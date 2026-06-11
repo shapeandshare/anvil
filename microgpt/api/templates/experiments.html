@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<section>
+  <h2>📊 Experiment History</h2>
+  <div id="experiment-list"></div>
+  <h2>🔍 Compare Experiments</h2>
+  <div id="compare-section">
+    <label>Experiment IDs (comma-separated): <input type="text" id="compare-ids" value="1,2"></label>
+    <button onclick="compareExperiments()">🔍 Compare</button>
+  </div>
+  <div id="comparison-results"></div>
+</section>
+
+<script>
+async function loadExperiments() {
+  const resp = await fetch('/v1/experiments');
+  const data = await resp.json();
+  const list = document.getElementById('experiment-list');
+  list.innerHTML = data.experiments.map(e =>
+    `<div class="exp-card">#${e.id} — ${e.status} — loss: ${e.final_loss ?? '...'}</div>`
+  ).join('');
+}
+
+async function compareExperiments() {
+  const ids = document.getElementById('compare-ids').value.split(',').map(s => s.trim());
+  const params = ids.map(id => `id=${id}`).join('&');
+  const resp = await fetch(`/v1/experiments/compare?${params}`);
+  const data = await resp.json();
+  document.getElementById('comparison-results').innerHTML =
+    `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+}
+
+loadExperiments();
+</script>
+{% endblock %}

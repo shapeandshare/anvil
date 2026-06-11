@@ -1,0 +1,30 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Courier New', monospace;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  line-height: 1.6;
+}
+.retro-header {
+  background: #16213e;
+  padding: 1rem 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border-bottom: 3px solid #e94560;
+}
+.retro-header .unicorn { font-size: 2rem; animation: float 3s ease-in-out infinite; }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+.retro-header h1 { font-size: 1.5rem; color: #e94560; flex: 1; }
+.retro-header nav a { color: #a0a0d0; text-decoration: none; margin: 0 0.5rem; padding: 0.3rem 0.6rem; border: 1px solid #a0a0d0; }
+.retro-header nav a:hover { background: #e94560; color: #fff; border-color: #e94560; }
+.container { max-width: 960px; margin: 2rem auto; padding: 0 1rem; }
+.training-dashboard { background: #0f3460; padding: 1.5rem; border: 2px solid #e94560; }
+.config-form { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+.config-form label { display: flex; flex-direction: column; font-size: 0.9rem; }
+.config-form input { background: #1a1a2e; border: 1px solid #a0a0d0; color: #e0e0e0; padding: 0.4rem; font-family: monospace; }
+#start-btn { grid-column: 1/-1; background: #e94560; color: #fff; border: none; padding: 0.8rem; font-size: 1.2rem; cursor: pointer; }
+#start-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+#loss-display { background: #1a1a2e; padding: 1rem; border: 1px solid #a0a0d0; max-height: 300px; overflow-y: auto; font-size: 0.85rem; }
+.sample { display: inline-block; background: #16213e; padding: 0.3rem 0.6rem; margin: 0.2rem; border: 1px solid #a0a0d0; }
+.retro-footer { text-align: center; padding: 1rem; color: #a0a0d0; font-size: 0.7rem; }
