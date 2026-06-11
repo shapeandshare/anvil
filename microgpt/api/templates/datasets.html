@@ -1,17 +1,73 @@
 {% extends "base.html" %}
 {% block content %}
-<section>
-  <h2>📁 Datasets</h2>
-  <div id="dataset-list"></div>
-</section>
+<div class="panel">
+  <div class="panel-titlebar">██████████[ DATASET MANAGER ]███████████████████</div>
+  <div class="panel-body">
+
+    <div class="prompt-line" style="margin-bottom:4px;">
+      <span class="prompt-symbol">$</span>
+      <span class="prompt-label">upload --file</span>
+    </div>
+    <form id="upload-form" class="upload-zone" style="padding-left:16px;">
+      <input type="file" class="terminal-input" id="file-input" accept=".txt">
+      <button type="submit" class="terminal-btn"><span class="btn-prefix">$</span> upload</button>
+    </form>
+    <div class="telemetry" id="upload-status" style="min-height:24px;margin-top:4px;max-height:40px;">Ready.</div>
+
+    <div style="margin-top:12px;">
+      <span class="terminal-sep">████ listing available datasets █████████████████</span>
+      <div id="dataset-list"><span style="color:var(--text-dim);font-size:0.78rem;">Loading...</span></div>
+    </div>
+
+  </div>
+</div>
+
 <script>
-async function loadDatasets() {
-  const resp = await fetch('/v1/datasets');
-  const data = await resp.json();
-  document.getElementById('dataset-list').innerHTML = data.datasets.map(d =>
-    `<div class="exp-card">📄 ${d.name} — ${d.document_count ?? '?'} docs, ${d.vocabulary_size ?? '?'} vocab</div>`
-  ).join('');
-}
-loadDatasets();
+(function() {
+  window.loadDatasets = async function loadDatasets() {
+    var resp = await fetch('/v1/datasets');
+    var data = await resp.json();
+    var list = document.getElementById('dataset-list');
+    if (data.datasets.length === 0) {
+      list.innerHTML = '<span style="color:var(--text-dim);font-size:0.78rem;">No datasets uploaded yet.</span>';
+      return;
+    }
+    list.innerHTML = data.datasets.map(function(d) {
+      var size = d.document_count != null ? String(d.document_count) : '?';
+      var vocab = d.vocabulary_size != null ? String(d.vocabulary_size) : '?';
+      var date = d.created_at || '????-??-??';
+      return '<div class="ls-line">' +
+        '<span class="ls-perms">-rw-r--r--</span>' +
+        '<span class="ls-size">' + size + '</span>' +
+        '<span class="ls-date">' + date + '</span>' +
+        '<span class="ls-name">' + d.name + '</span>' +
+        '<span style="color:var(--text-dim);font-size:0.72rem;">[' + vocab + ' unique chars]</span>' +
+        '</div>';
+    }).join('');
+  };
+
+  document.getElementById('upload-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    var fileInput = document.getElementById('file-input');
+    var status = document.getElementById('upload-status');
+    if (!fileInput.files.length) {
+      status.textContent = '! Please select a .txt file.';
+      return;
+    }
+    var formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    status.textContent = '> uploading...';
+    try {
+      var resp = await fetch('/v1/datasets/upload', { method: 'POST', body: formData });
+      var data = await resp.json();
+      status.textContent = '> uploaded "' + data.name + '" -- ' + data.document_count + ' lines, ' + data.vocabulary_size + ' unique chars';
+      loadDatasets();
+    } catch (err) {
+      status.textContent = '! Upload failed: ' + err.message;
+    }
+  });
+
+  loadDatasets();
+})();
 </script>
 {% endblock %}
