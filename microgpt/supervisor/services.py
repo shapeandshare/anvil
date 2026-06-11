@@ -1,6 +1,7 @@
 import os
 import signal
 import subprocess
+import sys
 from pathlib import Path
 
 from microgpt.config import get_config
@@ -19,9 +20,10 @@ class MLflowService:
     def start(self) -> None:
         if self.process is not None and self.process.poll() is None:
             return
+        mlflow_bin = str(Path(sys.executable).parent / "mlflow")
         self.process = subprocess.Popen(
             [
-                "mlflow",
+                mlflow_bin,
                 "server",
                 "--backend-store-uri",
                 f"sqlite:///{self.mlruns_dir / 'mlflow.db'}",
