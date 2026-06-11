@@ -3,29 +3,82 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🦄 microgpt-workbench</title>
+<title>microgpt-workbench</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-<header class="retro-header">
-  <div class="unicorn">🦄</div>
-  <h1>microgpt-workbench</h1>
-  <nav>
-    <a href="/">🧠 Train</a>
-    <a href="/experiments">📊 Experiments</a>
-    <a href="/datasets">📁 Datasets</a>
-    <a href="/operations">🔧 Operations</a>
-    <a href="/v1/docs">📖 API</a>
-  </nav>
-</header>
-<main class="container">
-  {% block content %}{% endblock %}
-</main>
-<footer class="retro-footer">
-  <pre>  ___ ___ ___ ___ ___ ___
- | _ | _ | _ | _ | _ | _ |
- |___|___|___|___|___|___|  v0.1.0 🦄
-</pre>
-</footer>
+
+<div class="scanlines"></div>
+
+<div class="tmux-tab-bar">
+  <span class="tmux-tab" data-target="/v1">[0]: Train</span>
+  <span class="tmux-tab" data-target="/v1/experiments-page">[1]: Experiments</span>
+  <span class="tmux-tab" data-target="/v1/datasets-page">[2]: Datasets</span>
+  <span class="tmux-tab" data-target="/v1/operations-page">[3]: Ops</span>
+  <span class="tmux-tab" data-target="/v1/inference-page">[4]: Inference</span>
+</div>
+
+<div class="terminal-window">
+  <div class="terminal-titlebar">
+    <span class="title-text">████████████[ microgpt-workbench ]████████████████</span>
+    <span style="color:var(--text-dim);margin-left:auto;">v0.1.0</span>
+  </div>
+  <main class="terminal-content">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+<div class="status-bar">
+  <span class="status-item">[SYSTEM: ONLINE]</span>
+  <span class="status-item" id="status-time">[TIME: --:--:--]</span>
+  <span class="status-item">[HOST: localhost]</span>
+  <span class="status-item" id="status-uptime">[UPTIME: 0h 0m 0s]</span>
+</div>
+
+<script>
+(function() {
+  // ── Set active tab from current URL ──────────────────────
+  const path = window.location.pathname;
+  document.querySelectorAll('.tmux-tab').forEach(function(tab) {
+    var target = tab.getAttribute('data-target');
+    if (path === target || (target === '/v1' && (path === '/' || path === '/v1'))) {
+      tab.classList.add('active');
+    }
+  });
+
+  // ── Tab navigation ──────────────────────────────────────
+  document.querySelectorAll('.tmux-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      window.location.href = this.getAttribute('data-target');
+    });
+  });
+
+  // ── Status bar clock ────────────────────────────────────
+  function updateClock() {
+    var now = new Date();
+    var h = now.getHours().toString().padStart(2, '0');
+    var m = now.getMinutes().toString().padStart(2, '0');
+    var s = now.getSeconds().toString().padStart(2, '0');
+    document.getElementById('status-time').textContent = '[TIME: ' + h + ':' + m + ':' + s + ']';
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  // ── Uptime counter (page session) ────────────────────────
+  (function() {
+    var uptime = 0;
+    setInterval(function() {
+      uptime++;
+      var h = Math.floor(uptime / 3600);
+      var m = Math.floor((uptime % 3600) / 60);
+      var s = uptime % 60;
+      document.getElementById('status-uptime').textContent =
+        '[UPTIME: ' + h + 'h ' + m + 'm ' + s + 's]';
+    }, 1000);
+  })();
+})();
+</script>
+
+{% block scripts %}{% endblock %}
 </body>
 </html>

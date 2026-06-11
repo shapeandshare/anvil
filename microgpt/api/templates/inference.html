@@ -1,8 +1,97 @@
 {% extends "base.html" %}
 {% block content %}
-<section>
-  <h2>✨ Inference</h2>
-  <p>Train a model first, then generate samples here.</p>
-  <pre id="inference-output">No model trained yet. Go to 🧠 Train to start.</pre>
-</section>
+<div class="panel">
+  <div class="panel-titlebar">████████[ INFERENCE — LLM SAMPLING ]███████████████</div>
+  <div class="panel-body">
+    <div class="config-grid">
+      <label>
+        <span class="label-text">MODEL</span>
+        <div class="prompt-line">
+          <span class="prompt-symbol">$</span>
+          <span class="prompt-label">load --model</span>
+          <select class="terminal-input" id="model-select"></select>
+        </div>
+      </label>
+      <label>
+        <span class="label-text">TEMPERATURE</span>
+        <div class="prompt-line">
+          <span class="prompt-symbol">$</span>
+          <span class="prompt-label">set temperature=</span>
+          <input type="number" class="terminal-input" id="temperature" value="0.5" step="0.1" min="0.1" max="2" style="min-width:70px;">
+        </div>
+      </label>
+      <label>
+        <span class="label-text">SAMPLES</span>
+        <div class="prompt-line">
+          <span class="prompt-symbol">$</span>
+          <span class="prompt-label">set num_samples=</span>
+          <input type="number" class="terminal-input" id="num_samples" value="10" min="1" max="50" style="min-width:70px;">
+        </div>
+      </label>
+      <div class="config-full" style="margin-top:4px;">
+        <button class="terminal-btn glitch" onclick="runInference()">
+          <span class="btn-prefix">$</span> ./generate
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-titlebar">██████████████[ OUTPUT STREAM ]████████████████████</div>
+  <div class="panel-body">
+    <pre class="telemetry" id="inference-status" style="min-height:24px;max-height:40px;padding:6px 10px;">Awaiting command...</pre>
+    <div style="margin-top:8px;" id="inference-output"></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  window.loadModels = async function loadModels() {
+    var resp = await fetch('/v1/inference/models');
+    var data = await resp.json();
+    var select = document.getElementById('model-select');
+    if (data.models.length === 0) {
+      select.innerHTML = '<option value="">No trained models available</option>';
+      return;
+    }
+    select.innerHTML = data.models.map(function(m) {
+      var loss = m.final_loss != null ? m.final_loss.toFixed(4) : '?';
+      return '<option value="' + m.id + '">Experiment #' + m.id + ' — loss: ' + loss + ' — ' + (m.created_at || '') + '</option>';
+    }).join('');
+  };
+
+  window.runInference = async function runInference() {
+    var select = document.getElementById('model-select');
+    var experimentId = select.value;
+    var statusEl = document.getElementById('inference-status');
+    var outputEl = document.getElementById('inference-output');
+
+    if (!experimentId) {
+      statusEl.textContent = '! Please select a model first.';
+      return;
+    }
+
+    statusEl.textContent = '> generating...\n';
+    outputEl.innerHTML = '';
+
+    var resp = await fetch('/v1/inference/sample', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        experiment_id: parseInt(experimentId),
+        temperature: parseFloat(document.getElementById('temperature').value),
+        num_samples: parseInt(document.getElementById('num_samples').value),
+      }),
+    });
+    var data = await resp.json();
+    statusEl.textContent = '> generated ' + data.samples.length + ' samples\n';
+    outputEl.innerHTML = data.samples.map(function(s) {
+      return '<span class="sample-block">[SAMPLE] ' + s + '</span>';
+    }).join(' ');
+  };
+
+  loadModels();
+})();
+</script>
 {% endblock %}

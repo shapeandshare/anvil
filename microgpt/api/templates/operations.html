@@ -1,19 +1,93 @@
 {% extends "base.html" %}
 {% block content %}
-<section>
-  <h2>🔧 Operations Dashboard</h2>
-  <div id="services-list"></div>
-  <h3>📋 MLflow Logs</h3>
-  <pre id="mlflow-logs" style="background:#1a1a2e;padding:1rem;max-height:200px;overflow-y:auto;">Loading...</pre>
-</section>
+<div class="panel">
+  <div class="panel-titlebar">████████[ OPERATIONS — SERVICE CONTROL ]████████████</div>
+  <div class="panel-body">
+    <div id="services-list">
+      <span style="color:var(--text-dim);font-size:0.78rem;">Polling services...</span>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-titlebar">████████████[ SERVICE LOGS — tail -f ]███████████████</div>
+  <div class="panel-body" id="service-logs">
+    <span style="color:var(--text-dim);font-size:0.78rem;">Waiting for service data...</span>
+  </div>
+</div>
+
 <script>
-async function loadServices() {
-  const resp = await fetch('/v1/health');
-  const data = await resp.json();
-  document.getElementById('services-list').innerHTML =
-    `<div class="exp-card">🟢 Web Server — uptime: ${data.uptime_seconds ?? 0}s</div>`;
-}
-setInterval(loadServices, 5000);
-loadServices();
+(function() {
+  window.loadServices = async function loadServices() {
+    var healthResp = await fetch('/v1/health');
+    var svcResp = await fetch('/v1/services');
+    var health = await healthResp.json();
+    var svcData = await svcResp.json();
+
+    var uptime = health.uptime_seconds || 0;
+    var hours = Math.floor(uptime / 3600);
+    var mins = Math.floor((uptime % 3600) / 60);
+    var secs = uptime % 60;
+
+    var servicesHtml = '';
+    servicesHtml += '<div class="htop-header">';
+    servicesHtml += '<span class="htop-pid">PID</span>';
+    servicesHtml += '<span class="htop-service">SERVICE</span>';
+    servicesHtml += '<span class="htop-status">STATUS</span>';
+    servicesHtml += '<span class="htop-uptime">UPTIME</span>';
+    servicesHtml += '<span class="htop-mem">MEM</span>';
+    servicesHtml += '</div>';
+
+    servicesHtml += '<div class="htop-row">';
+    servicesHtml += '<span class="htop-pid">0001</span>';
+    servicesHtml += '<span class="htop-service">web-server</span>';
+    servicesHtml += '<span class="htop-status status-online">RUNNING</span>';
+    servicesHtml += '<span class="htop-uptime">' + hours + 'h ' + mins + 'm ' + secs + 's</span>';
+    servicesHtml += '<span class="htop-mem">-</span>';
+    servicesHtml += '</div>';
+
+    svcData.services.forEach(function(s) {
+      var statusClass = s.status === 'running' ? 'status-online' : 'status-offline';
+      var statusText = s.status === 'running' ? 'RUNNING' : (s.status || 'STOPPED').toUpperCase();
+      var port = s.port ? ':' + s.port : '';
+      var linkHtml = (s.status === 'running' && s.port) ? ' <a href="http://127.0.0.1' + port + '" target="_blank" style="color:var(--accent-cyan);text-decoration:underline;font-size:0.65rem;">[open]</a>' : '';
+      servicesHtml += '<div class="htop-row">';
+      servicesHtml += '<span class="htop-pid">' + (s.pid || '----').toString().padStart(4) + '</span>';
+      servicesHtml += '<span class="htop-service">' + (s.name || '?') + linkHtml + '</span>';
+      servicesHtml += '<span class="htop-status ' + statusClass + '">' + statusText + '</span>';
+      servicesHtml += '<span class="htop-uptime">' + (s.uptime || '-') + '</span>';
+      servicesHtml += '<span class="htop-mem">' + (s.memory || '-') + '</span>';
+      servicesHtml += '</div>';
+    });
+
+    document.getElementById('services-list').innerHTML = servicesHtml;
+
+    // Load logs for each service
+    var logsDiv = document.getElementById('service-logs');
+    var logsHtml = '';
+    for (var i = 0; i < svcData.services.length; i++) {
+      var svc = svcData.services[i];
+      try {
+        var logResp = await fetch('/v1/services/logs/' + svc.name + '?lines=20');
+        var logData = await logResp.json();
+        if (logData.logs && logData.logs.length > 0) {
+          logsHtml += '<div class="panel" style="margin:6px 0;">';
+          logsHtml += '<div class="panel-titlebar" style="font-size:0.7rem;">██████[ ' + svc.name + ' /var/log/syslog ]██████████</div>';
+          logsHtml += '<pre class="telemetry" style="max-height:180px;font-size:0.72rem;">';
+          logsHtml += logData.logs.join('\n');
+          logsHtml += '</pre></div>';
+        }
+      } catch (_) { /* skip service with no logs */ }
+    }
+    if (logsHtml) {
+      logsDiv.innerHTML = logsHtml;
+    } else {
+      logsDiv.innerHTML = '<span style="color:var(--text-dim);font-size:0.78rem;">No log data available.</span>';
+    }
+  };
+
+  setInterval(loadServices, 10000);
+  loadServices();
+})();
 </script>
 {% endblock %}

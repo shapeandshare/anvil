@@ -3,8 +3,9 @@ import json
 import os
 import random
 import urllib.request
+from collections.abc import Awaitable, Callable
 
-from microgpt.core.engine import train
+from microgpt.core.engine import GPT, train
 
 
 class TrainingService:
@@ -29,7 +30,13 @@ class TrainingService:
         self._queues[run_id] = asyncio.Queue()
         return run_id
 
-    async def start_training(self, config: dict, run_id: int | None = None) -> int:
+    async def start_training(
+        self,
+        config: dict,
+        run_id: int | None = None,
+        on_complete: Callable[[GPT, dict, float, list[str], list[str]], Awaitable[None]] | None = None,
+        progress_callback_override: Callable[[int, float], None] | None = None,
+    ) -> int:
         if run_id is None:
             run_id = self.reserve_run()
         queue = self._queues[run_id]
@@ -47,8 +54,10 @@ class TrainingService:
                 ),
                 loop,
             )
+            if progress_callback_override:
+                progress_callback_override(step, loss)
 
-        _, final_loss, samples = await loop.run_in_executor(
+        model, final_loss, samples, uchars = await loop.run_in_executor(
             None,
             lambda: train(
                 docs,
@@ -69,6 +78,10 @@ class TrainingService:
             }
         )
         self._queues.pop(run_id, None)
+
+        if on_complete:
+            await on_complete(model, config, final_loss, samples, uchars)
+
         return run_id
 
     def get_queue(self, run_id: int) -> asyncio.Queue | None:

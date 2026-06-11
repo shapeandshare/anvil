@@ -1,35 +1,42 @@
 {% extends "base.html" %}
 {% block content %}
-<section>
-  <h2>📊 Experiment History</h2>
-  <div id="experiment-list"></div>
-  <h2>🔍 Compare Experiments</h2>
-  <div id="compare-section">
-    <label>Experiment IDs (comma-separated): <input type="text" id="compare-ids" value="1,2"></label>
-    <button onclick="compareExperiments()">🔍 Compare</button>
+<div class="panel">
+  <div class="panel-titlebar">██████████[ EXPERIMENTS — view / compare ]████████████</div>
+  <div class="panel-body">
+    <div id="experiment-list"><span style="color:var(--text-dim);font-size:0.78rem;">Loading...</span></div>
   </div>
-  <div id="comparison-results"></div>
-</section>
+</div>
 
 <script>
-async function loadExperiments() {
-  const resp = await fetch('/v1/experiments');
-  const data = await resp.json();
-  const list = document.getElementById('experiment-list');
-  list.innerHTML = data.experiments.map(e =>
-    `<div class="exp-card">#${e.id} — ${e.status} — loss: ${e.final_loss ?? '...'}</div>`
-  ).join('');
-}
-
-async function compareExperiments() {
-  const ids = document.getElementById('compare-ids').value.split(',').map(s => s.trim());
-  const params = ids.map(id => `id=${id}`).join('&');
-  const resp = await fetch(`/v1/experiments/compare?${params}`);
-  const data = await resp.json();
-  document.getElementById('comparison-results').innerHTML =
-    `<pre>${JSON.stringify(data, null, 2)}</pre>`;
-}
-
-loadExperiments();
+(function() {
+  window.loadExperiments = async function() {
+    var resp = await fetch('/v1/experiments');
+    var data = await resp.json();
+    var list = document.getElementById('experiment-list');
+    if (data.experiments.length === 0) {
+      list.innerHTML = '<span style="color:var(--text-dim);font-size:0.78rem;">No experiments yet. <a href="/v1" style="color:var(--accent-cyan);">Run a training session</a>.</span>';
+      return;
+    }
+    var overviewLink = data.mlflow_url
+      ? ' — <a href="' + data.mlflow_url + '" target="_blank" style="color:var(--accent-cyan);text-decoration:underline;">MLflow overview →</a>'
+      : '';
+    var html = '<div style="margin-bottom:8px;font-size:0.78rem;color:var(--text-dim);">' + data.experiments.length + ' run(s)' + overviewLink + '</div>';
+    html += '<div class="htop-header"><span class="htop-pid">#</span><span class="htop-service">EXPERIMENT</span><span class="htop-status">STATUS</span><span class="htop-uptime">LOSS</span><span class="htop-mem">MLFLOW</span></div>';
+    data.experiments.forEach(function(e) {
+      var mlflowLink = e.mlflow_run_url
+        ? '<a href="' + e.mlflow_run_url + '" target="_blank" style="color:var(--accent-cyan);text-decoration:underline;">open →</a>'
+        : '-';
+      html += '<div class="htop-row">';
+      html += '<span class="htop-pid">' + e.id.toString().padStart(4) + '</span>';
+      html += '<span class="htop-service">#' + e.id + '</span>';
+      html += '<span class="htop-status ' + (e.status === 'completed' ? 'status-online' : 'status-offline') + '">' + (e.status || '?').toUpperCase() + '</span>';
+      html += '<span class="htop-uptime">' + (e.final_loss != null ? e.final_loss.toFixed(4) : '-') + '</span>';
+      html += '<span class="htop-mem">' + mlflowLink + '</span>';
+      html += '</div>';
+    });
+    list.innerHTML = html;
+  };
+  loadExperiments();
+})();
 </script>
 {% endblock %}
