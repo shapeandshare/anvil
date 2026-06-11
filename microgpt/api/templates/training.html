@@ -1,53 +1,144 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="training-dashboard">
-  <h2>🧠 Train a GPT Model</h2>
-  <div class="config-form">
-    <label>Steps: <input type="number" id="num_steps" value="1000" min="1" max="100000"></label>
-    <label>Embedding: <input type="number" id="n_embd" value="16" min="4" max="256"></label>
-    <label>Heads: <input type="number" id="n_head" value="4" min="1" max="16"></label>
-    <label>Learning Rate: <input type="number" id="learning_rate" value="0.01" step="0.001" min="0.001" max="1"></label>
-    <label>Temperature: <input type="number" id="temperature" value="0.5" step="0.1" min="0.1" max="2"></label>
-    <button id="start-btn" onclick="startTraining()">🚀 Start Training</button>
+<div class="panel">
+  <div class="panel-titlebar">████████[ TRAINING — GPT MODEL ]████████████████</div>
+  <div class="panel-body">
+    <div class="config-grid">
+      <label>
+        <span class="label-text">STEPS</span>
+        <div class="prompt-line">
+          <span class="prompt-symbol">$</span>
+          <span class="prompt-label">set num_steps=</span>
+          <input type="number" class="terminal-input" id="num_steps" value="1000" min="1" max="100000">
+        </div>
+      </label>
+      <label>
+        <span class="label-text">EMBEDDING</span>
+        <div class="prompt-line">
+          <span class="prompt-symbol">$</span>
+          <span class="prompt-label">set n_embd=</span>
+          <input type="number" class="terminal-input" id="n_embd" value="16" min="4" max="256">
+        </div>
+      </label>
+      <label>
+        <span class="label-text">ATTENTION HEADS</span>
+        <div class="prompt-line">
+          <span class="prompt-symbol">$</span>
+          <span class="prompt-label">set n_head=</span>
+          <input type="number" class="terminal-input" id="n_head" value="4" min="1" max="16">
+        </div>
+      </label>
+      <label>
+        <span class="label-text">LEARNING RATE</span>
+        <div class="prompt-line">
+          <span class="prompt-symbol">$</span>
+          <span class="prompt-label">set learning_rate=</span>
+          <input type="number" class="terminal-input" id="learning_rate" value="0.01" step="0.001" min="0.001" max="1">
+        </div>
+      </label>
+      <label>
+        <span class="label-text">TEMPERATURE</span>
+        <div class="prompt-line">
+          <span class="prompt-symbol">$</span>
+          <span class="prompt-label">set temperature=</span>
+          <input type="number" class="terminal-input" id="temperature" value="0.5" step="0.1" min="0.1" max="2">
+        </div>
+      </label>
+      <div class="config-full" style="margin-top:4px;">
+        <button class="terminal-btn glitch" id="start-btn" onclick="startTraining()">
+          <span class="btn-prefix">$</span> ./train --run
+        </button>
+      </div>
+    </div>
   </div>
-  <div class="training-results">
-    <h3>📉 Loss</h3>
-    <pre id="loss-display">Waiting to start...</pre>
-    <h3>✨ Generated Samples</h3>
-    <div id="samples-display"></div>
+</div>
+
+<div class="panel">
+  <div class="panel-titlebar">████████████[ LOSS TELEMETRY ]███████████████████</div>
+  <div class="panel-body">
+    <pre class="telemetry" id="loss-display">Waiting for training command...</pre>
   </div>
-</section>
+</div>
+
+<div class="panel">
+  <div class="panel-titlebar">███████████[ GENERATED SAMPLES ]██████████████████</div>
+  <div class="panel-body" id="samples-display">
+    <span style="color:var(--text-dim);font-size:0.78rem;">No samples yet.</span>
+  </div>
+</div>
 
 <script>
-let eventSource = null;
-const START_BTN = document.getElementById('start-btn');
-const LOSS_DISPLAY = document.getElementById('loss-display');
-const SAMPLES_DISPLAY = document.getElementById('samples-display');
+(function() {
+  var eventSource = null;
+  var START_BTN = document.getElementById('start-btn');
+  var LOSS_DISPLAY = document.getElementById('loss-display');
+  var SAMPLES_DISPLAY = document.getElementById('samples-display');
 
-async function startTraining() {
-  START_BTN.disabled = true;
-  LOSS_DISPLAY.textContent = 'Starting...';
-  const body = {
-    num_steps: parseInt(document.getElementById('num_steps').value),
-    n_embd: parseInt(document.getElementById('n_embd').value),
-    n_head: parseInt(document.getElementById('n_head').value),
-    learning_rate: parseFloat(document.getElementById('learning_rate').value),
-    temperature: parseFloat(document.getElementById('temperature').value),
+  window.startTraining = async function startTraining() {
+    START_BTN.disabled = true;
+    LOSS_DISPLAY.textContent = '> initializing training session...\n';
+
+    var body = {
+      num_steps: parseInt(document.getElementById('num_steps').value),
+      n_embd: parseInt(document.getElementById('n_embd').value),
+      n_head: parseInt(document.getElementById('n_head').value),
+      learning_rate: parseFloat(document.getElementById('learning_rate').value),
+      temperature: parseFloat(document.getElementById('temperature').value),
+    };
+
+    try {
+      var resp = await fetch('/v1/training/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      var data = await resp.json();
+      var run_id = data.run_id;
+      LOSS_DISPLAY.textContent += '> run_id: ' + run_id + '\n';
+      LOSS_DISPLAY.textContent += '═══════════════════════════════════════\n';
+      LOSS_DISPLAY.textContent += ' TRAINING IN PROGRESS\n';
+      LOSS_DISPLAY.textContent += '═══════════════════════════════════════\n';
+
+      eventSource = new EventSource('/v1/training/stream/' + run_id);
+
+      eventSource.addEventListener('metrics', function(e) {
+        var d = JSON.parse(e.data);
+        var pct = Math.min(100, Math.round((d.step / parseInt(document.getElementById('num_steps').value)) * 100));
+        var barLen = 10;
+        var filled = Math.round((pct / 100) * barLen);
+        var bar = '';
+        for (var i = 0; i < barLen; i++) {
+          bar += i < filled ? '█' : '░';
+        }
+        LOSS_DISPLAY.textContent += 'step ' + String(d.step).padStart(6) +
+          ' | loss ' + d.loss.toFixed(4) +
+          ' | ' + bar + ' ' + pct + '%\n';
+        LOSS_DISPLAY.scrollTop = LOSS_DISPLAY.scrollHeight;
+      });
+
+      eventSource.addEventListener('complete', function(e) {
+        var d = JSON.parse(e.data);
+        LOSS_DISPLAY.textContent += '\n═══════════════════════════════════════\n';
+        LOSS_DISPLAY.textContent += ' FINAL loss: ' + d.final_loss.toFixed(4) + '\n';
+        LOSS_DISPLAY.textContent += ' saved to experiments\n';
+        LOSS_DISPLAY.textContent += '═══════════════════════════════════════\n';
+
+        if (d.samples && d.samples.length > 0) {
+          SAMPLES_DISPLAY.innerHTML = d.samples.map(function(s) {
+            return '<span class="sample-block">[SAMPLE] ' + s + '</span>';
+          }).join(' ');
+        } else {
+          SAMPLES_DISPLAY.innerHTML = '<span style="color:var(--text-dim);font-size:0.78rem;">No samples generated.</span>';
+        }
+
+        eventSource.close();
+        START_BTN.disabled = false;
+      });
+    } catch (err) {
+      LOSS_DISPLAY.textContent += '\n! ERROR: ' + err.message + '\n';
+      START_BTN.disabled = false;
+    }
   };
-  const resp = await fetch('/v1/training/start', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
-  const { run_id } = await resp.json();
-  eventSource = new EventSource(`/v1/training/stream/${run_id}`);
-  eventSource.addEventListener('metrics', e => {
-    const d = JSON.parse(e.data);
-    LOSS_DISPLAY.textContent += `\nstep ${d.step}: loss ${d.loss.toFixed(4)}`;
-  });
-  eventSource.addEventListener('complete', e => {
-    const d = JSON.parse(e.data);
-    LOSS_DISPLAY.textContent += `\n\n✅ Final loss: ${d.final_loss.toFixed(4)}`;
-    SAMPLES_DISPLAY.innerHTML = d.samples.map(s => `<span class="sample">${s}</span>`).join(' ');
-    eventSource.close();
-    START_BTN.disabled = false;
-  });
-}
+})();
 </script>
 {% endblock %}
