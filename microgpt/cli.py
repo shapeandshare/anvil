@@ -44,7 +44,7 @@ def serve():
 
 def train():
     docs = _load_docs()
-    _, final_loss, samples = run_training(docs)
+    _, final_loss, samples, _ = run_training(docs)
     print(f"\nFinal loss: {final_loss:.4f}")
     print("\n--- Generated samples ---")
     for i, sample in enumerate(samples, 1):
