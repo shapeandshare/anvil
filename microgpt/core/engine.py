@@ -99,6 +99,28 @@ class GPT:
     def num_params(self):
         return len(self.params)
 
+    def save(self, path: str, chars: list[str] | None = None) -> None:
+        import json
+        import os
+
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        data = {
+            "vocab_size": self.vocab_size,
+            "n_embd": self.n_embd,
+            "n_head": self.n_head,
+            "n_layer": self.n_layer,
+            "block_size": self.block_size,
+            "chars": chars,
+            "state_dict": {
+                k: [[p.data for p in row] for row in mat]
+                for k, mat in self.state_dict.items()
+            },
+        }
+        with open(path, "w") as f:
+            json.dump(data, f)
+
+    
+
 
 def train(
     docs,
@@ -173,4 +195,4 @@ def train(
             sample.append(uchars[token_id])
         samples.append("".join(sample))
 
-    return model, loss.data, samples
+    return model, loss.data, samples, uchars
