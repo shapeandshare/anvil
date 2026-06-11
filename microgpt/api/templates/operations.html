@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<section>
+  <h2>🔧 Operations Dashboard</h2>
+  <div id="services-list"></div>
+  <h3>📋 MLflow Logs</h3>
+  <pre id="mlflow-logs" style="background:#1a1a2e;padding:1rem;max-height:200px;overflow-y:auto;">Loading...</pre>
+</section>
+<script>
+async function loadServices() {
+  const resp = await fetch('/v1/health');
+  const data = await resp.json();
+  document.getElementById('services-list').innerHTML =
+    `<div class="exp-card">🟢 Web Server — uptime: ${data.uptime_seconds ?? 0}s</div>`;
+}
+setInterval(loadServices, 5000);
+loadServices();
+</script>
+{% endblock %}

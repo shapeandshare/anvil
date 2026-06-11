@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<section>
+  <h2>📁 Datasets</h2>
+  <div id="dataset-list"></div>
+</section>
+<script>
+async function loadDatasets() {
+  const resp = await fetch('/v1/datasets');
+  const data = await resp.json();
+  document.getElementById('dataset-list').innerHTML = data.datasets.map(d =>
+    `<div class="exp-card">📄 ${d.name} — ${d.document_count ?? '?'} docs, ${d.vocabulary_size ?? '?'} vocab</div>`
+  ).join('');
+}
+loadDatasets();
+</script>
+{% endblock %}
