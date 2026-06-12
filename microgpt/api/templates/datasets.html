@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="panel">
-  <div class="panel-titlebar">██████████[ DATASET MANAGER ]███████████████████</div>
+  <div class="panel-titlebar">▌ DATASET MANAGER</div>
   <div class="panel-body">
 
     <div class="prompt-line" style="margin-bottom:4px;">
@@ -15,8 +15,38 @@
     <div class="telemetry" id="upload-status" style="min-height:24px;margin-top:4px;max-height:40px;">Ready.</div>
 
     <div style="margin-top:12px;">
-      <span class="terminal-sep">████ listing available datasets █████████████████</span>
+      <span class="terminal-sep">── datasets ──────────────────────────────────────</span>
       <div id="dataset-list"><span style="color:var(--text-dim);font-size:0.78rem;">Loading...</span></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-titlebar">▌ CORPORA MANAGER</div>
+  <div class="panel-body">
+
+    <div class="prompt-line" style="margin-bottom:4px;">
+      <span class="prompt-symbol">$</span>
+      <span class="prompt-label">corpus create --name</span>
+    </div>
+    <div id="corpus-create-form" style="padding-left:16px;display:flex;flex-wrap:wrap;gap:4px;">
+      <input type="text" class="terminal-input" id="corpus-name" placeholder="name" style="width:120px;">
+      <input type="text" class="terminal-input" id="corpus-root" placeholder="root_path" style="width:240px;">
+      <input type="text" class="terminal-input" id="corpus-pattern" placeholder="include (e.g. **/*.py)" style="width:180px;">
+      <input type="text" class="terminal-input" id="corpus-ignore" placeholder="exclude (e.g. tests/)" style="width:140px;">
+      <select class="terminal-input" id="corpus-strategy" style="width:100px;">
+        <option value="windowed">windowed</option>
+        <option value="line">line</option>
+        <option value="file">file</option>
+      </select>
+      <button class="terminal-btn" id="corpus-create-btn"><span class="btn-prefix">$</span> create</button>
+    </div>
+    <div class="telemetry" id="corpus-status" style="min-height:24px;margin-top:4px;max-height:40px;">Ready.</div>
+
+    <div style="margin-top:12px;">
+      <span class="terminal-sep">── corpora ──────────────────────────────────────</span>
+      <div id="corpus-list"><span style="color:var(--text-dim);font-size:0.78rem;">Loading...</span></div>
     </div>
 
   </div>
@@ -46,6 +76,43 @@
     }).join('');
   };
 
+  window.loadCorpora = async function loadCorpora() {
+    var resp = await fetch('/v1/corpora');
+    var data = await resp.json();
+    var list = document.getElementById('corpus-list');
+    if (!data.data || data.data.length === 0) {
+      list.innerHTML = '<span style="color:var(--text-dim);font-size:0.78rem;">No corpora created yet.</span>';
+      return;
+    }
+    list.innerHTML = data.data.map(function(c) {
+      var ingestBtn = '<button class="terminal-btn ingest-btn" data-id="' + c.id + '" style="font-size:0.7rem;padding:1px 6px;"><span class="btn-prefix">$</span> ingest</button>';
+      var delBtn = '<button class="terminal-btn del-btn" data-id="' + c.id + '" style="font-size:0.7rem;padding:1px 6px;margin-left:2px;"><span class="btn-prefix">$</span> rm</button>';
+      return '<div class="ls-line">' +
+        '<span class="ls-perms">drwxr-xr-x</span>' +
+        '<span class="ls-size">' + (c.file_count || 0) + 'f</span>' +
+        '<span class="ls-date">' + (c.created_at || '').slice(0,10) + '</span>' +
+        '<span class="ls-name">' + c.name + '</span>' +
+        '<span style="color:var(--text-dim);font-size:0.72rem;"> ' + (c.document_count || 0) + ' docs, ' + (c.chunking_strategy || '?') + '</span>' +
+        '<span style="margin-left:8px;">' + ingestBtn + delBtn + '</span>' +
+        '<div class="corpus-files" id="files-' + c.id + '" style="display:none;padding-left:20px;"></div>' +
+        '</div>';
+    }).join('');
+  };
+
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('ingest-btn')) {
+      var id = e.target.getAttribute('data-id');
+      e.target.textContent = '> ingesting...';
+      fetch('/v1/corpora/' + id + '/ingest', { method: 'POST' }).then(function(r) { return r.json(); }).then(function() {
+        loadCorpora();
+      }).catch(function() { loadCorpora(); });
+    }
+    if (e.target.classList.contains('del-btn')) {
+      var id = e.target.getAttribute('data-id');
+      fetch('/v1/corpora/' + id, { method: 'DELETE' }).then(function() { loadCorpora(); });
+    }
+  });
+
   document.getElementById('upload-form').addEventListener('submit', async function(e) {
     e.preventDefault();
     var fileInput = document.getElementById('file-input');
@@ -67,7 +134,28 @@
     }
   });
 
+  document.getElementById('corpus-create-btn').addEventListener('click', async function() {
+    var name = document.getElementById('corpus-name').value;
+    var root = document.getElementById('corpus-root').value;
+    var pattern = document.getElementById('corpus-pattern').value;
+    var ignore = document.getElementById('corpus-ignore').value;
+    var strategy = document.getElementById('corpus-strategy').value;
+    var status = document.getElementById('corpus-status');
+    if (!name || !root) { status.textContent = '! name and root_path required'; return; }
+    status.textContent = '> creating...';
+    var body = { name: name, root_path: root, chunking_strategy: strategy };
+    if (pattern) body.include_patterns = [pattern];
+    if (ignore) body.exclude_patterns = [ignore];
+    try {
+      var resp = await fetch('/v1/corpora', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      var data = await resp.json();
+      status.textContent = '> created corpus ' + data.data.id + ': ' + data.data.name;
+      loadCorpora();
+    } catch (err) { status.textContent = '! ' + err.message; }
+  });
+
   loadDatasets();
+  loadCorpora();
 })();
 </script>
 {% endblock %}
