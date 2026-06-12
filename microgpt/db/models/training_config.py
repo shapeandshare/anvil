@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from microgpt.db.base import Base, TimestampMixin
 
@@ -48,6 +48,8 @@ class Experiment(Base, TimestampMixin):
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     generated_samples: Mapped[str | None] = mapped_column(String, nullable=True)
     error_message: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    dataset: Mapped["Dataset | None"] = relationship("Dataset", lazy="joined")
 
 
 class Dataset(Base, TimestampMixin):

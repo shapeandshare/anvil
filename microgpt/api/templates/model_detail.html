@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="panel">
+  <div class="panel-titlebar">████████[ MODEL DETAIL ]███████████████████████</div>
+  <div class="panel-body" id="model-detail"><span style="color:var(--text-dim);font-size:0.78rem;">Loading...</span></div>
+</div>
+
+<script>
+(function() {
+  var modelId = {{ model_id }};
+
+  window.loadModelDetail = async function() {
+    var resp = await fetch('/v1/registry/models/' + modelId);
+    var data = await resp.json();
+    var el = document.getElementById('model-detail');
+
+    if (data.detail) {
+      el.innerHTML = '<span style="color:var(--accent-red);">Error: ' + data.detail + '</span>';
+      return;
+    }
+
+    var html = '<div class="config-grid">';
+    html += '<div><span class="label-text">NAME</span><div class="prompt-line" style="margin-top:4px;"><span class="prompt-symbol">$</span><span style="color:var(--accent-green);">' + data.name + '</span></div></div>';
+    if (data.description) {
+      html += '<div><span class="label-text">DESCRIPTION</span><div class="prompt-line" style="margin-top:4px;"><span class="prompt-symbol">#</span><span style="color:var(--text-dim);">' + data.description + '</span></div></div>';
+    }
+    html += '<div><span class="label-text">CREATED</span><div class="prompt-line" style="margin-top:4px;"><span class="prompt-symbol">$</span><span>' + (data.created_at || '') + '</span></div></div>';
+    html += '<div><span class="label-text">VERSIONS</span><div class="prompt-line" style="margin-top:4px;"><span class="prompt-symbol">$</span><span>' + data.versions.length + ' total</span></div></div>';
+    html += '</div>';
+
+    if (data.versions.length > 0) {
+      html += '<div class="htop-header" style="margin-top:12px;"><span class="htop-pid">VER</span><span class="htop-service">EXPERIMENT</span><span class="htop-status">LOSS</span><span class="htop-uptime">DATASET</span><span class="htop-mem">CREATED</span><span style="flex:0 0 80px;">ACTION</span></div>';
+      data.versions.forEach(function(v) {
+        var expUrl = '/v1/experiments-page';
+        html += '<div class="htop-row">';
+        html += '<span class="htop-pid">v' + v.version + '</span>';
+        html += '<span class="htop-service"><a href="' + expUrl + '" style="color:var(--accent-cyan);text-decoration:underline;">#' + v.experiment_id + '</a></span>';
+        html += '<span class="htop-status">' + (v.final_loss != null ? v.final_loss.toFixed(4) : '-') + '</span>';
+        html += '<span class="htop-uptime">' + (v.dataset_name || '-') + '</span>';
+        html += '<span class="htop-mem">' + (v.created_at || '') + '</span>';
+        html += '<span style="flex:0 0 80px;"><button class="terminal-btn" style="font-size:0.7rem;padding:1px 6px;color:var(--accent-red);" onclick="deleteVersion(' + v.version + ')"><span class="btn-prefix">$</span> del</button></span>';
+        html += '</div>';
+
+        if (v.hyperparameters) {
+          html += '<div class="htop-row" style="background:var(--bg-dark);font-size:0.7rem;color:var(--text-dim);padding-left:80px;">';
+          html += 'HP: ' + JSON.stringify(v.hyperparameters);
+          html += '</div>';
+        }
+      });
+    }
+
+    html += '<div style="margin-top:12px;display:flex;gap:8px;">';
+    html += '<button class="terminal-btn" style="color:var(--accent-red);" onclick="deleteModel()"><span class="btn-prefix">$</span> delete entire model</button>';
+    html += '</div>';
+
+    el.innerHTML = html;
+  };
+
+  window.deleteVersion = function(version) {
+    if (!confirm('Delete version ' + version + ' of this model?')) return;
+    fetch('/v1/registry/models/' + modelId + '/versions/' + version, { method: 'DELETE' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.detail) { alert('Error: ' + data.detail); }
+      else { alert(data.message); loadModelDetail(); }
+    })
+    .catch(function(err) { alert('Delete failed: ' + err); });
+  };
+
+  window.deleteModel = function() {
+    if (!confirm('Delete this entire model and all versions? This cannot be undone.')) return;
+    fetch('/v1/registry/models/' + modelId, { method: 'DELETE' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.detail) { alert('Error: ' + data.detail); }
+      else { alert(data.message); window.location.href = '/v1/models-page'; }
+    })
+    .catch(function(err) { alert('Delete failed: ' + err); });
+  };
+
+  loadModelDetail();
+})();
+</script>
+{% endblock %}

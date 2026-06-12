@@ -13,12 +13,14 @@ from microgpt.api.v1.datasets import router as datasets_router
 from microgpt.core.engine import GPT, softmax
 from microgpt.api.v1.experiments import router as experiments_router
 from microgpt.api.v1.training import router as training_router
+from microgpt.api.v1.registry import router as registry_router
 
 router = APIRouter()
 router.include_router(training_router)
 router.include_router(experiments_router)
 router.include_router(datasets_router)
 router.include_router(corpora_router)
+router.include_router(registry_router)
 
 MODELS_DIR = Path("data/models")
 
@@ -174,27 +176,39 @@ async def inference_page(request: Request):
     )
 
 
+@router.get("/models-page", response_class=HTMLResponse)
+async def models_page(request: Request):
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "models.html",
+    )
+
+
+@router.get("/model-detail/{model_id}", response_class=HTMLResponse)
+async def model_detail_page(request: Request, model_id: int):
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "model_detail.html",
+        {"model_id": model_id},
+    )
+
+
 @router.get("/inference/models")
 async def list_inference_models():
     from microgpt.db.session import AsyncSessionLocal
-    from microgpt.db.models.training_config import Experiment
-    from sqlalchemy import select
+    from microgpt.db.repositories.models import ModelRepository
+    from microgpt.services.models import ModelRegistryService
 
     async with AsyncSessionLocal() as session:
-        result = await session.execute(
-            select(Experiment).where(Experiment.status == "completed").order_by(Experiment.created_at.desc())
-        )
-        experiments = result.scalars().all()
-        return {
-            "models": [
-                {
-                    "id": e.id,
-                    "final_loss": e.final_loss,
-                    "created_at": str(e.created_at),
-                }
-                for e in experiments
-            ]
-        }
+        repo = ModelRepository(session)
+        svc = ModelRegistryService(repo)
+        models = await svc.get_inference_models()
+        if not models:
+            return {
+                "models": [],
+                "message": "No models registered. Train an experiment and register it first.",
+            }
+        return {"models": models}
 
 
 @router.post("/inference/sample")
@@ -202,16 +216,29 @@ async def inference_sample(body: dict):
     import random
     from microgpt.core.engine import GPT, softmax
 
-    experiment_id = body.get("experiment_id")
+    model_id = body.get("model_id")
+    version = body.get("version")
     temperature = body.get("temperature", 0.5)
     num_samples = body.get("num_samples", 10)
 
-    if experiment_id is None:
-        raise HTTPException(status_code=400, detail="experiment_id required")
+    if model_id is None or version is None:
+        raise HTTPException(status_code=400, detail="model_id and version required")
 
-    model_path = MODELS_DIR / f"experiment_{experiment_id}.json"
+    from microgpt.db.session import AsyncSessionLocal
+    from microgpt.db.repositories.models import ModelRepository
+    from microgpt.services.models import ModelRegistryService
+
+    async with AsyncSessionLocal() as session:
+        repo = ModelRepository(session)
+        svc = ModelRegistryService(repo)
+        v = await svc.get_version(model_id, version)
+
+    if v is None:
+        raise HTTPException(status_code=404, detail="Model version not found in registry")
+
+    model_path = Path(v["artifact_path"])
     if not model_path.exists():
-        raise HTTPException(status_code=404, detail="Model not found")
+        raise HTTPException(status_code=404, detail="Model artifact not found")
 
     with open(model_path) as f:
         data = json.load(f)

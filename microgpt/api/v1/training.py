@@ -96,6 +96,13 @@ async def start_training(config: dict):
                 mlflow_run_id=mlflow_run_id,
             )
             session.add(exp)
+            await session.flush()
+            await session.refresh(exp)
+
+            # Persist model artifact for registry access
+            experiment_model_path = MODELS_DIR / f"experiment_{exp.id}.json"
+            model.save(str(experiment_model_path), uchars)
+
             await session.commit()
 
     task = asyncio.create_task(

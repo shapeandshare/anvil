@@ -7,9 +7,13 @@ import sys
 import urllib.request
 
 import uvicorn
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from microgpt.config import get_config
 from microgpt.core.engine import train as run_training
+from microgpt.db.repositories.models import ModelRepository
+from microgpt.db.session import AsyncSessionLocal
+from microgpt.services.models import ModelRegistryService
 from microgpt.services.training import TrainingService
 from microgpt.supervisor.supervisor import ProcessSupervisor
 
@@ -21,6 +25,10 @@ class MicroGPTWorkbench:
     @property
     def training(self) -> TrainingService:
         return self._training
+
+    @property
+    def registry(self) -> ModelRegistryService:
+        raise NotImplementedError("Use get_registry_service() for async access")
 
 
 def _load_docs(corpus_id: int | None = None) -> list[str]:
