@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="panel">
-  <div class="panel-titlebar">████████[ OPERATIONS — SERVICE CONTROL ]████████████</div>
+  <div class="panel-titlebar">▌ OPERATIONS — SERVICE CONTROL</div>
   <div class="panel-body">
     <div id="services-list">
       <span style="color:var(--text-dim);font-size:0.78rem;">Polling services...</span>
@@ -10,14 +10,115 @@
 </div>
 
 <div class="panel">
-  <div class="panel-titlebar">████████████[ SERVICE LOGS — tail -f ]███████████████</div>
+  <div class="panel-titlebar">▌ SYSTEM ACTIONS</div>
+  <div class="panel-body">
+    <div class="ops-actions-bar">
+      <button class="terminal-btn btn-restart" onclick="ops.restartAll()" id="btn-restart-all">⟳ Restart All</button>
+      <button class="terminal-btn" onclick="ops.clearAllLogs()" id="btn-clear-logs">✕ Clear Logs</button>
+      <button class="terminal-btn btn-start" onclick="ops.healthCheck()" id="btn-health">◉ Health Check</button>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-titlebar">▌ SERVICE LOGS — tail -f</div>
   <div class="panel-body" id="service-logs">
     <span style="color:var(--text-dim);font-size:0.78rem;">Waiting for service data...</span>
   </div>
 </div>
 
+<div id="toast-container" class="toast-container"></div>
+
 <script>
 (function() {
+  var TOAST_DURATION = 3000;
+
+  function toast(msg, type) {
+    type = type || 'info';
+    var container = document.getElementById('toast-container');
+    var el = document.createElement('div');
+    el.className = 'toast toast-' + type;
+    el.textContent = msg;
+    container.appendChild(el);
+    setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, TOAST_DURATION);
+  }
+
+  function setBtnLoading(id, loading) {
+    var btn = document.getElementById(id);
+    if (!btn) return;
+    btn.disabled = loading;
+    btn.textContent = loading ? '...' : btn.getAttribute('data-label') || btn.textContent;
+  }
+
+  window.ops = {
+    action: async function(name, action) {
+      var btnId = 'btn-' + name + '-' + action;
+      setBtnLoading(btnId, true);
+      try {
+        var resp = await fetch('/v1/services/' + name + '/' + action, { method: 'POST' });
+        var data = await resp.json();
+        if (resp.ok) {
+          toast(name + ': ' + data.status, 'success');
+        } else {
+          toast(data.detail || 'Error', 'error');
+        }
+      } catch(e) {
+        toast('Network error', 'error');
+      }
+      setBtnLoading(btnId, false);
+      setTimeout(window.loadServices, 500);
+    },
+
+    restartAll: async function() {
+      setBtnLoading('btn-restart-all', true);
+      try {
+        var resp = await fetch('/v1/services/restart-all', { method: 'POST' });
+        var data = await resp.json();
+        if (resp.ok) {
+          toast('All services restarted', 'success');
+        } else {
+          toast(data.detail || 'Error', 'error');
+        }
+      } catch(e) {
+        toast('Network error', 'error');
+      }
+      setBtnLoading('btn-restart-all', false);
+      setTimeout(window.loadServices, 500);
+    },
+
+    clearAllLogs: async function() {
+      setBtnLoading('btn-clear-logs', true);
+      try {
+        var svcResp = await fetch('/v1/services');
+        var svcData = await svcResp.json();
+        for (var i = 0; i < svcData.services.length; i++) {
+          await fetch('/v1/services/logs/' + svcData.services[i].name + '/clear', { method: 'POST' });
+        }
+        toast('Logs cleared', 'success');
+      } catch(e) {
+        toast('Network error', 'error');
+      }
+      setBtnLoading('btn-clear-logs', false);
+      setTimeout(window.loadServices, 500);
+    },
+
+    healthCheck: async function() {
+      setBtnLoading('btn-health', true);
+      try {
+        var resp = await fetch('/v1/health');
+        var data = await resp.json();
+        if (resp.ok) {
+          toast('HEALTHY | v' + data.version + ' | uptime: ' + data.uptime_seconds + 's', 'success');
+        } else {
+          toast('Unhealthy', 'error');
+        }
+      } catch(e) {
+        toast('Network error', 'error');
+      }
+      setBtnLoading('btn-health', false);
+    }
+  };
+
   window.loadServices = async function loadServices() {
     var healthResp = await fetch('/v1/health');
     var svcResp = await fetch('/v1/services');
@@ -36,27 +137,42 @@
     servicesHtml += '<span class="htop-status">STATUS</span>';
     servicesHtml += '<span class="htop-uptime">UPTIME</span>';
     servicesHtml += '<span class="htop-mem">MEM</span>';
+    servicesHtml += '<span class="htop-actions">ACTIONS</span>';
     servicesHtml += '</div>';
 
+    // web-server always up
     servicesHtml += '<div class="htop-row">';
     servicesHtml += '<span class="htop-pid">0001</span>';
     servicesHtml += '<span class="htop-service">web-server</span>';
     servicesHtml += '<span class="htop-status status-online">RUNNING</span>';
     servicesHtml += '<span class="htop-uptime">' + hours + 'h ' + mins + 'm ' + secs + 's</span>';
     servicesHtml += '<span class="htop-mem">-</span>';
+    servicesHtml += '<span class="htop-actions"><span style="color:var(--text-dim);font-size:0.65rem;">—</span></span>';
     servicesHtml += '</div>';
 
     svcData.services.forEach(function(s) {
+      if (s.name === 'web') return;
       var statusClass = s.status === 'running' ? 'status-online' : 'status-offline';
       var statusText = s.status === 'running' ? 'RUNNING' : (s.status || 'STOPPED').toUpperCase();
       var port = s.port ? ':' + s.port : '';
-      var linkHtml = (s.status === 'running' && s.port) ? ' <a href="http://127.0.0.1' + port + '" target="_blank" style="color:var(--accent-cyan);text-decoration:underline;font-size:0.65rem;">[open]</a>' : '';
-      servicesHtml += '<div class="htop-row">';
-      servicesHtml += '<span class="htop-pid">' + (s.pid || '----').toString().padStart(4) + '</span>';
+      var linkHtml = (s.status === 'running' && s.port) ? ' <a href="http://127.0.0.1' + port + '" target="_blank">[open]</a>' : '';
+      var isRunning = s.status === 'running';
+
+servicesHtml += '<div class="htop-row">';
+      servicesHtml += '<span class="htop-pid">' + (s.pid ? s.pid.toString().padStart(4) : '----') + '</span>';
       servicesHtml += '<span class="htop-service">' + (s.name || '?') + linkHtml + '</span>';
       servicesHtml += '<span class="htop-status ' + statusClass + '">' + statusText + '</span>';
       servicesHtml += '<span class="htop-uptime">' + (s.uptime || '-') + '</span>';
       servicesHtml += '<span class="htop-mem">' + (s.memory || '-') + '</span>';
+      servicesHtml += '<span class="htop-actions">';
+      if (isRunning) {
+        servicesHtml += '<button class="terminal-btn btn-action btn-stop"    id="btn-' + s.name + '-stop"    onclick="ops.action(\'' + s.name + '\',\'stop\')">■ Stop</button>';
+        servicesHtml += '<button class="terminal-btn btn-action btn-restart" id="btn-' + s.name + '-restart" onclick="ops.action(\'' + s.name + '\',\'restart\')">⟳</button>';
+      } else {
+        servicesHtml += '<button class="terminal-btn btn-action btn-start"   id="btn-' + s.name + '-start"   onclick="ops.action(\'' + s.name + '\',\'start\')">▶ Start</button>';
+        servicesHtml += '<button class="terminal-btn btn-action btn-restart" id="btn-' + s.name + '-restart" onclick="ops.action(\'' + s.name + '\',\'restart\')" disabled>⟳</button>';
+      }
+      servicesHtml += '</span>';
       servicesHtml += '</div>';
     });
 
@@ -72,7 +188,7 @@
         var logData = await logResp.json();
         if (logData.logs && logData.logs.length > 0) {
           logsHtml += '<div class="panel" style="margin:6px 0;">';
-          logsHtml += '<div class="panel-titlebar" style="font-size:0.7rem;">██████[ ' + svc.name + ' /var/log/syslog ]██████████</div>';
+          logsHtml += '<div class="panel-titlebar">▌ ' + svc.name + '</div>';
           logsHtml += '<pre class="telemetry" style="max-height:180px;font-size:0.72rem;">';
           logsHtml += logData.logs.join('\n');
           logsHtml += '</pre></div>';
@@ -85,6 +201,14 @@
       logsDiv.innerHTML = '<span style="color:var(--text-dim);font-size:0.78rem;">No log data available.</span>';
     }
   };
+
+  // Set data-label for buttons
+  function storeLabels() {
+    document.querySelectorAll('.terminal-btn[id]').forEach(function(b) {
+      b.setAttribute('data-label', b.textContent);
+    });
+  }
+  storeLabels();
 
   setInterval(loadServices, 10000);
   loadServices();
