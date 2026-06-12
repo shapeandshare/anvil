@@ -10,7 +10,7 @@ $(VENV_DIR)/activate: pyproject.toml
 	$(PYTHON) -m pip install -e .
 	@touch $(VENV_DIR)/activate
 
-.PHONY: setup run stop train test lint format typecheck vault progressive clean install help benchmark
+.PHONY: setup run start stop train test lint format typecheck vault progressive clean install help benchmark
 
 setup: $(VENV_DIR)/activate
 	$(PYTHON) -m alembic upgrade head
@@ -18,6 +18,9 @@ setup: $(VENV_DIR)/activate
 
 run: $(VENV_DIR)/activate
 	$(PYTHON) -c "from microgpt.cli import serve; serve()"
+
+start: $(VENV_DIR)/activate
+	@mkdir -p logs; nohup $(PYTHON) -c "from microgpt.cli import serve; serve()" > logs/server.log 2>&1 & echo "Server starting in background (PID $$!). Use 'make stop' to stop it."
 
 stop:
 	$(PYTHON) -c "from microgpt.cli import stop; stop()"
@@ -66,7 +69,8 @@ clean:
 help:
 	@echo "microgpt-workbench Makefile"
 	@echo "  make setup     - Create venv + install deps + init DB"
-	@echo "  make run       - Start web server (0.0.0.0:8080)"
+	@echo "  make run       - Start web server (foreground, Ctrl+C to stop)"
+	@echo "  make start     - Start web server in background (detached)"
 	@echo "  make stop      - Stop all background services"
 	@echo "  make train     - Run training from CLI"
 	@echo "  make test      - Run tests"
