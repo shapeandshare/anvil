@@ -4,6 +4,11 @@
   <div class="panel-titlebar">▌ DATASET MANAGER</div>
   <div class="panel-body">
 
+    <div class="help-box" style="margin-bottom:10px;">
+      <div class="help-title">▌ DATASETS & CORPORA</div>
+      <div>Upload <code>.txt</code> files as datasets for training, or create <b>corpora</b> that ingest files from directories using glob patterns. Corpora support gitignore-style filtering for code repos.</div>
+    </div>
+
     <div class="prompt-line" style="margin-bottom:4px;">
       <span class="prompt-symbol">$</span>
       <span class="prompt-label">upload --file</span>
@@ -26,6 +31,16 @@
   <div class="panel-titlebar">▌ CORPORA MANAGER</div>
   <div class="panel-body">
 
+    <div class="help-box" style="margin-bottom:10px;">
+      <div class="help-title">▌ CORPORA CHUNKING STRATEGIES</div>
+      <table style="width:100%;border-collapse:collapse;font-size:0.7rem;">
+        <tr><td style="padding:2px 6px 2px 0;color:var(--accent-cyan);font-weight:bold;">windowed</td><td style="color:var(--text-dim);">Sliding character window — best for code repos and prose. Preserves context across chunks.</td></tr>
+        <tr><td style="padding:2px 6px 2px 0;color:var(--accent-cyan);font-weight:bold;">line</td><td style="color:var(--text-dim);">Each line is a separate document — useful for structured data, CSV, logs.</td></tr>
+        <tr><td style="padding:2px 6px 2px 0;color:var(--accent-cyan);font-weight:bold;">file</td><td style="color:var(--text-dim);">Each file is one document — ideal for config files, short scripts, or when line boundaries matter.</td></tr>
+      </table>
+      <div style="margin-top:4px;color:var(--text-dim);"><b>Pattern hints</b>: <code>**/*.py</code> = all Python files recursively, <code>tests/</code> = exclude test dir, <code>*.md</code> = markdown only.</div>
+    </div>
+
     <div class="prompt-line" style="margin-bottom:4px;">
       <span class="prompt-symbol">$</span>
       <span class="prompt-label">corpus create --name</span>
@@ -34,12 +49,17 @@
       <input type="text" class="terminal-input" id="corpus-name" placeholder="name" style="width:120px;">
       <input type="text" class="terminal-input" id="corpus-root" placeholder="root_path" style="width:240px;">
       <input type="text" class="terminal-input" id="corpus-pattern" placeholder="include (e.g. **/*.py)" style="width:180px;">
+      <div class="help-text" style="margin:0 0 0 20px;">glob pattern, e.g. <code>**/*.py</code> or <code>*.md</code></div>
       <input type="text" class="terminal-input" id="corpus-ignore" placeholder="exclude (e.g. tests/)" style="width:140px;">
-      <select class="terminal-input" id="corpus-strategy" style="width:100px;">
-        <option value="windowed">windowed</option>
-        <option value="line">line</option>
-        <option value="file">file</option>
-      </select>
+      <div class="help-text" style="margin:0 0 0 20px;">exclude pattern, e.g. <code>tests/**</code> or <code>node_modules</code></div>
+      <div style="display:flex;flex-direction:column;gap:3px;">
+        <select class="terminal-input" id="corpus-strategy" style="width:100px;">
+          <option value="windowed">windowed</option>
+          <option value="line">line</option>
+          <option value="file">file</option>
+        </select>
+        <div class="param-desc" id="strategy-desc" style="max-width:300px;">Sliding window over text — best for code & prose</div>
+      </div>
       <button class="terminal-btn" id="corpus-create-btn"><span class="btn-prefix">$</span> create</button>
     </div>
     <div class="telemetry" id="corpus-status" style="min-height:24px;margin-top:4px;max-height:40px;">Ready.</div>
@@ -156,6 +176,15 @@
 
   loadDatasets();
   loadCorpora();
+
+  var strategyDescriptions = {
+    'windowed': 'Sliding window over text — best for code & prose',
+    'line': 'One document per line — best for logs & structured data',
+    'file': 'Each file = one document — best for configuration & small files'
+  };
+  document.getElementById('corpus-strategy').addEventListener('change', function() {
+    document.getElementById('strategy-desc').textContent = strategyDescriptions[this.value] || '';
+  });
 })();
 </script>
 {% endblock %}

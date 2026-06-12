@@ -28,6 +28,12 @@
     html += '<div><span class="label-text">VERSIONS</span><div class="prompt-line" style="margin-top:4px;"><span class="prompt-symbol">$</span><span>' + data.versions.length + ' total</span></div></div>';
     html += '</div>';
 
+    var totalLosses = data.versions.filter(function(v) { return v.final_loss != null; });
+    var avgLoss = totalLosses.length > 0 ? totalLosses.reduce(function(s, v) { return s + v.final_loss; }, 0) / totalLosses.length : null;
+    if (avgLoss !== null) {
+      html += '<div class="help-text" style="margin:8px 0 4px;">avg loss across ' + totalLosses.length + ' version(s): <span style="color:var(--accent-cyan);">' + avgLoss.toFixed(4) + '</span></div>';
+    }
+
     if (data.versions.length > 0) {
       html += '<div class="htop-header" style="margin-top:12px;"><span class="htop-pid">VER</span><span class="htop-service">EXPERIMENT</span><span class="htop-status">LOSS</span><span class="htop-uptime">DATASET</span><span class="htop-mem">CREATED</span><span style="flex:0 0 80px;">ACTION</span></div>';
       data.versions.forEach(function(v) {
@@ -42,8 +48,20 @@
         html += '</div>';
 
         if (v.hyperparameters) {
-          html += '<div class="htop-row" style="background:var(--bg-dark);font-size:0.7rem;color:var(--text-dim);padding-left:80px;">';
-          html += 'HP: ' + JSON.stringify(v.hyperparameters);
+          html += '<div class="hp-grid" style="padding:6px 0 6px 80px;border-bottom:1px solid var(--border-sub);">';
+          var hp = v.hyperparameters;
+          var hpFields = [
+            { key: 'n_embd', label: 'EMBED DIM' },
+            { key: 'n_head', label: 'HEADS' },
+            { key: 'n_layer', label: 'LAYERS' },
+            { key: 'num_steps', label: 'STEPS' },
+            { key: 'learning_rate', label: 'LR' },
+            { key: 'temperature', label: 'TEMP' },
+          ];
+          hpFields.forEach(function(f) {
+            var val = hp[f.key] !== undefined ? hp[f.key] : null;
+            html += '<div class="hp-item"><span class="hp-label">' + f.label + '</span><span class="hp-value' + (val === null ? '-null' : '') + '">' + (val !== null ? val : '\u2014') + '</span></div>';
+          });
           html += '</div>';
         }
       });
@@ -51,6 +69,12 @@
 
     html += '<div style="margin-top:12px;display:flex;gap:8px;">';
     html += '<button class="terminal-btn" style="color:var(--accent-red);" onclick="deleteModel()"><span class="btn-prefix">$</span> delete entire model</button>';
+    html += '</div>';
+
+    html += '<div class="help-box" style="margin-top:12px;">';
+    html += '<div class="help-title">\u258c VERSION NOTES</div>';
+    html += '<div>Each version represents a trained experiment registered to this model. The latest version is used by default in inference.</div>';
+    html += '<div style="margin-top:2px;">Click <span style="color:var(--accent-red);">del</span> to remove a specific version, or <span style="color:var(--accent-red);">delete entire model</span> to remove everything.</div>';
     html += '</div>';
 
     el.innerHTML = html;
