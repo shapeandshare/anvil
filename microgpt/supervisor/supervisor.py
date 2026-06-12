@@ -5,6 +5,41 @@ import signal
 import subprocess
 from pathlib import Path
 
+_PID_DIR = "logs"
+
+
+def write_pid(name: str, pid_dir: str = _PID_DIR) -> Path:
+    """Write current process PID to a named PID file."""
+    path = Path(pid_dir) / f"{name}.pid"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(str(os.getpid()))
+    return path
+
+
+def read_pid(name: str, pid_dir: str = _PID_DIR) -> int | None:
+    """Read a PID from a named PID file. Returns None if not found."""
+    path = Path(pid_dir) / f"{name}.pid"
+    if not path.exists():
+        return None
+    return int(path.read_text().strip())
+
+
+def kill_pid_file(
+    name: str, sig: int = signal.SIGTERM, pid_dir: str = _PID_DIR
+) -> bool:
+    """Kill process by named PID file. Cleans up the file on success or if process is gone."""
+    pid = read_pid(name, pid_dir=pid_dir)
+    if pid is None:
+        return False
+    path = Path(pid_dir) / f"{name}.pid"
+    try:
+        os.kill(pid, sig)
+        path.unlink(missing_ok=True)
+        return True
+    except (ProcessLookupError, FileNotFoundError):
+        path.unlink(missing_ok=True)
+        return False
+
 
 class ProcessSupervisor:
     def __init__(self, log_dir: str = "logs"):
