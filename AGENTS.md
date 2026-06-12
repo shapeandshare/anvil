@@ -1,6 +1,6 @@
 # microgpt-workbench — Agent Guidelines
 
-**Last updated**: 2026-06-10
+**Last updated**: 2026-06-11
 
 ## Project Overview
 
@@ -64,3 +64,10 @@ microgpt/          # Python package (implicit namespace)
 - Imports at top of file only (no inline imports)
 - Classes for all logic (no loose functions)
 - Strict explicit typing on all function signatures
+
+## Active Technologies
+- Python 3.11+ + Existing project deps (FastAPI, SQLAlchemy, aiofiles) + `pathspec` (lightweight gitignore pattern matching, pure Python, no binary deps) (002-directory-corpus-ingestion)
+- SQLite via async SQLAlchemy for corpus metadata; filesystem via existing `LocalFileStore` or reference to original directory paths (002-directory-corpus-ingestion)
+
+## Recent Changes
+- 002-directory-corpus-ingestion: Added Python 3.11+ + Existing project deps (FastAPI, SQLAlchemy, aiofiles) + `pathspec` (lightweight gitignore pattern matching, pure Python, no binary deps)

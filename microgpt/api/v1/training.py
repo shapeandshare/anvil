@@ -50,6 +50,7 @@ async def start_training(config: dict):
         "beta1": config.get("beta1", 0.85),
         "beta2": config.get("beta2", 0.99),
         "temperature": config.get("temperature", 0.5),
+        "corpus_id": config.get("corpus_id"),
     }
     _get_mlflow_client().log_batch(
         run_id=mlflow_run_id,

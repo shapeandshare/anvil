@@ -8,63 +8,72 @@
 </head>
 <body>
 
-<div class="scanlines"></div>
+<div class="app-shell">
 
-<div class="tmux-tab-bar">
-  <span class="tmux-tab" data-target="/v1">[0]: Train</span>
-  <span class="tmux-tab" data-target="/v1/experiments-page">[1]: Experiments</span>
-  <span class="tmux-tab" data-target="/v1/datasets-page">[2]: Datasets</span>
-  <span class="tmux-tab" data-target="/v1/operations-page">[3]: Ops</span>
-  <span class="tmux-tab" data-target="/v1/inference-page">[4]: Inference</span>
-</div>
+  <header class="app-header">
+    <div class="app-logo">microgpt</div>
+    <nav class="app-tabs">
+      <span class="app-tab" data-target="/v1">Train</span>
+      <span class="app-tab" data-target="/v1/experiments-page">Experiments</span>
+      <span class="app-tab" data-target="/v1/datasets-page">Datasets</span>
+      <span class="app-tab" data-target="/v1/operations-page">Ops</span>
+      <span class="app-tab" data-target="/v1/inference-page">Inference</span>
+    </nav>
+    <div class="app-header-right">
+      <span class="theme-toggle" id="theme-toggle">dark</span>
+      <span class="app-version">v0.1.0</span>
+    </div>
+  </header>
 
-<div class="terminal-window">
-  <div class="terminal-titlebar">
-    <span class="title-text">████████████[ microgpt-workbench ]████████████████</span>
-    <span style="color:var(--text-dim);margin-left:auto;">v0.1.0</span>
-  </div>
-  <main class="terminal-content">
+  <div class="rainbow-strip"></div>
+
+  <main class="app-main">
     {% block content %}{% endblock %}
   </main>
-</div>
 
-<div class="status-bar">
-  <span class="status-item">[SYSTEM: ONLINE]</span>
-  <span class="status-item" id="status-time">[TIME: --:--:--]</span>
-  <span class="status-item">[HOST: localhost]</span>
-  <span class="status-item" id="status-uptime">[UPTIME: 0h 0m 0s]</span>
+  <footer class="app-statusbar">
+    <span class="status-item online" id="status-system">ONLINE</span>
+    <span class="status-item" id="status-time">--:--:--</span>
+    <span class="status-item" id="status-uptime">0h 0m 0s</span>
+    <span class="status-item">localhost</span>
+  </footer>
+
 </div>
 
 <script>
 (function() {
-  // ── Set active tab from current URL ──────────────────────
-  const path = window.location.pathname;
-  document.querySelectorAll('.tmux-tab').forEach(function(tab) {
+  var theme = localStorage.getItem('theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', theme);
+  var btn = document.getElementById('theme-toggle');
+  btn.textContent = theme === 'dark' ? 'dark' : 'light';
+  btn.addEventListener('click', function() {
+    var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    btn.textContent = next;
+  });
+
+  var path = window.location.pathname;
+  document.querySelectorAll('.app-tab').forEach(function(tab) {
     var target = tab.getAttribute('data-target');
     if (path === target || (target === '/v1' && (path === '/' || path === '/v1'))) {
       tab.classList.add('active');
     }
-  });
-
-  // ── Tab navigation ──────────────────────────────────────
-  document.querySelectorAll('.tmux-tab').forEach(function(tab) {
     tab.addEventListener('click', function() {
       window.location.href = this.getAttribute('data-target');
     });
   });
 
-  // ── Status bar clock ────────────────────────────────────
   function updateClock() {
     var now = new Date();
     var h = now.getHours().toString().padStart(2, '0');
     var m = now.getMinutes().toString().padStart(2, '0');
     var s = now.getSeconds().toString().padStart(2, '0');
-    document.getElementById('status-time').textContent = '[TIME: ' + h + ':' + m + ':' + s + ']';
+    document.getElementById('status-time').textContent = h + ':' + m + ':' + s;
   }
   setInterval(updateClock, 1000);
   updateClock();
 
-  // ── Uptime counter (page session) ────────────────────────
   (function() {
     var uptime = 0;
     setInterval(function() {
@@ -72,8 +81,7 @@
       var h = Math.floor(uptime / 3600);
       var m = Math.floor((uptime % 3600) / 60);
       var s = uptime % 60;
-      document.getElementById('status-uptime').textContent =
-        '[UPTIME: ' + h + 'h ' + m + 'm ' + s + 's]';
+      document.getElementById('status-uptime').textContent = h + 'h ' + m + 'm ' + s + 's';
     }, 1000);
   })();
 })();

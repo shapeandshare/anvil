@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="panel">
-  <div class="panel-titlebar">████████[ TRAINING — GPT MODEL ]████████████████</div>
+  <div class="panel-titlebar">▌ TRAINING — GPT MODEL</div>
   <div class="panel-body">
     <div class="config-grid">
       <label>
@@ -45,6 +45,13 @@
         </div>
       </label>
       <div class="config-full" style="margin-top:4px;">
+        <span class="prompt-symbol">$</span>
+        <span class="prompt-label">corpus_id=</span>
+        <select class="terminal-input" id="corpus_id" style="width:auto;">
+          <option value="">input.txt (default)</option>
+        </select>
+      </div>
+      <div class="config-full" style="margin-top:4px;">
         <button class="terminal-btn glitch" id="start-btn" onclick="startTraining()">
           <span class="btn-prefix">$</span> ./train --run
         </button>
@@ -54,14 +61,14 @@
 </div>
 
 <div class="panel">
-  <div class="panel-titlebar">████████████[ LOSS TELEMETRY ]███████████████████</div>
+  <div class="panel-titlebar">▌ LOSS TELEMETRY</div>
   <div class="panel-body">
     <pre class="telemetry" id="loss-display">Waiting for training command...</pre>
   </div>
 </div>
 
 <div class="panel">
-  <div class="panel-titlebar">███████████[ GENERATED SAMPLES ]██████████████████</div>
+  <div class="panel-titlebar">▌ GENERATED SAMPLES</div>
   <div class="panel-body" id="samples-display">
     <span style="color:var(--text-dim);font-size:0.78rem;">No samples yet.</span>
   </div>
@@ -73,6 +80,18 @@
   var START_BTN = document.getElementById('start-btn');
   var LOSS_DISPLAY = document.getElementById('loss-display');
   var SAMPLES_DISPLAY = document.getElementById('samples-display');
+  var CORPUS_SELECT = document.getElementById('corpus_id');
+
+  fetch('/v1/corpora').then(function(r) { return r.json(); }).then(function(data) {
+    if (data.data && data.data.length) {
+      data.data.forEach(function(c) {
+        var opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.name + ' (' + c.file_count + ' files)';
+        CORPUS_SELECT.appendChild(opt);
+      });
+    }
+  }).catch(function() {});
 
   window.startTraining = async function startTraining() {
     START_BTN.disabled = true;
@@ -85,6 +104,8 @@
       learning_rate: parseFloat(document.getElementById('learning_rate').value),
       temperature: parseFloat(document.getElementById('temperature').value),
     };
+    var cid = CORPUS_SELECT.value;
+    if (cid) { body.corpus_id = parseInt(cid); }
 
     try {
       var resp = await fetch('/v1/training/start', {

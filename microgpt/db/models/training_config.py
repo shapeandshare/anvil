@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String
@@ -23,6 +25,9 @@ class TrainingConfig(Base, TimestampMixin):
     use_gpu: Mapped[bool] = mapped_column(Boolean, default=False)
     dataset_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("datasets.id"), nullable=True
+    )
+    corpus_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("corpora.id"), nullable=True
     )
 
 

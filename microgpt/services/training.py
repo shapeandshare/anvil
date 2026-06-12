@@ -13,7 +13,24 @@ class TrainingService:
         self._queues: dict[int, asyncio.Queue] = {}
         self._running = 0
 
-    def _load_docs(self) -> list[str]:
+    def _load_docs(self, corpus_id: int | None = None) -> list[str]:
+        if corpus_id is not None:
+            import asyncio
+
+            from microgpt.db.session import AsyncSessionLocal
+            from microgpt.db.repositories.corpora import CorpusRepository
+            from microgpt.services.corpora import CorpusService
+            from microgpt.services.corpus_loader import CorpusLoader
+
+            async def _load():
+                async with AsyncSessionLocal() as session:
+                    repo = CorpusRepository(session)
+                    loader = CorpusLoader()
+                    svc = CorpusService(repo, loader)
+                    return await svc.load_docs(corpus_id)
+
+            return asyncio.run(_load())
+
         if not os.path.exists("input.txt"):
             url = (
                 "https://raw.githubusercontent.com/karpathy/makemore/988aa59/names.txt"
@@ -42,7 +59,8 @@ class TrainingService:
         queue = self._queues[run_id]
 
         loop = asyncio.get_event_loop()
-        docs = await loop.run_in_executor(None, self._load_docs)
+        corpus_id = config.get("corpus_id")
+        docs = await loop.run_in_executor(None, self._load_docs, corpus_id)
 
         def progress_callback(step: int, loss: float) -> None:
             asyncio.run_coroutine_threadsafe(
