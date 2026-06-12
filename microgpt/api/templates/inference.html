@@ -9,7 +9,15 @@
         <div class="prompt-line">
           <span class="prompt-symbol">$</span>
           <span class="prompt-label">load --model</span>
-          <select class="terminal-input" id="model-select"></select>
+          <select class="terminal-input" id="model-select" onchange="updateVersionSelect()"></select>
+        </div>
+      </label>
+      <label id="version-label" style="display:none;">
+        <span class="label-text">VERSION</span>
+        <div class="prompt-line">
+          <span class="prompt-symbol">$</span>
+          <span class="prompt-label">load --version</span>
+          <select class="terminal-input" id="version-select"></select>
         </div>
       </label>
       <label>
@@ -47,45 +55,78 @@
 
 <script>
 (function() {
+  var modelsData = [];
+
   window.loadModels = async function loadModels() {
     var resp = await fetch('/v1/inference/models');
     var data = await resp.json();
     var select = document.getElementById('model-select');
     if (data.models.length === 0) {
-      select.innerHTML = '<option value="">No trained models available</option>';
+      select.innerHTML = '<option value="">No models registered</option>';
+      document.getElementById('version-label').style.display = 'none';
+      document.getElementById('inference-status').textContent = '! No models registered. Train an experiment and register it from the Experiments page.';
       return;
     }
+    modelsData = data.models;
     select.innerHTML = data.models.map(function(m) {
       var loss = m.final_loss != null ? m.final_loss.toFixed(4) : '?';
-      return '<option value="' + m.id + '">Experiment #' + m.id + ' — loss: ' + loss + ' — ' + (m.created_at || '') + '</option>';
+      return '<option value="' + m.id + '" data-versions="1">' + m.name + ' — loss: ' + loss + '</option>';
     }).join('');
+    updateVersionSelect();
+  };
+
+  window.updateVersionSelect = function() {
+    var modelSelect = document.getElementById('model-select');
+    var versionLabel = document.getElementById('version-label');
+    var versionSelect = document.getElementById('version-select');
+    var selectedId = parseInt(modelSelect.value);
+    if (!selectedId) {
+      versionLabel.style.display = 'none';
+      return;
+    }
+    var model = modelsData.find(function(m) { return m.id === selectedId; });
+    if (model && model.total_versions > 1) {
+      versionLabel.style.display = '';
+      versionSelect.innerHTML = '';
+      for (var v = 1; v <= model.total_versions; v++) {
+        var sel = v === model.latest_version ? ' selected' : '';
+        versionSelect.innerHTML += '<option value="' + v + '"' + sel + '>v' + v + '</option>';
+      }
+    } else {
+      versionLabel.style.display = 'none';
+    }
   };
 
   window.runInference = async function runInference() {
-    var select = document.getElementById('model-select');
-    var experimentId = select.value;
+    var modelSelect = document.getElementById('model-select');
+    var modelId = parseInt(modelSelect.value);
+    var versionLabel = document.getElementById('version-label');
+    var version = versionLabel.style.display !== 'none'
+      ? parseInt(document.getElementById('version-select').value)
+      : 1;
     var statusEl = document.getElementById('inference-status');
     var outputEl = document.getElementById('inference-output');
 
-    if (!experimentId) {
+    if (!modelId) {
       statusEl.textContent = '! Please select a model first.';
       return;
     }
 
-    statusEl.textContent = '> generating...\n';
+    statusEl.textContent = '> generating (model ' + modelId + ' v' + version + ')...\n';
     outputEl.innerHTML = '';
 
     var resp = await fetch('/v1/inference/sample', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        experiment_id: parseInt(experimentId),
+        model_id: modelId,
+        version: version,
         temperature: parseFloat(document.getElementById('temperature').value),
         num_samples: parseInt(document.getElementById('num_samples').value),
       }),
     });
     var data = await resp.json();
-    statusEl.textContent = '> generated ' + data.samples.length + ' samples\n';
+    statusEl.textContent = '> generated ' + data.samples.length + ' samples (model ' + modelId + ' v' + version + ')\n';
     outputEl.innerHTML = data.samples.map(function(s) {
       return '<span class="sample-block">[SAMPLE] ' + s + '</span>';
     }).join(' ');

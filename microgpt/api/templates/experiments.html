@@ -21,20 +21,48 @@
       ? ' — <a href="' + data.mlflow_url + '" target="_blank">MLflow overview →</a>'
       : '';
     var html = '<div style="margin-bottom:8px;font-size:0.78rem;color:var(--text-dim);">' + data.experiments.length + ' run(s)' + overviewLink + '</div>';
-    html += '<div class="htop-header"><span class="htop-pid">#</span><span class="htop-service">EXPERIMENT</span><span class="htop-status">STATUS</span><span class="htop-uptime">LOSS</span><span class="htop-mem">MLFLOW</span></div>';
+    html += '<div class="htop-header"><span class="htop-pid">#</span><span class="htop-service">EXPERIMENT</span><span class="htop-status">STATUS</span><span class="htop-uptime">LOSS</span><span class="htop-mem">MLFLOW</span><span style="flex:0 0 120px;color:var(--accent-cyan);font-weight:bold;">REGISTRY</span></div>';
     data.experiments.forEach(function(e) {
       var mlflowLink = e.mlflow_run_url
         ? '<a href="' + e.mlflow_run_url + '" target="_blank">open →</a>'
         : '-';
+      var registerBtn = '';
+      if (e.status === 'completed' && e.artifact_available) {
+        registerBtn = '<button class="terminal-btn" style="font-size:0.7rem;padding:1px 6px;" onclick="openRegisterModal(' + e.id + ')"><span class="btn-prefix">$</span> register</button>';
+      } else {
+        registerBtn = '<span style="color:var(--text-dim);font-size:0.7rem;">-</span>';
+      }
       html += '<div class="htop-row">';
       html += '<span class="htop-pid">' + e.id.toString().padStart(4) + '</span>';
       html += '<span class="htop-service">#' + e.id + '</span>';
       html += '<span class="htop-status ' + (e.status === 'completed' ? 'status-online' : 'status-offline') + '">' + (e.status || '?').toUpperCase() + '</span>';
       html += '<span class="htop-uptime">' + (e.final_loss != null ? e.final_loss.toFixed(4) : '-') + '</span>';
       html += '<span class="htop-mem">' + mlflowLink + '</span>';
+      html += '<span style="flex:0 0 120px;">' + registerBtn + '</span>';
       html += '</div>';
     });
     list.innerHTML = html;
+  };
+
+  window.openRegisterModal = function(experimentId) {
+    var name = prompt('Register model from Experiment #' + experimentId + '\n\nEnter a name for this model:');
+    if (!name || !name.trim()) return;
+    var desc = prompt('Optional description (or leave blank):');
+    fetch('/v1/registry/models', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ experiment_id: experimentId, name: name.trim(), description: desc || null }),
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.detail) {
+        alert('Error: ' + data.detail);
+      } else {
+        alert('Registered as "' + data.name + '" v' + data.version);
+        loadExperiments();
+      }
+    })
+    .catch(function(err) { alert('Registration failed: ' + err); });
   };
   loadExperiments();
 })();
