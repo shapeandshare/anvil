@@ -1,5 +1,8 @@
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from mlflow.tracking import MlflowClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from microgpt.api.deps import get_db_session
@@ -41,6 +44,8 @@ async def list_experiments(svc: ExperimentService = Depends(get_service)):
                 "mlflow_run_id": e.mlflow_run_id,
                 "mlflow_run_url": f"{MLFLOW_UI_URI}/#/experiments/{mlflow_exp_id}/runs/{e.mlflow_run_id}" if (mlflow_exp_id and e.mlflow_run_id) else None,
                 "created_at": str(e.created_at),
+                "artifact_available": Path(f"data/models/experiment_{e.id}.json").exists(),
+                "dataset_name": e.dataset.name if e.dataset_id else None,
             }
             for e in experiments
         ]
