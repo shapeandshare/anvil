@@ -12,12 +12,21 @@
           <select class="terminal-input" id="model-select" onchange="updateVersionSelect()"></select>
         </div>
       </label>
+      <div id="model-info" class="help-text" style="margin:2px 0 0 22px;display:none;"></div>
       <label id="version-label" style="display:none;">
         <span class="label-text">VERSION</span>
         <div class="prompt-line">
           <span class="prompt-symbol">$</span>
           <span class="prompt-label">load --version</span>
           <select class="terminal-input" id="version-select"></select>
+        </div>
+      </label>
+      <label>
+        <span class="label-text">SEED PROMPT</span>
+        <div class="prompt-line">
+          <span class="prompt-symbol">$</span>
+          <span class="prompt-label">set prompt=</span>
+          <input type="text" class="terminal-input" id="seed-prompt" placeholder="e.g. Hello, my name is" style="min-width:200px;flex:1;">
         </div>
       </label>
       <label>
@@ -41,6 +50,13 @@
           <span class="btn-prefix">$</span> ./generate
         </button>
       </div>
+      <div class="config-full help-text" style="margin-top:6px;">
+        <span style="color:var(--text-dim);">click to try:</span>
+        <span class="example-prompt" onclick="document.getElementById('seed-prompt').value='Hello, my name is'">Hello, my name is</span>
+        <span class="example-prompt" onclick="document.getElementById('seed-prompt').value='In the beginning'">In the beginning</span>
+        <span class="example-prompt" onclick="document.getElementById('seed-prompt').value='The meaning of life is'">The meaning of life is</span>
+        <span class="example-prompt" onclick="document.getElementById('seed-prompt').value='Once upon a time'">Once upon a time</span>
+      </div>
     </div>
   </div>
 </div>
@@ -51,6 +67,12 @@
     <pre class="telemetry" id="inference-status" style="min-height:24px;max-height:40px;padding:6px 10px;">Awaiting command...</pre>
     <div style="margin-top:8px;" id="inference-output"></div>
   </div>
+</div>
+
+<div class="help-box">
+  <div class="help-title">▌ HOW INFERENCE WORKS</div>
+  <div>Select a registered model, optionally provide a seed prompt, and the model will generate text character-by-character based on what it learned during training.</div>
+  <div style="margin-top:4px;"><b>Temperature</b>: controls randomness. Lower values produce more repetitive/predictable output. Higher values increase creativity but may produce gibberish.</div>
 </div>
 
 <script>
@@ -73,6 +95,7 @@
       return '<option value="' + m.id + '" data-versions="1">' + m.name + ' — loss: ' + loss + '</option>';
     }).join('');
     updateVersionSelect();
+    updateModelInfo();
   };
 
   window.updateVersionSelect = function() {
@@ -95,6 +118,18 @@
     } else {
       versionLabel.style.display = 'none';
     }
+    updateModelInfo();
+  };
+
+  window.updateModelInfo = function() {
+    var select = document.getElementById('model-select');
+    var info = document.getElementById('model-info');
+    var id = parseInt(select.value);
+    if (!id) { info.style.display = 'none'; return; }
+    var model = modelsData.find(function(m) { return m.id === id; });
+    if (!model) { info.style.display = 'none'; return; }
+    info.style.display = 'block';
+    info.innerHTML = 'loss: <span style="color:var(--accent-cyan);">' + (model.final_loss != null ? model.final_loss.toFixed(4) : '?') + '</span> | versions: <span style="color:var(--accent-green);">' + model.total_versions + '</span> | created: <span style="color:var(--text-dim);">' + (model.created_at || '?') + '</span>';
   };
 
   window.runInference = async function runInference() {
@@ -112,7 +147,9 @@
       return;
     }
 
-    statusEl.textContent = '> generating (model ' + modelId + ' v' + version + ')...\n';
+    var promptEl = document.getElementById('seed-prompt');
+    var prompt = promptEl ? promptEl.value || null : null;
+    statusEl.textContent = '> generating (model ' + modelId + ' v' + version + (prompt ? ', prompt: "' + prompt + '"' : '') + ')...\n';
     outputEl.innerHTML = '';
 
     var resp = await fetch('/v1/inference/sample', {
@@ -123,6 +160,7 @@
         version: version,
         temperature: parseFloat(document.getElementById('temperature').value),
         num_samples: parseInt(document.getElementById('num_samples').value),
+        prompt: prompt,
       }),
     });
     var data = await resp.json();
