@@ -20,17 +20,20 @@
       return;
     }
     var html = '<div class="prompt-line" style="margin-bottom:8px;"><span class="prompt-symbol">$</span><span class="prompt-label">search models</span><input type="text" class="terminal-input" id="model-search" placeholder="filter by name..." style="min-width:200px;" oninput="loadModels()" value="' + (search ? search : '') + '"></div>';
-    html += '<div class="htop-header"><span class="htop-pid">#</span><span class="htop-service">MODEL</span><span class="htop-status">VERSIONS</span><span class="htop-uptime">LATEST LOSS</span><span class="htop-mem">CREATED</span></div>';
+    html += '<div id="model-stats" style="margin-bottom:4px;font-size:0.72rem;color:var(--text-dim);"></div>';
+    html += '<div class="htop-header"><span class="htop-pid">#</span><span class="htop-service">MODEL</span><span class="htop-status">VERSIONS</span><span class="htop-uptime">LATEST LOSS</span><span class="htop-mem">HPARAMS / CREATED</span></div>';
     data.models.forEach(function(m) {
       html += '<div class="htop-row" style="cursor:pointer;" onclick="window.location.href=\'/v1/model-detail/' + m.id + '\'">';
       html += '<span class="htop-pid">' + m.id.toString().padStart(4) + '</span>';
       html += '<span class="htop-service">' + m.name + '</span>';
       html += '<span class="htop-status status-online">v' + m.latest_version + ' (' + m.total_versions + ' total)</span>';
       html += '<span class="htop-uptime">' + (m.latest_loss != null ? m.latest_loss.toFixed(4) : '-') + '</span>';
-      html += '<span class="htop-mem">' + (m.created_at || '') + '</span>';
+      html += '<span class="htop-mem" style="font-size:0.65rem;">' + (m.created_at || '') + '</span>';
       html += '</div>';
     });
     list.innerHTML = html;
+    var totalVersions = data.models.reduce(function(sum, m) { return sum + (m.total_versions || 0); }, 0);
+    document.getElementById('model-stats').textContent = data.models.length + ' model(s) registered | ' + totalVersions + ' total version(s)';
   };
   loadModels();
 })();

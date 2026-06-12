@@ -3,19 +3,17 @@
 import argparse
 import os
 import random
+import signal
 import sys
 import urllib.request
 
 import uvicorn
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from microgpt.config import get_config
 from microgpt.core.engine import train as run_training
-from microgpt.db.repositories.models import ModelRepository
-from microgpt.db.session import AsyncSessionLocal
 from microgpt.services.models import ModelRegistryService
 from microgpt.services.training import TrainingService
-from microgpt.supervisor.supervisor import ProcessSupervisor
+from microgpt.supervisor.supervisor import kill_pid_file, write_pid
 
 
 class MicroGPTWorkbench:
@@ -62,12 +60,16 @@ def _load_docs(corpus_id: int | None = None) -> list[str]:
 
 def serve():
     cfg = get_config()
-    uvicorn.run(
-        "microgpt.api.app:app",
-        host="0.0.0.0",
-        port=cfg["port"],
-        reload=False,
-    )
+    pid_path = write_pid("web", pid_dir=cfg["log_dir"])
+    try:
+        uvicorn.run(
+            "microgpt.api.app:app",
+            host="0.0.0.0",
+            port=cfg["port"],
+            reload=False,
+        )
+    finally:
+        pid_path.unlink(missing_ok=True)
 
 
 def train():
@@ -202,6 +204,74 @@ def corpus_main():
     asyncio.run(_run())
 
 
+def _find_pid_by_port(port: int) -> list[int]:
+    """Find process PIDs listening on a port using lsof."""
+    import subprocess
+
+    try:
+        result = subprocess.run(
+            ["lsof", "-ti", f":{port}", "-sTCP:LISTEN"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode != 0 or not result.stdout.strip():
+            return []
+        pids = [int(pid) for pid in result.stdout.strip().split()]
+        # Filter out non-Python processes (system services, etc.)
+        filtered = []
+        for pid in pids:
+            try:
+                comm = subprocess.run(
+                    ["ps", "-p", str(pid), "-o", "comm="],
+                    capture_output=True, text=True, timeout=3,
+                )
+                cmd = comm.stdout.strip().lower()
+                if any(kw in cmd for kw in ("python", "mlflow", "uvicorn")):
+                    filtered.append(pid)
+            except (subprocess.TimeoutExpired, ValueError):
+                pass
+        return filtered
+    except (subprocess.TimeoutExpired, FileNotFoundError, ValueError):
+        return []
+
+
+def _kill_pids(pids: list[int], sig: int = signal.SIGTERM) -> bool:
+    """Kill a list of PIDs. Returns True if at least one was killed."""
+    killed = False
+    for pid in pids:
+        try:
+            os.kill(pid, sig)
+            killed = True
+        except ProcessLookupError:
+            pass
+    return killed
+
+
 def stop():
-    sup = ProcessSupervisor()
-    sup.stop_all()
+    cfg = get_config()
+    pid_dir = cfg["log_dir"]
+    killed = False
+
+    if kill_pid_file("web", pid_dir=pid_dir):
+        print("Stopped web server.")
+        killed = True
+
+    if kill_pid_file("mlflow", pid_dir=pid_dir):
+        print("Stopped MLflow server.")
+        killed = True
+
+    if not killed:
+        print("No PID files found. Looking for servers by port...")
+        web_pids = _find_pid_by_port(cfg["port"])
+        if web_pids:
+            _kill_pids(web_pids, signal.SIGTERM)
+            print(f"Stopped web server (PID{' '.join(str(p) for p in web_pids)}).")
+            killed = True
+
+        mlflow_pids = _find_pid_by_port(5000)
+        if mlflow_pids:
+            _kill_pids(mlflow_pids, signal.SIGTERM)
+            print(f"Stopped MLflow server (PID{' '.join(str(p) for p in mlflow_pids)}).")
+            killed = True
+
+    if not killed:
+        print("No running servers found.")

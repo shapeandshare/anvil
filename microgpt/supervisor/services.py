@@ -12,8 +12,9 @@ class MLflowService:
         cfg = get_config()
         self.mlruns_dir = Path("mlruns")
         self.mlruns_dir.mkdir(parents=True, exist_ok=True)
-        self.log_file = Path(cfg["log_dir"]) / "mlflow.log"
-        self.log_file.parent.mkdir(parents=True, exist_ok=True)
+        self.log_dir = Path(cfg["log_dir"])
+        self.log_dir.mkdir(parents=True, exist_ok=True)
+        self.log_file = self.log_dir / "mlflow.log"
         self.process: subprocess.Popen | None = None
         self.port = 5000
 
@@ -38,9 +39,12 @@ class MLflowService:
             stderr=subprocess.STDOUT,
             preexec_fn=os.setsid,
         )
+        (self.log_dir / "mlflow.pid").write_text(str(self.process.pid))
 
     def stop(self) -> None:
+        pid_file = self.log_dir / "mlflow.pid"
         if self.process is None or self.process.poll() is not None:
+            pid_file.unlink(missing_ok=True)
             return
         try:
             os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
@@ -50,7 +54,9 @@ class MLflowService:
                 os.killpg(os.getpgid(self.process.pid), signal.SIGKILL)
             except ProcessLookupError:
                 pass
-        self.process = None
+        finally:
+            self.process = None
+            pid_file.unlink(missing_ok=True)
 
     @property
     def is_running(self) -> bool:

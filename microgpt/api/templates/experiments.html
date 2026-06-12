@@ -3,6 +3,11 @@
 <div class="panel">
   <div class="panel-titlebar">▌ EXPERIMENTS — view / compare</div>
   <div class="panel-body">
+    <div class="help-box" style="margin-bottom:10px;">
+      <div class="help-title">▌ ABOUT EXPERIMENTS</div>
+      <div>Each time you run training, a new experiment is created. Experiments track hyperparameters, loss curves, and model checkpoints. Completed experiments can be <b>registered</b> as models for inference.</div>
+      <div style="margin-top:4px;">Experiments are tracked via <b>MLflow</b> — open the MLflow UI to compare loss curves side-by-side and browse run metadata.</div>
+    </div>
     <div id="experiment-list"><span style="color:var(--text-dim);font-size:0.78rem;">Loading...</span></div>
   </div>
 </div>
@@ -20,7 +25,9 @@
     var overviewLink = data.mlflow_url
       ? ' — <a href="' + data.mlflow_url + '" target="_blank">MLflow overview →</a>'
       : '';
-    var html = '<div style="margin-bottom:8px;font-size:0.78rem;color:var(--text-dim);">' + data.experiments.length + ' run(s)' + overviewLink + '</div>';
+    var completedCount = data.experiments.filter(function(e) { return e.status === 'completed'; }).length;
+    var failedCount = data.experiments.filter(function(e) { return e.status === 'failed' || e.status === 'error'; }).length;
+    var html = '<div style="margin-bottom:8px;font-size:0.78rem;color:var(--text-dim);">' + data.experiments.length + ' run(s) — ' + completedCount + ' completed, ' + failedCount + ' failed' + overviewLink + '</div>';
     html += '<div class="htop-header"><span class="htop-pid">#</span><span class="htop-service">EXPERIMENT</span><span class="htop-status">STATUS</span><span class="htop-uptime">LOSS</span><span class="htop-mem">MLFLOW</span><span style="flex:0 0 120px;color:var(--accent-cyan);font-weight:bold;">REGISTRY</span></div>';
     data.experiments.forEach(function(e) {
       var mlflowLink = e.mlflow_run_url
@@ -35,12 +42,22 @@
       html += '<div class="htop-row">';
       html += '<span class="htop-pid">' + e.id.toString().padStart(4) + '</span>';
       html += '<span class="htop-service">#' + e.id + '</span>';
-      html += '<span class="htop-status ' + (e.status === 'completed' ? 'status-online' : 'status-offline') + '">' + (e.status || '?').toUpperCase() + '</span>';
+      var statusLabel = (e.status || '?').toUpperCase();
+      var qualityHint = '';
+      if (e.status === 'completed' && e.final_loss != null) {
+        if (e.final_loss < 0.5) qualityHint = ' <span class="badge badge-green" style="font-size:0.55rem;">good</span>';
+        else if (e.final_loss < 1.0) qualityHint = ' <span class="badge badge-yellow" style="font-size:0.55rem;">fair</span>';
+        else qualityHint = ' <span class="badge badge-red" style="font-size:0.55rem;">high</span>';
+      }
+      html += '<span class="htop-status ' + (e.status === 'completed' ? 'status-online' : 'status-offline') + '">' + statusLabel + qualityHint + '</span>';
       html += '<span class="htop-uptime">' + (e.final_loss != null ? e.final_loss.toFixed(4) : '-') + '</span>';
       html += '<span class="htop-mem">' + mlflowLink + '</span>';
       html += '<span style="flex:0 0 120px;">' + registerBtn + '</span>';
       html += '</div>';
     });
+    html += '<div class="help-text" style="margin-top:12px;padding-top:8px;border-top:1px solid var(--border-sub);">';
+    html += 'MLflow: track runs, compare loss curves, browse artifacts. <a href="' + (data.mlflow_url || '#') + '" target="_blank" style="color:var(--accent-cyan);">open mlflow →</a>';
+    html += '</div>';
     list.innerHTML = html;
   };
 

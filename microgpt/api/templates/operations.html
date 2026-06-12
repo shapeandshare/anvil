@@ -3,6 +3,11 @@
 <div class="panel">
   <div class="panel-titlebar">▌ OPERATIONS — SERVICE CONTROL</div>
   <div class="panel-body">
+    <div class="help-box" style="margin-bottom:10px;">
+      <div class="help-title">▌ SERVICE CONTROL</div>
+      <div>Manage background services (MLflow tracking server, etc.). Use <b>Start</b>/<b>Stop</b> to control individual services, or <b>Restart All</b> to cycle everything.</div>
+      <div style="margin-top:4px;">Services list refreshes automatically every 10 seconds. Logs show the last 20 lines from each service.</div>
+    </div>
     <div id="services-list">
       <span style="color:var(--text-dim);font-size:0.78rem;">Polling services...</span>
     </div>
@@ -24,6 +29,13 @@
   <div class="panel-titlebar">▌ SERVICE LOGS — tail -f</div>
   <div class="panel-body" id="service-logs">
     <span style="color:var(--text-dim);font-size:0.78rem;">Waiting for service data...</span>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-titlebar">▌ SYSTEM RESOURCES — host info</div>
+  <div class="panel-body">
+    <div id="system-resources"><span style="color:var(--text-dim);font-size:0.78rem;">Polling...</span></div>
   </div>
 </div>
 
@@ -212,6 +224,26 @@ servicesHtml += '<div class="htop-row">';
 
   setInterval(loadServices, 10000);
   loadServices();
+  loadResources();
+
+  // ── System resources ────────
+  window.loadResources = async function loadResources() {
+    var el = document.getElementById('system-resources');
+    if (!el) return;
+    try {
+      var resp = await fetch('/v1/health');
+      var health = await resp.json();
+      var html = '<div class="info-grid">';
+      html += '<span class="info-key">version</span><span class="info-val">' + (health.version || '?') + '</span>';
+      html += '<span class="info-key">platform</span><span class="info-val">' + navigator.platform + '</span>';
+      html += '<span class="info-key">uptime</span><span class="info-val">' + (health.uptime_seconds ? Math.floor(health.uptime_seconds / 3600) + 'h ' + Math.floor((health.uptime_seconds % 3600) / 60) + 'm' : '?') + '</span>';
+      html += '<span class="info-key">services</span><span class="info-val">web + background processes</span>';
+      html += '</div>';
+      el.innerHTML = html;
+    } catch(e) {
+      el.innerHTML = '<span style="color:var(--text-dim);font-size:0.78rem;">Could not fetch system info.</span>';
+    }
+  };
 })();
 </script>
 {% endblock %}

@@ -36,6 +36,9 @@
     <span class="status-item online" id="status-system">ONLINE</span>
     <span class="status-item" id="status-time">--:--:--</span>
     <span class="status-item" id="status-uptime">0h 0m 0s</span>
+    <span class="status-item" id="status-models" onclick="window.location.href='/v1/models-page'" style="cursor:pointer">models: --</span>
+    <span class="status-item" id="status-experiments" onclick="window.location.href='/v1/experiments-page'" style="cursor:pointer">exps: --</span>
+    <span class="status-item" id="status-datasets" onclick="window.location.href='/v1/datasets-page'" style="cursor:pointer">datasets: --</span>
     <span class="status-item">localhost</span>
   </footer>
 
@@ -84,7 +87,21 @@
       var s = uptime % 60;
       document.getElementById('status-uptime').textContent = h + 'h ' + m + 'm ' + s + 's';
     }, 1000);
-  })();
+// ── Status bar live stats ────────
+  function fetchStats() {
+    fetch('/v1/registry/models').then(function(r) { return r.json(); }).then(function(d) {
+      document.getElementById('status-models').textContent = 'models: ' + (d.models ? d.models.length : 0);
+    }).catch(function() {});
+    fetch('/v1/experiments').then(function(r) { return r.json(); }).then(function(d) {
+      document.getElementById('status-experiments').textContent = 'exps: ' + (d.experiments ? d.experiments.length : 0);
+    }).catch(function() {});
+    fetch('/v1/datasets').then(function(r) { return r.json(); }).then(function(d) {
+      document.getElementById('status-datasets').textContent = 'datasets: ' + (d.datasets ? d.datasets.length : 0);
+    }).catch(function() {});
+  }
+  fetchStats();
+  setInterval(fetchStats, 15000);
+})();
 })();
 </script>
 

@@ -12,6 +12,7 @@
           <input type="number" class="terminal-input" id="num_steps" value="1000" min="1" max="100000">
         </div>
       </label>
+      <div class="param-desc">Number of training iterations. <span class="range">range: 100–100,000</span> | <span class="default">default: 1000</span></div>
       <label>
         <span class="label-text">EMBEDDING</span>
         <div class="prompt-line">
@@ -20,6 +21,7 @@
           <input type="number" class="terminal-input" id="n_embd" value="16" min="4" max="256">
         </div>
       </label>
+      <div class="param-desc">Dimension of token embeddings. Wider = more capacity, slower. <span class="range">range: 4–256</span> | <span class="default">default: 16</span></div>
       <label>
         <span class="label-text">ATTENTION HEADS</span>
         <div class="prompt-line">
@@ -28,6 +30,7 @@
           <input type="number" class="terminal-input" id="n_head" value="4" min="1" max="16">
         </div>
       </label>
+      <div class="param-desc">Parallel attention heads. Must divide n_embd evenly. <span class="range">range: 1–16</span> | <span class="default">default: 4</span></div>
       <label>
         <span class="label-text">LEARNING RATE</span>
         <div class="prompt-line">
@@ -36,6 +39,7 @@
           <input type="number" class="terminal-input" id="learning_rate" value="0.01" step="0.001" min="0.001" max="1">
         </div>
       </label>
+      <div class="param-desc">Adam optimizer learning rate. Higher = faster but unstable. <span class="range">range: 0.001–1.0</span> | <span class="default">default: 0.01</span></div>
       <label>
         <span class="label-text">TEMPERATURE</span>
         <div class="prompt-line">
@@ -44,6 +48,7 @@
           <input type="number" class="terminal-input" id="temperature" value="0.5" step="0.1" min="0.1" max="2">
         </div>
       </label>
+      <div class="param-desc">Sampling randomness. 0 = deterministic, 1+ = chaotic. <span class="range">range: 0.1–2.0</span> | <span class="default">default: 0.5</span></div>
       <div class="config-full" style="margin-top:4px;">
         <span class="prompt-symbol">$</span>
         <span class="prompt-label">corpus_id=</span>
@@ -55,6 +60,14 @@
         <button class="terminal-btn glitch" id="start-btn" onclick="startTraining()">
           <span class="btn-prefix">$</span> ./train --run
         </button>
+      </div>
+      <div class="help-box" style="margin-top: 10px;">
+        <div class="help-title">▌ PARAMETER GUIDE</div>
+        <div><b>STEPS</b> — More steps = lower loss, but diminishing returns after ~5000. Start with 1000 to test.</div>
+        <div><b>N_EMBD</b> — Embedding size. Powers of 2 (16, 32, 64, 128) recommended. Must be divisible by n_head.</div>
+        <div><b>N_HEAD</b> — Attention heads. Must divide <code>n_embd</code> evenly (e.g. n_embd=64, n_head=4 works).</div>
+        <div><b>LEARNING RATE</b> — 0.01 is a safe start. Drop to 0.001 if loss oscillates or spikes.</div>
+        <div><b>TEMPERATURE</b> — Low (0.1–0.3) for predictable text, medium (0.5–0.7) for creative, high (1.0+) for chaos.</div>
       </div>
     </div>
   </div>
