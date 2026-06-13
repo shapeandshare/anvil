@@ -87,6 +87,20 @@
   </div>
 </div>
 
+<div class="panel">
+  <div class="panel-titlebar">▌ PROGRESSIVE WALKTHROUGH — bigram → GPT</div>
+  <div class="panel-body">
+    <div class="help-box" style="margin-bottom:10px;">
+      <div class="help-title">▌ 6 STAGES FROM SCRATCH</div>
+      <div>Runs train0.py → train5.py sequentially, each building on the last: bigram → MLP → CNN → RNN → Transformer → Full GPT. Hit <b>Run Walkthrough</b> to start.</div>
+    </div>
+    <div class="config-full">
+      <button class="terminal-btn" id="progressive-btn">▸ ./progressive --run</button>
+    </div>
+    <pre class="telemetry" id="progressive-display" style="margin-top:8px;max-height:360px;">Waiting for progressive walkthrough command...</pre>
+  </div>
+</div>
+
 <script>
 (function() {
   var eventSource = null;
@@ -173,6 +187,70 @@
       START_BTN.disabled = false;
     }
   };
+})();
+
+// ── Progressive walkthrough ──────────────────────
+(function() {
+  var PROGRESSIVE_BTN = document.getElementById('progressive-btn');
+  var PROGRESSIVE_DISPLAY = document.getElementById('progressive-display');
+
+  window.runProgressive = async function runProgressive() {
+    PROGRESSIVE_BTN.disabled = true;
+    PROGRESSIVE_DISPLAY.textContent = '> starting progressive walkthrough...\n';
+
+    try {
+      var resp = await fetch('/v1/training/progressive/start', { method: 'POST' });
+      var data = await resp.json();
+      var run_id = data.run_id;
+      PROGRESSIVE_DISPLAY.textContent += '> run_id: ' + run_id + '\n';
+      PROGRESSIVE_DISPLAY.textContent += '═══════════════════════════════════════\n';
+
+      var es = new EventSource('/v1/training/progressive/stream/' + run_id);
+
+      es.addEventListener('step_start', function(e) {
+        var d = JSON.parse(e.data);
+        PROGRESSIVE_DISPLAY.textContent += '\n── ' + d.script + ' ──────────────────────\n';
+        PROGRESSIVE_DISPLAY.scrollTop = PROGRESSIVE_DISPLAY.scrollHeight;
+      });
+
+      es.addEventListener('step_output', function(e) {
+        var d = JSON.parse(e.data);
+        PROGRESSIVE_DISPLAY.textContent += '  ' + d.line + '\n';
+        PROGRESSIVE_DISPLAY.scrollTop = PROGRESSIVE_DISPLAY.scrollHeight;
+      });
+
+      es.addEventListener('step_complete', function(e) {
+        var d = JSON.parse(e.data);
+        PROGRESSIVE_DISPLAY.textContent += '✓ ' + d.script + ' complete\n';
+        PROGRESSIVE_DISPLAY.scrollTop = PROGRESSIVE_DISPLAY.scrollHeight;
+      });
+
+      es.addEventListener('step_skip', function(e) {
+        var d = JSON.parse(e.data);
+        PROGRESSIVE_DISPLAY.textContent += '  ⚠ ' + d.script + ': ' + d.reason + '\n';
+        PROGRESSIVE_DISPLAY.scrollTop = PROGRESSIVE_DISPLAY.scrollHeight;
+      });
+
+      es.addEventListener('complete', function() {
+        PROGRESSIVE_DISPLAY.textContent += '\n═══════════════════════════════════════\n';
+        PROGRESSIVE_DISPLAY.textContent += ' Progressive walkthrough complete.\n';
+        PROGRESSIVE_DISPLAY.textContent += '═══════════════════════════════════════\n';
+        es.close();
+        PROGRESSIVE_BTN.disabled = false;
+      });
+
+      es.addEventListener('error', function() {
+        PROGRESSIVE_DISPLAY.textContent += '\n! Connection error — check server logs.\n';
+        es.close();
+        PROGRESSIVE_BTN.disabled = false;
+      });
+    } catch (err) {
+      PROGRESSIVE_DISPLAY.textContent += '\n! ERROR: ' + err.message + '\n';
+      PROGRESSIVE_BTN.disabled = false;
+    }
+  };
+
+  PROGRESSIVE_BTN.addEventListener('click', runProgressive);
 })();
 </script>
 {% endblock %}

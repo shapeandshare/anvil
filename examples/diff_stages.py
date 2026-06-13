@@ -16,6 +16,6 @@ def show_diff(file_a, file_b):
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        print("Usage: python diff_stages.py train2.py train3.py")
+        print("Usage: python examples/diff_stages.py examples/train0.py examples/train1.py")
     else:
         show_diff(sys.argv[1], sys.argv[2])
