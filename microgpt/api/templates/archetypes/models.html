@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
+{% block content %}
+
+<div class="panel">
+  <h2 class="panel-title">Model Registry</h2>
+  <p class="text-muted" style="margin-bottom:var(--space-4);font-size:0.75rem;">
+    Registered models are promoted from completed experiments. 
+    <a href="/v1/experiments-page" class="action-link">Go to Experiments</a> to register a new model.
+  </p>
+  <div id="models-empty" class="loading-indicator" style="display:block;">
+    Loading models...
+  </div>
+  <table class="run-table" id="models-table" style="display:none;">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+        <th>Versions</th>
+        <th>Latest Loss</th>
+        <th>Created</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="models-tbody"></tbody>
+  </table>
+</div>
+
+<style>
+.model-link {
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  cursor: pointer;
+}
+.model-link:hover {
+  text-decoration: underline;
+}
+</style>
+
+{% endblock %}
+{% block scripts %}
+<script>
+(function() {
+  'use strict';
+
+  function escHtml(s) {
+    if (s == null) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  var emptyEl = document.getElementById('models-empty');
+  var tableEl = document.getElementById('models-table');
+  var tbody = document.getElementById('models-tbody');
+
+  fetch('/v1/registry/models').then(function(r) { return r.json(); }).then(function(data) {
+    var models = data.models || [];
+
+    if (models.length === 0) {
+      emptyEl.innerHTML = 'No models registered yet — <a href="/v1/experiments-page" class="action-link">register one from a completed experiment</a>.';
+      return;
+    }
+
+    emptyEl.style.display = 'none';
+    tableEl.style.display = '';
+
+    models.forEach(function(m) {
+      var row = document.createElement('tr');
+
+      var lossDisplay = m.latest_loss != null ? m.latest_loss.toFixed(4) : '—';
+      var lossClass = m.latest_loss != null
+        ? (m.latest_loss < 0.5 ? 'loss-green' : m.latest_loss < 1.0 ? 'loss-yellow' : 'loss-red')
+        : '';
+
+      row.innerHTML =
+        '<td><a href="/v1/model-detail/' + m.id + '" class="model-link">' + escHtml(m.name) + '</a></td>' +
+        '<td class="text-dim">' + (m.description ? escHtml(m.description) : '—') + '</td>' +
+        '<td>' + m.total_versions + '</td>' +
+        '<td class="' + lossClass + '">' + lossDisplay + '</td>' +
+        '<td class="text-dim">' + (m.created_at || '—') + '</td>' +
+        '<td><a href="/v1/model-detail/' + m.id + '" class="btn btn-secondary btn-sm">View</a></td>';
+
+      tbody.appendChild(row);
+    });
+  }).catch(function() {
+    emptyEl.textContent = 'Failed to load models.';
+  });
+
+})();
+</script>
+{% endblock %}

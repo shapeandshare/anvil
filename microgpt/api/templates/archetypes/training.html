@@ -2,20 +2,87 @@
 {% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
 {% block content %}
 <div class="training-dashboard">
-  <div class="training-config panel">
-    <h2 class="panel-title">Configuration</h2>
-    <div class="config-grid">
-      <label>n_embd <input type="number" id="n_embd" value="16" min="4" max="256"></label>
-      <label>n_layer <input type="number" id="n_layer" value="1" min="1" max="12"></label>
-      <label>n_head <input type="number" id="n_head" value="4" min="1" max="16"></label>
-      <label>num_steps <input type="number" id="num_steps" value="1000" min="10" max="100000"></label>
-      <label>learning_rate <input type="number" id="learning_rate" value="0.01" step="0.001" min="0.0001" max="1"></label>
-      <label>temperature <input type="number" id="temperature" value="0.5" step="0.1" min="0" max="2"></label>
+  <div class="training-data-source panel">
+    <h2 class="panel-title">1. Select Your Data</h2>
+    <div class="ds-selectors">
+      <div class="ds-field">
+        <label class="ds-label" for="corpus_id">Corpus</label>
+        <select class="ds-select" id="corpus_id">
+          <option value="">input.txt (default)</option>
+        </select>
+      </div>
+      <div class="ds-field">
+        <label class="ds-label" for="dataset_id">Dataset</label>
+        <select class="ds-select" id="dataset_id">
+          <option value="">— none —</option>
+        </select>
+      </div>
     </div>
+    <div id="data-context" class="ds-card">
+      <div class="ds-card-empty">Select a corpus or dataset above.</div>
+    </div>
+    <div id="model-stats" class="ds-card">
+      <div class="ds-card-empty">Model stats will appear here.</div>
+    </div>
+  </div>
+
+  <div class="training-config panel">
+    <h2 class="panel-title">2. Configure &amp; Auto-Tune Parameters</h2>
+    <div class="config-grid">
+      <div class="param-block">
+        <label class="param-label">n_embd</label>
+        <input type="number" id="n_embd" value="16" min="4" max="256">
+        <p class="param-desc">Embedding size — powers of 2 (16, 32, 64…). Must be divisible by <code>n_head</code>.</p>
+      </div>
+      <div class="param-block">
+        <label class="param-label">n_layer</label>
+        <input type="number" id="n_layer" value="1" min="1" max="12">
+        <p class="param-desc">Transformer depth — 1–2 for simple patterns, 4+ for complex structure.</p>
+      </div>
+      <div class="param-block">
+        <label class="param-label">n_head</label>
+        <input type="number" id="n_head" value="4" min="1" max="16">
+        <p class="param-desc">Attention heads — must divide <code>n_embd</code> evenly (e.g. 64 &amp; 4 works).</p>
+      </div>
+      <div class="param-block">
+        <label class="param-label">block_size</label>
+        <input type="number" id="block_size" value="16" min="8" max="1024">
+        <p class="param-desc">Context window in characters — match to your corpus chunk size.</p>
+      </div>
+      <div class="param-block">
+        <label class="param-label">num_steps</label>
+        <input type="number" id="num_steps" value="1000" min="10" max="100000">
+        <p class="param-desc">Training steps — more = lower loss. Start with 1000.</p>
+      </div>
+      <div class="param-block">
+        <label class="param-label">learning_rate</label>
+        <input type="number" id="learning_rate" value="0.01" step="0.001" min="0.0001" max="1">
+        <p class="param-desc">Step size — 0.01 safe start. Drop if loss oscillates or spikes.</p>
+      </div>
+      <div class="param-block">
+        <label class="param-label">temperature</label>
+        <input type="number" id="temperature" value="0.5" step="0.1" min="0" max="2">
+        <p class="param-desc">Creativity — 0.1–0.3 predictable, 0.5–0.7 creative, 1.0+ chaos.</p>
+      </div>
+      <div class="param-block">
+        <label class="param-label">device</label>
+        <div class="device-toggle">
+          <label class="toggle-label">
+            <input type="checkbox" id="use_gpu" onchange="window.updateModelStats()">
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            <span class="toggle-text">GPU acceleration</span>
+          </label>
+          <p class="param-desc" id="gpu-status">Checking GPU availability...</p>
+        </div>
+      </div>
+    </div>
+
     <div class="config-actions">
+      <button class="btn btn-accent" id="autotune-btn">✨ Auto-Tune</button>
       <button class="btn btn-primary" id="start-btn">Start Training</button>
       <button class="btn btn-secondary" id="stop-btn" disabled>Stop</button>
     </div>
+    <p class="autotune-feedback" id="autotune-feedback"></p>
   </div>
 
   <div class="training-chart panel">
@@ -31,6 +98,7 @@
     <div class="metrics-grid">
       <div class="metric"><span class="metric-label">Step</span><span class="metric-value" id="metric-step">—</span></div>
       <div class="metric"><span class="metric-label">Loss</span><span class="metric-value" id="metric-loss">—</span></div>
+      <div class="metric"><span class="metric-label">Device</span><span class="metric-value" id="metric-device">—</span></div>
       <div class="metric"><span class="metric-label">Throughput</span><span class="metric-value" id="metric-Throughput">—</span></div>
     </div>
     <div class="loading-indicator" id="training-loading" style="display:none;">
@@ -38,9 +106,15 @@
     </div>
   </div>
 
+  <div class="training-samples panel" id="samples-panel" style="display:none;">
+    <h2 class="panel-title">Generated Samples</h2>
+    <div id="samples-display"></div>
+  </div>
+
   <div class="training-output panel">
     <h2 class="panel-title">Output</h2>
     <pre class="loss-display" id="loss-display"></pre>
+    <div id="output-actions" class="output-actions"></div>
   </div>
 </div>
 {% endblock %}
@@ -49,6 +123,9 @@
 <script src="/static/js/chart.js"></script>
 <script>
 (function() {
+  'use strict';
+
+  /* ── State ── */
   var session = null;
   var chart = null;
   var startBtn = document.getElementById('start-btn');
@@ -56,22 +133,41 @@
   var stateEl = document.getElementById('connection-state');
   var lossDisplay = document.getElementById('loss-display');
   var loadingEl = document.getElementById('training-loading');
+  var corpusSelect = document.getElementById('corpus_id');
+  var datasetSelect = document.getElementById('dataset_id');
+  var dataContextEl = document.getElementById('data-context');
+  var modelStatsEl = document.getElementById('model-stats');
+  var samplesPanel = document.getElementById('samples-panel');
+  var samplesDisplay = document.getElementById('samples-display');
+  var outputActions = document.getElementById('output-actions');
+
+  var corpusCache = {};
+  var datasetCache = {};
+
+  /* ── Helpers ── */
+  function escHtml(s) {
+    if (s == null) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function formatParams(n) {
+    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+    return String(n);
+  }
 
   function updateState(state) {
     stateEl.textContent = state;
     stateEl.className = 'connection-state cs-' + state;
     startBtn.disabled = (state === 'streaming' || state === 'connecting');
     stopBtn.disabled = (state !== 'streaming' && state !== 'connecting');
-    if (state === 'streaming' || state === 'connecting') {
-      loadingEl.style.display = 'block';
-    } else {
-      loadingEl.style.display = 'none';
-    }
+    loadingEl.style.display = (state === 'streaming' || state === 'connecting') ? 'block' : 'none';
   }
 
   function updateMetrics(d) {
     document.getElementById('metric-step').textContent = d.step || '—';
     document.getElementById('metric-loss').textContent = d.loss ? d.loss.toFixed(4) : '—';
+    document.getElementById('metric-device').textContent = d.device || '—';
   }
 
   function log(msg) {
@@ -86,19 +182,255 @@
     }
   }
 
+  /* ── Data Context & Model Stats ── */
+  function updateDataContext() {
+    var cid = corpusSelect.value;
+    var did = datasetSelect.value;
+    var html = '';
+
+    if (cid && corpusCache[cid]) {
+      var c = corpusCache[cid];
+      html += '<div class="ds-card-header">'
+        + '<span class="ds-badge ds-badge-corpus">CORPUS</span>'
+        + '<span class="ds-card-title">' + escHtml(c.name) + '</span>'
+        + '</div>'
+        + '<div class="ds-card-body">'
+        + c.file_count + ' files, ' + c.document_count + ' docs'
+        + ' &mdash; strategy: ' + c.chunking_strategy
+        + (c.block_size ? ', block_size=' + c.block_size : '')
+        + (c.chunk_overlap ? ', overlap=' + (c.chunk_overlap * 100) + '%' : '')
+        + '</div>';
+    }
+    if (did && datasetCache[did]) {
+      var d = datasetCache[did];
+      if (html) html += '<div style="height:var(--space-2);"></div>';
+      html += '<div class="ds-card-header">'
+        + '<span class="ds-badge ds-badge-dataset">DATASET</span>'
+        + '<span class="ds-card-title">' + escHtml(d.name) + '</span>'
+        + '</div>'
+        + '<div class="ds-card-body">'
+        + (d.sample_count || 0) + ' samples'
+        + ', v' + (d.curation_version || 0)
+        + '</div>';
+    }
+    if (!html) {
+      html = '<div class="ds-card-empty">Select a corpus or dataset above.</div>';
+    }
+    dataContextEl.innerHTML = html;
+    updateModelStats(cid, did);
+  }
+
+  function updateModelStats(cid, did) {
+    var n_embd = parseInt(document.getElementById('n_embd').value) || 16;
+    var n_head = parseInt(document.getElementById('n_head').value) || 4;
+    var n_layer = parseInt(document.getElementById('n_layer').value) || 1;
+    var block_size = parseInt(document.getElementById('block_size').value) || 16;
+    var num_steps = parseInt(document.getElementById('num_steps').value) || 1000;
+
+    var estVocab = '-';
+    var docCount = 0;
+    if (cid && corpusCache[cid]) {
+      estVocab = corpusCache[cid].document_count > 0
+        ? '~' + Math.min(200, Math.ceil(Math.sqrt(corpusCache[cid].document_count * 10)))
+        : '~50';
+      docCount = corpusCache[cid].document_count || 0;
+    } else if (did && datasetCache[did]) {
+      docCount = datasetCache[did].sample_count || 0;
+      estVocab = docCount > 0
+        ? '~' + Math.min(200, Math.ceil(Math.sqrt(docCount * 5)))
+        : '~50';
+    }
+
+    var wte = estVocab !== '-' ? parseInt(estVocab.replace('~','')) * n_embd : 0;
+    var wpe = block_size * n_embd;
+    var lmHead = estVocab !== '-' ? parseInt(estVocab.replace('~','')) * n_embd : 0;
+    var perLayer = 4 * n_embd * n_embd
+      + 4 * n_embd * (4 * n_embd)
+      + (4 * n_embd) * n_embd;
+    var totalParams = wte + wpe + lmHead + n_layer * perLayer;
+
+    var coverage = docCount > 0
+      ? Math.min(100, Math.round((num_steps / docCount) * 100))
+      : 0;
+
+    var html = '<div class="ds-card-header">'
+      + '<span class="ds-badge ds-badge-model">MODEL</span>'
+      + '<span class="ds-card-title">Architecture</span>'
+      + '</div>'
+      + '<div class="ds-stat-grid">'
+      + '<div class="ds-stat"><span class="ds-stat-value">' + formatParams(totalParams) + '</span><span class="ds-stat-label">Parameters</span></div>'
+      + '<div class="ds-stat"><span class="ds-stat-value">' + n_layer + ' \u00d7 ' + n_embd + 'd</span><span class="ds-stat-label">Layers</span></div>'
+      + '<div class="ds-stat"><span class="ds-stat-value">' + block_size + '</span><span class="ds-stat-label">Context</span></div>'
+      + '<div class="ds-stat"><span class="ds-stat-value">' + n_head + ' heads</span><span class="ds-stat-label">Attention</span></div>'
+      + '</div>';
+
+    if (coverage > 0) {
+      html += '<div style="height:var(--space-2);"></div>'
+        + '<div class="ds-card-body">'
+        + '<span class="ds-badge ds-badge-model" style="font-size:0.55rem;">COVERAGE</span> '
+        + num_steps + ' steps \u00d7 ' + docCount + ' docs'
+        + ' = ' + coverage + '% visit rate'
+        + (coverage < 10
+          ? ' <span class="ds-warn">(low &mdash; more steps recommended)</span>'
+          : '')
+        + '</div>';
+    }
+
+    modelStatsEl.innerHTML = html;
+  }
+
+  function patchParamListeners() {
+    ['n_embd','n_head','n_layer','block_size','num_steps'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('input', function() {
+        updateModelStats(corpusSelect.value, datasetSelect.value);
+      });
+    });
+  }
+
+  function loadCorpora() {
+    fetch('/v1/corpora').then(function(r) { return r.json(); }).then(function(data) {
+      if (data.data && data.data.length) {
+        data.data.forEach(function(c) {
+          corpusCache[c.id] = c;
+          var opt = document.createElement('option');
+          opt.value = c.id;
+          opt.textContent = c.name + ' (' + c.file_count + ' files, ' + c.document_count + ' docs)';
+          corpusSelect.appendChild(opt);
+        });
+      }
+      autotuneParameters();
+    }).catch(function() {});
+  }
+
+  function loadDatasets() {
+    fetch('/v1/datasets').then(function(r) { return r.json(); }).then(function(data) {
+      var datasets = data.data ? data.data.datasets : (data.datasets || []);
+      datasets.forEach(function(d) {
+        datasetCache[d.id] = d;
+        var opt = document.createElement('option');
+        opt.value = d.id;
+        opt.textContent = d.name + ' (' + (d.sample_count || 0) + ' samples)';
+        datasetSelect.appendChild(opt);
+      });
+      autotuneParameters();
+    }).catch(function() {});
+  }
+
+  /* ── Auto-Tune ── */
+  window.autotuneParameters = function() {
+    var cid = corpusSelect.value;
+    var did = datasetSelect.value;
+    var fb = document.getElementById('autotune-feedback');
+    var reasons = [];
+
+    /* Estimate vocabulary & data size from corpus or dataset */
+    var estVocab = 50;
+    var docCount = 0;
+    var corpusBlockSize = null;
+    if (cid && corpusCache[cid]) {
+      var c = corpusCache[cid];
+      docCount = c.document_count || 0;
+      corpusBlockSize = c.block_size || null;
+      estVocab = docCount > 0
+        ? Math.min(200, Math.ceil(Math.sqrt(docCount * 10)))
+        : 50;
+      reasons.push('data: ' + c.file_count + ' files, ' + docCount + ' docs');
+    } else if (did && datasetCache[did]) {
+      var d = datasetCache[did];
+      docCount = d.sample_count || 0;
+      estVocab = docCount > 0
+        ? Math.min(200, Math.ceil(Math.sqrt(docCount * 5)))
+        : 50;
+      reasons.push('data: ' + docCount + ' samples');
+    } else {
+      reasons.push('using defaults (no data source selected)');
+    }
+
+    /* n_embd: power of 2 based on vocab estimate */
+    var embdOptions = [16, 32, 64, 128, 256];
+    var nEmbd = 64;
+    for (var i = 0; i < embdOptions.length; i++) {
+      if (embdOptions[i] >= estVocab * 0.4) { nEmbd = embdOptions[i]; break; }
+    }
+    nEmbd = Math.min(256, Math.max(16, nEmbd));
+    reasons.push('n_embd=' + nEmbd + ' (~' + estVocab + ' estimated tokens)');
+
+    /* n_head: divisor of n_embd */
+    var nHead = Math.min(nEmbd, 8);
+    while (nEmbd % nHead !== 0) nHead--;
+    reasons.push('n_head=' + nHead + ' (divides n_embd)');
+
+    /* n_layer: based on data complexity */
+    var nLayer = docCount > 50 ? 4 : (docCount > 10 ? 2 : 1);
+    reasons.push('n_layer=' + nLayer + ' (' + (nLayer > 1 ? 'moderate' : 'simple') + ' data)');
+
+    /* block_size: match corpus or scale with n_embd */
+    var blockSize = corpusBlockSize || Math.min(256, nEmbd * 4);
+    blockSize = Math.min(1024, Math.max(8, blockSize));
+    reasons.push('block_size=' + blockSize);
+
+    /* num_steps: proportional to data */
+    var numSteps = Math.min(10000, Math.max(500, Math.round(docCount * 10)));
+    reasons.push('steps=' + numSteps + ' (' + Math.round(numSteps / (docCount || 1)) + 'x data)');
+
+    /* Set values */
+    document.getElementById('n_embd').value = nEmbd;
+    document.getElementById('n_head').value = nHead;
+    document.getElementById('n_layer').value = nLayer;
+    document.getElementById('block_size').value = blockSize;
+    document.getElementById('num_steps').value = numSteps;
+    document.getElementById('learning_rate').value = 0.01;
+    document.getElementById('temperature').value = 0.5;
+
+    /* Update dependent displays */
+    updateModelStats(cid, did);
+
+    /* Feedback */
+    fb.textContent = '✓ Tuned — ' + reasons.join(' · ');
+  };
+
+  /* ── Register Model Modal ── */
+  window.openRegisterModal = function(experimentId) {
+    var name = prompt('Register model from Experiment #' + experimentId + '\n\nEnter a name for this model:');
+    if (!name || !name.trim()) return;
+    var desc = prompt('Optional description (or leave blank):');
+    fetch('/v1/registry/models', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ experiment_id: experimentId, name: name.trim(), description: desc || null }),
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.detail) { alert('Error: ' + data.detail); }
+      else { alert('Registered as "' + data.name + '" v' + data.version); }
+    })
+    .catch(function(err) { alert('Registration failed: ' + err); });
+  };
+
+  /* ── Training Lifecycle ── */
   window.startTraining = async function startTraining() {
     if (session) { session.destroy(); session = null; }
     initChart();
     chart.clear();
+    samplesPanel.style.display = 'none';
+    outputActions.innerHTML = '';
+    lossDisplay.textContent = '';
 
     var config = {
       n_embd: parseInt(document.getElementById('n_embd').value),
       n_layer: parseInt(document.getElementById('n_layer').value),
       n_head: parseInt(document.getElementById('n_head').value),
+      block_size: parseInt(document.getElementById('block_size').value),
       num_steps: parseInt(document.getElementById('num_steps').value),
       learning_rate: parseFloat(document.getElementById('learning_rate').value),
       temperature: parseFloat(document.getElementById('temperature').value),
+      use_gpu: document.getElementById('use_gpu').checked,
     };
+    var cid = corpusSelect.value;
+    var did = datasetSelect.value;
+    if (cid) config.corpus_id = parseInt(cid);
+    if (did) config.dataset_id = parseInt(did);
 
     log('> Starting training with: ' + JSON.stringify(config));
 
@@ -120,7 +452,44 @@
         log('step ' + String(d.step).padStart(6) + ' | loss ' + d.loss.toFixed(4));
       };
       session.oncomplete = function(d) {
-        log('> Training complete — final loss: ' + (d.final_loss || '?').toFixed(4));
+        var finalLoss = d.final_loss != null ? d.final_loss.toFixed(4) : '?';
+        log('');
+        log('═══════════════════════════════════════');
+        log(' FINAL loss: ' + finalLoss);
+        log('═══════════════════════════════════════');
+
+        /* Show generated samples */
+        if (d.samples && d.samples.length > 0) {
+          samplesPanel.style.display = 'block';
+          samplesDisplay.innerHTML = d.samples.map(function(s) {
+            return '<span class="sample-block">[SAMPLE] ' + escHtml(s) + '</span>';
+          }).join('');
+        }
+
+        /* Fetch experiment details for post-training actions */
+        fetch('/v1/experiments').then(function(r) { return r.json(); }).then(function(expData) {
+          var exps = expData.experiments || [];
+          var latest = exps.length > 0 ? exps[exps.length - 1] : null;
+          if (latest) {
+            var html = '';
+
+            var qualityBadge = '';
+            if (latest.final_loss != null) {
+              if (latest.final_loss < 0.5) qualityBadge = '<span class="badge badge-green">good</span>';
+              else if (latest.final_loss < 1.0) qualityBadge = '<span class="badge badge-yellow">fair</span>';
+              else qualityBadge = '<span class="badge badge-red">high</span>';
+            }
+            html += '<span class="action-text">Experiment #' + latest.id + ' &mdash; loss ' + finalLoss + ' ' + qualityBadge + '</span>';
+
+            html += '<div class="action-buttons">';
+            html += '<button class="action-btn" onclick="openRegisterModal(' + latest.id + ')">register model</button>';
+            html += '<a class="action-link" href="/v1/experiments-page">view all experiments &rarr;</a>';
+            html += '<a class="action-link action-link-dim" href="' + (expData.mlflow_url || '#') + '" target="_blank">mlflow &rarr;</a>';
+            html += '</div>';
+
+            outputActions.innerHTML = html;
+          }
+        }).catch(function() {});
       };
       session.onerror = function(e) {
         log('> Error: ' + e.message);
@@ -141,6 +510,25 @@
     }
   };
 
+  /* ── Init ── */
+  var autotuneBtn = document.getElementById('autotune-btn');
+
+  function handleDataSourceChange() {
+    updateDataContext();
+    autotuneParameters();
+  }
+
+  corpusSelect.addEventListener('change', handleDataSourceChange);
+  datasetSelect.addEventListener('change', handleDataSourceChange);
+  patchParamListeners();
+  loadCorpora();
+  loadDatasets();
+
+  /* Initial auto-tune (uses defaults if data not yet loaded) */
+  autotuneParameters();
+
+  autotuneBtn.addEventListener('click', autotuneParameters);
+
   startBtn.addEventListener('click', startTraining);
   stopBtn.addEventListener('click', stopTraining);
 
@@ -150,6 +538,27 @@
   });
 
   updateState('idle');
+
+  /* ── GPU availability check ── */
+  fetch('/v1/health').then(function(r) { return r.json(); }).then(function(health) {
+    var gpu = health.gpu || {};
+    var statusEl = document.getElementById('gpu-status');
+    var toggle = document.getElementById('use_gpu');
+    if (gpu.available) {
+      statusEl.innerHTML = '<span style="color:var(--accent-green);">GPU ready: '
+        + (gpu.device_name || gpu.backend) + ' (' + gpu.backend + ')'
+        + (gpu.memory_total_gb ? ' &middot; ' + gpu.memory_total_gb.toFixed(1) + ' GB' : '')
+        + '</span>';
+      toggle.disabled = false;
+    } else {
+      var reason = gpu.errors && gpu.errors.length ? gpu.errors[0] : 'torch not installed';
+      statusEl.innerHTML = '<span class="text-muted">GPU not available: ' + reason + '</span>';
+      toggle.disabled = true;
+      toggle.checked = false;
+    }
+  }).catch(function() {
+    document.getElementById('gpu-status').innerHTML = '<span class="text-muted">Could not detect GPU</span>';
+  });
 })();
 </script>
 {% endblock %}

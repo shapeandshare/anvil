@@ -19,4 +19,5 @@ def get_config():
         "log_dir": os.getenv("MICROGPT_LOG_DIR", "logs"),
         "mlflow_uri": os.getenv("MICROGPT_MLFLOW_URI", "sqlite:///./mlruns/mlflow.db"),
         "storage_backend": os.getenv("MICROGPT_STORAGE_BACKEND", "local"),
+        "device": os.getenv("MICROGPT_DEVICE", ""),
     }

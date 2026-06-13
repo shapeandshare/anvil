@@ -2,6 +2,7 @@ import os
 import signal
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 from microgpt.config import get_config
@@ -18,9 +19,41 @@ class MLflowService:
         self.process: subprocess.Popen | None = None
         self.port = 5000
 
+    def _free_port(self) -> None:
+        """Kill any zombie process occupying our target port before starting."""
+        try:
+            result = subprocess.run(
+                ["lsof", "-ti", f":{self.port}"],
+                capture_output=True, text=True, timeout=5,
+            )
+            if not result.stdout.strip():
+                return
+            for pid_str in result.stdout.strip().split():
+                try:
+                    os.kill(int(pid_str), signal.SIGTERM)
+                except (ProcessLookupError, ValueError):
+                    pass
+            deadline = time.monotonic() + 1.0
+            while time.monotonic() < deadline:
+                time.sleep(0.3)
+                check = subprocess.run(
+                    ["lsof", "-ti", f":{self.port}"],
+                    capture_output=True, text=True, timeout=3,
+                )
+                if not check.stdout.strip():
+                    return
+                for pid_str in check.stdout.strip().split():
+                    try:
+                        os.kill(int(pid_str), signal.SIGKILL)
+                    except (ProcessLookupError, ValueError):
+                        pass
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            pass
+
     def start(self) -> None:
         if self.process is not None and self.process.poll() is None:
             return
+        self._free_port()
         mlflow_bin = str(Path(sys.executable).parent / "mlflow")
         self.process = subprocess.Popen(
             [

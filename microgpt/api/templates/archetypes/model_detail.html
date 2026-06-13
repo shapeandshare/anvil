@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
+{% block content %}
+
+<div class="panel">
+  <h2 class="panel-title">Model Detail <span class="text-muted">#{{ model_id }}</span></h2>
+  <div id="model-detail" class="panel-body">
+    <div class="loading-indicator" style="display:block;">Loading model...</div>
+  </div>
+</div>
+
+<style>
+.model-header { margin-bottom: var(--space-4); }
+.model-name {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  margin: 0 0 var(--space-1);
+}
+.text-dim { color: var(--text-muted); font-size: 0.75rem; }
+.loss-value { font-family: var(--font-mono); text-align: right; }
+.error-text { color: var(--danger); padding: var(--space-4); }
+
+/* ── HP Tags ── */
+.hp-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+}
+.hp-tag {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  background: var(--bg);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius);
+  padding: 2px var(--space-2);
+  white-space: nowrap;
+}
+.hp-tag .hp-label { color: var(--text-muted); margin-right: var(--space-1); }
+.hp-tag .hp-value { color: var(--text); font-weight: 600; }
+</style>
+
+{% endblock %}
+{% block scripts %}
+<script>
+(function() {
+  'use strict';
+
+  var modelId = {{ model_id }};
+
+  function escHtml(s) {
+    if (s == null) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function loadModelDetail() {
+    fetch('/v1/registry/models/' + modelId).then(function(r) { return r.json(); }).then(function(data) {
+      var el = document.getElementById('model-detail');
+      if (data.detail) {
+        el.innerHTML = '<div class="error-text">Error: ' + escHtml(data.detail) + '</div>';
+        return;
+      }
+
+      var html = '<div class="model-header">'
+        + '<h3 class="model-name">' + escHtml(data.name) + '</h3>'
+        + (data.description ? '<p class="text-dim">' + escHtml(data.description) + '</p>' : '')
+        + '</div>'
+        + '<div class="metrics-grid">'
+        + '<div class="metric"><span class="metric-label">Versions</span><span class="metric-value">' + data.versions.length + '</span></div>'
+        + '<div class="metric"><span class="metric-label">Created</span><span class="metric-value">' + (data.created_at || '—') + '</span></div>'
+        + '</div>';
+
+      var totalLosses = data.versions.filter(function(v) { return v.final_loss != null; });
+      var avgLoss = totalLosses.length > 0
+        ? totalLosses.reduce(function(s, v) { return s + v.final_loss; }, 0) / totalLosses.length
+        : null;
+      if (avgLoss !== null) {
+        html += '<p class="text-dim" style="margin-top:var(--space-2);">avg loss: <span class="accent-cyan">' + avgLoss.toFixed(4) + '</span> across ' + totalLosses.length + ' version(s)</p>';
+      }
+
+      if (data.versions.length > 0) {
+        html += '<table class="run-table" style="margin-top:var(--space-4);">'
+          + '<thead><tr><th>Version</th><th>Experiment</th><th>Loss</th><th>Dataset</th><th>Created</th><th>Actions</th></tr></thead><tbody>';
+        data.versions.forEach(function(v) {
+          html += '<tr>'
+            + '<td>v' + v.version + '</td>'
+            + '<td><a href="/v1/experiments-page" class="action-link">#' + v.experiment_id + '</a></td>'
+            + '<td class="loss-value">' + (v.final_loss != null ? v.final_loss.toFixed(4) : '—') + '</td>'
+            + '<td class="text-dim">' + (v.dataset_name || '—') + '</td>'
+            + '<td class="text-dim">' + (v.created_at || '') + '</td>'
+            + '<td><button class="btn btn-secondary btn-sm" onclick="deleteVersion(' + v.version + ')">Delete</button></td>'
+            + '</tr>';
+
+          if (v.hyperparameters) {
+            html += '<tr class="hp-row"><td colspan="6"><div class="hp-grid">';
+            var hpFields = [
+              { key: 'n_embd', label: 'n_embd' },
+              { key: 'n_head', label: 'n_head' },
+              { key: 'n_layer', label: 'n_layer' },
+              { key: 'num_steps', label: 'steps' },
+              { key: 'learning_rate', label: 'lr' },
+              { key: 'temperature', label: 'temp' },
+            ];
+            hpFields.forEach(function(f) {
+              var val = v.hyperparameters[f.key] !== undefined ? v.hyperparameters[f.key] : null;
+              html += '<span class="hp-tag"><span class="hp-label">' + f.label + '</span> <span class="hp-value">' + (val !== null ? val : '—') + '</span></span>';
+            });
+            html += '</div></td></tr>';
+          }
+        });
+        html += '</tbody></table>';
+      }
+
+      html += '<div style="margin-top:var(--space-4);">'
+        + '<button class="btn btn-secondary" onclick="deleteModel()" style="color:var(--danger);">Delete Entire Model</button>'
+        + '</div>';
+
+      el.innerHTML = html;
+    }).catch(function(err) {
+      document.getElementById('model-detail').innerHTML = '<div class="error-text">Failed to load: ' + err.message + '</div>';
+    });
+  }
+
+  window.deleteVersion = function(version) {
+    if (!confirm('Delete version ' + version + ' of this model?')) return;
+    fetch('/v1/registry/models/' + modelId + '/versions/' + version, { method: 'DELETE' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.detail) { alert('Error: ' + data.detail); }
+      else { alert(data.message); loadModelDetail(); }
+    })
+    .catch(function(err) { alert('Delete failed: ' + err); });
+  };
+
+  window.deleteModel = function() {
+    if (!confirm('Delete this entire model and all versions? This cannot be undone.')) return;
+    fetch('/v1/registry/models/' + modelId, { method: 'DELETE' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.detail) { alert('Error: ' + data.detail); }
+      else { alert(data.message); window.location.href = '/v1/models-page'; }
+    })
+    .catch(function(err) { alert('Delete failed: ' + err); });
+  };
+
+  loadModelDetail();
+})();
+</script>
+{% endblock %}

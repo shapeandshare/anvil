@@ -1,42 +1,38 @@
 {% extends "base.html" %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
 {% block content %}
+
 <div class="panel">
-  <div class="panel-titlebar" data-title="OPERATIONS — SERVICE CONTROL">▌ OPERATIONS — SERVICE CONTROL</div>
-  <div class="panel-body">
-    <div class="help-box" style="margin-bottom:10px;">
-      <div class="help-title">▌ SERVICE CONTROL</div>
-      <div>Manage background services (MLflow tracking server, etc.). Use <b>Start</b>/<b>Stop</b> to control individual services, or <b>Restart All</b> to cycle everything.</div>
-      <div style="margin-top:4px;">Services list refreshes automatically every 10 seconds. Logs show the last 20 lines from each service.</div>
-    </div>
-    <div id="services-list">
-      <span style="color:var(--text-dim);font-size:0.78rem;">Polling services...</span>
-    </div>
+  <h2 class="panel-title">Operations — Service Control</h2>
+  <div class="help-box" style="margin-bottom:var(--space-3);">
+    <div class="help-title">Service Control</div>
+    <div>Manage background services (MLflow tracking server, etc.). Use <b>Start</b>/<b>Stop</b> to control individual services, or <b>Restart All</b> to cycle everything.</div>
+    <div style="margin-top:var(--space-1);">Services list refreshes automatically every 10 seconds. Logs show the last 20 lines from each service.</div>
+  </div>
+  <div id="services-list">
+    <span class="text-muted" style="font-size:0.78rem;">Polling services...</span>
   </div>
 </div>
 
 <div class="panel">
-  <div class="panel-titlebar" data-title="SYSTEM ACTIONS">▌ SYSTEM ACTIONS</div>
-  <div class="panel-body">
-    <div class="ops-actions-bar">
-      <button class="terminal-btn btn-restart" onclick="ops.restartAll()" id="btn-restart-all">⟳ Restart All</button>
-      <button class="terminal-btn" onclick="ops.clearAllLogs()" id="btn-clear-logs">✕ Clear Logs</button>
-      <button class="terminal-btn btn-start" onclick="ops.healthCheck()" id="btn-health">◉ Health Check</button>
-    </div>
+  <h2 class="panel-title">System Actions</h2>
+  <div class="ops-actions-bar">
+    <button class="btn btn-secondary" onclick="ops.restartAll()" id="btn-restart-all">⟳ Restart All</button>
+    <button class="btn btn-secondary" onclick="ops.clearAllLogs()" id="btn-clear-logs">✕ Clear Logs</button>
+    <button class="btn btn-secondary" onclick="ops.healthCheck()" id="btn-health">◉ Health Check</button>
   </div>
 </div>
 
 <div class="panel">
-  <div class="panel-titlebar" data-title="SERVICE LOGS — tail -f">▌ SERVICE LOGS — tail -f</div>
-  <div class="panel-body" id="service-logs">
-    <span style="color:var(--text-dim);font-size:0.78rem;">Waiting for service data...</span>
+  <h2 class="panel-title">Service Logs — tail -f</h2>
+  <div id="service-logs">
+    <span class="text-muted" style="font-size:0.78rem;">Waiting for service data...</span>
   </div>
 </div>
 
 <div class="panel">
-  <div class="panel-titlebar" data-title="SYSTEM RESOURCES — host info">▌ SYSTEM RESOURCES — host info</div>
-  <div class="panel-body">
-    <div id="system-resources"><span style="color:var(--text-dim);font-size:0.78rem;">Polling...</span></div>
-  </div>
+  <h2 class="panel-title">System Resources — host info</h2>
+  <div id="system-resources"><span class="text-muted" style="font-size:0.78rem;">Polling...</span></div>
 </div>
 
 <div id="toast-container" class="toast-container"></div>
@@ -128,6 +124,23 @@
         toast('Network error', 'error');
       }
       setBtnLoading('btn-health', false);
+    },
+
+    killPort: async function(name) {
+      setBtnLoading('btn-' + name + '-killport', true);
+      try {
+        var resp = await fetch('/v1/services/' + name + '/kill-port', { method: 'POST' });
+        var data = await resp.json();
+        if (resp.ok) {
+          toast(name + ': port ' + data.port + ' freed (' + data.killed + ' process' + (data.killed !== 1 ? 'es' : '') + ' killed)', 'success');
+        } else {
+          toast(data.detail || 'Error', 'error');
+        }
+      } catch(e) {
+        toast('Network error', 'error');
+      }
+      setBtnLoading('btn-' + name + '-killport', false);
+      setTimeout(window.loadServices, 500);
     }
   };
 
@@ -142,67 +155,58 @@
     var mins = Math.floor((uptime % 3600) / 60);
     var secs = uptime % 60;
 
-    var servicesHtml = '';
-    servicesHtml += '<div class="htop-header">';
-    servicesHtml += '<span class="htop-pid">PID</span>';
-    servicesHtml += '<span class="htop-service">SERVICE</span>';
-    servicesHtml += '<span class="htop-status">STATUS</span>';
-    servicesHtml += '<span class="htop-uptime">UPTIME</span>';
-    servicesHtml += '<span class="htop-mem">MEM</span>';
-    servicesHtml += '<span class="htop-actions">ACTIONS</span>';
-    servicesHtml += '</div>';
+    // ── Services table ──
+    var servicesHtml = '<table class="run-table">';
+    servicesHtml += '<thead><tr>';
+    servicesHtml += '<th>PID</th><th>Service</th><th>Status</th><th>Uptime</th><th>Mem</th><th>Actions</th>';
+    servicesHtml += '</tr></thead><tbody>';
 
     // web-server always up
-    servicesHtml += '<div class="htop-row">';
-    servicesHtml += '<span class="htop-pid">0001</span>';
-    servicesHtml += '<span class="htop-service">web-server</span>';
-    servicesHtml += '<span class="htop-status status-online">RUNNING</span>';
-    servicesHtml += '<span class="htop-uptime">' + hours + 'h ' + mins + 'm ' + secs + 's</span>';
-    servicesHtml += '<span class="htop-mem">-</span>';
-    servicesHtml += '<span class="htop-actions"><span style="color:var(--text-dim);font-size:0.65rem;">—</span></span>';
-    servicesHtml += '</div>';
+    servicesHtml += '<tr>';
+    servicesHtml += '<td class="text-muted">0001</td>';
+    servicesHtml += '<td>web-server</td>';
+    servicesHtml += '<td><span class="badge badge-green">RUNNING</span></td>';
+    servicesHtml += '<td class="text-muted">' + hours + 'h ' + mins + 'm ' + secs + 's</td>';
+    servicesHtml += '<td class="text-muted">-</td>';
+    servicesHtml += '<td><span class="text-muted" style="font-size:0.65rem;">—</span></td>';
+    servicesHtml += '</tr>';
 
     svcData.services.forEach(function(s) {
       if (s.name === 'web') return;
-      var statusClass = s.status === 'running' ? 'status-online' : 'status-offline';
+      var badgeClass = s.status === 'running' ? 'badge-green' : 'badge-red';
       var statusText = s.status === 'running' ? 'RUNNING' : (s.status || 'STOPPED').toUpperCase();
       var port = s.port ? ':' + s.port : '';
-      var linkHtml = (s.status === 'running' && s.port) ? ' <a href="http://127.0.0.1' + port + '" target="_blank">[open]</a>' : '';
+      var linkHtml = (s.status === 'running' && s.port) ? ' <a href="http://127.0.0.1' + port + '" target="_blank" style="font-size:0.65rem;">[open]</a>' : '';
       var isRunning = s.status === 'running';
 
-servicesHtml += '<div class="htop-row">';
-      servicesHtml += '<span class="htop-pid">' + (s.pid ? s.pid.toString().padStart(4) : '----') + '</span>';
-      servicesHtml += '<span class="htop-service">' + (s.name || '?') + linkHtml + '</span>';
-      servicesHtml += '<span class="htop-status ' + statusClass + '">' + statusText + '</span>';
-      servicesHtml += '<span class="htop-uptime">' + (s.uptime || '-') + '</span>';
-      servicesHtml += '<span class="htop-mem">' + (s.memory || '-') + '</span>';
-      servicesHtml += '<span class="htop-actions">';
+      servicesHtml += '<tr>';
+      servicesHtml += '<td class="text-muted">' + (s.pid ? s.pid.toString().padStart(4) : '----') + '</td>';
+      servicesHtml += '<td>' + (s.name || '?') + linkHtml + '</td>';
+      servicesHtml += '<td><span class="badge ' + badgeClass + '">' + statusText + '</span></td>';
+      servicesHtml += '<td class="text-muted">' + (s.uptime || '-') + '</td>';
+      servicesHtml += '<td class="text-muted">' + (s.memory || '-') + '</td>';
+      servicesHtml += '<td>';
       if (isRunning) {
-        servicesHtml += '<button class="terminal-btn btn-action btn-stop"    id="btn-' + s.name + '-stop"    data-label="■ Stop"    onclick="ops.action(\'' + s.name + '\',\'stop\')">■ Stop</button>';
-        servicesHtml += '<button class="terminal-btn btn-action btn-restart" id="btn-' + s.name + '-restart" data-label="⟳" onclick="ops.action(\'' + s.name + '\',\'restart\')">⟳</button>';
+servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-red);border-color:var(--accent-red);" id="btn-' + s.name + '-stop" data-label="■ Stop" onclick="ops.action(\'' + s.name + '\',\'stop\')">■ Stop</button> ';
+        servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-warn);border-color:var(--accent-warn);" id="btn-' + s.name + '-restart" data-label="⟳" onclick="ops.action(\'' + s.name + '\',\'restart\')">⟳</button>';
+        if (s.port) {
+          servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-red);border-color:var(--accent-red);opacity:0.5;" id="btn-' + s.name + '-killport" data-label="✕ Port" onclick="ops.killPort(\'' + s.name + '\')" title="Force-kill process on port ' + s.port + '">✕ Port</button>';
+        }
       } else {
-        servicesHtml += '<button class="terminal-btn btn-action btn-start"   id="btn-' + s.name + '-start"   data-label="▶ Start"   onclick="ops.action(\'' + s.name + '\',\'start\')">▶ Start</button>';
-        servicesHtml += '<button class="terminal-btn btn-action btn-restart" id="btn-' + s.name + '-restart" data-label="⟳" onclick="ops.action(\'' + s.name + '\',\'restart\')" disabled>⟳</button>';
+        servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-green);border-color:var(--accent-green);" id="btn-' + s.name + '-start" data-label="▶ Start" onclick="ops.action(\'' + s.name + '\',\'start\')">▶ Start</button> ';
+        servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-warn);border-color:var(--accent-warn);opacity:0.4;" id="btn-' + s.name + '-restart" data-label="⟳" onclick="ops.action(\'' + s.name + '\',\'restart\')" disabled>⟳</button>';
+        if (s.port) {
+          servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-red);border-color:var(--accent-red);" id="btn-' + s.name + '-killport" data-label="✕ Port" onclick="ops.killPort(\'' + s.name + '\')" title="Force-kill process on port ' + s.port + '">✕ Port</button>';
+        }
       }
-      servicesHtml += '</span>';
-      servicesHtml += '</div>';
+      servicesHtml += '</td>';
+      servicesHtml += '</tr>';
     });
 
+    servicesHtml += '</tbody></table>';
     document.getElementById('services-list').innerHTML = servicesHtml;
 
-    // ── System resources (reusing health data) ────────
-    var resEl = document.getElementById('system-resources');
-    if (resEl) {
-      var resHtml = '<div class="info-grid">';
-      resHtml += '<span class="info-key">version</span><span class="info-val">' + (health.version || '?') + '</span>';
-      resHtml += '<span class="info-key">platform</span><span class="info-val">' + navigator.platform + '</span>';
-      resHtml += '<span class="info-key">uptime</span><span class="info-val">' + (health.uptime_seconds ? Math.floor(health.uptime_seconds / 3600) + 'h ' + Math.floor((health.uptime_seconds % 3600) / 60) + 'm' : '?') + '</span>';
-      resHtml += '<span class="info-key">services</span><span class="info-val">web + background processes</span>';
-      resHtml += '</div>';
-      resEl.innerHTML = resHtml;
-    }
-
-    // Load logs for each service
+// ── Service logs ──
     var logsDiv = document.getElementById('service-logs');
     var logsHtml = '';
     for (var i = 0; i < svcData.services.length; i++) {
@@ -211,8 +215,8 @@ servicesHtml += '<div class="htop-row">';
         var logResp = await fetch('/v1/services/logs/' + svc.name + '?lines=20');
         var logData = await logResp.json();
         if (logData.logs && logData.logs.length > 0) {
-          logsHtml += '<div class="panel" style="margin:6px 0;">';
-          logsHtml += '<div class="panel-titlebar" data-title="' + svc.name + '">▌ ' + svc.name + '</div>';
+          logsHtml += '<div class="panel" style="margin:var(--space-2) 0;">';
+          logsHtml += '<h2 class="panel-title" style="padding:var(--space-2) var(--space-3);margin-bottom:0;border-bottom:var(--border-width) solid var(--border);background:var(--bg-element);border-radius:var(--radius) var(--radius) 0 0;">' + svc.name + '</h2>';
           logsHtml += '<pre class="telemetry" style="max-height:180px;font-size:0.72rem;">';
           logsHtml += logData.logs.join('\n');
           logsHtml += '</pre></div>';
@@ -221,25 +225,71 @@ servicesHtml += '<div class="htop-row">';
     }
     if (logsHtml) {
       logsDiv.innerHTML = logsHtml;
-      // Apply current titlebar style to dynamic titlebars
-      if (window.applyTitlebarStyle) {
-        window.applyTitlebarStyle(localStorage.getItem('titlebar-style') || 'minimal');
-      }
     } else {
-      logsDiv.innerHTML = '<span style="color:var(--text-dim);font-size:0.78rem;">No log data available.</span>';
+      logsDiv.innerHTML = '<span class="text-muted" style="font-size:0.78rem;">No log data available.</span>';
     }
   };
 
-  // Set data-label for buttons
+  // Store data-label for buttons
   function storeLabels() {
-    document.querySelectorAll('.terminal-btn[id]').forEach(function(b) {
+    document.querySelectorAll('.btn[id]').forEach(function(b) {
       b.setAttribute('data-label', b.textContent);
     });
   }
   storeLabels();
 
   setInterval(loadServices, 10000);
-  loadServices();   // also renders system resources (reuses health data)
+  setInterval(loadServices, 10000);
+  loadServices();
+
+  // ── System resources ────────
+  window.loadResources = async function loadResources() {
+    var el = document.getElementById('system-resources');
+    if (!el) return;
+    try {
+      var resp = await fetch('/v1/health');
+      var health = await resp.json();
+      var s = health.system || {};
+      var cpu = s.cpu_percent !== undefined ? s.cpu_percent : '?';
+      var memPct = s.memory_percent !== undefined ? s.memory_percent : '?';
+      var memUsed = s.memory_used_gb || '?';
+      var memTotal = s.memory_total_gb || '?';
+      var diskPct = s.disk_percent !== undefined ? s.disk_percent : '?';
+      var diskUsed = s.disk_used_gb || '?';
+      var diskTotal = s.disk_total_gb || '?';
+      var uptime = health.uptime_seconds ? Math.floor(health.uptime_seconds / 3600) + 'h ' + Math.floor((health.uptime_seconds % 3600) / 60) + 'm' : '?';
+
+      var gpu = health.gpu || {};
+      var gpuErrors = gpu.errors && gpu.errors.length > 0 ? gpu.errors.join('; ') : null;
+      var gpuName = gpu.device_name || (gpu.available ? gpu.backend : '—');
+
+      function bar(pct) {
+        var w = Math.min(pct, 100);
+        return '<div class="meter"><span style="width:' + w + '%"></span></div>';
+      }
+
+      var html = '<div class="info-grid">';
+      html += '<span class="info-key">version</span><span class="info-val">' + (health.version || '?') + '</span>';
+      html += '<span class="info-key">uptime</span><span class="info-val">' + uptime + '</span>';
+      html += '<span class="info-key">cpu</span><span class="info-val">' + cpu + '%' + bar(cpu) + '</span>';
+      html += '<span class="info-key">memory</span><span class="info-val">' + memPct + '% (' + memUsed + '/' + memTotal + ' GB)' + bar(memPct) + '</span>';
+      html += '<span class="info-key">disk</span><span class="info-val">' + diskPct + '% (' + diskUsed + '/' + diskTotal + ' GB)' + bar(diskPct) + '</span>';
+      html += '<span class="info-key">gpu</span><span class="info-val">' + (gpu.available
+        ? gpuName + ' (' + gpu.backend + ')'
+        : '<span class="text-muted">not available</span>')
+        + (gpu.backend ? ' <span class="badge badge-green">READY</span>' : '')
+        + (gpu.memory_total_gb ? ' &middot; ' + gpu.memory_total_gb.toFixed(1) + ' GB' : '')
+        + (gpuErrors ? '<br><span class="text-muted" style="font-size:0.65rem;">' + gpuErrors + '</span>' : '')
+        + '</span>';
+      html += '</div>';
+      el.innerHTML = html;
+    } catch(e) {
+      el.innerHTML = '<span class="text-muted" style="font-size:0.78rem;">Could not fetch system info.</span>';
+    }
+  };
+
+  setInterval(loadResources, 10000);
+  loadResources();
 })();
 </script>
 {% endblock %}

@@ -25,6 +25,7 @@
   font-family: var(--font-mono);
   font-size: 0.85rem;
   margin-bottom: var(--space-3);
+  box-sizing: border-box;
 }
 
 .widget-input:focus {
@@ -45,6 +46,34 @@
   margin-top: var(--space-2);
 }
 
+/* ── Empty / Error State ── */
+.widget-empty-state {
+  padding: var(--space-5) var(--space-4);
+  text-align: center;
+  background: var(--surface);
+  border: var(--border-width) dashed var(--border);
+  border-radius: var(--radius);
+  margin-top: var(--space-3);
+}
+
+.widget-empty-text {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.widget-empty-link {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.widget-empty-link:hover {
+  filter: brightness(1.2);
+}
+
 /* ── Tokenization ── */
 .token-list {
   display: flex;
@@ -62,6 +91,12 @@
   border-radius: var(--radius);
 }
 
+.token-chip-bos {
+  background: var(--border);
+  border-color: var(--text-muted);
+  opacity: 0.75;
+}
+
 .token-value {
   font-family: var(--font-mono);
   font-size: 0.85rem;
@@ -74,7 +109,21 @@
   color: var(--text-muted);
 }
 
+.token-stats {
+  margin-bottom: var(--space-2);
+}
+
+.token-stats-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
 /* ── Embedding ── */
+.embedding-controls {
+  margin-bottom: var(--space-2);
+}
+
 .embedding-canvas {
   width: 100%;
   height: 200px;
@@ -88,38 +137,92 @@
   outline-offset: 2px;
 }
 
-/* ── Attention ── */
-.attention-heatmap {
-  overflow-x: auto;
+.embedding-info {
+  margin-top: var(--space-1);
 }
 
-.attention-tokens {
+/* ── Attention Heatmap ── */
+.heatmap-controls {
   display: flex;
-  gap: 2px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+  align-items: center;
   flex-wrap: wrap;
 }
 
-.attention-token {
+.heatmap-select-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.heatmap-select {
   padding: var(--space-1) var(--space-2);
   background: var(--surface);
   border: var(--border-width) solid var(--border);
   border-radius: var(--radius);
+  color: var(--text);
   font-family: var(--font-mono);
-  font-size: 0.85rem;
+  font-size: 0.7rem;
   cursor: pointer;
-  transition: opacity var(--dur-fast) var(--ease);
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%238a8c94' d='M5 7L1 3h8z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  padding-right: 22px;
+}
+
+.heatmap-select:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.heatmap-wrapper {
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin-bottom: var(--space-1);
+}
+
+.attn-canvas {
+  display: block;
   outline: none;
+  max-width: 100%;
 }
 
-.attention-token:hover,
-.attention-token:focus {
-  border-color: var(--accent);
+.attn-canvas:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
-.attention-token.active {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: #fff;
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.legend-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  min-width: 12px;
+  text-align: center;
+}
+
+.legend-bar {
+  flex: 1;
+  height: 8px;
+  background: linear-gradient(to right, var(--surface), var(--accent));
+  border-radius: 4px;
+  border: var(--border-width) solid var(--border);
+}
+
+.attn-info {
+  margin-top: var(--space-1);
 }
 
 /* ── Sampling ── */
@@ -144,6 +247,9 @@
   font-size: 0.7rem;
   text-align: right;
   color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .dist-bar-track {
@@ -165,6 +271,25 @@
   width: 50px;
   font-size: 0.65rem;
   color: var(--text-muted);
+  text-align: right;
+}
+
+/* ── Training Loop ── */
+.tl-select-row {
+  margin-bottom: var(--space-2);
+}
+
+.tl-canvas {
+  width: 100%;
+  display: block;
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: var(--space-2);
+}
+
+.tl-info {
+  margin-top: var(--space-1);
 }
 
 /* ── Computation Graph ── */
