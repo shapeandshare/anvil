@@ -35,6 +35,9 @@ class ModelRepository:
 
     async def delete(self, model_id: int) -> None:
         await self._session.execute(
+            delete(ModelVersion).where(ModelVersion.model_id == model_id)
+        )
+        await self._session.execute(
             delete(RegisteredModel).where(RegisteredModel.id == model_id)
         )
 
