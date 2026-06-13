@@ -1,7 +1,7 @@
-"""Rev 002: Add model registry tables."""
+"""Rev 002b: Add model registry tables."""
 
-revision = "002"
-down_revision = "001"
+revision = "002b"
+down_revision = "002"
 branch_labels = None
 depends_on = None
 
