@@ -187,16 +187,16 @@
       servicesHtml += '<td class="text-muted">' + (s.memory || '-') + '</td>';
       servicesHtml += '<td>';
       if (isRunning) {
-        servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-red);border-color:var(--accent-red);" id="btn-' + s.name + '-stop" onclick="ops.action(\'' + s.name + '\',\'stop\')">■ Stop</button> ';
-        servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-warn);border-color:var(--accent-warn);" id="btn-' + s.name + '-restart" onclick="ops.action(\'' + s.name + '\',\'restart\')">⟳</button>';
+servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-red);border-color:var(--accent-red);" id="btn-' + s.name + '-stop" data-label="■ Stop" onclick="ops.action(\'' + s.name + '\',\'stop\')">■ Stop</button> ';
+        servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-warn);border-color:var(--accent-warn);" id="btn-' + s.name + '-restart" data-label="⟳" onclick="ops.action(\'' + s.name + '\',\'restart\')">⟳</button>';
         if (s.port) {
-          servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-red);border-color:var(--accent-red);opacity:0.5;" id="btn-' + s.name + '-killport" onclick="ops.killPort(\'' + s.name + '\')" title="Force-kill process on port ' + s.port + '">✕ Port</button>';
+          servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-red);border-color:var(--accent-red);opacity:0.5;" id="btn-' + s.name + '-killport" data-label="✕ Port" onclick="ops.killPort(\'' + s.name + '\')" title="Force-kill process on port ' + s.port + '">✕ Port</button>';
         }
       } else {
-        servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-green);border-color:var(--accent-green);" id="btn-' + s.name + '-start" onclick="ops.action(\'' + s.name + '\',\'start\')">▶ Start</button> ';
-        servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-warn);border-color:var(--accent-warn);opacity:0.4;" id="btn-' + s.name + '-restart" onclick="ops.action(\'' + s.name + '\',\'restart\')" disabled>⟳</button>';
+        servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-green);border-color:var(--accent-green);" id="btn-' + s.name + '-start" data-label="▶ Start" onclick="ops.action(\'' + s.name + '\',\'start\')">▶ Start</button> ';
+        servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-warn);border-color:var(--accent-warn);opacity:0.4;" id="btn-' + s.name + '-restart" data-label="⟳" onclick="ops.action(\'' + s.name + '\',\'restart\')" disabled>⟳</button>';
         if (s.port) {
-          servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-red);border-color:var(--accent-red);" id="btn-' + s.name + '-killport" onclick="ops.killPort(\'' + s.name + '\')" title="Force-kill process on port ' + s.port + '">✕ Port</button>';
+          servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-red);border-color:var(--accent-red);" id="btn-' + s.name + '-killport" data-label="✕ Port" onclick="ops.killPort(\'' + s.name + '\')" title="Force-kill process on port ' + s.port + '">✕ Port</button>';
         }
       }
       servicesHtml += '</td>';
@@ -206,7 +206,7 @@
     servicesHtml += '</tbody></table>';
     document.getElementById('services-list').innerHTML = servicesHtml;
 
-    // ── Service logs ──
+// ── Service logs ──
     var logsDiv = document.getElementById('service-logs');
     var logsHtml = '';
     for (var i = 0; i < svcData.services.length; i++) {
@@ -238,6 +238,7 @@
   }
   storeLabels();
 
+  setInterval(loadServices, 10000);
   setInterval(loadServices, 10000);
   loadServices();
 
