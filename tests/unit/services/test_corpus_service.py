@@ -85,7 +85,7 @@ async def test_ingest_updates_counts(svc):
         (Path(td) / "main.py").write_text("print('hello')\n")
         (Path(td) / "utils.py").write_text("import os\n")
         corpus = await svc.create(name="ingest-test", root_path=td)
-        ingested = await svc.ingest(corpus.id)
+        ingested, _ = await svc.ingest(corpus.id)
         assert ingested.file_count == 2
         assert ingested.document_count > 0
     finally:

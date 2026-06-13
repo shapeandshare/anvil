@@ -158,7 +158,7 @@ def corpus_main():
                 print(f"Created corpus {corpus.id}: {corpus.name}")
 
             elif args.command == "ingest":
-                corpus = await svc.ingest(args.id)
+                corpus, errors = await svc.ingest(args.id)
                 print(
                     f"Ingested corpus {corpus.id}: "
                     f"{corpus.file_count} files, "
