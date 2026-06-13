@@ -1,0 +1,25 @@
+/* ── Code / Token / Data Rendering ── */
+code, pre, .code, .token-value, .tensor-value, .loss-value {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+}
+
+pre {
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+  overflow-x: auto;
+  line-height: 1.5;
+}
+
+code {
+  background: var(--surface);
+  padding: 0.1em 0.3em;
+  border-radius: 3px;
+}
+
+.token-id, .token-text, .tensor-scalar {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css"><link rel="stylesheet" href="/static/css/components.css">{% endblock %}
+{% block content %}
+<div class="panel" style="margin-bottom:var(--space-4);">
+  <h2 class="panel-title">Playground — Explore Concepts</h2>
+  <p class="text-muted" style="margin-bottom:var(--space-4);">Compose concept widgets side by side without the scroll narrative.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);">
+    <div class="concept-widget" id="widget-tokenization"><p class="text-muted">Tokenization widget loads here</p></div>
+    <div class="concept-widget" id="widget-embedding"><p class="text-muted">Embedding widget loads here</p></div>
+    <div class="concept-widget" id="widget-sampling"><p class="text-muted">Sampling widget loads here</p></div>
+    <div class="concept-widget" id="widget-attention"><p class="text-muted">Attention widget loads here</p></div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/widgets/tokenization.js"></script>
+<script src="/static/js/widgets/embedding.js"></script>
+<script src="/static/js/widgets/sampling.js"></script>
+<script src="/static/js/widgets/attention.js"></script>
+<script>
+(function() {
+  if (window.TokenizationWidget) new TokenizationWidget(document.getElementById('widget-tokenization'));
+  if (window.EmbeddingWidget) new EmbeddingWidget(document.getElementById('widget-embedding'));
+  if (window.SamplingWidget) new SamplingWidget(document.getElementById('widget-sampling'));
+  if (window.AttentionWidget) new AttentionWidget(document.getElementById('widget-attention'));
+})();
+</script>
+{% endblock %}

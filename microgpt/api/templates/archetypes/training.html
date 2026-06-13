@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
+{% block content %}
+<div class="training-dashboard">
+  <div class="training-config panel">
+    <h2 class="panel-title">Configuration</h2>
+    <div class="config-grid">
+      <label>n_embd <input type="number" id="n_embd" value="16" min="4" max="256"></label>
+      <label>n_layer <input type="number" id="n_layer" value="1" min="1" max="12"></label>
+      <label>n_head <input type="number" id="n_head" value="4" min="1" max="16"></label>
+      <label>num_steps <input type="number" id="num_steps" value="1000" min="10" max="100000"></label>
+      <label>learning_rate <input type="number" id="learning_rate" value="0.01" step="0.001" min="0.0001" max="1"></label>
+      <label>temperature <input type="number" id="temperature" value="0.5" step="0.1" min="0" max="2"></label>
+    </div>
+    <div class="config-actions">
+      <button class="btn btn-primary" id="start-btn">Start Training</button>
+      <button class="btn btn-secondary" id="stop-btn" disabled>Stop</button>
+    </div>
+  </div>
+
+  <div class="training-chart panel">
+    <h2 class="panel-title">Loss Curve</h2>
+    <div class="connection-state" id="connection-state">idle</div>
+    <div class="chart-container">
+      {% include "partials/streaming-chart.html" %}
+    </div>
+  </div>
+
+  <div class="training-metrics panel">
+    <h2 class="panel-title">Metrics</h2>
+    <div class="metrics-grid">
+      <div class="metric"><span class="metric-label">Step</span><span class="metric-value" id="metric-step">—</span></div>
+      <div class="metric"><span class="metric-label">Loss</span><span class="metric-value" id="metric-loss">—</span></div>
+      <div class="metric"><span class="metric-label">Throughput</span><span class="metric-value" id="metric-Throughput">—</span></div>
+    </div>
+    <div class="loading-indicator" id="training-loading" style="display:none;">
+      <span class="spinner"></span> Waiting for training data...
+    </div>
+  </div>
+
+  <div class="training-output panel">
+    <h2 class="panel-title">Output</h2>
+    <pre class="loss-display" id="loss-display"></pre>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/sse.js"></script>
+<script src="/static/js/chart.js"></script>
+<script>
+(function() {
+  var session = null;
+  var chart = null;
+  var startBtn = document.getElementById('start-btn');
+  var stopBtn = document.getElementById('stop-btn');
+  var stateEl = document.getElementById('connection-state');
+  var lossDisplay = document.getElementById('loss-display');
+  var loadingEl = document.getElementById('training-loading');
+
+  function updateState(state) {
+    stateEl.textContent = state;
+    stateEl.className = 'connection-state cs-' + state;
+    startBtn.disabled = (state === 'streaming' || state === 'connecting');
+    stopBtn.disabled = (state !== 'streaming' && state !== 'connecting');
+    if (state === 'streaming' || state === 'connecting') {
+      loadingEl.style.display = 'block';
+    } else {
+      loadingEl.style.display = 'none';
+    }
+  }
+
+  function updateMetrics(d) {
+    document.getElementById('metric-step').textContent = d.step || '—';
+    document.getElementById('metric-loss').textContent = d.loss ? d.loss.toFixed(4) : '—';
+  }
+
+  function log(msg) {
+    lossDisplay.textContent += msg + '\n';
+    lossDisplay.scrollTop = lossDisplay.scrollHeight;
+  }
+
+  function initChart() {
+    var canvas = document.getElementById('loss-chart');
+    if (!chart && canvas) {
+      chart = new LossChart(canvas, { mode: 'live' });
+    }
+  }
+
+  window.startTraining = async function startTraining() {
+    if (session) { session.destroy(); session = null; }
+    initChart();
+    chart.clear();
+
+    var config = {
+      n_embd: parseInt(document.getElementById('n_embd').value),
+      n_layer: parseInt(document.getElementById('n_layer').value),
+      n_head: parseInt(document.getElementById('n_head').value),
+      num_steps: parseInt(document.getElementById('num_steps').value),
+      learning_rate: parseFloat(document.getElementById('learning_rate').value),
+      temperature: parseFloat(document.getElementById('temperature').value),
+    };
+
+    log('> Starting training with: ' + JSON.stringify(config));
+
+    try {
+      var resp = await fetch('/v1/training/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config)
+      });
+      var data = await resp.json();
+      var runId = data.run_id;
+      log('> Run ID: ' + runId);
+
+      session = new SSESession(runId);
+      session.onstatechange = function(s) { updateState(s); };
+      session.onmetrics = function(d) {
+        updateMetrics(d);
+        chart.appendPoint({ step: d.step, loss: d.loss });
+        log('step ' + String(d.step).padStart(6) + ' | loss ' + d.loss.toFixed(4));
+      };
+      session.oncomplete = function(d) {
+        log('> Training complete — final loss: ' + (d.final_loss || '?').toFixed(4));
+      };
+      session.onerror = function(e) {
+        log('> Error: ' + e.message);
+      };
+      session.start();
+
+      window._currentSession = session;
+    } catch (err) {
+      log('> Failed to start: ' + err.message);
+      updateState('errored');
+    }
+  };
+
+  window.stopTraining = function() {
+    if (session) {
+      session.stop();
+      log('> Training stopped by user');
+    }
+  };
+
+  startBtn.addEventListener('click', startTraining);
+  stopBtn.addEventListener('click', stopTraining);
+
+  window.addEventListener('beforeunload', function() {
+    if (session) session.destroy();
+    if (chart) chart.destroy();
+  });
+
+  updateState('idle');
+})();
+</script>
+{% endblock %}
