@@ -63,3 +63,7 @@ class Dataset(Base, TimestampMixin):
     vocabulary_size: Mapped[int | None] = mapped_column(Integer, nullable=True)
     document_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     is_default: Mapped[bool] = mapped_column(Boolean, default=False)
+    sample_count: Mapped[int] = mapped_column(Integer, default=0)
+    total_size_bytes: Mapped[int] = mapped_column(Integer, default=0)
+    curation_version: Mapped[int] = mapped_column(Integer, default=0)
+    status: Mapped[str] = mapped_column(String(20), default="empty")

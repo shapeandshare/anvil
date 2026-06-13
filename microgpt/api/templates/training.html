@@ -57,6 +57,13 @@
         </select>
       </div>
       <div class="config-full" style="margin-top:4px;">
+        <span class="prompt-symbol">$</span>
+        <span class="prompt-label">dataset_id=</span>
+        <select class="terminal-input" id="dataset_id" style="width:auto;">
+          <option value="">— none —</option>
+        </select>
+      </div>
+      <div class="config-full" style="margin-top:4px;">
         <button class="terminal-btn glitch" id="start-btn" onclick="startTraining()">
           <span class="btn-prefix">$</span> ./train --run
         </button>
@@ -108,6 +115,7 @@
   var LOSS_DISPLAY = document.getElementById('loss-display');
   var SAMPLES_DISPLAY = document.getElementById('samples-display');
   var CORPUS_SELECT = document.getElementById('corpus_id');
+  var DATASET_SELECT = document.getElementById('dataset_id');
 
   fetch('/v1/corpora').then(function(r) { return r.json(); }).then(function(data) {
     if (data.data && data.data.length) {
@@ -118,6 +126,16 @@
         CORPUS_SELECT.appendChild(opt);
       });
     }
+  }).catch(function() {});
+
+  fetch('/v1/datasets').then(function(r) { return r.json(); }).then(function(data) {
+    var datasets = data.data ? data.data.datasets : (data.datasets || []);
+    datasets.forEach(function(d) {
+      var opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = d.name + ' (' + (d.sample_count || 0) + ' samples)';
+      DATASET_SELECT.appendChild(opt);
+    });
   }).catch(function() {});
 
   window.startTraining = async function startTraining() {
@@ -132,7 +150,9 @@
       temperature: parseFloat(document.getElementById('temperature').value),
     };
     var cid = CORPUS_SELECT.value;
+    var did = DATASET_SELECT.value;
     if (cid) { body.corpus_id = parseInt(cid); }
+    if (did) { body.dataset_id = parseInt(did); }
 
     try {
       var resp = await fetch('/v1/training/start', {
