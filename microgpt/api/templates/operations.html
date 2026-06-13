@@ -178,17 +178,29 @@ servicesHtml += '<div class="htop-row">';
       servicesHtml += '<span class="htop-mem">' + (s.memory || '-') + '</span>';
       servicesHtml += '<span class="htop-actions">';
       if (isRunning) {
-        servicesHtml += '<button class="terminal-btn btn-action btn-stop"    id="btn-' + s.name + '-stop"    onclick="ops.action(\'' + s.name + '\',\'stop\')">■ Stop</button>';
-        servicesHtml += '<button class="terminal-btn btn-action btn-restart" id="btn-' + s.name + '-restart" onclick="ops.action(\'' + s.name + '\',\'restart\')">⟳</button>';
+        servicesHtml += '<button class="terminal-btn btn-action btn-stop"    id="btn-' + s.name + '-stop"    data-label="■ Stop"    onclick="ops.action(\'' + s.name + '\',\'stop\')">■ Stop</button>';
+        servicesHtml += '<button class="terminal-btn btn-action btn-restart" id="btn-' + s.name + '-restart" data-label="⟳" onclick="ops.action(\'' + s.name + '\',\'restart\')">⟳</button>';
       } else {
-        servicesHtml += '<button class="terminal-btn btn-action btn-start"   id="btn-' + s.name + '-start"   onclick="ops.action(\'' + s.name + '\',\'start\')">▶ Start</button>';
-        servicesHtml += '<button class="terminal-btn btn-action btn-restart" id="btn-' + s.name + '-restart" onclick="ops.action(\'' + s.name + '\',\'restart\')" disabled>⟳</button>';
+        servicesHtml += '<button class="terminal-btn btn-action btn-start"   id="btn-' + s.name + '-start"   data-label="▶ Start"   onclick="ops.action(\'' + s.name + '\',\'start\')">▶ Start</button>';
+        servicesHtml += '<button class="terminal-btn btn-action btn-restart" id="btn-' + s.name + '-restart" data-label="⟳" onclick="ops.action(\'' + s.name + '\',\'restart\')" disabled>⟳</button>';
       }
       servicesHtml += '</span>';
       servicesHtml += '</div>';
     });
 
     document.getElementById('services-list').innerHTML = servicesHtml;
+
+    // ── System resources (reusing health data) ────────
+    var resEl = document.getElementById('system-resources');
+    if (resEl) {
+      var resHtml = '<div class="info-grid">';
+      resHtml += '<span class="info-key">version</span><span class="info-val">' + (health.version || '?') + '</span>';
+      resHtml += '<span class="info-key">platform</span><span class="info-val">' + navigator.platform + '</span>';
+      resHtml += '<span class="info-key">uptime</span><span class="info-val">' + (health.uptime_seconds ? Math.floor(health.uptime_seconds / 3600) + 'h ' + Math.floor((health.uptime_seconds % 3600) / 60) + 'm' : '?') + '</span>';
+      resHtml += '<span class="info-key">services</span><span class="info-val">web + background processes</span>';
+      resHtml += '</div>';
+      resEl.innerHTML = resHtml;
+    }
 
     // Load logs for each service
     var logsDiv = document.getElementById('service-logs');
@@ -227,27 +239,7 @@ servicesHtml += '<div class="htop-row">';
   storeLabels();
 
   setInterval(loadServices, 10000);
-  loadServices();
-  loadResources();
-
-  // ── System resources ────────
-  window.loadResources = async function loadResources() {
-    var el = document.getElementById('system-resources');
-    if (!el) return;
-    try {
-      var resp = await fetch('/v1/health');
-      var health = await resp.json();
-      var html = '<div class="info-grid">';
-      html += '<span class="info-key">version</span><span class="info-val">' + (health.version || '?') + '</span>';
-      html += '<span class="info-key">platform</span><span class="info-val">' + navigator.platform + '</span>';
-      html += '<span class="info-key">uptime</span><span class="info-val">' + (health.uptime_seconds ? Math.floor(health.uptime_seconds / 3600) + 'h ' + Math.floor((health.uptime_seconds % 3600) / 60) + 'm' : '?') + '</span>';
-      html += '<span class="info-key">services</span><span class="info-val">web + background processes</span>';
-      html += '</div>';
-      el.innerHTML = html;
-    } catch(e) {
-      el.innerHTML = '<span style="color:var(--text-dim);font-size:0.78rem;">Could not fetch system info.</span>';
-    }
-  };
+  loadServices();   // also renders system resources (reuses health data)
 })();
 </script>
 {% endblock %}
