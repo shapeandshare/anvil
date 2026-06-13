@@ -120,17 +120,33 @@ class CorpusLoadResult:
         self.errors = errors
 
 
+class CorpusScanResult:
+    def __init__(
+        self,
+        file_count: int,
+        total_bytes: int,
+        sizes: list[int],
+        language_map: dict[str, int],
+        language_sizes: dict[str, list[int]] | None = None,
+    ):
+        self.file_count = file_count
+        self.total_bytes = total_bytes
+        self.sizes = sizes
+        self.language_map = language_map
+        self.language_sizes = language_sizes or {}
+
+
 class CorpusLoader:
     def __init__(self, block_size: int = 16):
         self._block_size = block_size
 
-    def _make_chunker(self, strategy: str, overlap: float) -> Chunker:
+    def _make_chunker(self, strategy: str, overlap: float, block_size: int | None = None) -> Chunker:
         if strategy == "line":
             return LineAsDocChunker()
         if strategy == "file":
             return FileAsDocChunker()
         return FixedSizeWindowChunker(
-            block_size=self._block_size, overlap=overlap
+            block_size=block_size or self._block_size, overlap=overlap
         )
 
     def ingest(
@@ -141,13 +157,14 @@ class CorpusLoader:
         chunking_strategy: str = "windowed",
         chunk_overlap: float = 0.5,
         max_files: int = 10000,
+        block_size: int | None = None,
     ) -> CorpusLoadResult:
         root = Path(root_path).resolve()
         if not root.is_dir():
             raise NotADirectoryError(f"Not a directory: {root_path}")
 
         spec = _build_spec(include_patterns, exclude_patterns)
-        chunker = self._make_chunker(chunking_strategy, chunk_overlap)
+        chunker = self._make_chunker(chunking_strategy, chunk_overlap, block_size)
 
         files: list[dict] = []
         total_docs = 0
@@ -203,4 +220,49 @@ class CorpusLoader:
             total_docs=total_docs,
             language_map=language_map,
             errors=errors,
+        )
+
+    def scan(
+        self,
+        root_path: str,
+        include_patterns: list[str] | None = None,
+        exclude_patterns: list[str] | None = None,
+        max_files: int = 100000,
+    ) -> CorpusScanResult:
+        """Walk directory and return file stats without reading contents."""
+        root = Path(root_path).resolve()
+        if not root.is_dir():
+            raise NotADirectoryError(f"Not a directory: {root_path}")
+
+        spec = _build_spec(include_patterns, exclude_patterns)
+        sizes: list[int] = []
+        language_map: dict[str, int] = {}
+        language_sizes: dict[str, list[int]] = {}
+        file_count = 0
+
+        for abs_path in root.rglob("*"):
+            if not abs_path.is_file():
+                continue
+            rel = str(abs_path.relative_to(root))
+            if not spec.match_file(rel):
+                continue
+            if file_count >= max_files:
+                break
+
+            stat = abs_path.stat()
+            sizes.append(stat.st_size)
+            lang = detect_language(rel)
+            if lang:
+                language_map[lang] = language_map.get(lang, 0) + 1
+                if lang not in language_sizes:
+                    language_sizes[lang] = []
+                language_sizes[lang].append(stat.st_size)
+            file_count += 1
+
+        return CorpusScanResult(
+            file_count=file_count,
+            total_bytes=sum(sizes),
+            sizes=sizes,
+            language_map=language_map,
+            language_sizes=language_sizes,
         )

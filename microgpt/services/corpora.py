@@ -23,6 +23,7 @@ class CorpusService:
         exclude_patterns: list[str] | None = None,
         chunking_strategy: str = "windowed",
         chunk_overlap: float = 0.5,
+        block_size: int = 16,
     ) -> Corpus:
         if chunking_strategy not in ("line", "windowed", "file"):
             raise ValueError(
@@ -44,6 +45,7 @@ class CorpusService:
             ),
             chunking_strategy=chunking_strategy,
             chunk_overlap=chunk_overlap,
+            block_size=block_size,
         )
         return await self._repo.add(corpus)
 
@@ -56,7 +58,7 @@ class CorpusService:
     async def delete(self, id: int) -> bool:
         return await self._repo.delete(id)
 
-    async def ingest(self, id: int) -> Corpus:
+    async def ingest(self, id: int, max_files: int = 10000) -> tuple[Corpus, list[str]]:
         corpus = await self._repo.get(id)
         if corpus is None:
             raise ValueError(f"Corpus {id} not found")
@@ -78,6 +80,8 @@ class CorpusService:
             exclude_patterns=exc,
             chunking_strategy=corpus.chunking_strategy,
             chunk_overlap=corpus.chunk_overlap,
+            block_size=corpus.block_size,
+            max_files=max_files,
         )
 
         await self._repo.delete_files_for_corpus(corpus.id)
@@ -98,7 +102,7 @@ class CorpusService:
         corpus.file_count = len(result.files)
         corpus.document_count = result.total_docs
         corpus.language_map = json.dumps(result.language_map)
-        return corpus
+        return corpus, result.errors
 
     async def load_docs(self, corpus_id: int) -> list[str]:
         corpus = await self._repo.get(corpus_id)
@@ -120,6 +124,7 @@ class CorpusService:
             exclude_patterns=exc,
             chunking_strategy=corpus.chunking_strategy,
             chunk_overlap=corpus.chunk_overlap,
+            block_size=corpus.block_size,
         )
         all_chunks: list[str] = []
         for fd in result.files:
@@ -129,7 +134,7 @@ class CorpusService:
                 .read_text("utf-8")
             )
             chunker = self._loader._make_chunker(
-                corpus.chunking_strategy, corpus.chunk_overlap
+                corpus.chunking_strategy, corpus.chunk_overlap, corpus.block_size
             )
             all_chunks.extend(chunker.chunk(text))
         return all_chunks

@@ -97,6 +97,7 @@ class TrainingService:
                 n_embd=config.get("n_embd", 16),
                 n_head=config.get("n_head", 4),
                 n_layer=config.get("n_layer", 1),
+                block_size=config.get("block_size", 16),
                 learning_rate=config.get("learning_rate", 0.01),
                 temperature=config.get("temperature", 0.5),
                 progress_callback=progress_callback,
