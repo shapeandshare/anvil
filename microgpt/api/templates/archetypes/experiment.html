@@ -1,18 +1,7 @@
 {% extends "base.html" %}
 {% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
 {% block content %}
-
-{% if model_id is defined and model_id %}
-{# ── Model Detail View ── #}
-<div class="panel">
-  <h2 class="panel-title">Model Detail <span class="text-muted">#{{ model_id }}</span></h2>
-  <div id="model-detail" class="panel-body">
-    <div class="loading-indicator" style="display:block;">Loading model...</div>
-  </div>
-</div>
-{% else %}
-{# ── Experiment List View ── #}
-<div class="panel">
+<div class="experiment-list panel">
   <h2 class="panel-title">Experiment History</h2>
   <div id="experiment-empty" class="loading-indicator" style="display:block;">
     Loading experiments...
@@ -22,9 +11,8 @@
       <tr>
         <th>ID</th>
         <th>Status</th>
-        <th>Steps</th>
         <th>Final Loss</th>
-        <th>MLflow</th>
+        <th>Dataset</th>
         <th>Actions</th>
       </tr>
     </thead>
@@ -34,221 +22,19 @@
 
 <div class="panel" id="run-detail" style="display:none;">
   <h2 class="panel-title">Run Detail <span id="run-detail-id" class="text-muted"></span></h2>
-  <div id="run-detail-loading" class="loading-indicator">Loading metrics...</div>
+  <div id="run-detail-loading" class="loading-indicator">Loading...</div>
   <div id="run-detail-content" style="display:none;">
     <div class="metrics-grid">
       <div class="metric"><span class="metric-label">Final Loss</span><span class="metric-value" id="detail-loss">—</span></div>
-      <div class="metric"><span class="metric-label">Steps</span><span class="metric-value" id="detail-steps">—</span></div>
-      <div class="metric"><span class="metric-label">Duration</span><span class="metric-value" id="detail-duration">—</span></div>
       <div class="metric"><span class="metric-label">Dataset</span><span class="metric-value" id="detail-dataset">—</span></div>
-    </div>
-    <div class="detail-actions">
-      <button class="btn btn-secondary" id="detail-register-btn" style="display:none;">Register Model</button>
-      <a id="detail-mlflow-link" href="#" target="_blank" class="action-link" style="display:none;">Open in MLflow &rarr;</a>
-    </div>
-    <div class="chart-container" style="margin-top:var(--space-4);">
-      <canvas id="replay-chart"></canvas>
-    </div>
-
-    <!-- Hyperparameters -->
-    <div class="detail-section">
-      <h3 class="detail-section-title">Hyperparameters</h3>
-      <table class="detail-table" id="hyperparams-table">
-        <tbody></tbody>
-      </table>
-    </div>
-
-    <!-- Model Architecture -->
-    <div class="detail-section">
-      <h3 class="detail-section-title">Model Architecture</h3>
-      <div id="model-arch-content"></div>
-    </div>
-
-    <!-- Generated Samples -->
-    <div class="detail-section">
-      <h3 class="detail-section-title">
-        Generated Samples
-        <span class="collapse-toggle" id="samples-toggle" onclick="toggleSamples()">[+]</span>
-      </h3>
-      <div id="samples-content" style="display:none;"></div>
-    </div>
-
-    <!-- MLflow Link -->
-    <div class="detail-section" id="mlflow-section" style="display:none;">
-      <a id="mlflow-link" href="#" target="_blank" class="btn btn-secondary">Open in MLflow &rarr;</a>
+      <div class="metric"><span class="metric-label">MLflow</span><span class="metric-value" id="detail-mlflow">—</span></div>
     </div>
   </div>
 </div>
-
-<style>
-/* ── Detail Sections ── */
-.detail-section { margin-top: var(--space-5); }
-.detail-section-title {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: var(--space-3);
-  padding-bottom: var(--space-2);
-  border-bottom: var(--border-width) solid var(--border);
-}
-
-/* ── Detail Tables (hyperparams, architecture) ── */
-.detail-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-}
-.detail-table td {
-  padding: var(--space-1) var(--space-2);
-  border-bottom: var(--border-width) solid var(--border);
-}
-.detail-table tr:last-child td { border-bottom: none; }
-.hp-label {
-  color: var(--text-muted);
-  width: 50%;
-}
-.hp-value {
-  text-align: right;
-  color: var(--text);
-}
-
-/* ── Sample Display ── */
-.sample-line {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  line-height: 1.5;
-  background: var(--bg);
-  border: var(--border-width) solid var(--border);
-  border-radius: var(--radius);
-  padding: var(--space-2) var(--space-3);
-  margin: var(--space-1) 0;
-  white-space: pre-wrap;
-  word-break: break-all;
-  color: var(--text);
-}
-
-/* ── Collapse Toggle ── */
-.collapse-toggle {
-  cursor: pointer;
-  color: var(--accent);
-  font-size: 0.7rem;
-  margin-left: var(--space-2);
-  user-select: none;
-}
-.collapse-toggle:hover { opacity: 0.8; }
-</style>
-{% endif %}
 {% endblock %}
 {% block scripts %}
-<script src="/static/js/chart.js"></script>
 <script>
 (function() {
-  'use strict';
-
-  {% if model_id is defined and model_id %}
-  /* ── Model Detail ── */
-  (function() {
-    var modelId = {{ model_id }};
-
-    function loadModelDetail() {
-      fetch('/v1/registry/models/' + modelId).then(function(r) { return r.json(); }).then(function(data) {
-        var el = document.getElementById('model-detail');
-        if (data.detail) {
-          el.innerHTML = '<div class="error-text">Error: ' + escHtml(data.detail) + '</div>';
-          return;
-        }
-
-        var html = '<div class="model-header">'
-          + '<h3 class="model-name">' + escHtml(data.name) + '</h3>'
-          + (data.description ? '<p class="text-muted">' + escHtml(data.description) + '</p>' : '')
-          + '</div>'
-          + '<div class="metrics-grid">'
-          + '<div class="metric"><span class="metric-label">Versions</span><span class="metric-value">' + data.versions.length + '</span></div>'
-          + '<div class="metric"><span class="metric-label">Created</span><span class="metric-value">' + (data.created_at || '—') + '</span></div>'
-          + '</div>';
-
-        var totalLosses = data.versions.filter(function(v) { return v.final_loss != null; });
-        var avgLoss = totalLosses.length > 0
-          ? totalLosses.reduce(function(s, v) { return s + v.final_loss; }, 0) / totalLosses.length
-          : null;
-        if (avgLoss !== null) {
-          html += '<p class="text-muted" style="margin-top:var(--space-2);">avg loss: <span class="accent-cyan">' + avgLoss.toFixed(4) + '</span> across ' + totalLosses.length + ' version(s)</p>';
-        }
-
-        if (data.versions.length > 0) {
-          html += '<table class="run-table" style="margin-top:var(--space-4);">'
-            + '<thead><tr><th>Version</th><th>Experiment</th><th>Loss</th><th>Dataset</th><th>Created</th><th>Actions</th></tr></thead><tbody>';
-          data.versions.forEach(function(v) {
-            html += '<tr>'
-              + '<td>v' + v.version + '</td>'
-              + '<td><a href="/v1/experiments-page" class="action-link">#' + v.experiment_id + '</a></td>'
-              + '<td class="loss-value">' + (v.final_loss != null ? v.final_loss.toFixed(4) : '—') + '</td>'
-              + '<td class="text-dim">' + (v.dataset_name || '—') + '</td>'
-              + '<td class="text-dim">' + (v.created_at || '') + '</td>'
-              + '<td><button class="btn btn-secondary btn-sm" onclick="deleteVersion(' + v.version + ')">Delete</button></td>'
-              + '</tr>';
-
-            if (v.hyperparameters) {
-              html += '<tr class="hp-row"><td colspan="6"><div class="hp-grid">';
-              var hpFields = [
-                { key: 'n_embd', label: 'n_embd' },
-                { key: 'n_head', label: 'n_head' },
-                { key: 'n_layer', label: 'n_layer' },
-                { key: 'num_steps', label: 'steps' },
-                { key: 'learning_rate', label: 'lr' },
-                { key: 'temperature', label: 'temp' },
-              ];
-              hpFields.forEach(function(f) {
-                var val = v.hyperparameters[f.key] !== undefined ? v.hyperparameters[f.key] : null;
-                html += '<span class="hp-tag"><span class="hp-label">' + f.label + '</span> <span class="hp-value">' + (val !== null ? val : '—') + '</span></span>';
-              });
-              html += '</div></td></tr>';
-            }
-          });
-          html += '</tbody></table>';
-        }
-
-        html += '<div style="margin-top:var(--space-4);">'
-          + '<button class="btn btn-secondary" onclick="deleteModel()" style="color:var(--danger);">Delete Entire Model</button>'
-          + '</div>';
-
-        el.innerHTML = html;
-      }).catch(function(err) {
-        document.getElementById('model-detail').innerHTML = '<div class="error-text">Failed to load: ' + err.message + '</div>';
-      });
-    }
-
-    window.deleteVersion = function(version) {
-      if (!confirm('Delete version ' + version + ' of this model?')) return;
-      fetch('/v1/registry/models/' + modelId + '/versions/' + version, { method: 'DELETE' })
-      .then(function(r) { return r.json(); })
-      .then(function(data) {
-        if (data.detail) { alert('Error: ' + data.detail); }
-        else { alert(data.message); loadModelDetail(); }
-      })
-      .catch(function(err) { alert('Delete failed: ' + err); });
-    };
-
-    window.deleteModel = function() {
-      if (!confirm('Delete this entire model and all versions? This cannot be undone.')) return;
-      fetch('/v1/registry/models/' + modelId, { method: 'DELETE' })
-      .then(function(r) { return r.json(); })
-      .then(function(data) {
-        if (data.detail) { alert('Error: ' + data.detail); }
-        else { alert(data.message); window.location.href = '/v1/models-page'; }
-      })
-      .catch(function(err) { alert('Delete failed: ' + err); });
-    };
-
-    loadModelDetail();
-  })();
-
-  {% else %}
-  /* ── Experiment List ── */
-  var currentChart = null;
   var runId = window.core && window.core.getUrlParams().get('run_id');
 
   fetch('/v1/experiments').then(function(r) { return r.json(); }).then(function(data) {
@@ -267,30 +53,22 @@
 
     exps.forEach(function(exp) {
       var row = document.createElement('tr');
-      var statusLabel = exp.final_loss != null ? 'completed' : (exp.status || 'running');
-      var badge = '';
+      var badgeClass = '';
+      var statusText = 'running';
       if (exp.final_loss != null) {
-        badge = exp.final_loss < 0.5 ? 'badge-green' : exp.final_loss < 1.0 ? 'badge-yellow' : 'badge-red';
+        statusText = 'completed';
+        badgeClass = exp.final_loss < 0.5 ? 'badge-green' : exp.final_loss < 1.0 ? 'badge-yellow' : 'badge-red';
       }
-
-      var mlflowLink = exp.mlflow_run_url
-        ? '<a href="' + exp.mlflow_run_url + '" target="_blank" class="action-link">open &rarr;</a>'
-        : '<span class="text-dim">—</span>';
-
-      var registerBtn = '';
-      if (exp.status === 'completed' && exp.artifact_available) {
-        registerBtn = '<button class="btn btn-secondary btn-sm" onclick="openRegisterModal(' + exp.id + ')">Register</button>';
-      } else {
-        registerBtn = '<span class="text-dim">—</span>';
+      if (exp.status === 'failed' || exp.status === 'error') {
+        statusText = 'failed';
+        badgeClass = 'badge-red';
       }
-
       row.innerHTML =
         '<td>' + exp.id + '</td>' +
-        '<td><span class="badge ' + badge + '">' + statusLabel + '</span></td>' +
-        '<td>' + (exp.steps || '—') + '</td>' +
+        '<td><span class="badge ' + badgeClass + '">' + statusText + '</span></td>' +
         '<td class="loss-value">' + (exp.final_loss != null ? exp.final_loss.toFixed(4) : '—') + '</td>' +
-        '<td>' + mlflowLink + '</td>' +
-        '<td>' + registerBtn + ' <button class="btn btn-secondary btn-sm" onclick="selectRun(' + exp.id + ')">View</button></td>';
+        '<td>' + (exp.dataset_name || '—') + '</td>' +
+        '<td><button class="btn btn-secondary" onclick="selectRun(' + exp.id + ')">View</button></td>';
       row.addEventListener('click', function() { selectRun(exp.id); });
       tbody.appendChild(row);
     });
@@ -304,147 +82,29 @@
     var detail = document.getElementById('run-detail');
     var loading = document.getElementById('run-detail-loading');
     var content = document.getElementById('run-detail-content');
-    var registerBtn = document.getElementById('detail-register-btn');
-    var mlflowLink = document.getElementById('detail-mlflow-link');
-    var mlflowSection = document.getElementById('mlflow-section');
-    var mlflowBtn = document.getElementById('mlflow-link');
     detail.style.display = '';
     loading.style.display = 'block';
     content.style.display = 'none';
-    registerBtn.style.display = 'none';
-    mlflowLink.style.display = 'none';
-    if (mlflowSection) mlflowSection.style.display = 'none';
     document.getElementById('run-detail-id').textContent = '#' + id;
 
     if (window.core) window.core.setUrlParams(new URLSearchParams({ run_id: id }));
 
-    fetch('/v1/experiments/' + id).then(function(r) { return r.json(); }).then(function(exp) {
-      if (!exp || exp.detail) return;
+    fetch('/v1/experiments').then(function(r) { return r.json(); }).then(function(data) {
+      var exps = data.experiments || [];
+      var exp = exps.find(function(e) { return e.id === id; });
+      if (!exp) return;
       document.getElementById('detail-loss').textContent = exp.final_loss != null ? exp.final_loss.toFixed(4) : '—';
-      document.getElementById('detail-steps').textContent = exp.steps || exp.num_steps || '—';
-      document.getElementById('detail-duration').textContent = exp.duration_seconds != null ? exp.duration_seconds.toFixed(1) + 's' : '—';
-
-      var datasetEl = document.getElementById('detail-dataset');
-      if (datasetEl && exp.dataset_name) {
-        datasetEl.textContent = exp.dataset_name;
+      document.getElementById('detail-dataset').textContent = exp.dataset_name || '—';
+      var mlflowEl = document.getElementById('detail-mlflow');
+      if (exp.mlflow_run_url) {
+        mlflowEl.innerHTML = '<a href="' + exp.mlflow_run_url + '" target="_blank">open in MLflow →</a>';
+      } else {
+        mlflowEl.textContent = '—';
       }
-
       loading.style.display = 'none';
       content.style.display = '';
-
-      if (exp.mlflow && exp.mlflow.run_url) {
-        mlflowLink.style.display = 'inline';
-        mlflowLink.href = exp.mlflow.run_url;
-        if (mlflowSection) mlflowSection.style.display = '';
-        if (mlflowBtn) mlflowBtn.href = exp.mlflow.run_url;
-      }
-      if (exp.status === 'completed' && exp.artifact_available) {
-        registerBtn.style.display = 'inline';
-        registerBtn.onclick = function() { openRegisterModal(exp.id); };
-      }
-
-      // Hyperparameters
-      var hp = exp.hyperparameters || {};
-      var hpTable = document.getElementById('hyperparams-table');
-      if (hpTable) {
-        var hpTbody = hpTable.querySelector('tbody');
-        hpTbody.innerHTML = '';
-        var hpFields = [
-          ['n_layer', 'Layers'], ['n_embd', 'Embed Dim'], ['n_head', 'Attention Heads'],
-          ['block_size', 'Context Size'], ['num_steps', 'Training Steps'],
-          ['learning_rate', 'Learning Rate'], ['beta1', 'Adam \u03b2\u2081'], ['beta2', 'Adam \u03b2\u2082'],
-          ['temperature', 'Temperature'], ['use_gpu', 'GPU Enabled']
-        ];
-        hpFields.forEach(function(f) {
-          var val = hp[f[0]];
-          if (val === undefined || val === null) return;
-          var tr = document.createElement('tr');
-          tr.innerHTML = '<td class="hp-label">' + f[1] + '</td><td class="hp-value">' + val + '</td>';
-          hpTbody.appendChild(tr);
-        });
-      }
-
-      // Model Architecture
-      var arch = exp.model_architecture;
-      var archEl = document.getElementById('model-arch-content');
-      if (archEl) {
-        if (arch) {
-          var archFields = [
-            ['vocab_size', 'Vocabulary Size'], ['n_layer', 'Layers'], ['n_embd', 'Embed Dim'],
-            ['n_head', 'Attention Heads'], ['block_size', 'Context Size'], ['num_params', 'Parameters']
-          ];
-          var archHtml = '<table class="detail-table"><tbody>';
-          archFields.forEach(function(f) {
-            var val = arch[f[0]];
-            archHtml += '<tr><td class="hp-label">' + f[1] + '</td><td class="hp-value">' + (val != null ? (f[0] === 'num_params' ? val.toLocaleString() : val) : '\u2014') + '</td></tr>';
-          });
-          archHtml += '</tbody></table>';
-          archEl.innerHTML = archHtml;
-        } else {
-          archEl.innerHTML = '<p class="text-muted">Model artifact not available</p>';
-        }
-      }
-
-      // Generated Samples
-      var samples = exp.generated_samples;
-      var samplesEl = document.getElementById('samples-content');
-      if (samplesEl) {
-        if (samples && samples.length > 0) {
-          samplesEl.innerHTML = samples.map(function(s) {
-            return '<pre class="sample-line">' + escHtml(s) + '</pre>';
-          }).join('');
-        } else {
-          samplesEl.innerHTML = '<p class="text-muted">No samples available</p>';
-        }
-      }
-
-      fetch('/v1/experiments/' + id + '/metrics').then(function(r) { return r.json(); }).then(function(metricsData) {
-        if (currentChart) { currentChart.destroy(); }
-        var canvas = document.getElementById('replay-chart');
-        currentChart = new LossChart(canvas, { mode: 'replay' });
-        var metrics = (metricsData.metrics || []).map(function(m) { return { step: m.step, loss: m.loss }; });
-        if (metrics.length > 0) { currentChart.setData(metrics); }
-      });
-    }).catch(function() {
-      loading.textContent = 'Failed to load experiment details.';
     });
   };
-
-  window.toggleSamples = function() {
-    var content = document.getElementById('samples-content');
-    var toggle = document.getElementById('samples-toggle');
-    if (!content || !toggle) return;
-    if (content.style.display === 'none') {
-      content.style.display = '';
-      toggle.textContent = '[\u2212]';
-    } else {
-      content.style.display = 'none';
-      toggle.textContent = '[+]';
-    }
-  };
-
-  window.openRegisterModal = function(experimentId) {
-    var name = prompt('Register model from Experiment #' + experimentId + '\n\nEnter a name for this model:');
-    if (!name || !name.trim()) return;
-    var desc = prompt('Optional description (or leave blank):');
-    fetch('/v1/registry/models', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ experiment_id: experimentId, name: name.trim(), description: desc || null }),
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      if (data.detail) { alert('Error: ' + data.detail); }
-      else { alert('Registered as "' + data.name + '" v' + data.version); }
-    })
-    .catch(function(err) { alert('Registration failed: ' + err); });
-  };
-  {% endif %}
-
-  function escHtml(s) {
-    if (s == null) return '';
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  }
 })();
 </script>
 {% endblock %}
