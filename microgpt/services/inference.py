@@ -13,6 +13,8 @@ from microgpt.core.tokenizer import Vocabulary
 
 DEMO_MODEL_PATH = Path("data/models/demo/model.json")
 DEMO_CORPUS = [
+    "the quick brown fox jumps over the lazy dog",
+    "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG",
     "emma",
     "olivia",
     "ava",
@@ -21,6 +23,7 @@ DEMO_CORPUS = [
     "mia",
     "charlotte",
     "amelia",
+    "GPT demo 42",
 ]
 _DEMO_TRAIN_LOCK = threading.Lock()
 

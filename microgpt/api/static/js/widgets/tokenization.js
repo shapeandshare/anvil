@@ -53,20 +53,26 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: text })
     })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        if (data.error === 'no_model' || data.detail === 'No model available') {
-          empty.style.display = '';
-          output.innerHTML = '';
-          stats.innerHTML = '';
-          return;
+      .then(function (r) {
+        if (!r.ok) {
+          return r.json().then(function (err) {
+            throw new Error(err.detail || 'Request failed');
+          });
         }
+        return r.json();
+      })
+      .then(function (data) {
         self._renderTokens(data, stats, output);
       })
-      .catch(function () {
+      .catch(function (err) {
         empty.style.display = '';
         output.innerHTML = '';
         stats.innerHTML = '';
+        var msg = err && err.message;
+        if (msg) {
+          var p = empty.querySelector('.widget-empty-text');
+          if (p) p.textContent = msg;
+        }
       });
   };
 

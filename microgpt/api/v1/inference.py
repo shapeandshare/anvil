@@ -8,6 +8,16 @@ router = APIRouter()
 _svc = InferenceService()
 
 
+def _call_or_400(svc_method, *args):
+    try:
+        return svc_method(*args)
+    except KeyError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Character {e!r} is not in the model's vocabulary.",
+        ) from e
+
+
 @router.post("/inference/tokenize")
 async def inference_tokenize(body: dict):
     text = body.get("text")
@@ -17,7 +27,7 @@ async def inference_tokenize(body: dict):
         loaded = await _svc.load_model(body.get("model_id"), body.get("version"))
     except (ValueError, FileNotFoundError) as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
-    return _svc.tokenize(text, loaded)
+    return _call_or_400(_svc.tokenize, text, loaded)
 
 
 @router.post("/inference/embeddings")
@@ -29,7 +39,7 @@ async def inference_embeddings(body: dict):
         loaded = await _svc.load_model(body.get("model_id"), body.get("version"))
     except (ValueError, FileNotFoundError) as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
-    return _svc.embeddings(text, loaded)
+    return _call_or_400(_svc.embeddings, text, loaded)
 
 
 @router.post("/inference/attention")
@@ -41,7 +51,7 @@ async def inference_attention(body: dict):
         loaded = await _svc.load_model(body.get("model_id"), body.get("version"))
     except (ValueError, FileNotFoundError) as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
-    return _svc.attention(text, loaded)
+    return _call_or_400(_svc.attention, text, loaded)
 
 
 @router.post("/inference/sampling-distribution")
