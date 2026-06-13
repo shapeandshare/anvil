@@ -10,13 +10,16 @@ import sqlalchemy as sa
 
 
 def upgrade():
-    op.add_column(
-        "training_configs",
-        sa.Column(
-            "corpus_id", sa.Integer(), sa.ForeignKey("corpora.id"), nullable=True
-        ),
-    )
+    with op.batch_alter_table("training_configs") as batch_op:
+        batch_op.add_column(
+            sa.Column("corpus_id", sa.Integer(), nullable=True),
+        )
+        batch_op.create_foreign_key(
+            "fk_training_configs_corpus_id", "corpora", ["corpus_id"], ["id"],
+        )
 
 
 def downgrade():
-    op.drop_column("training_configs", "corpus_id")
+    with op.batch_alter_table("training_configs") as batch_op:
+        batch_op.drop_constraint("fk_training_configs_corpus_id", type_="foreignkey")
+        batch_op.drop_column("corpus_id")
