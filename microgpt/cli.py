@@ -1,6 +1,8 @@
 """CLI entry points and MicroGPTWorkbench god class."""
 
 import argparse
+import asyncio
+import json
 import os
 import random
 import signal
@@ -10,7 +12,6 @@ import urllib.request
 import uvicorn
 
 from microgpt.config import get_config
-from microgpt.core.engine import train as run_training
 from microgpt.services.models import ModelRegistryService
 from microgpt.services.training import TrainingService
 from microgpt.supervisor.supervisor import kill_pid_file, write_pid
@@ -82,13 +83,51 @@ def train():
         default=None,
         help="Corpus ID to train on (default: input.txt)",
     )
+    parser.add_argument(
+        "--gpu",
+        action="store_true",
+        help="Enable GPU acceleration (uses CUDA/MPS if available)",
+    )
+    parser.add_argument(
+        "--device",
+        type=str,
+        default=None,
+        help='Device override (e.g. "cuda:0", "mps", "cpu")',
+    )
     args, _ = parser.parse_known_args()
-    docs = _load_docs(corpus_id=args.corpus)
-    _, final_loss, samples, _ = run_training(docs)
-    print(f"\nFinal loss: {final_loss:.4f}")
-    print("\n--- Generated samples ---")
-    for i, sample in enumerate(samples, 1):
-        print(f"sample {i:2d}: {sample}")
+    use_gpu = args.gpu or os.getenv("USE_GPU", "").lower() in ("true", "1", "yes")
+
+    from microgpt.services.training import TrainingService
+
+    svc = TrainingService()
+    config = {
+        "use_gpu": use_gpu,
+        "device": args.device or "",
+    }
+
+    async def _run():
+        run_id = svc.reserve_run()
+        await svc.start_training(config, run_id=run_id)
+        queue = svc.get_queue(run_id)
+        if queue is None:
+            return
+        while True:
+            msg = await queue.get()
+            if msg["event"] == "metrics":
+                data = json.loads(msg["data"])
+                print(f"step {data['step']:6d} | loss {data['loss']:.4f} | device {data.get('device', 'cpu')}")
+            elif msg["event"] == "complete":
+                data = json.loads(msg["data"])
+                print(f"\nFinal loss: {data['final_loss']:.4f} (device: {data.get('device', 'cpu')})")
+                print("\n--- Generated samples ---")
+                for i, sample in enumerate(data.get("samples", []), 1):
+                    print(f"sample {i:2d}: {sample}")
+                break
+            elif msg["event"] == "error":
+                print(f"\nError: {msg['data']}")
+                break
+
+    asyncio.run(_run())
     sys.exit(0)
 
 

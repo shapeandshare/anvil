@@ -10,6 +10,7 @@ from mlflow.tracking import MlflowClient
 from starlette.responses import StreamingResponse
 
 from microgpt.services.training import TrainingService
+from microgpt.gpu import detect_gpu
 
 router = APIRouter()
 svc = TrainingService()
@@ -40,6 +41,7 @@ async def start_training(config: dict):
     mlflow_run = _get_mlflow_client().create_run(exp_id)
     mlflow_run_id = mlflow_run.info.run_id
 
+    use_gpu = config.get("use_gpu", False)
     dataset_id = config.get("dataset_id")
     corpus_id = config.get("corpus_id")
     hyperparams = {
@@ -52,12 +54,32 @@ async def start_training(config: dict):
         "beta1": config.get("beta1", 0.85),
         "beta2": config.get("beta2", 0.99),
         "temperature": config.get("temperature", 0.5),
+        "use_gpu": use_gpu,
         "corpus_id": corpus_id,
         "dataset_id": dataset_id,
     }
+    mlflow_params = [mlflow.entities.Param(k, str(v)) for k, v in hyperparams.items()]
+
+    # Log GPU info to MLflow
+    gpu_info = detect_gpu()
+    mlflow_params.append(
+        mlflow.entities.Param("gpu_available", str(gpu_info.available))
+    )
+    mlflow_params.append(
+        mlflow.entities.Param("gpu_backend", str(gpu_info.backend or "cpu"))
+    )
+    if gpu_info.device_name:
+        mlflow_params.append(
+            mlflow.entities.Param("gpu_device_name", gpu_info.device_name)
+        )
+    if gpu_info.torch_version:
+        mlflow_params.append(
+            mlflow.entities.Param("torch_version", gpu_info.torch_version)
+        )
+
     _get_mlflow_client().log_batch(
         run_id=mlflow_run_id,
-        params=[mlflow.entities.Param(k, str(v)) for k, v in hyperparams.items()],
+        params=mlflow_params,
     )
 
     def mlflow_progress_callback(step: int, loss: float) -> None:
@@ -66,7 +88,9 @@ async def start_training(config: dict):
         except Exception:
             pass
 
-    async def on_complete(model, config: dict, final_loss: float, samples: list[str], uchars: list[str]):
+    async def on_complete(
+        model, config: dict, final_loss: float, samples: list[str], uchars: list[str]
+    ):
         client = _get_mlflow_client()
         client.log_metric(mlflow_run_id, "final_loss", final_loss)
 
@@ -86,7 +110,13 @@ async def start_training(config: dict):
         from microgpt.db.models.training_config import Experiment, TrainingConfig
 
         async with AsyncSessionLocal() as session:
-            training_config = TrainingConfig(**{k: v for k, v in hyperparams.items() if v is not None or k not in ("corpus_id", "dataset_id")})
+            training_config = TrainingConfig(
+                **{
+                    k: v
+                    for k, v in hyperparams.items()
+                    if v is not None or k not in ("corpus_id", "dataset_id")
+                }
+            )
             session.add(training_config)
             await session.flush()
             await session.refresh(training_config)
@@ -106,10 +136,33 @@ async def start_training(config: dict):
             experiment_model_path = MODELS_DIR / f"experiment_{exp.id}.json"
             model.save(str(experiment_model_path), uchars)
 
+            # Register model in MLflow Model Registry
+            try:
+                from mlflow.tracking import MlflowClient as RegistryClient
+
+                registry_client = RegistryClient(tracking_uri=MLFLOW_TRACKING_URI)
+                model_name = f"microgpt-experiment-{exp.id}"
+                try:
+                    registry_client.create_registered_model(model_name)
+                except Exception:
+                    pass  # Model already registered
+                registry_client.create_model_version(
+                    name=model_name,
+                    source=f"runs:/{mlflow_run_id}/model.json",
+                    run_id=mlflow_run_id,
+                )
+            except Exception:
+                pass  # Registration is non-critical
+
             await session.commit()
 
     task = asyncio.create_task(
-        svc.start_training(config, run_id, on_complete=on_complete, progress_callback_override=mlflow_progress_callback)
+        svc.start_training(
+            config,
+            run_id,
+            on_complete=on_complete,
+            progress_callback_override=mlflow_progress_callback,
+        )
     )
     _tasks.add(task)
     task.add_done_callback(_tasks.discard)
@@ -180,26 +233,11 @@ async def stop_training(run_id: int):
 
 @router.get("/forward-pass/graph")
 async def forward_pass_graph():
-    nodes = [
-        {"id": "input", "op": "input", "label": "token_id", "depth": 0, "step": 0},
-        {"id": "embed", "op": "embed", "label": "Embed", "depth": 1, "step": 1},
-        {"id": "pos", "op": "pos_enc", "label": "PosEnc", "depth": 1, "step": 1},
-        {"id": "add_emb", "op": "add", "label": "Add", "depth": 2, "step": 2},
-        {"id": "ln1", "op": "layer_norm", "label": "LayerNorm", "depth": 3, "step": 3},
-        {"id": "attn_q", "op": "linear", "label": "Q_proj", "depth": 4, "step": 4},
-        {"id": "attn_k", "op": "linear", "label": "K_proj", "depth": 4, "step": 4},
-        {"id": "attn_v", "op": "linear", "label": "V_proj", "depth": 4, "step": 4},
-        {"id": "score", "op": "dot", "label": "Score", "depth": 5, "step": 5},
-        {"id": "softmax", "op": "softmax", "label": "Softmax", "depth": 6, "step": 6},
-        {"id": "attn_out", "op": "weighted", "label": "AttnOut", "depth": 7, "step": 7},
-    ]
-    edges = [
-        {"from": "input", "to": "embed"}, {"from": "input", "to": "pos"},
-        {"from": "embed", "to": "add_emb"}, {"from": "pos", "to": "add_emb"},
-        {"from": "add_emb", "to": "ln1"},
-        {"from": "ln1", "to": "attn_q"}, {"from": "ln1", "to": "attn_k"}, {"from": "ln1", "to": "attn_v"},
-        {"from": "attn_q", "to": "score"}, {"from": "attn_k", "to": "score"},
-        {"from": "score", "to": "softmax"}, {"from": "softmax", "to": "attn_out"},
-        {"from": "attn_v", "to": "attn_out"},
-    ]
-    return {"nodes": nodes, "edges": edges}
+    from microgpt.services.inference import InferenceService
+
+    svc = InferenceService()
+    try:
+        loaded = await svc.load_model()
+    except (ValueError, FileNotFoundError) as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    return svc.forward_graph(loaded)
