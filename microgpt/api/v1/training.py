@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import sys
 import tempfile
 from pathlib import Path
 
@@ -19,6 +20,11 @@ MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
 MLFLOW_TRACKING_URI = "sqlite:///./mlruns/mlflow.db"
 MLFLOW_EXPERIMENT_NAME = "microgpt-workbench"
+
+# ── Progressive walkthrough state ────────────────
+_progressive_queues: dict[int, asyncio.Queue] = {}
+_progressive_counter = 0
+PROGRESSIVE_SCRIPTS = [f"examples/train{i}.py" for i in range(6)]
 
 
 def _get_mlflow_client() -> MlflowClient:
@@ -173,3 +179,103 @@ async def list_configs():
 @router.post("/training/{run_id}/stop")
 async def stop_training(run_id: int):
     return {"status": "stopped"}
+
+
+# ── Progressive walkthrough ──────────────────────
+
+
+async def _run_progressive(run_id: int, queue: asyncio.Queue) -> None:
+    """Run examples/train0.py through examples/train5.py sequentially via SSE."""
+    examples_dir = Path("examples")
+    for script_path in PROGRESSIVE_SCRIPTS:
+        full = examples_dir / script_path
+        script_name = script_path
+        if not full.exists():
+            full = Path(script_path)
+        if not full.exists():
+            await queue.put(
+                {
+                    "event": "step_skip",
+                    "data": json.dumps({"script": script_name, "reason": "not found"}),
+                }
+            )
+            continue
+
+        await queue.put(
+            {"event": "step_start", "data": json.dumps({"script": script_name})}
+        )
+
+        proc = await asyncio.create_subprocess_exec(
+            sys.executable,
+            str(full),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+        )
+
+        lines: list[str] = []
+        stdout = proc.stdout
+        if stdout:
+            while True:
+                raw = await stdout.readline()
+                if not raw:
+                    break
+                text = raw.decode(errors="replace").rstrip()
+                lines.append(text)
+                await queue.put(
+                    {
+                        "event": "step_output",
+                        "data": json.dumps({"script": script_name, "line": text}),
+                    }
+                )
+
+        await proc.wait()
+
+        await queue.put(
+            {
+                "event": "step_complete",
+                "data": json.dumps({"script": script_name, "lines": lines}),
+            }
+        )
+
+    await queue.put({"event": "complete", "data": json.dumps({"status": "done"})})
+    _progressive_queues.pop(run_id, None)
+
+
+@router.post("/training/progressive/start")
+async def start_progressive():
+    global _progressive_counter
+    run_id = _progressive_counter
+    _progressive_counter += 1
+    queue: asyncio.Queue = asyncio.Queue()
+    _progressive_queues[run_id] = queue
+
+    task = asyncio.create_task(_run_progressive(run_id, queue))
+    _tasks.add(task)
+    task.add_done_callback(_tasks.discard)
+    return {"run_id": run_id}
+
+
+@router.get("/training/progressive/stream/{run_id}")
+async def stream_progressive(run_id: int):
+    queue = _progressive_queues.get(run_id)
+    if queue is None:
+        raise HTTPException(status_code=404, detail="Progressive run not found")
+
+    async def event_stream():
+        while True:
+            try:
+                msg = await asyncio.wait_for(queue.get(), timeout=30)
+                yield f"event: {msg['event']}\ndata: {msg['data']}\n\n"
+                if msg["event"] in ("complete", "error"):
+                    break
+            except TimeoutError:
+                yield "event: heartbeat\ndata: {}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
