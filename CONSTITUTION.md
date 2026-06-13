@@ -34,8 +34,12 @@ All data access MUST follow the Repository pattern. Business logic MUST be in th
 
 The UI MUST be delightful — pixel art, ASCII banners, SVG animations, emojis, a unicorn mascot 🦄. Whimsy MUST NEVER undermine correctness, completeness, or robustness.
 
+### Article IX — Pit of Success
+
+All optional capabilities (GPU acceleration, external services, advanced features) MUST be opt-in at every layer — install, config, and runtime. The default, do-nothing path SHALL always produce a working system. When a user opts into an enhanced capability that is unavailable, the system SHALL silently fall back to the equivalent base capability — never crash, never error, never block. Specifically: CPU is the implicit default device. GPU MUST be explicitly opted into, and if the opt-in is set but no GPU/torch is available, training SHALL fall back to CPU without raising.
+
 ## Governance
 
 This constitution supersedes all other practices in this repository. Amendments require documentation in an Architecture Decision Record (ADR), approval, and version bump. All PRs and agent sessions must verify compliance with these articles.
 
-**Version**: 1.0.0 | **Ratified**: 2026-06-10 | **Last Amended**: 2026-06-10
+**Version**: 1.1.0 | **Ratified**: 2026-06-10 | **Last Amended**: 2026-06-13
