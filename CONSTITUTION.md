@@ -36,7 +36,12 @@ The UI MUST be delightful — pixel art, ASCII banners, SVG animations, emojis, 
 
 ### Article IX — Pit of Success
 
-All optional capabilities (GPU acceleration, external services, advanced features) MUST be opt-in at every layer — install, config, and runtime. The default, do-nothing path SHALL always produce a working system. When a user opts into an enhanced capability that is unavailable, the system SHALL silently fall back to the equivalent base capability — never crash, never error, never block. Specifically: CPU is the implicit default device. GPU MUST be explicitly opted into, and if the opt-in is set but no GPU/torch is available, training SHALL fall back to CPU without raising.
+All optional capabilities (GPU acceleration, external services, advanced features) MUST work without manual configuration on capable hardware. The default, do-nothing path SHALL always produce a working system. When a user enables an enhanced capability that is unavailable at runtime, the system SHALL silently fall back to the equivalent base capability — never crash, never error, never block. Specifically:
+
+- **Install layer**: GPU dependencies (torch) SHALL be auto-detected on Apple Silicon (MPS) and NVIDIA Linux (nvidia-smi). `make setup` installs GPU extras automatically on capable platforms.
+- **Config layer**: GPU acceleration is opt-in via `USE_GPU=true` env var, `--gpu` CLI flag, or web UI toggle.
+- **Runtime layer**: CPU is the implicit default device. If GPU is opted in but unavailable (torch missing, no accelerator detected), training SHALL fall back to CPU without raising.
+- **Explicit override**: `make setup-gpu` / `make install-gpu` force GPU extras regardless of auto-detection.
 
 ## Governance
 

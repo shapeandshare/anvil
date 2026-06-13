@@ -7,7 +7,7 @@ include shared/database.mk
 
 ## Convenience aliases
 
-setup-gpu: install-gpu ## Set up environment with GPU support (torch + CUDA/MPS)
+setup-gpu: install-gpu ## Force GPU setup (auto-detected on Apple Silicon / NVIDIA Linux; use this to override)
 	@echo ""
 	@echo "GPU setup complete. Start the web app with 'make run' or train with 'make train-gpu'."
 
