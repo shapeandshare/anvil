@@ -137,8 +137,8 @@ class TorchGPT:
 
     def to(self, device):
         for v in vars(self).values():
-            if isinstance(v, (torch.nn.Parameter, torch.nn.ParameterList)):
-                v.data = v.data.to(device) if isinstance(v, torch.nn.Parameter) else v
+            if isinstance(v, torch.nn.Parameter):
+                v.data = v.data.to(device)
             elif isinstance(v, torch.nn.ParameterList):
                 for p in v:
                     p.data = p.data.to(device)
