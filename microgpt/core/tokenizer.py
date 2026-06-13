@@ -9,3 +9,26 @@ class Tokenizer:
 
     def decode(self, ids: list[int]) -> str:
         return "".join(self.uchars[i] for i in ids if i != self.BOS)
+
+
+class Vocabulary:
+    """Reconstructable from a chars list (no docs required).
+
+    Matches Tokenizer encode/decode semantics exactly (BOS-wrapped).
+    """
+
+    def __init__(self, chars: list[str]):
+        self.chars = chars
+        self.bos_id = len(chars)
+        self.vocab_size = len(chars) + 1
+        self._char_to_id = {ch: i for i, ch in enumerate(chars)}
+
+    @classmethod
+    def from_chars(cls, chars: list[str]) -> "Vocabulary":
+        return cls(chars)
+
+    def encode(self, text: str) -> list[int]:
+        return [self.bos_id] + [self._char_to_id[ch] for ch in text] + [self.bos_id]
+
+    def decode(self, ids: list[int]) -> str:
+        return "".join(self.chars[i] for i in ids if i != self.bos_id)
