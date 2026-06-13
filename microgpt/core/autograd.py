@@ -55,14 +55,18 @@ class Value:
         topo = []
         visited = set()
 
-        def build_topo(v):
-            if v not in visited:
-                visited.add(v)
-                for child in v._children:
-                    build_topo(child)
+        # Iterative topological sort to avoid RecursionError on deep graphs
+        stack = [(self, False)]
+        while stack:
+            v, processed = stack.pop()
+            if processed:
                 topo.append(v)
-
-        build_topo(self)
+            elif v not in visited:
+                visited.add(v)
+                stack.append((v, True))
+                for child in v._children:
+                    if child not in visited:
+                        stack.append((child, False))
         self.grad = 1
         for v in reversed(topo):
             for child, local_grad in zip(v._children, v._local_grads, strict=False):
