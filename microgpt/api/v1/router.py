@@ -167,7 +167,7 @@ async def graph_concept_page(request: Request):
 async def datasets_page(request: Request):
     return request.app.state.templates.TemplateResponse(
         request,
-        "archetypes/training.html",
+        "datasets.html",
     )
 
 
@@ -175,7 +175,7 @@ async def datasets_page(request: Request):
 async def operations_page(request: Request):
     return request.app.state.templates.TemplateResponse(
         request,
-        "archetypes/training.html",
+        "operations.html",
     )
 
 
