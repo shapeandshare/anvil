@@ -110,12 +110,12 @@ print(f"Samples: {samples}")
 ### Progressive walkthrough
 
 ```bash
-python train0.py   # Bigram count table
-python train1.py   # MLP stub
-python train2.py   # Autograd verification
-python train3.py   # Attention stub
-python train4.py   # Multi-head stub (delegates to microgpt core)
-python train5.py   # Full GPT training (delegates to microgpt core)
+python examples/train0.py   # Bigram count table
+python examples/train1.py   # MLP stub
+python examples/train2.py   # Autograd verification
+python examples/train3.py   # Attention stub
+python examples/train4.py   # Multi-head stub (delegates to microgpt core)
+python examples/train5.py   # Full GPT training (delegates to microgpt core)
 ```
 
 ---
