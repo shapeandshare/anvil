@@ -108,12 +108,6 @@ a:hover { text-decoration: underline; }
   background: var(--border);
 }
 
-.app-version {
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  color: var(--text-muted);
-}
-
 .app-main {
   flex: 1;
   padding: var(--space-6) var(--space-5);

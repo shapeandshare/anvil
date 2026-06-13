@@ -1,101 +1,121 @@
-(function() {
+(function () {
   'use strict';
 
-  function GraphView(canvas, options) {
+  function GraphView(canvas, _options) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     this._nodes = [];
     this._edges = [];
-    this._currentStep = 0;
-    this._allSteps = options.steps || [];
-    this._renderStep = options.onStepRender || null;
     this._resize();
   }
 
-  GraphView.prototype._resize = function() {
+  GraphView.prototype._resize = function () {
     var rect = this.canvas.parentElement.getBoundingClientRect();
-    this.canvas.width = rect.width;
-    this.canvas.height = rect.height || 400;
-    this._w = this.canvas.width;
-    this._h = this.canvas.height;
+    var dpr = window.devicePixelRatio || 1;
+    this.canvas.width = rect.width * dpr;
+    this.canvas.height = (rect.height || 400) * dpr;
+    this._w = rect.width;
+    this._h = rect.height || 400;
+    this._dpr = dpr;
   };
 
-  GraphView.prototype.setGraph = function(data) {
+  GraphView.prototype.setGraph = function (data) {
     this._nodes = data.nodes || [];
     this._edges = data.edges || [];
     this.draw();
   };
 
-  GraphView.prototype.setStep = function(step) {
+  GraphView.prototype.setStep = function (step) {
     this._currentStep = step;
     this.draw();
   };
 
-  GraphView.prototype.draw = function() {
-    var ctx = this.ctx, w = this._w, h = this._h;
+  GraphView.prototype.draw = function () {
+    var ctx = this.ctx, w = this._w, h = this._h, dpr = this._dpr || 1;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
 
-    var visibleNodes = this._nodes.filter(function(n) { return n.step <= this._currentStep; }.bind(this));
-    if (visibleNodes.length === 0) {
-      ctx.fillStyle = '#888';
-      ctx.font = '14px sans-serif';
+    if (this._nodes.length === 0) {
+      var style = getComputedStyle(document.documentElement);
+      var muted = style.getPropertyValue('--text-muted').trim() || '#888';
+      ctx.fillStyle = muted;
+      ctx.font = '12px "SF Mono","Fira Code",monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('Scrub forward to build the graph', w / 2, h / 2);
+      ctx.textBaseline = 'middle';
+      ctx.fillText('No graph data — train and register a model first', w / 2, h / 2);
       return;
     }
 
     var style = getComputedStyle(document.documentElement);
     var accent = style.getPropertyValue('--accent').trim() || '#3b82f6';
     var muted = style.getPropertyValue('--text-muted').trim() || '#888';
-    var border = style.getPropertyValue('--border').trim() || '#333';
+    var surface = style.getPropertyValue('--surface').trim() || '#181a1f';
 
+    /* Group nodes by depth */
     var layers = {};
-    visibleNodes.forEach(function(n) {
-      var depth = n.depth || 0;
+    this._nodes.forEach(function (n) {
+      var depth = n.depth !== undefined ? n.depth : 0;
       if (!layers[depth]) layers[depth] = [];
       layers[depth].push(n);
     });
 
-    var keys = Object.keys(layers).sort();
+    var keys = Object.keys(layers).sort(function (a, b) { return parseInt(a) - parseInt(b); });
     var nodeW = 100, nodeH = 30;
-    keys.forEach(function(d) {
+
+    /* Store node positions for edge drawing */
+    var nodePositions = {};
+
+    keys.forEach(function (d) {
       var nodes = layers[d];
-      var totalH = nodes.length * (nodeH + 10);
-      var startY = (h - totalH) / 2 + nodeH / 2;
-      var x = parseInt(d) * 140 + 30;
-      nodes.forEach(function(n, i) {
-        var y = startY + i * (nodeH + 10);
-        ctx.fillStyle = border;
+      var depth = parseInt(d);
+      var totalH = nodes.length * (nodeH + 12) - 12;
+      var startY = Math.max(nodeH / 2, (h - totalH) / 2);
+      var x = depth * 150 + 40;
+      nodes.forEach(function (n, i) {
+        var y = startY + i * (nodeH + 12);
+        nodePositions[n.id] = { x: x, y: y, depth: depth };
+
+        /* Node rect */
+        ctx.fillStyle = surface;
         ctx.strokeStyle = accent;
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.roundRect(x - nodeW / 2, y - nodeH / 2, nodeW, nodeH, 4);
+        ctx.roundRect(x - nodeW / 2, y - nodeH / 2, nodeW, nodeH, 6);
         ctx.fill();
         ctx.stroke();
+
+        /* Node label */
         ctx.fillStyle = accent;
-        ctx.font = '11px "SF Mono", monospace';
+        ctx.font = '10px "SF Mono","Fira Code",monospace';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(n.label || n.op || '?', x, y);
+
+        /* Value display */
+        if (n.value !== undefined && n.value !== null) {
+          ctx.fillStyle = muted;
+          ctx.font = '8px "SF Mono","Fira Code",monospace';
+          ctx.textBaseline = 'top';
+          var valStr = typeof n.value === 'number' ? n.value.toFixed(4) : String(n.value);
+          ctx.fillText(valStr, x, y + nodeH / 2 + 2);
+        }
       });
     });
 
-    var visibleEdgeNodes = {};
-    visibleNodes.forEach(function(n) { visibleEdgeNodes[n.id] = true; });
-    this._edges.forEach(function(e) {
-      if (!visibleEdgeNodes[e.from] || !visibleEdgeNodes[e.to]) return;
-      var fromNode = this._nodes.find(function(n) { return n.id === e.from; });
-      var toNode = this._nodes.find(function(n) { return n.id === e.to; });
-      if (!fromNode || !toNode) return;
-      var fromDepth = fromNode.depth || 0;
-      var toDepth = toNode.depth || 0;
-      ctx.strokeStyle = muted;
-      ctx.lineWidth = 1;
+    /* Draw edges */
+    ctx.strokeStyle = muted;
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.4;
+    this._edges.forEach(function (e) {
+      var fromPos = nodePositions[e.from];
+      var toPos = nodePositions[e.to];
+      if (!fromPos || !toPos) return;
       ctx.beginPath();
-      ctx.moveTo(fromDepth * 140 + 30 + nodeW / 2, fromNode._y || 0);
-      ctx.lineTo(toDepth * 140 + 30 - nodeW / 2, toNode._y || 0);
+      ctx.moveTo(fromPos.x + nodeW / 2, fromPos.y);
+      ctx.lineTo(toPos.x - nodeW / 2, toPos.y);
       ctx.stroke();
-    }.bind(this));
+    });
+    ctx.globalAlpha = 1;
   };
 
   window.GraphView = GraphView;

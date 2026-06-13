@@ -51,6 +51,16 @@
   }
 
   function initStatusBar() {
+    var startTime = Date.now();
+
+    function formatUptime(ms) {
+      var total = Math.floor(ms / 1000);
+      var h = Math.floor(total / 3600);
+      var m = Math.floor((total % 3600) / 60);
+      var s = total % 60;
+      return h + 'h ' + m + 'm ' + s + 's';
+    }
+
     function fetchStats() {
       fetch('/v1/registry/models').then(function(r) { return r.json(); }).then(function(d) {
         var el = document.getElementById('status-models');
@@ -64,6 +74,8 @@
         var el = document.getElementById('status-datasets');
         if (el) el.textContent = 'datasets: ' + (d.datasets ? d.datasets.length : 0);
       }).catch(function() {});
+      var uptimeEl = document.getElementById('status-uptime');
+      if (uptimeEl) uptimeEl.textContent = formatUptime(Date.now() - startTime);
     }
     fetchStats();
     setInterval(fetchStats, 15000);
