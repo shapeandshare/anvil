@@ -19,8 +19,23 @@
     </form>
     <div class="telemetry" id="upload-status" style="min-height:24px;margin-top:4px;max-height:40px;">Ready.</div>
 
+    <div class="prompt-line" style="margin-bottom:4px;margin-top:12px;">
+      <span class="prompt-symbol">$</span>
+      <span class="prompt-label">dataset create --name --description</span>
+    </div>
+    <div id="create-dataset-form" style="padding-left:16px;display:flex;flex-wrap:wrap;gap:4px;align-items:center;">
+      <input type="text" class="terminal-input" id="new-dataset-name" placeholder="name" style="width:140px;">
+      <input type="text" class="terminal-input" id="new-dataset-description" placeholder="description (optional)" style="width:260px;">
+      <button class="terminal-btn" id="create-dataset-btn"><span class="btn-prefix">$</span> create</button>
+    </div>
+    <div class="telemetry" id="create-status" style="min-height:24px;margin-top:4px;max-height:40px;">Ready.</div>
+
     <div style="margin-top:12px;">
-      <span class="terminal-sep">── datasets ──────────────────────────────────────</span>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span class="terminal-sep" style="margin:0;flex:1;">── datasets ──────────────────────────────────────</span>
+        <input type="text" class="terminal-input" id="dataset-search" placeholder="filter..." style="width:130px;font-size:0.72rem;">
+        <button class="terminal-btn" id="search-btn" style="font-size:0.72rem;padding:2px 10px;"><span class="btn-prefix">$</span> filter</button>
+      </div>
       <div id="dataset-list"><span style="color:var(--text-dim);font-size:0.78rem;">Loading...</span></div>
     </div>
 
@@ -74,27 +89,116 @@
 
 <script>
 (function() {
+
+  /* ── helpers ────────────────────────────────────────── */
+
+  function extractDatasets(data) {
+    if (data && data.data && Array.isArray(data.data.datasets)) return data.data.datasets;
+    if (data && Array.isArray(data.datasets)) return data.datasets;
+    return [];
+  }
+
+  function formatBytes(b) {
+    if (b == null) return '?';
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+    return (b / 1048576).toFixed(1) + ' MB';
+  }
+
+  function escHtml(s) {
+    if (s == null) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function statusBadge(status) {
+    if (!status) return '<span class="badge badge-cyan">unknown</span>';
+    var cls = 'badge-cyan';
+    if (status === 'ready' || status === 'completed') cls = 'badge-green';
+    else if (status === 'error' || status === 'failed') cls = 'badge-red';
+    else if (status === 'ingesting' || status === 'processing') cls = 'badge-yellow';
+    return '<span class="badge ' + cls + '">' + status + '</span>';
+  }
+
+  var currentQuery = '';
+
+  function showToast(msg, type) {
+    var container = document.getElementById('toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'toast-container';
+      container.className = 'toast-container';
+      document.body.appendChild(container);
+    }
+    var toast = document.createElement('div');
+    toast.className = 'toast toast-' + (type || 'info');
+    toast.textContent = msg;
+    container.appendChild(toast);
+    setTimeout(function() {
+      toast.style.opacity = '0';
+      toast.style.transition = 'opacity 0.3s ease';
+      setTimeout(function() { toast.remove(); }, 300);
+    }, 3000);
+  }
+
+  /* ── load datasets ──────────────────────────────────── */
+
   window.loadDatasets = async function loadDatasets() {
-    var resp = await fetch('/v1/datasets');
+    var url = '/v1/datasets';
+    if (currentQuery) url += '?q=' + encodeURIComponent(currentQuery);
+    var resp = await fetch(url);
     var data = await resp.json();
+    var datasets = extractDatasets(data);
     var list = document.getElementById('dataset-list');
-    if (data.datasets.length === 0) {
-      list.innerHTML = '<span style="color:var(--text-dim);font-size:0.78rem;">No datasets uploaded yet.</span>';
+
+    if (datasets.length === 0) {
+      list.innerHTML = '<span style="color:var(--text-dim);font-size:0.78rem;">No datasets'
+        + (currentQuery ? ' matching &quot;' + escHtml(currentQuery) + '&quot;' : ' uploaded yet')
+        + '.</span>';
       return;
     }
-    list.innerHTML = data.datasets.map(function(d) {
-      var size = d.document_count != null ? String(d.document_count) : '?';
-      var vocab = d.vocabulary_size != null ? String(d.vocabulary_size) : '?';
-      var date = d.created_at || '????-??-??';
-      return '<div class="ls-line">' +
-        '<span class="ls-perms">-rw-r--r--</span>' +
-        '<span class="ls-size">' + size + '</span>' +
-        '<span class="ls-date">' + date + '</span>' +
-        '<span class="ls-name">' + d.name + '</span>' +
-        '<span style="color:var(--text-dim);font-size:0.72rem;">[' + vocab + ' unique chars]</span>' +
-        '</div>';
-    }).join('');
+
+    var html = '<div style="overflow-x:auto;"><table class="terminal-table">'
+      + '<thead><tr>'
+      + '<th>Name</th><th>Description</th><th style="text-align:right;">Samples</th>'
+      + '<th style="text-align:right;">Size</th><th>Status</th>'
+      + '<th style="text-align:center;">Cur.</th><th style="text-align:right;">Actions</th>'
+      + '</tr></thead><tbody>';
+
+    datasets.forEach(function(d) {
+      var nameEsc = escHtml(d.name);
+      var descEsc = escHtml(d.description);
+      var sampleCount = d.sample_count != null ? d.sample_count : '?';
+      var sizeStr = formatBytes(d.total_size_bytes);
+      var badge = statusBadge(d.status);
+      var curVer = d.curation_version != null ? d.curation_version : '-';
+
+      html += '<tr data-id="' + d.id + '">'
+        + '<td><span class="ls-name edit-target" data-field="name">' + nameEsc + '</span></td>'
+        + '<td><span class="edit-target" data-field="description" style="color:var(--text-dim);font-size:0.75rem;">' + (d.description ? descEsc : '-') + '</span></td>'
+        + '<td style="text-align:right;color:var(--info);">' + sampleCount + '</td>'
+        + '<td style="text-align:right;color:var(--text-dim);">' + sizeStr + '</td>'
+        + '<td>' + badge + '</td>'
+        + '<td style="text-align:center;color:var(--text-dim);">' + curVer + '</td>'
+        + '<td style="text-align:right;white-space:nowrap;">'
+        + '<div class="htop-actions">'
+        + '<button class="terminal-btn edit-btn" data-id="' + d.id + '" style="font-size:0.68rem;padding:1px 6px;"><span class="btn-prefix">$</span> edit</button>'
+        + '<button class="terminal-btn curate-btn" data-id="' + d.id + '" title="Open dataset curation" style="font-size:0.68rem;padding:1px 6px;"><span class="btn-prefix">$</span> curate</button>'
+        + '<button class="terminal-btn del-dataset-btn" data-id="' + d.id + '" data-name="' + nameEsc + '" style="font-size:0.68rem;padding:1px 6px;color:var(--accent-red);"><span class="btn-prefix">$</span> rm</button>'
+        + '</div>'
+        + '<div class="inline-edit-form" style="display:none;margin-top:4px;gap:4px;flex-wrap:wrap;align-items:center;">'
+        + '<input type="text" class="terminal-input ie-name" placeholder="name" style="width:130px;font-size:0.72rem;" value="' + nameEsc + '">'
+        + '<input type="text" class="terminal-input ie-desc" placeholder="description" style="width:200px;font-size:0.72rem;" value="' + (d.description ? descEsc : '') + '">'
+        + '<button class="terminal-btn ie-save" style="font-size:0.68rem;padding:1px 8px;"><span class="btn-prefix">$</span> save</button>'
+        + '<button class="terminal-btn ie-cancel" style="font-size:0.68rem;padding:1px 8px;"><span class="btn-prefix">$</span> cancel</button>'
+        + '</div></td>'
+        + '</tr>';
+    });
+
+    html += '</tbody></table></div>';
+    list.innerHTML = html;
   };
+
+  /* ── load corpora ───────────────────────────────────── */
 
   window.loadCorpora = async function loadCorpora() {
     var resp = await fetch('/v1/corpora');
@@ -119,19 +223,104 @@
     }).join('');
   };
 
+  /* ── event delegation ───────────────────────────────── */
+
   document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('ingest-btn')) {
-      var id = e.target.getAttribute('data-id');
-      e.target.textContent = '> ingesting...';
+
+    /* ingest corpus */
+    if (e.target.classList.contains('ingest-btn') || (e.target.closest && e.target.closest('.ingest-btn'))) {
+      var btn = e.target.classList.contains('ingest-btn') ? e.target : e.target.closest('.ingest-btn');
+      var id = btn.getAttribute('data-id');
+      btn.textContent = '> ingesting...';
       fetch('/v1/corpora/' + id + '/ingest', { method: 'POST' }).then(function(r) { return r.json(); }).then(function() {
         loadCorpora();
       }).catch(function() { loadCorpora(); });
     }
-    if (e.target.classList.contains('del-btn')) {
-      var id = e.target.getAttribute('data-id');
+
+    /* delete corpus */
+    if (e.target.classList.contains('del-btn') || (e.target.closest && e.target.closest('.del-btn'))) {
+      var btn = e.target.classList.contains('del-btn') ? e.target : e.target.closest('.del-btn');
+      var id = btn.getAttribute('data-id');
       fetch('/v1/corpora/' + id, { method: 'DELETE' }).then(function() { loadCorpora(); });
     }
+
+    /* ── show inline edit ── */
+    if (e.target.closest && e.target.closest('.edit-btn')) {
+      var btn = e.target.closest('.edit-btn');
+      var tr = btn.closest('tr');
+      var form = tr.querySelector('.inline-edit-form');
+      form.style.display = 'flex';
+      btn.style.display = 'none';
+    }
+
+    /* ── cancel inline edit ── */
+    if (e.target.closest && e.target.closest('.ie-cancel')) {
+      var btn = e.target.closest('.ie-cancel');
+      var tr = btn.closest('tr');
+      var form = tr.querySelector('.inline-edit-form');
+      form.style.display = 'none';
+      tr.querySelector('.edit-btn').style.display = '';
+    }
+
+    /* ── save inline edit (PUT) ── */
+    if (e.target.closest && e.target.closest('.ie-save')) {
+      var btn = e.target.closest('.ie-save');
+      var tr = btn.closest('tr');
+      var id = tr.getAttribute('data-id');
+      var name = tr.querySelector('.ie-name').value.trim();
+      var desc = tr.querySelector('.ie-desc').value.trim();
+      if (!name) { showToast('Name is required.', 'error'); return; }
+      fetch('/v1/datasets/' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name, description: desc || null })
+      })
+      .then(function(r) {
+        if (!r.ok) return r.json().then(function(d) { throw new Error(d.detail || 'Update failed'); });
+        return r.json();
+      })
+      .then(function() {
+        showToast('Dataset updated', 'success');
+        loadDatasets();
+      })
+      .catch(function(err) {
+        showToast(err.message, 'error');
+        loadDatasets();
+      });
+    }
+
+    /* ── curate button → navigate ── */
+    if (e.target.closest && e.target.closest('.curate-btn')) {
+      var btn = e.target.closest('.curate-btn');
+      var id = btn.getAttribute('data-id');
+      window.location.href = '/v1/datasets/' + id + '/curate';
+    }
+
+    /* ── delete dataset (with confirmation) ── */
+    if (e.target.closest && e.target.closest('.del-dataset-btn')) {
+      var btn = e.target.closest('.del-dataset-btn');
+      var id = btn.getAttribute('data-id');
+      var name = btn.getAttribute('data-name');
+      if (!confirm('Delete dataset "' + name + '"? This cannot be undone.')) return;
+      fetch('/v1/datasets/' + id, { method: 'DELETE' })
+      .then(function(r) {
+        if (r.status === 409) throw new Error('Blocked: dataset is referenced by one or more training configs.');
+        if (!r.ok) return r.json().then(function(d) { throw new Error(d.detail || 'Delete failed'); });
+        return r.json();
+      })
+      .then(function() {
+        showToast('Dataset deleted', 'success');
+        loadDatasets();
+      })
+      .catch(function(err) {
+        showToast(err.message, 'error');
+        loadDatasets();
+      });
+    }
+
   });
+
+  /* ── upload form ────────────────────────────────────── */
 
   document.getElementById('upload-form').addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -154,6 +343,45 @@
     }
   });
 
+  /* ── create dataset (POST) ──────────────────────────── */
+
+  document.getElementById('create-dataset-btn').addEventListener('click', async function() {
+    var name = document.getElementById('new-dataset-name').value.trim();
+    var desc = document.getElementById('new-dataset-description').value.trim();
+    var status = document.getElementById('create-status');
+    if (!name) { status.textContent = '! Name is required.'; return; }
+    status.textContent = '> creating...';
+    try {
+      var resp = await fetch('/v1/datasets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name, description: desc || null })
+      });
+      var data = await resp.json();
+      if (!resp.ok) throw new Error(data.detail || 'Create failed');
+      status.textContent = '> created dataset "' + name + '"';
+      document.getElementById('new-dataset-name').value = '';
+      document.getElementById('new-dataset-description').value = '';
+      loadDatasets();
+    } catch (err) {
+      status.textContent = '! ' + err.message;
+    }
+  });
+
+  /* ── search / filter ────────────────────────────────── */
+
+  function doSearch() {
+    currentQuery = document.getElementById('dataset-search').value.trim();
+    loadDatasets();
+  }
+
+  document.getElementById('search-btn').addEventListener('click', doSearch);
+  document.getElementById('dataset-search').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') doSearch();
+  });
+
+  /* ── corpus create ──────────────────────────────────── */
+
   document.getElementById('corpus-create-btn').addEventListener('click', async function() {
     var name = document.getElementById('corpus-name').value;
     var root = document.getElementById('corpus-root').value;
@@ -174,6 +402,8 @@
     } catch (err) { status.textContent = '! ' + err.message; }
   });
 
+  /* ── initial load ───────────────────────────────────── */
+
   loadDatasets();
   loadCorpora();
 
@@ -185,6 +415,7 @@
   document.getElementById('corpus-strategy').addEventListener('change', function() {
     document.getElementById('strategy-desc').textContent = strategyDescriptions[this.value] || '';
   });
+
 })();
 </script>
 {% endblock %}

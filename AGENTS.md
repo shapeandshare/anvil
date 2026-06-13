@@ -1,6 +1,6 @@
 # microgpt-workbench — Agent Guidelines
 
-**Last updated**: 2026-06-11
+**Last updated**: 2026-06-12
 
 ## Project Overview
 
@@ -71,6 +71,8 @@ microgpt/          # Python package (implicit namespace)
 - SQLite via async SQLAlchemy for corpus metadata; filesystem via existing `LocalFileStore` or reference to original directory paths (002-directory-corpus-ingestion)
 - FastAPI, SQLAlchemy (async), MLflow, Jinja2, pytest (all existing — no new deps) (002-model-registry-tracking)
 - SQLite (async SQLAlchemy) for metadata, local filesystem (`data/models/`) for model artifacts (002-model-registry-tracking)
+- Python 3.11+ + FastAPI, SQLAlchemy (async), aiofiles, pathspec (all existing) (003-dataset-curation)
+- SQLite via async SQLAlchemy (metadata); local filesystem via existing `LocalFileStore` (sample content, curation artifacts) (003-dataset-curation)
 
 ## Recent Changes
 - 002-directory-corpus-ingestion: Added Python 3.11+ + Existing project deps (FastAPI, SQLAlchemy, aiofiles) + `pathspec` (lightweight gitignore pattern matching, pure Python, no binary deps)

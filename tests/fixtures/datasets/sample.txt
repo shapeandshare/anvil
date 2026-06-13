@@ -1,0 +1,6 @@
+hello world
+this is a test
+third line of sample data
+line with special chars: !@#$%^&*()
+short
+A longer line that exceeds fifty characters to test length filtering properly

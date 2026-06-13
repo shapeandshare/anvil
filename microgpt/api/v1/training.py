@@ -40,6 +40,8 @@ async def start_training(config: dict):
     mlflow_run = _get_mlflow_client().create_run(exp_id)
     mlflow_run_id = mlflow_run.info.run_id
 
+    dataset_id = config.get("dataset_id")
+    corpus_id = config.get("corpus_id")
     hyperparams = {
         "n_layer": config.get("n_layer", 1),
         "n_embd": config.get("n_embd", 16),
@@ -50,7 +52,8 @@ async def start_training(config: dict):
         "beta1": config.get("beta1", 0.85),
         "beta2": config.get("beta2", 0.99),
         "temperature": config.get("temperature", 0.5),
-        "corpus_id": config.get("corpus_id"),
+        "corpus_id": corpus_id,
+        "dataset_id": dataset_id,
     }
     _get_mlflow_client().log_batch(
         run_id=mlflow_run_id,
@@ -83,7 +86,7 @@ async def start_training(config: dict):
         from microgpt.db.models.training_config import Experiment, TrainingConfig
 
         async with AsyncSessionLocal() as session:
-            training_config = TrainingConfig(**hyperparams)
+            training_config = TrainingConfig(**{k: v for k, v in hyperparams.items() if v is not None or k not in ("corpus_id", "dataset_id")})
             session.add(training_config)
             await session.flush()
             await session.refresh(training_config)

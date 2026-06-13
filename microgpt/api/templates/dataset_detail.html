@@ -1,0 +1,550 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="panel" id="dataset-info-bar">
+  <div class="panel-titlebar">████████[ DATASET DETAIL ]███████████████████████</div>
+  <div class="panel-body" id="dataset-info">
+    <span style="color:var(--text-dim);font-size:0.78rem;">Loading dataset...</span>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-titlebar">▌ SAMPLE BROWSER</div>
+  <div class="panel-body">
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
+      <span class="prompt-symbol">$</span>
+      <span class="prompt-label">search</span>
+      <input type="text" class="terminal-input" id="sample-search" placeholder="filter samples..." style="min-width:200px;">
+      <button class="terminal-btn" id="search-btn"><span class="btn-prefix">$</span> grep</button>
+      <span style="color:var(--text-dim);font-size:0.72rem;margin-left:8px;" id="sample-count-label"></span>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="terminal-table" id="samples-table" style="font-size:0.72rem;">
+        <thead>
+          <tr>
+            <th style="width:50px;">#</th>
+            <th>Text Preview</th>
+            <th style="width:70px;">Length</th>
+            <th style="width:140px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="samples-body">
+          <tr><td colspan="4"><span style="color:var(--text-dim);font-size:0.78rem;">Loading samples...</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:8px;justify-content:space-between;flex-wrap:wrap;">
+      <div style="display:flex;gap:4px;">
+        <button class="terminal-btn btn-action" id="prev-page-btn"><span class="btn-prefix">$</span> prev</button>
+        <button class="terminal-btn btn-action" id="next-page-btn"><span class="btn-prefix">$</span> next</button>
+      </div>
+      <span style="color:var(--text-dim);font-size:0.68rem;" id="pagination-info"></span>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-titlebar">▌ CURATION TOOLBAR</div>
+  <div class="panel-body">
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+      <div>
+        <div class="prompt-line" style="margin-bottom:4px;">
+          <span class="prompt-symbol">$</span>
+          <span class="prompt-label">deduplicate</span>
+        </div>
+        <button class="terminal-btn" id="dedup-btn"><span class="btn-prefix">$</span> dedup</button>
+      </div>
+      <div>
+        <div class="prompt-line" style="margin-bottom:4px;">
+          <span class="prompt-symbol">$</span>
+          <span class="prompt-label">length filter</span>
+        </div>
+        <div style="display:flex;gap:4px;align-items:center;">
+          <input type="number" class="terminal-input" id="filter-min" placeholder="min" style="width:70px;">
+          <span style="color:var(--text-dim);">-</span>
+          <input type="number" class="terminal-input" id="filter-max" placeholder="max" style="width:70px;">
+          <button class="terminal-btn" id="filter-btn"><span class="btn-prefix">$</span> filter</button>
+        </div>
+      </div>
+      <div>
+        <div class="prompt-line" style="margin-bottom:4px;">
+          <span class="prompt-symbol">$</span>
+          <span class="prompt-label">regex replace</span>
+        </div>
+        <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
+          <input type="text" class="terminal-input" id="regex-pattern" placeholder="pattern" style="width:120px;">
+          <input type="text" class="terminal-input" id="regex-replacement" placeholder="replacement" style="width:120px;">
+          <label style="display:flex;align-items:center;gap:3px;font-size:0.68rem;color:var(--text-dim);cursor:pointer;">
+            <input type="checkbox" id="regex-casesensitive" style="accent-color:var(--primary);"> cs
+          </label>
+          <button class="terminal-btn" id="regex-btn"><span class="btn-prefix">$</span> replace</button>
+        </div>
+      </div>
+    </div>
+    <div class="telemetry" id="curation-result" style="margin-top:8px;min-height:24px;max-height:40px;padding:6px 10px;">Ready.</div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-titlebar">▌ QUALITY METRICS</div>
+  <div class="panel-body" id="metrics-panel">
+    <span style="color:var(--text-dim);font-size:0.78rem;">Loading metrics...</span>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-titlebar">▌ EXPORT</div>
+  <div class="panel-body">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <span class="prompt-symbol">$</span>
+      <span class="prompt-label">export format=</span>
+      <select class="terminal-input" id="export-format" style="width:100px;">
+        <option value="txt">TXT</option>
+        <option value="csv">CSV</option>
+        <option value="jsonl">JSONL</option>
+      </select>
+      <button class="terminal-btn" id="export-btn"><span class="btn-prefix">$</span> download</button>
+      <span style="color:var(--text-dim);font-size:0.72rem;" id="export-status"></span>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-titlebar">▌ OPERATION HISTORY</div>
+  <div class="panel-body" id="history-panel">
+    <span style="color:var(--text-dim);font-size:0.78rem;">Loading operation history...</span>
+  </div>
+</div>
+
+<script>
+(function() {
+  var DATASET_ID = {{ dataset_id }};
+  var SAMPLE_OFFSET = 0;
+  var SAMPLE_LIMIT = 50;
+  var SAMPLE_TOTAL = 0;
+  var SEARCH_QUERY = '';
+
+  var infoEl = document.getElementById('dataset-info');
+  var samplesBody = document.getElementById('samples-body');
+  var paginationInfo = document.getElementById('pagination-info');
+  var sampleCountLabel = document.getElementById('sample-count-label');
+  var metricsPanel = document.getElementById('metrics-panel');
+  var historyPanel = document.getElementById('history-panel');
+  var curationResult = document.getElementById('curation-result');
+  var searchInput = document.getElementById('sample-search');
+  var prevBtn = document.getElementById('prev-page-btn');
+  var nextBtn = document.getElementById('next-page-btn');
+
+  function apiUrl(path) {
+    return '/v1/datasets/' + DATASET_ID + path;
+  }
+
+  function apiFetch(url, options) {
+    return fetch(url, options || {}).then(function(r) { return r.json(); });
+  }
+
+  function toast(msg, type) {
+    type = type || 'info';
+    var container = document.querySelector('.toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.className = 'toast-container';
+      document.body.appendChild(container);
+    }
+    var el = document.createElement('div');
+    el.className = 'toast toast-' + type;
+    el.textContent = msg;
+    container.appendChild(el);
+    setTimeout(function() { el.remove(); }, 4000);
+  }
+
+  function escHtml(s) {
+    if (s == null) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function buildQueryString(params) {
+    var parts = [];
+    for (var k in params) {
+      if (params[k] !== null && params[k] !== undefined && params[k] !== '') {
+        parts.push(encodeURIComponent(k) + '=' + encodeURIComponent(params[k]));
+      }
+    }
+    return parts.length ? '?' + parts.join('&') : '';
+  }
+
+  // ── Section 1: Dataset Info ──────────────────────────
+  function loadDatasetInfo() {
+    apiFetch(apiUrl('')).then(function(resp) {
+      if (resp.error) {
+        infoEl.innerHTML = '<span style="color:var(--accent-red);">Error: ' + escHtml(resp.error) + '</span>';
+        return;
+      }
+      var d = resp.data || resp;
+      var html = '<div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;">';
+      html += '<a href="/v1/datasets-page" style="font-size:0.72rem;color:var(--accent-cyan);">← back to datasets</a>';
+      html += '<div class="info-grid" style="margin:0;">';
+      html += '<span class="info-key">Name</span><span class="info-val" style="color:var(--accent-green);font-weight:bold;">' + escHtml(d.name) + '</span>';
+      html += '<span class="info-key">Status</span><span class="info-val"><span class="badge badge-' + (d.status === 'ready' ? 'green' : 'yellow') + '">' + escHtml(d.status || 'unknown') + '</span></span>';
+      html += '<span class="info-key">Samples</span><span class="info-val">' + (d.sample_count != null ? d.sample_count : '?') + '</span>';
+      html += '<span class="info-key">Curation Ver</span><span class="info-val">' + (d.curation_version != null ? 'v' + d.curation_version : '-') + '</span>';
+      if (d.created_at) {
+        html += '<span class="info-key">Created</span><span class="info-val">' + escHtml(d.created_at) + '</span>';
+      }
+      html += '</div></div>';
+      infoEl.innerHTML = html;
+    }).catch(function(err) {
+      infoEl.innerHTML = '<span style="color:var(--accent-red);">Failed to load dataset: ' + escHtml(err.message) + '</span>';
+    });
+  }
+
+  // ── Section 2: Sample Browser ────────────────────────
+  function loadSamples(offset) {
+    if (offset == null) offset = SAMPLE_OFFSET;
+    var params = { offset: offset, limit: SAMPLE_LIMIT };
+    if (SEARCH_QUERY) params.search = SEARCH_QUERY;
+    apiFetch(apiUrl('/samples' + buildQueryString(params))).then(function(resp) {
+      if (resp.error) {
+        samplesBody.innerHTML = '<tr><td colspan="4"><span style="color:var(--accent-red);">Error: ' + escHtml(resp.error) + '</span></td></tr>';
+        return;
+      }
+      var data = resp.data;
+      var samples = data.samples || [];
+      SAMPLE_TOTAL = data.total || 0;
+      SAMPLE_OFFSET = data.offset || 0;
+
+      if (samples.length === 0) {
+        samplesBody.innerHTML = '<tr><td colspan="4"><span style="color:var(--text-dim);font-size:0.78rem;">No samples found.</span></td></tr>';
+      } else {
+        samplesBody.innerHTML = samples.map(function(s) {
+          var preview = escHtml((s.text_preview || '').slice(0, 200));
+          var editBtn = '<button class="terminal-btn btn-action edit-btn" data-id="' + s.id + '" style="color:var(--accent-cyan);"><span class="btn-prefix">$</span> edit</button>';
+          var delBtn = '<button class="terminal-btn btn-action del-btn" data-id="' + s.id + '" style="color:var(--accent-red);"><span class="btn-prefix">$</span> rm</button>';
+          return '<tr data-sample-id="' + s.id + '">' +
+            '<td style="color:var(--text-dim);">' + s.index + '</td>' +
+            '<td><span class="sample-text" data-id="' + s.id + '">' + preview + '</span></td>' +
+            '<td style="color:var(--info);">' + s.length + '</td>' +
+            '<td>' + editBtn + delBtn + '</td>' +
+            '</tr>';
+        }).join('');
+      }
+
+      var pageStart = SAMPLE_OFFSET + 1;
+      var pageEnd = Math.min(SAMPLE_OFFSET + samples.length, SAMPLE_TOTAL);
+      paginationInfo.textContent = 'Showing ' + pageStart + '–' + pageEnd + ' of ' + SAMPLE_TOTAL;
+      sampleCountLabel.textContent = SAMPLE_TOTAL + ' samples' + (SEARCH_QUERY ? ' (filtered)' : '');
+      prevBtn.disabled = SAMPLE_OFFSET <= 0;
+      nextBtn.disabled = (SAMPLE_OFFSET + samples.length) >= SAMPLE_TOTAL;
+    }).catch(function(err) {
+      samplesBody.innerHTML = '<tr><td colspan="4"><span style="color:var(--accent-red);">Failed to load: ' + escHtml(err.message) + '</span></td></tr>';
+    });
+  }
+
+  function prevPage() {
+    if (SAMPLE_OFFSET > 0) {
+      loadSamples(Math.max(0, SAMPLE_OFFSET - SAMPLE_LIMIT));
+    }
+  }
+
+  function nextPage() {
+    loadSamples(SAMPLE_OFFSET + SAMPLE_LIMIT);
+  }
+
+  // ── Edit sample inline ───────────────────────────────
+  function enableEdit(sampleId) {
+    var row = document.querySelector('tr[data-sample-id="' + sampleId + '"]');
+    if (!row) return;
+    var textCell = row.querySelector('.sample-text');
+    if (!textCell) return;
+    var currentText = textCell.textContent;
+    textCell.innerHTML = '<textarea class="terminal-input" style="width:100%;min-height:40px;font-size:0.72rem;" id="edit-textarea-' + sampleId + '">' + escHtml(currentText) + '</textarea>' +
+      '<div style="display:flex;gap:4px;margin-top:4px;">' +
+      '<button class="terminal-btn btn-action save-edit-btn" data-id="' + sampleId + '" style="color:var(--success);"><span class="btn-prefix">$</span> save</button>' +
+      '<button class="terminal-btn btn-action cancel-edit-btn" data-id="' + sampleId + '" style="color:var(--text-dim);"><span class="btn-prefix">$</span> cancel</button>' +
+      '</div>';
+    var editBtns = row.querySelectorAll('.edit-btn, .del-btn');
+    editBtns.forEach(function(b) { b.disabled = true; });
+  }
+
+  function cancelEdit(sampleId) {
+    loadSamples(SAMPLE_OFFSET);
+  }
+
+  function saveEdit(sampleId) {
+    var ta = document.getElementById('edit-textarea-' + sampleId);
+    if (!ta) return;
+    var newText = ta.value;
+    apiFetch(apiUrl('/samples/' + sampleId), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: newText })
+    }).then(function(resp) {
+      if (resp.error) {
+        toast('Edit failed: ' + resp.error, 'error');
+        return;
+      }
+      toast('Sample updated', 'success');
+      loadSamples(SAMPLE_OFFSET);
+    }).catch(function(err) {
+      toast('Edit failed: ' + err.message, 'error');
+    });
+  }
+
+  function deleteSample(sampleId) {
+    if (!confirm('Delete sample #' + sampleId + '? This cannot be undone.')) return;
+    apiFetch(apiUrl('/samples/' + sampleId), { method: 'DELETE' }).then(function(resp) {
+      if (resp.error) {
+        toast('Delete failed: ' + resp.error, 'error');
+        return;
+      }
+      toast('Sample deleted', 'success');
+      loadSamples(SAMPLE_OFFSET);
+    }).catch(function(err) {
+      toast('Delete failed: ' + err.message, 'error');
+    });
+  }
+
+  // ── Section 3: Curation Toolbar ──────────────────────
+  function setCurationResult(msg, isError) {
+    curationResult.textContent = msg;
+    curationResult.style.color = isError ? 'var(--accent-red)' : 'var(--success)';
+  }
+
+  function runDedup() {
+    setCurationResult('> deduplicating...', false);
+    apiFetch(apiUrl('/curate/dedup'), { method: 'POST' }).then(function(resp) {
+      if (resp.error) {
+        setCurationResult('! ' + resp.error, true);
+        return;
+      }
+      var r = resp.data;
+      setCurationResult('> dedup complete: ' + r.samples_removed + ' removed (' + r.samples_before + ' → ' + r.samples_after + ' samples)', false);
+      toast('Dedup: ' + r.samples_removed + ' samples removed', 'success');
+      refreshAll();
+    }).catch(function(err) {
+      setCurationResult('! Dedup failed: ' + err.message, true);
+    });
+  }
+
+  function runLengthFilter() {
+    var minVal = document.getElementById('filter-min').value;
+    var maxVal = document.getElementById('filter-max').value;
+    if (!minVal && !maxVal) {
+      setCurationResult('! Enter at least min or max value', true);
+      return;
+    }
+    var body = {};
+    if (minVal) body.min_length = parseInt(minVal, 10);
+    if (maxVal) body.max_length = parseInt(maxVal, 10);
+    setCurationResult('> filtering by length...', false);
+    apiFetch(apiUrl('/curate/filter'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }).then(function(resp) {
+      if (resp.error) {
+        setCurationResult('! ' + resp.error, true);
+        return;
+      }
+      var r = resp.data;
+      setCurationResult('> length filter complete: ' + r.samples_removed + ' removed (' + r.samples_before + ' → ' + r.samples_after + ' samples)', false);
+      toast('Filter: ' + r.samples_removed + ' removed', 'success');
+      refreshAll();
+    }).catch(function(err) {
+      setCurationResult('! Filter failed: ' + err.message, true);
+    });
+  }
+
+  function runRegexReplace() {
+    var pattern = document.getElementById('regex-pattern').value;
+    var replacement = document.getElementById('regex-replacement').value;
+    var caseSensitive = document.getElementById('regex-casesensitive').checked;
+    if (!pattern) {
+      setCurationResult('! Enter a regex pattern', true);
+      return;
+    }
+    setCurationResult('> applying regex replace...', false);
+    apiFetch(apiUrl('/curate/replace'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pattern: pattern,
+        replacement: replacement,
+        case_sensitive: caseSensitive
+      })
+    }).then(function(resp) {
+      if (resp.error) {
+        setCurationResult('! ' + resp.error, true);
+        return;
+      }
+      var r = resp.data;
+      setCurationResult('> regex replace complete: ' + r.samples_affected + ' affected (' + r.samples_before + ' → ' + r.samples_after + ' samples)', false);
+      toast('Regex: ' + r.samples_affected + ' samples modified', 'success');
+      refreshAll();
+    }).catch(function(err) {
+      setCurationResult('! Regex replace failed: ' + err.message, true);
+    });
+  }
+
+  // ── Section 4: Quality Metrics ───────────────────────
+  function loadMetrics() {
+    apiFetch(apiUrl('/metrics')).then(function(resp) {
+      if (resp.error) {
+        metricsPanel.innerHTML = '<span style="color:var(--accent-red);">Error: ' + escHtml(resp.error) + '</span>';
+        return;
+      }
+      var m = resp.data;
+      var html = '<div class="config-grid">';
+      html += '<div><span class="label-text">Sample Count</span><div class="prompt-line" style="margin-top:4px;"><span class="prompt-symbol">#</span><span style="color:var(--accent-green);font-size:0.9rem;">' + (m.sample_count != null ? m.sample_count : '-') + '</span></div></div>';
+      html += '<div><span class="label-text">Total Characters</span><div class="prompt-line" style="margin-top:4px;"><span class="prompt-symbol">∑</span><span>' + (m.total_chars != null ? m.total_chars.toLocaleString() : '-') + '</span></div></div>';
+      html += '<div><span class="label-text">Estimated Tokens</span><div class="prompt-line" style="margin-top:4px;"><span class="prompt-symbol">≈</span><span style="color:var(--accent-cyan);">' + (m.estimated_tokens != null ? m.estimated_tokens.toLocaleString() : '-') + '</span></div></div>';
+      html += '<div><span class="label-text">Vocabulary Size</span><div class="prompt-line" style="margin-top:4px;"><span class="prompt-symbol">$</span><span style="color:var(--accent-magenta);">' + (m.vocabulary_size != null ? m.vocabulary_size : '-') + '</span></div></div>';
+      html += '</div>';
+
+      if (m.length_distribution) {
+        var ld = m.length_distribution;
+        html += '<div class="section-label" style="margin-top:10px;">▌ LENGTH DISTRIBUTION</div>';
+        html += '<div class="info-grid">';
+        html += '<span class="info-key">Min</span><span class="info-val">' + (ld.min != null ? ld.min : '-') + '</span>';
+        html += '<span class="info-key">Max</span><span class="info-val">' + (ld.max != null ? ld.max : '-') + '</span>';
+        html += '<span class="info-key">Mean</span><span class="info-val">' + (ld.mean != null ? ld.mean.toFixed(1) : '-') + '</span>';
+        html += '<span class="info-key">Median</span><span class="info-val">' + (ld.median != null ? ld.median : '-') + '</span>';
+        html += '</div>';
+      }
+
+      if (m.duplicate_count != null) {
+        html += '<div class="section-label" style="margin-top:10px;">▌ DUPLICATES</div>';
+        html += '<div class="prompt-line"><span class="prompt-symbol">!</span><span style="color:' + (m.duplicate_count > 0 ? 'var(--warning)' : 'var(--success)') + ';">' + m.duplicate_count + ' duplicate' + (m.duplicate_count !== 1 ? 's' : '') + ' detected</span></div>';
+      }
+
+      metricsPanel.innerHTML = html;
+    }).catch(function(err) {
+      metricsPanel.innerHTML = '<span style="color:var(--accent-red);">Failed to load metrics: ' + escHtml(err.message) + '</span>';
+    });
+  }
+
+  // ── Section 5: Export ────────────────────────────────
+  function runExport() {
+    var format = document.getElementById('export-format').value;
+    var statusEl = document.getElementById('export-status');
+    statusEl.textContent = '> downloading...';
+    var url = apiUrl('/export?format=' + encodeURIComponent(format));
+    window.location.href = url;
+    statusEl.textContent = '> download started (' + format.toUpperCase() + ')';
+    setTimeout(function() { statusEl.textContent = ''; }, 4000);
+  }
+
+  // ── Section 6: Operation History ─────────────────────
+  function loadOperations() {
+    apiFetch(apiUrl('/operations')).then(function(resp) {
+      if (resp.error) {
+        historyPanel.innerHTML = '<span style="color:var(--accent-red);">Error: ' + escHtml(resp.error) + '</span>';
+        return;
+      }
+      var ops = (resp.data && resp.data.operations) || [];
+      if (ops.length === 0) {
+        historyPanel.innerHTML = '<span style="color:var(--text-dim);font-size:0.78rem;">No curation operations recorded yet.</span>';
+        return;
+      }
+      var html = '<table class="terminal-table" style="font-size:0.72rem;">';
+      html += '<thead><tr><th>Type</th><th>Parameters</th><th>Before → After</th><th>Timestamp</th></tr></thead><tbody>';
+      ops.forEach(function(op) {
+        var params = '-';
+        if (op.parameters) {
+          try {
+            var parsed = typeof op.parameters === 'string' ? JSON.parse(op.parameters) : op.parameters;
+            params = Object.keys(parsed).map(function(k) {
+              return '<span style="color:var(--accent-cyan);">' + k + '</span>=<span style="color:var(--accent-green);">' + escHtml(String(parsed[k])) + '</span>';
+            }).join(' ');
+          } catch(e) {
+            params = escHtml(String(op.parameters));
+          }
+        }
+        var opType = escHtml(op.operation_type || '?');
+        var before = op.sample_count_before != null ? op.sample_count_before : '?';
+        var after = op.sample_count_after != null ? op.sample_count_after : '?';
+        var ts = op.created_at ? escHtml(op.created_at).slice(0, 19) : '-';
+        var badgeClass = 'badge-cyan';
+        if (opType === 'dedup') badgeClass = 'badge-yellow';
+        else if (opType === 'filter') badgeClass = 'badge-magenta';
+        else if (opType === 'replace') badgeClass = 'badge-green';
+        html += '<tr>' +
+          '<td><span class="badge ' + badgeClass + '">' + opType + '</span></td>' +
+          '<td style="font-size:0.68rem;">' + params + '</td>' +
+          '<td><span style="color:var(--text-dim);">' + before + '</span> → <span style="color:var(--accent-green);">' + after + '</span></td>' +
+          '<td style="color:var(--text-dim);font-size:0.65rem;">' + ts + '</td>' +
+          '</tr>';
+      });
+      html += '</tbody></table>';
+      historyPanel.innerHTML = html;
+    }).catch(function(err) {
+      historyPanel.innerHTML = '<span style="color:var(--accent-red);">Failed to load history: ' + escHtml(err.message) + '</span>';
+    });
+  }
+
+  function refreshAll() {
+    loadDatasetInfo();
+    loadSamples(SAMPLE_OFFSET);
+    loadMetrics();
+    loadOperations();
+  }
+
+  // ── Event listeners ──────────────────────────────────
+  searchInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      SEARCH_QUERY = searchInput.value.trim();
+      SAMPLE_OFFSET = 0;
+      loadSamples(0);
+    }
+  });
+  document.getElementById('search-btn').addEventListener('click', function() {
+    SEARCH_QUERY = searchInput.value.trim();
+    SAMPLE_OFFSET = 0;
+    loadSamples(0);
+  });
+
+  prevBtn.addEventListener('click', prevPage);
+  nextBtn.addEventListener('click', nextPage);
+
+  document.getElementById('dedup-btn').addEventListener('click', runDedup);
+  document.getElementById('filter-btn').addEventListener('click', runLengthFilter);
+  document.getElementById('regex-btn').addEventListener('click', runRegexReplace);
+
+  document.getElementById('export-btn').addEventListener('click', runExport);
+
+  // Delegated clicks for dynamic content
+  document.addEventListener('click', function(e) {
+    // Edit button
+    if (e.target.classList.contains('edit-btn') || (e.target.parentElement && e.target.parentElement.classList.contains('edit-btn'))) {
+      var btn = e.target.classList.contains('edit-btn') ? e.target : e.target.parentElement;
+      enableEdit(btn.getAttribute('data-id'));
+    }
+    // Delete button
+    if (e.target.classList.contains('del-btn') || (e.target.parentElement && e.target.parentElement.classList.contains('del-btn'))) {
+      var btn = e.target.classList.contains('del-btn') ? e.target : e.target.parentElement;
+      deleteSample(btn.getAttribute('data-id'));
+    }
+    // Save edit button
+    if (e.target.classList.contains('save-edit-btn') || (e.target.parentElement && e.target.parentElement.classList.contains('save-edit-btn'))) {
+      var btn = e.target.classList.contains('save-edit-btn') ? e.target : e.target.parentElement;
+      saveEdit(btn.getAttribute('data-id'));
+    }
+    // Cancel edit button
+    if (e.target.classList.contains('cancel-edit-btn') || (e.target.parentElement && e.target.parentElement.classList.contains('cancel-edit-btn'))) {
+      var btn = e.target.classList.contains('cancel-edit-btn') ? e.target : e.target.parentElement;
+      cancelEdit(btn.getAttribute('data-id'));
+    }
+  });
+
+  // ── Init ─────────────────────────────────────────────
+  loadDatasetInfo();
+  loadSamples(0);
+  loadMetrics();
+  loadOperations();
+})();
+</script>
+{% endblock %}

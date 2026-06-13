@@ -13,7 +13,20 @@ class TrainingService:
         self._queues: dict[int, asyncio.Queue] = {}
         self._running = 0
 
-    def _load_docs(self, corpus_id: int | None = None) -> list[str]:
+    def _load_docs(self, corpus_id: int | None = None, dataset_id: int | None = None) -> list[str]:
+        if dataset_id is not None:
+            from microgpt.db.session import AsyncSessionLocal
+            from microgpt.db.repositories.datasets import DatasetRepository
+            from microgpt.services.datasets import DatasetService
+
+            async def _load_dataset():
+                async with AsyncSessionLocal() as session:
+                    repo = DatasetRepository(session)
+                    svc = DatasetService(repo)
+                    return await svc.load_docs(dataset_id)
+
+            return asyncio.run(_load_dataset())
+
         if corpus_id is not None:
             import asyncio
 
@@ -60,7 +73,8 @@ class TrainingService:
 
         loop = asyncio.get_event_loop()
         corpus_id = config.get("corpus_id")
-        docs = await loop.run_in_executor(None, self._load_docs, corpus_id)
+        dataset_id = config.get("dataset_id")
+        docs = await loop.run_in_executor(None, self._load_docs, corpus_id, dataset_id)
 
         def progress_callback(step: int, loss: float) -> None:
             asyncio.run_coroutine_threadsafe(
