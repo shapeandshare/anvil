@@ -1,0 +1,180 @@
+---
+title: Training Render Loop & Data Flow
+type: reference
+tags: [type/reference, domain/core]
+created: 2026-06-12
+updated: 2026-06-12
+aliases: [render-loop, data-flow, training-pipeline]
+---
+
+# Training Render Loop & Data Flow
+
+## Overview
+
+The training pipeline bridges three execution paradigms: async web → sync CPU-bound engine → async streaming back to browser. This document traces the complete path from browser button click to parameter update and back.
+
+## Architecture Diagram
+
+```
+┌──────────────┐     POST /v1/training/start     ┌──────────────────┐
+│   Browser    │ ──────────────────────────────►  │    FastAPI       │
+│  (Jinja2 +   │                                  │   (uvicorn)      │
+│   vanilla    │ ◄── SSE /v1/training/stream ──── │                  │
+│     JS)      │     event: metrics/loss          │  api/v1/training │
+└──────────────┘     event: complete/samples      └────────┬─────────┘
+                                                           │
+                                              asyncio.create_task()
+                                                           │
+                                                           ▼
+                                              ┌─────────────────────┐
+                                              │  TrainingService    │
+                                              │  services/training  │
+                                              │                     │
+                                              │  asyncio.Queue      │
+                                              │  (SSE event buffer) │
+                                              └──────────┬──────────┘
+                                                         │
+                                              run_in_executor()
+                                              (thread pool)
+                                                         │
+                                                         ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                    Core Engine (sync, zero deps)                     │
+│                    microgpt/core/engine.py                           │
+│                                                                     │
+│  train(docs, num_steps, ...)                                        │
+│    │                                                                │
+│    ├── Tokenize: char-level, BOS sentinel                           │
+│    ├── Init GPT model (state_dict of Value matrices)                │
+│    ├── Init AdamW buffers (m, v)                                    │
+│    │                                                                │
+│    └── STEP LOOP (for step in range(num_steps))                     │
+│          │                                                          │
+│          ├── Select doc (round-robin)                               │
+│          ├── Encode: [BOS, c1, c2, ..., BOS]                       │
+│          ├── Init KV cache (per-layer lists)                        │
+│          │                                                          │
+│          ├── FORWARD PASS (autoregressive over block_size)          │
+│          │   │                                                      │
+│          │   ├── GPT.forward(token_id, pos_id, keys, values)       │
+│          │   │     ├── token_emb = wte[token_id]                   │
+│          │   │     ├── pos_emb  = wpe[pos_id]                      │
+│          │   │     ├── x = tok_emb + pos_emb                       │
+│          │   │     ├── rmsnorm(x)                                  │
+│          │   │     │                                                │
+│          │   │     └── FOR each layer:                              │
+│          │   │           ├── Self-attention:                       │
+│          │   │           │   Q = x · Wq                            │
+│          │   │           │   K = x · Wk  → append to KV cache     │
+│          │   │           │   V = x · Wv  → append to KV cache     │
+│          │   │           │   FOR each head:                        │
+│          │   │           │     attn = softmax(Q·Kᵀ / √d)          │
+│          │   │           │     out  = Σ attn·V                     │
+│          │   │           │   x = attn_out · Wo + residual          │
+│          │   │           │                                                │
+│          │   │           └── MLP:                                  │
+│          │   │               x = rmsnorm(x)                        │
+│          │   │               x = relu(x · Wfc1) · Wfc2 + residual  │
+│          │   │                                                      │
+│          │   └── logits = x · lm_head                              │
+│          │                                                          │
+│          ├── softmax(logits) → probs                               │
+│          ├── cross_entropy = -log(probs[target])                   │
+│          ├── loss = mean(cross_entropies)                          │
+│          │                                                          │
+│          ├── BACKWARD PASS                                         │
+│          │   └── loss.backward()                                   │
+│          │       (reverse-mode autograd on Value graph)            │
+│          │                                                          │
+│          ├── ADAMW UPDATE                                          │
+│          │   lr_t = lr * (1 - step/num_steps)                     │
+│          │   FOR each param:                                       │
+│          │     m = β₁·m + (1-β₁)·grad                              │
+│          │     v = β₂·v + (1-β₂)·grad²                             │
+│          │     m_hat = m / (1-β₁^step)                             │
+│          │     v_hat = v / (1-β₂^step)                             │
+│          │     param -= lr_t · m_hat / (√v_hat + ε)               │
+│          │     grad = 0                                            │
+│          │                                                          │
+│          └── progress_callback(step, loss.data)                    │
+│               │                                                    │
+│               │  (called from thread executor)                     │
+│               ▼                                                    │
+│          asyncio.run_coroutine_threadsafe(                         │
+│            queue.put({"event":"metrics",                           │
+│                        "data":{"step":s,"loss":l}}),               │
+│            loop)                                                   │
+│                                                                    │
+│    POST-LOOP: Sampling                                             │
+│      FOR _ in range(20):                                           │
+│        Autoregressive generation with temperature scaling          │
+│        token_id = sample(softmax(logits / temperature))            │
+│        Until BOS or block_size                                     │
+│                                                                    │
+│    return model, final_loss, samples, uchars                       │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+## SSE Streaming Bridge
+
+The critical bridge between sync training and async web:
+
+```
+Thread Executor (sync core)           asyncio Event Loop
+┌────────────────────┐              ┌──────────────────────┐
+│ train()            │              │ TrainingService      │
+│   progress_cb() ───┼──run_coro──►│   queue.put(msg)     │
+│                    │              │                      │
+│                    │              │ FastAPI SSE endpoint  │
+│                    │              │   queue.get() ───────► Browser
+└────────────────────┘              └──────────────────────┘
+```
+
+Key properties:
+- `run_coroutine_threadsafe()` is the only safe way to inject into an asyncio.Queue from another thread
+- SSE keeps connection alive with 30s timeout + heartbeat keepalive
+- Queue consumer breaks on `complete` or `error` events
+
+## Completion & Persistence
+
+After training finishes, `on_complete` fires:
+
+1. **MLflow**: Log final metric, upload samples.txt + model.json artifacts, terminate run
+2. **DB**: INSERT TrainingConfig + Experiment records (async SQLAlchemy)
+3. **Disk**: Save `data/models/experiment_{id}.json` for registry access
+4. **SSE**: Send `complete` event with final loss + generated samples
+5. **Browser**: Display samples, enable "register model" action
+
+## Inference Flow
+
+```
+POST /v1/inference/sample  {model_id, version, temperature, num_samples}
+  │
+  ├── DB lookup → get artifact_path from ModelRegistry
+  ├── Load model.json from disk
+  ├── Reconstruct GPT with saved hyperparams + state_dict
+  │
+  └── Autoregressive sampling (same as post-training loop)
+        token = BOS
+        for pos in range(block_size):
+          logits = GPT.forward(token, pos, keys, values)
+          token = sample(softmax(logits / temperature))
+          if token == BOS: break
+```
+
+## Key Properties
+
+| Property | Implementation |
+|----------|---------------|
+| **Determinism** | `random.seed(42)` at train start; model init uses fixed std |
+| **Zero deps** | Core engine imports only `random` and `math` |
+| **Character-level** | No BPE/WordPiece — sorted unique chars + BOS sentinel |
+| **KV cache** | Per-layer lists appended each forward step (no recompute) |
+| **Autograd** | Reverse-mode AD via Value graph (micrograd pattern) |
+| **AdamW** | Full Adam with bias correction + linear LR decay |
+| **No batching** | Processes one token position at a time (educational simplicity) |
+
+## See Also
+
+- [[Glossary]] — Value, RMSNorm, KV cache, AdamW definitions
+- [[Decisions/ADR-002-sync-core-async-bridge|ADR-002: Sync Core / Async Bridge]]
