@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
+{% block content %}
+<div class="graph-page">
+  <div class="panel">
+    <h2 class="panel-title">Computation Graph — Forward Pass Explorer</h2>
+    <p class="text-muted" style="margin-bottom:var(--space-4);">
+      Scrub through the forward pass to see how a computation graph builds from token input to attention output.
+      Each step adds real operations — no static diagrams.
+    </p>
+  </div>
+
+  <div class="panel">
+    <div class="graph-view-container">
+      {% include "partials/graph-view.html" %}
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2 class="panel-title">What's Happening</h2>
+    <div id="graph-description" class="graph-description">
+      <p class="text-muted">Drag the scrubber to step through the forward pass. Each step adds nodes to the computation graph showing real operations.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/graph-view.js"></script>
+<script>
+(function() {
+  'use strict';
+
+  var canvas = document.getElementById('graph-canvas');
+  var scrubber = document.getElementById('graph-scrubber');
+  var stepLabel = document.getElementById('graph-step-label');
+  var descEl = document.getElementById('graph-description');
+
+  var STEP_INFO = [
+    { label: 'Token Embedding', desc: 'Input token is mapped to a dense vector via the embedding matrix (WTE). This converts discrete token IDs into continuous representations.' },
+    { label: 'Position Embedding', desc: 'Position information is added via the position embedding matrix (WPE). This lets the model know where each token sits in the sequence.' },
+    { label: 'LayerNorm 1', desc: 'The combined embedding is normalized to stabilize activations. LayerNorm ensures consistent scale across the embedding dimension.' },
+    { label: 'Attention QKV', desc: 'Query, Key, and Value vectors are computed from the normalized embedding using learned weight matrices. Q and K determine pairwise attention scores.' },
+    { label: 'Attention Scores', desc: 'Dot products between Query and Key vectors produce attention scores. Each token "looks at" every other token to determine relevance.' },
+    { label: 'Softmax + Weighted Sum', desc: 'Attention scores are normalized via softmax to produce attention weights (0-1). Values are summed weighted by these attention scores.' },
+    { label: 'MLP Feed-Forward', desc: 'Attention output passes through a multi-layer perceptron (MLP). This is where the model transforms attended information.' },
+    { label: 'Output Logits', desc: 'Final LayerNorm and linear projection produce logits — scores for each token in the vocabulary. The highest-scoring token is the model\'s prediction.' },
+  ];
+
+  /* Build synthetic graph data — one node per step with increasing complexity */
+  var graphData = {
+    nodes: [],
+    edges: []
+  };
+
+  var ids = ['tok', 'pos', 'ln1', 'qkv', 'att', 'smax', 'mlp', 'out'];
+  var layers = [0, 0, 1, 1, 2, 2, 3, 3];
+
+  ids.forEach(function(id, i) {
+    graphData.nodes.push({
+      id: id,
+      label: STEP_INFO[i].label,
+      op: STEP_INFO[i].label,
+      step: i,
+      depth: layers[i],
+    });
+  });
+
+  /* Edges (data flow) */
+  graphData.edges.push({ from: 'tok', to: 'pos' });
+  graphData.edges.push({ from: 'pos', to: 'ln1' });
+  graphData.edges.push({ from: 'ln1', to: 'qkv' });
+  graphData.edges.push({ from: 'qkv', to: 'att' });
+  graphData.edges.push({ from: 'att', to: 'smax' });
+  graphData.edges.push({ from: 'smax', to: 'mlp' });
+  graphData.edges.push({ from: 'mlp', to: 'out' });
+
+  var view = new GraphView(canvas, { steps: STEP_INFO });
+  view.setGraph(graphData);
+  view.setStep(0);
+
+  scrubber.addEventListener('input', function() {
+    var step = parseInt(this.value);
+    stepLabel.textContent = step;
+    view.setStep(step);
+    descEl.innerHTML = '<h3>' + STEP_INFO[step].label + '</h3><p class="text-muted">' + STEP_INFO[step].desc + '</p>';
+  });
+
+  /* Trigger initial render */
+  descEl.innerHTML = '<h3>' + STEP_INFO[0].label + '</h3><p class="text-muted">' + STEP_INFO[0].desc + '</p>';
+
+  window.addEventListener('resize', function() {
+    view._resize();
+    view.draw();
+  });
+})();
+</script>
+{% endblock %}

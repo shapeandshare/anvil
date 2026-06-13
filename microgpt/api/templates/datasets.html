@@ -1,139 +1,164 @@
 {% extends "base.html" %}
 {% block content %}
+
+{# ── PANEL: DATASET MANAGER ───────────────────────────── #}
 <div class="panel">
-  <div class="panel-titlebar" data-title="DATASET MANAGER">▌ DATASET MANAGER</div>
-  <div class="panel-body">
+  <h2 class="panel-title">Dataset Manager</h2>
 
-    <div class="help-box" style="margin-bottom:10px;">
-      <div class="help-title">▌ DATASETS & CORPORA</div>
-      <div>Upload <code>.txt</code> files as datasets for training, or create <b>corpora</b> that ingest files from directories using glob patterns. Corpora support gitignore-style filtering for code repos.</div>
-    </div>
-
-    <div class="prompt-line" style="margin-bottom:4px;">
-      <span class="prompt-symbol">$</span>
-      <span class="prompt-label">upload --file</span>
-    </div>
-    <form id="upload-form" class="upload-zone" style="padding-left:16px;">
-      <input type="file" class="terminal-input" id="file-input" accept=".txt">
-      <button type="submit" class="terminal-btn"><span class="btn-prefix">$</span> upload</button>
-    </form>
-    <div class="telemetry" id="upload-status" style="min-height:24px;margin-top:4px;max-height:40px;">Ready.</div>
-
-    <div class="prompt-line" style="margin-bottom:4px;margin-top:12px;">
-      <span class="prompt-symbol">$</span>
-      <span class="prompt-label">dataset create --name --description</span>
-    </div>
-    <div id="create-dataset-form" style="padding-left:16px;display:flex;flex-wrap:wrap;gap:4px;align-items:center;">
-      <input type="text" class="terminal-input" id="new-dataset-name" placeholder="name" style="width:140px;">
-      <input type="text" class="terminal-input" id="new-dataset-description" placeholder="description (optional)" style="width:260px;">
-      <button class="terminal-btn" id="create-dataset-btn"><span class="btn-prefix">$</span> create</button>
-    </div>
-    <div class="telemetry" id="create-status" style="min-height:24px;margin-top:4px;max-height:40px;">Ready.</div>
-
-    <div style="margin-top:12px;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-        <span class="terminal-sep" style="margin:0;flex:1;">── datasets ──────────────────────────────────────</span>
-        <input type="text" class="terminal-input" id="dataset-search" placeholder="filter..." style="width:130px;font-size:0.72rem;">
-        <button class="terminal-btn" id="search-btn" style="font-size:0.72rem;padding:2px 10px;"><span class="btn-prefix">$</span> filter</button>
-      </div>
-      <div id="dataset-list"><span style="color:var(--text-dim);font-size:0.78rem;">Loading...</span></div>
-    </div>
-
+  <div class="help-box" style="margin-bottom:var(--space-3);">
+    <div class="help-title">ABOUT DATASETS &amp; CORPORA</div>
+    <div>Upload <code>.txt</code> files as datasets for training, or create <b>corpora</b> that ingest files from directories using glob patterns. Corpora support gitignore-style filtering for code repos.</div>
   </div>
+
+  {# ── Upload form ── #}
+  <div class="prompt-line" style="margin-bottom:var(--space-1);">
+    <span class="prompt-symbol">$</span>
+    <span class="prompt-label">upload --file</span>
+  </div>
+  <form id="upload-form" class="upload-zone">
+    <input type="file" class="form-input" id="file-input" accept=".txt">
+    <button type="submit" class="btn btn-primary btn-sm"><span class="btn-prefix">$</span> upload</button>
+  </form>
+  <div class="telemetry-compact" id="upload-status">Ready.</div>
+
+  {# ── Create dataset form ── #}
+  <div class="prompt-line" style="margin-bottom:var(--space-1);margin-top:var(--space-4);">
+    <span class="prompt-symbol">$</span>
+    <span class="prompt-label">dataset create --name --description</span>
+  </div>
+  <div id="create-dataset-form" style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;">
+    <input type="text" class="form-input" id="new-dataset-name" placeholder="name" style="width:140px;">
+    <input type="text" class="form-input" id="new-dataset-description" placeholder="description (optional)" style="width:260px;">
+    <button class="btn btn-primary btn-sm" id="create-dataset-btn"><span class="btn-prefix">$</span> create</button>
+  </div>
+  <div class="telemetry-compact" id="create-status">Ready.</div>
+
+  {# ── Dataset list with search ── #}
+  <div style="margin-top:var(--space-4);">
+    <div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-2);">
+      <span class="label-text" style="flex-shrink:0;">DATASETS</span>
+      <input type="text" class="form-input" id="dataset-search" placeholder="filter..." style="width:130px;font-size:0.72rem;">
+      <button class="btn btn-sm btn-secondary" id="search-btn" style="font-size:0.72rem;">filter</button>
+    </div>
+    <div id="dataset-list"><span class="text-muted" style="font-size:0.78rem;">Loading...</span></div>
+  </div>
+
 </div>
 
+{# ── PANEL: CORPORA WIZARD ────────────────────────────── #}
 <div class="panel">
-  <div class="panel-titlebar" data-title="CORPORA WIZARD">▌ CORPORA WIZARD</div>
-  <div class="panel-body">
+  <h2 class="panel-title">Corpora Wizard</h2>
 
-    <div class="help-box" style="margin-bottom:10px;">
-      <div class="help-title">▌ HOW IT WORKS</div>
+    <div class="help-box" style="margin-bottom:var(--space-3);">
+      <div class="help-title">HOW IT WORKS</div>
       <div>Enter a directory path and optional glob patterns. The wizard scans the directory (no data read), shows file statistics, and recommends optimal chunking parameters based on file size and type. Pick a recommendation or customize, then create &amp; ingest.</div>
     </div>
 
-    <div class="prompt-line" style="margin-bottom:4px;">
+    {# ── Analyzer controls ── #}
+    <div class="prompt-line" style="margin-bottom:var(--space-1);">
       <span class="prompt-symbol">$</span>
       <span class="prompt-label">analyze --path</span>
     </div>
-    <div id="wiz-drop-zone" style="padding-left:16px;display:flex;flex-wrap:wrap;gap:4px;align-items:center;">
-      <input type="text" class="terminal-input" id="wiz-root" placeholder="root_path" style="width:260px;">
-      <button class="terminal-btn" id="wiz-browse-btn" title="Select folder via native dialog" style="font-size:0.7rem;padding:2px 8px;"><span class="btn-prefix">$</span> browse</button>
+    <div id="wiz-drop-zone" style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:flex-start;">
+      <input type="text" class="form-input" id="wiz-root" placeholder="root_path" style="width:260px;">
+      <button class="btn btn-sm btn-secondary" id="wiz-browse-btn" title="Select folder via native dialog">browse</button>
       <input type="file" id="wiz-folder-picker" webkitdirectory style="display:none;">
-      <input type="text" class="terminal-input" id="wiz-include" placeholder="include (e.g. **/*)" style="width:160px;">
-      <span class="help-text" style="font-size:0.65rem;">glob</span>
-      <input type="text" class="terminal-input" id="wiz-exclude" placeholder="exclude (e.g. tests/)" style="width:140px;">
-      <span class="help-text" style="font-size:0.65rem;">exclude</span>
-      <button class="terminal-btn" id="wiz-analyze-btn" style="color:var(--accent-green);border-color:var(--accent-green);" title="Scan directory and auto-select best chunking params"><span class="btn-prefix">⚡</span> auto-tune</button>
+      <div class="filter-bag filter-bag--include">
+        <div class="filter-bag__header">
+          <span class="filter-bag__label"><span class="filter-bag__label-icon">+</span> include</span>
+        </div>
+        <input type="text" class="form-input" id="wiz-include" placeholder="e.g. **/*, *.py" style="width:180px;">
+      </div>
+      <div class="filter-bag filter-bag--exclude">
+        <div class="filter-bag__header">
+          <span class="filter-bag__label"><span class="filter-bag__label-icon">−</span> exclude</span>
+        </div>
+        <input type="text" class="form-input" id="wiz-exclude" placeholder="e.g. tests/, node_modules" style="width:180px;">
+      </div>
+      <button class="btn btn-sm btn-success" id="wiz-analyze-btn" title="Scan directory and auto-select best chunking params">auto-tune</button>
     </div>
-    <div style="padding-left:16px;display:flex;flex-wrap:wrap;gap:3px;margin-top:4px;" id="wiz-glob-chips">
-      <span class="glob-chip" data-target="include" data-value="**/*">All files</span>
-      <span class="glob-chip" data-target="include" data-value="*.py">Python</span>
-      <span class="glob-chip" data-target="include" data-value="*.js">JS</span>
-      <span class="glob-chip" data-target="include" data-value="*.ts">TS</span>
-      <span class="glob-chip" data-target="include" data-value="*.go">Go</span>
-      <span class="glob-chip" data-target="include" data-value="*.rs">Rust</span>
-      <span class="glob-chip" data-target="include" data-value="*.md">Markdown</span>
-      <span class="glob-chip" data-target="include" data-value="*.{py,js,ts,go,rs,md}">Code+Docs</span>
-      <span class="glob-chip" data-target="include" data-value="*.json">JSON</span>
-      <span class="glob-chip" data-target="include" data-value="*.yaml">YAML</span>
-      <span class="glob-chip" data-target="include" data-value="*.sh">Shell</span>
-      <span class="glob-chip" data-target="include" data-value="*.css">CSS</span>
-      <span class="glob-chip" data-target="include" data-value="*.html">HTML</span>
-      <span class="glob-sep">|</span>
-      <span class="glob-chip" data-target="exclude" data-value="tests/">! tests/</span>
-      <span class="glob-chip" data-target="exclude" data-value="node_modules">! node_modules</span>
-      <span class="glob-chip" data-target="exclude" data-value="__pycache__">! __pycache__</span>
-      <span class="glob-chip" data-target="exclude" data-value=".git">! .git</span>
+
+    {# ── Glob pattern chips ── #}
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:var(--space-1);align-items:flex-start;">
+      <div class="filter-bag__chips">
+        <span class="tag" data-target="include" data-value="**/*">All files</span>
+        <span class="tag" data-target="include" data-value="*.py">Python</span>
+        <span class="tag" data-target="include" data-value="*.js">JS</span>
+        <span class="tag" data-target="include" data-value="*.ts">TS</span>
+        <span class="tag" data-target="include" data-value="*.go">Go</span>
+        <span class="tag" data-target="include" data-value="*.rs">Rust</span>
+        <span class="tag" data-target="include" data-value="*.md">Markdown</span>
+        <span class="tag" data-target="include" data-value="*.{py,js,ts,go,rs,md}">Code+Docs</span>
+        <span class="tag" data-target="include" data-value="*.json">JSON</span>
+        <span class="tag" data-target="include" data-value="*.yaml">YAML</span>
+        <span class="tag" data-target="include" data-value="*.sh">Shell</span>
+        <span class="tag" data-target="include" data-value="*.css">CSS</span>
+        <span class="tag" data-target="include" data-value="*.html">HTML</span>
+      </div>
+      <div class="filter-bag__chips">
+        <span class="tag" data-target="exclude" data-value="tests/">! tests/</span>
+        <span class="tag" data-target="exclude" data-value="node_modules">! node_modules</span>
+        <span class="tag" data-target="exclude" data-value="__pycache__">! __pycache__</span>
+        <span class="tag" data-target="exclude" data-value=".git">! .git</span>
+      </div>
     </div>
-    <div class="telemetry" id="wiz-status" style="min-height:24px;margin-top:4px;max-height:40px;">Enter a path, drag a folder from Finder here, or use <b>browse</b>.</div>
+    <div class="telemetry-compact" id="wiz-status">Enter a path, drag a folder from Finder here, or use <b>browse</b>.</div>
 
-    <div id="wiz-results" style="display:none;margin-top:10px;">
+    {# ── Analysis results (hidden until analyze) ── #}
+    <div id="wiz-results" style="display:none;margin-top:var(--space-3);">
 
-      <div id="wiz-stats" class="help-box" style="margin-bottom:8px;"></div>
+      <div id="wiz-stats" class="help-box" style="margin-bottom:var(--space-2);"></div>
 
-      <div class="prompt-line" style="margin-bottom:6px;">
+      <div class="prompt-line" style="margin-bottom:var(--space-2);">
         <span class="prompt-symbol">$</span>
         <span class="prompt-label">recommendations</span>
       </div>
-      <div id="wiz-recs" style="display:flex;flex-direction:column;gap:4px;"></div>
+      <div id="wiz-recs" style="display:flex;flex-direction:column;gap:var(--space-1);"></div>
 
-      <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);">
-        <div class="prompt-line" style="margin-bottom:4px;">
+      <div style="margin-top:var(--space-3);padding-top:var(--space-2);border-top:1px solid var(--border);">
+        <div class="prompt-line" style="margin-bottom:var(--space-1);">
           <span class="prompt-symbol">$</span>
           <span class="prompt-label">corpus create --name --strategy --params</span>
         </div>
-        <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding-left:16px;">
-          <input type="text" class="terminal-input" id="wiz-name" placeholder="corpus name" style="width:140px;">
-          <span class="help-text" style="font-size:0.65rem;">strategy:</span>
-          <select class="terminal-input" id="wiz-strategy" style="width:100px;">
+        <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;">
+          <input type="text" class="form-input" id="wiz-name" placeholder="corpus name" style="width:140px;">
+          <span class="help-text">strategy:</span>
+          <select class="form-select" id="wiz-strategy" style="width:100px;">
             <option value="windowed">windowed</option>
             <option value="file">file</option>
             <option value="line">line</option>
           </select>
-          <span class="help-text" style="font-size:0.65rem;">max files:</span>
-          <input type="number" class="terminal-input" id="wiz-max-files" value="10000" min="100" max="1000000" step="1000" style="width:80px;">
-          <span class="help-text" id="wiz-bs-label" style="font-size:0.65rem;">block_size:</span>
+          <span class="help-text">max files:</span>
+          <input type="number" class="form-input" id="wiz-max-files" value="10000" min="100" max="1000000" step="1000" style="width:80px;">
+          <span class="help-text" id="wiz-bs-label">block_size:</span>
           <input type="range" id="wiz-block-size" min="8" max="1024" value="64" step="8" style="width:100px;accent-color:var(--primary);vertical-align:middle;">
           <span id="wiz-bs-value" style="font-size:0.68rem;color:var(--accent-cyan);min-width:35px;">64</span>
-          <span class="help-text" id="wiz-ov-label" style="font-size:0.65rem;">overlap:</span>
+          <span class="help-text" id="wiz-ov-label">overlap:</span>
           <input type="range" id="wiz-overlap" min="0" max="50" value="25" style="width:80px;accent-color:var(--primary);vertical-align:middle;">
           <span id="wiz-ov-value" style="font-size:0.68rem;color:var(--accent-cyan);min-width:30px;">25%</span>
-          <button class="terminal-btn" id="wiz-create-btn"><span class="btn-prefix">$</span> create &amp; ingest</button>
+          <button class="btn btn-primary btn-sm" id="wiz-create-btn"><span class="btn-prefix">$</span> create &amp; ingest</button>
         </div>
-        <div id="wiz-estimate" style="padding-left:16px;margin-top:4px;min-height:20px;font-size:0.72rem;"></div>
-        <div class="telemetry" id="wiz-create-status" style="min-height:24px;margin-top:2px;max-height:40px;"></div>
+        <div id="wiz-estimate" style="padding-left:16px;margin-top:var(--space-1);min-height:20px;font-size:0.72rem;"></div>
+        <div class="telemetry-compact" id="wiz-create-status"></div>
       </div>
 
     </div>
 
-    <div style="margin-top:12px;">
-      <span class="terminal-sep">── corpora ──────────────────────────────────────</span>
-      <div id="corpus-list"><span style="color:var(--text-dim);font-size:0.78rem;">Loading...</span></div>
+    {# ── Corpus list ── #}
+    <div style="margin-top:var(--space-4);">
+      <div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-1);">
+        <span class="label-text">CORPORA</span>
+      </div>
+      <div id="corpus-list"><span class="text-muted" style="font-size:0.78rem;">Loading...</span></div>
     </div>
 
   </div>
 </div>
 
+{# ── Toast container ── #}
+<div id="toast-container" class="toast-container"></div>
+
+{# ── JavaScript (preserved in full) ── #}
 <script>
 (function() {
 
@@ -240,15 +265,15 @@
         + '<td style="text-align:center;color:var(--text-dim);">' + curVer + '</td>'
         + '<td style="text-align:right;white-space:nowrap;">'
         + '<div class="htop-actions">'
-        + '<button class="terminal-btn edit-btn" data-id="' + d.id + '" style="font-size:0.68rem;padding:1px 6px;"><span class="btn-prefix">$</span> edit</button>'
-        + '<button class="terminal-btn curate-btn" data-id="' + d.id + '" title="Open dataset curation" style="font-size:0.68rem;padding:1px 6px;"><span class="btn-prefix">$</span> curate</button>'
-        + '<button class="terminal-btn del-dataset-btn" data-id="' + d.id + '" data-name="' + nameEsc + '" style="font-size:0.68rem;padding:1px 6px;color:var(--accent-red);"><span class="btn-prefix">$</span> rm</button>'
+        + '<button class="btn btn-sm btn-secondary edit-btn" data-id="' + d.id + '"><span class="btn-prefix">$</span> edit</button>'
+        + '<button class="btn btn-sm btn-secondary curate-btn" data-id="' + d.id + '" title="Open dataset curation"><span class="btn-prefix">$</span> curate</button>'
+        + '<button class="btn btn-sm btn-danger del-dataset-btn" data-id="' + d.id + '" data-name="' + nameEsc + '"><span class="btn-prefix">$</span> rm</button>'
         + '</div>'
         + '<div class="inline-edit-form" style="display:none;margin-top:4px;gap:4px;flex-wrap:wrap;align-items:center;">'
-        + '<input type="text" class="terminal-input ie-name" placeholder="name" style="width:130px;font-size:0.72rem;" value="' + nameEsc + '">'
-        + '<input type="text" class="terminal-input ie-desc" placeholder="description" style="width:200px;font-size:0.72rem;" value="' + (d.description ? descEsc : '') + '">'
-        + '<button class="terminal-btn ie-save" style="font-size:0.68rem;padding:1px 8px;"><span class="btn-prefix">$</span> save</button>'
-        + '<button class="terminal-btn ie-cancel" style="font-size:0.68rem;padding:1px 8px;"><span class="btn-prefix">$</span> cancel</button>'
+        + '<input type="text" class="form-input ie-name" placeholder="name" style="width:130px;font-size:0.72rem;" value="' + nameEsc + '">'
+        + '<input type="text" class="form-input ie-desc" placeholder="description" style="width:200px;font-size:0.72rem;" value="' + (d.description ? descEsc : '') + '">'
+        + '<button class="btn btn-sm btn-primary ie-save"><span class="btn-prefix">$</span> save</button>'
+        + '<button class="btn btn-sm btn-secondary ie-cancel"><span class="btn-prefix">$</span> cancel</button>'
         + '</div></td>'
         + '</tr>';
     });
@@ -268,8 +293,8 @@
       return;
     }
     list.innerHTML = data.data.map(function(c) {
-      var ingestBtn = '<button class="terminal-btn ingest-btn" data-id="' + c.id + '" style="font-size:0.7rem;padding:1px 6px;"><span class="btn-prefix">$</span> ingest</button>';
-      var delBtn = '<button class="terminal-btn del-btn" data-id="' + c.id + '" style="font-size:0.7rem;padding:1px 6px;margin-left:2px;"><span class="btn-prefix">$</span> rm</button>';
+      var ingestBtn = '<button class="btn btn-sm btn-secondary ingest-btn" data-id="' + c.id + '"><span class="btn-prefix">$</span> ingest</button>';
+      var delBtn = '<button class="btn btn-sm btn-danger del-btn" data-id="' + c.id + '" style="margin-left:2px;"><span class="btn-prefix">$</span> rm</button>';
       return '<div class="ls-line">' +
         '<span class="ls-perms">drwxr-xr-x</span>' +
         '<span class="ls-size">' + (c.file_count || 0) + ' files</span>' +
@@ -478,13 +503,13 @@
     .then(function(resp) {
       if (resp.data && resp.data.path) {
         document.getElementById('wiz-root').value = resp.data.path;
-        status.innerHTML = '> Resolved &quot;' + dirName + '&quot; to ' + resp.data.path + '. Click <b>analyze</b> or drop another folder.';
+        status.innerHTML = '> Resolved "' + dirName + '" to ' + resp.data.path + '. Click <b>analyze</b> or drop another folder.';
       } else {
-        status.innerHTML = '> Folder &quot;' + dirName + '&quot; selected (' + files.length + ' files). Could not auto-resolve. Drag from Finder or paste the full path.';
+        status.innerHTML = '> Folder "' + dirName + '" selected (' + files.length + ' files). Could not auto-resolve. Drag from Finder or paste the full path.';
       }
     })
     .catch(function() {
-      status.innerHTML = '> Folder &quot;' + dirName + '&quot; selected (' + files.length + ' files). Drag from Finder or paste the full path.';
+      status.innerHTML = '> Folder "' + dirName + '" selected (' + files.length + ' files). Drag from Finder or paste the full path.';
     });
   });
 
@@ -524,9 +549,9 @@
 
   /* ── wizard: glob chips ─────────────────────────────── */
 
-  document.getElementById('wiz-glob-chips').addEventListener('click', function(e) {
+  document.addEventListener('click', function(e) {
     var chip = e.target;
-    if (!chip.classList.contains('glob-chip')) return;
+    if (!chip.classList.contains('tag')) return;
     var target = chip.getAttribute('data-target');
     var value = chip.getAttribute('data-value');
     var input = document.getElementById('wiz-' + target);
@@ -538,7 +563,7 @@
     }
     /* Build the comma-separated value from all active chips */
     var values = [];
-    document.querySelectorAll('.glob-chip[data-target="' + target + '"].active').forEach(function(c) {
+    document.querySelectorAll('.tag[data-target="' + target + '"].active').forEach(function(c) {
       values.push(c.getAttribute('data-value'));
     });
     input.value = values.join(', ');
@@ -570,14 +595,14 @@
         body: JSON.stringify(body),
       });
       var parsed = await safeJson(resp);
-      if (!parsed.ok) { btn.disabled = false; btn.innerHTML = '<span class="btn-prefix">⚡</span> auto-tune'; status.textContent = '! ' + (parsed.body ? (parsed.body.detail || 'Analyze failed') : parsed.raw); return; }
+      if (!parsed.ok) { btn.disabled = false; btn.innerHTML = 'auto-tune'; status.textContent = '! ' + (parsed.body ? (parsed.body.detail || 'Analyze failed') : parsed.raw); return; }
       wizState.analysis = parsed.body.data;
       renderWizResults(parsed.body.data, true);
       document.getElementById('wiz-results').style.display = 'block';
       status.textContent = '> scan complete: ' + parsed.body.data.file_count + ' files, ' + formatBytes(parsed.body.data.total_bytes);
       btn.disabled = false;
-      btn.innerHTML = '<span class="btn-prefix">⚡</span> auto-tune';
-    } catch (err) { btn.disabled = false; btn.innerHTML = '<span class="btn-prefix">⚡</span> auto-tune'; status.textContent = '! ' + err.message; }
+      btn.innerHTML = 'auto-tune';
+    } catch (err) { btn.disabled = false; btn.innerHTML = 'auto-tune'; status.textContent = '! ' + err.message; }
   });
 
   function renderWizResults(data, autoSelect) {

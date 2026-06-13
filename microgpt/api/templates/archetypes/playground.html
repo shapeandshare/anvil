@@ -1,28 +1,289 @@
 {% extends "base.html" %}
-{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css"><link rel="stylesheet" href="/static/css/components.css">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css"><link rel="stylesheet" href="/static/css/components.css">
+<style>
+.model-card-header { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3); }
+.model-card-name { font-weight: 600; font-size: 1.1em; }
+.model-card-version { color: var(--text-dim); font-family: var(--font-mono); }
+.model-card-stats { display: flex; gap: var(--space-4); margin-bottom: var(--space-3); }
+.stat { display: flex; flex-direction: column; }
+.stat-label { font-size: 0.75em; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+.stat-value { font-size: 1.3em; font-weight: 600; font-family: var(--font-mono); }
+.stat-value.accent { color: var(--accent-cyan); }
+.model-card-section { margin-top: var(--space-3); padding-top: var(--space-2); border-top: 1px solid var(--border); }
+.card-section-title { font-size: 0.8em; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: var(--space-2); }
+.model-card-table { width: 100%; border-collapse: collapse; }
+.model-card-table td { padding: 2px 8px; font-size: 0.85em; }
+.card-label { color: var(--text-dim); width: 40%; }
+.card-value { font-family: var(--font-mono); color: var(--text); text-align: right; }
+.model-card-links { display: flex; gap: var(--space-2); margin-top: var(--space-2); }
+</style>{% endblock %}
 {% block content %}
-<div class="panel" style="margin-bottom:var(--space-4);">
-  <h2 class="panel-title">Playground — Explore Concepts</h2>
-  <p class="text-muted" style="margin-bottom:var(--space-4);">Compose concept widgets side by side without the scroll narrative.</p>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);">
-    <div class="concept-widget" id="widget-tokenization"><p class="text-muted">Tokenization widget loads here</p></div>
-    <div class="concept-widget" id="widget-embedding"><p class="text-muted">Embedding widget loads here</p></div>
-    <div class="concept-widget" id="widget-sampling"><p class="text-muted">Sampling widget loads here</p></div>
-    <div class="concept-widget" id="widget-attention"><p class="text-muted">Attention widget loads here</p></div>
+
+<div class="playground-layout">
+
+  <div class="panel">
+    <h2 class="panel-title">Inference — Sample from a Model</h2>
+    <div class="inference-config">
+      <div class="config-grid">
+        <label>Model
+          <select id="model-select" class="form-select">
+            <option value="">Loading models...</option>
+          </select>
+        </label>
+        <label id="version-label" style="display:none;">Version
+          <select id="version-select" class="form-select"></select>
+        </label>
+        <label>Seed Prompt
+          <input type="text" id="seed-prompt" class="form-input" placeholder="e.g. Hello, my name is" value="">
+        </label>
+        <label>Temperature
+          <input type="number" id="inference-temperature" class="form-input" value="0.5" step="0.1" min="0.1" max="2">
+        </label>
+        <label>Samples
+          <input type="number" id="num-samples" class="form-input" value="5" min="1" max="50">
+        </label>
+      </div>
+      <div id="model-info" class="model-info-text" style="display:none;"></div>
+      <div class="example-prompts">
+        <span class="example-label">Try:</span>
+        <span class="example-chip" data-prompt="Hello, my name is">Hello, my name is</span>
+        <span class="example-chip" data-prompt="In the beginning">In the beginning</span>
+        <span class="example-chip" data-prompt="The meaning of life is">The meaning of life is</span>
+        <span class="example-chip" data-prompt="Once upon a time">Once upon a time</span>
+      </div>
+      <div class="inference-actions">
+        <button class="btn btn-primary" id="generate-btn">Generate</button>
+        <span class="text-muted" id="inference-status" style="font-size:0.85rem;"></span>
+      </div>
+    </div>
   </div>
-</div>
+
+  <div class="panel" id="model-info-card" style="display:none;">
+    <div class="panel-titlebar" data-title="MODEL INFO">▌ MODEL INFO</div>
+    <div class="panel-body" id="model-info-card-body"></div>
+  </div>
+
+  <div class="panel" id="inference-output-panel" style="display:none;">
+    <h2 class="panel-title">Output</h2>
+    <div id="inference-output" class="inference-output"></div>
+  </div>
+
+  </div>
 {% endblock %}
 {% block scripts %}
-<script src="/static/js/widgets/tokenization.js"></script>
-<script src="/static/js/widgets/embedding.js"></script>
-<script src="/static/js/widgets/sampling.js"></script>
-<script src="/static/js/widgets/attention.js"></script>
 <script>
 (function() {
-  if (window.TokenizationWidget) new TokenizationWidget(document.getElementById('widget-tokenization'));
-  if (window.EmbeddingWidget) new EmbeddingWidget(document.getElementById('widget-embedding'));
-  if (window.SamplingWidget) new SamplingWidget(document.getElementById('widget-sampling'));
-  if (window.AttentionWidget) new AttentionWidget(document.getElementById('widget-attention'));
-})();
+  'use strict';
+
+  /* ── State ── */
+  var modelsData = [];
+
+  /* ── Model Select ── */
+  var modelSelect = document.getElementById('model-select');
+  var versionLabel = document.getElementById('version-label');
+  var versionSelect = document.getElementById('version-select');
+  var modelInfoEl = document.getElementById('model-info');
+  var seedPrompt = document.getElementById('seed-prompt');
+  var temperatureInput = document.getElementById('inference-temperature');
+  var numSamplesInput = document.getElementById('num-samples');
+  var generateBtn = document.getElementById('generate-btn');
+  var statusEl = document.getElementById('inference-status');
+  var outputPanel = document.getElementById('inference-output-panel');
+  var outputEl = document.getElementById('inference-output');
+
+  function loadModels() {
+    fetch('/v1/inference/models').then(function(r) { return r.json(); }).then(function(data) {
+      if (data.models.length === 0) {
+        modelSelect.innerHTML = '<option value="">No models registered</option>';
+        return;
+      }
+      modelsData = data.models;
+      modelSelect.innerHTML = '<option value="">— select a model —</option>'
+        + data.models.map(function(m) {
+            var loss = m.final_loss != null ? m.final_loss.toFixed(4) : '?';
+            return '<option value="' + m.id + '">' + m.name + ' — loss: ' + loss + '</option>';
+          }).join('');
+      updateVersionSelect();
+      updateModelInfo();
+      updateModelInfoCard();
+    }).catch(function() {
+      modelSelect.innerHTML = '<option value="">Failed to load models</option>';
+    });
+  }
+
+  function updateVersionSelect() {
+    var id = parseInt(modelSelect.value);
+    if (!id) { versionLabel.style.display = 'none'; updateModelInfoCard(); return; }
+    var model = modelsData.find(function(m) { return m.id === id; });
+    if (model && model.total_versions > 1) {
+      versionLabel.style.display = '';
+      versionSelect.innerHTML = '';
+      for (var v = 1; v <= model.total_versions; v++) {
+        var sel = v === (model.latest_version || 1) ? ' selected' : '';
+        versionSelect.innerHTML += '<option value="' + v + '"' + sel + '>v' + v + '</option>';
+      }
+    } else {
+      versionLabel.style.display = 'none';
+    }
+    updateModelInfoCard();
+  }
+
+  function updateModelInfo() {
+    var id = parseInt(modelSelect.value);
+    if (!id) { modelInfoEl.style.display = 'none'; return; }
+    var model = modelsData.find(function(m) { return m.id === id; });
+    if (!model) { modelInfoEl.style.display = 'none'; return; }
+    modelInfoEl.style.display = 'block';
+    modelInfoEl.innerHTML = 'loss: <span class="accent-cyan">' + (model.final_loss != null ? model.final_loss.toFixed(4) : '?')
+      + '</span> | versions: <span class="accent-green">' + model.total_versions
+      + '</span> | created: <span class="text-dim">' + (model.created_at || '?') + '</span>';
+  }
+
+  window.updateModelInfoCard = function() {
+    var card = document.getElementById('model-info-card');
+    var body = document.getElementById('model-info-card-body');
+    var id = parseInt(modelSelect.value);
+    if (!id) { card.style.display = 'none'; return; }
+
+    var model = modelsData.find(function(m) { return m.id === id; });
+    if (!model) { card.style.display = 'none'; return; }
+
+    card.style.display = '';
+
+    var html = '';
+
+    // Model name + version
+    var version = versionLabel.style.display !== 'none'
+      ? parseInt(versionSelect.value)
+      : (model.latest_version || 1);
+
+    html += '<div class="model-card-header">';
+    html += '  <span class="model-card-name">' + escHtml(model.name) + '</span>';
+    html += '  <span class="model-card-version">v' + version + '</span>';
+    html += '</div>';
+
+    // Stats row
+    html += '<div class="model-card-stats">';
+    if (model.final_loss != null) {
+      html += '  <div class="stat"><span class="stat-label">Loss</span><span class="stat-value accent">' + model.final_loss.toFixed(4) + '</span></div>';
+    }
+    html += '</div>';
+
+    // Architecture table
+    var arch = model.architecture;
+    if (arch) {
+      html += '<div class="model-card-section"><h4 class="card-section-title">Architecture</h4>';
+      html += '<table class="model-card-table"><tbody>';
+      var archFields = [
+        ['vocab_size', 'Vocabulary'], ['num_params', 'Parameters'],
+        ['n_layer', 'Layers'], ['n_embd', 'Embed Dim'],
+        ['n_head', 'Heads'], ['block_size', 'Context']
+      ];
+      archFields.forEach(function(f) {
+        var val = arch[f[0]];
+        if (val == null) return;
+        var display = f[0] === 'num_params' ? val.toLocaleString() : val;
+        html += '<tr><td class="card-label">' + f[1] + '</td><td class="card-value">' + display + '</td></tr>';
+      });
+      html += '</tbody></table></div>';
+    }
+
+    // Hyperparams table
+    var hp = model.hyperparameters;
+    if (hp && Object.keys(hp).length > 0) {
+      html += '<div class="model-card-section"><h4 class="card-section-title">Training Config</h4>';
+      html += '<table class="model-card-table"><tbody>';
+      var hpFields = [
+        ['num_steps', 'Steps'], ['learning_rate', 'LR'],
+        ['temperature', 'Temp'], ['beta1', '\u03b2\u2081'], ['beta2', '\u03b2\u2082']
+      ];
+      hpFields.forEach(function(f) {
+        var val = hp[f[0]];
+        if (val == null) return;
+        html += '<tr><td class="card-label">' + f[1] + '</td><td class="card-value">' + val + '</td></tr>';
+      });
+      html += '</tbody></table></div>';
+    }
+
+    // MLflow + experiment links
+    if (model.mlflow_run_url || model.experiment_id) {
+      html += '<div class="model-card-section model-card-links">';
+      if (model.mlflow_run_url) {
+        html += '<a href="' + escHtml(model.mlflow_run_url) + '" target="_blank" class="btn btn-secondary btn-sm">Open in MLflow \u2192</a>';
+      }
+      if (model.experiment_id) {
+        html += '<a href="/v1/experiments-page?run_id=' + model.experiment_id + '" class="btn btn-secondary btn-sm">View Experiment \u2192</a>';
+      }
+      html += '</div>';
+    }
+
+    body.innerHTML = html;
+  };
+
+  modelSelect.addEventListener('change', function() {
+    updateVersionSelect();
+    updateModelInfo();
+    updateModelInfoCard();
+  });
+
+  /* ── Example Chips ── */
+  document.querySelectorAll('.example-chip').forEach(function(chip) {
+    chip.addEventListener('click', function() {
+      seedPrompt.value = this.getAttribute('data-prompt');
+    });
+  });
+
+  /* ── Generate ── */
+  generateBtn.addEventListener('click', async function() {
+    var modelId = parseInt(modelSelect.value);
+    if (!modelId) {
+      statusEl.textContent = 'Select a model first';
+      return;
+    }
+    var version = versionLabel.style.display !== 'none'
+      ? parseInt(versionSelect.value)
+      : 1;
+    var prompt = seedPrompt.value.trim() || null;
+
+    generateBtn.disabled = true;
+    statusEl.textContent = 'Generating...';
+    outputPanel.style.display = 'block';
+    outputEl.innerHTML = '<div class="loading-pulse">Generating samples...</div>';
+
+    try {
+      var resp = await fetch('/v1/inference/sample', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model_id: modelId,
+          version: version,
+          temperature: parseFloat(temperatureInput.value),
+          num_samples: parseInt(numSamplesInput.value),
+          prompt: prompt,
+        }),
+      });
+      var data = await resp.json();
+      if (!resp.ok) throw new Error(data.detail || 'Generation failed');
+
+      statusEl.textContent = data.samples.length + ' samples generated';
+      outputEl.innerHTML = data.samples.map(function(s) {
+        return '<div class="sample-block"><span class="sample-marker">[SAMPLE]</span> ' + escHtml(s) + '</div>';
+      }).join('');
+    } catch (err) {
+      statusEl.textContent = 'Error: ' + err.message;
+      outputEl.innerHTML = '<div class="error-block">' + escHtml(err.message) + '</div>';
+    }
+    generateBtn.disabled = false;
+  });
+
+  function escHtml(s) {
+    if (s == null) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  /* ── Init ── */
+  loadModels();
+
+  })();
 </script>
 {% endblock %}

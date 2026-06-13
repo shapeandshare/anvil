@@ -17,13 +17,48 @@
       {% endif %}
     </div>
     {% endfor %}
+    {% if arc %}
+    <div class="step" style="min-height:auto;border:none;">
+      <nav class="learn-arc-nav" aria-label="Lesson navigation">
+        <p class="text-muted space-y-2" style="font-size:0.75rem;">
+          Lesson {{ current_index + 1 }} of {{ arc|length }}
+        </p>
+        <div class="learn-arc-links">
+          {% if prev %}
+          <a href="{{ prev.path }}" class="btn btn-secondary">&larr; {{ prev.title }}</a>
+          {% endif %}
+          {% if next %}
+          <a href="{{ next.path }}" class="btn btn-secondary">{{ next.title }} &rarr;</a>
+          {% endif %}
+        </div>
+        <p class="space-y-2" style="margin-top:var(--space-2);">
+          <a href="/v1/learn" class="action-link">Back to Learning Index</a>
+        </p>
+      </nav>
+    </div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}
 {% block scripts %}
 <script src="/static/js/scroll-scene.js"></script>
+<script src="/static/js/widgets/tokenization.js"></script>
+<script src="/static/js/widgets/embedding.js"></script>
+<script src="/static/js/widgets/sampling.js"></script>
+<script src="/static/js/widgets/attention.js"></script>
+<script src="/static/js/widgets/training-loop.js"></script>
 <script>
 (function() {
+  var WIDGET_CLASSES = {
+    tokenization: window.TokenizationWidget,
+    embedding:   window.EmbeddingWidget,
+    sampling:    window.SamplingWidget,
+    attention:   window.AttentionWidget,
+    trainingLoop: window.TrainingLoopWidget,
+  };
+
+  var widgetInstances = {};
+
   var scene = new ScrollScene({
     container: document.getElementById('scroll-scene'),
     pinnedVisual: document.getElementById('pinned-visual'),
@@ -37,10 +72,41 @@
 
   scene.onstepchange = function(key) {
     var content = document.getElementById('pinned-content');
-    if (content) {
-      content.innerHTML = '<p class="text-mono text-accent">' + key + '</p>';
+    var stepEl = document.querySelector('.step[data-step-key="' + key + '"]');
+    if (!content) return;
+
+    var widgetEl = stepEl && stepEl.querySelector('.concept-widget');
+    var widgetType = widgetEl && widgetEl.getAttribute('data-widget');
+    var WidgetClass = widgetType && WIDGET_CLASSES[widgetType];
+
+    /* Initialize widget in the right-side narrative step if not yet done */
+    if (WidgetClass && widgetEl && !widgetInstances[key]) {
+      widgetInstances[key] = new WidgetClass(widgetEl);
+    }
+
+    /* Render into the left pinned panel */
+    if (WidgetClass) {
+      content.innerHTML = '';
+      new WidgetClass(content);
+    } else {
+      var titleEl = stepEl && stepEl.querySelector('h2');
+      var bodyEl = stepEl && stepEl.querySelector('p');
+      content.innerHTML = ''
+        + '<div style="text-align:center;padding:var(--space-4);max-width:480px;margin:0 auto;">'
+        + '<h2 style="font-family:var(--font-display);font-size:clamp(1.2rem,2.5vw,2rem);color:var(--text);margin-bottom:var(--space-3);">'
+        + (titleEl ? titleEl.textContent : key.replace(/-/g, ' '))
+        + '</h2>'
+        + (bodyEl ? '<p style="font-size:0.8rem;color:var(--text-muted);line-height:1.6;">' + bodyEl.textContent + '</p>' : '')
+        + '</div>';
     }
   };
+
+  /* Render first step immediately (don't wait for IntersectionObserver) */
+  var firstStep = document.querySelector('.step');
+  if (firstStep) {
+    var firstKey = firstStep.getAttribute('data-step-key');
+    if (firstKey) scene.onstepchange(firstKey);
+  }
 
   window.addEventListener('beforeunload', function() {
     scene.destroy();
