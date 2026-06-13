@@ -16,6 +16,9 @@ from microgpt.storage.local import LocalFileStore
 from microgpt.db.models.training_config import Dataset
 from microgpt.db.repositories.datasets import DatasetRepository
 from microgpt.services.datasets import DatasetService
+from microgpt.db.repositories.corpora import CorpusRepository
+from microgpt.services.corpora import CorpusService
+from microgpt.services.corpus_loader import CorpusLoader
 
 router = APIRouter()
 
@@ -164,6 +167,34 @@ async def import_dataset(
             "rows_imported": result.rows_imported,
             "errors": result.errors,
             "preview": result.preview,
+        },
+        "error": None,
+    }
+
+
+@router.post("/datasets/{id}/import-corpus")
+async def import_dataset_from_corpus(
+    id: int,
+    body: dict,
+    session: AsyncSession = Depends(get_db_session),
+):
+    corpus_id = body.get("corpus_id")
+    if not corpus_id:
+        raise HTTPException(status_code=422, detail="corpus_id required")
+    repo = CorpusRepository(session)
+    loader = CorpusLoader()
+    svc = CorpusService(repo, loader)
+    try:
+        docs = await svc.load_docs(corpus_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    import_svc = DatasetImportService(session, id)
+    result = await import_svc.commit_corpus_import(docs)
+    return {
+        "data": {
+            "import_source_id": result.import_source_id,
+            "rows_imported": result.rows_imported,
+            "errors": result.errors,
         },
         "error": None,
     }

@@ -27,6 +27,9 @@ class Corpus(Base, TimestampMixin):
     chunk_overlap: Mapped[float] = mapped_column(
         Float, nullable=False, default=0.5
     )
+    block_size: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=16
+    )
     file_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     document_count: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0

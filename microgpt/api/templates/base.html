@@ -11,18 +11,22 @@
 <div class="app-shell">
 
 <header class="app-header">
-    <div class="app-logo">microgpt</div>
+    <div class="app-logo">
+      <span class="logo-name">microgpt</span>
+      <span class="logo-version">v0.1.0</span>
+    </div>
     <nav class="app-tabs">
+      <span class="app-tab" data-target="/v1/datasets-page">Datasets</span>
       <span class="app-tab" data-target="/v1">Train</span>
       <span class="app-tab" data-target="/v1/experiments-page">Experiments</span>
-      <span class="app-tab" data-target="/v1/datasets-page">Datasets</span>
-      <span class="app-tab" data-target="/v1/operations-page">Ops</span>
-      <span class="app-tab" data-target="/v1/inference-page">Inference</span>
       <span class="app-tab" data-target="/v1/models-page">Models</span>
+      <span class="app-tab" data-target="/v1/inference-page">Inference</span>
     </nav>
-    <div class="app-header-right">
+<div class="app-header-right">
+      <span class="theme-toggle" id="titlebar-toggle" title="Toggle titlebar style">ansi</span>
       <span class="theme-toggle" id="theme-toggle">dark</span>
       <span class="app-version">v0.1.0</span>
+      <span class="app-tab ops-tab" data-target="/v1/operations-page">Ops</span>
     </div>
   </header>
 
@@ -101,6 +105,70 @@
   }
   fetchStats();
   setInterval(fetchStats, 15000);
+})();
+
+// ── Titlebar style toggle (block-art / minimal) ────────
+(function() {
+  var STORAGE_KEY = 'titlebar-style';
+
+  // Wild frame character pairs for ANSI mode — each panel gets a different one
+  var FRAMES = [
+    { l: '\u2588', r: '\u2588' },  // solid block
+    { l: '\u2593', r: '\u2593' },  // dark shade
+    { l: '\u2592', r: '\u2592' },  // medium shade
+    { l: '\u2591', r: '\u2591' },  // light shade
+    { l: '\u2584', r: '\u2584' },  // bottom half block
+    { l: '\u2580', r: '\u2580' },  // top half block
+    { l: '\u258c', r: '\u2590' },  // left/right half blocks (ears in)
+    { l: '\u2590', r: '\u258c' },  // right/left half blocks (ears out)
+    { l: '\u259a', r: '\u259e' },  // quadrants
+    { l: '\u259e', r: '\u259a' },  // reversed quadrants
+    { l: '\u25c6', r: '\u25c6' },  // diamond
+    { l: '\u25aa', r: '\u25aa' },  // small square
+  ];
+
+  function hashStr(s) {
+    var h = 0;
+    for (var i = 0; i < s.length; i++) {
+      h = ((h << 5) - h) + s.charCodeAt(i);
+      h = h & h;
+    }
+    return Math.abs(h);
+  }
+
+  function formatTitlebar(title, style) {
+    if (style !== 'block-art') return '\u258c ' + title;
+    var full = '[ ' + title + ' ]';
+    var target = 54;
+    var left = Math.floor((target - full.length) / 2);
+    var right = target - full.length - left;
+    var idx = hashStr(title) % FRAMES.length;
+    var f = FRAMES[idx];
+    return f.l.repeat(left) + full + f.r.repeat(right);
+  }
+
+  function applyTitlebarStyle(style) {
+    document.querySelectorAll('.panel-titlebar[data-title]').forEach(function(el) {
+      var title = el.getAttribute('data-title');
+      el.textContent = formatTitlebar(title, style);
+    });
+    var btn = document.getElementById('titlebar-toggle');
+    if (btn) btn.textContent = style === 'block-art' ? 'ansi' : 'min';
+  }
+  window.applyTitlebarStyle = applyTitlebarStyle;
+
+  function toggleTitlebarStyle() {
+    var current = localStorage.getItem(STORAGE_KEY) || 'minimal';
+    var next = current === 'block-art' ? 'minimal' : 'block-art';
+    localStorage.setItem(STORAGE_KEY, next);
+    applyTitlebarStyle(next);
+  }
+
+  var saved = localStorage.getItem(STORAGE_KEY) || 'minimal';
+  document.addEventListener('DOMContentLoaded', function() {
+    applyTitlebarStyle(saved);
+  });
+  document.getElementById('titlebar-toggle').addEventListener('click', toggleTitlebarStyle);
 })();
 })();
 </script>

@@ -2,14 +2,14 @@
 {% block content %}
 
 <div class="panel" id="dataset-info-bar">
-  <div class="panel-titlebar">████████[ DATASET DETAIL ]███████████████████████</div>
+  <div class="panel-titlebar" data-title="DATASET DETAIL">▌ DATASET DETAIL</div>
   <div class="panel-body" id="dataset-info">
     <span style="color:var(--text-dim);font-size:0.78rem;">Loading dataset...</span>
   </div>
 </div>
 
 <div class="panel">
-  <div class="panel-titlebar">▌ SAMPLE BROWSER</div>
+  <div class="panel-titlebar" data-title="SAMPLE BROWSER">▌ SAMPLE BROWSER</div>
   <div class="panel-body">
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
       <span class="prompt-symbol">$</span>
@@ -44,7 +44,7 @@
 </div>
 
 <div class="panel">
-  <div class="panel-titlebar">▌ CURATION TOOLBAR</div>
+  <div class="panel-titlebar" data-title="CURATION TOOLBAR">▌ CURATION TOOLBAR</div>
   <div class="panel-body">
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
       <div>
@@ -86,14 +86,29 @@
 </div>
 
 <div class="panel">
-  <div class="panel-titlebar">▌ QUALITY METRICS</div>
+  <div class="panel-titlebar" data-title="IMPORT FROM CORPUS">▌ IMPORT FROM CORPUS</div>
+  <div class="panel-body">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <span class="prompt-symbol">$</span>
+      <span class="prompt-label">corpus</span>
+      <select class="terminal-input" id="corpus-select" style="width:200px;">
+        <option value="">— select corpus —</option>
+      </select>
+      <button class="terminal-btn" id="import-corpus-btn"><span class="btn-prefix">$</span> import</button>
+      <span style="color:var(--text-dim);font-size:0.72rem;" id="import-corpus-status"></span>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-titlebar" data-title="QUALITY METRICS">▌ QUALITY METRICS</div>
   <div class="panel-body" id="metrics-panel">
     <span style="color:var(--text-dim);font-size:0.78rem;">Loading metrics...</span>
   </div>
 </div>
 
 <div class="panel">
-  <div class="panel-titlebar">▌ EXPORT</div>
+  <div class="panel-titlebar" data-title="EXPORT">▌ EXPORT</div>
   <div class="panel-body">
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
       <span class="prompt-symbol">$</span>
@@ -110,7 +125,7 @@
 </div>
 
 <div class="panel">
-  <div class="panel-titlebar">▌ OPERATION HISTORY</div>
+  <div class="panel-titlebar" data-title="OPERATION HISTORY">▌ OPERATION HISTORY</div>
   <div class="panel-body" id="history-panel">
     <span style="color:var(--text-dim);font-size:0.78rem;">Loading operation history...</span>
   </div>
@@ -261,7 +276,7 @@
     var textCell = row.querySelector('.sample-text');
     if (!textCell) return;
     var currentText = textCell.textContent;
-    textCell.innerHTML = '<textarea class="terminal-input" style="width:100%;min-height:40px;font-size:0.72rem;" id="edit-textarea-' + sampleId + '">' + escHtml(currentText) + '</textarea>' +
+    textCell.innerHTML = '<textarea class="terminal-input terminal-textarea" style="font-size:0.72rem;" id="edit-textarea-' + sampleId + '">' + escHtml(currentText) + '</textarea>' +
       '<div style="display:flex;gap:4px;margin-top:4px;">' +
       '<button class="terminal-btn btn-action save-edit-btn" data-id="' + sampleId + '" style="color:var(--success);"><span class="btn-prefix">$</span> save</button>' +
       '<button class="terminal-btn btn-action cancel-edit-btn" data-id="' + sampleId + '" style="color:var(--text-dim);"><span class="btn-prefix">$</span> cancel</button>' +
@@ -540,11 +555,54 @@
     }
   });
 
+  // ── Import from Corpus ──────────────────────────────
+  async function loadCorporaList() {
+    try {
+      var resp = await fetch('/v1/corpora');
+      var json = await resp.json();
+      var select = document.getElementById('corpus-select');
+      if (!json.data) return;
+      select.innerHTML = '<option value="">— select corpus —</option>';
+      json.data.forEach(function(c) {
+        var opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.name + ' (' + c.file_count + ' files, ' + c.document_count + ' docs)';
+        select.appendChild(opt);
+      });
+    } catch(e) {}
+  }
+
+  document.getElementById('import-corpus-btn').addEventListener('click', async function() {
+    var select = document.getElementById('corpus-select');
+    var corpusId = select.value;
+    var status = document.getElementById('import-corpus-status');
+    if (!corpusId) { status.textContent = '! Select a corpus'; return; }
+    var btn = this;
+    btn.disabled = true;
+    var orig = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner"></span> importing';
+    status.textContent = '> importing corpus docs...';
+    try {
+      var resp = await fetch('/v1/datasets/' + DATASET_ID + '/import-corpus', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ corpus_id: parseInt(corpusId, 10) }),
+      });
+      var json = await resp.json();
+      if (!resp.ok) { status.textContent = '! ' + (json.detail || 'Import failed'); btn.disabled = false; btn.innerHTML = orig; return; }
+      var d = json.data;
+      status.textContent = '> imported ' + d.rows_imported + ' samples';
+      refreshAll();
+    } catch(err) { status.textContent = '! ' + err.message; }
+    btn.disabled = false;
+    btn.innerHTML = orig;
+  });
+
   // ── Init ─────────────────────────────────────────────
   loadDatasetInfo();
   loadSamples(0);
   loadMetrics();
   loadOperations();
-})();
+  loadCorporaList();
 </script>
 {% endblock %}
