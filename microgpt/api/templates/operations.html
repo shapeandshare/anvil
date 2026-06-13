@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="panel">
-  <div class="panel-titlebar">▌ OPERATIONS — SERVICE CONTROL</div>
+  <div class="panel-titlebar" data-title="OPERATIONS — SERVICE CONTROL">▌ OPERATIONS — SERVICE CONTROL</div>
   <div class="panel-body">
     <div class="help-box" style="margin-bottom:10px;">
       <div class="help-title">▌ SERVICE CONTROL</div>
@@ -15,7 +15,7 @@
 </div>
 
 <div class="panel">
-  <div class="panel-titlebar">▌ SYSTEM ACTIONS</div>
+  <div class="panel-titlebar" data-title="SYSTEM ACTIONS">▌ SYSTEM ACTIONS</div>
   <div class="panel-body">
     <div class="ops-actions-bar">
       <button class="terminal-btn btn-restart" onclick="ops.restartAll()" id="btn-restart-all">⟳ Restart All</button>
@@ -26,14 +26,14 @@
 </div>
 
 <div class="panel">
-  <div class="panel-titlebar">▌ SERVICE LOGS — tail -f</div>
+  <div class="panel-titlebar" data-title="SERVICE LOGS — tail -f">▌ SERVICE LOGS — tail -f</div>
   <div class="panel-body" id="service-logs">
     <span style="color:var(--text-dim);font-size:0.78rem;">Waiting for service data...</span>
   </div>
 </div>
 
 <div class="panel">
-  <div class="panel-titlebar">▌ SYSTEM RESOURCES — host info</div>
+  <div class="panel-titlebar" data-title="SYSTEM RESOURCES — host info">▌ SYSTEM RESOURCES — host info</div>
   <div class="panel-body">
     <div id="system-resources"><span style="color:var(--text-dim);font-size:0.78rem;">Polling...</span></div>
   </div>
@@ -200,7 +200,7 @@ servicesHtml += '<div class="htop-row">';
         var logData = await logResp.json();
         if (logData.logs && logData.logs.length > 0) {
           logsHtml += '<div class="panel" style="margin:6px 0;">';
-          logsHtml += '<div class="panel-titlebar">▌ ' + svc.name + '</div>';
+          logsHtml += '<div class="panel-titlebar" data-title="' + svc.name + '">▌ ' + svc.name + '</div>';
           logsHtml += '<pre class="telemetry" style="max-height:180px;font-size:0.72rem;">';
           logsHtml += logData.logs.join('\n');
           logsHtml += '</pre></div>';
@@ -209,6 +209,10 @@ servicesHtml += '<div class="htop-row">';
     }
     if (logsHtml) {
       logsDiv.innerHTML = logsHtml;
+      // Apply current titlebar style to dynamic titlebars
+      if (window.applyTitlebarStyle) {
+        window.applyTitlebarStyle(localStorage.getItem('titlebar-style') || 'minimal');
+      }
     } else {
       logsDiv.innerHTML = '<span style="color:var(--text-dim);font-size:0.78rem;">No log data available.</span>';
     }
