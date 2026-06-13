@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="panel">
-  <div class="panel-titlebar">▌ DATASET MANAGER</div>
+  <div class="panel-titlebar" data-title="DATASET MANAGER">▌ DATASET MANAGER</div>
   <div class="panel-body">
 
     <div class="help-box" style="margin-bottom:10px;">
@@ -43,41 +43,88 @@
 </div>
 
 <div class="panel">
-  <div class="panel-titlebar">▌ CORPORA MANAGER</div>
+  <div class="panel-titlebar" data-title="CORPORA WIZARD">▌ CORPORA WIZARD</div>
   <div class="panel-body">
 
     <div class="help-box" style="margin-bottom:10px;">
-      <div class="help-title">▌ CORPORA CHUNKING STRATEGIES</div>
-      <table style="width:100%;border-collapse:collapse;font-size:0.7rem;">
-        <tr><td style="padding:2px 6px 2px 0;color:var(--accent-cyan);font-weight:bold;">windowed</td><td style="color:var(--text-dim);">Sliding character window — best for code repos and prose. Preserves context across chunks.</td></tr>
-        <tr><td style="padding:2px 6px 2px 0;color:var(--accent-cyan);font-weight:bold;">line</td><td style="color:var(--text-dim);">Each line is a separate document — useful for structured data, CSV, logs.</td></tr>
-        <tr><td style="padding:2px 6px 2px 0;color:var(--accent-cyan);font-weight:bold;">file</td><td style="color:var(--text-dim);">Each file is one document — ideal for config files, short scripts, or when line boundaries matter.</td></tr>
-      </table>
-      <div style="margin-top:4px;color:var(--text-dim);"><b>Pattern hints</b>: <code>**/*.py</code> = all Python files recursively, <code>tests/</code> = exclude test dir, <code>*.md</code> = markdown only.</div>
+      <div class="help-title">▌ HOW IT WORKS</div>
+      <div>Enter a directory path and optional glob patterns. The wizard scans the directory (no data read), shows file statistics, and recommends optimal chunking parameters based on file size and type. Pick a recommendation or customize, then create &amp; ingest.</div>
     </div>
 
     <div class="prompt-line" style="margin-bottom:4px;">
       <span class="prompt-symbol">$</span>
-      <span class="prompt-label">corpus create --name</span>
+      <span class="prompt-label">analyze --path</span>
     </div>
-    <div id="corpus-create-form" style="padding-left:16px;display:flex;flex-wrap:wrap;gap:4px;">
-      <input type="text" class="terminal-input" id="corpus-name" placeholder="name" style="width:120px;">
-      <input type="text" class="terminal-input" id="corpus-root" placeholder="root_path" style="width:240px;">
-      <input type="text" class="terminal-input" id="corpus-pattern" placeholder="include (e.g. **/*.py)" style="width:180px;">
-      <div class="help-text" style="margin:0 0 0 20px;">glob pattern, e.g. <code>**/*.py</code> or <code>*.md</code></div>
-      <input type="text" class="terminal-input" id="corpus-ignore" placeholder="exclude (e.g. tests/)" style="width:140px;">
-      <div class="help-text" style="margin:0 0 0 20px;">exclude pattern, e.g. <code>tests/**</code> or <code>node_modules</code></div>
-      <div style="display:flex;flex-direction:column;gap:3px;">
-        <select class="terminal-input" id="corpus-strategy" style="width:100px;">
-          <option value="windowed">windowed</option>
-          <option value="line">line</option>
-          <option value="file">file</option>
-        </select>
-        <div class="param-desc" id="strategy-desc" style="max-width:300px;">Sliding window over text — best for code & prose</div>
+    <div id="wiz-drop-zone" style="padding-left:16px;display:flex;flex-wrap:wrap;gap:4px;align-items:center;">
+      <input type="text" class="terminal-input" id="wiz-root" placeholder="root_path" style="width:260px;">
+      <button class="terminal-btn" id="wiz-browse-btn" title="Select folder via native dialog" style="font-size:0.7rem;padding:2px 8px;"><span class="btn-prefix">$</span> browse</button>
+      <input type="file" id="wiz-folder-picker" webkitdirectory style="display:none;">
+      <input type="text" class="terminal-input" id="wiz-include" placeholder="include (e.g. **/*)" style="width:160px;">
+      <span class="help-text" style="font-size:0.65rem;">glob</span>
+      <input type="text" class="terminal-input" id="wiz-exclude" placeholder="exclude (e.g. tests/)" style="width:140px;">
+      <span class="help-text" style="font-size:0.65rem;">exclude</span>
+      <button class="terminal-btn" id="wiz-analyze-btn" style="color:var(--accent-green);border-color:var(--accent-green);" title="Scan directory and auto-select best chunking params"><span class="btn-prefix">⚡</span> auto-tune</button>
+    </div>
+    <div style="padding-left:16px;display:flex;flex-wrap:wrap;gap:3px;margin-top:4px;" id="wiz-glob-chips">
+      <span class="glob-chip" data-target="include" data-value="**/*">All files</span>
+      <span class="glob-chip" data-target="include" data-value="*.py">Python</span>
+      <span class="glob-chip" data-target="include" data-value="*.js">JS</span>
+      <span class="glob-chip" data-target="include" data-value="*.ts">TS</span>
+      <span class="glob-chip" data-target="include" data-value="*.go">Go</span>
+      <span class="glob-chip" data-target="include" data-value="*.rs">Rust</span>
+      <span class="glob-chip" data-target="include" data-value="*.md">Markdown</span>
+      <span class="glob-chip" data-target="include" data-value="*.{py,js,ts,go,rs,md}">Code+Docs</span>
+      <span class="glob-chip" data-target="include" data-value="*.json">JSON</span>
+      <span class="glob-chip" data-target="include" data-value="*.yaml">YAML</span>
+      <span class="glob-chip" data-target="include" data-value="*.sh">Shell</span>
+      <span class="glob-chip" data-target="include" data-value="*.css">CSS</span>
+      <span class="glob-chip" data-target="include" data-value="*.html">HTML</span>
+      <span class="glob-sep">|</span>
+      <span class="glob-chip" data-target="exclude" data-value="tests/">! tests/</span>
+      <span class="glob-chip" data-target="exclude" data-value="node_modules">! node_modules</span>
+      <span class="glob-chip" data-target="exclude" data-value="__pycache__">! __pycache__</span>
+      <span class="glob-chip" data-target="exclude" data-value=".git">! .git</span>
+    </div>
+    <div class="telemetry" id="wiz-status" style="min-height:24px;margin-top:4px;max-height:40px;">Enter a path, drag a folder from Finder here, or use <b>browse</b>.</div>
+
+    <div id="wiz-results" style="display:none;margin-top:10px;">
+
+      <div id="wiz-stats" class="help-box" style="margin-bottom:8px;"></div>
+
+      <div class="prompt-line" style="margin-bottom:6px;">
+        <span class="prompt-symbol">$</span>
+        <span class="prompt-label">recommendations</span>
       </div>
-      <button class="terminal-btn" id="corpus-create-btn"><span class="btn-prefix">$</span> create</button>
+      <div id="wiz-recs" style="display:flex;flex-direction:column;gap:4px;"></div>
+
+      <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);">
+        <div class="prompt-line" style="margin-bottom:4px;">
+          <span class="prompt-symbol">$</span>
+          <span class="prompt-label">corpus create --name --strategy --params</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding-left:16px;">
+          <input type="text" class="terminal-input" id="wiz-name" placeholder="corpus name" style="width:140px;">
+          <span class="help-text" style="font-size:0.65rem;">strategy:</span>
+          <select class="terminal-input" id="wiz-strategy" style="width:100px;">
+            <option value="windowed">windowed</option>
+            <option value="file">file</option>
+            <option value="line">line</option>
+          </select>
+          <span class="help-text" style="font-size:0.65rem;">max files:</span>
+          <input type="number" class="terminal-input" id="wiz-max-files" value="10000" min="100" max="1000000" step="1000" style="width:80px;">
+          <span class="help-text" id="wiz-bs-label" style="font-size:0.65rem;">block_size:</span>
+          <input type="range" id="wiz-block-size" min="8" max="1024" value="64" step="8" style="width:100px;accent-color:var(--primary);vertical-align:middle;">
+          <span id="wiz-bs-value" style="font-size:0.68rem;color:var(--accent-cyan);min-width:35px;">64</span>
+          <span class="help-text" id="wiz-ov-label" style="font-size:0.65rem;">overlap:</span>
+          <input type="range" id="wiz-overlap" min="0" max="50" value="25" style="width:80px;accent-color:var(--primary);vertical-align:middle;">
+          <span id="wiz-ov-value" style="font-size:0.68rem;color:var(--accent-cyan);min-width:30px;">25%</span>
+          <button class="terminal-btn" id="wiz-create-btn"><span class="btn-prefix">$</span> create &amp; ingest</button>
+        </div>
+        <div id="wiz-estimate" style="padding-left:16px;margin-top:4px;min-height:20px;font-size:0.72rem;"></div>
+        <div class="telemetry" id="wiz-create-status" style="min-height:24px;margin-top:2px;max-height:40px;"></div>
+      </div>
+
     </div>
-    <div class="telemetry" id="corpus-status" style="min-height:24px;margin-top:4px;max-height:40px;">Ready.</div>
 
     <div style="margin-top:12px;">
       <span class="terminal-sep">── corpora ──────────────────────────────────────</span>
@@ -108,6 +155,18 @@
   function escHtml(s) {
     if (s == null) return '';
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function parsePatterns(s) {
+    if (!s || !s.trim()) return null;
+    return s.split(',').map(function(p) { return p.trim(); }).filter(function(p) { return p; });
+  }
+
+  function safeJson(resp) {
+    return resp.text().then(function(text) {
+      try { return { ok: resp.ok, body: JSON.parse(text), raw: null }; }
+      catch(e) { return { ok: false, body: null, raw: text.slice(0, 200) }; }
+    });
   }
 
   function statusBadge(status) {
@@ -213,7 +272,7 @@
       var delBtn = '<button class="terminal-btn del-btn" data-id="' + c.id + '" style="font-size:0.7rem;padding:1px 6px;margin-left:2px;"><span class="btn-prefix">$</span> rm</button>';
       return '<div class="ls-line">' +
         '<span class="ls-perms">drwxr-xr-x</span>' +
-        '<span class="ls-size">' + (c.file_count || 0) + 'f</span>' +
+        '<span class="ls-size">' + (c.file_count || 0) + ' files</span>' +
         '<span class="ls-date">' + (c.created_at || '').slice(0,10) + '</span>' +
         '<span class="ls-name">' + c.name + '</span>' +
         '<span style="color:var(--text-dim);font-size:0.72rem;"> ' + (c.document_count || 0) + ' docs, ' + (c.chunking_strategy || '?') + '</span>' +
@@ -231,10 +290,25 @@
     if (e.target.classList.contains('ingest-btn') || (e.target.closest && e.target.closest('.ingest-btn'))) {
       var btn = e.target.classList.contains('ingest-btn') ? e.target : e.target.closest('.ingest-btn');
       var id = btn.getAttribute('data-id');
+      var status = document.getElementById('wiz-create-status');
       btn.textContent = '> ingesting...';
-      fetch('/v1/corpora/' + id + '/ingest', { method: 'POST' }).then(function(r) { return r.json(); }).then(function() {
-        loadCorpora();
-      }).catch(function() { loadCorpora(); });
+      status.textContent = '> ingesting...';
+      fetch('/v1/corpora/' + id + '/ingest', { method: 'POST' })
+        .then(function(r) {
+          return r.json().then(function(body) { return { ok: r.ok, body: body }; });
+        })
+        .then(function(res) {
+          if (!res.ok) {
+            status.textContent = '! Ingest failed: ' + (res.body.detail || 'Unknown error');
+            return;
+          }
+          var d = res.body.data;
+          status.textContent = '> Ingested ' + d.file_count + ' files, ' + d.document_count + ' documents';
+          loadCorpora();
+        })
+        .catch(function(err) {
+          status.textContent = '! Ingest error: ' + err.message;
+        });
     }
 
     /* delete corpus */
@@ -380,41 +454,347 @@
     if (e.key === 'Enter') doSearch();
   });
 
-  /* ── corpus create ──────────────────────────────────── */
+  /* ── wizard: browse folder ──────────────────────────── */
 
-  document.getElementById('corpus-create-btn').addEventListener('click', async function() {
-    var name = document.getElementById('corpus-name').value;
-    var root = document.getElementById('corpus-root').value;
-    var pattern = document.getElementById('corpus-pattern').value;
-    var ignore = document.getElementById('corpus-ignore').value;
-    var strategy = document.getElementById('corpus-strategy').value;
-    var status = document.getElementById('corpus-status');
-    if (!name || !root) { status.textContent = '! name and root_path required'; return; }
-    status.textContent = '> creating...';
-    var body = { name: name, root_path: root, chunking_strategy: strategy };
-    if (pattern) body.include_patterns = [pattern];
-    if (ignore) body.exclude_patterns = [ignore];
+  document.getElementById('wiz-browse-btn').addEventListener('click', function() {
+    document.getElementById('wiz-folder-picker').click();
+  });
+
+  document.getElementById('wiz-folder-picker').addEventListener('change', function(e) {
+    var files = e.target.files;
+    if (!files || files.length === 0) return;
+    var relPath = files[0].webkitRelativePath || '';
+    var parts = relPath.split('/');
+    var dirName = parts.length > 1 ? parts[0] : '(unknown)';
+    var status = document.getElementById('wiz-status');
+    status.textContent = '> resolving path for "' + dirName + '"...';
+    /* Try to resolve via server */
+    fetch('/v1/corpora/resolve-path', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folder_name: dirName }),
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(resp) {
+      if (resp.data && resp.data.path) {
+        document.getElementById('wiz-root').value = resp.data.path;
+        status.innerHTML = '> Resolved &quot;' + dirName + '&quot; to ' + resp.data.path + '. Click <b>analyze</b> or drop another folder.';
+      } else {
+        status.innerHTML = '> Folder &quot;' + dirName + '&quot; selected (' + files.length + ' files). Could not auto-resolve. Drag from Finder or paste the full path.';
+      }
+    })
+    .catch(function() {
+      status.innerHTML = '> Folder &quot;' + dirName + '&quot; selected (' + files.length + ' files). Drag from Finder or paste the full path.';
+    });
+  });
+
+  /* ── wizard: drag & drop from Finder ─────────────────── */
+
+  var dropZone = document.getElementById('wiz-drop-zone');
+  var dropHighlight = function(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    dropZone.style.outline = '2px dashed var(--accent-cyan)';
+    dropZone.style.outlineOffset = '2px';
+  };
+  dropZone.addEventListener('dragover', dropHighlight);
+  dropZone.addEventListener('dragenter', dropHighlight);
+  dropZone.addEventListener('dragleave', function(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    dropZone.style.outline = '';
+    dropZone.style.outlineOffset = '';
+  });
+  dropZone.addEventListener('drop', function(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    dropZone.style.outline = '';
+    dropZone.style.outlineOffset = '';
+    /* On macOS, dragging from Finder exposes the POSIX path in text/plain */
+    var path = e.dataTransfer.getData('text/plain');
+    if (path) {
+      path = path.trim();
+      /* Strip trailing slash if present */
+      if (path.endsWith('/')) path = path.slice(0, -1);
+      document.getElementById('wiz-root').value = path;
+      /* Auto-trigger analyze */
+      document.getElementById('wiz-analyze-btn').click();
+    }
+  });
+
+  /* ── wizard: glob chips ─────────────────────────────── */
+
+  document.getElementById('wiz-glob-chips').addEventListener('click', function(e) {
+    var chip = e.target;
+    if (!chip.classList.contains('glob-chip')) return;
+    var target = chip.getAttribute('data-target');
+    var value = chip.getAttribute('data-value');
+    var input = document.getElementById('wiz-' + target);
+    var isActive = chip.classList.contains('active');
+    if (isActive) {
+      chip.classList.remove('active');
+    } else {
+      chip.classList.add('active');
+    }
+    /* Build the comma-separated value from all active chips */
+    var values = [];
+    document.querySelectorAll('.glob-chip[data-target="' + target + '"].active').forEach(function(c) {
+      values.push(c.getAttribute('data-value'));
+    });
+    input.value = values.join(', ');
+  });
+
+  /* ── wizard: analyze ─────────────────────────────────── */
+
+  var wizState = {};
+
+  document.getElementById('wiz-analyze-btn').addEventListener('click', async function() {
+    var btn = this;
+    var root = document.getElementById('wiz-root').value.trim();
+    var inc = document.getElementById('wiz-include').value.trim();
+    var exc = document.getElementById('wiz-exclude').value.trim();
+    var status = document.getElementById('wiz-status');
+    if (!root) { status.textContent = '! root_path required'; return; }
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> scanning';
+    status.textContent = '> scanning...';
+    var body = { path: root };
+    var incList = parsePatterns(inc);
+    var excList = parsePatterns(exc);
+    if (incList) body.include_patterns = incList;
+    if (excList) body.exclude_patterns = excList;
     try {
-      var resp = await fetch('/v1/corpora', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      var data = await resp.json();
-      status.textContent = '> created corpus ' + data.data.id + ': ' + data.data.name;
+      var resp = await fetch('/v1/corpora/analyze-path', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      var parsed = await safeJson(resp);
+      if (!parsed.ok) { btn.disabled = false; btn.innerHTML = '<span class="btn-prefix">⚡</span> auto-tune'; status.textContent = '! ' + (parsed.body ? (parsed.body.detail || 'Analyze failed') : parsed.raw); return; }
+      wizState.analysis = parsed.body.data;
+      renderWizResults(parsed.body.data, true);
+      document.getElementById('wiz-results').style.display = 'block';
+      status.textContent = '> scan complete: ' + parsed.body.data.file_count + ' files, ' + formatBytes(parsed.body.data.total_bytes);
+      btn.disabled = false;
+      btn.innerHTML = '<span class="btn-prefix">⚡</span> auto-tune';
+    } catch (err) { btn.disabled = false; btn.innerHTML = '<span class="btn-prefix">⚡</span> auto-tune'; status.textContent = '! ' + err.message; }
+  });
+
+  function renderWizResults(data, autoSelect) {
+    /* stats box */
+    var langs = Object.keys(data.language_breakdown || {}).slice(0, 8);
+    var langStats = data.language_stats || {};
+    var langHtml = langs.length
+      ? langs.map(function(l) {
+          var extra = '';
+          var st = langStats[l];
+          if (st && st.avg_bytes) {
+            extra = ' <span style="color:var(--text-dim);font-size:0.62rem;">avg ' + formatBytes(st.avg_bytes) + '</span>';
+          }
+          return '<span style="color:var(--accent-cyan);">' + l + '</span> ' + data.language_breakdown[l] + ' files' + extra;
+        }).join(' &middot; ')
+      : 'No language data';
+    document.getElementById('wiz-stats').innerHTML =
+      '<div style="display:flex;gap:20px;flex-wrap:wrap;font-size:0.72rem;">'
+      + '<span><b>Files</b>: ' + data.file_count + '</span>'
+      + '<span><b>Total</b>: ' + formatBytes(data.total_bytes) + '</span>'
+      + '<span><b>Avg</b>: ' + formatBytes(data.avg_bytes) + '</span>'
+      + '<span><b>Median</b>: ' + formatBytes(data.median_bytes) + '</span>'
+      + '</div><div style="font-size:0.68rem;margin-top:4px;color:var(--text-dim);">' + langHtml + '</div>';
+
+    /* recommendations */
+    var recs = data.recommendations || [];
+    var html = recs.map(function(r, i) {
+      var docs = r.estimated_docs != null ? formatBytes(r.estimated_docs).replace('B','').replace('KB','K').replace('MB','M') + ' docs' : '? docs';
+      var selected = i === 0 && r.strategy ? ' selected-rec' : '';
+      var stratAttr = r.strategy ? ' data-strategy="' + r.strategy + '"' : '';
+      var cardStyle = r.strategy
+        ? 'style="display:flex;gap:8px;align-items:flex-start;padding:6px 10px;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:0.72rem;"'
+        : 'style="display:flex;gap:8px;align-items:flex-start;padding:6px 10px;border:1px dashed var(--border);border-radius:4px;font-size:0.7rem;color:var(--text-dim);"';
+      return '<div class="rec-card' + selected + '" data-idx="' + i + '"' + stratAttr + ' ' + cardStyle + '>'
+        + '<input type="radio" name="wiz-rec" value="' + i + '"' + (i === 0 ? ' checked' : '') + ' style="margin-top:2px;accent-color:var(--primary);">'
+        + '<div style="flex:1;">'
+        + '<div style="color:var(--accent-green);font-weight:bold;">' + r.label + '</div>'
+        + '<div style="color:var(--text-dim);">' + r.detail + '</div>'
+        + '</div>'
+        + '<div style="text-align:right;white-space:nowrap;color:var(--info);font-size:0.68rem;">' + docs + '</div>'
+        + '</div>';
+    }).join('');
+    var recsContainer = document.getElementById('wiz-recs');
+    recsContainer.innerHTML = html;
+
+    /* click handler on rec cards */
+    recsContainer.querySelectorAll('.rec-card').forEach(function(card) {
+      card.addEventListener('click', function() {
+        recsContainer.querySelectorAll('.rec-card').forEach(function(c) { c.classList.remove('selected-rec'); c.style.borderColor = 'var(--border)'; });
+        card.classList.add('selected-rec');
+        card.style.borderColor = 'var(--accent-cyan)';
+        card.querySelector('input').checked = true;
+        var idx = parseInt(card.getAttribute('data-idx'), 10);
+        var rec = data.recommendations[idx];
+        if (rec.strategy) document.getElementById('wiz-strategy').value = rec.strategy;
+        if (rec.block_size) {
+          var bs = document.getElementById('wiz-block-size');
+          bs.value = String(rec.block_size);
+          document.getElementById('wiz-bs-value').textContent = bs.value;
+        }
+        if (rec.overlap != null) {
+          var ov = document.getElementById('wiz-overlap');
+          ov.value = String(Math.round(rec.overlap * 100));
+          document.getElementById('wiz-ov-value').textContent = ov.value + '%';
+        }
+        updateWizParams();
+      });
+    });
+
+    /* auto-select first recommendation on first analysis */
+    if (recs.length > 0) {
+      /* Skip informational cards (no strategy) and auto-select first actionable one */
+      var first = recsContainer.querySelector('.rec-card[data-strategy]');
+      if (!first) first = recsContainer.querySelector('.rec-card');
+      if (first) first.click();
+    }
+
+    /* update strategy visibility for block_size */
+    updateWizParams();
+  }
+
+  function updateWizParams() {
+    var strat = document.getElementById('wiz-strategy').value;
+    var bsSlider = document.getElementById('wiz-block-size');
+    var bsLabel = document.getElementById('wiz-bs-label');
+    var bsVal = document.getElementById('wiz-bs-value');
+    var ovSlider = document.getElementById('wiz-overlap');
+    var ovLabel = document.getElementById('wiz-ov-label');
+    var ovVal = document.getElementById('wiz-ov-value');
+    var hidden = strat !== 'windowed';
+    bsSlider.style.display = hidden ? 'none' : '';
+    bsLabel.style.display = hidden ? 'none' : '';
+    bsVal.style.display = hidden ? 'none' : '';
+    ovSlider.style.display = hidden ? 'none' : '';
+    ovLabel.style.display = hidden ? 'none' : '';
+    ovVal.style.display = hidden ? 'none' : '';
+    /* Update displayed values */
+    bsVal.textContent = bsSlider.value;
+    ovVal.textContent = ovSlider.value + '%';
+    updateEstimate();
+  }
+
+  function updateEstimate() {
+    var analysis = wizState.analysis;
+    var el = document.getElementById('wiz-estimate');
+    if (!analysis) { el.innerHTML = ''; return; }
+    var strat = document.getElementById('wiz-strategy').value;
+    var totalBytes = analysis.total_bytes;
+    var fileCount = analysis.file_count;
+    var avgBytes = analysis.avg_bytes;
+    var docs, label;
+    if (strat === 'file') {
+      docs = fileCount;
+      label = '1 doc per file';
+    } else if (strat === 'line') {
+      var estLines = Math.round(totalBytes / 60);
+      docs = estLines;
+      label = '1 doc per line';
+    } else {
+      var bs = parseInt(document.getElementById('wiz-block-size').value, 10);
+      var overlap = parseInt(document.getElementById('wiz-overlap').value, 10) / 100;
+      var stride = Math.max(1, Math.round(bs * (1 - overlap)));
+      var docsPerFile = avgBytes > bs ? Math.floor((avgBytes - bs) / stride) + 1 : 1;
+      docs = fileCount * docsPerFile;
+      label = bs + '-char window, ' + Math.round(overlap * 100) + '% overlap';
+    }
+    var displayDocs = docs.toLocaleString();
+    var color = docs > 5000000 ? 'var(--warning)' : docs > 500000 ? 'var(--text-dim)' : 'var(--accent-green)';
+    var html = '<span style="color:' + color + ';">~' + displayDocs + ' training docs</span>  <span style="color:var(--text-dim);">(' + label + ')</span>';
+    el.innerHTML = html;
+  }
+
+  document.getElementById('wiz-strategy').addEventListener('change', updateWizParams);
+  document.getElementById('wiz-block-size').addEventListener('input', function() {
+    document.getElementById('wiz-bs-value').textContent = this.value;
+    updateEstimate();
+  });
+  document.getElementById('wiz-overlap').addEventListener('input', function() {
+    document.getElementById('wiz-ov-value').textContent = this.value + '%';
+    updateEstimate();
+  });
+
+  /* ── wizard: create & ingest ─────────────────────────── */
+
+  document.getElementById('wiz-create-btn').addEventListener('click', async function() {
+    var btn = this;
+    var name = document.getElementById('wiz-name').value.trim();
+    var root = document.getElementById('wiz-root').value.trim();
+    var inc = document.getElementById('wiz-include').value.trim();
+    var exc = document.getElementById('wiz-exclude').value.trim();
+    var strategy = document.getElementById('wiz-strategy').value;
+    var blockSize = parseInt(document.getElementById('wiz-block-size').value, 10);
+    var overlap = parseInt(document.getElementById('wiz-overlap').value, 10) / 100;
+    var status = document.getElementById('wiz-create-status');
+    if (!name) { status.textContent = '! name required'; return; }
+    btn.disabled = true;
+    var origText = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner"></span> creating';
+
+    var body = {
+      name: name,
+      root_path: root,
+      chunking_strategy: strategy,
+      block_size: blockSize,
+      chunk_overlap: overlap,
+    };
+    var incList = parsePatterns(inc);
+    var excList = parsePatterns(exc);
+    if (incList) body.include_patterns = incList;
+    if (excList) body.exclude_patterns = excList;
+
+    try {
+      /* create */
+      var resp = await fetch('/v1/corpora', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      var parsed = await safeJson(resp);
+      if (!parsed.ok) {
+        btn.disabled = false; btn.innerHTML = origText;
+        status.textContent = '! ' + (parsed.body ? (parsed.body.detail || 'Create failed') : parsed.raw);
+        return;
+      }
+      var corpusId = parsed.body.data.id;
+      status.textContent = '> created, ingesting...';
+
+      /* ingest */
+      var maxFiles = document.getElementById('wiz-max-files').value;
+      var ingestResp = await fetch('/v1/corpora/' + corpusId + '/ingest?max_files=' + maxFiles, { method: 'POST' });
+      var ingestParsed = await safeJson(ingestResp);
+      if (!ingestParsed.ok) {
+        btn.disabled = false;
+        btn.innerHTML = origText;
+        status.innerHTML = '! Ingest failed: ' + (ingestParsed.body ? (ingestParsed.body.detail || 'Unknown') : ingestParsed.raw);
+        loadCorpora();
+        return;
+      }
+      var d = ingestParsed.body.data;
+      var msg = '> ingested ' + d.file_count + ' files, ' + d.document_count + ' documents';
+      if (d.errors && d.errors.length > 0) {
+        msg += '  <span style="color:var(--warning);">' + d.errors.length + ' warning(s)</span>';
+        d.errors.slice(0, 3).forEach(function(e) {
+          msg += '<br><span style="color:var(--text-dim);font-size:0.65rem;">! ' + e + '</span>';
+        });
+      }
+      status.innerHTML = msg;
+      btn.disabled = false;
+      btn.innerHTML = origText;
       loadCorpora();
-    } catch (err) { status.textContent = '! ' + err.message; }
+    } catch (err) { btn.disabled = false; btn.innerHTML = origText; status.textContent = '! ' + err.message; }
   });
 
   /* ── initial load ───────────────────────────────────── */
 
   loadDatasets();
   loadCorpora();
-
-  var strategyDescriptions = {
-    'windowed': 'Sliding window over text — best for code & prose',
-    'line': 'One document per line — best for logs & structured data',
-    'file': 'Each file = one document — best for configuration & small files'
-  };
-  document.getElementById('corpus-strategy').addEventListener('change', function() {
-    document.getElementById('strategy-desc').textContent = strategyDescriptions[this.value] || '';
-  });
 
 })();
 </script>
