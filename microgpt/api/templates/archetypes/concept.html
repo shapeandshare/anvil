@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
+{% block content %}
+<div class="scroll-scene" id="scroll-scene">
+  <div class="scroll-visual" id="pinned-visual">
+    <div class="pinned-content" id="pinned-content">
+      <p class="text-muted">Scroll to begin exploring</p>
+    </div>
+  </div>
+  <div class="scroll-narrative" id="scroll-narrative">
+    {% for step in steps %}
+    <div class="step" data-step-key="{{ step.key }}">
+      <h2>{{ step.title }}</h2>
+      <p>{{ step.body }}</p>
+      {% if step.widget %}
+      <div class="concept-widget" data-widget="{{ step.widget }}"></div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/scroll-scene.js"></script>
+<script>
+(function() {
+  var scene = new ScrollScene({
+    container: document.getElementById('scroll-scene'),
+    pinnedVisual: document.getElementById('pinned-visual'),
+    threshold: 0.5,
+  });
+
+  document.querySelectorAll('.step').forEach(function(el) {
+    var key = el.getAttribute('data-step-key');
+    if (key) scene.observeStep(key, el);
+  });
+
+  scene.onstepchange = function(key) {
+    var content = document.getElementById('pinned-content');
+    if (content) {
+      content.innerHTML = '<p class="text-mono text-accent">' + key + '</p>';
+    }
+  };
+
+  window.addEventListener('beforeunload', function() {
+    scene.destroy();
+  });
+})();
+</script>
+{% endblock %}

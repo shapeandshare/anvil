@@ -4,175 +4,50 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>microgpt-workbench</title>
-<link rel="stylesheet" href="/static/style.css">
+<script>
+(function(){var t=localStorage.getItem('theme');if(!t){t=window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'}document.documentElement.setAttribute('data-theme',t)})();
+</script>
+<link rel="stylesheet" href="/static/css/tokens.css">
+<link rel="stylesheet" href="/static/css/base.css">
+<link rel="stylesheet" href="/static/css/utilities.css">
+<link rel="stylesheet" href="/static/css/code.css">
+{% block extra_css %}{% endblock %}
 </head>
 <body>
-
 <div class="app-shell">
-
-<header class="app-header">
+  <header class="app-header">
     <div class="app-logo">
       <span class="logo-name">microgpt</span>
       <span class="logo-version">v0.1.0</span>
     </div>
-    <nav class="app-tabs">
-      <span class="app-tab" data-target="/v1/datasets-page">Datasets</span>
-      <span class="app-tab" data-target="/v1">Train</span>
+    <nav class="app-nav">
+      <span class="app-tab" data-target="/v1/training-page">Train</span>
+      <span class="app-tab" data-target="/learn/attention">Learn</span>
       <span class="app-tab" data-target="/v1/experiments-page">Experiments</span>
+      <span class="app-tab" data-target="/v1/inference-page">Playground</span>
+      <span class="app-tab" data-target="/v1/datasets-page">Data</span>
       <span class="app-tab" data-target="/v1/models-page">Models</span>
-      <span class="app-tab" data-target="/v1/inference-page">Inference</span>
     </nav>
-<div class="app-header-right">
-      <span class="theme-toggle" id="titlebar-toggle" title="Toggle titlebar style">ansi</span>
+    <div class="app-header-right">
       <span class="theme-toggle" id="theme-toggle">dark</span>
       <span class="app-version">v0.1.0</span>
       <span class="app-tab ops-tab" data-target="/v1/operations-page">Ops</span>
     </div>
   </header>
-
-  <div class="header-divider"></div>
-
   <main class="app-main">
     {% block content %}{% endblock %}
   </main>
-
   <footer class="app-statusbar">
     <span class="status-item online" id="status-system">ONLINE</span>
     <span class="status-item" id="status-time">--:--:--</span>
-    <span class="status-item" id="status-uptime">0h 0m 0s</span>
+    <span class="status-item" id="status-uptime">4h 12m 0s</span>
     <span class="status-item" id="status-models" onclick="window.location.href='/v1/models-page'" style="cursor:pointer">models: --</span>
     <span class="status-item" id="status-experiments" onclick="window.location.href='/v1/experiments-page'" style="cursor:pointer">exps: --</span>
     <span class="status-item" id="status-datasets" onclick="window.location.href='/v1/datasets-page'" style="cursor:pointer">datasets: --</span>
     <span class="status-item">localhost</span>
   </footer>
-
 </div>
-
-<script>
-(function() {
-  var theme = localStorage.getItem('theme') || 'dark';
-  document.documentElement.setAttribute('data-theme', theme);
-  var btn = document.getElementById('theme-toggle');
-  btn.textContent = theme === 'dark' ? 'dark' : 'light';
-  btn.addEventListener('click', function() {
-    var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('theme', next);
-    btn.textContent = next;
-  });
-
-  var path = window.location.pathname;
-  document.querySelectorAll('.app-tab').forEach(function(tab) {
-    var target = tab.getAttribute('data-target');
-    if (path === target || (target === '/v1' && (path === '/' || path === '/v1'))) {
-      tab.classList.add('active');
-    }
-    tab.addEventListener('click', function() {
-      window.location.href = this.getAttribute('data-target');
-    });
-  });
-
-  function updateClock() {
-    var now = new Date();
-    var h = now.getHours().toString().padStart(2, '0');
-    var m = now.getMinutes().toString().padStart(2, '0');
-    var s = now.getSeconds().toString().padStart(2, '0');
-    document.getElementById('status-time').textContent = h + ':' + m + ':' + s;
-  }
-  setInterval(updateClock, 1000);
-  updateClock();
-
-  (function() {
-    var uptime = 0;
-    setInterval(function() {
-      uptime++;
-      var h = Math.floor(uptime / 3600);
-      var m = Math.floor((uptime % 3600) / 60);
-      var s = uptime % 60;
-      document.getElementById('status-uptime').textContent = h + 'h ' + m + 'm ' + s + 's';
-    }, 1000);
-// ── Status bar live stats ────────
-  function fetchStats() {
-    fetch('/v1/registry/models').then(function(r) { return r.json(); }).then(function(d) {
-      document.getElementById('status-models').textContent = 'models: ' + (d.models ? d.models.length : 0);
-    }).catch(function() {});
-    fetch('/v1/experiments').then(function(r) { return r.json(); }).then(function(d) {
-      document.getElementById('status-experiments').textContent = 'exps: ' + (d.experiments ? d.experiments.length : 0);
-    }).catch(function() {});
-    fetch('/v1/datasets').then(function(r) { return r.json(); }).then(function(d) {
-      document.getElementById('status-datasets').textContent = 'datasets: ' + (d.datasets ? d.datasets.length : 0);
-    }).catch(function() {});
-  }
-  fetchStats();
-  setInterval(fetchStats, 15000);
-})();
-
-// ── Titlebar style toggle (block-art / minimal) ────────
-(function() {
-  var STORAGE_KEY = 'titlebar-style';
-
-  // Wild frame character pairs for ANSI mode — each panel gets a different one
-  var FRAMES = [
-    { l: '\u2588', r: '\u2588' },  // solid block
-    { l: '\u2593', r: '\u2593' },  // dark shade
-    { l: '\u2592', r: '\u2592' },  // medium shade
-    { l: '\u2591', r: '\u2591' },  // light shade
-    { l: '\u2584', r: '\u2584' },  // bottom half block
-    { l: '\u2580', r: '\u2580' },  // top half block
-    { l: '\u258c', r: '\u2590' },  // left/right half blocks (ears in)
-    { l: '\u2590', r: '\u258c' },  // right/left half blocks (ears out)
-    { l: '\u259a', r: '\u259e' },  // quadrants
-    { l: '\u259e', r: '\u259a' },  // reversed quadrants
-    { l: '\u25c6', r: '\u25c6' },  // diamond
-    { l: '\u25aa', r: '\u25aa' },  // small square
-  ];
-
-  function hashStr(s) {
-    var h = 0;
-    for (var i = 0; i < s.length; i++) {
-      h = ((h << 5) - h) + s.charCodeAt(i);
-      h = h & h;
-    }
-    return Math.abs(h);
-  }
-
-  function formatTitlebar(title, style) {
-    if (style !== 'block-art') return '\u258c ' + title;
-    var full = '[ ' + title + ' ]';
-    var target = 54;
-    var left = Math.floor((target - full.length) / 2);
-    var right = target - full.length - left;
-    var idx = hashStr(title) % FRAMES.length;
-    var f = FRAMES[idx];
-    return f.l.repeat(left) + full + f.r.repeat(right);
-  }
-
-  function applyTitlebarStyle(style) {
-    document.querySelectorAll('.panel-titlebar[data-title]').forEach(function(el) {
-      var title = el.getAttribute('data-title');
-      el.textContent = formatTitlebar(title, style);
-    });
-    var btn = document.getElementById('titlebar-toggle');
-    if (btn) btn.textContent = style === 'block-art' ? 'ansi' : 'min';
-  }
-  window.applyTitlebarStyle = applyTitlebarStyle;
-
-  function toggleTitlebarStyle() {
-    var current = localStorage.getItem(STORAGE_KEY) || 'minimal';
-    var next = current === 'block-art' ? 'minimal' : 'block-art';
-    localStorage.setItem(STORAGE_KEY, next);
-    applyTitlebarStyle(next);
-  }
-
-  var saved = localStorage.getItem(STORAGE_KEY) || 'minimal';
-  document.addEventListener('DOMContentLoaded', function() {
-    applyTitlebarStyle(saved);
-  });
-  document.getElementById('titlebar-toggle').addEventListener('click', toggleTitlebarStyle);
-})();
-})();
-</script>
-
+<script src="/static/js/core.js"></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

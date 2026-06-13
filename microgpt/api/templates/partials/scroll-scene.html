@@ -1,0 +1,16 @@
+<div class="scroll-scene" id="scroll-scene">
+  <div class="scroll-visual" id="pinned-visual">
+    <div class="pinned-content" id="pinned-content">
+      <p class="text-muted">Scroll to begin</p>
+    </div>
+  </div>
+  <div class="scroll-narrative" id="scroll-narrative">
+    {% for step in steps %}
+    <div class="step" data-step-key="{{ step.key }}">
+      <h2>{{ step.title }}</h2>
+      <p>{{ step.body }}</p>
+      {% if step.widget %}<div class="concept-widget" data-widget="{{ step.widget }}"></div>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>

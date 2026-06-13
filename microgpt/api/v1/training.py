@@ -176,3 +176,30 @@ async def list_configs():
 @router.post("/training/{run_id}/stop")
 async def stop_training(run_id: int):
     return {"status": "stopped"}
+
+
+@router.get("/forward-pass/graph")
+async def forward_pass_graph():
+    nodes = [
+        {"id": "input", "op": "input", "label": "token_id", "depth": 0, "step": 0},
+        {"id": "embed", "op": "embed", "label": "Embed", "depth": 1, "step": 1},
+        {"id": "pos", "op": "pos_enc", "label": "PosEnc", "depth": 1, "step": 1},
+        {"id": "add_emb", "op": "add", "label": "Add", "depth": 2, "step": 2},
+        {"id": "ln1", "op": "layer_norm", "label": "LayerNorm", "depth": 3, "step": 3},
+        {"id": "attn_q", "op": "linear", "label": "Q_proj", "depth": 4, "step": 4},
+        {"id": "attn_k", "op": "linear", "label": "K_proj", "depth": 4, "step": 4},
+        {"id": "attn_v", "op": "linear", "label": "V_proj", "depth": 4, "step": 4},
+        {"id": "score", "op": "dot", "label": "Score", "depth": 5, "step": 5},
+        {"id": "softmax", "op": "softmax", "label": "Softmax", "depth": 6, "step": 6},
+        {"id": "attn_out", "op": "weighted", "label": "AttnOut", "depth": 7, "step": 7},
+    ]
+    edges = [
+        {"from": "input", "to": "embed"}, {"from": "input", "to": "pos"},
+        {"from": "embed", "to": "add_emb"}, {"from": "pos", "to": "add_emb"},
+        {"from": "add_emb", "to": "ln1"},
+        {"from": "ln1", "to": "attn_q"}, {"from": "ln1", "to": "attn_k"}, {"from": "ln1", "to": "attn_v"},
+        {"from": "attn_q", "to": "score"}, {"from": "attn_k", "to": "score"},
+        {"from": "score", "to": "softmax"}, {"from": "softmax", "to": "attn_out"},
+        {"from": "attn_v", "to": "attn_out"},
+    ]
+    return {"nodes": nodes, "edges": edges}

@@ -132,7 +132,7 @@ async def restart_service(name: str, request: Request):
 async def root(request: Request):
     return request.app.state.templates.TemplateResponse(
         request,
-        "training.html",
+        "archetypes/training.html",
     )
 
 
@@ -140,7 +140,7 @@ async def root(request: Request):
 async def training_page(request: Request):
     return request.app.state.templates.TemplateResponse(
         request,
-        "training.html",
+        "archetypes/training.html",
     )
 
 
@@ -148,7 +148,18 @@ async def training_page(request: Request):
 async def experiments_page(request: Request):
     return request.app.state.templates.TemplateResponse(
         request,
-        "experiments.html",
+        "archetypes/experiment.html",
+    )
+
+
+@router.get("/learn/graph", response_class=HTMLResponse)
+async def graph_concept_page(request: Request):
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "archetypes/concept.html",
+        {"steps": [
+            {"key": "forward-pass", "title": "Forward Pass Graph", "body": "Scrub through the computation graph to see how a forward pass builds up from token input to attention output.", "widget": None},
+        ]},
     )
 
 
@@ -156,7 +167,7 @@ async def experiments_page(request: Request):
 async def datasets_page(request: Request):
     return request.app.state.templates.TemplateResponse(
         request,
-        "datasets.html",
+        "archetypes/training.html",
     )
 
 
@@ -164,7 +175,7 @@ async def datasets_page(request: Request):
 async def operations_page(request: Request):
     return request.app.state.templates.TemplateResponse(
         request,
-        "operations.html",
+        "archetypes/training.html",
     )
 
 
@@ -172,7 +183,58 @@ async def operations_page(request: Request):
 async def inference_page(request: Request):
     return request.app.state.templates.TemplateResponse(
         request,
-        "inference.html",
+        "archetypes/playground.html",
+    )
+
+
+ATTENTION_STEPS = [
+    {"key": "what-is-attention", "title": "What is Attention?", "body": "Attention allows the model to focus on relevant parts of the input when generating each token. Instead of treating all tokens equally, it learns which tokens matter most for the current prediction.", "widget": None},
+    {"key": "query-key-value", "title": "Query, Key, Value", "body": "Each token produces three vectors: a Query (what am I looking for?), a Key (what do I contain?), and a Value (what information do I carry?). Attention scores are computed by comparing Queries with Keys.", "widget": None},
+    {"key": "attention-weights", "title": "Attention Weights", "body": "The dot product of Query and Key produces attention weights — a score for every pair of tokens. These are normalized via softmax so they sum to 1. Higher weight = more influence.", "widget": None},
+    {"key": "multi-head", "title": "Multi-Head Attention", "body": "Instead of one attention computation, transformers use multiple 'heads' in parallel. Each head learns a different relationship pattern — syntax, semantics, position, etc.", "widget": None},
+    {"key": "try-it", "title": "Try it yourself", "body": "Click on a token below to see which other tokens it attends to most strongly. Brighter = stronger attention.", "widget": "attention"},
+]
+
+
+@router.get("/learn/attention", response_class=HTMLResponse)
+async def attention_concept_page(request: Request):
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "archetypes/concept.html",
+        {"steps": ATTENTION_STEPS},
+    )
+
+
+@router.get("/learn/tokenization", response_class=HTMLResponse)
+async def tokenization_concept_page(request: Request):
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "archetypes/concept.html",
+        {"steps": [
+            {"key": "what-are-tokens", "title": "What are Tokens?", "body": "Tokens are the atomic units of text that a language model processes. Words are split into smaller pieces called tokens.", "widget": "tokenization"},
+        ]},
+    )
+
+
+@router.get("/learn/embeddings", response_class=HTMLResponse)
+async def embeddings_concept_page(request: Request):
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "archetypes/concept.html",
+        {"steps": [
+            {"key": "what-are-embeddings", "title": "What are Embeddings?", "body": "Embeddings map tokens into high-dimensional vectors where semantic relationships are encoded as spatial relationships.", "widget": "embedding"},
+        ]},
+    )
+
+
+@router.get("/learn/sampling", response_class=HTMLResponse)
+async def sampling_concept_page(request: Request):
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "archetypes/concept.html",
+        {"steps": [
+            {"key": "what-is-sampling", "title": "What is Sampling?", "body": "After the model predicts a probability distribution over next tokens, we sample from it. Temperature and Top-K control how creative vs deterministic the output is.", "widget": "sampling"},
+        ]},
     )
 
 
@@ -180,7 +242,7 @@ async def inference_page(request: Request):
 async def models_page(request: Request):
     return request.app.state.templates.TemplateResponse(
         request,
-        "models.html",
+        "archetypes/experiment.html",
     )
 
 
@@ -188,7 +250,7 @@ async def models_page(request: Request):
 async def model_detail_page(request: Request, model_id: int):
     return request.app.state.templates.TemplateResponse(
         request,
-        "model_detail.html",
+        "archetypes/experiment.html",
         {"model_id": model_id},
     )
 
