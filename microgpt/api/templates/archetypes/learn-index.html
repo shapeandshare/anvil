@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:640px;margin:var(--space-6) auto;">
+  <h2 class="panel-title">Learning Path</h2>
+  <p class="text-muted space-y-4" style="font-size:0.85rem;line-height:1.6;">
+    Five interactive lessons that walk you through how this character-level GPT model works,
+    from raw text to trained generation. Each lesson pairs a scrollable tutorial with a live
+    widget that shows the model's real internals.
+  </p>
+  <ol class="learn-arc-list">
+    {% for item in arc %}
+    <li class="learn-arc-item">
+      <a href="{{ item.path }}" class="learn-arc-item-link">
+        <span class="learn-arc-item-title">{{ item.title }}</span>
+        <span class="learn-arc-item-desc">{{ item.desc }}</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ol>
+</div>
+
+<style>
+.learn-arc-list {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-4) 0 0;
+  counter-reset: lesson-counter;
+}
+.learn-arc-item {
+  counter-increment: lesson-counter;
+  margin-bottom: var(--space-2);
+}
+.learn-arc-item-link {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  transition: background var(--dur-fast) var(--ease),
+              border-color var(--dur-fast) var(--ease);
+  position: relative;
+  padding-left: var(--space-7);
+}
+.learn-arc-item-link::before {
+  content: counter(lesson-counter);
+  position: absolute;
+  left: var(--space-3);
+  top: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+}
+.learn-arc-item-link:hover {
+  background: var(--surface);
+  border-color: var(--accent);
+}
+.learn-arc-item-title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--text);
+  font-weight: 600;
+}
+.learn-arc-item-desc {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+</style>
+{% endblock %}
+{% block scripts %}{% endblock %}

@@ -5,7 +5,18 @@ import random
 import urllib.request
 from collections.abc import Awaitable, Callable
 
+from microgpt.config import get_config
 from microgpt.core.engine import GPT, train
+from microgpt.gpu import resolve_device
+from microgpt.core.torch_engine import torch_available, train_torch
+
+
+def _load_weights_into_model(model: GPT, weights: dict) -> None:
+    """Load exported weight lists into a CPU GPT model."""
+    for k, mat_data in weights.items():
+        for i, row in enumerate(mat_data):
+            for j, val in enumerate(row):
+                model.state_dict[k][i][j].data = val
 
 
 class TrainingService:
@@ -76,12 +87,17 @@ class TrainingService:
         dataset_id = config.get("dataset_id")
         docs = await loop.run_in_executor(None, self._load_docs, corpus_id, dataset_id)
 
+        use_gpu = config.get("use_gpu", False)
+        cfg = get_config()
+        preferred_device = config.get("device", cfg["device"])
+        device = resolve_device(use_gpu=use_gpu, preferred=preferred_device or None)
+
         def progress_callback(step: int, loss: float) -> None:
             asyncio.run_coroutine_threadsafe(
                 queue.put(
                     {
                         "event": "metrics",
-                        "data": json.dumps({"step": step, "loss": loss}),
+                        "data": json.dumps({"step": step, "loss": loss, "device": device}),
                     }
                 ),
                 loop,
@@ -89,25 +105,59 @@ class TrainingService:
             if progress_callback_override:
                 progress_callback_override(step, loss)
 
-        model, final_loss, samples, uchars = await loop.run_in_executor(
-            None,
-            lambda: train(
-                docs,
-                num_steps=config.get("num_steps", 1000),
+        # Dispatch to GPU or CPU engine
+        use_gpu_backend = device != "cpu"
+
+        if use_gpu_backend and torch_available():
+            raw_weights, final_loss, samples, uchars = await loop.run_in_executor(
+                None,
+                lambda: train_torch(
+                    docs,
+                    device=device,
+                    num_steps=config.get("num_steps", 1000),
+                    n_embd=config.get("n_embd", 16),
+                    n_head=config.get("n_head", 4),
+                    n_layer=config.get("n_layer", 1),
+                    block_size=config.get("block_size", 16),
+                    learning_rate=config.get("learning_rate", 0.01),
+                    temperature=config.get("temperature", 0.5),
+                    progress_callback=progress_callback,
+                ),
+            )
+            # Wrap GPU weights into a CPU GPT model for downstream compatibility
+            model = GPT(
+                vocab_size=len(uchars) + 1,
                 n_embd=config.get("n_embd", 16),
                 n_head=config.get("n_head", 4),
                 n_layer=config.get("n_layer", 1),
                 block_size=config.get("block_size", 16),
-                learning_rate=config.get("learning_rate", 0.01),
-                temperature=config.get("temperature", 0.5),
-                progress_callback=progress_callback,
-            ),
-        )
+            )
+            _load_weights_into_model(model, raw_weights)
+
+        else:
+            model, final_loss, samples, uchars = await loop.run_in_executor(
+                None,
+                lambda: train(
+                    docs,
+                    num_steps=config.get("num_steps", 1000),
+                    n_embd=config.get("n_embd", 16),
+                    n_head=config.get("n_head", 4),
+                    n_layer=config.get("n_layer", 1),
+                    block_size=config.get("block_size", 16),
+                    learning_rate=config.get("learning_rate", 0.01),
+                    temperature=config.get("temperature", 0.5),
+                    progress_callback=progress_callback,
+                ),
+            )
 
         await queue.put(
             {
                 "event": "complete",
-                "data": json.dumps({"final_loss": final_loss, "samples": samples}),
+                "data": json.dumps({
+                    "final_loss": final_loss,
+                    "samples": samples,
+                    "device": device,
+                }),
             }
         )
         self._queues.pop(run_id, None)

@@ -205,6 +205,14 @@ body {
   background: var(--border);
 }
 
+.nav-divider {
+  width: 1px;
+  align-self: stretch;
+  flex-shrink: 0;
+  background: var(--border);
+  margin: 0 var(--space-1);
+}
+
 /* ── Main content area ──────────────────────────────────── */
 
 .app-main {
@@ -256,6 +264,7 @@ body {
   background: var(--bg-panel);
   border-radius: var(--radius);
   box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  padding: 22px 24px;
 }
 
 .panel + .panel { margin-top: 0; }
@@ -957,6 +966,25 @@ a:hover {
   font-size: 0.75rem;
 }
 
+.info-grid .meter {
+  display: inline-block;
+  width: 48px;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  vertical-align: middle;
+  margin-left: 6px;
+  overflow: hidden;
+}
+
+.info-grid .meter span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
 /* ── Hyperparameter grid ────────────────────────────────── */
 
 .hp-grid {
@@ -1274,3 +1302,302 @@ textarea.terminal-input.terminal-textarea {
   50%  { content: '-'; }
   75%  { content: '\\'; }
 }
+
+/* ── Editorial Design System Aliases ─────────────────────── */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  font-family: var(--font);
+  font-size: 0.85rem;
+  padding: 5px 16px;
+  cursor: pointer;
+  transition: background var(--t), color var(--t);
+  user-select: none;
+  border-radius: var(--radius);
+}
+
+.btn:hover {
+  background: var(--primary);
+  color: var(--bg);
+}
+
+.btn:active { transform: translateY(1px); }
+
+.btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-color: var(--border);
+  color: var(--text-dim);
+}
+
+.btn:disabled:hover {
+  background: transparent;
+  color: var(--text-dim);
+  border-color: var(--border);
+}
+
+.btn-primary {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.btn-primary:hover {
+  background: var(--primary);
+  color: var(--bg);
+}
+
+.btn-secondary {
+  border-color: var(--border);
+  color: var(--text-dim);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-element);
+  color: var(--text);
+  border-color: var(--text-dim);
+}
+
+.btn-sm {
+  font-size: 0.68rem;
+  padding: 2px 10px;
+}
+
+.btn-danger {
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+}
+
+.btn-danger:hover {
+  background: var(--accent-red);
+  color: var(--bg);
+}
+
+.btn-success {
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+}
+
+.btn-success:hover {
+  background: var(--accent-green);
+  color: var(--bg);
+}
+
+.form-input {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.85rem;
+  padding: 5px 10px;
+  outline: none;
+  caret-color: var(--primary);
+  transition: border-color var(--t);
+  min-width: 60px;
+  border-radius: var(--radius);
+}
+
+.form-input:focus {
+  border-color: var(--primary);
+}
+
+.form-input::placeholder {
+  color: var(--text-dim);
+}
+
+.form-select {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.85rem;
+  padding: 5px 10px;
+  outline: none;
+  cursor: pointer;
+  min-width: 100px;
+  border-radius: var(--radius);
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 28px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0,0 L5,6 L10,0' fill='%236366f1'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+.form-select:focus {
+  border-color: var(--primary);
+}
+
+.loading-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font);
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.panel-title {
+  font-family: var(--font);
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  flex: 1;
+}
+
+.tag {
+  display: inline-block;
+  font-size: 0.62rem;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  cursor: pointer;
+  font-family: var(--font);
+  user-select: none;
+  transition: all var(--t);
+  background: var(--bg-element);
+  line-height: 1.4;
+}
+
+.tag:hover {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.tag.active {
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+  background: rgba(52, 211, 153, 0.18);
+  font-weight: 600;
+}
+
+/* Exclude chips represent negation — tint red so they're visually
+   distinct from include chips in every state. */
+.tag[data-target="exclude"] {
+  color: var(--accent-red);
+  border-color: rgba(248, 113, 113, 0.45);
+}
+
+.tag[data-target="exclude"]:hover {
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+  background: rgba(248, 113, 113, 0.12);
+}
+
+.tag[data-target="exclude"].active {
+  border-color: var(--accent-red);
+  color: var(--text-bright);
+  background: rgba(248, 113, 113, 0.24);
+  font-weight: 600;
+}
+
+.tag-sep {
+  color: var(--border);
+  font-size: 0.7rem;
+  padding: 0 2px;
+  user-select: none;
+}
+
+/* ── Filter bags (include / exclude) ───────────────────── */
+.filter-bag {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.02);
+  min-width: 180px;
+}
+
+.filter-bag__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-bag__label {
+  font-family: var(--font);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: bold;
+}
+
+.filter-bag__label-icon {
+  font-size: 0.55rem;
+}
+
+.filter-bag--include {
+  border-color: rgba(56, 189, 248, 0.25);
+}
+
+.filter-bag--include .filter-bag__label {
+  color: var(--accent-cyan);
+}
+
+.filter-bag--include .form-input:focus {
+  border-color: var(--accent-cyan);
+}
+
+.filter-bag--exclude {
+  border-color: rgba(251, 191, 36, 0.25);
+}
+
+.filter-bag--exclude .filter-bag__label {
+  color: var(--accent-yellow);
+}
+
+.filter-bag--exclude .form-input:focus {
+  border-color: var(--accent-yellow);
+}
+
+.filter-bag .form-input {
+  background: var(--bg);
+  width: 100%;
+}
+
+.filter-bag__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+[data-theme="light"] .filter-bag {
+  background: rgba(0, 0, 0, 0.015);
+}
+
+[data-theme="light"] .filter-bag--include {
+  border-color: rgba(14, 165, 233, 0.3);
+}
+
+[data-theme="light"] .filter-bag--exclude {
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+/* ── Telemetry compact ──────────────────────────────────── */
+
+.telemetry-compact {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--accent-green);
+  font-family: var(--font);
+  font-size: 0.72rem;
+  padding: 8px 12px;
+  min-height: 24px;
+  margin-top: 4px;
+  max-height: 300px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  border-radius: var(--radius);
+}
+
+[data-theme="light"] .telemetry-compact { color: var(--text); background: #f8fff8; }

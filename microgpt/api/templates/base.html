@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="/static/css/base.css">
 <link rel="stylesheet" href="/static/css/utilities.css">
 <link rel="stylesheet" href="/static/css/code.css">
+<link rel="stylesheet" href="/static/style.css">
 {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -21,16 +22,17 @@
       <span class="logo-version">v0.1.0</span>
     </div>
     <nav class="app-nav">
-      <span class="app-tab" data-target="/v1/training-page">Train</span>
-      <span class="app-tab" data-target="/v1/learn/attention">Learn</span>
-      <span class="app-tab" data-target="/v1/experiments-page">Experiments</span>
-      <span class="app-tab" data-target="/v1/inference-page">Playground</span>
       <span class="app-tab" data-target="/v1/datasets-page">Data</span>
+      <span class="app-tab" data-target="/v1/training-page">Train</span>
+      <span class="nav-divider"></span>
       <span class="app-tab" data-target="/v1/models-page">Models</span>
+      <span class="app-tab" data-target="/v1/experiments-page">Experiments</span>
+      <span class="nav-divider"></span>
+      <span class="app-tab" data-target="/v1/inference-page">Playground</span>
+      <span class="app-tab" data-target="/v1/learn">Learn</span>
     </nav>
     <div class="app-header-right">
       <span class="theme-toggle" id="theme-toggle">dark</span>
-      <span class="app-version">v0.1.0</span>
       <span class="app-tab ops-tab" data-target="/v1/operations-page">Ops</span>
     </div>
   </header>

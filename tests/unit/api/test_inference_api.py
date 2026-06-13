@@ -1,0 +1,132 @@
+"""Tests for inference API endpoints."""
+
+import pytest
+
+
+@pytest.mark.asyncio
+async def test_inference_tokenize_demo(client):
+    resp = await client.post("/v1/inference/tokenize", json={"text": "abc"})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "model" in data
+    assert data["model"]["is_demo"] is True
+    assert data["model"]["name"] == "demo"
+    assert "tokens" in data
+    assert "vocab_size" in data
+    assert "bos_id" in data
+    assert len(data["tokens"]) > 0
+    assert data["tokens"][0]["char"] == "<BOS>"
+
+
+@pytest.mark.asyncio
+async def test_inference_tokenize_empty_text(client):
+    resp = await client.post("/v1/inference/tokenize", json={"text": ""})
+    assert resp.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_inference_tokenize_no_text(client):
+    resp = await client.post("/v1/inference/tokenize", json={})
+    assert resp.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_inference_embeddings_demo(client):
+    resp = await client.post("/v1/inference/embeddings", json={"text": "abc"})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["model"]["is_demo"] is True
+    assert "vectors" in data
+    assert "projection" in data
+    assert "n_embd" in data
+    assert len(data["vectors"]) == len(data["projection"])
+    assert len(data["vectors"]) == len(data["tokens"])
+
+
+@pytest.mark.asyncio
+async def test_inference_attention_demo(client):
+    resp = await client.post("/v1/inference/attention", json={"text": "abc"})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["model"]["is_demo"] is True
+    assert "weights" in data
+    assert "n_layer" in data
+    assert "n_head" in data
+    assert "tokens" in data
+    n_layer = data["n_layer"]
+    n_head = data["n_head"]
+    assert len(data["weights"]) == n_layer
+    assert len(data["weights"][0]) == n_head
+
+
+@pytest.mark.asyncio
+async def test_inference_sampling_distribution_demo(client):
+    resp = await client.post(
+        "/v1/inference/sampling-distribution",
+        json={"prompt": "a", "temperature": 0.5},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["model"]["is_demo"] is True
+    assert "tokens" in data
+    assert "temperature" in data
+    assert data["temperature"] == 0.5
+    assert len(data["tokens"]) > 0
+    for t in data["tokens"]:
+        assert "char" in t
+        assert "id" in t
+        assert "prob" in t
+    probs = [t["prob"] for t in data["tokens"]]
+    assert abs(sum(probs) - 1.0) < 1e-4
+
+
+@pytest.mark.asyncio
+async def test_inference_sampling_distribution_with_top_k(client):
+    resp = await client.post(
+        "/v1/inference/sampling-distribution",
+        json={"prompt": "a", "temperature": 1.0, "top_k": 3},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    nonzero = sum(1 for t in data["tokens"] if t["prob"] > 0)
+    assert nonzero <= 3
+
+
+@pytest.mark.asyncio
+async def test_inference_forward_graph_demo(client):
+    resp = await client.get("/v1/inference/forward-graph")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["model"]["is_demo"] is True
+    assert "nodes" in data
+    assert "edges" in data
+    assert len(data["nodes"]) > 0
+    for n in data["nodes"]:
+        assert "id" in n
+        assert "op" in n
+        assert "depth" in n
+
+
+@pytest.mark.asyncio
+async def test_forward_pass_graph_backward_compat(client):
+    resp = await client.get("/v1/forward-pass/graph")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "nodes" in data
+    assert "edges" in data
+    assert len(data["nodes"]) > 0
+
+
+@pytest.mark.asyncio
+async def test_inference_invalid_temperature(client):
+    resp = await client.post(
+        "/v1/inference/sampling-distribution",
+        json={"prompt": "a", "temperature": 0},
+    )
+    assert resp.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_inference_attention_empty_text(client):
+    resp = await client.post("/v1/inference/attention", json={"text": ""})
+    assert resp.status_code == 400

@@ -38,7 +38,7 @@ def test_gpt_param_count():
 
 def test_train_reduces_loss():
     docs = ["emma", "olivia", "ava", "isabella"]
-    _, final_loss, samples = train(docs, num_steps=20, n_embd=8, n_head=2)
+    _, final_loss, samples, _ = train(docs, num_steps=20, n_embd=8, n_head=2)
     assert final_loss > 0
     assert isinstance(samples, list)
     assert len(samples) == 20

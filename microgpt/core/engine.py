@@ -51,6 +51,7 @@ class GPT:
             self.state_dict[f"layer{i}.attn_wo"] = matrix(n_embd, n_embd)
             self.state_dict[f"layer{i}.mlp_fc1"] = matrix(4 * n_embd, n_embd)
             self.state_dict[f"layer{i}.mlp_fc2"] = matrix(n_embd, 4 * n_embd)
+        self.chars: list[str] | None = None
         self.params = [
             p for mat in self.state_dict.values() for row in mat for p in row
         ]
@@ -119,7 +120,93 @@ class GPT:
         with open(path, "w") as f:
             json.dump(data, f)
 
-    
+    @classmethod
+    def load(cls, path: str) -> "GPT":
+        import json
+
+        with open(path) as f:
+            data = json.load(f)
+
+        model = cls(
+            vocab_size=data["vocab_size"],
+            n_embd=data["n_embd"],
+            n_head=data["n_head"],
+            n_layer=data["n_layer"],
+            block_size=data["block_size"],
+        )
+        for k, mat_data in data["state_dict"].items():
+            for i, row in enumerate(mat_data):
+                for j, val in enumerate(row):
+                    model.state_dict[k][i][j].data = val
+
+        model.chars = data.get("chars")
+        return model
+
+    def forward_introspect(self, token_ids: list[int]) -> dict:
+        keys = [[] for _ in range(self.n_layer)]
+        values = [[] for _ in range(self.n_layer)]
+        all_embeddings: list[list[float]] = []
+        final_logits = None
+        n_pos = len(token_ids)
+
+        attention_weights_mat: list[list[list[list[float]]]] = [
+            [[[] for _ in range(n_pos)] for _ in range(self.n_head)]
+            for _ in range(self.n_layer)
+        ]
+
+        for pos_id, token_id in enumerate(token_ids):
+            tok_emb = self.state_dict["wte"][token_id]
+            pos_emb = self.state_dict["wpe"][pos_id]
+            x = [t + p for t, p in zip(tok_emb, pos_emb, strict=False)]
+            x = rmsnorm(x)
+            all_embeddings.append([v.data for v in x])
+
+            for li in range(self.n_layer):
+                x_residual = x
+                x = rmsnorm(x)
+                q = linear(x, self.state_dict[f"layer{li}.attn_wq"])
+                k = linear(x, self.state_dict[f"layer{li}.attn_wk"])
+                v = linear(x, self.state_dict[f"layer{li}.attn_wv"])
+                keys[li].append(k)
+                values[li].append(v)
+                x_attn = []
+                for h in range(self.n_head):
+                    hs = h * self.head_dim
+                    q_h = q[hs : hs + self.head_dim]
+                    k_h = [ki[hs : hs + self.head_dim] for ki in keys[li]]
+                    v_h = [vi[hs : hs + self.head_dim] for vi in values[li]]
+                    attn_logits = [
+                        sum(q_h[j] * k_h[t][j] for j in range(self.head_dim))
+                        / self.head_dim**0.5
+                        for t in range(len(k_h))
+                    ]
+                    attn_weights = softmax(attn_logits)
+                    attention_weights_mat[li][h][pos_id] = [
+                        w.data for w in attn_weights
+                    ]
+                    head_out = [
+                        sum(attn_weights[t] * v_h[t][j] for t in range(len(v_h)))
+                        for j in range(self.head_dim)
+                    ]
+                    x_attn.extend(head_out)
+                x = linear(x_attn, self.state_dict[f"layer{li}.attn_wo"])
+                x = [a + b for a, b in zip(x, x_residual, strict=False)]
+                x_residual = x
+                x = rmsnorm(x)
+                x = linear(x, self.state_dict[f"layer{li}.mlp_fc1"])
+                x = [xi.relu() for xi in x]
+                x = linear(x, self.state_dict[f"layer{li}.mlp_fc2"])
+                x = [a + b for a, b in zip(x, x_residual, strict=False)]
+            final_logits = linear(x, self.state_dict["lm_head"])
+
+        return {
+            "attention": attention_weights_mat,
+            "logits": final_logits,
+            "embeddings": all_embeddings,
+            "n_layer": self.n_layer,
+            "n_head": self.n_head,
+            "tokens": token_ids,
+        }
 
 
 def train(
