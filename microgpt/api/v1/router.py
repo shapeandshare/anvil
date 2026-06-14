@@ -1,6 +1,5 @@
 """Versioned API v1 router."""
 
-import json
 import os
 import random
 import signal
@@ -119,11 +118,15 @@ async def clear_service_logs(name: str):
 @router.post("/services/{name}/start")
 async def start_service(name: str, request: Request):
     if name == "web":
-        raise HTTPException(status_code=400, detail="web server cannot be managed via API")
+        raise HTTPException(
+            status_code=400, detail="web server cannot be managed via API"
+        )
     if name == "mlflow":
         mlflow = getattr(request.app.state, "mlflow", None)
         if mlflow is None:
-            raise HTTPException(status_code=500, detail="MLflow service not initialized")
+            raise HTTPException(
+                status_code=500, detail="MLflow service not initialized"
+            )
         if mlflow.is_running:
             return {"status": "already_running"}
         mlflow.start()
@@ -134,11 +137,15 @@ async def start_service(name: str, request: Request):
 @router.post("/services/{name}/stop")
 async def stop_service(name: str, request: Request):
     if name == "web":
-        raise HTTPException(status_code=400, detail="web server cannot be managed via API")
+        raise HTTPException(
+            status_code=400, detail="web server cannot be managed via API"
+        )
     if name == "mlflow":
         mlflow = getattr(request.app.state, "mlflow", None)
         if mlflow is None:
-            raise HTTPException(status_code=500, detail="MLflow service not initialized")
+            raise HTTPException(
+                status_code=500, detail="MLflow service not initialized"
+            )
         if not mlflow.is_running:
             return {"status": "already_stopped"}
         mlflow.stop()
@@ -149,11 +156,15 @@ async def stop_service(name: str, request: Request):
 @router.post("/services/{name}/restart")
 async def restart_service(name: str, request: Request):
     if name == "web":
-        raise HTTPException(status_code=400, detail="web server cannot be managed via API")
+        raise HTTPException(
+            status_code=400, detail="web server cannot be managed via API"
+        )
     if name == "mlflow":
         mlflow = getattr(request.app.state, "mlflow", None)
         if mlflow is None:
-            raise HTTPException(status_code=500, detail="MLflow service not initialized")
+            raise HTTPException(
+                status_code=500, detail="MLflow service not initialized"
+            )
         if mlflow.is_running:
             mlflow.stop()
         mlflow.start()
@@ -167,7 +178,9 @@ def _poll_port(port: int, timeout: float = 2.0) -> list[int]:
     while time.monotonic() < deadline:
         result = subprocess.run(
             ["lsof", "-ti", f":{port}"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         if not result.stdout.strip():
             return []
@@ -180,11 +193,15 @@ async def kill_service_port(name: str, request: Request):
     SERVICE_PORTS = {"mlflow": 5000}
     port = SERVICE_PORTS.get(name)
     if port is None:
-        raise HTTPException(status_code=404, detail=f"Unknown service or no port configured: {name}")
+        raise HTTPException(
+            status_code=404, detail=f"Unknown service or no port configured: {name}"
+        )
     try:
         result = subprocess.run(
             ["lsof", "-ti", f":{port}"],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         if not result.stdout.strip():
             return {"status": "port_free", "port": port, "killed": 0}
@@ -206,7 +223,9 @@ async def kill_service_port(name: str, request: Request):
     except subprocess.TimeoutExpired:
         raise HTTPException(status_code=500, detail="Timeout while scanning port")
     except FileNotFoundError:
-        raise HTTPException(status_code=500, detail="lsof not found — cannot scan ports")
+        raise HTTPException(
+            status_code=500, detail="lsof not found — cannot scan ports"
+        )
 
 
 @router.get("", response_class=HTMLResponse)
@@ -271,10 +290,18 @@ LEARNING_ARC = [
      "desc": "How the model chops text into character tokens and maps them to IDs."},
     {"key": "embeddings", "title": "Embeddings", "path": "/v1/learn/embeddings",
      "desc": "How each token ID becomes a dense vector the model can compute with."},
+    {"key": "parameters", "title": "Parameters", "path": "/v1/learn/parameters",
+     "desc": "Where the model's 4,192 parameters live and what each matrix does."},
+    {"key": "autograd", "title": "Autograd", "path": "/v1/learn/autograd",
+     "desc": "How gradients flow backward through the computation graph to train the model."},
     {"key": "attention", "title": "Attention", "path": "/v1/learn/attention",
      "desc": "How each token looks at its predecessors to build context-aware representations."},
+    {"key": "loss", "title": "Cross-Entropy Loss", "path": "/v1/learn/loss",
+     "desc": "How prediction error is measured and what the loss number means."},
     {"key": "sampling", "title": "Sampling", "path": "/v1/learn/sampling",
      "desc": "How the model picks the next character from its probability distribution."},
+    {"key": "adam", "title": "Adam Optimizer", "path": "/v1/learn/adam",
+     "desc": "How momentum and adaptive learning rates make training converge faster."},
     {"key": "training-loop", "title": "Training Loop", "path": "/v1/learn/training-loop",
      "desc": "How the model learns by minimizing prediction error step by step."},
 ]
@@ -282,7 +309,9 @@ LEARNING_ARC = [
 
 def _arc_context(current_key: str) -> dict:
     """Build prev/next navigation context from LEARNING_ARC."""
-    idx = next((i for i, item in enumerate(LEARNING_ARC) if item["key"] == current_key), -1)
+    idx = next(
+        (i for i, item in enumerate(LEARNING_ARC) if item["key"] == current_key), -1
+    )
     return {
         "arc": LEARNING_ARC,
         "current_key": current_key,
@@ -465,6 +494,28 @@ ATTENTION_STEPS = [
         ),
         "widget": "attention",
     },
+    {
+        "key": "residual-connections",
+        "title": "Residual Connections",
+        "body": (
+            "After attention, the original input is added back to the output: "
+            'output = attention(x) + x. This "add-back" pattern creates a gradient highway '
+            "that lets signals flow directly through the network without vanishing or exploding. "
+            "Without residuals, deeper models would struggle to learn because gradients "
+            "would decay to zero through many layers."
+        ),
+    },
+    {
+        "key": "rmsnorm",
+        "title": "RMSNorm Explained",
+        "body": (
+            "Before attention, the model normalises activations with RMSNorm. "
+            "Given input values x, it computes RMS = sqrt(mean(x squared)), then scales by "
+            "a learned parameter: output = x / RMS. Unlike LayerNorm, RMSNorm does not "
+            "subtract the mean — it only divides by the root-mean-square. This is simpler, "
+            "faster, and works well for transformer training."
+        ),
+    },
 ]
 
 SAMPLING_STEPS = [
@@ -588,6 +639,241 @@ TRAINING_LOOP_STEPS = [
     },
 ]
 
+LOSS_STEPS = [
+    {
+        "key": "what-is-loss",
+        "title": "What is Loss?",
+        "body": (
+            "Loss measures how wrong the model's predictions are. For each token, "
+            "the model outputs a probability distribution over the vocabulary. "
+            "If the correct next token gets probability 0.1, the loss is higher "
+            "than if it gets 0.9. The widget shows the running loss as training progresses."
+        ),
+        "widget": "loss",
+    },
+    {
+        "key": "cross-entropy",
+        "title": "Cross-Entropy",
+        "body": (
+            "Cross-entropy loss is defined as -log(p(target)), where p(target) is "
+            "the probability the model assigned to the correct next token. "
+            "If p(target) = 1.0 (perfect prediction), loss = 0. "
+            "If p(target) = 0.5, loss ≈ 0.69. The widget shows this value "
+            "for the current training step."
+        ),
+        "widget": "loss",
+    },
+    {
+        "key": "softmax-connection",
+        "title": "Softmax Connection",
+        "body": (
+            "The model's raw output is logits — unnormalised scores. Softmax converts "
+            "them into probabilities that sum to 1.0. The loss is computed from those "
+            "probabilities, not from the logits directly. The widget shows the softmax "
+            "output for the current batch and highlights p(target)."
+        ),
+        "widget": "loss",
+    },
+    {
+        "key": "reading-the-curve",
+        "title": "Reading the Curve",
+        "body": (
+            "A smooth downward slope means stable learning — the model is consistently "
+            "making better predictions. Plateaus suggest the model needs more capacity "
+            "(more parameters) or a different learning rate regime. "
+            "The widget annotates each region of the curve with what it indicates."
+        ),
+        "widget": "loss",
+    },
+    {
+        "key": "the-baseline",
+        "title": "The Baseline",
+        "body": (
+            "Random guessing for a vocabulary of 27 characters (26 letters + BOS) "
+            "gives p = 1/27 for each token, so loss = -log(1/27) ≈ 3.3. "
+            "If your training loss is above 3.3, the model hasn't even reached "
+            "random guessing yet. The widget marks the baseline on the loss curve."
+        ),
+        "widget": "loss",
+    },
+]
+
+PARAMS_STEPS = [
+    {
+        "key": "where-params-live",
+        "title": "Where Parameters Live",
+        "body": (
+            "All model parameters live in a state_dict: a dictionary of PyTorch-like "
+            "tensors accessible via model.state_dict(). Each key is a layer name, "
+            "each value is a weight matrix. The widget loads the most recent model's "
+            "state_dict and shows every parameter with its shape and value range."
+        ),
+        "widget": "params",
+    },
+    {
+        "key": "token-embeddings",
+        "title": "Token Embeddings (WTE)",
+        "body": (
+            "WTE (Weight Token Embedding) is a matrix of shape vocab_size x n_embd. "
+            "Each of the 27 tokens gets one 16-dimensional vector. "
+            "These are the learned representations that turn token IDs into dense vectors. "
+            "The widget highlights the WTE entry and shows a few rows of values."
+        ),
+        "widget": "params",
+    },
+    {
+        "key": "position-embeddings",
+        "title": "Position Embeddings (WPE)",
+        "body": (
+            "WPE (Weight Position Embedding) is a matrix of shape block_size x n_embd. "
+            "Each of the 16 possible positions gets its own 16-dimensional vector. "
+            "WPE lets the model distinguish 'a' at position 0 from 'a' at position 5. "
+            "The widget shows WPE alongside WTE to highlight the additive structure."
+        ),
+        "widget": "params",
+    },
+    {
+        "key": "attention-weights",
+        "title": "Attention Weights (Q/K/V/O)",
+        "body": (
+            "Each attention head has four projection matrices: Query (Q), Key (K), "
+            "Value (V), and Output (O). Each is shape n_embd x n_embd (16 x 16). "
+            "With 4 heads, that is 4 x 4 x 16 x 16 = 4,096 attention parameters. "
+            "The widget breaks down each projection and shows sample values."
+        ),
+        "widget": "params",
+    },
+    {
+        "key": "mlp-and-output",
+        "title": "MLP and Output Head",
+        "body": (
+            "After attention, a small MLP projects through fc1 (16 x 64) and fc2 (64 x 16). "
+            "The lm_head (16 x 27) produces logits over the vocabulary. "
+            "In this model, WTE and lm_head are the same tensor (tied embeddings). "
+            "Total: 4,192 parameters. The widget sums them up and verifies the count."
+        ),
+        "widget": "params",
+    },
+]
+
+ADAM_STEPS = [
+    {
+        "key": "what-is-adam",
+        "title": "What is Adam?",
+        "body": (
+            "Plain SGD uses a single learning rate for every parameter. "
+            "Adam (Adaptive Moment Estimation) maintains two per-parameter values: "
+            "m (momentum) and v (adaptive learning rate). This makes training faster "
+            "and more stable, especially for transformers with diverse parameter scales."
+        ),
+        "widget": "adam",
+    },
+    {
+        "key": "momentum",
+        "title": "Momentum (m)",
+        "body": (
+            "Momentum tracks a rolling average of past gradients: "
+            "m_t = beta1 * m_{t-1} + (1 - beta1) * g_t. "
+            "This smooths out noisy gradients and accelerates progress in consistent "
+            "directions. The widget shows how m evolves step by step for a sample parameter."
+        ),
+        "widget": "adam",
+    },
+    {
+        "key": "adaptive-lr",
+        "title": "Adaptive LR (v)",
+        "body": (
+            "The v term tracks the squared gradient magnitude: "
+            "v_t = beta2 * v_{t-1} + (1 - beta2) * g_t^2. "
+            "Parameters with large gradients get smaller updates (they are sensitive), "
+            "while parameters with small gradients get larger updates. "
+            "The widget visualises this per-parameter scaling effect."
+        ),
+        "widget": "adam",
+    },
+    {
+        "key": "bias-correction",
+        "title": "Bias Correction",
+        "body": (
+            "At the first step, m and v are initialised to zero, so they are biased "
+            "toward zero. Adam corrects this: m_hat = m / (1 - beta1^t), "
+            "v_hat = v / (1 - beta2^t). Early in training, this correction is large; "
+            "it decays toward 1 as t increases. The widget shows the correction curve."
+        ),
+        "widget": "adam",
+    },
+    {
+        "key": "lr-decay",
+        "title": "LR Decay",
+        "body": (
+            "This model uses a linear learning rate decay schedule: "
+            "lr_t = lr * (1 - step / num_steps). The learning rate starts at the "
+            "configured value and decreases linearly to zero. This lets the model "
+            "make large updates early when it is far from optimal, then fine-tune "
+            "with smaller updates later. The widget shows the decay curve."
+        ),
+        "widget": "adam",
+    },
+]
+
+AUTOGRAD_STEPS = [
+    {
+        "key": "what-is-autograd",
+        "title": "What is Autograd?",
+        "body": (
+            "Autograd is automatic differentiation: it tracks every mathematical operation "
+            "to build a computation graph, then walks it backward to compute gradients. "
+            "In microgpt, each number is wrapped in a Value object that records how it was "
+            "computed. Type some text into the widget and watch the computation graph build."
+        ),
+        "widget": "autograd",
+    },
+    {
+        "key": "building-the-graph",
+        "title": "Building the Graph",
+        "body": (
+            "Every operation (add, multiply, log, exp, relu) creates a new Value node "
+            "that points back to its inputs (children). The graph grows from parameters "
+            "and input tokens up through embeddings, attention, and finally to the loss. "
+            "Each node stores its data value and the local gradient of the operation."
+        ),
+        "widget": "autograd",
+    },
+    {
+        "key": "topological-sort",
+        "title": "Topological Sort",
+        "body": (
+            "Before backpropagation, the graph must be topologically sorted: ordered so "
+            "that every node comes after all nodes it depends on. This ensures gradients "
+            "flow in the correct direction — from the loss (output) back to the parameters "
+            "(inputs). The widget shows the node depth, with depth 0 at the output."
+        ),
+        "widget": "autograd",
+    },
+    {
+        "key": "chain-rule",
+        "title": "Chain Rule",
+        "body": (
+            "Backpropagation applies the chain rule: the gradient at each node is the sum "
+            "of (local gradient x parent gradient) for all paths to the loss. Each edge in "
+            "the graph shows the local gradient contribution. Green values mean positive "
+            "influence on the loss, red means negative."
+        ),
+        "widget": "autograd",
+    },
+    {
+        "key": "gradient-accumulation",
+        "title": "Gradient Accumulation",
+        "body": (
+            "When a Value is used in multiple places (the graph branches), its gradient "
+            "is the sum of contributions from each path. This is why the backward pass "
+            "uses += (accumulation) rather than simple assignment. The widget shows the "
+            "final accumulated gradient (g) at each node."
+        ),
+        "widget": "autograd",
+    },
+]
+
 
 @router.get("/learn", response_class=HTMLResponse)
 async def learn_index(request: Request):
@@ -643,6 +929,51 @@ async def training_loop_concept_page(request: Request):
     )
 
 
+@router.get("/learn/autograd", response_class=HTMLResponse)
+async def autograd_concept_page(request: Request):
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "archetypes/concept.html",
+        {"steps": AUTOGRAD_STEPS, **_arc_context("autograd")},
+    )
+
+
+@router.get("/learn/loss", response_class=HTMLResponse)
+async def loss_concept_page(request: Request):
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "archetypes/concept.html",
+        {"steps": LOSS_STEPS, **_arc_context("loss")},
+    )
+
+
+@router.get("/learn/parameters", response_class=HTMLResponse)
+async def params_concept_page(request: Request):
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "archetypes/concept.html",
+        {"steps": PARAMS_STEPS, **_arc_context("parameters")},
+    )
+
+
+@router.get("/learn/adam", response_class=HTMLResponse)
+async def adam_concept_page(request: Request):
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "archetypes/concept.html",
+        {"steps": ADAM_STEPS, **_arc_context("adam")},
+    )
+
+
+@router.get("/learn/faq", response_class=HTMLResponse)
+async def faq_page(request: Request):
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "archetypes/faq.html",
+        {"arc": LEARNING_ARC},
+    )
+
+
 @router.get("/models-page", response_class=HTMLResponse)
 async def models_page(request: Request):
     return request.app.state.templates.TemplateResponse(
@@ -680,9 +1011,7 @@ async def list_inference_models():
 
 @router.post("/inference/sample")
 async def inference_sample(body: dict):
-    import random
     from microgpt.core.autograd import Value
-    from microgpt.core.engine import GPT, softmax
 
     model_id = body.get("model_id")
     version = body.get("version")
@@ -718,7 +1047,9 @@ async def inference_sample(body: dict):
         v = await svc.get_version(model_id, version)
 
     if v is None:
-        raise HTTPException(status_code=404, detail="Model version not found in registry")
+        raise HTTPException(
+            status_code=404, detail="Model version not found in registry"
+        )
 
     model_path = Path(v["artifact_path"])
     if not model_path.exists():
@@ -740,7 +1071,7 @@ async def inference_sample(body: dict):
                 status_code=400,
                 detail=f"Character {bad_char!r} not in model vocabulary",
             ) from err
-        prompt_ids = prompt_ids[:model.block_size]
+        prompt_ids = prompt_ids[: model.block_size]
 
     def apply_top_k(scaled, top_k_val, vocab_size):
         if top_k_val <= 0 or top_k_val >= vocab_size:

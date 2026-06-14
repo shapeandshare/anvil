@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
+{% block content %}
+<div class="training-dashboard" style="grid-template-columns: 1fr; max-width: 720px; margin: 0 auto; padding: var(--space-4);">
+  <div class="panel">
+    <h1 class="panel-title" style="font-size: 1rem; text-align: center;">Frequently Asked Questions</h1>
+    <p class="text-muted" style="text-align: center; margin-bottom: var(--space-4);">
+      Common questions about how microgpt works and what it can (and cannot) do.
+    </p>
+
+    <div class="faq-list">
+      <div class="faq-item panel" style="cursor: pointer;" onclick="toggleFaq(this)">
+        <div class="faq-question panel-title" style="margin-bottom: 0; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+          Does the model actually understand anything?
+          <span class="faq-toggle" style="font-family: var(--font-mono); font-size: 0.7rem;">[+]</span>
+        </div>
+        <div class="faq-answer" style="display: none; margin-top: var(--space-3);">
+          <p class="text-muted">
+            No. The model has no understanding, consciousness, or intent. It is a statistical
+            pattern matcher: given a sequence of characters, it predicts the next most likely
+            character based on patterns in its training data. When it generates something that
+            looks meaningful, it is reproducing statistical regularities, not thinking.
+            This is sometimes called a "stochastic parrot."
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item panel" style="cursor: pointer;" onclick="toggleFaq(this)">
+        <div class="faq-question panel-title" style="margin-bottom: 0; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+          Why does it hallucinate?
+          <span class="faq-toggle" style="font-family: var(--font-mono); font-size: 0.7rem;">[+]</span>
+        </div>
+        <div class="faq-answer" style="display: none; margin-top: var(--space-3);">
+          <p class="text-muted">
+            Hallucination is just the model generating plausible-looking text that happens
+            to be factually wrong. Since it has no understanding of truth, it simply produces
+            whatever sequence of characters is statistically likely. If the training data
+            contained patterns like "Einstein was born in 1879," the model may reproduce
+            that. But it can just as easily generate "Einstein was born in 1923" if that
+            fits a statistical pattern. Every output is just a grammar exercise, not a
+            factual statement.
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item panel" style="cursor: pointer;" onclick="toggleFaq(this)">
+        <div class="faq-question panel-title" style="margin-bottom: 0; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+          How is this related to ChatGPT?
+          <span class="faq-toggle" style="font-family: var(--font-mono); font-size: 0.7rem;">[+]</span>
+        </div>
+        <div class="faq-answer" style="display: none; margin-top: var(--space-3);">
+          <p class="text-muted">
+            This is the same fundamental architecture: a decoder-only transformer with
+            self-attention, trained to predict the next token. The differences are scale:
+            ChatGPT has billions of parameters, was trained on trillions of tokens, and
+            used thousands of GPUs for weeks. microgpt has 4,192 parameters, trains on
+            kilobytes of text in seconds, and fits on a single CPU. Every concept here
+            scales up directly to production models — just with 10,000,000&times; more
+            data and compute.
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item panel" style="cursor: pointer;" onclick="toggleFaq(this)">
+        <div class="faq-question panel-title" style="margin-bottom: 0; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+          Why is it so slow?
+          <span class="faq-toggle" style="font-family: var(--font-mono); font-size: 0.7rem;">[+]</span>
+        </div>
+        <div class="faq-answer" style="display: none; margin-top: var(--space-3);">
+          <p class="text-muted">
+            The core engine is pure Python with no GPU acceleration. Every forward pass
+            loops through scalar operations (add, multiply, softmax) one value at a time.
+            Production models use GPU kernels that process thousands of operations in
+            parallel. The slowness is intentional: it lets you inspect every intermediate
+            value and watch the computation unfold step by step — something impossible
+            with optimised frameworks like PyTorch.
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item panel" style="cursor: pointer;" onclick="toggleFaq(this)">
+        <div class="faq-question panel-title" style="margin-bottom: 0; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+          Can I make it generate better names?
+          <span class="faq-toggle" style="font-family: var(--font-mono); font-size: 0.7rem;">[+]</span>
+        </div>
+        <div class="faq-answer" style="display: none; margin-top: var(--space-3);">
+          <p class="text-muted">
+            Better names require better data or more training. The default dataset is
+            a small collection of medieval guild names. You can upload your own .txt
+            dataset through the Data tab and retrain. Training for more steps, increasing
+            n_embd, or adding n_layer also helps the model pick up longer-range patterns.
+            But with 4,192 parameters, it will never produce genuinely creative or
+            coherent names — it can only recombine patterns it has seen.
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-item panel" style="cursor: pointer;" onclick="toggleFaq(this)">
+        <div class="faq-question panel-title" style="margin-bottom: 0; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+          What if I change the dataset?
+          <span class="faq-toggle" style="font-family: var(--font-mono); font-size: 0.7rem;">[+]</span>
+        </div>
+        <div class="faq-answer" style="display: none; margin-top: var(--space-3);">
+          <p class="text-muted">
+            The model learns whatever character-level patterns exist in the training text.
+            Give it Shakespeare and it will generate Shakespeare-like character sequences.
+            Give it Python code and it will generate plausible-looking code (though with
+            only 4,192 parameters it won't compile). The vocabulary is built from the
+            unique characters in the dataset, so a dataset with more diverse characters
+            (uppercase, digits, punctuation) gives the model more tokens to work with
+            but spreads its limited capacity thinner.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align: center; margin-top: var(--space-4);">
+      <p class="space-y-2">
+        <a href="/v1/learn" class="action-link">Back to Learning Index</a>
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function toggleFaq(el) {
+  var answer = el.querySelector('.faq-answer');
+  var toggle = el.querySelector('.faq-toggle');
+  if (answer.style.display === 'none' || answer.style.display === '') {
+    answer.style.display = 'block';
+    toggle.textContent = '[-]';
+  } else {
+    answer.style.display = 'none';
+    toggle.textContent = '[+]';
+  }
+}
+</script>
+{% endblock %}
