@@ -5,8 +5,8 @@ import random
 
 random.seed(42)
 
-from microgpt.core.autograd import Value
-from microgpt.core.engine import GPT, softmax
+from anvil.core.autograd import Value
+from anvil.core.engine import GPT, softmax
 
 # --- data ---
 docs = [l.strip() for l in open("input.txt") if l.strip()]

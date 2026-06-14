@@ -1,8 +1,8 @@
 """Unit tests for the core training engine."""
 
-from microgpt.core.autograd import Value
-from microgpt.core.engine import GPT, train
-from microgpt.core.tokenizer import Tokenizer
+from anvil.core.autograd import Value
+from anvil.core.engine import GPT, train
+from anvil.core.tokenizer import Tokenizer
 
 
 def test_value_backward_multipath():
@@ -52,7 +52,7 @@ def test_optimizer_state_callback():
     def cb(step, m, v, grads):
         captured.append({"step": step, "m_len": len(m), "v_len": len(v), "grads_len": len(grads)})
 
-    from microgpt.core.engine import train as t
+    from anvil.core.engine import train as t
 
     t(docs, num_steps=5, n_embd=8, n_head=2, optimizer_state_callback=cb)
 

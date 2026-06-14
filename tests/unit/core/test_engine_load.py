@@ -3,7 +3,7 @@
 import json
 import tempfile
 
-from microgpt.core.engine import GPT, train, softmax
+from anvil.core.engine import GPT, train, softmax
 
 
 def test_gpt_save_load_roundtrip():

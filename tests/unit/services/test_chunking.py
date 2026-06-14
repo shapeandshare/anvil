@@ -1,8 +1,8 @@
 """Tests for chunking strategies."""
 
-from microgpt.services.chunking.line_chunker import LineAsDocChunker
-from microgpt.services.chunking.window_chunker import FixedSizeWindowChunker
-from microgpt.services.chunking.file_chunker import FileAsDocChunker
+from anvil.services.chunking.line_chunker import LineAsDocChunker
+from anvil.services.chunking.window_chunker import FixedSizeWindowChunker
+from anvil.services.chunking.file_chunker import FileAsDocChunker
 
 
 class TestLineAsDocChunker:

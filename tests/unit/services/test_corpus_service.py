@@ -3,12 +3,12 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from microgpt.db.models.corpus import Corpus
-from microgpt.db.repositories.corpora import CorpusRepository
-from microgpt.services.corpora import CorpusService
-from microgpt.services.corpus_loader import CorpusLoader
-from microgpt.db.base import Base
-from microgpt.db.session import async_engine, AsyncSessionLocal
+from anvil.db.models.corpus import Corpus
+from anvil.db.repositories.corpora import CorpusRepository
+from anvil.services.corpora import CorpusService
+from anvil.services.corpus_loader import CorpusLoader
+from anvil.db.base import Base
+from anvil.db.session import async_engine, AsyncSessionLocal
 
 
 @pytest.fixture

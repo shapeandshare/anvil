@@ -1,10 +1,10 @@
-"""Tests for microgpt.config.get_config()."""
+"""Tests for anvil.config.get_config()."""
 
 import os
 
 import pytest
-from microgpt import config as _cfg_mod
-from microgpt.config import get_config, get_mlflow_uri, set_resolved_mlflow_uri
+from anvil import config as _cfg_mod
+from anvil.config import get_config, get_mlflow_uri, set_resolved_mlflow_uri
 
 
 def test_mlflow_uri_defaults_to_http():
@@ -22,7 +22,7 @@ def test_mlflow_backend_store_uri_is_absolute_sqlite():
 
 
 def test_mlflow_uri_env_override(monkeypatch):
-    monkeypatch.setenv("MICROGPT_MLFLOW_URI", "http://custom:5001")
+    monkeypatch.setenv("ANVIL_MLFLOW_URI", "http://custom:5001")
     get_config.cache_clear()
     try:
         cfg = get_config()

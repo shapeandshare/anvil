@@ -1,9 +1,9 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from microgpt.db.repositories.experiments import ExperimentRepository
-from microgpt.db.session import AsyncSessionLocal
-from microgpt.services.tracking import TrackingService
+from anvil.db.repositories.experiments import ExperimentRepository
+from anvil.db.session import AsyncSessionLocal
+from anvil.services.tracking import TrackingService
 
 
 class _FakeMLflowClient:
@@ -170,6 +170,6 @@ async def test_reconcile_orphans_skips_finished_runs(
 def test_lifespan_calls_reconcile_orphans_source():
     from pathlib import Path
 
-    src = Path("microgpt/api/app.py").read_text()
+    src = Path("anvil/api/app.py").read_text()
     assert "reconcile_orphans" in src
     assert "TrackingService" in src

@@ -2,12 +2,12 @@ from unittest.mock import patch
 
 import pytest
 
-from microgpt.services.tracking import TrackingService
+from anvil.services.tracking import TrackingService
 
 
 @pytest.fixture(autouse=True)
 def reset_guard():
-    import microgpt.services.tracking as mod
+    import anvil.services.tracking as mod
 
     mod._system_metrics_enabled = False
     yield
@@ -15,7 +15,7 @@ def reset_guard():
 
 
 def _guard():
-    import microgpt.services.tracking as mod
+    import anvil.services.tracking as mod
 
     return mod._system_metrics_enabled
 

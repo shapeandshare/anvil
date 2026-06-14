@@ -16,7 +16,7 @@ def _iter_py_files(root: Path):
 
 def test_no_completed_status_in_py_source():
     root = Path(__file__).resolve().parent.parent.parent
-    pkg_root = root / "microgpt"
+    pkg_root = root / "anvil"
     hits = []
     for p in _iter_py_files(pkg_root):
         text = p.read_text()
@@ -29,7 +29,7 @@ def test_no_completed_status_in_py_source():
 
 def test_no_pending_status_in_py_source():
     root = Path(__file__).resolve().parent.parent.parent
-    pkg_root = root / "microgpt"
+    pkg_root = root / "anvil"
     hits = []
     for p in _iter_py_files(pkg_root):
         text = p.read_text()

@@ -8,11 +8,11 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from microgpt.api.app import app
-from microgpt.db.base import Base
-from microgpt.db.repositories.experiments import ExperimentRepository
-from microgpt.db.session import AsyncSessionLocal, async_engine
-from microgpt.services.tracking import TrackingService
+from anvil.api.app import app
+from anvil.db.base import Base
+from anvil.db.repositories.experiments import ExperimentRepository
+from anvil.db.session import AsyncSessionLocal, async_engine
+from anvil.services.tracking import TrackingService
 
 
 class FakeClientForTraining:
@@ -71,8 +71,8 @@ def fake_tracking():
 async def test_training_start_creates_experiment(
     db_session: AsyncSession, fake_tracking
 ):
-    from microgpt.api.v1 import training as training_module
-    from microgpt.api.v1.training import router
+    from anvil.api.v1 import training as training_module
+    from anvil.api.v1.training import router
 
     orig_svc = training_module.tracking_svc
     training_module.tracking_svc = fake_tracking

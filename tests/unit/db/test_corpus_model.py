@@ -2,7 +2,7 @@
 
 import pytest
 
-from microgpt.db.models.corpus import Corpus, CorpusFile
+from anvil.db.models.corpus import Corpus, CorpusFile
 
 
 class TestCorpusModel:

@@ -5,9 +5,9 @@ from pathlib import Path
 
 import pytest
 
-from microgpt.core.engine import GPT, train
-from microgpt.core.tokenizer import Vocabulary
-from microgpt.services.inference import (
+from anvil.core.engine import GPT, train
+from anvil.core.tokenizer import Vocabulary
+from anvil.services.inference import (
     DemoModelProvider,
     InferenceService,
     LoadedModel,

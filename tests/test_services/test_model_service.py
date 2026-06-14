@@ -2,9 +2,9 @@
 
 import pytest
 
-from microgpt.db.models.registry import RegisteredModel
-from microgpt.db.repositories.models import ModelRepository
-from microgpt.services.models import ModelRegistryService
+from anvil.db.models.registry import RegisteredModel
+from anvil.db.repositories.models import ModelRepository
+from anvil.services.models import ModelRegistryService
 
 
 @pytest.mark.asyncio

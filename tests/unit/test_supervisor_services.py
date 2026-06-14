@@ -1,7 +1,7 @@
 """Tests for supervisor MLflowService config integration."""
 
-from microgpt.config import get_config
-from microgpt.supervisor.services import MLflowService
+from anvil.config import get_config
+from anvil.supervisor.services import MLflowService
 
 
 def test_mlflow_service_backend_store_from_config():

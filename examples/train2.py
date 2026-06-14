@@ -1,6 +1,6 @@
 """train2: Autograd replaces manual gradients."""
 print("Stage 2: Autograd (Value class)")
-from microgpt.core.autograd import Value
+from anvil.core.autograd import Value
 a = Value(2.0)
 b = Value(3.0)
 c = a * b

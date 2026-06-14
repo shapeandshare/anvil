@@ -9,7 +9,7 @@ import pytest
 
 class TestContentDigest:
     def test_same_docs_same_digest(self):
-        from microgpt.services.mlflow_inputs import MlflowInputResolver
+        from anvil.services.mlflow_inputs import MlflowInputResolver
 
         d1 = MlflowInputResolver.content_digest(["hello", "world"])
         d2 = MlflowInputResolver.content_digest(["hello", "world"])
@@ -17,14 +17,14 @@ class TestContentDigest:
         assert len(d1) == 64
 
     def test_different_docs_different_digest(self):
-        from microgpt.services.mlflow_inputs import MlflowInputResolver
+        from anvil.services.mlflow_inputs import MlflowInputResolver
 
         d1 = MlflowInputResolver.content_digest(["hello"])
         d2 = MlflowInputResolver.content_digest(["world"])
         assert d1 != d2
 
     def test_empty_docs_stable(self):
-        from microgpt.services.mlflow_inputs import MlflowInputResolver
+        from anvil.services.mlflow_inputs import MlflowInputResolver
 
         d = MlflowInputResolver.content_digest([])
         assert isinstance(d, str)
@@ -34,7 +34,7 @@ class TestContentDigest:
 class TestResolveDataset:
     @pytest.mark.asyncio
     async def test_returns_dataset_with_digest(self, tmp_path: Path):
-        from microgpt.services.mlflow_inputs import MlflowInputResolver
+        from anvil.services.mlflow_inputs import MlflowInputResolver
 
         file = tmp_path / "data.txt"
         file.write_text("hello world")
@@ -45,7 +45,7 @@ class TestResolveDataset:
         mock_ds.name = "test-ds"
         mock_ds.file_path = str(file)
 
-        with patch("microgpt.services.mlflow_inputs.DatasetRepository") as repo_cls:
+        with patch("anvil.services.mlflow_inputs.DatasetRepository") as repo_cls:
             repo = repo_cls.return_value
             repo.get = AsyncMock(return_value=mock_ds)
 
@@ -57,7 +57,7 @@ class TestResolveDataset:
 
     @pytest.mark.asyncio
     async def test_with_validation_role(self, tmp_path: Path):
-        from microgpt.services.mlflow_inputs import MlflowInputResolver
+        from anvil.services.mlflow_inputs import MlflowInputResolver
 
         file = tmp_path / "val.txt"
         file.write_text("val data")
@@ -68,7 +68,7 @@ class TestResolveDataset:
         mock_ds.name = "val-ds"
         mock_ds.file_path = str(file)
 
-        with patch("microgpt.services.mlflow_inputs.DatasetRepository") as repo_cls:
+        with patch("anvil.services.mlflow_inputs.DatasetRepository") as repo_cls:
             repo = repo_cls.return_value
             repo.get = AsyncMock(return_value=mock_ds)
 
@@ -78,10 +78,10 @@ class TestResolveDataset:
 
     @pytest.mark.asyncio
     async def test_dataset_not_found_raises(self):
-        from microgpt.services.mlflow_inputs import MlflowInputResolver
+        from anvil.services.mlflow_inputs import MlflowInputResolver
 
         mock_session = AsyncMock()
-        with patch("microgpt.services.mlflow_inputs.DatasetRepository") as repo_cls:
+        with patch("anvil.services.mlflow_inputs.DatasetRepository") as repo_cls:
             repo = repo_cls.return_value
             repo.get = AsyncMock(return_value=None)
 
@@ -93,7 +93,7 @@ class TestResolveDataset:
 class TestResolveCorpus:
     @pytest.mark.asyncio
     async def test_returns_metadataset_and_artifact_paths(self, tmp_path: Path):
-        from microgpt.services.mlflow_inputs import MlflowInputResolver
+        from anvil.services.mlflow_inputs import MlflowInputResolver
 
         root = tmp_path / "corpus_root"
         root.mkdir()
@@ -106,7 +106,7 @@ class TestResolveCorpus:
         mock_corpus.name = "test-corpus"
         mock_corpus.root_path = str(root)
 
-        with patch("microgpt.services.mlflow_inputs.CorpusRepository") as repo_cls:
+        with patch("anvil.services.mlflow_inputs.CorpusRepository") as repo_cls:
             repo = repo_cls.return_value
             repo.get = AsyncMock(return_value=mock_corpus)
 
@@ -123,7 +123,7 @@ class TestResolveCorpus:
 
     @pytest.mark.asyncio
     async def test_no_files_returns_empty_artifacts(self, tmp_path: Path):
-        from microgpt.services.mlflow_inputs import MlflowInputResolver
+        from anvil.services.mlflow_inputs import MlflowInputResolver
 
         root = tmp_path / "empty_corpus"
         root.mkdir()
@@ -134,7 +134,7 @@ class TestResolveCorpus:
         mock_corpus.name = "empty"
         mock_corpus.root_path = str(root)
 
-        with patch("microgpt.services.mlflow_inputs.CorpusRepository") as repo_cls:
+        with patch("anvil.services.mlflow_inputs.CorpusRepository") as repo_cls:
             repo = repo_cls.return_value
             repo.get = AsyncMock(return_value=mock_corpus)
 
@@ -146,10 +146,10 @@ class TestResolveCorpus:
 
     @pytest.mark.asyncio
     async def test_corpus_not_found_raises(self):
-        from microgpt.services.mlflow_inputs import MlflowInputResolver
+        from anvil.services.mlflow_inputs import MlflowInputResolver
 
         mock_session = AsyncMock()
-        with patch("microgpt.services.mlflow_inputs.CorpusRepository") as repo_cls:
+        with patch("anvil.services.mlflow_inputs.CorpusRepository") as repo_cls:
             repo = repo_cls.return_value
             repo.get = AsyncMock(return_value=None)
 
@@ -162,7 +162,7 @@ class TestFR024NoCustomCorpusAbstraction:
     def test_no_custom_corpus_store_class_defined(self):
         import inspect
 
-        import microgpt.services.mlflow_inputs as mod
+        import anvil.services.mlflow_inputs as mod
 
         for name, obj in inspect.getmembers(mod):
             if inspect.isclass(obj):

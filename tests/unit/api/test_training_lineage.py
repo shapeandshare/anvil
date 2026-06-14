@@ -5,9 +5,9 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from microgpt.api.app import app
-from microgpt.db.base import Base
-from microgpt.db.session import AsyncSessionLocal, async_engine
+from anvil.api.app import app
+from anvil.db.base import Base
+from anvil.db.session import AsyncSessionLocal, async_engine
 
 
 class FakeLineageClient:
@@ -61,7 +61,7 @@ async def db_session():
 
 @pytest.fixture
 def fake_tracking():
-    from microgpt.services.tracking import TrackingService
+    from anvil.services.tracking import TrackingService
 
     svc = TrackingService(
         tracking_uri="http://127.0.0.1:5000",
@@ -86,7 +86,7 @@ BASE_CONFIG = {
 
 @pytest.mark.asyncio
 async def test_start_with_dataset_id_calls_log_dataset_input(db_session, fake_tracking):
-    from microgpt.api.v1 import training as training_module
+    from anvil.api.v1 import training as training_module
 
     orig_svc = training_module.tracking_svc
     training_module.tracking_svc = fake_tracking
@@ -114,7 +114,7 @@ async def test_start_with_dataset_id_calls_log_dataset_input(db_session, fake_tr
 
 @pytest.mark.asyncio
 async def test_start_with_corpus_id_calls_log_corpus_input(db_session, fake_tracking):
-    from microgpt.api.v1 import training as training_module
+    from anvil.api.v1 import training as training_module
 
     orig_svc = training_module.tracking_svc
     training_module.tracking_svc = fake_tracking
@@ -141,7 +141,7 @@ async def test_start_with_corpus_id_calls_log_corpus_input(db_session, fake_trac
 
 @pytest.mark.asyncio
 async def test_no_dataset_or_corpus_no_phantom_input(db_session, fake_tracking):
-    from microgpt.api.v1 import training as training_module
+    from anvil.api.v1 import training as training_module
 
     orig_svc = training_module.tracking_svc
     training_module.tracking_svc = fake_tracking
@@ -172,8 +172,8 @@ async def test_no_dataset_or_corpus_no_phantom_input(db_session, fake_tracking):
 
 @pytest.mark.asyncio
 async def test_start_with_dataset_id_persists_input_digest(db_session, fake_tracking):
-    from microgpt.api.v1 import training as training_module
-    from microgpt.db.repositories.experiments import ExperimentRepository
+    from anvil.api.v1 import training as training_module
+    from anvil.db.repositories.experiments import ExperimentRepository
 
     orig_svc = training_module.tracking_svc
     training_module.tracking_svc = fake_tracking
@@ -207,8 +207,8 @@ async def test_start_with_dataset_id_persists_input_digest(db_session, fake_trac
 
 @pytest.mark.asyncio
 async def test_no_input_id_no_digest(db_session, fake_tracking):
-    from microgpt.api.v1 import training as training_module
-    from microgpt.db.repositories.experiments import ExperimentRepository
+    from anvil.api.v1 import training as training_module
+    from anvil.db.repositories.experiments import ExperimentRepository
 
     orig_svc = training_module.tracking_svc
     training_module.tracking_svc = fake_tracking

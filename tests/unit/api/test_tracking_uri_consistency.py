@@ -10,12 +10,12 @@ from pathlib import Path
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from microgpt.api.app import app
-from microgpt.db.base import Base
-from microgpt.db.session import AsyncSessionLocal, async_engine
-from microgpt.services.tracking import TrackingService
+from anvil.api.app import app
+from anvil.db.base import Base
+from anvil.db.session import AsyncSessionLocal, async_engine
+from anvil.services.tracking import TrackingService
 
-API_DIR = Path("microgpt/api/v1")
+API_DIR = Path("anvil/api/v1")
 
 
 @pytest.fixture(autouse=True)
@@ -123,7 +123,7 @@ async def test_training_start_degraded_mode_returns_200():
         client_factory=lambda uri: _DegradingClient(uri),
     )
     transport = ASGITransport(app=app)
-    from microgpt.api.v1 import training as training_module
+    from anvil.api.v1 import training as training_module
 
     orig_svc = training_module.tracking_svc
     training_module.tracking_svc = svc
@@ -152,7 +152,7 @@ async def test_training_start_active_mode_returns_mlflow_run_id():
         tracking_uri="http://127.0.0.1:5000",
         client_factory=lambda uri: _FakeClientForDegradedTest(uri),
     )
-    from microgpt.api.v1 import training as training_module
+    from anvil.api.v1 import training as training_module
 
     orig_svc = training_module.tracking_svc
     training_module.tracking_svc = svc

@@ -3,12 +3,12 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from microgpt.db.models.registry import ModelVersion, RegisteredModel
-from microgpt.db.models.training_config import Experiment, TrainingConfig
-from microgpt.db.repositories.experiments import ExperimentRepository
-from microgpt.db.repositories.models import ModelRepository
-from microgpt.services.models import ModelRegistryService
-from microgpt.services.tracking import TrackingService
+from anvil.db.models.registry import ModelVersion, RegisteredModel
+from anvil.db.models.training_config import Experiment, TrainingConfig
+from anvil.db.repositories.experiments import ExperimentRepository
+from anvil.db.repositories.models import ModelRepository
+from anvil.services.models import ModelRegistryService
+from anvil.services.tracking import TrackingService
 
 
 class FakeMlflowClient:

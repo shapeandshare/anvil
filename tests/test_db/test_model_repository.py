@@ -3,8 +3,8 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from microgpt.db.models.registry import ModelVersion, RegisteredModel
-from microgpt.db.repositories.models import ModelRepository
+from anvil.db.models.registry import ModelVersion, RegisteredModel
+from anvil.db.repositories.models import ModelRepository
 
 
 @pytest.mark.asyncio
