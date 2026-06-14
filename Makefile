@@ -11,9 +11,9 @@ setup-gpu: install-gpu ## Force GPU setup (auto-detected on Apple Silicon / NVID
 	@echo ""
 	@echo "GPU setup complete. Start the web app with 'make run' or train with 'make train-gpu'."
 
-run-gpu: export MICROGPT_DEVICE=auto
+run-gpu: export ANVIL_DEVICE=auto
 run-gpu: run ## Start web server with GPU auto-detection
 
 train-gpu: export USE_GPU=true
 train-gpu: $(VENV_DIR)/activate ## Train with GPU acceleration (also defined in cli.mk)
-	$(PYTHON) -c "from microgpt.cli import train; train()"
+	$(PYTHON) -c "from anvil.cli import train; train()"
