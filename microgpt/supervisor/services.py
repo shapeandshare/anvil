@@ -1,11 +1,12 @@
 import os
 import signal
+import socket
 import subprocess
 import sys
 import time
 from pathlib import Path
 
-from microgpt.config import get_config
+from microgpt.config import get_config, set_resolved_mlflow_uri
 
 
 class MLflowService:
@@ -17,12 +18,35 @@ class MLflowService:
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.log_file = self.log_dir / "mlflow.log"
         self.process: subprocess.Popen | None = None
-        self.port = 5000
+        self.port = cfg["mlflow_port"]
         self._tracking_uri = cfg["mlflow_uri"]
         self._backend_store_uri = cfg["mlflow_backend_store_uri"]
 
+    @staticmethod
+    def _detect_lan_ip() -> str | None:
+        """Discover the primary LAN IP address of this host.
+
+        Connects to a public resolver to determine which interface
+        carries the default route, then returns that interface's IP.
+        Returns None if detection fails.
+        """
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                s.settimeout(1.0)
+                s.connect(("1.1.1.1", 80))
+                ip = s.getsockname()[0]
+                if ip and not ip.startswith("127."):
+                    return ip
+            return None
+        except (OSError, socket.error):
+            return None
+
     def _free_port(self) -> None:
-        """Kill any zombie process occupying our target port before starting."""
+        """Kill any Python/MLflow zombie occupying our target port before starting.
+
+        Only targets processes with 'python' or 'mlflow' in their command name
+        to avoid killing system processes (e.g., macOS ControlCenter on 5000).
+        """
         try:
             result = subprocess.run(
                 ["lsof", "-ti", f":{self.port}"],
@@ -32,26 +56,43 @@ class MLflowService:
             )
             if not result.stdout.strip():
                 return
+            pids = []
             for pid_str in result.stdout.strip().split():
                 try:
-                    os.kill(int(pid_str), signal.SIGTERM)
-                except (ProcessLookupError, ValueError):
+                    comm = subprocess.run(
+                        ["ps", "-p", pid_str, "-o", "comm="],
+                        capture_output=True,
+                        text=True,
+                        timeout=3,
+                    )
+                    cmd = comm.stdout.strip().lower()
+                    if any(kw in cmd for kw in ("python", "mlflow", "uvicorn")):
+                        pids.append(int(pid_str))
+                except (subprocess.TimeoutExpired, ValueError):
+                    pass
+            if not pids:
+                return
+            for pid in pids:
+                try:
+                    os.kill(pid, signal.SIGTERM)
+                except ProcessLookupError:
                     pass
             deadline = time.monotonic() + 1.0
             while time.monotonic() < deadline:
                 time.sleep(0.3)
-                check = subprocess.run(
-                    ["lsof", "-ti", f":{self.port}"],
-                    capture_output=True,
-                    text=True,
-                    timeout=3,
-                )
-                if not check.stdout.strip():
-                    return
-                for pid_str in check.stdout.strip().split():
+                remaining = []
+                for pid in pids:
                     try:
-                        os.kill(int(pid_str), signal.SIGKILL)
-                    except (ProcessLookupError, ValueError):
+                        os.kill(pid, 0)
+                        remaining.append(pid)
+                    except ProcessLookupError:
+                        pass
+                if not remaining:
+                    return
+                for pid in remaining:
+                    try:
+                        os.kill(pid, signal.SIGKILL)
+                    except ProcessLookupError:
                         pass
         except (subprocess.TimeoutExpired, FileNotFoundError):
             pass
@@ -68,7 +109,7 @@ class MLflowService:
                 "--backend-store-uri",
                 self._backend_store_uri,
                 "--host",
-                "127.0.0.1",
+                "0.0.0.0",
                 "--port",
                 str(self.port),
                 "--workers",
@@ -79,6 +120,16 @@ class MLflowService:
             preexec_fn=os.setsid,
         )
         (self.log_dir / "mlflow.pid").write_text(str(self.process.pid))
+
+        # Auto-detect LAN IP so browser-facing MLflow links resolve from
+        # other machines. Only override if the user hasn't explicitly
+        # configured MICROGPT_MLFLOW_URI (i.e. still points at 127.0.0.1).
+        cfg = get_config()
+        if cfg["mlflow_uri"] == f"http://127.0.0.1:{self.port}":
+            lan_ip = self._detect_lan_ip()
+            if lan_ip:
+                self._tracking_uri = f"http://{lan_ip}:{self.port}"
+                set_resolved_mlflow_uri(self._tracking_uri)
 
     def stop(self) -> None:
         pid_file = self.log_dir / "mlflow.pid"
