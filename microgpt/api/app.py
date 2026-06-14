@@ -3,8 +3,8 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
-from fastapi.responses import RedirectResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -54,9 +54,12 @@ app = FastAPI(
 )
 
 
-@app.get("/")
-async def root_redirect():
-    return RedirectResponse(url="/v1")
+@app.get("/", response_class=HTMLResponse)
+async def root_hero(request: Request):
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "archetypes/hero.html",
+    )
 
 
 app.include_router(v1_router, prefix="/v1")

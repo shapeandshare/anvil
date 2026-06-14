@@ -53,6 +53,13 @@ a:hover { text-decoration: underline; }
   font-weight: 700;
   color: var(--text);
   letter-spacing: -0.02em;
+  text-decoration: none;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+
+.nav-title:hover {
+  opacity: 0.8;
+  text-decoration: none;
 }
 
 .theme-toggle {
