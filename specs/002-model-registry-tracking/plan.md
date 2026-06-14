@@ -7,7 +7,7 @@
 
 ## Summary
 
-Add a local model registry to microgpt-workbench so users can register trained models from experiments, version them, and select from the registry (not experiments) for inference. The registry stores model artifacts independently from experiment MLflow storage. Users can browse, search, version, and delete registered models via the web UI.
+Add a local model registry to anvil so users can register trained models from experiments, version them, and select from the registry (not experiments) for inference. The registry stores model artifacts independently from experiment MLflow storage. Users can browse, search, version, and delete registered models via the web UI.
 
 **Design Outputs (Phase 0-1 completed)**:
 - `research.md` — Technical decisions documented

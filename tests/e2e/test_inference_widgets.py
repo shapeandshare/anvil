@@ -95,27 +95,30 @@ async def test_model_params_demo_fallback(client):
 
 
 @pytest.mark.asyncio
-async def test_backward_graph_oov_error(client):
-    """T054: FR-020 — OOV character returns 400 with error message."""
+async def test_backward_graph_oov_skipped(client):
+    """T054: FR-020 — OOV characters are silently skipped, endpoint returns 200."""
     r = await client.post("/v1/inference/backward-graph", json={"text": "hello \U0001f60a world"})
-    assert r.status_code == 400
-    detail = r.json().get("detail", "")
-    assert len(detail) > 0
+    assert r.status_code == 200
+    data = r.json()
+    assert "nodes" in data
+    assert "edges" in data
 
 
 @pytest.mark.asyncio
-async def test_loss_breakdown_oov_error(client):
-    """T054: FR-020 — OOV character returns 400 for loss-breakdown."""
+async def test_loss_breakdown_oov_skipped(client):
+    """T054: FR-020 — OOV characters are silently skipped for loss-breakdown."""
     r = await client.post("/v1/inference/loss-breakdown", json={"text": "hi \u2603 snow"})
-    assert r.status_code == 400
-    detail = r.json().get("detail", "")
-    assert len(detail) > 0
+    assert r.status_code == 200
+    data = r.json()
+    assert "tokens" in data
+    assert "losses" in data
 
 
 @pytest.mark.asyncio
-async def test_attention_oov_error(client):
-    """T054: FR-020 — OOV character returns 400 for attention endpoint."""
+async def test_attention_oov_skipped(client):
+    """T054: FR-020 — OOV characters are silently skipped for attention endpoint."""
     r = await client.post("/v1/inference/attention", json={"text": "test \U0001f436"})
-    assert r.status_code == 400
-    detail = r.json().get("detail", "")
-    assert len(detail) > 0
+    assert r.status_code == 200
+    data = r.json()
+    assert "tokens" in data
+    assert "weights" in data

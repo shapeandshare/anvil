@@ -30,7 +30,7 @@ def fake_platform():
 
 
 def _svc_and_mock_run():
-    import microgpt.services.metrics_collectors as mc
+    import anvil.services.metrics_collectors as mc
 
     return mc
 

@@ -1,11 +1,11 @@
-# microgpt-workbench Constitution (Spec Kit mirror)
+# anvil Constitution (Spec Kit mirror)
 
 > **Authoritative source**: the root [`CONSTITUTION.md`](../../CONSTITUTION.md) (v1.1.0). This file mirrors it for Spec Kit tooling (`/speckit.analyze` etc.). If the two ever diverge, the root `CONSTITUTION.md` wins; update it first, then re-sync this mirror.
 
 ## Core Principles
 
 ### Article I — Zero-Dependency Core
-The core training engine (`microgpt/core/`) MUST have zero third-party Python dependencies (stdlib only). All additional functionality (web server, database, **experiment tracking**, **GPU**) MUST be opt-in layers.
+The core training engine (`anvil/core/`) MUST have zero third-party Python dependencies (stdlib only). All additional functionality (web server, database, **experiment tracking**, **GPU**) MUST be opt-in layers.
 
 ### Article II — Educational Clarity
 Code MUST prioritize readability/educational value over performance. Comments explain WHY, not just WHAT.
@@ -23,7 +23,7 @@ Web, database, and service layers MUST be async. The core training engine is the
 PEP 420 implicit namespaces. `__init__.py` ONLY where a public API surface is exported — never for internal wiring or side-effect imports.
 
 ### Article VII — Layered Architecture
-Repository pattern for all data access; business logic in Services; services exposed through the God Class (`MicroGPTWorkbench`); routes/CLI/tests call the God Class. No DB primitives leak beyond the Repository layer.
+Repository pattern for all data access; business logic in Services; services exposed through the God Class (`AnvilWorkbench`); routes/CLI/tests call the God Class. No DB primitives leak beyond the Repository layer.
 
 ### Article VIII — Whimsy Without Compromise
 The UI MUST be delightful, but whimsy MUST NEVER undermine correctness, completeness, or robustness.

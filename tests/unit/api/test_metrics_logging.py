@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from microgpt.services.tracking import TrackingService
+from anvil.services.tracking import TrackingService
 
 
 @pytest.mark.asyncio
@@ -65,7 +65,7 @@ async def test_on_complete_logs_final_loss():
     mlflow_run_id = "test-run-final"
     final_loss_val = 0.123
 
-    from microgpt.api.v1.training import router
+    from anvil.api.v1.training import router
 
     async def on_complete(model, config, final_loss, samples, uchars):
         await tracking_svc.finish_run(mlflow_run_id)

@@ -62,7 +62,7 @@ Migration (new tables)
 
 | Component | File | Change |
 |-----------|------|--------|
-| Training callback | `microgpt/api/v1/training.py` | Expose model artifact path in experiment detail for "Register Model" action |
+| Training callback | `anvil/api/v1/training.py` | Expose model artifact path in experiment detail for "Register Model" action |
 | Experiment list UI | `templates/experiments.html` | Add "Register Model" button for completed experiments |
 | Inference endpoints | `router.py` | Change `/v1/inference/models` to query registry instead of experiments |
 | God class | `cli.py` | Expose `ModelRegistryService` via property |

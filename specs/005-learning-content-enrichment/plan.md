@@ -5,7 +5,7 @@
 
 ## Summary
 
-Enrich the microgpt-workbench learning arc from 5 lessons to 9+ by adding interactive scroll-driven lessons with live computation graph visualization (autograd), per-token loss breakdown, parameter anatomy explorer, real logged optimizer state visualization, and progressive training scripts. Fill 3 empty stubs in the 6-stage curriculum (Constitution Article II compliance). Add a static FAQ and enrich existing attention lessons with RMSNorm/residual explanations. All widgets use the existing demo model for data — no training required to explore.
+Enrich the anvil learning arc from 5 lessons to 9+ by adding interactive scroll-driven lessons with live computation graph visualization (autograd), per-token loss breakdown, parameter anatomy explorer, real logged optimizer state visualization, and progressive training scripts. Fill 3 empty stubs in the 6-stage curriculum (Constitution Article II compliance). Add a static FAQ and enrich existing attention lessons with RMSNorm/residual explanations. All widgets use the existing demo model for data — no training required to explore.
 
 ## Technical Context
 
@@ -16,7 +16,7 @@ Enrich the microgpt-workbench learning arc from 5 lessons to 9+ by adding intera
 **Target Platform**: macOS ARM (Apple Silicon) primary, Linux secondary
 **Project Type**: Python web application (FastAPI + Jinja2 templates + educational JS widgets)
 **Performance Goals**: All lesson widgets respond to user input within 1 second (existing demo model); computation graph capped at 400 nodes (existing limit)
-**Constraints**: Core engine (`microgpt/core/`) must remain stdlib-only; progressive scripts (train1/train3/train4) must be independently runnable with zero pip dependencies; all lesson widgets fall back to demo model when no trained model exists
+**Constraints**: Core engine (`anvil/core/`) must remain stdlib-only; progressive scripts (train1/train3/train4) must be independently runnable with zero pip dependencies; all lesson widgets fall back to demo model when no trained model exists
 **Scale/Scope**: 7 new learning features across P1 (3) and P2 (4); 3 backend endpoint additions; 3 code stubs to implement; ~300 lines total backend delta
 
 **NEEDS CLARIFICATION**: None. All design decisions are covered by the spec, constitution, and research.
@@ -106,7 +106,7 @@ tests/
     └── test_inference_widgets.py           # [NEW] Tests for new inference endpoints
 ```
 
-**Structure Decision**: The project uses a single-package layout (`microgpt/`). New learning features add files within existing directories (services/inference.py, api/v1/, templates/, static/js/widgets/). No new packages or modules at the top level.
+**Structure Decision**: The project uses a single-package layout (`anvil/`). New learning features add files within existing directories (services/inference.py, api/v1/, templates/, static/js/widgets/). No new packages or modules at the top level.
 
 ## Complexity Tracking
 

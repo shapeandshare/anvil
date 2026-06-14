@@ -11,7 +11,7 @@ updated: 2026-06-10
 **Status**: Accepted
 
 ## Context
-Initial bootstrapping of the microgpt-workbench required decisions on technology stack, architecture patterns, and implementation approach.
+Initial bootstrapping of the anvil required decisions on technology stack, architecture patterns, and implementation approach.
 
 ## Decisions
 

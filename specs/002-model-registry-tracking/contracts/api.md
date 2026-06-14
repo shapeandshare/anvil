@@ -4,7 +4,7 @@
 
 ## Overview
 
-REST API endpoints for the model registry feature. All endpoints are under the `/v1/registry/` prefix and return JSON responses. Follows existing FastAPI patterns in `microgpt/api/v1/`.
+REST API endpoints for the model registry feature. All endpoints are under the `/v1/registry/` prefix and return JSON responses. Follows existing FastAPI patterns in `anvil/api/v1/`.
 
 ---
 

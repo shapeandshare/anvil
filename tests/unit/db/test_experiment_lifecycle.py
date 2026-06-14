@@ -6,10 +6,10 @@ import pytest
 from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from microgpt.db.base import Base
-from microgpt.db.models.training_config import Experiment
-from microgpt.db.repositories.experiments import ExperimentRepository
-from microgpt.db.session import AsyncSessionLocal, async_engine
+from anvil.db.base import Base
+from anvil.db.models.training_config import Experiment
+from anvil.db.repositories.experiments import ExperimentRepository
+from anvil.db.session import AsyncSessionLocal, async_engine
 
 
 @pytest.fixture

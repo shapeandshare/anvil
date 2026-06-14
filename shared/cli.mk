@@ -1,7 +1,7 @@
 # CLI commands for training and utilities
 
 train: $(VENV_DIR)/activate ## Run training from CLI
-	$(PYTHON) -c "from microgpt.cli import train; train()"
+	$(PYTHON) -c "from anvil.cli import train; train()"
 
 progressive: $(VENV_DIR)/activate ## Run progressive training walkthrough (train0.py → train5.py)
 	@for f in train0.py train1.py train2.py train3.py train4.py train5.py; do \

@@ -8,10 +8,10 @@
 
 **New behavior**:
 1. Resolve canonical tracking URI from config (remove the hardcoded `MLFLOW_TRACKING_URI` literal, line 21).
-2. Resolve `engine_backend`+`device` (via `microgpt.gpu`); `TrackingService.start_run(run_name, params, engine_backend, device)` → `mlflow_run_id`.
+2. Resolve `engine_backend`+`device` (via `anvil.gpu`); `TrackingService.start_run(run_name, params, engine_backend, device)` → `mlflow_run_id`.
 3. **Create the local `Experiment` row immediately** (`status="running"`, `started_at`, `run_name`, `mlflow_run_id`, resolved `dataset_id`/`corpus_id`, `engine_backend`, `device`). (Previously created only in `on_complete`.)
 4. Attach input lineage (`log_dataset_input`/`log_corpus_input`) → store `input_digest`/`input_role`.
-5. On success → `finish_run` + status `finished` + `final_loss` + `log_artifacts` + **`register_source_model`** (source-keyed; replaces the `microgpt-experiment-{id}` auto-register, lines 139–155).
+5. On success → `finish_run` + status `finished` + `final_loss` + `log_artifacts` + **`register_source_model`** (source-keyed; replaces the `anvil-experiment-{id}` auto-register, lines 139–155).
 6. On exception → `fail_run(reason=...)` + status `failed` + `error_message`; NO model version created.
 
 **Response** (extended): `{ "run_id": int, "mlflow_run_id": str | null, "experiment_id": int, "status": "running", "tracking": "active" | "degraded" }`.
@@ -45,6 +45,6 @@ SSE metrics stream (already emits `device` in metric events).
 
 - After engine init / `create_all` and MLflow server start: call `mlflow.enable_system_metrics_logging()` once, then `TrackingService.reconcile_orphans()` before serving (FR-020/028). Idempotent.
 
-## CLI parity — `microgpt train` (MODIFIED, `cli.py`)
+## CLI parity — `anvil train` (MODIFIED, `cli.py`)
 
 - Route through `TrainingService` + `TrackingService` so CLI runs are tracked identically (create run, lifecycle, lineage, metrics, system metrics, source-keyed registration) — FR-008. Add `--dataset` alongside `--corpus`/`--gpu`/`--device`.

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="hero-page">
+  <div class="forge-section">
+    <div class="forge-glow-container">
+      <div class="forge-glow"></div>
+    </div>
+
+    <div class="forge-embers" aria-hidden="true">
+      <span class="forge-ember" style="--x: 15%; --d: 0s; --s: 3s"></span>
+      <span class="forge-ember" style="--x: 35%; --d: 0.6s; --s: 4s"></span>
+      <span class="forge-ember" style="--x: 55%; --d: 1.2s; --s: 3.5s"></span>
+      <span class="forge-ember" style="--x: 75%; --d: 0.3s; --s: 4.5s"></span>
+      <span class="forge-ember" style="--x: 25%; --d: 1.8s; --s: 2.8s"></span>
+      <span class="forge-ember" style="--x: 65%; --d: 2.4s; --s: 3.2s"></span>
+      <span class="forge-ember" style="--x: 45%; --d: 0.9s; --s: 5s"></span>
+      <span class="forge-ember forge-ember--bright" style="--x: 85%; --d: 1.5s; --s: 3.8s"></span>
+    </div>
+
+    <div class="forge-icon" role="img" aria-label="Anvil">🔨</div>
+    <h1 class="hero-title hero-title--forge">anvil</h1>
+    <p class="hero-tagline">Forging intelligence.</p>
+    <p class="hero-subtitle">Train and experiment with LLMs from scratch — all in your browser.</p>
+
+    <div class="hero-actions">
+      <a href="/v1/training-page" class="hero-cta hero-cta--forge">Start Training</a>
+      <a href="/v1/learn" class="hero-secondary">Learn the Concepts</a>
+    </div>
+  </div>
+
+  <div class="hero-features">
+    <a href="/v1/datasets-page" class="hero-card" style="--i: 0">
+      <span class="hero-card-icon">📁</span>
+      <span class="hero-card-title">Data</span>
+      <span class="hero-card-desc">Upload and manage corpora, curate training datasets</span>
+    </a>
+    <a href="/v1/training-page" class="hero-card" style="--i: 1">
+      <span class="hero-card-icon">🏋️</span>
+      <span class="hero-card-title">Train</span>
+      <span class="hero-card-desc">Configure hyperparameters and train GPT from scratch</span>
+    </a>
+    <a href="/v1/experiments-page" class="hero-card" style="--i: 2">
+      <span class="hero-card-icon">🔬</span>
+      <span class="hero-card-title">Experiments</span>
+      <span class="hero-card-desc">Track runs, compare loss curves side-by-side</span>
+    </a>
+    <a href="/v1/models-page" class="hero-card" style="--i: 3">
+      <span class="hero-card-icon">🧠</span>
+      <span class="hero-card-title">Models</span>
+      <span class="hero-card-desc">Register, version, and manage trained models</span>
+    </a>
+    <a href="/v1/inference-page" class="hero-card" style="--i: 4">
+      <span class="hero-card-icon">🎮</span>
+      <span class="hero-card-title">Play</span>
+      <span class="hero-card-desc">Generate text with trained models, tweak sampling params</span>
+    </a>
+    <a href="/v1/learn" class="hero-card" style="--i: 5">
+      <span class="hero-card-icon">📖</span>
+      <span class="hero-card-title">Learn</span>
+      <span class="hero-card-desc">Interactive walkthroughs from bigrams to full GPT</span>
+    </a>
+  </div>
+
+  <div class="hero-footer">
+    <span class="hero-footer-text">smithy v0.1.0 — built on <a href="https://gist.github.com/karpathy/8627fe009c40f57531cb18360106ce95" target="_blank" rel="noopener">Karpathy's microgpt.py</a></span>
+  </div>
+</div>
+{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/archetypes.css">
+{% endblock %}

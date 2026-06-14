@@ -1,10 +1,10 @@
-# Feature Specification: Smithy — Llama Engine Evolution & Safetensors Export
+# Feature Specification: anvil — Llama Engine Evolution & Safetensors Export
 
 **Feature Branch**: `006-llama-engine-evolution`  
 **Created**: 2026-06-14  
 **Status**: Draft  
-**Project**: Smithy  
-**Input**: User description: "Evolve the Smithy core training engine to a Llama-compatible architecture. Replace ReLU MLP with SwiGLU, add learned RMSNorm weights, replace learned position embeddings with RoPE. The safetensors format is the primary model delivery artifact — generated, stored, tracked, and versioned automatically."
+**Project**: anvil  
+**Input**: User description: "Evolve the anvil core training engine to a Llama-compatible architecture. Replace ReLU MLP with SwiGLU, add learned RMSNorm weights, replace learned position embeddings with RoPE. The safetensors format is the primary model delivery artifact — generated, stored, tracked, and versioned automatically."
 
 ## Clarifications
 
@@ -20,7 +20,7 @@
 
 ### User Story 1 - Train a Llama-Compatible Model (Priority: P1)
 
-A user trains a model on their own dataset using the Smithy training interface. When training completes, the model is automatically serialized to safetensors as the primary artifact — complete with a standards-compatible configuration file and tokenizer. The safetensors checkpoint is stored, tracked, and versioned as the canonical output. Every tensor was learned during training — no synthetic or untrained parameters. The user can immediately load the artifact into any tool that supports the target decoder-only transformer architecture. The native JSON format is also produced as a secondary internal representation.
+A user trains a model on their own dataset using the anvil training interface. When training completes, the model is automatically serialized to safetensors as the primary artifact — complete with a standards-compatible configuration file and tokenizer. The safetensors checkpoint is stored, tracked, and versioned as the canonical output. Every tensor was learned during training — no synthetic or untrained parameters. The user can immediately load the artifact into any tool that supports the target decoder-only transformer architecture. The native JSON format is also produced as a secondary internal representation.
 
 **Why this priority**: This is the core value proposition — users can train locally and deploy anywhere. Without training functionality, nothing else works.
 
@@ -58,12 +58,12 @@ An engineer has trained a model on their custom corpus. The safetensors checkpoi
 
 **Why this priority**: This unlocks the "train once, run anywhere" value that justifies the architectural evolution, but is only meaningful after the engine itself works (Story 1).
 
-**Independent Test**: Can be tested by exporting a trained model, loading it in a standards-compatible inference tool, running a forward pass, and comparing logits to the native Smithy forward pass.
+**Independent Test**: Can be tested by exporting a trained model, loading it in a standards-compatible inference tool, running a forward pass, and comparing logits to the native anvil forward pass.
 
 **Acceptance Scenarios**:
 
 1. **Given** a trained model, **When** the export function runs, **Then** a model weights file is produced with standard tensor naming conventions for the target decoder-only architecture (model.embed_tokens.weight, model.layers.{i}.self_attn.q_proj.weight, etc.).
-2. **Given** an exported model, **When** loaded in a standards-compatible inference tool configured with the correct activation function, **Then** the forward pass logits match the native Smithy forward pass within floating-point tolerance.
+2. **Given** an exported model, **When** loaded in a standards-compatible inference tool configured with the correct activation function, **Then** the forward pass logits match the native anvil forward pass within floating-point tolerance.
 3. **Given** an exported model directory, **When** a user inspects the configuration file, **Then** it includes the correct architecture type and all required configuration fields derived from training hyperparameters.
 
 ---
@@ -102,7 +102,7 @@ An engineer has trained a model on their custom corpus. The safetensors checkpoi
 
 - **GPT State Dict**: The complete set of learned parameters for a model. Contains token embeddings (wte), per-layer attention projections (attn_wq/wk/wv/wo), per-layer SwiGLU MLP projections (mlp_gate/up/down), per-layer RMSNorm scales (rms_1/rms_2), and output projection (lm_head).
 - **Training Checkpoint (safetensors)**: The primary model artifact — a safetensors weights file with accompanying config.json and tokenizer.json. Uses standard tensor naming conventions for the target decoder-only architecture. Automatically generated, stored, tracked, and versioned on every training completion.
-- **Internal Model State (JSON)**: A secondary representation of the model in native Smithy JSON format. Contains hyperparameters and the complete state dict. Used internally for in-platform operations (inference, introspection).
+- **Internal Model State (JSON)**: A secondary representation of the model in native anvil JSON format. Contains hyperparameters and the complete state dict. Used internally for in-platform operations (inference, introspection).
 - **Tokenizer Vocabulary**: The sorted unique characters from the training corpus, stored as a character-level mapping. Generated during training and embedded in both checkpoint formats.
 
 ## Success Criteria *(mandatory)*
@@ -110,15 +110,15 @@ An engineer has trained a model on their custom corpus. The safetensors checkpoi
 ### Measurable Outcomes
 
 - **SC-001**: A trained model with n_embd=16, n_layer=1, n_head=4 completes training on a 1000-character corpus in under 60 seconds and produces a valid safetensors export.
-- **SC-002**: Forward pass logits from the exported model match the native Smithy forward pass logits within 1e-5 floating-point tolerance across 10 random input sequences.
+- **SC-002**: Forward pass logits from the exported model match the native anvil forward pass logits within 1e-5 floating-point tolerance across 10 random input sequences.
 - **SC-003**: The exported model's configuration validates successfully against the target decoder-only transformer architecture schema for any combination of compatible model sizes (embedding dimension 16-768, depth 1-12, heads 2-12 compatible with embedding divisibility).
 - **SC-004**: Users can train a model, export it, and load it in any standards-compatible inference tool without requiring code changes to the tool.
 - **SC-005**: All six walkthrough scripts (train0.py through train5.py) execute without errors and each produces a valid model with the correct architecture components for that lesson.
 
 ## Assumptions
 
-- **Project identity**: This is the **Smithy** project — the educational training and experimentation tier. Smithy sits upstream of Foundry (model catalog, quantization, benchmarking) and Crucible (extensive eval & reporting). Models trained in Smithy are designed for export into the broader ecosystem.
-- The Smithy training engine is being evolved — this is not a separate engine but an evolution of the existing one, replacing its components.
+- **Project identity**: This is the **anvil** project — the educational training and experimentation tier. anvil sits upstream of Foundry (model catalog, quantization, benchmarking) and Crucible (extensive eval & reporting). Models trained in anvil are designed for export into the broader ecosystem.
+- The anvil training engine is being evolved — this is not a separate engine but an evolution of the existing one, replacing its components.
 - The intermediate size for SwiGLU is `int(8 * n_embd / 3)` to maintain parameter count parity with the old ReLU MLP, following Llama convention.
 - RoPE theta is set to 10000.0 (standard Llama default) and RoPE is applied to every pair of dimensions in each attention head.
 - The demo model retrains automatically on first startup, so no manual migration of old demo checkpoints is needed.

@@ -20,7 +20,7 @@ description: "Task list for Bootstrap LLM Workbench"
 
 ## Path Conventions
 
-All paths relative to repository root. Package root: `microgpt/`. Tests root: `tests/`.
+All paths relative to repository root. Package root: `anvil/`. Tests root: `tests/`.
 
 ---
 
@@ -28,8 +28,8 @@ All paths relative to repository root. Package root: `microgpt/`. Tests root: `t
 
 **Purpose**: Initialize the project skeleton (no code logic yet)
 
-- [X] T001 Create directory structure per plan.md: `microgpt/core/`, `microgpt/db/`, `microgpt/services/`, `microgpt/api/`, `microgpt/storage/`, `microgpt/supervisor/`, `migrations/`, `tests/unit/`, `tests/e2e/`, `data/`, `logs/`
-- [X] T002 [P] Create `pyproject.toml` with package metadata (`name="microgpt-workbench"`, version `0.1.0`, Python >=3.11, dependencies, optional-dependency groups, entry points)
+- [X] T001 Create directory structure per plan.md: `anvil/core/`, `anvil/db/`, `anvil/services/`, `anvil/api/`, `anvil/storage/`, `anvil/supervisor/`, `migrations/`, `tests/unit/`, `tests/e2e/`, `data/`, `logs/`
+- [X] T002 [P] Create `pyproject.toml` with package metadata (`name="anvil"`, version `0.1.0`, Python >=3.11, dependencies, optional-dependency groups, entry points)
 - [X] T003 [P] Create `.gitignore` excluding `__pycache__/`, `.venv/`, `.env`, `logs/`, `data/`, `mlruns/`, IDE files
 - [X] T004 [P] Create `.env.example` documenting all config vars: `MICROGPT_PORT`, `MICROGPT_DB_PATH`, `MICROGPT_LOG_DIR`, `MICROGPT_MLFLOW_URI`, `MICROGPT_STORAGE_BACKEND`
 - [X] T005 Create dependency lock file (`requirements.lock` or `uv.lock`) from pyproject.toml dependencies
@@ -66,25 +66,25 @@ All paths relative to repository root. Package root: `microgpt/`. Tests root: `t
 
 - [X] T014 Create `Makefile` with targets: `setup` (venv + lock install + db init), `run` (start all services via venv), `stop` (stop all services), `train` (CLI training), `test` (run all tests), `lint` (ruff → black --check → isort --check → pylint), `format` (black + isort), `typecheck` (mypy/pyright), `vault` (open docs), `progressive` (run all train0-5 files), `clean` (remove artifacts), `install` (pip install -e .), `help`. All targets auto-detect/create venv.
 - [X] T015 [P] Configure `[tool.ruff]`, `[tool.black]`, `[tool.isort]`, `[tool.pylint]`, `[tool.mypy]` sections in `pyproject.toml` per research.md patterns
-- [X] T016 [P] Create `microgpt/__init__.py` — package exports: god class, version, public API surface
-- [X] T017 [P] Create `microgpt/db/__init__.py` — export all repository and model classes
-- [X] T018 [P] Create `microgpt/db/session.py` — async engine creation, `AsyncSessionLocal` factory, `get_db` async context manager for request-scoped sessions
-- [X] T019 [P] Create `microgpt/db/base.py` — SQLAlchemy `DeclarativeBase` with common mixins (timestamp columns, etc.)
+- [X] T016 [P] Create `anvil/__init__.py` — package exports: god class, version, public API surface
+- [X] T017 [P] Create `anvil/db/__init__.py` — export all repository and model classes
+- [X] T018 [P] Create `anvil/db/session.py` — async engine creation, `AsyncSessionLocal` factory, `get_db` async context manager for request-scoped sessions
+- [X] T019 [P] Create `anvil/db/base.py` — SQLAlchemy `DeclarativeBase` with common mixins (timestamp columns, etc.)
 - [X] T020 Create `alembic.ini` at repo root — configure async SQLAlchemy URL, migration directory
 - [X] T021 [P] Create `migrations/env.py` — async Alembic environment using `async_engine_from_config`
 - [X] T022 [P] Create `migrations/script.py.mako` — migration template
 - [X] T023 Create initial migration in `migrations/versions/` — create all tables (Dataset, TrainingConfig, Experiment) from data-model.md
-- [X] T024 [P] Create `microgpt/storage/__init__.py` — export FileStore interface and factory
-- [X] T025 [P] Create `microgpt/storage/interface.py` — `FileStore` abstract base: `get()`, `put()`, `delete()`, `list()`, `FileInfo` Pydantic model
-- [X] T026 [P] Create `microgpt/storage/local.py` — `LocalFileStore` with `aiofiles`, temp-file-rename atomic writes
-- [X] T027 [P] Create `microgpt/api/__init__.py` — export FastAPI app factory
-- [X] T028 [P] Create `microgpt/api/app.py` — FastAPI app with lifespan (auto `alembic upgrade head` on startup, graceful shutdown), static file mount, template engine setup, CORS for LAN access
-- [X] T029 [P] Create `microgpt/api/deps.py` — FastAPI dependencies: `get_db_session`, `get_god_class`, `get_file_store`
+- [X] T024 [P] Create `anvil/storage/__init__.py` — export FileStore interface and factory
+- [X] T025 [P] Create `anvil/storage/interface.py` — `FileStore` abstract base: `get()`, `put()`, `delete()`, `list()`, `FileInfo` Pydantic model
+- [X] T026 [P] Create `anvil/storage/local.py` — `LocalFileStore` with `aiofiles`, temp-file-rename atomic writes
+- [X] T027 [P] Create `anvil/api/__init__.py` — export FastAPI app factory
+- [X] T028 [P] Create `anvil/api/app.py` — FastAPI app with lifespan (auto `alembic upgrade head` on startup, graceful shutdown), static file mount, template engine setup, CORS for LAN access
+- [X] T029 [P] Create `anvil/api/deps.py` — FastAPI dependencies: `get_db_session`, `get_god_class`, `get_file_store`
 - [X] T030 [P] Create `tests/conftest.py` — pytest-asyncio fixtures: async test DB (`aiosqlite` in-memory), test client (httpx.AsyncClient), test session override
 - [X] T031 Create initial e2e test in `tests/e2e/test_setup.py` — verify `make setup` creates venv, installs deps, runs migrations
-- [X] T115 [P] Create `microgpt/config.py` — env var reading with `python-dotenv` and sensible defaults per FR-046 (`MICROGPT_PORT=8080`, `MICROGPT_DB_PATH=./data/microgpt.db`, `MICROGPT_LOG_DIR=./logs/`, `MICROGPT_MLFLOW_URI=sqlite:///./mlruns/mlflow.db`, `MICROGPT_STORAGE_BACKEND=local`)
-- [X] T116 [P] Create `microgpt/cli.py` — CLI entry point functions: `serve()` (starts web server via uvicorn), `train()` (runs training via god class), `stop()` (stops services via supervisor). Registered via `[project.scripts]` in pyproject.toml
-- [X] T117 [P] Update `microgpt/db/session.py` to enable SQLite WAL mode via `pragma journal_mode=WAL` and `pragma foreign_keys=ON` on engine creation per FR-043
+- [X] T115 [P] Create `anvil/config.py` — env var reading with `python-dotenv` and sensible defaults per FR-046 (`MICROGPT_PORT=8080`, `MICROGPT_DB_PATH=./data/microgpt.db`, `MICROGPT_LOG_DIR=./logs/`, `MICROGPT_MLFLOW_URI=sqlite:///./mlruns/mlflow.db`, `MICROGPT_STORAGE_BACKEND=local`)
+- [X] T116 [P] Create `anvil/cli.py` — CLI entry point functions: `serve()` (starts web server via uvicorn), `train()` (runs training via god class), `stop()` (stops services via supervisor). Registered via `[project.scripts]` in pyproject.toml
+- [X] T117 [P] Update `anvil/db/session.py` to enable SQLite WAL mode via `pragma journal_mode=WAL` and `pragma foreign_keys=ON` on engine creation per FR-043
 
 **Checkpoint**: Foundation ready. Database, storage, web server skeleton, and test infrastructure are all functional.
 
@@ -107,24 +107,24 @@ All paths relative to repository root. Package root: `microgpt/`. Tests root: `t
 
 ### Implementation for User Story 1
 
-- [X] T038 [US1] [P] Create `microgpt/core/__init__.py` — export core engine classes
-- [X] T039 [US1] [P] Create `microgpt/core/autograd.py` — Value class with operations (+/\*, log, exp, relu, pow, backward), as-is from Karpathy's microgpt.py
-- [X] T040 [US1] [P] Create `microgpt/core/tokenizer.py` — character-level tokenizer: `encode(text)`, `decode(ids)`, vocabulary build from dataset
-- [X] T041 [US1] Create `microgpt/core/engine.py` — GPT model: parameter init, RMSNorm, softmax, linear, multi-head attention, MLP, `gpt()` forward function, inference `generate()`
-- [X] T042 [US1] Write training orchestrator in `microgpt/core/engine.py` — `train()`: Adam optimizer loop, loss tracking, sample generation, progress callback for SSE
-- [X] T043 [US1] [P] Create `microgpt/db/models/training_config.py` — TrainingConfig ORM model per data-model.md
-- [X] T044 [US1] [P] Create `microgpt/db/repositories/training_configs.py` — `TrainingConfigRepository` with async CRUD
-- [X] T045 [P] [US1] Create `microgpt/api/v1/__init__.py` — export v1 router
-- [X] T046 [P] [US1] Create `microgpt/api/v1/router.py` — FastAPI APIRouter with `/v1/` prefix
-- [X] T047 [US1] Create `microgpt/services/training.py` — `TrainingService`: orchestrates engine training in background asyncio task, publishes loss metrics to SSE queue, logs to MLflow stub
-- [X] T048 [US1] Create `microgpt/api/v1/training.py` — training endpoints: `POST /v1/training/start` (spawns background task), `GET /v1/training/stream/{id}` (SSE), `POST /v1/training/{id}/stop`
-- [X] T049 [US1] [P] Create `microgpt/api/templates/base.html` — Jinja2 base template: nav bar, unicorn header (SVG + ASCII art), emoji touches, retro CSS
-- [X] T050 [US1] [P] Create `microgpt/api/templates/training.html` — training dashboard: hyperparameter form, SSE-connected loss chart (Chart.js or canvas), generated samples display
-- [X] T051 [US1] [P] Create `microgpt/api/static/style.css` — retro CSS: pixel-art-inspired borders, bright colors, emoji-styled buttons, responsive layout
-- [X] T052 [US1] [P] Create `microgpt/api/static/unicorn.svg` — inline SVG unicorn mascot (agent-generated whimsy)
-- [X] T053 [US1] Create `microgpt/__init__.py` god class — `MicroGPTWorkbench` with `create_training_run()`, `get_training_status()`, delegates to `TrainingService`
-- [X] T054 [US1] Wire SSE event stream in `microgpt/api/v1/training.py` — `asyncio.Queue` pub/sub, Starlette `StreamingResponse`, heartbeat every 15s, `Last-Event-ID` for reconnection
-- [X] T055 [US1] Add `make train` CLI target in Makefile — delegates to `microgpt.cli:train` entry point, which instantiates god class and runs training synchronously (same service logic, no HTTP needed)
+- [X] T038 [US1] [P] Create `anvil/core/__init__.py` — export core engine classes
+- [X] T039 [US1] [P] Create `anvil/core/autograd.py` — Value class with operations (+/\*, log, exp, relu, pow, backward), as-is from Karpathy's microgpt.py
+- [X] T040 [US1] [P] Create `anvil/core/tokenizer.py` — character-level tokenizer: `encode(text)`, `decode(ids)`, vocabulary build from dataset
+- [X] T041 [US1] Create `anvil/core/engine.py` — GPT model: parameter init, RMSNorm, softmax, linear, multi-head attention, MLP, `gpt()` forward function, inference `generate()`
+- [X] T042 [US1] Write training orchestrator in `anvil/core/engine.py` — `train()`: Adam optimizer loop, loss tracking, sample generation, progress callback for SSE
+- [X] T043 [US1] [P] Create `anvil/db/models/training_config.py` — TrainingConfig ORM model per data-model.md
+- [X] T044 [US1] [P] Create `anvil/db/repositories/training_configs.py` — `TrainingConfigRepository` with async CRUD
+- [X] T045 [P] [US1] Create `anvil/api/v1/__init__.py` — export v1 router
+- [X] T046 [P] [US1] Create `anvil/api/v1/router.py` — FastAPI APIRouter with `/v1/` prefix
+- [X] T047 [US1] Create `anvil/services/training.py` — `TrainingService`: orchestrates engine training in background asyncio task, publishes loss metrics to SSE queue, logs to MLflow stub
+- [X] T048 [US1] Create `anvil/api/v1/training.py` — training endpoints: `POST /v1/training/start` (spawns background task), `GET /v1/training/stream/{id}` (SSE), `POST /v1/training/{id}/stop`
+- [X] T049 [US1] [P] Create `anvil/api/templates/base.html` — Jinja2 base template: nav bar, unicorn header (SVG + ASCII art), emoji touches, retro CSS
+- [X] T050 [US1] [P] Create `anvil/api/templates/training.html` — training dashboard: hyperparameter form, SSE-connected loss chart (Chart.js or canvas), generated samples display
+- [X] T051 [US1] [P] Create `anvil/api/static/style.css` — retro CSS: pixel-art-inspired borders, bright colors, emoji-styled buttons, responsive layout
+- [X] T052 [US1] [P] Create `anvil/api/static/unicorn.svg` — inline SVG unicorn mascot (agent-generated whimsy)
+- [X] T053 [US1] Create `anvil/__init__.py` god class — `MicroGPTWorkbench` with `create_training_run()`, `get_training_status()`, delegates to `TrainingService`
+- [X] T054 [US1] Wire SSE event stream in `anvil/api/v1/training.py` — `asyncio.Queue` pub/sub, Starlette `StreamingResponse`, heartbeat every 15s, `Last-Event-ID` for reconnection
+- [X] T055 [US1] Add `make train` CLI target in Makefile — delegates to `anvil.cli:train` entry point, which instantiates god class and runs training synchronously (same service logic, no HTTP needed)
 
 **Checkpoint**: User Story 1 is fully functional. Training works from both web UI (SSE streaming) and CLI.
 
@@ -144,15 +144,15 @@ All paths relative to repository root. Package root: `microgpt/`. Tests root: `t
 
 ### Implementation for User Story 2
 
-- [X] T059 [US2] [P] Create `microgpt/db/models/experiment.py` — Experiment ORM model per data-model.md
-- [X] T060 [US2] [P] Create `microgpt/db/repositories/experiments.py` — `ExperimentRepository` with async CRUD + comparison query
-- [X] T061 [US2] [P] Create `microgpt/services/experiments.py` — `ExperimentService`: list, get, compare, delete experiments
-- [X] T062 [US2] Create `microgpt/supervisor/__init__.py` — export supervisor classes
-- [X] T063 [US2] Create `microgpt/supervisor/services.py` — `MLflowService` class: start/stop/restart MLflow subprocess with `preexec_fn=os.setsid`, PID file, log capture, health check
-- [X] T064 [US2] Create `microgpt/supervisor/supervisor.py` — `ProcessSupervisor`: manages all background services (web, MLflow, training runner), lifecycle controls (start/stop/restart/status), per-service log capture
+- [X] T059 [US2] [P] Create `anvil/db/models/experiment.py` — Experiment ORM model per data-model.md
+- [X] T060 [US2] [P] Create `anvil/db/repositories/experiments.py` — `ExperimentRepository` with async CRUD + comparison query
+- [X] T061 [US2] [P] Create `anvil/services/experiments.py` — `ExperimentService`: list, get, compare, delete experiments
+- [X] T062 [US2] Create `anvil/supervisor/__init__.py` — export supervisor classes
+- [X] T063 [US2] Create `anvil/supervisor/services.py` — `MLflowService` class: start/stop/restart MLflow subprocess with `preexec_fn=os.setsid`, PID file, log capture, health check
+- [X] T064 [US2] Create `anvil/supervisor/supervisor.py` — `ProcessSupervisor`: manages all background services (web, MLflow, training runner), lifecycle controls (start/stop/restart/status), per-service log capture
 - [X] T065 [US2] Integrate MLflow tracking into `TrainingService` — on training start: `mlflow.start_run()`, log params, per-step metrics, final artifact (samples), store `mlflow_run_id` on Experiment model
-- [X] T066 [US2] Create `microgpt/api/v1/experiments.py` — experiment endpoints: `GET /v1/experiments` (list with pagination), `GET /v1/experiments/{id}`, `DELETE /v1/experiments/{id}`, `GET /v1/experiments/compare?id=1&id=2`
-- [X] T067 [US2] [P] Create `microgpt/api/templates/experiments.html` — experiment history list + comparison view: two-column loss curve overlay, side-by-side samples, hyperparameter table
+- [X] T066 [US2] Create `anvil/api/v1/experiments.py` — experiment endpoints: `GET /v1/experiments` (list with pagination), `GET /v1/experiments/{id}`, `DELETE /v1/experiments/{id}`, `GET /v1/experiments/compare?id=1&id=2`
+- [X] T067 [US2] [P] Create `anvil/api/templates/experiments.html` — experiment history list + comparison view: two-column loss curve overlay, side-by-side samples, hyperparameter table
 - [X] T068 [US2] Add MLflow native UI link in operations page and embed MLflow server start in `make run` lifecycle
 
 **Checkpoint**: Experiment tracking end-to-end: training → MLflow logging → browse/compare in web UI.
@@ -172,9 +172,9 @@ All paths relative to repository root. Package root: `microgpt/`. Tests root: `t
 
 ### Implementation for User Story 3
 
-- [X] T071 [US3] [P] Create `microgpt/api/v1/health.py` — `GET /v1/health`: service status, DB connectivity, version, uptime
-- [X] T072 [US3] Create `microgpt/api/v1/router.py` additions — operations endpoints: `GET /v1/operations/services`, `POST /v1/operations/services/{name}/start`, `POST .../stop`, `POST .../restart`, `GET .../logs?tail=N`, `GET .../logs/stream` (SSE)
-- [X] T073 [US3] [P] Create `microgpt/api/templates/operations.html` — service management dashboard: service cards with status indicators (🟢🔴🟡), start/stop/restart buttons, real-time log viewer (SSE-streamed), uptime/memory widgets
+- [X] T071 [US3] [P] Create `anvil/api/v1/health.py` — `GET /v1/health`: service status, DB connectivity, version, uptime
+- [X] T072 [US3] Create `anvil/api/v1/router.py` additions — operations endpoints: `GET /v1/operations/services`, `POST /v1/operations/services/{name}/start`, `POST .../stop`, `POST .../restart`, `GET .../logs?tail=N`, `GET .../logs/stream` (SSE)
+- [X] T073 [US3] [P] Create `anvil/api/templates/operations.html` — service management dashboard: service cards with status indicators (🟢🔴🟡), start/stop/restart buttons, real-time log viewer (SSE-streamed), uptime/memory widgets
 - [X] T074 [US3] [P] Add `GET /v1/operations/services/{name}/logs/stream` SSE endpoint — tails log file via async file reading, yields new lines as SSE events
 - [X] T075 [US3] Wire supervisor into god class — `MicroGPTWorkbench` exposes `get_supervisor()`, `get_services()`, `start_service()`, `stop_service()`
 
@@ -196,12 +196,12 @@ All paths relative to repository root. Package root: `microgpt/`. Tests root: `t
 
 ### Implementation for User Story 4
 
-- [X] T079 [US4] [P] Create `microgpt/db/models/dataset.py` — Dataset ORM model per data-model.md
-- [X] T080 [US4] [P] Create `microgpt/db/repositories/datasets.py` — `DatasetRepository` with async CRUD, default dataset detection
-- [X] T081 [US4] Create `microgpt/services/datasets.py` — `DatasetService`: upload file to FileStore, compute vocabulary/document_count, list/delete datasets, seed default names dataset
-- [X] T082 [US4] Create `microgpt/api/v1/datasets.py` — dataset endpoints: `POST /v1/datasets` (multipart), `GET /v1/datasets`, `GET /v1/datasets/{id}`, `DELETE /v1/datasets/{id}`, `PUT /v1/datasets/{id}`
-- [X] T083 [US4] [P] Create `microgpt/api/templates/datasets.html` — dataset manager: upload form with drag-and-drop, dataset cards with vocab size/docs count, delete confirmation with unicorn animation 🦄
-- [X] T084 [US4] Seed default names dataset — bundle `input.txt` in package (`microgpt/core/data/input.txt`), auto-ingest on first `make run` or `make setup`
+- [X] T079 [US4] [P] Create `anvil/db/models/dataset.py` — Dataset ORM model per data-model.md
+- [X] T080 [US4] [P] Create `anvil/db/repositories/datasets.py` — `DatasetRepository` with async CRUD, default dataset detection
+- [X] T081 [US4] Create `anvil/services/datasets.py` — `DatasetService`: upload file to FileStore, compute vocabulary/document_count, list/delete datasets, seed default names dataset
+- [X] T082 [US4] Create `anvil/api/v1/datasets.py` — dataset endpoints: `POST /v1/datasets` (multipart), `GET /v1/datasets`, `GET /v1/datasets/{id}`, `DELETE /v1/datasets/{id}`, `PUT /v1/datasets/{id}`
+- [X] T083 [US4] [P] Create `anvil/api/templates/datasets.html` — dataset manager: upload form with drag-and-drop, dataset cards with vocab size/docs count, delete confirmation with unicorn animation 🦄
+- [X] T084 [US4] Seed default names dataset — bundle `input.txt` in package (`anvil/core/data/input.txt`), auto-ingest on first `make run` or `make setup`
 - [X] T085 [US4] Update TrainingService to accept `dataset_id` parameter — load dataset content from FileStore, build vocabulary, feed to engine
 
 **Checkpoint**: Dataset management complete — upload, browse, select, train on custom data.
@@ -235,7 +235,7 @@ All paths relative to repository root. Package root: `microgpt/`. Tests root: `t
 - [X] T094 [US7] [P] Create `train2.py` — Autograd (Value class) replaces manual gradients
 - [X] T095 [US7] [P] Create `train3.py` — Position embeddings + single-head attention + RMSNorm + residuals
 - [X] T096 [US7] [P] Create `train4.py` — Multi-head attention + layer loop — full GPT architecture
-- [X] T097 [US7] [P] Create `train5.py` (aka `train.py`) — Adam optimizer, full training loop, inference sampler (mirrors `microgpt/core/engine.py`)
+- [X] T097 [US7] [P] Create `train5.py` (aka `train.py`) — Adam optimizer, full training loop, inference sampler (mirrors `anvil/core/engine.py`)
 - [X] T098 [US7] [P] Create `diff_stages.py` — CLI script to print diff between any two stage files
 
 **Checkpoint**: All user stories complete.
@@ -246,7 +246,7 @@ All paths relative to repository root. Package root: `microgpt/`. Tests root: `t
 
 **Goal**: Optional GPU acceleration — MPS on macOS ARM, CUDA on Linux.
 
-- [X] T099 Create GPU detection in `microgpt/core/engine.py` — `detect_gpu()`: try `torch.backends.mps.is_available()`, try `torch.cuda.is_available()`, fall back to CPU
+- [X] T099 Create GPU detection in `anvil/core/engine.py` — `detect_gpu()`: try `torch.backends.mps.is_available()`, try `torch.cuda.is_available()`, fall back to CPU
 - [X] T100 [P] Create `make train-gpu` Makefile target — sets `USE_GPU=true`, delegates to god class
 - [X] T101 Add `use_gpu` parameter to TrainingConfig, god class, and training service — dispatch to MPS or CUDA if available
 
@@ -272,7 +272,7 @@ All paths relative to repository root. Package root: `microgpt/`. Tests root: `t
 - [X] T119 [P] Add PyPy smoke test in `tests/e2e/test_pypy.py` — verify core microgpt engine runs under PyPy (stdlib-only path); optional deps gracefully report incompatibility
 - [X] T120 [P] Add migration failure test in `tests/e2e/test_migrations.py` — verify server refuses to start with descriptive error when Alembic detects schema drift
 - [X] T121 [P] Add CSS animations and SVG interactions to templates — loading spinners, loss chart entry animations, hover effects on service cards, unicorn idle animation in header
-- [X] T122 [P] Add CLI entry point smoke tests in `tests/unit/test_cli.py` — verify `microgpt-workbench --help`, `microgpt-train --help`, `microgpt-stop --help` print usage without errors
+- [X] T122 [P] Add CLI entry point smoke tests in `tests/unit/test_cli.py` — verify `anvil-workbench --help`, `anvil-train --help`, `anvil-stop --help` print usage without errors
 - [X] T123 Add optional benchmark in `Makefile` (`make benchmark`) — runs training and measures time against SC-001 (should complete in under 60s on Apple Silicon)
 
 **Checkpoint**: Project is production-ready for educational/experimental use.

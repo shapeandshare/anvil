@@ -10,7 +10,7 @@ updated: 2026-06-12
 
 | Term | Definition |
 |------|------------|
-| **microgpt** | The core GPT training engine — ~200 lines of pure Python, zero dependencies |
+| **anvil** (core engine) | The core GPT training engine — ~200 lines of pure Python, zero dependencies |
 | **God Class** | `MicroGPTWorkbench` — single entry point exposing all service methods to routes/CLI/tests |
 | **FileStore** | Pluggable async file storage abstraction (local filesystem or S3) |
 | **Repository** | Data access class encapsulating all DB operations for a single entity |
@@ -19,7 +19,7 @@ updated: 2026-06-12
 | **ADR** | Architecture Decision Record — documents significant architecture decisions |
 | **Vault** | Obsidian-compatible documentation directory at `docs/vault/` |
 | **Constitution** | Project governance document (`CONSTITUTION.md`) defining non-negotiable principles |
-| **Value** | Autograd scalar node in `microgpt/core/autograd.py` — stores `data`, `grad`, children and local partial derivatives for reverse-mode AD |
+| **Value** | Autograd scalar node in `anvil/core/autograd.py` — stores `data`, `grad`, children and local partial derivatives for reverse-mode AD |
 | **Autograd** | Automatic differentiation via computation graph — forward pass builds DAG, `.backward()` traverses in topological order applying chain rule |
 | **KV Cache** | Key-Value cache for causal self-attention — per-layer lists appended at each autoregressive step, avoids recomputing previous positions |
 | **RMSNorm** | Root Mean Square Layer Normalization — `x / sqrt(mean(x²) + ε)` — used in GPT forward pass at three points per layer |

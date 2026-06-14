@@ -1,10 +1,10 @@
-# microgpt-workbench — Agent Guidelines
+# anvil — Agent Guidelines
 
-**Last updated**: 2026-06-13
+**Last updated**: 2026-06-14
 
 ## Project Overview
 
-microgpt-workbench is a pip-installable Python package wrapping Karpathy's microgpt.py with a FastAPI web server, MLflow experiment tracking, and a retro whimsical UI. The system follows a layered architecture: Repository → Service → God Class → Routes/CLI.
+anvil is a pip-installable Python package wrapping Karpathy's microgpt.py with a FastAPI web server, MLflow experiment tracking, and a retro whimsical UI. The system follows a layered architecture: Repository → Service → God Class → Routes/CLI.
 
 ## Design System
 
@@ -12,7 +12,7 @@ This project uses a visual design system defined in @DESIGN.md.
 
 Follow strictly the rules defined in @DESIGN.md for all UI generation. Do not invent colors, fonts, spacing values, or component styles outside the design system. Match component states (hover, focus, active, disabled, pressed) to patterns defined in @DESIGN.md.
 
-The design system is implemented via CSS custom properties in `microgpt/api/static/css/tokens.css` (source of truth for token values), with components in `components.css`, layout archetypes in `archetypes.css`, and utilities in `utilities.css`. Always reference these tokens rather than raw values — a systemic restyle must be a token edit.
+The design system is implemented via CSS custom properties in `anvil/api/static/css/tokens.css` (source of truth for token values), with components in `components.css`, layout archetypes in `archetypes.css`, and utilities in `utilities.css`. Always reference these tokens rather than raw values — a systemic restyle must be a token edit.
 
 ## Quick Reference
 
@@ -33,7 +33,7 @@ The design system is implemented via CSS custom properties in `microgpt/api/stat
 ### Project Structure
 
 ```
-microgpt/          # Python package (implicit namespace)
+anvil/          # Python package (implicit namespace)
 ├── core/          # Stdlib-only training engine
 ├── db/            # async SQLAlchemy + repositories
 ├── services/      # Business logic
@@ -66,7 +66,7 @@ microgpt/          # Python package (implicit namespace)
 
 ## Architecture Rules
 
-- Core engine (`microgpt/core/`) has ZERO pip dependencies
+- Core engine (`anvil/core/`) has ZERO pip dependencies
 - All file paths use relative imports within the package
 - Constants grouped together in dedicated modules
 - Imports at top of file only (no inline imports)
@@ -84,8 +84,8 @@ microgpt/          # Python package (implicit namespace)
 - JavaScript (ES6+), Python 3.11+ (backend FastAPI) + Zero JS libraries currently; refactor maintains lean dependency ethos — native EventSource, IntersectionObserver, CSS custom properties, Canvas API. A single encoding library for computation graph layout (e.g., dagre) may be justified for FR-014. (004-frontend-refactor)
 - localStorage for theme preference, URL search params for shareable state (run ID, model config), sessionStorage for ephemeral UI state (004-frontend-refactor)
 - Python 3.11+ + FastAPI, SQLAlchemy (async) + aiosqlite, Alembic, Jinja2; **CHANGED**: `mlflow>=3.1,<4` (was `>=2.16,<3`); **NEW**: `nvidia-ml-py>=12,<13` in `gpu` optional extra; custom `MPSMetricsCollector` via `ioreg`/IOKit (no sudo); new service modules: `tracking.py`, `mlflow_inputs.py`, `mlflow_capabilities.py`, `metrics_collectors.py`; source-keyed registry consolidation (dataset-<id>/corpus-<id>/default-source) (005-mlflow-experiment-tracking)
-- SQLite via async SQLAlchemy (app metadata: `data/microgpt.db`); MLflow tracking via the supervisor-managed `mlflow server` (SQLite backend `mlruns/mlflow.db`, artifacts under `mlruns/`), reached over HTTP. (005-mlflow-experiment-tracking)
-- App metadata in SQLite (`data/microgpt.db`, async SQLAlchemy + Alembic). MLflow data via the supervisor-managed `mlflow server` (SQLite backend `mlruns/mlflow.db`, artifacts under `mlruns/`), reached over HTTP. (005-mlflow-experiment-tracking)
+- SQLite via async SQLAlchemy (app metadata: `data/anvil.db`); MLflow tracking via the supervisor-managed `mlflow server` (SQLite backend `mlruns/mlflow.db`, artifacts under `mlruns/`), reached over HTTP. (005-mlflow-experiment-tracking)
+- App metadata in SQLite (`data/anvil.db`, async SQLAlchemy + Alembic). MLflow data via the supervisor-managed `mlflow server` (SQLite backend `mlruns/mlflow.db`, artifacts under `mlruns/`), reached over HTTP. (005-mlflow-experiment-tracking)
 - Python 3.11+ (backend), JavaScript ES6+ (frontend widgets) + FastAPI, Jinja2, aiofiles (all existing); no new pip dependencies (005-learning-content-enrichment)
 - Demo model at `data/models/demo/model.json` (existing); optimizer state captured in-memory during training runs (005-learning-content-enrichment)
 

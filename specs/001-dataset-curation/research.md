@@ -101,7 +101,7 @@ async def load_docs(self, dataset_id: int) -> list[str]:
 
 ### API Route Pattern
 
-**Decision**: Create a new `microgpt/api/v1/curation.py` module with its own `router`, registered in `router.py`. Follow existing patterns: service dependency injection via `Depends(get_service)`, `{"data": ..., "error": None}` response envelope (corpora pattern).
+**Decision**: Create a new `anvil/api/v1/curation.py` module with its own `router`, registered in `router.py`. Follow existing patterns: service dependency injection via `Depends(get_service)`, `{"data": ..., "error": None}` response envelope (corpora pattern).
 
 **Rationale**:
 - Existing pattern: each feature gets its own route module and `router.include_router()` in `router.py`
@@ -114,7 +114,7 @@ async def load_docs(self, dataset_id: int) -> list[str]:
 
 ### UI Template Pattern
 
-**Decision**: Create `microgpt/api/templates/dataset_detail.html` extending `base.html`. Use IIFE pattern for JavaScript, `fetch` + `FormData` for uploads, Unix `ls`-style CSS classes for list display. No HTMX.
+**Decision**: Create `anvil/api/templates/dataset_detail.html` extending `base.html`. Use IIFE pattern for JavaScript, `fetch` + `FormData` for uploads, Unix `ls`-style CSS classes for list display. No HTMX.
 
 **Rationale**:
 - Existing `datasets.html` and `base.html` provide established patterns

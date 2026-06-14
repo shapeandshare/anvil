@@ -4,7 +4,7 @@ import asyncio
 
 import pytest
 
-from microgpt.services.tracking import TrackingService
+from anvil.services.tracking import TrackingService
 
 
 class FakeMlflowClient:

@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from microgpt.config import get_config
+from anvil.config import get_config
 
 
 @dataclass
@@ -90,7 +90,7 @@ def fake_client_factory(tracking_uri: str) -> FakeMlflowClient:
 
 @pytest.fixture
 def svc():
-    from microgpt.services.tracking import TrackingService
+    from anvil.services.tracking import TrackingService
 
     return TrackingService(
         tracking_uri="http://127.0.0.1:5000", client_factory=fake_client_factory
@@ -186,7 +186,7 @@ async def test_log_artifacts(svc):
 
 @pytest.mark.asyncio
 async def test_degraded_mode_on_connection_error():
-    from microgpt.services.tracking import TrackingService
+    from anvil.services.tracking import TrackingService
 
     def failing_factory(tracking_uri: str):
         client = FakeMlflowClient(tracking_uri)
@@ -205,7 +205,7 @@ async def test_degraded_mode_on_connection_error():
 
 @pytest.mark.asyncio
 async def test_degraded_noop_on_subsequent_calls(svc):
-    from microgpt.services.tracking import TrackingService
+    from anvil.services.tracking import TrackingService
 
     class DegradedClient(FakeMlflowClient):
         def create_run(self, experiment_id, run_name=None, tags=None):
@@ -234,7 +234,7 @@ async def test_capabilities(svc):
 
 @pytest.mark.asyncio
 async def test_construct_with_default_uri():
-    from microgpt.services.tracking import TrackingService
+    from anvil.services.tracking import TrackingService
 
     svc = TrackingService(client_factory=fake_client_factory)
     cfg = get_config()
@@ -261,7 +261,7 @@ class TestLogDatasetInput:
 
         mock_session = AsyncMock()
         with patch(
-            "microgpt.services.mlflow_inputs.MlflowInputResolver"
+            "anvil.services.mlflow_inputs.MlflowInputResolver"
         ) as resolver_cls:
             mock_resolver = AsyncMock()
             resolver_cls.return_value = mock_resolver
@@ -299,7 +299,7 @@ class TestLogDatasetInput:
         )
 
         with patch(
-            "microgpt.services.mlflow_inputs.MlflowInputResolver"
+            "anvil.services.mlflow_inputs.MlflowInputResolver"
         ) as resolver_cls:
             mock_session = AsyncMock()
             mock_resolver = AsyncMock()
@@ -321,7 +321,7 @@ class TestLogCorpusInput:
 
         mock_session = AsyncMock()
         with patch(
-            "microgpt.services.mlflow_inputs.MlflowInputResolver"
+            "anvil.services.mlflow_inputs.MlflowInputResolver"
         ) as resolver_cls:
             mock_resolver = AsyncMock()
             resolver_cls.return_value = mock_resolver
@@ -361,7 +361,7 @@ class TestLogCorpusInput:
         )
 
         with patch(
-            "microgpt.services.mlflow_inputs.MlflowInputResolver"
+            "anvil.services.mlflow_inputs.MlflowInputResolver"
         ) as resolver_cls:
             mock_session = AsyncMock()
             mock_resolver = AsyncMock()

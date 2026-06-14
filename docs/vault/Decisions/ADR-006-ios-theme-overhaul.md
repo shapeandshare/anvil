@@ -12,7 +12,7 @@ updated: 2026-06-13
 Accepted
 
 ## Context
-The microgpt-workbench UI currently uses an "editorial whimsy" design language — a cross between a mid-century textbook publisher's typesetting and a modern terminal emulator. This includes dark cinema-like backgrounds, Times New Roman serif display type, monospace data display, pixel art, ASCII banners, and a unicorn mascot.
+The anvil UI currently uses an "editorial whimsy" design language — a cross between a mid-century textbook publisher's typesetting and a modern terminal emulator. This includes dark cinema-like backgrounds, Times New Roman serif display type, monospace data display, pixel art, ASCII banners, and a unicorn mascot.
 
 The user requested a full visual retheme to iOS mobile aesthetics:
 - Drop the retro/terminal/whimsy personality entirely

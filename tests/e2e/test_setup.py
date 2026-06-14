@@ -1,13 +1,13 @@
 """e2e setup test."""
 
 
-def test_import_microgpt():
-    import microgpt
+def test_import_anvil():
+    import anvil
 
-    assert microgpt.__version__ == "0.1.0"
+    assert anvil.__version__ == "0.1.0"
 
 
 def test_import_core():
-    from microgpt.core import engine
+    from anvil.core import engine
 
     assert engine is not None

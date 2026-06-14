@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from microgpt.services.corpus_loader import (
+from anvil.services.corpus_loader import (
     CorpusLoader,
     detect_language,
     _build_spec,

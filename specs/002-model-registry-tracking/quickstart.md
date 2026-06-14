@@ -4,7 +4,7 @@
 
 ## What This Feature Does
 
-Adds a local model registry to microgpt-workbench so users can:
+Adds a local model registry to anvil so users can:
 1. Register trained models from completed experiments
 2. Browse and search registered models
 3. View version history and training metadata

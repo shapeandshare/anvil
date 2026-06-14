@@ -5,7 +5,7 @@
 
 ## Summary
 
-Bootstrap a Python LLM workbench repository (microgpt) using patterns from oldgrowth. The system is a pip-installable Python package (`microgpt-workbench`) wrapping Karpathy's microgpt.py with a FastAPI web server (async, Jinja2 SSR), MLflow experiment tracking (SQLite backend), repository-pattern data access (async SQLAlchemy), process supervisor for background services, a retro whimsical UI (pixel art, ASCII, SVG, unicorns 🦄, SSE streaming), and full agentic governance (constitution, vault, ADRs, AGENTS.md, .specify/ tooling). Implementation order: Agentic Harness → Boilerplating → Remainder.
+Bootstrap a Python LLM workbench repository (microgpt) using patterns from oldgrowth. The system is a pip-installable Python package (`anvil-workbench`) wrapping Karpathy's microgpt.py with a FastAPI web server (async, Jinja2 SSR), MLflow experiment tracking (SQLite backend), repository-pattern data access (async SQLAlchemy), process supervisor for background services, a retro whimsical UI (pixel art, ASCII, SVG, unicorns 🦄, SSE streaming), and full agentic governance (constitution, vault, ADRs, AGENTS.md, .specify/ tooling). Implementation order: Agentic Harness → Boilerplating → Remainder.
 
 ## Technical Context
 
@@ -14,7 +14,7 @@ Bootstrap a Python LLM workbench repository (microgpt) using patterns from oldgr
 **Storage**: SQLite (async via aiosqlite/SQLAlchemy for app DB; sync SQLite via MLflow's own store for experiment tracking), filesystem (local via aiofiles, S3-ready abstraction)
 **Testing**: pytest + pytest-asyncio + httpx (AsyncClient for FastAPI tests); coverage.py; TDD mandatory with 100% coverage enforcement
 **Target Platform**: macOS ARM (Apple Silicon) bare metal primary; Linux planned (Docker); Windows explicitly excluded
-**Project Type**: Hybrid — pip-installable Python package (`microgpt-workbench`) with CLI entry points, web server (FastAPI background daemon), and MLflow tracking service
+**Project Type**: Hybrid — pip-installable Python package (`anvil-workbench`) with CLI entry points, web server (FastAPI background daemon), and MLflow tracking service
 **Performance Goals**: Training completes 1000 steps on names dataset in under 60s on Apple Silicon (M1+); web UI responds to interactions within 200ms; SSE streams update loss chart at least once per training step
 **Constraints**: Zero third-party deps for core microgpt.py; optional features (web, MLflow, GPU) are opt-in layers; no page refreshes (SSE streaming); implicit namespace packages; all internal imports relative; `__init__.py` only for package exports; strict explicit typing; no circular imports
 **Scale/Scope**: Single-user local network tool; not designed for concurrent multi-user access
@@ -25,12 +25,12 @@ Bootstrap a Python LLM workbench repository (microgpt) using patterns from oldgr
 
 **Gates derived from spec requirements:**
 
-1. ✅ **Zero-Dependency Core**: `microgpt.py` MUST have zero third-party Python dependencies (stdlib only) — CONFIRMED by spec FR-001, FR-022
+1. ✅ **Zero-Dependency Core**: `anvil.py` MUST have zero third-party Python dependencies (stdlib only) — CONFIRMED by spec FR-001, FR-022
 2. ✅ **TDD Mandatory**: Tests MUST be written before implementation; 100% unit test coverage + full e2e tests — CONFIRMED by spec FR-032, SC-022
 3. ✅ **Implicit Namespace**: No `__init__.py` except for public API exports; all internal imports relative — CONFIRMED by spec FR-023, SC-012
 4. ✅ **Layer Isolation**: Repository → Service → God Class → Routes — no DB primitives leak beyond repositories — CONFIRMED by spec FR-040, SC-028
 5. ✅ **Async Architecture**: Fully async (FastAPI handlers, SQLAlchemy, FileStore, service layer) — CONFIRMED by spec clarification Q2
-6. ✅ **Semantic Versioning**: MAJOR.MINOR.PATCH in pyproject.toml, accessible via `microgpt.__version__` — CONFIRMED by spec FR-033
+6. ✅ **Semantic Versioning**: MAJOR.MINOR.PATCH in pyproject.toml, accessible via `anvil.__version__` — CONFIRMED by spec FR-033
 7. ✅ **Agentic Design**: Constitution, vault, ADRs, AGENTS.md, vault enrichment protocol — CONFIRMED by spec FR-006, FR-013, FR-034, FR-039, Phase 1 priority
 8. ✅ **MLflow Exclusivity**: MLflow with SQLite, not W&B — CONFIRMED by spec FR-017
 
@@ -140,7 +140,7 @@ CONTRIBUTING.md                    # Contribution guidelines
 .env.example                       # Environment variable reference
 ```
 
-**Structure Decision**: Single flat Python package (`microgpt/`) using implicit namespace. The package name `microgpt` doubles as the module name. Core is stdlib-only. All optional deps (web, db, mlflow, gpu) are import-only-when-activated layers. `__init__.py` files exist ONLY in directories that export a public API (package root, `db/`, `services/`, `api/`, `api/v1/`, `storage/`, `supervisor/`, `core/`, `db/repositories/`, `db/models/`). Internal directories (e.g., utility modules) have NO `__init__.py`.
+**Structure Decision**: Single flat Python package (`anvil/`) using implicit namespace. The package name `anvil` doubles as the module name. Core is stdlib-only. All optional deps (web, db, mlflow, gpu) are import-only-when-activated layers. `__init__.py` files exist ONLY in directories that export a public API (package root, `db/`, `services/`, `api/`, `api/v1/`, `storage/`, `supervisor/`, `core/`, `db/repositories/`, `db/models/`). Internal directories (e.g., utility modules) have NO `__init__.py`.
 
 ## Complexity Tracking
 

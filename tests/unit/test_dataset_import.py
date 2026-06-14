@@ -4,7 +4,7 @@ import hashlib
 
 import pytest
 
-from microgpt.services.dataset_import import DatasetImportService, ParsedSample
+from anvil.services.dataset_import import DatasetImportService, ParsedSample
 
 
 class TestParsing:
@@ -104,8 +104,8 @@ class TestParsing:
 
 class TestPreviewImport:
     def test_preview_returns_preview(self):
-        from microgpt.db.repositories.curation import SampleRepository
-        from microgpt.db.repositories.datasets import DatasetRepository
+        from anvil.db.repositories.curation import SampleRepository
+        from anvil.db.repositories.datasets import DatasetRepository
 
         svc = DatasetImportService.__new__(DatasetImportService)
         assert hasattr(svc, "preview_import")

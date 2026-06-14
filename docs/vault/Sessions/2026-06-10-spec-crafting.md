@@ -9,7 +9,7 @@ updated: 2026-06-11
 # Session: Spec Crafting & Implementation
 
 ## Summary
-Complete bootstrap of the microgpt-workbench repository through iterative spec crafting and full implementation. The feature specification was refined through extensive user clarifications covering architecture, UI philosophy, tech stack, operations, testing, and deployment. All 125 implementation tasks completed and verified.
+Complete bootstrap of the anvil repository through iterative spec crafting and full implementation. The feature specification was refined through extensive user clarifications covering architecture, UI philosophy, tech stack, operations, testing, and deployment. All 125 implementation tasks completed and verified.
 
 ## Key Decisions Made During Spec Crafting
 
@@ -54,7 +54,7 @@ Complete bootstrap of the microgpt-workbench repository through iterative spec c
 
 ## Artifacts Created
 - `specs/001-bootstrap-llm-workbench/spec.md` — full feature specification
-- `microgpt/` — complete Python package (22 modules)
+- `anvil/` — complete Python package (22 modules)
 - `CONSTITUTION.md`, `AGENTS.md`, `docs/vault/` — governance and agentic harness
 - 10 passing tests (unit + e2e HTTP + DB CRUD + training)
 - `docs/user-requirements.md` — consolidated user requirements reference

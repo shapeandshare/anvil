@@ -12,7 +12,7 @@ updated: 2026-06-12
 
 ## Context
 
-The training engine (`microgpt/core/engine.py`) is a synchronous, CPU-bound loop — it must be, because it's a tight numerical loop with zero pip dependencies. However, the web layer (FastAPI) is fully async and needs to stream real-time progress to the browser via SSE.
+The training engine (`anvil/core/engine.py`) is a synchronous, CPU-bound loop — it must be, because it's a tight numerical loop with zero pip dependencies. However, the web layer (FastAPI) is fully async and needs to stream real-time progress to the browser via SSE.
 
 This creates a fundamental impedance mismatch: sync blocking code cannot run on the asyncio event loop without blocking all other requests.
 
@@ -48,11 +48,11 @@ Training task:
 
 ### Code Locations
 
-- **Queue allocation**: `TrainingService.reserve_run()` in `microgpt/services/training.py:57-61`
+- **Queue allocation**: `TrainingService.reserve_run()` in `anvil/services/training.py:57-61`
 - **Training launch**: `TrainingService.start_training()` same file, lines 63-118
 - **Thread bridge**: `loop.run_in_executor(None, lambda: train(...))` at line 92-104
 - **SSE bridge**: `asyncio.run_coroutine_threadsafe(queue.put(...), loop)` at line 80-88
-- **SSE endpoint**: `stream_training()` in `microgpt/api/v1/training.py:119-142`
+- **SSE endpoint**: `stream_training()` in `anvil/api/v1/training.py:119-142`
 
 ## Alternatives Considered
 
@@ -74,6 +74,6 @@ Training task:
 
 ## Compliance
 
-- The `train()` function in `core/engine.py` must remain pure sync with no asyncio imports
+- The `train()` function in `anvil/core/engine.py` must remain pure sync with no asyncio imports
 - All SSE event production must go through `TrainingService._queues[run_id]` — never directly in route handlers
 - `run_coroutine_threadsafe` is the only allowed thread-to-async bridge

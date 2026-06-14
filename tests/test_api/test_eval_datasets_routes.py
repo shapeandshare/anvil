@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, PropertyMock
 
 import pytest
 
-from microgpt.services.tracking import CapabilityUnavailable
+from anvil.services.tracking import CapabilityUnavailable
 
 
 @pytest.mark.asyncio
@@ -16,7 +16,7 @@ async def test_create_eval_dataset_when_available(client):
     caps.server_backed = True
     svc_mock.capabilities = AsyncMock(return_value=caps)
 
-    import microgpt.api.v1.eval_datasets as ed
+    import anvil.api.v1.eval_datasets as ed
 
     original = ed._tracking_svc
     ed._tracking_svc = svc_mock
@@ -41,7 +41,7 @@ async def test_create_eval_dataset_unavailable(client):
     caps.server_backed = False
     svc_mock.capabilities = AsyncMock(return_value=caps)
 
-    import microgpt.api.v1.eval_datasets as ed
+    import anvil.api.v1.eval_datasets as ed
 
     original = ed._tracking_svc
     ed._tracking_svc = svc_mock
@@ -64,7 +64,7 @@ async def test_append_eval_records_when_available(client):
     caps.server_backed = True
     svc_mock.capabilities = AsyncMock(return_value=caps)
 
-    import microgpt.api.v1.eval_datasets as ed
+    import anvil.api.v1.eval_datasets as ed
 
     original = ed._tracking_svc
     ed._tracking_svc = svc_mock
@@ -92,7 +92,7 @@ async def test_append_eval_records_unavailable(client):
     caps.server_backed = False
     svc_mock.capabilities = AsyncMock(return_value=caps)
 
-    import microgpt.api.v1.eval_datasets as ed
+    import anvil.api.v1.eval_datasets as ed
 
     original = ed._tracking_svc
     ed._tracking_svc = svc_mock
@@ -119,7 +119,7 @@ async def test_get_eval_dataset_when_available(client):
     caps.server_backed = True
     svc_mock.capabilities = AsyncMock(return_value=caps)
 
-    import microgpt.api.v1.eval_datasets as ed
+    import anvil.api.v1.eval_datasets as ed
 
     original = ed._tracking_svc
     ed._tracking_svc = svc_mock
@@ -142,7 +142,7 @@ async def test_get_eval_dataset_not_found(client):
     caps.server_backed = True
     svc_mock.capabilities = AsyncMock(return_value=caps)
 
-    import microgpt.api.v1.eval_datasets as ed
+    import anvil.api.v1.eval_datasets as ed
 
     original = ed._tracking_svc
     ed._tracking_svc = svc_mock
@@ -164,7 +164,7 @@ async def test_get_eval_dataset_unavailable(client):
     caps.server_backed = False
     svc_mock.capabilities = AsyncMock(return_value=caps)
 
-    import microgpt.api.v1.eval_datasets as ed
+    import anvil.api.v1.eval_datasets as ed
 
     original = ed._tracking_svc
     ed._tracking_svc = svc_mock
@@ -187,7 +187,7 @@ async def test_create_eval_dataset_missing_name(client):
     caps.server_backed = True
     svc_mock.capabilities = AsyncMock(return_value=caps)
 
-    import microgpt.api.v1.eval_datasets as ed
+    import anvil.api.v1.eval_datasets as ed
 
     original = ed._tracking_svc
     ed._tracking_svc = svc_mock

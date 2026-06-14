@@ -1,10 +1,10 @@
-# microgpt-workbench Constitution
+# anvil Constitution
 
 ## Core Principles
 
 ### Article I — Zero-Dependency Core
 
-The core training engine (`microgpt/core/`) MUST have zero third-party Python dependencies — stdlib only. This ensures the fundamental algorithm is accessible to anyone with Python, without pip install. All additional functionality (web server, database, experiment tracking, GPU) MUST be opt-in layers.
+The core training engine (`anvil/core/`) MUST have zero third-party Python dependencies — stdlib only. This ensures the fundamental algorithm is accessible to anyone with Python, without pip install. All additional functionality (web server, database, experiment tracking, GPU) MUST be opt-in layers.
 
 ### Article II — Educational Clarity
 
@@ -28,7 +28,7 @@ All Python packages MUST use implicit namespace packages (PEP 420). `__init__.py
 
 ### Article VII — Layered Architecture
 
-All data access MUST follow the Repository pattern. Business logic MUST be in the Service layer. All services MUST be exposed through a single God Class (`MicroGPTWorkbench`). Routes, CLI, and tests call the God Class. No DB primitives leak beyond the Repository layer.
+All data access MUST follow the Repository pattern. Business logic MUST be in the Service layer. All services MUST be exposed through a single God Class (`AnvilWorkbench`). Routes, CLI, and tests call the God Class. No DB primitives leak beyond the Repository layer.
 
 ### Article VIII — iOS-Grade Polish
 

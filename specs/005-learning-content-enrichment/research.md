@@ -18,7 +18,7 @@ Three parallel background agents conducted exhaustive analysis:
 
 **Decision**: Extend existing `forward_graph()` to include `.grad` and `_local_grads`.
 
-**Rationale**: The `Value` class (`microgpt/core/autograd.py`) defines `__slots__ = ("_children", "_local_grads", "data", "grad")`. The existing `InferenceService.forward_graph()` (inference.py:330-401) already traverses `_children` via DFS to build `{nodes, edges}`. Adding two fields per node is ~3 lines of code.
+**Rationale**: The `Value` class (`anvil/core/autograd.py`) defines `__slots__ = ("_children", "_local_grads", "data", "grad")`. The existing `InferenceService.forward_graph()` (inference.py:330-401) already traverses `_children` via DFS to build `{nodes, edges}`. Adding two fields per node is ~3 lines of code.
 
 **Current node shape** (in `forward_graph()`):
 ```python

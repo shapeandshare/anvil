@@ -1,6 +1,6 @@
 """Tests for mlflow capability detection."""
 
-from microgpt.services.mlflow_capabilities import (
+from anvil.services.mlflow_capabilities import (
     TrackingCapabilities,
     detect_capabilities,
 )

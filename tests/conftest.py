@@ -4,10 +4,10 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from microgpt.api.app import app
-from microgpt.db import models
-from microgpt.db.base import Base
-from microgpt.db.session import AsyncSessionLocal, async_engine
+from anvil.api.app import app
+from anvil.db import models
+from anvil.db.base import Base
+from anvil.db.session import AsyncSessionLocal, async_engine
 
 
 @pytest.fixture

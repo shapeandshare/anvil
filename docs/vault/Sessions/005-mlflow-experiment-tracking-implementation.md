@@ -17,7 +17,7 @@ Phases 1-10 executed across 9 parallel/sequential implementation agents.
 - Managed evaluation datasets (`mlflow.genai.datasets`, first-class under 3.x, OSS SQLite-backed)
 - Source-keyed model registry (`dataset-<id>`/`corpus-<id>`/`default-source`)
 - Experiment lifecycle: `running`->`finished`/`failed`; orphan reconciliation on startup
-- CLI parity: `microgpt train --dataset` tracks identically to web
+- CLI parity: `anvil train --dataset` tracks identically to web
 
 ## Corrections Applied
 - MPS utilization via `ioreg` (not psutil/torch.mps which are memory-only)

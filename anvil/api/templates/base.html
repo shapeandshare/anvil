@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>anvil-workbench</title>
+<script>
+(function(){var t=localStorage.getItem('theme');if(!t){t=window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'}document.documentElement.setAttribute('data-theme',t)})();
+</script>
+<link rel="stylesheet" href="/static/css/tokens.css">
+<link rel="stylesheet" href="/static/css/base.css">
+<link rel="stylesheet" href="/static/css/utilities.css">
+<link rel="stylesheet" href="/static/css/components.css">
+<link rel="stylesheet" href="/static/css/code.css">
+{% block extra_css %}{% endblock %}
+</head>
+<body>
+<div class="app-shell">
+  <nav class="nav-bar">
+    <a href="/" class="nav-title nav-title--forge">anvil</a>
+    <button type="button" class="theme-toggle" id="theme-toggle">dark</button>
+  </nav>
+  <main class="app-main">
+    <div class="ambient-particles" aria-hidden="true">
+      <span class="ambient-p" style="--x: 8%; --d: 0s; --s: 7s"></span>
+      <span class="ambient-p ambient-p--warm" style="--x: 18%; --d: 1s; --s: 9s"></span>
+      <span class="ambient-p" style="--x: 28%; --d: 2.5s; --s: 8s"></span>
+      <span class="ambient-p" style="--x: 38%; --d: 0.5s; --s: 11s"></span>
+      <span class="ambient-p ambient-p--warm" style="--x: 48%; --d: 3.5s; --s: 7s"></span>
+      <span class="ambient-p" style="--x: 58%; --d: 1.8s; --s: 10s"></span>
+      <span class="ambient-p ambient-p--warm" style="--x: 68%; --d: 4.5s; --s: 6s"></span>
+      <span class="ambient-p" style="--x: 78%; --d: 0.8s; --s: 9s"></span>
+      <span class="ambient-p" style="--x: 88%; --d: 3s; --s: 12s"></span>
+      <span class="ambient-p ambient-p--warm" style="--x: 95%; --d: 5s; --s: 8s"></span>
+      <span class="ambient-p" style="--x: 14%; --d: 6s; --s: 10s"></span>
+      <span class="ambient-p" style="--x: 34%; --d: 7.5s; --s: 7s"></span>
+      <span class="ambient-p ambient-p--warm" style="--x: 52%; --d: 9s; --s: 11s"></span>
+      <span class="ambient-p" style="--x: 72%; --d: 2s; --s: 6s"></span>
+      <span class="ambient-p" style="--x: 42%; --d: 8s; --s: 9s"></span>
+      <span class="ambient-p ambient-p--warm" style="--x: 62%; --d: 10s; --s: 8s"></span>
+      <span class="ambient-p" style="--x: 22%; --d: 4s; --s: 12s"></span>
+      <span class="ambient-p" style="--x: 82%; --d: 11s; --s: 7s"></span>
+      <span class="ambient-p ambient-p--warm" style="--x: 45%; --d: 12s; --s: 9s"></span>
+      <span class="ambient-p" style="--x: 92%; --d: 6.5s; --s: 10s"></span>
+    </div>
+  </main>
+  <nav class="tab-bar">
+    <a href="/v1/datasets-page" class="tab-item"><span class="tab-icon">📁</span><span class="tab-label">Data</span></a>
+    <a href="/v1/training-page" class="tab-item"><span class="tab-icon">🏋️</span><span class="tab-label">Train</span></a>
+    <a href="/v1/experiments-page" class="tab-item"><span class="tab-icon">🔬</span><span class="tab-label">Exps</span></a>
+    <a href="/v1/models-page" class="tab-item"><span class="tab-icon">🧠</span><span class="tab-label">Models</span></a>
+    <a href="/v1/inference-page" class="tab-item"><span class="tab-icon">🎮</span><span class="tab-label">Play</span></a>
+    <a href="/v1/learn" class="tab-item"><span class="tab-icon">📖</span><span class="tab-label">Learn</span></a>
+    <a href="/v1/operations-page" class="tab-item"><span class="tab-icon">⚙️</span><span class="tab-label">Ops</span></a>
+  </nav>
+</div>
+<div id="toast-container" class="toast-container"></div>
+<script src="/static/js/core.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

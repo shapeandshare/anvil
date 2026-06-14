@@ -1,13 +1,13 @@
-# 🦄 microgpt-workbench
+# anvil
 
 **Train and experiment with LLMs from scratch — all in your browser.**
 
-microgpt-workbench is a pip-installable Python package wrapping [Karpathy's microgpt.py](https://gist.github.com/karpathy/8627fe009c40f57531cb18360106ce95) with a FastAPI web server, MLflow experiment tracking, and a whimsical retro UI.
+anvil is a pip-installable Python package wrapping [Karpathy's microgpt.py](https://gist.github.com/karpathy/8627fe009c40f57531cb18360106ce95) with a FastAPI web server, MLflow experiment tracking, and a whimsical retro UI.
 
 ## Quick Start
 
 ```bash
-pip install microgpt-workbench
+pip install anvil
 make run
 ```
 
@@ -26,7 +26,7 @@ Open `http://<your-ip>:8080` from any device on your LAN.
 ## Architecture
 
 ```
-microgpt/          # Python package (implicit namespace)
+anvil/          # Python package (implicit namespace)
 ├── core/          # Stdlib-only training engine (zero deps)
 ├── db/            # Async SQLAlchemy + repositories
 ├── services/      # Business logic layer
@@ -63,13 +63,13 @@ Copy `.env.example` to `.env` and customize:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `MICROGPT_PORT` | `8080` | Web server port |
-| `MICROGPT_DB_PATH` | `./data/microgpt.db` | Database file |
-| `MICROGPT_LOG_DIR` | `./logs/` | Log directory |
-| `MICROGPT_MLFLOW_URI` | `http://127.0.0.1:5000` | MLflow HTTP tracking server URI (drives writers AND readers) |
+| `ANVIL_PORT` | `8080` | Web server port |
+| `ANVIL_DB_PATH` | `./data/anvil.db` | Database file |
+| `ANVIL_LOG_DIR` | `./logs/` | Log directory |
+| `ANVIL_MLFLOW_URI` | `http://127.0.0.1:5000` | MLflow HTTP tracking server URI (drives writers AND readers) |
 
 > **MLflow**: Requires MLflow 3.x (`mlflow>=3.1,<4`). Uses source-keyed model registry (one registered model per dataset/corpus source).
-| `MICROGPT_STORAGE_BACKEND` | `local` | Storage backend |
+| `ANVIL_STORAGE_BACKEND` | `local` | Storage backend |
 
 ## License
 

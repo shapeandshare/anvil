@@ -48,7 +48,7 @@
 
 A critical review verified the spec's factual premises against the actual codebase and the two external libraries it depends on. Corrections applied:
 
-- **Registry dual-write claim corrected** (spec Context + rebase note): MLflow auto-registers on **every** completed run (`microgpt-experiment-{id}`); the **local** registry is written **only** via the manual `POST /v1/registry/models` endpoint — they are NOT both written on every run. The dual-system contradiction is **latent**, not unconditional. Consolidation work (FR-019/027) is unchanged.
+- **Registry dual-write claim corrected** (spec Context + rebase note): MLflow auto-registers on **every** completed run (`anvil-experiment-{id}`); the **local** registry is written **only** via the manual `POST /v1/registry/models` endpoint — they are NOT both written on every run. The dual-system contradiction is **latent**, not unconditional. Consolidation work (FR-019/027) is unchanged.
 - **MPS utilization mechanism corrected** (research R9, data-model B5, plan, tasks T043/T044): `psutil`/`torch.mps` cannot provide GPU utilization (torch.mps is memory-only); utilization comes from `ioreg`/IOKit `AGXAccelerator → PerformanceStatistics` (no `sudo`, no new dep). `powermetrics` rejected (requires `sudo`).
 - **`mlflow.genai` managed datasets confirmed** available on self-hosted **SQLite/SQL-backed** OSS MLflow 3.x (NOT Databricks-only; NOT FileStore-compatible) — validating US6 as first-class and reinforcing R2's HTTP-server-over-SQLite destination.
 - **Orphan-reconciliation liveness wording corrected** (FR-028): no PID/heartbeat tracking exists; single-process assumption made explicit; multi-instance concurrency out of scope.

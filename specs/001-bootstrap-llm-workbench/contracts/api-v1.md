@@ -259,6 +259,6 @@ Defined in `pyproject.toml` under `[project.scripts]`:
 
 | Command | Entry Point | Description |
 |---------|------------|-------------|
-| `microgpt-workbench` | `microgpt.cli:serve` | Start web server |
-| `microgpt-train` | `microgpt.cli:train` | Run training from CLI |
-| `microgpt-stop` | `microgpt.cli:stop` | Stop all services |
+| `anvil-workbench` | `anvil.cli:serve` | Start web server |
+| `anvil-train` | `anvil.cli:train` | Run training from CLI |
+| `anvil-stop` | `anvil.cli:stop` | Stop all services |

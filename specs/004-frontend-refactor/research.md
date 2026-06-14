@@ -34,7 +34,7 @@
 
 ## 4. SSE Data Format (from existing backend)
 
-Current SSE backend (`microgpt/api/v1/training.py`) emits:
+Current SSE backend (`anvil/api/v1/training.py`) emits:
 
 ```
 event: metrics
@@ -95,7 +95,7 @@ Throughput calculation must happen client-side (step deltas / wall clock) or be 
 
 ## 9. JS Module Strategy: Inline IIFE → Static Files
 
-- **Decision**: Extract all inline JS from 9 templates into separate `.js` files under `microgpt/api/static/js/`. Each file is wrapped in an IIFE (preserving the existing pattern) with explicit `window.` exports for Jinja2 `onclick` compatibility.
+- **Decision**: Extract all inline JS from 9 templates into separate `.js` files under `anvil/api/static/js/`. Each file is wrapped in an IIFE (preserving the existing pattern) with explicit `window.` exports for Jinja2 `onclick` compatibility.
 - **Rationale**: All JS is currently inline in `<script>` blocks with IIFE wrappers. Extracting to files improves maintainability, enables caching, and supports the modular architecture. Keeping the IIFE pattern avoids a breaking change for existing `onclick` handlers.
 - **Alternatives considered**:
   - ES modules — rejected (requires `type="module"`, breaks existing inline onclick patterns)

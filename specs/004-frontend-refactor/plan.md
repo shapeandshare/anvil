@@ -96,7 +96,7 @@ microgpt/api/                   # Existing API module — routes stay unchanged
         └── unicorn.svg         # Mascot (unchanged)
 ```
 
-**Structure Decision**: Option 2 (Web application — frontend component structure extracted from inline template JS into organized `static/js/` and `static/css/` directories). Routes remain in `microgpt/api/v1/` as-is. The existing monolithic template-per-route pattern is replaced by an archetype + partials pattern with extracted JS modules.
+**Structure Decision**: Option 2 (Web application — frontend component structure extracted from inline template JS into organized `static/js/` and `static/css/` directories). Routes remain in `anvil/api/v1/` as-is. The existing monolithic template-per-route pattern is replaced by an archetype + partials pattern with extracted JS modules.
 
 ## Complexity Tracking
 

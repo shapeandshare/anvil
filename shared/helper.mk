@@ -7,7 +7,7 @@ RESET := $(shell printf '\033[0m')
 
 # Help target (auto-discovers documented targets marked with "##")
 help: ## Show all documented commands
-	@echo "$(BLUE)microgpt-workbench$(RESET)"
+	@echo "$(BLUE)anvil$(RESET)"
 	@echo "======================"
 	@echo ""
 	@grep -hE '^[a-zA-Z0-9_.-]+:.*##' Makefile shared/*.mk 2>/dev/null | \

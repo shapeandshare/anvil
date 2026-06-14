@@ -5,7 +5,7 @@
 
 ## Summary
 
-Add feature-rich dataset curation to the microgpt-workbench platform: users can create, import (TXT/CSV/JSONL/JSON), curate (dedup, filter, regex replace, individual edit/delete), view quality metrics, export (TXT/CSV/JSONL), and use curated datasets directly for training. Extends the existing Dataset model and bridges directory-sourced corpora for curation.
+Add feature-rich dataset curation to the anvil platform: users can create, import (TXT/CSV/JSONL/JSON), curate (dedup, filter, regex replace, individual edit/delete), view quality metrics, export (TXT/CSV/JSONL), and use curated datasets directly for training. Extends the existing Dataset model and bridges directory-sourced corpora for curation.
 
 ## Technical Context
 

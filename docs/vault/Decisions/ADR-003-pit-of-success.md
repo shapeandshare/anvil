@@ -38,10 +38,10 @@ This principle applies across all future optional features, not just GPU. Exampl
 
 ### Existing Code That Already Conforms
 
-- `microgpt/gpu.py:detect_gpu()` — never raises; returns `GpuInfo(available=False)` with errors list
-- `microgpt/gpu.py:resolve_device()` — returns `"cpu"` when no GPU available, regardless of `use_gpu=True`
-- `microgpt/services/training.py` — checks `torch_available()` before dispatching to torch engine; falls back to `core.engine.train()`
-- `microgpt/core/torch_engine.py` — `_TORCH_AVAILABLE` flag with graceful `ImportError` handling; `train_torch()` raises `RuntimeError` only when explicitly called without torch (which the service layer prevents)
+- `anvil/gpu.py:detect_gpu()` — never raises; returns `GpuInfo(available=False)` with errors list
+- `anvil/gpu.py:resolve_device()` — returns `"cpu"` when no GPU available, regardless of `use_gpu=True`
+- `anvil/services/training.py` — checks `torch_available()` before dispatching to torch engine; falls back to `core.engine.train()`
+- `anvil/core/torch_engine.py` — `_TORCH_AVAILABLE` flag with graceful `ImportError` handling; `train_torch()` raises `RuntimeError` only when explicitly called without torch (which the service layer prevents)
 
 ## Consequences
 

@@ -4,9 +4,9 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from microgpt.api.app import app
-from microgpt.db.repositories.experiments import ExperimentRepository
-from microgpt.services.tracking import TrackingService
+from anvil.api.app import app
+from anvil.db.repositories.experiments import ExperimentRepository
+from anvil.services.tracking import TrackingService
 
 
 class _FakeClientForFailure:
@@ -75,7 +75,7 @@ def _fake_tracking():
 async def test_training_exception_triggers_fail_run(
     session: AsyncSession, _fake_tracking
 ):
-    from microgpt.api.v1 import training as training_module
+    from anvil.api.v1 import training as training_module
 
     orig_tracking_svc = training_module.tracking_svc
     orig_start_training = training_module.svc.start_training

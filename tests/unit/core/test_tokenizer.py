@@ -2,8 +2,8 @@
 
 import tempfile
 
-from microgpt.core.engine import GPT, train
-from microgpt.core.tokenizer import Tokenizer, Vocabulary
+from anvil.core.engine import GPT, train
+from anvil.core.tokenizer import Tokenizer, Vocabulary
 
 
 def test_vocabulary_from_chars():
