@@ -51,16 +51,30 @@ class TorchGPT:
         self.block_size = block_size
         self.head_dim = n_embd // n_head
 
+        self.intermediate_size = int(8 * n_embd / 3)
+
         self.wte = torch.nn.Parameter(torch.randn(vocab_size, n_embd) * 0.08)
-        self.wpe = torch.nn.Parameter(torch.randn(block_size, n_embd) * 0.08)
         self.lm_head = torch.nn.Parameter(torch.randn(vocab_size, n_embd) * 0.08)
 
+        # RMSNorm learned scale parameters
+        self.rms_final = torch.nn.Parameter(torch.ones(n_embd))
+        self.rms_1 = torch.nn.ParameterList(
+            [torch.nn.Parameter(torch.ones(n_embd)) for _ in range(n_layer)]
+        )
+        self.rms_2 = torch.nn.ParameterList(
+            [torch.nn.Parameter(torch.ones(n_embd)) for _ in range(n_layer)]
+        )
+
+        # Attention parameters
         self.attn_wq = torch.nn.ParameterList()
         self.attn_wk = torch.nn.ParameterList()
         self.attn_wv = torch.nn.ParameterList()
         self.attn_wo = torch.nn.ParameterList()
-        self.mlp_fc1 = torch.nn.ParameterList()
-        self.mlp_fc2 = torch.nn.ParameterList()
+
+        # SwiGLU MLP parameters
+        self.mlp_gate = torch.nn.ParameterList()
+        self.mlp_up = torch.nn.ParameterList()
+        self.mlp_down = torch.nn.ParameterList()
 
         for _ in range(n_layer):
             self.attn_wq.append(
@@ -75,12 +89,31 @@ class TorchGPT:
             self.attn_wo.append(
                 torch.nn.Parameter(torch.randn(n_embd, n_embd) * 0.08)
             )
-            self.mlp_fc1.append(
-                torch.nn.Parameter(torch.randn(4 * n_embd, n_embd) * 0.08)
+            self.mlp_gate.append(
+                torch.nn.Parameter(
+                    torch.randn(self.intermediate_size, n_embd) * 0.08
+                )
             )
-            self.mlp_fc2.append(
-                torch.nn.Parameter(torch.randn(n_embd, 4 * n_embd) * 0.08)
+            self.mlp_up.append(
+                torch.nn.Parameter(
+                    torch.randn(self.intermediate_size, n_embd) * 0.08
+                )
             )
+            self.mlp_down.append(
+                torch.nn.Parameter(
+                    torch.randn(n_embd, self.intermediate_size) * 0.08
+                )
+            )
+
+        # RoPE precomputation (half-split style)
+        head_dim = self.head_dim
+        inv_freq = 1.0 / (
+            10000.0 ** (torch.arange(0, head_dim, 2, dtype=torch.float) / head_dim)
+        )
+        pos = torch.arange(block_size, dtype=torch.float)
+        freqs = pos[:, None] * inv_freq[None, :]  # (block_size, head_dim//2)
+        self.cos_table = torch.cos(freqs)  # (block_size, head_dim//2)
+        self.sin_table = torch.sin(freqs)  # (block_size, head_dim//2)
 
     @property
     def num_params(self) -> int:
@@ -96,26 +129,54 @@ class TorchGPT:
                 yield from v
 
     def forward(self, token_id: int, pos_id: int, keys: list[list], values: list[list]):
-        tok_emb = self.wte[token_id]
-        pos_emb = self.wpe[pos_id]
-        x = tok_emb + pos_emb
-        x = F.rms_norm(x, normalized_shape=(self.n_embd,), eps=1e-5)
+        # Token embedding only — NO wpe, NO embedding-level norm
+        x = self.wte[token_id]
 
         for li in range(self.n_layer):
             x_residual = x
-            x = F.rms_norm(x, normalized_shape=(self.n_embd,), eps=1e-5)
+
+            # Pre-attention RMSNorm with learned scale
+            x = (
+                F.rms_norm(x, normalized_shape=(self.n_embd,), eps=1e-5)
+                * self.rms_1[li]
+            )
 
             q = F.linear(x, self.attn_wq[li])
             k = F.linear(x, self.attn_wk[li])
             v = F.linear(x, self.attn_wv[li])
 
-            keys[li].append(k)
+            # Half-split RoPE: split each head's q/k into two halves and rotate
+            half = self.head_dim // 2
+            cos = self.cos_table[pos_id]  # (half,)
+            sin = self.sin_table[pos_id]  # (half,)
+
+            q_rot = torch.empty_like(q)
+            k_rot = torch.empty_like(k)
+            for h in range(self.n_head):
+                hs = h * self.head_dim
+                q_h = q[hs : hs + self.head_dim]
+                k_h = k[hs : hs + self.head_dim]
+
+                q1 = q_h[:half]
+                q2 = q_h[half:]
+                q_rot[hs : hs + self.head_dim] = torch.cat(
+                    [q1 * cos - q2 * sin, q1 * sin + q2 * cos]
+                )
+
+                k1 = k_h[:half]
+                k2 = k_h[half:]
+                k_rot[hs : hs + self.head_dim] = torch.cat(
+                    [k1 * cos - k2 * sin, k1 * sin + k2 * cos]
+                )
+
+            # Cache rotated k and v
+            keys[li].append(k_rot)
             values[li].append(v)
 
             x_attn_parts = []
             for h in range(self.n_head):
                 hs = h * self.head_dim
-                q_h = q[hs : hs + self.head_dim]
+                q_h = q_rot[hs : hs + self.head_dim]
 
                 # Stack all previous keys/values for this head
                 k_h = torch.stack(
@@ -137,13 +198,24 @@ class TorchGPT:
             x = F.linear(x_attn, self.attn_wo[li])
             x = x + x_residual
 
+            # Pre-MLP RMSNorm with learned scale
             x_residual = x
-            x = F.rms_norm(x, normalized_shape=(self.n_embd,), eps=1e-5)
-            x = F.linear(x, self.mlp_fc1[li])
-            x = F.relu(x)
-            x = F.linear(x, self.mlp_fc2[li])
+            x = (
+                F.rms_norm(x, normalized_shape=(self.n_embd,), eps=1e-5)
+                * self.rms_2[li]
+            )
+
+            # SwiGLU MLP
+            gate = F.silu(F.linear(x, self.mlp_gate[li]))
+            up = F.linear(x, self.mlp_up[li])
+            x = F.linear(gate * up, self.mlp_down[li])
             x = x + x_residual
 
+        # Final RMSNorm with learned scale before lm_head
+        x = (
+            F.rms_norm(x, normalized_shape=(self.n_embd,), eps=1e-5)
+            * self.rms_final
+        )
         logits = F.linear(x, self.lm_head)
         return logits
 
@@ -154,24 +226,35 @@ class TorchGPT:
             elif isinstance(v, torch.nn.ParameterList):
                 for p in v:
                     p.data = p.data.to(device)
+        # Move RoPE buffer tensors (non-parameter tensors)
+        self.cos_table = self.cos_table.to(device)
+        self.sin_table = self.sin_table.to(device)
         return self
 
     def eval(self):
         pass
 
-    def export_weights(self) -> dict[str, list[list[float]]]:
-        sd: dict[str, list[list[float]]] = {}
+    def export_weights(self) -> dict[str, list]:
+        """Export all weights as plain Python lists.
+
+        Returns a dict with 2D matrices (wte, lm_head, attention, SwiGLU layers)
+        and 1D vectors (RMSNorm scales).
+        """
+        sd: dict[str, list] = {}
         sd["wte"] = self.wte.detach().cpu().tolist()
-        sd["wpe"] = self.wpe.detach().cpu().tolist()
         sd["lm_head"] = self.lm_head.detach().cpu().tolist()
+        sd["rms_final"] = self.rms_final.detach().cpu().tolist()
 
         for li in range(self.n_layer):
             sd[f"layer{li}.attn_wq"] = self.attn_wq[li].detach().cpu().tolist()
             sd[f"layer{li}.attn_wk"] = self.attn_wk[li].detach().cpu().tolist()
             sd[f"layer{li}.attn_wv"] = self.attn_wv[li].detach().cpu().tolist()
             sd[f"layer{li}.attn_wo"] = self.attn_wo[li].detach().cpu().tolist()
-            sd[f"layer{li}.mlp_fc1"] = self.mlp_fc1[li].detach().cpu().tolist()
-            sd[f"layer{li}.mlp_fc2"] = self.mlp_fc2[li].detach().cpu().tolist()
+            sd[f"layer{li}.rms_1"] = self.rms_1[li].detach().cpu().tolist()
+            sd[f"layer{li}.rms_2"] = self.rms_2[li].detach().cpu().tolist()
+            sd[f"layer{li}.mlp_gate"] = self.mlp_gate[li].detach().cpu().tolist()
+            sd[f"layer{li}.mlp_up"] = self.mlp_up[li].detach().cpu().tolist()
+            sd[f"layer{li}.mlp_down"] = self.mlp_down[li].detach().cpu().tolist()
 
         return sd
 

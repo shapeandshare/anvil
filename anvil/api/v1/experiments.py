@@ -1,7 +1,10 @@
+import asyncio
 import json
+import os
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import FileResponse
 from mlflow.tracking import MlflowClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +15,7 @@ from anvil.core.engine import GPT
 from anvil.db.models.training_config import TrainingConfig
 from anvil.db.repositories import ExperimentRepository
 from anvil.services.experiments import ExperimentService
+from anvil.services.tracking import TrackingService
 
 router = APIRouter()
 
@@ -161,6 +165,7 @@ async def get_experiment(
 
     # MLflow data
     mlflow_data = None
+    safetensors_artifacts = None
     if exp.mlflow_run_id:
         try:
             client = MlflowClient(tracking_uri=get_config()["mlflow_uri"])
@@ -175,8 +180,24 @@ async def get_experiment(
                     else None
                 ),
             }
+            # T049: Query safetensors artifacts from MLflow
+            tracking_svc = TrackingService(tracking_uri=get_config()["mlflow_uri"])
+            safetensors_artifacts = await tracking_svc.get_safetensors_artifacts(
+                exp.mlflow_run_id
+            )
         except Exception:
             mlflow_data = None
+
+    # Architecture type from safetensors config or tag
+    architecture_type = None
+    if exp.mlflow_run_id:
+        try:
+            client = MlflowClient(tracking_uri=get_config()["mlflow_uri"])
+            run = client.get_run(exp.mlflow_run_id)
+            tags = dict(run.data.tags)
+            architecture_type = tags.get("architectures")
+        except Exception:
+            pass
 
     return {
         "id": exp.id,
@@ -193,6 +214,8 @@ async def get_experiment(
         "hyperparameters": hyperparameters,
         "model_architecture": model_architecture,
         "mlflow": mlflow_data,
+        "safetensors_artifacts": safetensors_artifacts,
+        "architecture_type": architecture_type,
         "input_digest": exp.input_digest,
         "input_role": exp.input_role,
         "engine_backend": exp.engine_backend,
@@ -212,6 +235,7 @@ async def get_experiment_mlflow(id: int, svc: ExperimentService = Depends(get_se
             "metrics": {},
             "metric_histories": {},
             "artifacts": [],
+            "safetensors_artifacts": None,
             "run_url": None,
         }
 
@@ -235,6 +259,12 @@ async def get_experiment_mlflow(id: int, svc: ExperimentService = Depends(get_se
         except Exception:
             artifact_paths = []
 
+        # T049: Query safetensors artifact info
+        tracking_svc = TrackingService(tracking_uri=get_config()["mlflow_uri"])
+        safetensors_artifacts = await tracking_svc.get_safetensors_artifacts(
+            exp.mlflow_run_id
+        )
+
         mlflow_exp_id = _get_mlflow_experiment_id()
 
         return {
@@ -243,6 +273,7 @@ async def get_experiment_mlflow(id: int, svc: ExperimentService = Depends(get_se
             "metrics": dict(run.data.metrics),
             "metric_histories": metric_histories,
             "artifacts": artifact_paths,
+            "safetensors_artifacts": safetensors_artifacts,
             "run_url": (
                 f"{get_mlflow_uri()}/#/experiments/{mlflow_exp_id}/runs/{exp.mlflow_run_id}"
                 if mlflow_exp_id
@@ -256,6 +287,7 @@ async def get_experiment_mlflow(id: int, svc: ExperimentService = Depends(get_se
             "metrics": {},
             "metric_histories": {},
             "artifacts": [],
+            "safetensors_artifacts": None,
             "run_url": None,
             "error": str(e),
         }
@@ -283,3 +315,114 @@ async def get_experiment_metrics(
 async def delete_experiment(id: int, svc: ExperimentService = Depends(get_service)):
     await svc.delete_experiment(id)
     return {"status": "deleted"}
+
+
+@router.get("/experiments/{experiment_id}/runs/{run_id}/download/safetensors")
+async def download_safetensors(
+    experiment_id: int,
+    run_id: str,
+    svc: ExperimentService = Depends(get_service),
+):
+    """Download safetensors checkpoint for a given experiment/run.
+
+    The run_id is the MLflow run ID. Looks up the file from MLflow artifact store
+    and streams it to the client.
+    """
+    exp = await svc.get_experiment(experiment_id)
+    if exp is None:
+        raise HTTPException(status_code=404, detail="Experiment not found")
+    if not exp.mlflow_run_id:
+        raise HTTPException(status_code=404, detail="No MLflow run associated")
+    if exp.mlflow_run_id != run_id:
+        raise HTTPException(status_code=400, detail="Run ID does not match experiment")
+
+    tracking_svc = TrackingService(tracking_uri=get_config()["mlflow_uri"])
+    artifacts_info = await tracking_svc.get_safetensors_artifacts(run_id)
+    if not artifacts_info["available"]:
+        raise HTTPException(
+            status_code=404,
+            detail="No safetensors artifacts found for this run",
+        )
+
+    safetensors_file = next(
+        (f for f in artifacts_info["files"] if f["is_safetensors"]), None
+    )
+    if safetensors_file is None:
+        raise HTTPException(
+            status_code=404,
+            detail="No safetensors file found",
+        )
+
+    # Download artifact from MLflow to a temp location
+    try:
+        client = MlflowClient(tracking_uri=get_config()["mlflow_uri"])
+        loop = asyncio.get_event_loop()
+        local_path = await loop.run_in_executor(
+            None,
+            lambda: client.download_artifacts(
+                run_id, safetensors_file["path"], dst_path=None
+            ),
+        )
+        if not os.path.isfile(local_path):
+            raise HTTPException(
+                status_code=500, detail="Downloaded artifact is not a file"
+            )
+        return FileResponse(
+            path=local_path,
+            filename="model.safetensors",
+            media_type="application/octet-stream",
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to download safetensors: {str(e)}"
+        )
+
+
+@router.post("/experiments/{experiment_id}/retry-export")
+async def retry_export(experiment_id: int, svc: ExperimentService = Depends(get_service)):
+    """Retry safetensors export from a finished experiment's model.json."""
+    exp = await svc.get_experiment(experiment_id)
+    if exp is None:
+        raise HTTPException(status_code=404, detail="Experiment not found")
+
+    model_path = Path(f"data/models/experiment_{experiment_id}.json")
+    if not model_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="No model artifact found for this experiment. Complete training first.",
+        )
+
+    output_dir = Path(f"data/models/export_{experiment_id}")
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    from anvil.services.export import SafetensorsExportService as ExportService
+
+    loop = asyncio.get_event_loop()
+    export_svc = ExportService()
+    result = await loop.run_in_executor(
+        None, lambda: export_svc.retry_export(str(model_path), str(output_dir))
+    )
+
+    if result["error"]:
+        raise HTTPException(
+            status_code=500, detail=f"Export retry failed: {result['error']}"
+        )
+
+    if exp.mlflow_run_id:
+        tracking_svc = TrackingService(tracking_uri=get_config()["mlflow_uri"])
+        if result.get("safetensors_path"):
+            await tracking_svc.log_artifacts(
+                exp.mlflow_run_id,
+                safetensors_path=result["safetensors_path"],
+                config_path=result.get("config_path"),
+                tokenizer_path=result.get("tokenizer_path"),
+            )
+
+    return {
+        "status": "exported",
+        "safetensors_path": result["safetensors_path"],
+        "config_path": result["config_path"],
+        "tokenizer_path": result["tokenizer_path"],
+    }

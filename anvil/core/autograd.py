@@ -30,6 +30,15 @@ class Value:
     def relu(self):
         return Value(max(0, self.data), (self,), (float(self.data > 0),))
 
+    def silu(self):
+        """SiLU (Swish): f(x) = x * sigmoid(x)"""
+        s = 1 / (1 + math.exp(-self.data))
+        return Value(
+            self.data * s,
+            (self,),
+            (s + self.data * s * (1 - s),),
+        )
+
     def __neg__(self):
         return self * -1
 
@@ -69,5 +78,5 @@ class Value:
                         stack.append((child, False))
         self.grad = 1
         for v in reversed(topo):
-            for child, local_grad in zip(v._children, v._local_grads, strict=False):
+            for child, local_grad in zip(v._children, v._local_grads):
                 child.grad += local_grad * v.grad

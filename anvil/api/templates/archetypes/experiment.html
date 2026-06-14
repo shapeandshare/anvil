@@ -13,6 +13,7 @@
         <th>Status</th>
         <th>Final Loss</th>
         <th>Dataset</th>
+        <th>Architecture</th>
         <th>Actions</th>
       </tr>
     </thead>
@@ -27,15 +28,53 @@
     <div class="metrics-grid">
       <div class="metric"><span class="metric-label">Final Loss</span><span class="metric-value" id="detail-loss">—</span></div>
       <div class="metric"><span class="metric-label">Dataset</span><span class="metric-value" id="detail-dataset">—</span></div>
+      <div class="metric"><span class="metric-label">Architecture</span><span class="metric-value" id="detail-architecture">—</span></div>
       <div class="metric"><span class="metric-label">MLflow</span><span class="metric-value" id="detail-mlflow">—</span></div>
+    </div>
+    <div id="detail-safetensors" style="margin-top:var(--space-4);padding-top:var(--space-3);border-top:var(--border-width) solid var(--border);display:none;">
+      <h3 class="section-card__title" style="font-size:0.75rem;">Safetensors Artifacts</h3>
+      <div class="metrics-grid" style="margin-top:var(--space-2);">
+        <div class="metric"><span class="metric-label">Artifact</span><span class="metric-value" id="detail-st-file">—</span></div>
+        <div class="metric"><span class="metric-label">File Size</span><span class="metric-value" id="detail-st-size">—</span></div>
+        <div class="metric"><span class="metric-label">Config</span><span class="metric-value" id="detail-st-config">—</span></div>
+        <div class="metric"><span class="metric-label">Tokenizer</span><span class="metric-value" id="detail-st-tokenizer">—</span></div>
+      </div>
+      <div style="margin-top:var(--space-3);display:flex;gap:var(--space-2);flex-wrap:wrap;">
+        <button class="btn btn-secondary btn-sm" id="btn-download-st" style="display:none;" onclick="downloadSafetensors()">Download Safetensors</button>
+        <button class="btn btn-secondary btn-sm" id="btn-retry-export" style="display:none;" onclick="retryExport()">Retry Export</button>
+      </div>
+      <div id="detail-st-error" class="error-text" style="margin-top:var(--space-2);display:none;"></div>
     </div>
   </div>
 </div>
+
+<style>
+.error-text {
+  color: var(--danger);
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+}
+</style>
 {% endblock %}
 {% block scripts %}
 <script>
 (function() {
+  'use strict';
   var runId = window.core && window.core.getUrlParams().get('run_id');
+  var selectedExpId = null;
+  var selectedMlflowRunId = null;
+
+  function escHtml(s) {
+    if (s == null) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function formatFileSize(bytes) {
+    if (bytes == null) return '—';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  }
 
   fetch('/v1/experiments').then(function(r) { return r.json(); }).then(function(data) {
     var exps = data.experiments || [];
@@ -70,6 +109,7 @@
         '<td><span class="badge ' + badgeClass + '">' + statusText + '</span></td>' +
         '<td class="loss-value">' + (exp.final_loss != null ? exp.final_loss.toFixed(4) : '—') + '</td>' +
         '<td>' + (exp.dataset_name || '—') + '</td>' +
+        '<td class="text-dim" style="font-family:var(--font-mono);font-size:0.65rem;">' + (exp.engine_backend === 'torch' ? 'GPU' : 'CPU') + '</td>' +
         '<td><button class="btn btn-secondary" onclick="selectRun(' + exp.id + ')">View</button></td>';
       row.addEventListener('click', function() { selectRun(exp.id); });
       tbody.appendChild(row);
@@ -81,6 +121,7 @@
   });
 
   window.selectRun = function(id) {
+    selectedExpId = id;
     var detail = document.getElementById('run-detail');
     var loading = document.getElementById('run-detail-loading');
     var content = document.getElementById('run-detail-content');
@@ -91,20 +132,110 @@
 
     if (window.core) window.core.setUrlParams(new URLSearchParams({ run_id: id }));
 
-    fetch('/v1/experiments').then(function(r) { return r.json(); }).then(function(data) {
-      var exps = data.experiments || [];
-      var exp = exps.find(function(e) { return e.id === id; });
-      if (!exp) return;
+    // Fetch full detail including safetensors info
+    fetch('/v1/experiments/' + id).then(function(r) { return r.json(); }).then(function(exp) {
       document.getElementById('detail-loss').textContent = exp.final_loss != null ? exp.final_loss.toFixed(4) : '—';
       document.getElementById('detail-dataset').textContent = exp.dataset_name || '—';
+      document.getElementById('detail-architecture').textContent = exp.architecture_type || '—';
       var mlflowEl = document.getElementById('detail-mlflow');
-      if (exp.mlflow_run_url) {
-        mlflowEl.innerHTML = '<a href="' + exp.mlflow_run_url + '" target="_blank">open in MLflow →</a>';
+      if (exp.mlflow && exp.mlflow.run_url) {
+        mlflowEl.innerHTML = '<a href="' + exp.mlflow.run_url + '" target="_blank">open in MLflow →</a>';
       } else {
         mlflowEl.textContent = '—';
       }
+
+      selectedMlflowRunId = exp.mlflow_run_id;
+
+      // Safetensors artifact info
+      var stSection = document.getElementById('detail-safetensors');
+      var stFile = document.getElementById('detail-st-file');
+      var stSize = document.getElementById('detail-st-size');
+      var stConfig = document.getElementById('detail-st-config');
+      var stTokenizer = document.getElementById('detail-st-tokenizer');
+      var btnDownload = document.getElementById('btn-download-st');
+      var btnRetry = document.getElementById('btn-retry-export');
+      var stError = document.getElementById('detail-st-error');
+
+      stSection.style.display = 'none';
+      btnDownload.style.display = 'none';
+      btnRetry.style.display = 'none';
+      stError.style.display = 'none';
+
+      if (exp.safetensors_artifacts && exp.safetensors_artifacts.available) {
+        stSection.style.display = '';
+
+        var safetensorsFile = exp.safetensors_artifacts.files.find(function(f) { return f.is_safetensors; });
+        var configFile = exp.safetensors_artifacts.files.find(function(f) { return f.is_config; });
+        var tokenizerFile = exp.safetensors_artifacts.files.find(function(f) { return f.is_tokenizer; });
+
+        stFile.textContent = safetensorsFile ? safetensorsFile.path : '—';
+        stSize.textContent = safetensorsFile ? formatFileSize(safetensorsFile.file_size) : '—';
+        stConfig.textContent = configFile ? '&#10003;' : '—';
+        stTokenizer.textContent = tokenizerFile ? '&#10003;' : '—';
+
+        if (exp.mlflow_run_id && safetensorsFile) {
+          btnDownload.style.display = '';
+        }
+        if (exp.status === 'finished') {
+          btnRetry.style.display = '';
+        }
+      } else if (exp.safetensors_artifacts && exp.safetensors_artifacts.error) {
+        stSection.style.display = '';
+        stError.style.display = '';
+        stError.textContent = 'Artifact error: ' + escHtml(exp.safetensors_artifacts.error);
+      } else if (exp.status === 'finished') {
+        stSection.style.display = '';
+        stFile.textContent = 'No safetensors export found';
+        stSize.textContent = '—';
+        stConfig.textContent = '—';
+        stTokenizer.textContent = '—';
+        btnRetry.style.display = '';
+      }
+
       loading.style.display = 'none';
       content.style.display = '';
+    }).catch(function() {
+      loading.textContent = 'Failed to load experiment details.';
+    });
+  };
+
+  window.downloadSafetensors = function() {
+    if (!selectedExpId || !selectedMlflowRunId) return;
+    var url = '/v1/experiments/' + selectedExpId + '/runs/' + encodeURIComponent(selectedMlflowRunId) + '/download/safetensors';
+    window.open(url, '_blank');
+  };
+
+  window.retryExport = function() {
+    if (!selectedExpId) return;
+    var btn = document.getElementById('btn-retry-export');
+    btn.disabled = true;
+    btn.textContent = 'Exporting...';
+    var stError = document.getElementById('detail-st-error');
+    stError.style.display = 'none';
+
+    fetch('/v1/experiments/' + selectedExpId + '/retry-export', { method: 'POST' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.detail) {
+        stError.style.display = '';
+        stError.textContent = 'Export failed: ' + data.detail;
+        btn.disabled = false;
+        btn.textContent = 'Retry Export';
+        return;
+      }
+      btn.textContent = 'Exported!';
+      setTimeout(function() {
+        btn.disabled = false;
+        btn.textContent = 'Retry Export';
+        // Refresh detail to show new artifacts
+        selectRun(selectedExpId);
+      }, 1500);
+    })
+    .catch(function(err) {
+      stError.style.display = '';
+      stError.textContent = 'Export request failed: ' + err.message;
+      btn.disabled = false;
+      btn.textContent = 'Retry Export';
     });
   };
 })();
