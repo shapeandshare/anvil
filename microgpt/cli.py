@@ -423,34 +423,71 @@ def _kill_pids(pids: list[int], sig: int = signal.SIGTERM) -> bool:
 def stop():
     cfg = get_config()
     pid_dir = cfg["log_dir"]
-    killed = False
+    web_killed = False
+    mlflow_killed = False
 
     if kill_pid_file("web", pid_dir=pid_dir):
         print("Stopped web server.")
-        killed = True
+        web_killed = True
 
     if kill_pid_file("mlflow", pid_dir=pid_dir):
         print("Stopped MLflow server.")
-        killed = True
+        mlflow_killed = True
 
-    if not killed:
-        print("No PID files found. Looking for servers by port...")
-        web_pids = _find_pid_by_port(cfg["port"])
-        if web_pids:
-            _kill_pids(web_pids, signal.SIGTERM)
-            print(f"Stopped web server (PID{' '.join(str(p) for p in web_pids)}).")
-            killed = True
+    # Always try port-based fallback, regardless of PID file results.
+    # If PID file was found but the process didn't actually die (e.g. web
+    # shutdown hadn't cleaned up MLflow yet), we need the port scan.
+    print("Verifying ports are free...")
+    web_pids = _find_pid_by_port(cfg["port"])
+    if web_pids:
+        _kill_pids(web_pids, signal.SIGTERM)
+        _wait_and_sigkill(web_pids, cfg["port"])
+        print(f"Stopped web server (PID{' '.join(str(p) for p in web_pids)}).")
+        web_killed = True
 
-        mlflow_pids = _find_pid_by_port(5000)
-        if mlflow_pids:
-            _kill_pids(mlflow_pids, signal.SIGTERM)
-            print(
-                f"Stopped MLflow server (PID{' '.join(str(p) for p in mlflow_pids)})."
-            )
-            killed = True
+    mlflow_pids = _find_pid_by_port(cfg["mlflow_port"])
+    if mlflow_pids:
+        _kill_pids(mlflow_pids, signal.SIGTERM)
+        _wait_and_sigkill(mlflow_pids, cfg["mlflow_port"])
+        print(
+            f"Stopped MLflow server (PID{' '.join(str(p) for p in mlflow_pids)})."
+        )
+        mlflow_killed = True
 
-    if not killed:
+    if not web_killed and not mlflow_killed:
         print("No running servers found.")
+
+
+def _wait_and_sigkill(pids: list[int], port: int) -> None:
+    """Wait briefly for processes to die, then SIGKILL any survivors.
+
+    Verifies the port is actually free afterward.
+    """
+    import time
+
+    deadline = time.monotonic() + 2.0
+    while time.monotonic() < deadline:
+        time.sleep(0.3)
+        survivors = []
+        for pid in pids:
+            try:
+                os.kill(pid, 0)
+                survivors.append(pid)
+            except ProcessLookupError:
+                pass
+        if not survivors:
+            remaining = _find_pid_by_port(port)
+            if not remaining:
+                return
+            pids = remaining
+            survivors = remaining
+        pids = survivors
+
+    for pid in pids:
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
 
 
 def migrate_registry():

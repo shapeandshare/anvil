@@ -35,6 +35,14 @@ async def lifespan(app: FastAPI):
     except Exception:
         pass
 
+    # Pre-train demo model so first inference request doesn't block
+    try:
+        from microgpt.services.inference import _demo_provider
+
+        _demo_provider.get_model()
+    except Exception:
+        pass
+
     yield
     mlflow_svc.stop()
 
