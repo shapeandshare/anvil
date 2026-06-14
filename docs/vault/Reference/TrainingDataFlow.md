@@ -40,7 +40,7 @@ The training pipeline bridges three execution paradigms: async web → sync CPU-
                                                          ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │                    Core Engine (sync, zero deps)                     │
-│                    microgpt/core/engine.py                           │
+│                    anvil/core/engine.py                           │
 │                                                                     │
 │  train(docs, num_steps, ...)                                        │
 │    │                                                                │

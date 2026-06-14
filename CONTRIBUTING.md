@@ -1,4 +1,4 @@
-# Contributing to microgpt-workbench
+# Contributing to anvil
 
 ## Development Setup
 

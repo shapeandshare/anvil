@@ -12,7 +12,7 @@ updated: 2026-06-13
 
 ## Context
 
-Two parallel model-record systems existed: MLflow auto-registered per-run as `microgpt-experiment-{id}` (one throwaway model per run), and local `RegisteredModel`/`ModelVersion` DB tables written via manual `POST /v1/registry/models`. This created registry pollution and potential contradictions.
+Two parallel model-record systems existed: MLflow auto-registered per-run as `anvil-experiment-{id}` (one throwaway model per run), and local `RegisteredModel`/`ModelVersion` DB tables written via manual `POST /v1/registry/models`. This created registry pollution and potential contradictions.
 
 ## Decision
 

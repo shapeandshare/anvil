@@ -11,7 +11,7 @@
 - Layered architecture: **Repository → Service → God Class → Routes/CLI**
 - Repository pattern with ACID transactions and Unit of Work — no DB primitives leak outside repositories
 - Shared DB context per request context; commit/rollback managed at the context level, never in individual repositories
-- God class (`MicroGPTWorkbench`) as single entry point exposing all service methods; instantiatable outside HTTP (CLI, tests, other agents)
+- God class (`AnvilWorkbench`) as single entry point exposing all service methods; instantiatable outside HTTP (CLI, tests, other agents)
 - Services consume one or more repositories for business logic
 - FastAPI dependency injection manages request-scoped DB context
 - Circular imports must be fixed architecturally (restructure modules) — never with hacks or inline imports
@@ -44,7 +44,7 @@
 - **Configuration**: All settings configurable via environment variables with sensible defaults, documented in `.env.example`
 - **Linting**: ruff, black, isort, pylint — all configured in `pyproject.toml`, run via `make lint`
 - **Type checking**: mypy or pyright enforced via `make typecheck`
-- **CLI entry points**: Defined under `[project.scripts]` — `microgpt-workbench`, `microgpt-train`, `microgpt-stop` delegating to the god class
+- **CLI entry points**: Defined under `[project.scripts]` — `anvil-workbench`, `anvil-train`, `anvil-stop` delegating to the god class
 
 ## Code Style
 
@@ -67,14 +67,14 @@
 
 ## Versioning & Governance
 
-- **Semantic versioning** (MAJOR.MINOR.PATCH) for all releases; version declared in `pyproject.toml` and accessible via `microgpt.__version__`
+- **Semantic versioning** (MAJOR.MINOR.PATCH) for all releases; version declared in `pyproject.toml` and accessible via `anvil.__version__`
 - Version bumps follow conventional commit analysis
 - **ADRs** (Architecture Decision Records) created for every significant architecture decision; stored in `docs/vault/Decisions/` with status, context, decision, consequences, and compliance notes
 - Vault enriched with discoveries during and at end of each session
 
 ## Build & Distribution
 
-- pip-installable Python package (`microgpt-workbench`) with `pyproject.toml`
+- pip-installable Python package (`anvil-workbench`) with `pyproject.toml`
 - Optional dependency groups for web, GPU, and dev extras
 - Python dependency lock files required (e.g., `uv.lock` or `requirements.lock`)
 - Python-first implementation — favor Python over bash scripts; Makefile acceptable for tooling wrappers

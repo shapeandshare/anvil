@@ -9,10 +9,10 @@ updated: 2026-06-10
 # Session: Bootstrap Implementation
 
 ## Summary
-Full bootstrap implementation of the microgpt-workbench repository. All 125 tasks completed across 10 phases. Infrastructure, core engine, web UI, CLI, and documentation all built.
+Full bootstrap implementation of the anvil repository. All 125 tasks completed across 10 phases. Infrastructure, core engine, web UI, CLI, and documentation all built.
 
 ## Artifacts Created
-- `microgpt/` — Python package (core, db, services, api, storage, supervisor)
+- `anvil/` — Python package (core, db, services, api, storage, supervisor)
 - `CONSTITUTION.md`, `AGENTS.md`, `docs/vault/` — governance and agentic harness
 - `Makefile`, `pyproject.toml`, `requirements.lock` — build system
 - `train0.py`–`train5.py`, `diff_stages.py` — progressive walkthrough

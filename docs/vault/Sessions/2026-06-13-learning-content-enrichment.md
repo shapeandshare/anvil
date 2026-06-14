@@ -7,7 +7,7 @@ created: 2026-06-13
 
 # Session: Learning Content Enrichment
 
-Implements 7 new learning features for microgpt-workbench: autograd backprop visualization, progressive code stubs (train1/train3/train4), cross-entropy loss deep-dive, model parameter anatomy, Adam optimizer interactive lesson, FAQ section, and residual connections & RMSNorm explanations.
+Implements 7 new learning features for anvil: autograd backprop visualization, progressive code stubs (train1/train3/train4), cross-entropy loss deep-dive, model parameter anatomy, Adam optimizer interactive lesson, FAQ section, and residual connections & RMSNorm explanations.
 
 ## What was built
 

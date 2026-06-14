@@ -1,4 +1,4 @@
-# Testing Guide — microgpt-workbench
+# Testing Guide — anvil
 
 **Last updated**: 2026-06-11
 
@@ -35,7 +35,7 @@ Tests that exercise the full stack through HTTP endpoints.
 
 | Test file | What it tests | How to run |
 |-----------|---------------|------------|
-| `tests/e2e/test_setup.py` | Package imports resolve (`import microgpt`, `import microgpt.core.engine`) | `pytest tests/e2e/test_setup.py -v` |
+| `tests/e2e/test_setup.py` | Package imports resolve (`import anvil`, `import anvil.core.engine`) | `pytest tests/e2e/test_setup.py -v` |
 | `tests/e2e/test_endpoints.py` | HTTP API endpoints (`/v1/health`, `/v1/datasets`, `/v1/experiments`) return 200 with correct JSON | `pytest tests/e2e/test_endpoints.py -v` |
 
 **How e2e tests work:**
@@ -71,12 +71,12 @@ curl http://localhost:8080/v1/experiments
 
 ## Testing the Core Engine
 
-The GPT training engine at `microgpt/core/` is the heart of the project. Here's how to test it manually:
+The GPT training engine at `anvil/core/` is the heart of the project. Here's how to test it manually:
 
 ### Autograd (Value class)
 
 ```python
-from microgpt.core.autograd import Value
+from anvil.core.autograd import Value
 
 a = Value(2.0)
 b = Value(3.0)
@@ -91,7 +91,7 @@ print(b.grad)  # Should be 2.0 (dL/db = a = 2)
 ### GPT forward pass
 
 ```python
-from microgpt.core.engine import GPT
+from anvil.core.engine import GPT
 model = GPT(vocab_size=27, n_embd=16, n_head=4, n_layer=1, block_size=16)
 print(f"Parameters: {model.num_params()}")  # Should be 4192
 ```
@@ -99,7 +99,7 @@ print(f"Parameters: {model.num_params()}")  # Should be 4192
 ### Full training
 
 ```python
-from microgpt.core.engine import train
+from anvil.core.engine import train
 docs = ["emma", "olivia", "ava", "isabella", "sophia"]
 # Train for just 5 steps to verify it runs
 model, loss, samples = train(docs, num_steps=5, n_embd=8, n_head=2)
@@ -114,8 +114,8 @@ python examples/train0.py   # Bigram count table
 python examples/train1.py   # MLP stub
 python examples/train2.py   # Autograd verification
 python examples/train3.py   # Attention stub
-python examples/train4.py   # Multi-head stub (delegates to microgpt core)
-python examples/train5.py   # Full GPT training (delegates to microgpt core)
+python examples/train4.py   # Multi-head stub (delegates to anvil core)
+python examples/train5.py   # Full GPT training (delegates to anvil core)
 ```
 
 ---
@@ -172,10 +172,10 @@ curl -N http://localhost:8080/v1/training/stream/0
 
 ```python
 import asyncio
-from microgpt.db.session import async_engine, AsyncSessionLocal
-from microgpt.db.base import Base
-from microgpt.db import models  # Register models
-from microgpt.db.repositories import DatasetRepository, ExperimentRepository, TrainingConfigRepository
+from anvil.db.session import async_engine, AsyncSessionLocal
+from anvil.db.base import Base
+from anvil.db import models  # Register models
+from anvil.db.repositories import DatasetRepository, ExperimentRepository, TrainingConfigRepository
 
 async def test_db():
     # Create tables
@@ -214,7 +214,7 @@ make stop     # Stops background services
 Run with coverage to see gaps:
 
 ```bash
-make test   # Runs pytest with --cov=microgpt --cov-report=term-missing
+make test   # Runs pytest with --cov=anvil --cov-report=term-missing
 ```
 
 Current coverage: ~41% (improvement needed — tests are minimal; the TDD mandate targets 100%)
@@ -228,7 +228,7 @@ Current coverage: ~41% (improvement needed — tests are minimal; the TDD mandat
 ```python
 """Unit tests for <module name>."""
 
-from microgpt.<module> import <Class>
+from anvil.<module> import <Class>
 
 
 def test_<behavior>():
@@ -259,7 +259,7 @@ The `client` fixture is defined in `tests/conftest.py` and provides an `httpx.As
 
 ```bash
 make lint      # ruff → black --check → isort --check → pylint
-make typecheck # mypy microgpt/
+make typecheck # mypy anvil/
 make test      # pytest + coverage
 make format    # auto-fix formatting
 ```

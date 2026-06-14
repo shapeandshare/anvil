@@ -40,7 +40,7 @@ Deep analysis of the training render loop and end-to-end data flow — tracing t
 - MLflow runs as a managed subprocess; training logs metrics to it via REST API
 
 ### Code Patterns
-- The `Tokenizier` class at `microgpt/core/tokenizer.py` exists but is NOT used by `train()` — the engine embeds its own inline tokenization in the loop
+- The `Tokenizier` class at `anvil/core/tokenizer.py` exists but is NOT used by `train()` — the engine embeds its own inline tokenization in the loop
 - `softmax` is reimplemented three times across the codebase — once in engine.py, once in api/v1/router.py (for inference)
 
 ## Artifacts Created / Updated
@@ -52,6 +52,6 @@ Deep analysis of the training render loop and end-to-end data flow — tracing t
 - `docs/vault/index.md` — updated timestamp
 
 ## Open Questions
-- The `Tokenizer` class at `microgpt/core/tokenizer.py` is dead code (not imported by engine.py) — should be removed or integrated into the train() function
+- The `Tokenizer` class at `anvil/core/tokenizer.py` is dead code (not imported by engine.py) — should be removed or integrated into the train() function
 - softmax is duplicated (engine.py + api/v1/router.py) — should be a shared utility
 - The `stop_training` endpoint returns 200 but does nothing — actual cancellation would require thread-safe signaling
