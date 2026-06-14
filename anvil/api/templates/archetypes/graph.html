@@ -2,24 +2,34 @@
 {% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
 {% block content %}
 <div class="graph-page">
-  <div class="panel">
-    <h2 class="panel-title">Computation Graph — Forward Pass Explorer</h2>
-    <p class="text-muted" style="margin-bottom:var(--space-4);">
-      Scrub through the forward pass to see how a computation graph builds from token input to attention output.
-      Each step adds real operations — no static diagrams.
-    </p>
-  </div>
-
-  <div class="panel">
-    <div class="graph-view-container">
-      {% include "partials/graph-view.html" %}
+  <div class="section-card" style="--stagger-i: 0">
+    <div class="section-card__header">
+      <div class="section-card__title">Computation Graph — Forward Pass Explorer</div>
+    </div>
+    <div class="section-card__content">
+      <p class="text-muted" style="margin-bottom:var(--space-4);">
+        Scrub through the forward pass to see how a computation graph builds from token input to attention output.
+        Each step adds real operations — no static diagrams.
+      </p>
     </div>
   </div>
 
-  <div class="panel">
-    <h2 class="panel-title">What's Happening</h2>
-    <div id="graph-description" class="graph-description">
-      <p class="text-muted">Drag the scrubber to step through the forward pass. Each step adds nodes to the computation graph showing real operations.</p>
+  <div class="section-card" style="--stagger-i: 1">
+    <div class="section-card__content">
+      <div class="graph-view-container">
+        {% include "partials/graph-view.html" %}
+      </div>
+    </div>
+  </div>
+
+  <div class="section-card" style="--stagger-i: 2">
+    <div class="section-card__header">
+      <div class="section-card__title">What's Happening</div>
+    </div>
+    <div class="section-card__content">
+      <div id="graph-description" class="graph-description">
+        <p class="text-muted">Drag the scrubber to step through the forward pass. Each step adds nodes to the computation graph showing real operations.</p>
+      </div>
     </div>
   </div>
 </div>

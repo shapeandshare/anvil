@@ -14,7 +14,7 @@ from anvil.db.base import Base
 from anvil.db.session import async_engine, init_engine
 from anvil.supervisor.services import MLflowService
 
-MLFLOW_EXPERIMENT_NAME = "anvil-workbench"
+MLFLOW_EXPERIMENT_NAME = "anvil"
 
 
 @asynccontextmanager
@@ -47,9 +47,12 @@ async def lifespan(app: FastAPI):
     mlflow_svc.stop()
 
 
+from anvil import __version__ as anvil_version
+
+
 app = FastAPI(
-    title="anvil-workbench",
-    version="0.1.0",
+    title="anvil",
+    version=anvil_version,
     lifespan=lifespan,
 )
 
@@ -59,6 +62,7 @@ async def root_hero(request: Request):
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/hero.html",
+        context={"version": anvil_version},
     )
 
 
@@ -66,6 +70,7 @@ app.include_router(v1_router, prefix="/v1")
 
 HERE = Path(__file__).parent
 templates = Jinja2Templates(directory=str(HERE / "templates"))
+templates.env.globals["version"] = anvil_version
 app.state.templates = templates
 
 static_dir = HERE / "static"

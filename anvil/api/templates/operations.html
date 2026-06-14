@@ -2,15 +2,19 @@
 {% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
 {% block content %}
 
-<div class="panel" style="--stagger-i: 0">
-  <h2 class="panel-title">System Resources — compute details</h2>
+<div class="section-card" style="--stagger-i: 0">
+  <div class="section-card__header">
+    <h2 class="section-card__title">System Resources — compute details</h2>
+  </div>
   <div id="system-resources"><span class="text-muted" style="font-size:0.78rem;">Polling...</span></div>
 </div>
 
-<div class="panel" style="--stagger-i: 1">
-  <h2 class="panel-title">Operations — Service Control</h2>
-  <div class="help-box" style="margin-bottom:var(--space-3);">
-    <div class="help-title">Service Control</div>
+<div class="section-card" style="--stagger-i: 1">
+  <div class="section-card__header">
+    <h2 class="section-card__title">Operations — Service Control</h2>
+  </div>
+  <div style="margin-bottom:var(--space-3);">
+    <div style="color:var(--accent);font-weight:600;font-size:0.75rem;margin-bottom:var(--space-1);">Service Control</div>
     <div>Manage background services (MLflow tracking server, etc.). Use <b>Start</b>/<b>Stop</b> to control individual services, or <b>Restart All</b> to cycle everything.</div>
     <div style="margin-top:var(--space-1);">Services list refreshes automatically every 10 seconds. Logs show the last 20 lines from each service.</div>
   </div>
@@ -19,8 +23,10 @@
   </div>
 </div>
 
-<div class="panel" style="--stagger-i: 2">
-  <h2 class="panel-title">System Actions</h2>
+<div class="section-card" style="--stagger-i: 2">
+  <div class="section-card__header">
+    <h2 class="section-card__title">System Actions</h2>
+  </div>
   <div class="ops-actions-bar">
     <button class="btn btn-secondary" onclick="ops.restartAll()" id="btn-restart-all">⟳ Restart All</button>
     <button class="btn btn-secondary" onclick="ops.clearAllLogs()" id="btn-clear-logs">✕ Clear Logs</button>
@@ -28,8 +34,10 @@
   </div>
 </div>
 
-<div class="panel" style="--stagger-i: 3">
-  <h2 class="panel-title">Service Logs — tail -f</h2>
+<div class="section-card" style="--stagger-i: 3">
+  <div class="section-card__header">
+    <h2 class="section-card__title">Service Logs — tail -f</h2>
+  </div>
   <div id="service-logs">
     <span class="text-muted" style="font-size:0.78rem;">Waiting for service data...</span>
   </div>
@@ -154,7 +162,7 @@
     var secs = uptime % 60;
 
     // ── Services table ──
-    var servicesHtml = '<table class="run-table">';
+    var servicesHtml = '<table class="grouped-list">';
     servicesHtml += '<thead><tr>';
     servicesHtml += '<th>PID</th><th>Service</th><th>Status</th><th>Uptime</th><th>Mem</th><th>Actions</th>';
     servicesHtml += '</tr></thead><tbody>';
@@ -213,8 +221,9 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
         var logResp = await fetch('/v1/services/logs/' + svc.name + '?lines=20');
         var logData = await logResp.json();
         if (logData.logs && logData.logs.length > 0) {
-          logsHtml += '<div class="panel" style="margin:var(--space-2) 0;">';
-          logsHtml += '<h2 class="panel-title" style="padding:var(--space-2) var(--space-3);margin-bottom:0;border-bottom:var(--border-width) solid var(--border);background:var(--bg-element);border-radius:var(--radius) var(--radius) 0 0;">' + svc.name + '</h2>';
+          logsHtml += '<div class="section-card" style="margin:var(--space-2) 0;">';
+          logsHtml += '<div class="section-card__header" style="padding:var(--space-2) var(--space-3);margin-bottom:0;border-bottom:var(--border-width) solid var(--border);background:var(--bg-element);border-radius:var(--radius) var(--radius) 0 0;">';
+          logsHtml += '<h2 class="section-card__title">' + svc.name + '</h2></div>';
           logsHtml += '<pre class="telemetry" style="max-height:180px;font-size:0.72rem;">';
           logsHtml += logData.logs.join('\n');
           logsHtml += '</pre></div>';
