@@ -19,10 +19,10 @@
 **Purpose**: Project initialization, DB migration structure, foundational model setup
 
 - [x] T001 Create DB migration file `migrations/versions/004_add_dataset_curation.py` with Sample, CurationOperation, ImportSource tables and Dataset extension (sample_count, total_size_bytes, curation_version, status fields)
-- [x] T002 [P] Create curation models module `microgpt/db/models/curation.py` with Sample, CurationOperation, ImportSource SQLAlchemy models (TimestampMixin, indexes per data-model.md)
-- [x] T003 [P] Create curation repositories module `microgpt/db/repositories/curation.py` with SampleRepository, CurationOperationRepository, ImportSourceRepository
-- [x] T004 [P] Update `microgpt/db/models/training_config.py` — extend Dataset model with new fields: sample_count, total_size_bytes, curation_version, status
-- [x] T005 [P] Update `microgpt/db/repositories/datasets.py` — extend DatasetRepository with methods for new fields, name search/filter, and delete-blocked check against TrainingConfig
+- [x] T002 [P] Create curation models module `anvil/db/models/curation.py` with Sample, CurationOperation, ImportSource SQLAlchemy models (TimestampMixin, indexes per data-model.md)
+- [x] T003 [P] Create curation repositories module `anvil/db/repositories/curation.py` with SampleRepository, CurationOperationRepository, ImportSourceRepository
+- [x] T004 [P] Update `anvil/db/models/training_config.py` — extend Dataset model with new fields: sample_count, total_size_bytes, curation_version, status
+- [x] T005 [P] Update `anvil/db/repositories/datasets.py` — extend DatasetRepository with methods for new fields, name search/filter, and delete-blocked check against TrainingConfig
 - [x] T006 [P] Update all relevant `__init__.py` files to export new models and repositories
 
 **Checkpoint**: Foundation DB models and repositories ready for all user stories
@@ -37,11 +37,11 @@
 
 ### Implementation for User Story 1
 
-- [x] T007 [P] [US1] Update `microgpt/api/v1/datasets.py`: extend `GET /v1/datasets` to return sample_count, total_size_bytes, status, curation_version; add `GET /v1/datasets/search?q=` for name filter; add `PUT /v1/datasets/{id}` for metadata edit
-- [x] T008 [US1] Extend `microgpt/services/datasets.py` with methods: `update_dataset()`, `search_datasets()`, integrate delete-blocked check for TrainingConfig references
-- [x] T009 [US1] Update `microgpt/api/templates/datasets.html`: add dataset creation form (name + description), edit inline, delete with confirmation dialog; add search/filter input; show sample_count, size, status per row
-- [x] T010 [US1] Add dataset creation endpoint `POST /v1/datasets` in `microgpt/api/v1/datasets.py` with name+description body
-- [x] T011 [US1] Update `microgpt/api/v1/router.py` if needed for any new route registration
+- [x] T007 [P] [US1] Update `anvil/api/v1/datasets.py`: extend `GET /v1/datasets` to return sample_count, total_size_bytes, status, curation_version; add `GET /v1/datasets/search?q=` for name filter; add `PUT /v1/datasets/{id}` for metadata edit
+- [x] T008 [US1] Extend `anvil/services/datasets.py` with methods: `update_dataset()`, `search_datasets()`, integrate delete-blocked check for TrainingConfig references
+- [x] T009 [US1] Update `anvil/api/templates/datasets.html`: add dataset creation form (name + description), edit inline, delete with confirmation dialog; add search/filter input; show sample_count, size, status per row
+- [x] T010 [US1] Add dataset creation endpoint `POST /v1/datasets` in `anvil/api/v1/datasets.py` with name+description body
+- [x] T011 [US1] Update `anvil/api/v1/router.py` if needed for any new route registration
 
 **Checkpoint**: US1 complete — datasets can be created, listed, edited, searched, and deleted (protected if referenced by training configs)
 
@@ -55,11 +55,11 @@
 
 ### Implementation for User Story 2
 
-- [x] T012 [P] [US2] Create `microgpt/services/dataset_import.py` with DatasetImportService: parse TXT (newline-split), CSV (configurable delimiter), JSONL (line-by-line JSON), JSON (array), paste text; compute content_hash (SHA-256), length; detect encoding
-- [x] T013 [P] [US2] Implement corpus bridge method in `microgpt/services/dataset_import.py`: import from existing corpus via `CorpusService.load_docs()` → treat each chunk as a sample
+- [x] T012 [P] [US2] Create `anvil/services/dataset_import.py` with DatasetImportService: parse TXT (newline-split), CSV (configurable delimiter), JSONL (line-by-line JSON), JSON (array), paste text; compute content_hash (SHA-256), length; detect encoding
+- [x] T013 [P] [US2] Implement corpus bridge method in `anvil/services/dataset_import.py`: import from existing corpus via `CorpusService.load_docs()` → treat each chunk as a sample
 - [x] T014 [US2] Implement atomic import transaction in DatasetImportService: create ImportSource record, write sample files via LocalFileStore, bulk-insert Sample rows, create CurationOperation(import type), update Dataset stats — all in single transaction with rollback on failure
-- [x] T015 [US2] Add preview endpoint `GET /v1/datasets/{id}/preview-import` in `microgpt/api/v1/datasets.py`
-- [x] T016 [US2] Add import endpoint `POST /v1/datasets/{id}/import` in `microgpt/api/v1/datasets.py`
+- [x] T015 [US2] Add preview endpoint `GET /v1/datasets/{id}/preview-import` in `anvil/api/v1/datasets.py`
+- [x] T016 [US2] Add import endpoint `POST /v1/datasets/{id}/import` in `anvil/api/v1/datasets.py`
 - [ ] T017 [US2] Import UI in datasets.html — DEFERRED (import triggers are in dataset_detail.html)
 
 **Checkpoint**: US2 complete — data can be imported from multiple sources with preview and atomic commit
@@ -74,13 +74,13 @@
 
 ### Implementation for User Story 3
 
-- [x] T018 [P] [US3] Create `microgpt/services/dataset_curation.py` with DatasetCurationService
-- [x] T019 [US3] Implement sample browsing endpoint in `microgpt/api/v1/datasets.py`
-- [x] T020 [US3] Implement sample edit/delete endpoints in `microgpt/api/v1/datasets.py`
-- [x] T021 [P] [US3] Implement curation endpoints in `microgpt/api/v1/datasets.py`
-- [x] T022 [US3] Implement quality metrics endpoint in `microgpt/api/v1/datasets.py`
-- [x] T023 [US3] Create `microgpt/api/templates/dataset_detail.html` with full curation UI
-- [x] T024 [US3] Update `microgpt/api/templates/datasets.html`: add "Curate" button per dataset
+- [x] T018 [P] [US3] Create `anvil/services/dataset_curation.py` with DatasetCurationService
+- [x] T019 [US3] Implement sample browsing endpoint in `anvil/api/v1/datasets.py`
+- [x] T020 [US3] Implement sample edit/delete endpoints in `anvil/api/v1/datasets.py`
+- [x] T021 [P] [US3] Implement curation endpoints in `anvil/api/v1/datasets.py`
+- [x] T022 [US3] Implement quality metrics endpoint in `anvil/api/v1/datasets.py`
+- [x] T023 [US3] Create `anvil/api/templates/dataset_detail.html` with full curation UI
+- [x] T024 [US3] Update `anvil/api/templates/datasets.html`: add "Curate" button per dataset
 
 **Checkpoint**: US3 complete — full curation workflow available in the UI
 
@@ -94,9 +94,9 @@
 
 ### Implementation for User Story 4
 
-- [x] T025 [P] [US4] Create `microgpt/services/dataset_export.py` with DatasetExportService
-- [x] T026 [US4] Add export endpoint in `microgpt/api/v1/datasets.py`
-- [x] T027 [US4] Add export UI to `microgpt/api/templates/dataset_detail.html`
+- [x] T025 [P] [US4] Create `anvil/services/dataset_export.py` with DatasetExportService
+- [x] T026 [US4] Add export endpoint in `anvil/api/v1/datasets.py`
+- [x] T027 [US4] Add export UI to `anvil/api/templates/dataset_detail.html`
 
 **Checkpoint**: US4 complete — datasets exportable in all three formats
 
@@ -110,10 +110,10 @@
 
 ### Implementation for User Story 5
 
-- [x] T028 [P] [US5] Add `load_docs(dataset_id)` method to `microgpt/services/datasets.py`
-- [x] T029 [US5] Extend `microgpt/services/training.py` to accept `dataset_id` param
-- [x] T030 [US5] Update `microgpt/api/v1/training.py` to accept `dataset_id` in request body
-- [x] T031 [US5] Update `microgpt/api/templates/training.html` with dataset selector dropdown
+- [x] T028 [P] [US5] Add `load_docs(dataset_id)` method to `anvil/services/datasets.py`
+- [x] T029 [US5] Extend `anvil/services/training.py` to accept `dataset_id` param
+- [x] T030 [US5] Update `anvil/api/v1/training.py` to accept `dataset_id` in request body
+- [x] T031 [US5] Update `anvil/api/templates/training.html` with dataset selector dropdown
 - [x] T032 [US5] Update MLflow hyperparams logging to include `dataset_id`
 
 **Checkpoint**: US5 complete — curated datasets fully integrated with training pipeline
@@ -128,8 +128,8 @@
 
 ### Implementation for User Story 6
 
-- [x] T033 [US6] Add operations history endpoint `GET /v1/datasets/{id}/operations` in `microgpt/api/v1/datasets.py`
-- [x] T034 [US6] Add "Operation History" panel to `microgpt/api/templates/dataset_detail.html`
+- [x] T033 [US6] Add operations history endpoint `GET /v1/datasets/{id}/operations` in `anvil/api/v1/datasets.py`
+- [x] T034 [US6] Add "Operation History" panel to `anvil/api/templates/dataset_detail.html`
 
 **Checkpoint**: US6 complete — operation history visible in curation UI
 

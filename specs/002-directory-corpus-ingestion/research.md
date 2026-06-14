@@ -31,7 +31,7 @@ Use `pathspec` for gitignore-compatible pattern matching with stdlib `pathlib.Pa
 ## 2. Chunking Strategies
 
 ### Decision
-Three custom chunker implementations in `microgpt/services/chunking/`, no external chunking library.
+Three custom chunker implementations in `anvil/services/chunking/`, no external chunking library.
 
 ### Rationale
 - All three strategies (line-as-doc, fixed-size windowed, file-as-doc) are algorithmically trivial — a library adds unnecessary dependency weight
@@ -108,7 +108,7 @@ The existing `TrainingConfig.dataset_id` FK on the `datasets` table is repurpose
 ## 7. CLI Design
 
 ### Decision
-New `microgpt corpus` subcommand group under the existing CLI.
+New `anvil corpus` subcommand group under the existing CLI.
 
 ### Patterns
 ```
@@ -120,6 +120,6 @@ microgpt corpus ingest <id>          # re-ingest (re-walk + re-chunk)
 ```
 
 ### Rationale
-- Follows the existing `microgpt train` / `microgpt serve` CLI pattern
+- Follows the existing `anvil train` / `anvil serve` CLI pattern
 - Separate subcommand keeps concerns clean
 - `ingest` is explicit (not automatic on create) — gives user control

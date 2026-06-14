@@ -45,12 +45,12 @@
 
 ### Implementation for Foundational Phase
 
-- [x] T007 [P] Create Corpus ORM model in `microgpt/db/models/corpus.py`
-- [x] T008 [P] Create CorpusFile ORM model in `microgpt/db/models/corpus.py`
-- [x] T009 [P] Export Corpus + CorpusFile from `microgpt/db/models/__init__.py`
+- [x] T007 [P] Create Corpus ORM model in `anvil/db/models/corpus.py`
+- [x] T008 [P] Create CorpusFile ORM model in `anvil/db/models/corpus.py`
+- [x] T009 [P] Export Corpus + CorpusFile from `anvil/db/models/__init__.py`
 - [x] T010 Create migration `migrations/versions/002_add_corpus_tables.py` for corpora + corpus_files tables
-- [x] T011 [P] Create CorpusRepository in `microgpt/db/repositories/corpora.py`
-- [x] T012 [P] Export CorpusRepository from `microgpt/db/repositories/__init__.py`
+- [x] T011 [P] Create CorpusRepository in `anvil/db/repositories/corpora.py`
+- [x] T012 [P] Export CorpusRepository from `anvil/db/repositories/__init__.py`
 
 **Checkpoint**: Foundation ready — user story implementation can now begin
 
@@ -74,15 +74,15 @@
 
 ### Implementation for User Story 1
 
-- [x] T020 [P] [US1] Create Chunker base class/interface in `microgpt/services/chunking/__init__.py`
-- [x] T021 [P] [US1] Implement LineAsDocChunker in `microgpt/services/chunking/line_chunker.py`
-- [x] T022 [P] [US1] Implement FixedSizeWindowChunker in `microgpt/services/chunking/window_chunker.py`
-- [x] T023 [P] [US1] Implement FileAsDocChunker in `microgpt/services/chunking/file_chunker.py`
-- [x] T024 [US1] Implement CorpusLoader (directory walk + default ignore patterns + chunk orchestration) in `microgpt/services/corpus_loader.py`
-- [x] T025 [US1] Implement CorpusService (create with field validation including `chunking_strategy` and `chunk_overlap`, ingest, list, get, delete) in `microgpt/services/corpora.py`
-- [x] T026 [P] [US1] Implement corpus API routes (POST/GET/DELETE) in `microgpt/api/v1/corpora.py`
-- [x] T027 [US1] Wire corpus router into `microgpt/api/v1/router.py`
-- [x] T028 [US1] Add `microgpt corpus` CLI subcommand (create, ingest, list, show, delete) in `microgpt/cli.py`
+- [x] T020 [P] [US1] Create Chunker base class/interface in `anvil/services/chunking/__init__.py`
+- [x] T021 [P] [US1] Implement LineAsDocChunker in `anvil/services/chunking/line_chunker.py`
+- [x] T022 [P] [US1] Implement FixedSizeWindowChunker in `anvil/services/chunking/window_chunker.py`
+- [x] T023 [P] [US1] Implement FileAsDocChunker in `anvil/services/chunking/file_chunker.py`
+- [x] T024 [US1] Implement CorpusLoader (directory walk + default ignore patterns + chunk orchestration) in `anvil/services/corpus_loader.py`
+- [x] T025 [US1] Implement CorpusService (create with field validation including `chunking_strategy` and `chunk_overlap`, ingest, list, get, delete) in `anvil/services/corpora.py`
+- [x] T026 [P] [US1] Implement corpus API routes (POST/GET/DELETE) in `anvil/api/v1/corpora.py`
+- [x] T027 [US1] Wire corpus router into `anvil/api/v1/router.py`
+- [x] T028 [US1] Add `anvil corpus` CLI subcommand (create, ingest, list, show, delete) in `anvil/cli.py`
 
 **Checkpoint**: At this point, User Story 1 should be fully functional — users can create/ingest/list/delete corpora via CLI and API
 
@@ -98,11 +98,11 @@
 
 - [x] T029 [P] [US2] Write unit tests for pattern filtering in `tests/unit/services/test_corpus_loader.py` (extend existing)
 - [x] T030 [US2] Write API contract test for pattern fields in corpus creation in `tests/unit/api/test_corpus_api.py`
-- [x] T031 [P] [US2] Add `include_patterns` and `exclude_patterns` field validation to CorpusService.create() in `microgpt/services/corpora.py`
-- [x] T032 [US2] Implement pattern merging (user patterns + system defaults) in CorpusLoader in `microgpt/services/corpus_loader.py`
-- [x] T033 [US2] Update corpus creation CLI in `microgpt/cli.py` to accept `--pattern` and `--ignore` flags
-- [x] T034 [US2] Update corpus creation API validation in `microgpt/api/v1/corpora.py` to validate pattern format
-- [x] T035 [US2] Update corpus creation CLI in `microgpt/cli.py` to accept `--pattern` and `--ignore` flags
+- [x] T031 [P] [US2] Add `include_patterns` and `exclude_patterns` field validation to CorpusService.create() in `anvil/services/corpora.py`
+- [x] T032 [US2] Implement pattern merging (user patterns + system defaults) in CorpusLoader in `anvil/services/corpus_loader.py`
+- [x] T033 [US2] Update corpus creation CLI in `anvil/cli.py` to accept `--pattern` and `--ignore` flags
+- [x] T034 [US2] Update corpus creation API validation in `anvil/api/v1/corpora.py` to validate pattern format
+- [x] T035 [US2] Update corpus creation CLI in `anvil/cli.py` to accept `--pattern` and `--ignore` flags
 
 **Checkpoint**: Users can control which files are included and how they are chunked
 
@@ -121,27 +121,27 @@
 
 ### Implementation for User Story 3
 
-- [x] T038 [US3] Add `corpus_id` FK to TrainingConfig model in `microgpt/db/models/training_config.py`
+- [x] T038 [US3] Add `corpus_id` FK to TrainingConfig model in `anvil/db/models/training_config.py`
 - [x] T038b [US3] Create migration to add `corpus_id` column to training_configs table in `migrations/versions/003_add_corpus_id_to_training_configs.py`
-- [x] T039 [US3] Modify `TrainingService._load_docs()` to accept `corpus_id` and delegate to `CorpusService.load_docs()` in `microgpt/services/training.py`
-- [x] T040 [US3] Implement `CorpusService.load_docs()` method that produces `list[str]` from corpus files + chunking strategy in `microgpt/services/corpora.py`
-- [x] T041 [US3] Update `POST /v1/training/start` to accept `corpus_id` field in `microgpt/api/v1/training.py`
-- [x] T041b [US3] Add `--corpus` flag to `microgpt train` CLI command in `microgpt/cli.py`
-- [x] T042 [US3] Add corpus selector dropdown to `microgpt/api/templates/training.html`
+- [x] T039 [US3] Modify `TrainingService._load_docs()` to accept `corpus_id` and delegate to `CorpusService.load_docs()` in `anvil/services/training.py`
+- [x] T040 [US3] Implement `CorpusService.load_docs()` method that produces `list[str]` from corpus files + chunking strategy in `anvil/services/corpora.py`
+- [x] T041 [US3] Update `POST /v1/training/start` to accept `corpus_id` field in `anvil/api/v1/training.py`
+- [x] T041b [US3] Add `--corpus` flag to `anvil train` CLI command in `anvil/cli.py`
+- [x] T042 [US3] Add corpus selector dropdown to `anvil/api/templates/training.html`
 - [x] T043 [P] [US4] Write unit tests for corpus file listing endpoint in `tests/unit/api/test_corpus_api.py`
 - [x] T044 [US4] Write unit tests for language detection helper in `tests/unit/services/test_corpus_loader.py`
-- [x] T045 [US4] Implement file listing endpoint `GET /v1/corpora/{id}/files` in `microgpt/api/v1/corpora.py`
-- [x] T046 [US4] Implement file detail endpoint `GET /v1/corpora/{id}/files/{file_id}` in `microgpt/api/v1/corpora.py`
-- [x] T047 [US4] Implement language detection via extension mapping in `microgpt/services/corpus_loader.py`
-- [x] T048 [US4] Add corpus browser section to `microgpt/api/templates/datasets.html` (corpus list + file tree in retro terminal style)
-- [x] T049 [US4] Update CorpusService.get() to include `language_map` in response (aggregated language stats) in `microgpt/services/corpora.py`
-- [x] T050 [P] Handle zero-file ingestion (empty directory or no matches) gracefully — return clear error message in `microgpt/services/corpus_loader.py`
-- [x] T051 Handle non-UTF-8 file encodings (skip with warning) in `microgpt/services/corpus_loader.py`
-- [x] T052 Handle symlinks (skip symlinks pointing outside corpus root) in `microgpt/services/corpus_loader.py`
-- [x] T052b [P] Handle large directories (>10,000 files) — add progress logging and a configurable file limit in `microgpt/services/corpus_loader.py`
-- [x] T052c Define re-ingestion semantics (replace existing records) in `microgpt/services/corpora.py` (CorpusService.ingest)
-- [x] T052d Handle corpus deletion while a training run references it — set corpus_id to NULL on TrainingConfig in `microgpt/services/corpora.py` (CorpusService.delete)
-- [x] T053 [P] Add `microgpt corpus files` CLI subcommand in `microgpt/cli.py`
+- [x] T045 [US4] Implement file listing endpoint `GET /v1/corpora/{id}/files` in `anvil/api/v1/corpora.py`
+- [x] T046 [US4] Implement file detail endpoint `GET /v1/corpora/{id}/files/{file_id}` in `anvil/api/v1/corpora.py`
+- [x] T047 [US4] Implement language detection via extension mapping in `anvil/services/corpus_loader.py`
+- [x] T048 [US4] Add corpus browser section to `anvil/api/templates/datasets.html` (corpus list + file tree in retro terminal style)
+- [x] T049 [US4] Update CorpusService.get() to include `language_map` in response (aggregated language stats) in `anvil/services/corpora.py`
+- [x] T050 [P] Handle zero-file ingestion (empty directory or no matches) gracefully — return clear error message in `anvil/services/corpus_loader.py`
+- [x] T051 Handle non-UTF-8 file encodings (skip with warning) in `anvil/services/corpus_loader.py`
+- [x] T052 Handle symlinks (skip symlinks pointing outside corpus root) in `anvil/services/corpus_loader.py`
+- [x] T052b [P] Handle large directories (>10,000 files) — add progress logging and a configurable file limit in `anvil/services/corpus_loader.py`
+- [x] T052c Define re-ingestion semantics (replace existing records) in `anvil/services/corpora.py` (CorpusService.ingest)
+- [x] T052d Handle corpus deletion while a training run references it — set corpus_id to NULL on TrainingConfig in `anvil/services/corpora.py` (CorpusService.delete)
+- [x] T053 [P] Add `anvil corpus files` CLI subcommand in `anvil/cli.py`
 - [x] T054 Update `AGENTS.md` with new modules and patterns for this feature
 - [x] T055 Update `README.md` with corpus ingestion usage examples
 - [x] T056 Update `docs/user-requirements.md` with corpus format documentation
@@ -242,4 +242,4 @@ After US1 is complete:
 - Verify tests fail before implementing (TDD: Red-Green-Refactor)
 - Commit after each logical group of tasks
 - Stop at any checkpoint to validate story independently
-- Core engine (`microgpt/core/`) MUST NOT be modified — all changes in services/db/api layers
+- Core engine (`anvil/core/`) MUST NOT be modified — all changes in services/db/api layers

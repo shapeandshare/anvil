@@ -15,8 +15,8 @@
 
 ## Path Conventions
 
-- **Single project**: `microgpt/`, `tests/` at repository root
-- Paths follow existing microgpt-workbench structure per plan.md
+- **Single project**: `anvil/`, `tests/` at repository root
+- Paths follow existing anvil structure per plan.md
 
 ---
 
@@ -24,7 +24,7 @@
 
 **Purpose**: Project is already set up — this phase covers adding registry-specific structure
 
-- [x] T001 Create `models.py` registry ORM module at `microgpt/db/models/registry.py` with RegisteredModel and ModelVersion SQLAlchemy tables (following training_config.py pattern with Base + TimestampMixin)
+- [x] T001 Create `models.py` registry ORM module at `anvil/db/models/registry.py` with RegisteredModel and ModelVersion SQLAlchemy tables (following training_config.py pattern with Base + TimestampMixin)
 - [x] T002 Create Alembic migration `migrations/versions/002_add_model_registry.py` with `registered_models` and `model_versions` tables (following 001_initial.py pattern, pointing down_revision="001")
 
 ---
@@ -35,9 +35,9 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [x] T003 Create `ModelRepository` in `microgpt/db/repositories/models.py` with async CRUD methods: get, get_all (with search), get_by_name, add, delete, get_versions, get_version, delete_version, get_next_version_number (following ExperimentRepository pattern)
-- [x] T004 Create `ModelRegistryService` in `microgpt/services/models.py` with async methods: register_model, list_models, get_model, get_model_versions, get_version, delete_model, delete_version, get_inference_models (following ExperimentService pattern)
-- [x] T005 Expose `ModelRegistryService` via God Class in `microgpt/cli.py` — add `_registry` attribute and `registry` property to `MicroGPTWorkbench`
+- [x] T003 Create `ModelRepository` in `anvil/db/repositories/models.py` with async CRUD methods: get, get_all (with search), get_by_name, add, delete, get_versions, get_version, delete_version, get_next_version_number (following ExperimentRepository pattern)
+- [x] T004 Create `ModelRegistryService` in `anvil/services/models.py` with async methods: register_model, list_models, get_model, get_model_versions, get_version, delete_model, delete_version, get_inference_models (following ExperimentService pattern)
+- [x] T005 Expose `ModelRegistryService` via God Class in `anvil/cli.py` — add `_registry` attribute and `registry` property to `MicroGPTWorkbench`
 
 **Checkpoint**: Foundation ready — user story implementation can now begin
 
@@ -51,14 +51,14 @@
 
 ### Implementation for User Story 1
 
-- [x] T006 [P] [US1] Create registry API routes module `microgpt/api/v1/registry.py` with POST /v1/registry/models endpoint that validates experiment is completed, creates RegisteredModel + first ModelVersion, copies artifact from experiment training output to `data/models/registry/{name}/v1/model.json` (independent from experiment storage per FR-008), and returns 201 with model version metadata
-- [x] T007 [P] [US1] Create GET /v1/registry/models endpoint in `microgpt/api/v1/registry.py` that lists all registered models sorted by most recently registered, with optional `?search=` query parameter for name filtering
-- [x] T008 [US1] Register the registry router in `microgpt/api/v1/router.py` by including `registry_router` (follow existing router inclusion pattern)
-- [x] T009 [US1] Modify `microgpt/api/v1/experiments.py` to return experiment detail including `artifact_available` flag for completed experiments (so UI knows when "Register Model" button should be enabled)
-- [x] T010 [US1] Add "Register Model" button to `microgpt/api/templates/experiments.html` in the experiment list htop-row for completed experiments — button opens a modal with model name + description fields, calls POST /v1/registry/models
-- [x] T011 [US1] Create model registry browse page `microgpt/api/templates/models.html` following retro terminal theme (htop-style rows matching experiments.html pattern) — shows list of registered models with name, latest_version, latest_loss, created_at, and search input
-- [x] T012 [US1] Add "Models" navigation tab to `microgpt/api/templates/base.html` in the nav bar — link to /v1/models-page or equivalent page route
-- [x] T013 [US1] Add GET /v1/models-page route in `microgpt/api/v1/router.py` that serves the models.html template with registered models data
+- [x] T006 [P] [US1] Create registry API routes module `anvil/api/v1/registry.py` with POST /v1/registry/models endpoint that validates experiment is completed, creates RegisteredModel + first ModelVersion, copies artifact from experiment training output to `data/models/registry/{name}/v1/model.json` (independent from experiment storage per FR-008), and returns 201 with model version metadata
+- [x] T007 [P] [US1] Create GET /v1/registry/models endpoint in `anvil/api/v1/registry.py` that lists all registered models sorted by most recently registered, with optional `?search=` query parameter for name filtering
+- [x] T008 [US1] Register the registry router in `anvil/api/v1/router.py` by including `registry_router` (follow existing router inclusion pattern)
+- [x] T009 [US1] Modify `anvil/api/v1/experiments.py` to return experiment detail including `artifact_available` flag for completed experiments (so UI knows when "Register Model" button should be enabled)
+- [x] T010 [US1] Add "Register Model" button to `anvil/api/templates/experiments.html` in the experiment list htop-row for completed experiments — button opens a modal with model name + description fields, calls POST /v1/registry/models
+- [x] T011 [US1] Create model registry browse page `anvil/api/templates/models.html` following retro terminal theme (htop-style rows matching experiments.html pattern) — shows list of registered models with name, latest_version, latest_loss, created_at, and search input
+- [x] T012 [US1] Add "Models" navigation tab to `anvil/api/templates/base.html` in the nav bar — link to /v1/models-page or equivalent page route
+- [x] T013 [US1] Add GET /v1/models-page route in `anvil/api/v1/router.py` that serves the models.html template with registered models data
 
 **Checkpoint**: User Story 1 complete — users can register, browse, and search models via both API and UI
 
@@ -72,9 +72,9 @@
 
 ### Implementation for User Story 2
 
-- [x] T014 [P] [US2] Modify `GET /v1/inference/models` endpoint in `microgpt/api/v1/router.py` to query `ModelRegistryService.get_inference_models()` instead of experiments table — returns list of registered models with latest version info; returns empty list with message if no models registered
-- [x] T015 [P] [US2] Modify `POST /v1/inference/sample` endpoint in `microgpt/api/v1/router.py` to accept `model_id` + `version` fields (instead of `experiment_id`), load model artifact from `data/models/registry/{name}/v{version}/model.json`, and generate samples
-- [x] T016 [US2] Update `microgpt/api/templates/inference.html` to load models from registry endpoint, display model name + version in dropdown (with version sub-selector for multi-version models), hide experiments from selector; show "No models registered" message with link to training when registry is empty
+- [x] T014 [P] [US2] Modify `GET /v1/inference/models` endpoint in `anvil/api/v1/router.py` to query `ModelRegistryService.get_inference_models()` instead of experiments table — returns list of registered models with latest version info; returns empty list with message if no models registered
+- [x] T015 [P] [US2] Modify `POST /v1/inference/sample` endpoint in `anvil/api/v1/router.py` to accept `model_id` + `version` fields (instead of `experiment_id`), load model artifact from `data/models/registry/{name}/v{version}/model.json`, and generate samples
+- [x] T016 [US2] Update `anvil/api/templates/inference.html` to load models from registry endpoint, display model name + version in dropdown (with version sub-selector for multi-version models), hide experiments from selector; show "No models registered" message with link to training when registry is empty
 
 **Checkpoint**: User Story 2 complete — inference exclusively uses registered models
 
@@ -88,12 +88,12 @@
 
 ### Implementation for User Story 3
 
-- [x] T017 [P] [US3] Add GET /v1/registry/models/{model_id} endpoint in `microgpt/api/v1/registry.py` that returns model detail with full version history (chronological, newest first), including metadata for each version (experiment_id, dataset_name, final_loss, hyperparameters JSON, created_at)
-- [x] T018 [P] [US3] Add GET /v1/registry/models/{model_id}/versions/{version} endpoint in `microgpt/api/v1/registry.py` that returns metadata for a specific version
-- [x] T019 [P] [US3] Add DELETE /v1/registry/models/{model_id}/versions/{version} endpoint in `microgpt/api/v1/registry.py` that removes the version artifact from filesystem and deletes the version record; returns 409 with warning if the model is currently selected for inference
-- [x] T020 [P] [US3] Add DELETE /v1/registry/models/{model_id} endpoint in `microgpt/api/v1/registry.py` that cascades delete of all versions (artifacts + records) and the model record; returns 409 with warning if any version is currently selected for inference
-- [x] T021 [US3] Create model detail page `microgpt/api/templates/model_detail.html` following retro terminal theme — shows model name, description, chronological version list with experiment links, metadata display, and delete buttons (with confirmation dialogs)
-- [x] T022 [US3] Add GET /v1/model-detail-page/{model_id} route in `microgpt/api/v1/router.py` that serves model_detail.html with model data and version history
+- [x] T017 [P] [US3] Add GET /v1/registry/models/{model_id} endpoint in `anvil/api/v1/registry.py` that returns model detail with full version history (chronological, newest first), including metadata for each version (experiment_id, dataset_name, final_loss, hyperparameters JSON, created_at)
+- [x] T018 [P] [US3] Add GET /v1/registry/models/{model_id}/versions/{version} endpoint in `anvil/api/v1/registry.py` that returns metadata for a specific version
+- [x] T019 [P] [US3] Add DELETE /v1/registry/models/{model_id}/versions/{version} endpoint in `anvil/api/v1/registry.py` that removes the version artifact from filesystem and deletes the version record; returns 409 with warning if the model is currently selected for inference
+- [x] T020 [P] [US3] Add DELETE /v1/registry/models/{model_id} endpoint in `anvil/api/v1/registry.py` that cascades delete of all versions (artifacts + records) and the model record; returns 409 with warning if any version is currently selected for inference
+- [x] T021 [US3] Create model detail page `anvil/api/templates/model_detail.html` following retro terminal theme — shows model name, description, chronological version list with experiment links, metadata display, and delete buttons (with confirmation dialogs)
+- [x] T022 [US3] Add GET /v1/model-detail-page/{model_id} route in `anvil/api/v1/router.py` that serves model_detail.html with model data and version history
 
 **Checkpoint**: User Story 3 complete — full version history, metadata viewing, and deletion flows work
 

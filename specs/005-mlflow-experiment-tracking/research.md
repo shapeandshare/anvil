@@ -28,7 +28,7 @@ Grounded in (a) direct reads of the post-`main` codebase and (b) MLflow 3.x API 
 
 ## R3. Single seam: `TrackingService`
 
-**Decision**: `microgpt/services/tracking.py` owns URI resolution, client construction (injectable factory for tests), experiment get-or-create, run lifecycle, params/metrics, lineage, artifacts, source-keyed registration, genai datasets, and orphan reconciliation. Routes (`training.py`, `experiments.py`, `registry.py`, new `eval_datasets.py`) and `cli.py` depend on it; the four hardcoded `MlflowClient(tracking_uri="sqlite:///./mlruns/mlflow.db")` literals are removed.
+**Decision**: `anvil/services/tracking.py` owns URI resolution, client construction (injectable factory for tests), experiment get-or-create, run lifecycle, params/metrics, lineage, artifacts, source-keyed registration, genai datasets, and orphan reconciliation. Routes (`training.py`, `experiments.py`, `registry.py`, new `eval_datasets.py`) and `cli.py` depend on it; the four hardcoded `MlflowClient(tracking_uri="sqlite:///./mlruns/mlflow.db")` literals are removed.
 
 **Rationale**: Layer discipline; eliminates duplication; one implementation for web+CLI (FR-008). Blocking MLflow calls wrapped in `run_in_executor` (mirrors existing `train()` executor usage).
 
@@ -71,7 +71,7 @@ Grounded in (a) direct reads of the post-`main` codebase and (b) MLflow 3.x API 
 
 ## R7. Backend/device provenance
 
-**Decision**: Record resolved engine backend (`stdlib`/`torch`) and device (`cpu`/`cuda`/`mps`) as run params/tags on every run, via `TrackingService` using `microgpt.gpu.resolve_device()`/`detect_gpu()`.
+**Decision**: Record resolved engine backend (`stdlib`/`torch`) and device (`cpu`/`cuda`/`mps`) as run params/tags on every run, via `TrackingService` using `anvil.gpu.resolve_device()`/`detect_gpu()`.
 
 **Rationale**: FR-011/Q3 — loss/speed differences may be due to CPU-vs-GPU, not config. `main` already logs `gpu_available`/`gpu_backend`/`gpu_device_name`/`torch_version` in `api/v1/training.py`; this consolidates that into `TrackingService` and adds the resolved `engine`+`device` so web and CLI record it consistently.
 
@@ -86,7 +86,7 @@ Grounded in (a) direct reads of the post-`main` codebase and (b) MLflow 3.x API 
 - `MlflowClient.create_registered_model(name)` (idempotent get-or-create) + `create_model_version(name, source="runs:/<run_id>/model.json", run_id=...)` → one new version per successful run (FR-019/030). No flavor/pyfunc (FR-025).
 - Deprecate the local `RegisteredModel`/`ModelVersion` write path (`services/models.py`); redirect/retire `POST /v1/registry/models`.
 
-**Rationale**: Engine is custom JSON (stdlib + torch both serialize to JSON), so no HF/PyTorch flavor applies; MLflow model versions can point at any artifact URI. Source-keying (user's model: 1 source → many experiments → many versions → 1 registered model) gives clean hygiene + a real versioning story, replacing `main`'s `microgpt-experiment-{id}` (one throwaway model per run). Resolves the dual-system contradiction (SC-008/SC-011).
+**Rationale**: Engine is custom JSON (stdlib + torch both serialize to JSON), so no HF/PyTorch flavor applies; MLflow model versions can point at any artifact URI. Source-keying (user's model: 1 source → many experiments → many versions → 1 registered model) gives clean hygiene + a real versioning story, replacing `main`'s `anvil-experiment-{id}` (one throwaway model per run). Resolves the dual-system contradiction (SC-008/SC-011).
 
 **Alternatives**: Per-experiment auto-register (current `main` — rejected, registry pollution); explicit promotion only (rejected by user); one global shared model (rejected — loses per-source separation); `pyfunc` wrapper (deferred).
 

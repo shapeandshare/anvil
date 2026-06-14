@@ -9,7 +9,7 @@
 
 ```bash
 git clone <repo-url>
-cd microgpt
+cd anvil
 make setup
 ```
 
@@ -29,7 +29,7 @@ make setup
 make train
 ```
 
-Trains microgpt on the names dataset for 1000 steps. Outputs:
+Trains anvil on the names dataset for 1000 steps. Outputs:
 ```
 num docs: 32033
 vocab size: 27
@@ -106,10 +106,10 @@ Gracefully stops all background services (web server, MLflow, training runs).
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `MICROGPT_PORT` | `8080` | Web server port |
-| `MICROGPT_DB_PATH` | `./data/microgpt.db` | Database file |
-| `MICROGPT_LOG_DIR` | `./logs/` | Service log directory |
-| `MICROGPT_MLFLOW_URI` | `sqlite:///./mlruns/mlflow.db` | MLflow tracking URI |
+| `ANVIL_PORT` | `8080` | Web server port |
+| `ANVIL_DB_PATH` | `./data/anvil.db` | Database file |
+| `ANVIL_LOG_DIR` | `./logs/` | Service log directory |
+| `ANVIL_MLFLOW_URI` | `sqlite:///./mlruns/mlflow.db` | MLflow tracking URI |
 
 Copy `.env.example` to `.env` and edit to customize.
 
@@ -142,7 +142,7 @@ make vault
 ## Project Map
 
 ```
-microgpt/         # Python package (implicit namespace)
+anvil/         # Python package (implicit namespace)
 ├── core/         # Stdlib-only training engine
 ├── db/           # Database repositories + models
 ├── services/     # Business logic layer

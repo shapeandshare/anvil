@@ -3,7 +3,7 @@
 **Date**: 2026-06-12
 **Status**: Final
 
-> **Note on existing patterns**: All new models extend `TimestampMixin` (from `microgpt/db/base.py`) for `created_at`/`updated_at`. Versioning follows the `ModelVersion` pattern: separate table with FK + auto-incrementing version number using `func.max()`. No soft-delete currently exists in codebase — `is_removed` column is new.
+> **Note on existing patterns**: All new models extend `TimestampMixin` (from `anvil/db/base.py`) for `created_at`/`updated_at`. Versioning follows the `ModelVersion` pattern: separate table with FK + auto-incrementing version number using `func.max()`. No soft-delete currently exists in codebase — `is_removed` column is new.
 
 ## Entities
 
@@ -155,7 +155,7 @@ The `TrainingService._load_docs()` should be extended to accept `dataset_id` as 
 
 ## WAL Mode Support
 
-SQLite WAL mode is already enabled in `microgpt/db/session.py` (`PRAGMA journal_mode=WAL`). This supports concurrent reads during curation operations — the training pipeline can read sample data from DB/filesystem while curation operations write to the same dataset.
+SQLite WAL mode is already enabled in `anvil/db/session.py` (`PRAGMA journal_mode=WAL`). This supports concurrent reads during curation operations — the training pipeline can read sample data from DB/filesystem while curation operations write to the same dataset.
 
 ## Performance Considerations
 

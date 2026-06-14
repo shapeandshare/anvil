@@ -1,6 +1,6 @@
 # Contract: `TrackingService` (internal service seam)
 
-**Module**: `microgpt/services/tracking.py`
+**Module**: `anvil/services/tracking.py`
 **Layer**: Service (consumed by `api/v1/*` routes and `cli.py`; depends on `config`, repositories, an injected MLflow client factory, and `metrics_collectors`)
 **Async**: all public methods are `async`; blocking MLflow/pynvml calls wrapped in `run_in_executor`.
 
@@ -12,7 +12,7 @@ The single seam for ALL MLflow access (FR-006/008). No other module constructs `
 TrackingService(
     *,
     tracking_uri: str | None = None,        # default: get_config()["mlflow_uri"] — the HTTP server URI (R2)
-    experiment_name: str = "microgpt-workbench",
+    experiment_name: str = "anvil",
     client_factory: Callable[[str], MlflowClientLike] | None = None,  # injected for tests (R12)
 )
 ```

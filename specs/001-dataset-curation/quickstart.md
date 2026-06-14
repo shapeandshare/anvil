@@ -4,7 +4,7 @@
 
 ## What We're Building
 
-Feature-rich dataset curation for microgpt-workbench: users create datasets, import text data from multiple formats (TXT/CSV/JSONL/JSON/paste/corpus), curate (dedup, filter, regex replace, edit/delete individual samples), view quality metrics, export, and use curated datasets for training.
+Feature-rich dataset curation for anvil: users create datasets, import text data from multiple formats (TXT/CSV/JSONL/JSON/paste/corpus), curate (dedup, filter, regex replace, edit/delete individual samples), view quality metrics, export, and use curated datasets for training.
 
 ## Key Architecture Decisions
 
@@ -19,21 +19,21 @@ Feature-rich dataset curation for microgpt-workbench: users create datasets, imp
 ## Files to Create/Modify
 
 ### New Files
-- `microgpt/db/migrations/versions/003_add_dataset_curation.py` - DB migration
-- `microgpt/services/dataset_import.py` - Multi-format import with validation + atomicity
-- `microgpt/services/dataset_curation.py` - Dedup, filter, replace engine
-- `microgpt/services/dataset_export.py` - Format-based export
-- `microgpt/api/templates/dataset_detail.html` - Curation UI page
+- `anvil/db/migrations/versions/003_add_dataset_curation.py` - DB migration
+- `anvil/services/dataset_import.py` - Multi-format import with validation + atomicity
+- `anvil/services/dataset_curation.py` - Dedup, filter, replace engine
+- `anvil/services/dataset_export.py` - Format-based export
+- `anvil/api/templates/dataset_detail.html` - Curation UI page
 - `tests/unit/test_dataset_services.py` - Service unit tests
 - `tests/integration/test_dataset_curation.py` - Full workflow tests
 
 ### Modified Files
-- `microgpt/db/models/training_config.py` - Extend Dataset model
-- `microgpt/db/repositories/datasets.py` - Add sample, curation operation, import source CRUD
-- `microgpt/services/datasets.py` - Delegate to new curation services
-- `microgpt/api/v1/datasets.py` - Add curation/import/export endpoints
-- `microgpt/api/v1/router.py` - Register new routes
-- `microgpt/api/templates/datasets.html` - Link to curation UI, show metrics
+- `anvil/db/models/training_config.py` - Extend Dataset model
+- `anvil/db/repositories/datasets.py` - Add sample, curation operation, import source CRUD
+- `anvil/services/datasets.py` - Delegate to new curation services
+- `anvil/api/v1/datasets.py` - Add curation/import/export endpoints
+- `anvil/api/v1/router.py` - Register new routes
+- `anvil/api/templates/datasets.html` - Link to curation UI, show metrics
 
 ## Data Flow
 

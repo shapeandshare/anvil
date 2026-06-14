@@ -14,10 +14,10 @@ Add support for ingesting entire source code directories as training corpora for
 **Storage**: SQLite via async SQLAlchemy for corpus metadata; filesystem via existing `LocalFileStore` or reference to original directory paths
 **Testing**: pytest + pytest-asyncio; TDD with 100% coverage enforcement
 **Target Platform**: macOS ARM / Linux — no platform-specific code needed (stdlib pathlib)
-**Project Type**: Python package (`microgpt-workbench`) — new modules under `microgpt/services/`, `microgpt/db/models/`, `microgpt/db/repositories/`, `microgpt/api/v1/`
+**Project Type**: Python package (`anvil-workbench`) — new modules under `anvil/services/`, `anvil/db/models/`, `anvil/db/repositories/`, `anvil/api/v1/`
 **Performance Goals**: Ingest 100 source files (200 lines avg) in under 30s (file I/O bound); no performance regression on existing training flows
 **Constraints**:
-- Core engine (`microgpt/core/`) MUST NOT be modified — all changes in services/db/api layers
+- Core engine (`anvil/core/`) MUST NOT be modified — all changes in services/db/api layers
 - Existing Dataset model and upload flow MUST remain backward compatible
 - `input.txt` fallback MUST continue to work for users who don't use corpora
 - No new heavy dependencies — `pathspec` only (pure Python, <100KB)
@@ -86,7 +86,7 @@ microgpt/
 ├── services/
 │   ├── training.py                   # MODIFY: _load_docs() → accept corpus_id param
 │   └── __init__.py                   # MODIFY: export new services
-├── cli.py                            # MODIFY: add `microgpt corpus` subcommand
+├── cli.py                            # MODIFY: add `anvil corpus` subcommand
 ├── db/
 │   ├── models/
 │   │   ├── __init__.py               # MODIFY: export Corpus, CorpusFile
