@@ -140,6 +140,7 @@
           <button class="btn btn-primary btn-sm" id="wiz-create-btn"><span class="btn-prefix">$</span> create &amp; ingest</button>
         </div>
         <div id="wiz-estimate" style="padding-left:16px;margin-top:var(--space-1);min-height:20px;font-size:0.72rem;"></div>
+        <div id="wiz-estimate-warnings" style="padding-left:16px;margin-top:var(--space-1);font-size:0.72rem;"></div>
         <div class="telemetry-compact" id="wiz-create-status"></div>
       </div>
 
@@ -734,7 +735,75 @@
     var color = docs > 5000000 ? 'var(--warning)' : docs > 500000 ? 'var(--text-dim)' : 'var(--accent-green)';
     var html = '<span style="color:' + color + ';">~' + displayDocs + ' training docs</span>  <span style="color:var(--text-dim);">(' + label + ')</span>';
     el.innerHTML = html;
+    updateEstimateWarnings();
   }
+
+  /* ── wizard: estimate warnings ─────────────────────────── */
+
+  function updateEstimateWarnings() {
+    var analysis = wizState.analysis;
+    var warnEl = document.getElementById('wiz-estimate-warnings');
+    if (!analysis) { warnEl.innerHTML = ''; return; }
+    var warnings = [];
+
+    /* max_files check: warn if file_count exceeds the ingest limit */
+    var maxFiles = parseInt(document.getElementById('wiz-max-files').value, 10);
+    var fileCount = analysis.file_count;
+    if (fileCount > maxFiles) {
+      if (maxFiles < 1000000 && fileCount <= 1000000) {
+        warnings.push(
+          '<span class="ds-warn">⚠ ' + fileCount + ' files found — max_files is ' + maxFiles + ', files beyond the limit will be skipped</span>'
+          + ' <button class="btn btn-sm btn-accent" onclick="window.boostMaxFiles(' + fileCount + ')">raise to ' + fileCount + '</button>'
+        );
+      } else {
+        warnings.push(
+          '<span class="ds-warn">⚠ ' + fileCount + ' files found — max_files at UI limit (1,000,000), some files will be skipped</span>'
+        );
+      }
+    }
+
+    /* block_size check: warn if slider is at max for windowed strategy */
+    var strat = document.getElementById('wiz-strategy').value;
+    if (strat === 'windowed') {
+      var bs = parseInt(document.getElementById('wiz-block-size').value, 10);
+      if (bs >= 1024) {
+        /* find recommended block_size from selected rec card */
+        var recCard = document.querySelector('.rec-card.selected-rec');
+        var recIdx = recCard ? parseInt(recCard.getAttribute('data-idx'), 10) : -1;
+        var recs = analysis.recommendations || [];
+        var rec = recIdx >= 0 ? recs[recIdx] : null;
+        var recBs = rec && rec.block_size ? rec.block_size : null;
+        var fixBut = '';
+        if (recBs && recBs < 1024) {
+          fixBut = ' <button class="btn btn-sm btn-accent" onclick="window.resetBlockSize(' + recBs + ')">reset to recommended (' + recBs + ')</button>';
+        } else if (recBs === 1024) {
+          fixBut = ' <span style="color:var(--text-dim);font-size:0.62rem;">(at recommended value)</span>';
+        } else {
+          fixBut = ' <button class="btn btn-sm btn-accent" onclick="window.resetBlockSize(64)">reset to default (64)</button>';
+        }
+        warnings.push(
+          '<span class="ds-warn">⚠ block_size at maximum (1024)</span>' + fixBut
+        );
+      }
+    }
+
+    warnEl.innerHTML = warnings.join('<br>');
+  }
+
+  /* ── wizard: fix functions ─────────────────────────────── */
+
+  window.boostMaxFiles = function(target) {
+    var input = document.getElementById('wiz-max-files');
+    input.value = String(Math.min(1000000, target));
+    updateEstimateWarnings();
+  };
+
+  window.resetBlockSize = function(bs) {
+    var slider = document.getElementById('wiz-block-size');
+    slider.value = String(bs);
+    document.getElementById('wiz-bs-value').textContent = bs;
+    updateEstimate();
+  };
 
   document.getElementById('wiz-strategy').addEventListener('change', updateWizParams);
   document.getElementById('wiz-block-size').addEventListener('input', function() {
@@ -744,6 +813,9 @@
   document.getElementById('wiz-overlap').addEventListener('input', function() {
     document.getElementById('wiz-ov-value').textContent = this.value + '%';
     updateEstimate();
+  });
+  document.getElementById('wiz-max-files').addEventListener('input', function() {
+    updateEstimateWarnings();
   });
 
   /* ── wizard: create & ingest ─────────────────────────── */
