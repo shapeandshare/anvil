@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
+{% block content %}
+<div class="experiment-list panel" style="--stagger-i: 0">
+  <h2 class="panel-title">Experiment History</h2>
+  <div id="experiment-empty" class="loading-indicator" style="display:block;">
+    Loading experiments...
+  </div>
+  <table class="run-table" id="run-table" style="display:none;">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Status</th>
+        <th>Final Loss</th>
+        <th>Dataset</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="run-tbody"></tbody>
+  </table>
+</div>
+
+<div class="panel" id="run-detail" style="display:none;--stagger-i: 1">
+  <h2 class="panel-title">Run Detail <span id="run-detail-id" class="text-muted"></span></h2>
+  <div id="run-detail-loading" class="loading-indicator">Loading...</div>
+  <div id="run-detail-content" style="display:none;">
+    <div class="metrics-grid">
+      <div class="metric"><span class="metric-label">Final Loss</span><span class="metric-value" id="detail-loss">—</span></div>
+      <div class="metric"><span class="metric-label">Dataset</span><span class="metric-value" id="detail-dataset">—</span></div>
+      <div class="metric"><span class="metric-label">MLflow</span><span class="metric-value" id="detail-mlflow">—</span></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function() {
+  var runId = window.core && window.core.getUrlParams().get('run_id');
+
+  fetch('/v1/experiments').then(function(r) { return r.json(); }).then(function(data) {
+    var exps = data.experiments || [];
+    var emptyEl = document.getElementById('experiment-empty');
+    var tableEl = document.getElementById('run-table');
+    var tbody = document.getElementById('run-tbody');
+
+    if (exps.length === 0) {
+      emptyEl.innerHTML = 'No runs yet — <a href="/v1/training-page">train your first model</a>';
+      return;
+    }
+
+    emptyEl.style.display = 'none';
+    tableEl.style.display = '';
+
+    exps.forEach(function(exp, i) {
+      var row = document.createElement('tr');
+      row.style.setProperty('--row-i', i);
+      row.classList.add('row-entrance');
+      var badgeClass = '';
+      var statusText = 'running';
+      if (exp.status === 'finished') {
+        statusText = 'finished';
+        badgeClass = exp.final_loss < 0.5 ? 'badge-green' : exp.final_loss < 1.0 ? 'badge-yellow' : 'badge-red';
+      }
+      if (exp.status === 'failed' || exp.status === 'error') {
+        statusText = 'failed';
+        badgeClass = 'badge-red';
+      }
+      row.innerHTML =
+        '<td>' + exp.id + '</td>' +
+        '<td><span class="badge ' + badgeClass + '">' + statusText + '</span></td>' +
+        '<td class="loss-value">' + (exp.final_loss != null ? exp.final_loss.toFixed(4) : '—') + '</td>' +
+        '<td>' + (exp.dataset_name || '—') + '</td>' +
+        '<td><button class="btn btn-secondary" onclick="selectRun(' + exp.id + ')">View</button></td>';
+      row.addEventListener('click', function() { selectRun(exp.id); });
+      tbody.appendChild(row);
+    });
+
+    if (runId) selectRun(parseInt(runId));
+  }).catch(function() {
+    document.getElementById('experiment-empty').textContent = 'Failed to load experiments.';
+  });
+
+  window.selectRun = function(id) {
+    var detail = document.getElementById('run-detail');
+    var loading = document.getElementById('run-detail-loading');
+    var content = document.getElementById('run-detail-content');
+    detail.style.display = '';
+    loading.style.display = 'block';
+    content.style.display = 'none';
+    document.getElementById('run-detail-id').textContent = '#' + id;
+
+    if (window.core) window.core.setUrlParams(new URLSearchParams({ run_id: id }));
+
+    fetch('/v1/experiments').then(function(r) { return r.json(); }).then(function(data) {
+      var exps = data.experiments || [];
+      var exp = exps.find(function(e) { return e.id === id; });
+      if (!exp) return;
+      document.getElementById('detail-loss').textContent = exp.final_loss != null ? exp.final_loss.toFixed(4) : '—';
+      document.getElementById('detail-dataset').textContent = exp.dataset_name || '—';
+      var mlflowEl = document.getElementById('detail-mlflow');
+      if (exp.mlflow_run_url) {
+        mlflowEl.innerHTML = '<a href="' + exp.mlflow_run_url + '" target="_blank">open in MLflow →</a>';
+      } else {
+        mlflowEl.textContent = '—';
+      }
+      loading.style.display = 'none';
+      content.style.display = '';
+    });
+  };
+})();
+</script>
+{% endblock %}
