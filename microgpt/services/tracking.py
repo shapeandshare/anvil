@@ -403,18 +403,21 @@ class TrackingService:
         self,
         *,
         run_id: str,
+        name: str | None = None,
         dataset_id: int | None = None,
         corpus_id: int | None = None,
         artifact_path: str = "model.json",
     ) -> dict:
         if self._degraded or not run_id:
             return {}
-        if dataset_id is not None:
-            source_key = f"dataset-{dataset_id}"
+        if name:
+            registry_name = name
+        elif dataset_id is not None:
+            registry_name = f"dataset-{dataset_id}"
         elif corpus_id is not None:
-            source_key = f"corpus-{corpus_id}"
+            registry_name = f"corpus-{corpus_id}"
         else:
-            source_key = "default-source"
+            registry_name = "default-source"
 
         loop = asyncio.get_event_loop()
         client = self._client
@@ -424,7 +427,7 @@ class TrackingService:
         try:
             await loop.run_in_executor(
                 None,
-                lambda: client.create_registered_model(source_key),
+                lambda: client.create_registered_model(registry_name),
             )
         except Exception:
             pass
@@ -432,13 +435,13 @@ class TrackingService:
         version = await loop.run_in_executor(
             None,
             lambda: client.create_model_version(
-                name=source_key,
+                name=registry_name,
                 source=f"runs:/{run_id}/{artifact_path}",
                 run_id=run_id,
             ),
         )
         return {
-            "name": source_key,
+            "name": registry_name,
             "version": version.version if hasattr(version, "version") else str(version),
             "run_id": run_id,
             "source": f"runs:/{run_id}/{artifact_path}",

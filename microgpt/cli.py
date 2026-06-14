@@ -3,6 +3,7 @@
 import argparse
 import asyncio
 import json
+import logging
 import os
 import random
 import signal
@@ -15,6 +16,8 @@ from microgpt.config import get_config
 from microgpt.services.models import ModelRegistryService
 from microgpt.services.training import TrainingService
 from microgpt.supervisor.supervisor import kill_pid_file, write_pid
+
+logger = logging.getLogger(__name__)
 
 
 class MicroGPTWorkbench:
@@ -173,14 +176,33 @@ def train():
             await tracking_svc.finish_run(mlflow_run_id)
             await tracking_svc.log_final_metric(mlflow_run_id, "final_loss", final_loss)
             if mlflow_run_id:
+                registry_name = None
+                if args.dataset is not None:
+                    from microgpt.db.repositories.datasets import DatasetRepository
+
+                    async with AsyncSessionLocal() as sess:
+                        ds_repo = DatasetRepository(sess)
+                        ds = await ds_repo.get(args.dataset)
+                        if ds:
+                            registry_name = ds.name
+                elif args.corpus is not None:
+                    from microgpt.db.repositories.corpora import CorpusRepository
+
+                    async with AsyncSessionLocal() as sess:
+                        corp_repo = CorpusRepository(sess)
+                        corpus = await corp_repo.get(args.corpus)
+                        if corpus:
+                            registry_name = corpus.name
+
                 try:
                     await tracking_svc.register_source_model(
                         run_id=mlflow_run_id,
+                        name=registry_name,
                         dataset_id=args.dataset,
                         corpus_id=args.corpus,
                     )
                 except Exception:
-                    pass
+                    logger.exception("Failed to register model for CLI training run")
             async with AsyncSessionLocal() as session:
                 from datetime import UTC, datetime
 

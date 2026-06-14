@@ -86,7 +86,7 @@
     var dpr = window.devicePixelRatio || 1;
     this._canvas.width = w * dpr;
     this._canvas.height = h * dpr;
-    this._canvas.style.width = w + 'px';
+    this._canvas.style.width = '100%';
     this._canvas.style.height = h + 'px';
     this._chartW = w;
     this._chartH = h;

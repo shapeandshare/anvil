@@ -1,10 +1,14 @@
 {% extends "base.html" %}
-{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">
+<style>
+/* Sticky visual sits above the flowing narrative — constrain its content */
+.pinned-content { padding: var(--space-4); }
+</style>{% endblock %}
 {% block content %}
 <div class="scroll-scene" id="scroll-scene">
   <div class="scroll-visual" id="pinned-visual">
     <div class="pinned-content" id="pinned-content">
-      <p class="text-muted">Scroll to begin exploring</p>
+      <p class="text-muted">Choose a lesson below to begin</p>
     </div>
   </div>
   <div class="scroll-narrative" id="scroll-narrative">
@@ -65,8 +69,6 @@
     adam: window.AdamWidget,
   };
 
-  var widgetInstances = {};
-
   var scene = new ScrollScene({
     container: document.getElementById('scroll-scene'),
     pinnedVisual: document.getElementById('pinned-visual'),
@@ -87,12 +89,7 @@
     var widgetType = widgetEl && widgetEl.getAttribute('data-widget');
     var WidgetClass = widgetType && WIDGET_CLASSES[widgetType];
 
-    /* Initialize widget in the right-side narrative step if not yet done */
-    if (WidgetClass && widgetEl && !widgetInstances[key]) {
-      widgetInstances[key] = new WidgetClass(widgetEl);
-    }
-
-    /* Render into the left pinned panel */
+    /* Render widget or step summary into the sticky visual banner */
     if (WidgetClass) {
       content.innerHTML = '';
       new WidgetClass(content);

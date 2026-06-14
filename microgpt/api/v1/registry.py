@@ -37,9 +37,24 @@ async def register_model(
 
     from microgpt.services.tracking import TrackingService
 
+    # Resolve registry name from the datasource's actual name
+    registry_name = None
+    if experiment.dataset_id is not None:
+        registry_name = experiment.dataset.name if experiment.dataset else None
+    elif experiment.corpus_id is not None:
+        from microgpt.db.repositories.corpora import CorpusRepository
+        from microgpt.db.session import AsyncSessionLocal
+
+        async with AsyncSessionLocal() as sess:
+            corp_repo = CorpusRepository(sess)
+            corpus = await corp_repo.get(experiment.corpus_id)
+            if corpus:
+                registry_name = corpus.name
+
     tracking_svc = TrackingService()
     result = await tracking_svc.register_source_model(
         run_id=experiment.mlflow_run_id,
+        name=registry_name,
         dataset_id=experiment.dataset_id,
         corpus_id=experiment.corpus_id,
     )
