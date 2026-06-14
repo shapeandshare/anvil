@@ -448,29 +448,6 @@
   line-height: 1.4;
 }
 
-/* ── Hero Footer ── */
-.hero-footer {
-  text-align: center;
-  padding-bottom: var(--space-4);
-}
-
-.hero-footer-text {
-  font-family: var(--font-body);
-  font-size: 0.72rem;
-  color: var(--text-tertiary);
-  line-height: 1.5;
-}
-
-.hero-footer-text a {
-  color: var(--text-tertiary);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.hero-footer-text a:hover {
-  color: var(--accent);
-}
-
 /* ── Responsive (Mobile) ── */
 @media (max-width: 480px) {
   .hero-page {
@@ -538,4 +515,264 @@
   .carousel-dot { width: 8px; height: 8px; }
   .carousel-slide { padding: var(--space-3) 0; }
   .config-grid { gap: var(--space-2); }
+}
+
+/* ════════════════════════════════════════════════
+   Section Cards — Hero-style for content sections
+   ════════════════════════════════════════════════ */
+
+.section-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-5) var(--space-4);
+  opacity: 0;
+  animation: card-entrance 0.5s var(--spring-quick) calc(0.15s + var(--stagger-i, 0) * 0.08s) both;
+}
+
+.section-card--forge {
+  border-left: 3px solid var(--accent-orange);
+}
+
+.section-card--accent {
+  border-left: 3px solid var(--accent);
+}
+
+.section-card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--separator);
+}
+
+.section-card__icon {
+  font-size: 1.2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.section-card__title {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+}
+
+.section-card__title--forge {
+  background: linear-gradient(135deg, var(--accent-orange), var(--accent-yellow));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.section-card__badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-xl);
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #fff;
+  margin-left: auto;
+}
+
+.section-card__badge--green { background: var(--accent-green); }
+.section-card__badge--orange { background: var(--accent-orange); color: #000; }
+.section-card__badge--red { background: var(--accent-red); }
+.section-card__badge--blue { background: var(--accent); }
+
+.section-card__content {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.section-card__actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--separator);
+}
+
+/* ── Section Card Metrics Grid ── */
+.section-card__metrics {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.section-card__metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-2);
+  border-radius: var(--radius);
+}
+
+.section-card__metric-label {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.section-card__metric-value {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* ════════════════════════════════════════════════
+   Grouped List — iOS-style grouped table replacement
+   ════════════════════════════════════════════════ */
+
+.grouped-list {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+}
+
+.grouped-list th,
+.grouped-list td {
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  border-bottom: 1px solid var(--separator);
+}
+
+.grouped-list th {
+  color: var(--text-tertiary);
+  font-weight: 500;
+  font-size: 0.75rem;
+}
+
+.grouped-list tr:hover td {
+  background: var(--surface-2);
+  cursor: pointer;
+}
+
+.grouped-list tr:last-child td {
+  border-bottom: none;
+}
+
+.grouped-list .badge {
+  display: inline-block;
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-xl);
+}
+
+/* ── Non-table grouped list (flex-based) ── */
+.grouped-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--separator);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.grouped-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  text-decoration: none;
+  transition: background var(--dur-fast) var(--ease);
+  min-height: 44px;
+}
+
+.grouped-row:hover {
+  background: var(--surface-2);
+  text-decoration: none;
+}
+
+.grouped-row:active {
+  background: var(--surface-2);
+}
+
+.grouped-row__icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  width: 24px;
+  text-align: center;
+}
+
+.grouped-row__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.grouped-row__title {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.grouped-row__subtitle {
+  font-family: var(--font-body);
+  font-size: 0.76rem;
+  color: var(--text-tertiary);
+}
+
+.grouped-row__action {
+  flex-shrink: 0;
+}
+
+.grouped-row__chevron {
+  color: var(--text-tertiary);
+  font-size: 0.75rem;
+}
+
+/* ── Staggered entrance for grouped rows ── */
+.grouped-row {
+  opacity: 0;
+  animation: row-entrance 0.4s var(--spring-quick) calc(0.2s + var(--row-i, 0) * 0.03s) both;
+}
+
+@keyframes row-entrance {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* ════════════════════════════════════════════════
+   Empty State (iOS-style)
+   ════════════════════════════════════════════════ */
+
+.empty-state-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: var(--text-tertiary);
+  line-height: 1.6;
+}
+
+.empty-state-card__icon {
+  font-size: 2rem;
+  opacity: 0.5;
+}
+
+.empty-state-card__action {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.empty-state-card__action:hover {
+  text-decoration: underline;
 }

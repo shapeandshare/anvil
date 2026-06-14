@@ -27,7 +27,7 @@ class TrackingService:
         self,
         *,
         tracking_uri: str | None = None,
-        experiment_name: str = "anvil-workbench",
+        experiment_name: str = "anvil",
         client_factory: Callable[[str], _MlflowClientLike] | None = None,
     ):
         cfg = get_config()

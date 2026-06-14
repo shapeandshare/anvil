@@ -2,8 +2,8 @@
 {% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
 {% block content %}
 
-<div class="panel">
-  <h2 class="panel-title">Model Registry</h2>
+<div class="section-card">
+  <div class="section-card__header"><h2 class="section-card__title">Model Registry</h2></div>
   <p class="text-muted" style="margin-bottom:var(--space-4);font-size:0.75rem;">
     Registered models are promoted from finished experiments. 
     <a href="/v1/experiments-page" class="action-link">Go to Experiments</a> to register a new model.
@@ -11,7 +11,7 @@
   <div id="models-empty" class="loading-indicator" style="display:block;">
     Loading models...
   </div>
-  <table class="run-table" id="models-table" style="display:none;">
+  <table class="grouped-list" id="models-table" style="display:none;">
     <thead>
       <tr>
         <th>Name</th>
@@ -25,18 +25,6 @@
     <tbody id="models-tbody"></tbody>
   </table>
 </div>
-
-<style>
-.model-link {
-  font-weight: 600;
-  color: var(--accent);
-  text-decoration: none;
-  cursor: pointer;
-}
-.model-link:hover {
-  text-decoration: underline;
-}
-</style>
 
 {% endblock %}
 {% block scripts %}
@@ -73,7 +61,7 @@
         : '';
 
       row.innerHTML =
-        '<td><a href="/v1/model-detail/' + m.id + '" class="model-link">' + escHtml(m.name) + '</a></td>' +
+        '<td><a href="/v1/model-detail/' + m.id + '" class="action-link">' + escHtml(m.name) + '</a></td>' +
         '<td class="text-dim">' + (m.description ? escHtml(m.description) : '—') + '</td>' +
         '<td>' + m.total_versions + '</td>' +
         '<td class="' + lossClass + '">' + lossDisplay + '</td>' +

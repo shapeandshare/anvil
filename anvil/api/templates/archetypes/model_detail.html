@@ -2,24 +2,14 @@
 {% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
 {% block content %}
 
-<div class="panel">
-  <h2 class="panel-title">Model Detail <span class="text-muted">#{{ model_id }}</span></h2>
-  <div id="model-detail" class="panel-body">
+<div class="section-card">
+  <div class="section-card__header"><h2 class="section-card__title">Model Detail <span class="text-muted">#{{ model_id }}</span></h2></div>
+  <div id="model-detail" class="section-card__content">
     <div class="loading-indicator" style="display:block;">Loading model...</div>
   </div>
 </div>
 
 <style>
-.model-header { margin-bottom: var(--space-4); }
-.model-name {
-  font-family: var(--font-mono);
-  font-size: 1rem;
-  margin: 0 0 var(--space-1);
-}
-.text-dim { color: var(--text-muted); font-size: 0.75rem; }
-.loss-value { font-family: var(--font-mono); text-align: right; }
-.error-text { color: var(--danger); padding: var(--space-4); }
-
 /* ── HP Tags ── */
 .hp-grid {
   display: flex;
@@ -79,7 +69,7 @@
       }
 
       if (data.versions.length > 0) {
-        html += '<table class="run-table" style="margin-top:var(--space-4);">'
+        html += '<table class="grouped-list" style="margin-top:var(--space-4);">'
           + '<thead><tr><th>Version</th><th>Experiment</th><th>Loss</th><th>Dataset</th><th>Created</th><th>Actions</th></tr></thead><tbody>';
         data.versions.forEach(function(v) {
           html += '<tr>'

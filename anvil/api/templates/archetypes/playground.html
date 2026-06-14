@@ -1,71 +1,64 @@
 {% extends "base.html" %}
-{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css"><link rel="stylesheet" href="/static/css/components.css">
-<style>
-.model-card-header { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3); }
-.model-card-name { font-weight: 600; font-size: 1.1em; }
-.model-card-version { color: var(--text-dim); font-family: var(--font-mono); }
-.model-card-stats { display: flex; gap: var(--space-4); margin-bottom: var(--space-3); }
-.stat { display: flex; flex-direction: column; }
-.stat-label { font-size: 0.75em; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
-.stat-value { font-size: 1.3em; font-weight: 600; font-family: var(--font-mono); }
-.stat-value.accent { color: var(--accent-cyan); }
-.model-card-section { margin-top: var(--space-3); padding-top: var(--space-2); border-top: 1px solid var(--border); }
-.card-section-title { font-size: 0.8em; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: var(--space-2); }
-.model-card-table { width: 100%; border-collapse: collapse; }
-.model-card-table td { padding: 2px 8px; font-size: 0.85em; }
-.card-label { color: var(--text-dim); width: 40%; }
-.card-value { font-family: var(--font-mono); color: var(--text); text-align: right; }
-.model-card-links { display: flex; gap: var(--space-2); margin-top: var(--space-2); }
-</style>{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css"><link rel="stylesheet" href="/static/css/components.css">{% endblock %}
 {% block content %}
 
 <div class="playground-layout">
 
-  <div class="panel">
-    <h2 class="panel-title">Inference — Sample from a Model</h2>
-    <div class="inference-config">
-      <div class="config-grid">
-        <label>Model
-          <select id="model-select" class="form-select">
-            <option value="">Loading models...</option>
-          </select>
-        </label>
-        <label id="version-label" style="display:none;">Version
-          <select id="version-select" class="form-select"></select>
-        </label>
-        <label>Seed Prompt
-          <input type="text" id="seed-prompt" class="form-input" placeholder="e.g. Hello, my name is" value="">
-        </label>
-        <label>Temperature
-          <input type="number" id="inference-temperature" class="form-input" value="0.5" step="0.1" min="0.1" max="2">
-        </label>
-        <label>Samples
-          <input type="number" id="num-samples" class="form-input" value="5" min="1" max="50">
-        </label>
-      </div>
-      <div id="model-info" class="model-info-text" style="display:none;"></div>
-      <div class="example-prompts">
-        <span class="example-label">Try:</span>
-        <span class="example-chip" data-prompt="Hello, my name is">Hello, my name is</span>
-        <span class="example-chip" data-prompt="In the beginning">In the beginning</span>
-        <span class="example-chip" data-prompt="The meaning of life is">The meaning of life is</span>
-        <span class="example-chip" data-prompt="Once upon a time">Once upon a time</span>
-      </div>
-      <div class="inference-actions">
-        <button class="btn btn-primary" id="generate-btn">Generate</button>
-        <span class="text-muted" id="inference-status" style="font-size:0.85rem;"></span>
+  <div class="section-card" style="--stagger-i: 0">
+    <div class="section-card__header">
+      <div class="section-card__title">Inference — Sample from a Model</div>
+    </div>
+    <div class="section-card__content">
+      <div class="inference-config">
+        <div class="config-grid">
+          <label>Model
+            <select id="model-select" class="form-select">
+              <option value="">Loading models...</option>
+            </select>
+          </label>
+          <label id="version-label" style="display:none;">Version
+            <select id="version-select" class="form-select"></select>
+          </label>
+          <label>Seed Prompt
+            <input type="text" id="seed-prompt" class="form-input" placeholder="e.g. Hello, my name is" value="">
+          </label>
+          <label>Temperature
+            <input type="number" id="inference-temperature" class="form-input" value="0.5" step="0.1" min="0.1" max="2">
+          </label>
+          <label>Samples
+            <input type="number" id="num-samples" class="form-input" value="5" min="1" max="50">
+          </label>
+        </div>
+        <div id="model-info" class="model-info-text" style="display:none;"></div>
+        <div class="example-prompts">
+          <span class="example-label">Try:</span>
+          <span class="example-chip" data-prompt="Hello, my name is">Hello, my name is</span>
+          <span class="example-chip" data-prompt="In the beginning">In the beginning</span>
+          <span class="example-chip" data-prompt="The meaning of life is">The meaning of life is</span>
+          <span class="example-chip" data-prompt="Once upon a time">Once upon a time</span>
+        </div>
+        <div class="inference-actions">
+          <button class="btn btn-primary" id="generate-btn">Generate</button>
+          <span class="text-muted" id="inference-status" style="font-size:0.85rem;"></span>
+        </div>
       </div>
     </div>
   </div>
 
-  <div class="panel" id="model-info-card" style="display:none;">
-    <div class="panel-titlebar" data-title="MODEL INFO">▌ MODEL INFO</div>
-    <div class="panel-body" id="model-info-card-body"></div>
+  <div class="section-card" id="model-info-card" style="--stagger-i: 1; display:none;">
+    <div class="section-card__header">
+      <div class="section-card__title" data-title="MODEL INFO">▌ MODEL INFO</div>
+    </div>
+    <div class="section-card__content" id="model-info-card-body"></div>
   </div>
 
-  <div class="panel" id="inference-output-panel" style="display:none;">
-    <h2 class="panel-title">Output</h2>
-    <div id="inference-output" class="inference-output"></div>
+  <div class="section-card" id="inference-output-panel" style="--stagger-i: 2; display:none;">
+    <div class="section-card__header">
+      <div class="section-card__title">Output</div>
+    </div>
+    <div class="section-card__content">
+      <div id="inference-output" class="inference-output"></div>
+    </div>
   </div>
 
   </div>
@@ -157,23 +150,23 @@
       ? parseInt(versionSelect.value)
       : (model.latest_version || 1);
 
-    html += '<div class="model-card-header">';
-    html += '  <span class="model-card-name">' + escHtml(model.name) + '</span>';
-    html += '  <span class="model-card-version">v' + version + '</span>';
+    html += '<div class="section-card__header">';
+    html += '  <span class="section-card__title">' + escHtml(model.name) + '</span>';
+    html += '  <span style="color:var(--text-dim);font-family:var(--font-mono)">v' + version + '</span>';
     html += '</div>';
 
     // Stats row
-    html += '<div class="model-card-stats">';
+    html += '<div class="section-card__metrics">';
     if (model.final_loss != null) {
-      html += '  <div class="stat"><span class="stat-label">Loss</span><span class="stat-value accent">' + model.final_loss.toFixed(4) + '</span></div>';
+      html += '  <div class="section-card__metric"><span class="section-card__metric-label">Loss</span><span class="section-card__metric-value" style="color:var(--accent-cyan)">' + model.final_loss.toFixed(4) + '</span></div>';
     }
     html += '</div>';
 
     // Architecture table
     var arch = model.architecture;
     if (arch) {
-      html += '<div class="model-card-section"><h4 class="card-section-title">Architecture</h4>';
-      html += '<table class="model-card-table"><tbody>';
+      html += '<div style="margin-top:var(--space-3);padding-top:var(--space-2);border-top:1px solid var(--border)"><h4 class="section-card__title" style="font-size:0.8em;margin-bottom:var(--space-2)">Architecture</h4>';
+      html += '<table class="grouped-list"><tbody>';
       var archFields = [
         ['vocab_size', 'Vocabulary'], ['num_params', 'Parameters'],
         ['n_layer', 'Layers'], ['n_embd', 'Embed Dim'],
@@ -183,7 +176,7 @@
         var val = arch[f[0]];
         if (val == null) return;
         var display = f[0] === 'num_params' ? val.toLocaleString() : val;
-        html += '<tr><td class="card-label">' + f[1] + '</td><td class="card-value">' + display + '</td></tr>';
+        html += '<tr><td style="color:var(--text-dim);width:40%">' + f[1] + '</td><td style="font-family:var(--font-mono);text-align:right">' + display + '</td></tr>';
       });
       html += '</tbody></table></div>';
     }
@@ -191,8 +184,8 @@
     // Hyperparams table
     var hp = model.hyperparameters;
     if (hp && Object.keys(hp).length > 0) {
-      html += '<div class="model-card-section"><h4 class="card-section-title">Training Config</h4>';
-      html += '<table class="model-card-table"><tbody>';
+      html += '<div style="margin-top:var(--space-3);padding-top:var(--space-2);border-top:1px solid var(--border)"><h4 class="section-card__title" style="font-size:0.8em;margin-bottom:var(--space-2)">Training Config</h4>';
+      html += '<table class="grouped-list"><tbody>';
       var hpFields = [
         ['num_steps', 'Steps'], ['learning_rate', 'LR'],
         ['temperature', 'Temp'], ['beta1', '\u03b2\u2081'], ['beta2', '\u03b2\u2082']
@@ -200,14 +193,14 @@
       hpFields.forEach(function(f) {
         var val = hp[f[0]];
         if (val == null) return;
-        html += '<tr><td class="card-label">' + f[1] + '</td><td class="card-value">' + val + '</td></tr>';
+        html += '<tr><td style="color:var(--text-dim);width:40%">' + f[1] + '</td><td style="font-family:var(--font-mono);text-align:right">' + val + '</td></tr>';
       });
       html += '</tbody></table></div>';
     }
 
     // MLflow + experiment links
     if (model.mlflow_run_url || model.experiment_id) {
-      html += '<div class="model-card-section model-card-links">';
+      html += '<div class="section-card__actions">';
       if (model.mlflow_run_url) {
         html += '<a href="' + escHtml(model.mlflow_run_url) + '" target="_blank" class="btn btn-secondary btn-sm">Open in MLflow \u2192</a>';
       }

@@ -19,7 +19,7 @@ router = APIRouter()
 def _get_mlflow_experiment_id() -> str | None:
     try:
         client = MlflowClient(tracking_uri=get_config()["mlflow_uri"])
-        exp = client.get_experiment_by_name("anvil-workbench")
+        exp = client.get_experiment_by_name("anvil")
         return exp.experiment_id if exp else None
     except Exception:
         return None

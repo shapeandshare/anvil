@@ -2,37 +2,32 @@
 {% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
 {% block content %}
 
-{# ── PANEL: DATASET MANAGER ───────────────────────────── #}
-<div class="panel" style="--stagger-i: 0">
-  <h2 class="panel-title">Dataset Manager</h2>
+{# ── SECTION: DATASET MANAGER ───────────────────────── #}
+<div class="section-card" style="--stagger-i: 0">
+  <div class="section-card__header">
+    <h2 class="section-card__title">Dataset Manager</h2>
+  </div>
 
-  <div class="help-box" style="margin-bottom:var(--space-3);">
-    <div class="help-title">ABOUT DATASETS &amp; CORPORA</div>
-    <div>Upload <code>.txt</code> files as datasets for training, or create <b>corpora</b> that ingest files from directories using glob patterns. Corpora support gitignore-style filtering for code repos.</div>
+  <div class="section-card__content" style="margin-bottom:var(--space-3);">
+    Upload <code>.txt</code> files as datasets for training, or create <b>corpora</b> that ingest files from directories using glob patterns. Corpora support gitignore-style filtering for code repos.
   </div>
 
   {# ── Upload form ── #}
-  <div class="prompt-line" style="margin-bottom:var(--space-1);">
-    <span class="prompt-symbol">$</span>
-    <span class="prompt-label">upload --file</span>
-  </div>
+  <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-1);">Upload File</div>
   <form id="upload-form" class="upload-zone">
     <input type="file" class="form-input" id="file-input" accept=".txt">
-    <button type="submit" class="btn btn-primary btn-sm"><span class="btn-prefix">$</span> upload</button>
+    <button type="submit" class="btn btn-primary btn-sm">upload</button>
   </form>
-  <div class="telemetry-compact" id="upload-status">Ready.</div>
+  <div class="section-card__content" id="upload-status" style="font-size:0.78rem;">Ready.</div>
 
   {# ── Create dataset form ── #}
-  <div class="prompt-line" style="margin-bottom:var(--space-1);margin-top:var(--space-4);">
-    <span class="prompt-symbol">$</span>
-    <span class="prompt-label">dataset create --name --description</span>
-  </div>
+  <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-1);margin-top:var(--space-4);">Create Dataset</div>
   <div id="create-dataset-form" style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;">
     <input type="text" class="form-input" id="new-dataset-name" placeholder="name" style="width:140px;">
     <input type="text" class="form-input" id="new-dataset-description" placeholder="description (optional)" style="width:260px;">
-    <button class="btn btn-primary btn-sm" id="create-dataset-btn"><span class="btn-prefix">$</span> create</button>
+    <button class="btn btn-primary btn-sm" id="create-dataset-btn">create</button>
   </div>
-  <div class="telemetry-compact" id="create-status">Ready.</div>
+  <div class="section-card__content" id="create-status" style="font-size:0.78rem;">Ready.</div>
 
   {# ── Dataset list with search ── #}
   <div style="margin-top:var(--space-4);">
@@ -46,20 +41,18 @@
 
 </div>
 
-{# ── PANEL: CORPORA WIZARD ────────────────────────────── #}
-<div class="panel" style="--stagger-i: 1">
-  <h2 class="panel-title">Corpora Wizard</h2>
+{# ── SECTION: CORPORA WIZARD ────────────────────────── #}
+<div class="section-card" style="--stagger-i: 1">
+  <div class="section-card__header">
+    <h2 class="section-card__title">Corpora Wizard</h2>
+  </div>
 
-    <div class="help-box" style="margin-bottom:var(--space-3);">
-      <div class="help-title">HOW IT WORKS</div>
-      <div>Enter a directory path and optional glob patterns. The wizard scans the directory (no data read), shows file statistics, and recommends optimal chunking parameters based on file size and type. Pick a recommendation or customize, then create &amp; ingest.</div>
+    <div class="section-card__content" style="margin-bottom:var(--space-3);">
+      Enter a directory path and optional glob patterns. The wizard scans the directory (no data read), shows file statistics, and recommends optimal chunking parameters based on file size and type. Pick a recommendation or customize, then create &amp; ingest.
     </div>
 
     {# ── Analyzer controls ── #}
-    <div class="prompt-line" style="margin-bottom:var(--space-1);">
-      <span class="prompt-symbol">$</span>
-      <span class="prompt-label">analyze --path</span>
-    </div>
+    <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-1);">Analyze Path</div>
     <div id="wiz-drop-zone" style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:flex-start;">
       <input type="text" class="form-input" id="wiz-root" placeholder="root_path" style="width:260px;">
       <button class="btn btn-sm btn-secondary" id="wiz-browse-btn" title="Select folder via native dialog">browse</button>
@@ -103,24 +96,18 @@
         <span class="tag" data-target="exclude" data-value=".git">! .git</span>
       </div>
     </div>
-    <div class="telemetry-compact" id="wiz-status">Enter a path, drag a folder from Finder here, or use <b>browse</b>.</div>
+    <div class="section-card__content" id="wiz-status" style="font-size:0.78rem;">Enter a path, drag a folder from Finder here, or use <b>browse</b>.</div>
 
     {# ── Analysis results (hidden until analyze) ── #}
     <div id="wiz-results" style="display:none;margin-top:var(--space-3);">
 
-      <div id="wiz-stats" class="help-box" style="margin-bottom:var(--space-2);"></div>
+      <div id="wiz-stats" class="section-card__content" style="margin-bottom:var(--space-2);"></div>
 
-      <div class="prompt-line" style="margin-bottom:var(--space-2);">
-        <span class="prompt-symbol">$</span>
-        <span class="prompt-label">recommendations</span>
-      </div>
+      <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-2);">Recommendations</div>
       <div id="wiz-recs" style="display:flex;flex-direction:column;gap:var(--space-1);"></div>
 
       <div style="margin-top:var(--space-3);padding-top:var(--space-2);border-top:1px solid var(--border);">
-        <div class="prompt-line" style="margin-bottom:var(--space-1);">
-          <span class="prompt-symbol">$</span>
-          <span class="prompt-label">corpus create --name --strategy --params</span>
-        </div>
+        <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-1);">Create &amp; Ingest Corpus</div>
         <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;">
           <input type="text" class="form-input" id="wiz-name" placeholder="corpus name" style="width:140px;">
           <span class="help-text">strategy:</span>
@@ -137,11 +124,11 @@
           <span class="help-text" id="wiz-ov-label">overlap:</span>
           <input type="range" id="wiz-overlap" min="0" max="50" value="25" style="width:80px;accent-color:var(--primary);vertical-align:middle;">
           <span id="wiz-ov-value" style="font-size:0.68rem;color:var(--accent-cyan);min-width:30px;">25%</span>
-          <button class="btn btn-primary btn-sm" id="wiz-create-btn"><span class="btn-prefix">$</span> create &amp; ingest</button>
+          <button class="btn btn-primary btn-sm" id="wiz-create-btn">create &amp; ingest</button>
         </div>
         <div id="wiz-estimate" style="padding-left:16px;margin-top:var(--space-1);min-height:20px;font-size:0.72rem;"></div>
         <div id="wiz-estimate-warnings" style="padding-left:16px;margin-top:var(--space-1);font-size:0.72rem;"></div>
-        <div class="telemetry-compact" id="wiz-create-status"></div>
+        <div class="section-card__content" id="wiz-create-status" style="font-size:0.78rem;"></div>
       </div>
 
     </div>
@@ -237,7 +224,7 @@
       return;
     }
 
-    var html = '<div style="overflow-x:auto;"><table class="terminal-table">'
+    var html = '<div style="overflow-x:auto;"><table class="grouped-list">'
       + '<thead><tr>'
       + '<th>Name</th><th>Description</th><th style="text-align:right;">Samples</th>'
       + '<th style="text-align:right;">Size</th><th>Status</th>'
@@ -253,23 +240,23 @@
       var curVer = d.curation_version != null ? d.curation_version : '-';
 
       html += '<tr data-id="' + d.id + '" class="row-entrance" style="--row-i: ' + i + '">'
-        + '<td><span class="ls-name edit-target" data-field="name">' + nameEsc + '</span></td>'
+        + '<td><span class="edit-target" data-field="name" style="color:var(--text);font-weight:500;">' + nameEsc + '</span></td>'
         + '<td><span class="edit-target" data-field="description" style="color:var(--text-dim);font-size:0.75rem;">' + (d.description ? descEsc : '-') + '</span></td>'
         + '<td style="text-align:right;color:var(--info);">' + sampleCount + '</td>'
         + '<td style="text-align:right;color:var(--text-dim);">' + sizeStr + '</td>'
         + '<td>' + badge + '</td>'
         + '<td style="text-align:center;color:var(--text-dim);">' + curVer + '</td>'
         + '<td style="text-align:right;white-space:nowrap;">'
-        + '<div class="htop-actions">'
-        + '<button class="btn btn-sm btn-secondary edit-btn" data-id="' + d.id + '"><span class="btn-prefix">$</span> edit</button>'
-        + '<button class="btn btn-sm btn-secondary curate-btn" data-id="' + d.id + '" title="Open dataset curation"><span class="btn-prefix">$</span> curate</button>'
-        + '<button class="btn btn-sm btn-danger del-dataset-btn" data-id="' + d.id + '" data-name="' + nameEsc + '"><span class="btn-prefix">$</span> rm</button>'
+        + '<div style="display:flex;gap:var(--space-1);justify-content:flex-end;">'
+        + '<button class="btn btn-sm btn-secondary edit-btn" data-id="' + d.id + '">edit</button>'
+        + '<button class="btn btn-sm btn-secondary curate-btn" data-id="' + d.id + '" title="Open dataset curation">curate</button>'
+        + '<button class="btn btn-sm btn-danger del-dataset-btn" data-id="' + d.id + '" data-name="' + nameEsc + '">rm</button>'
         + '</div>'
         + '<div class="inline-edit-form" style="display:none;margin-top:4px;gap:4px;flex-wrap:wrap;align-items:center;">'
         + '<input type="text" class="form-input ie-name" placeholder="name" style="width:130px;font-size:0.72rem;" value="' + nameEsc + '">'
         + '<input type="text" class="form-input ie-desc" placeholder="description" style="width:200px;font-size:0.72rem;" value="' + (d.description ? descEsc : '') + '">'
-        + '<button class="btn btn-sm btn-primary ie-save"><span class="btn-prefix">$</span> save</button>'
-        + '<button class="btn btn-sm btn-secondary ie-cancel"><span class="btn-prefix">$</span> cancel</button>'
+        + '<button class="btn btn-sm btn-primary ie-save">save</button>'
+        + '<button class="btn btn-sm btn-secondary ie-cancel">cancel</button>'
         + '</div></td>'
         + '</tr>';
     });
@@ -289,20 +276,19 @@
       return;
     }
     list.innerHTML = data.data.map(function(c, i) {
-      var ingestBtn = '<button class="btn btn-sm btn-secondary ingest-btn" data-id="' + c.id + '"><span class="btn-prefix">$</span> ingest</button>';
-      var delBtn = '<button class="btn btn-sm btn-danger del-btn" data-id="' + c.id + '" style="margin-left:2px;"><span class="btn-prefix">$</span> rm</button>';
+      var ingestBtn = '<button class="btn btn-sm btn-secondary ingest-btn" data-id="' + c.id + '">ingest</button>';
+      var delBtn = '<button class="btn btn-sm btn-danger del-btn" data-id="' + c.id + '" style="margin-left:2px;">rm</button>';
       var warnBadge = '';
       if (c.error_count > 0) {
         warnBadge = ' <span class="corpus-warn-badge" data-id="' + c.id + '" style="color:var(--warning);cursor:pointer;font-size:0.65rem;" title="Click to view warnings">&#9888; ' + c.error_count + ' warn</span>';
       }
-      return '<div class="ls-line ls-entrance" style="--ls-i: ' + i + '">' +
-        '<span class="ls-perms">drwxr-xr-x</span>' +
-        '<span class="ls-size">' + (c.file_count || 0) + ' files</span>' +
-        '<span class="ls-date">' + (c.created_at || '').slice(0,10) + '</span>' +
-        '<span class="ls-name">' + c.name + '</span>' +
-        '<span style="color:var(--text-dim);font-size:0.72rem;"> ' + (c.document_count || 0) + ' docs, ' + (c.chunking_strategy || '?') + '</span>' +
+      return '<div class="row-entrance" style="--row-i: ' + i + ';display:flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-3);background:var(--surface);border-radius:var(--radius-sm);margin-bottom:2px;">' +
+        '<span style="color:var(--text);font-weight:500;min-width:100px;">' + c.name + '</span>' +
+        '<span style="color:var(--text-dim);font-size:0.72rem;">' + (c.file_count || 0) + ' files, ' + (c.document_count || 0) + ' docs</span>' +
+        '<span style="color:var(--text-tertiary);font-size:0.68rem;">' + (c.created_at || '').slice(0,10) + '</span>' +
+        '<span style="color:var(--text-tertiary);font-size:0.68rem;">' + (c.chunking_strategy || '?') + '</span>' +
         warnBadge +
-        '<span style="margin-left:8px;">' + ingestBtn + delBtn + '</span>' +
+        '<span style="margin-left:auto;">' + ingestBtn + delBtn + '</span>' +
         '<div class="corpus-files" id="files-' + c.id + '" style="display:none;padding-left:20px;"></div>' +
         '<div class="corpus-errors" id="errors-' + c.id + '" style="display:none;padding-left:20px;padding-top:4px;"></div>' +
         '</div>';

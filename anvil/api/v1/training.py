@@ -12,7 +12,7 @@ from starlette.responses import StreamingResponse
 from anvil.gpu import detect_gpu, resolve_device
 from anvil.services.metrics_collectors import MPSMetricsCollector, MPSSamplerThread
 from anvil.services.tracking import TrackingService
-from anvil.services.training import StopRequested, TrainingService
+from anvil.services.training import TrainingService
 
 logger = logging.getLogger(__name__)
 
@@ -269,11 +269,29 @@ async def start_training(config: dict):
     return response
 
 
+@router.get("/training/{run_id}/status")
+async def training_run_status(run_id: int):
+    """Check whether a training run is still active on the server."""
+    queue = svc.get_queue(run_id)
+    if queue is None:
+        raise HTTPException(status_code=404, detail="Run not found or already completed")
+    return {"run_id": run_id, "status": "active"}
+
+
 @router.get("/training/stream/{run_id}")
 async def stream_training(run_id: int):
     queue = svc.get_queue(run_id)
     if queue is None:
-        raise HTTPException(status_code=404, detail="Run not found")
+        async def _run_gone():
+            yield "event: error\ndata: " + json.dumps({"message": "Training run has already completed or was never started"}) + "\n\n"
+        return StreamingResponse(
+            _run_gone(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+            },
+        )
 
     async def event_stream():
         while True:

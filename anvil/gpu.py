@@ -1,4 +1,4 @@
-"""GPU detection and device selection for anvil-workbench."""
+"""GPU detection and device selection for anvil."""
 
 from __future__ import annotations
 

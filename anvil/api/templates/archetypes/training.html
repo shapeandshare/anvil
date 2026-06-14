@@ -2,13 +2,13 @@
 {% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
 {% block content %}
 <div class="training-dashboard">
-  <div class="training-runs panel" id="runs-panel" style="display:none;--stagger-i: 0">
-    <h2 class="panel-title">Active Training Runs</h2>
+  <div class="training-runs section-card" id="runs-panel" style="display:none;--stagger-i: 0">
+    <div class="section-card__header"><h2 class="section-card__title">Active Training Runs</h2></div>
     <div id="runs-list"></div>
   </div>
 
-  <div class="training-data-source panel" style="--stagger-i: 1">
-    <h2 class="panel-title">1. Select Your Data</h2>
+  <div class="training-data-source section-card" style="--stagger-i: 1">
+    <div class="section-card__header"><h2 class="section-card__title">1. Select Your Data</h2></div>
     <div class="ds-selectors">
       <div class="ds-field">
         <label class="ds-label" for="corpus_id">Corpus</label>
@@ -31,8 +31,8 @@
     </div>
   </div>
 
-  <div class="training-config panel" style="--stagger-i: 2">
-    <h2 class="panel-title">2. Configure &amp; Auto-Tune Parameters</h2>
+  <div class="training-config section-card" style="--stagger-i: 2">
+    <div class="section-card__header"><h2 class="section-card__title">2. Configure &amp; Auto-Tune Parameters</h2></div>
     <div class="config-grid">
       <div class="param-block">
         <label class="param-label">n_embd</label>
@@ -90,16 +90,16 @@
     <p class="autotune-feedback" id="autotune-feedback"></p>
   </div>
 
-  <div class="training-chart panel" style="--stagger-i: 3">
-    <h2 class="panel-title">Loss Curve</h2>
+  <div class="training-chart section-card" style="--stagger-i: 3">
+    <div class="section-card__header"><h2 class="section-card__title">Loss Curve</h2></div>
     <div class="connection-state" id="connection-state">idle</div>
     <div class="chart-container">
       {% include "partials/streaming-chart.html" %}
     </div>
   </div>
 
-  <div class="training-metrics panel" style="--stagger-i: 4">
-    <h2 class="panel-title">Metrics</h2>
+  <div class="training-metrics section-card" style="--stagger-i: 4">
+    <div class="section-card__header"><h2 class="section-card__title">Metrics</h2></div>
     <div class="metrics-grid">
       <div class="metric"><span class="metric-label">Step</span><span class="metric-value" id="metric-step">—</span></div>
       <div class="metric"><span class="metric-label">Loss</span><span class="metric-value" id="metric-loss">—</span></div>
@@ -111,13 +111,13 @@
     </div>
   </div>
 
-  <div class="training-samples panel" id="samples-panel" style="display:none;--stagger-i: 5">
-    <h2 class="panel-title">Generated Samples</h2>
+  <div class="training-samples section-card" id="samples-panel" style="display:none;--stagger-i: 5">
+    <div class="section-card__header"><h2 class="section-card__title">Generated Samples</h2></div>
     <div id="samples-display"></div>
   </div>
 
-  <div class="training-output panel" style="--stagger-i: 6">
-    <h2 class="panel-title">Output</h2>
+  <div class="training-output section-card" style="--stagger-i: 6">
+    <div class="section-card__header"><h2 class="section-card__title">Output</h2></div>
     <pre class="loss-display" id="loss-display"></pre>
     <div id="output-actions" class="output-actions"></div>
   </div>
@@ -503,7 +503,7 @@
       var steps = r.metrics ? r.metrics.length : 0;
       var lastLoss = steps > 0 ? r.metrics[r.metrics.length - 1].loss : null;
       var timeAgo = r.startedAt ? Math.floor((Date.now() - r.startedAt) / 1000) + 's ago' : '';
-      var isCurrent = id === session && session.state !== 'idle';
+      var isCurrent = session && String(session.runId) === id && session.state !== 'idle';
       html += '<div class="rec-card" style="display:flex;align-items:center;gap:var(--space-2);padding:6px 10px;border:1px solid var(--border);border-radius:4px;font-size:0.72rem;">'
         + '<span class="badge ' + statusClass + '">' + r.status + '</span>'
         + '<span style="font-family:var(--font-mono);color:var(--info);">' + id.slice(0,12) + '</span>'
@@ -524,6 +524,22 @@
   }
 
   function reconnectToRun(runId, saved) {
+    /* Pre-check: is the run still active on the server? */
+    fetch('/v1/training/' + runId + '/status')
+      .then(function(resp) {
+        if (resp.ok) {
+          _doReconnect(runId, saved);
+        } else {
+          _staleRun(runId, saved);
+        }
+      })
+      .catch(function() {
+        /* Network error — try SSE anyway; will get error event if stale */
+        _doReconnect(runId, saved);
+      });
+  }
+
+  function _doReconnect(runId, saved) {
     if (session) { session.destroy(); session = null; }
     log('> Reconnecting to training run ' + runId + '...');
     initChart();
@@ -554,11 +570,31 @@
       };
       session.onerror = function(e) {
         log('> Could not reconnect: ' + e.message);
+        /* Mark run as errored so sessionStorage doesn't keep it as 'streaming' */
+        saved.status = 'errored';
+        var runs = window.coreSession.getActiveRuns();
+        if (runs[runId]) {
+          runs[runId].status = 'errored';
+          window.coreSession.addRun(runId, runs[runId]);
+        }
+        renderRunsList(window.coreSession.getActiveRuns());
       };
       session.start();
       renderRunsList(window.coreSession.getActiveRuns());
       window._currentSession = session;
     }
+
+  function _staleRun(runId, saved) {
+    saved.status = 'errored';
+    updateState('errored');
+    log('> Training run ' + runId + ' is no longer active on the server.');
+    var runs = window.coreSession.getActiveRuns();
+    if (runs[runId]) {
+      runs[runId].status = 'errored';
+      window.coreSession.addRun(runId, runs[runId]);
+    }
+    renderRunsList(window.coreSession.getActiveRuns());
+  }
 
     function restoreTrainingSession() {
     var runs = window.coreSession.getActiveRuns();

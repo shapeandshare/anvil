@@ -1,23 +1,27 @@
 {% extends "base.html" %}
 {% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
 {% block content %}
-<div class="panel" style="max-width:640px;margin:var(--space-6) auto;">
-  <h2 class="panel-title">Learning Path</h2>
-  <p class="text-muted space-y-4" style="font-size:0.85rem;line-height:1.6;">
-    Five interactive lessons that walk you through how this character-level GPT model works,
-    from raw text to trained generation. Each lesson pairs a scrollable tutorial with a live
-    widget that shows the model's real internals.
-  </p>
-  <ol class="learn-arc-list">
-    {% for item in arc %}
-    <li class="learn-arc-item">
-      <a href="{{ item.path }}" class="learn-arc-item-link">
-        <span class="learn-arc-item-title">{{ item.title }}</span>
-        <span class="learn-arc-item-desc">{{ item.desc }}</span>
-      </a>
-    </li>
-    {% endfor %}
-  </ol>
+<div class="section-card" style="--stagger-i: 0; max-width:640px;margin:var(--space-6) auto;">
+  <div class="section-card__header">
+    <div class="section-card__title">Learning Path</div>
+  </div>
+  <div class="section-card__content">
+    <p class="text-muted" style="font-size:0.85rem;line-height:1.6;margin-bottom:var(--space-4);">
+      Five interactive lessons that walk you through how this character-level GPT model works,
+      from raw text to trained generation. Each lesson pairs a scrollable tutorial with a live
+      widget that shows the model's real internals.
+    </p>
+    <ol class="learn-arc-list">
+      {% for item in arc %}
+      <li class="learn-arc-item">
+        <a href="{{ item.path }}" class="learn-arc-item-link">
+          <span class="learn-arc-item-title">{{ item.title }}</span>
+          <span class="learn-arc-item-desc">{{ item.desc }}</span>
+        </a>
+      </li>
+      {% endfor %}
+    </ol>
+  </div>
 </div>
 
 <style>
@@ -40,8 +44,6 @@
   border: var(--border-width) solid var(--border);
   border-radius: var(--radius);
   text-decoration: none;
-  transition: background var(--dur-fast) var(--ease),
-              border-color var(--dur-fast) var(--ease);
   position: relative;
   padding-left: var(--space-8);
 }

@@ -21,7 +21,11 @@
 
   function updateThemeUI(theme) {
     var btn = document.getElementById('theme-toggle');
-    if (btn) btn.textContent = theme;
+    if (!btn) return;
+    var sun = btn.querySelector('.theme-icon--sun');
+    var moon = btn.querySelector('.theme-icon--moon');
+    if (sun) sun.classList.toggle('hidden', theme === 'dark');
+    if (moon) moon.classList.toggle('hidden', theme === 'light');
   }
 
   function initNav() {

@@ -48,8 +48,26 @@
     if (this._es) this._es.close();
   };
 
-  SSESession.prototype._handleError = function() {
+  SSESession.prototype._handleError = function(e) {
     if (this._destroyed) return;
+
+    // SSE error event from backend (event: error with data) — clean terminal
+    if (e && e.data) {
+      if (this._es) {
+        this._es.close();
+        this._es = null;
+      }
+      this._setState('errored');
+      try {
+        var d = JSON.parse(e.data);
+        if (typeof this.onerror === 'function') this.onerror(d);
+      } catch(_) {
+        if (typeof this.onerror === 'function') this.onerror({ message: 'Training ended with an error' });
+      }
+      return;
+    }
+
+    // Transport-level error — retry with backoff
     if (this._retryCount < this._maxRetries) {
       this._setState('reconnecting');
       var delay = this._backoff[this._retryCount];
@@ -76,7 +94,7 @@
     this._es.addEventListener('open', function() { self._handleOpen(); });
     this._es.addEventListener('metrics', function(e) { self._handleMetrics(e); });
     this._es.addEventListener('complete', function(e) { self._handleComplete(e); });
-    this._es.addEventListener('error', function() { self._handleError(); });
+    this._es.addEventListener('error', function(e) { self._handleError(e); });
   };
 
   SSESession.prototype.start = function() {

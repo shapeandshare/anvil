@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
 {% block content %}
-<div class="experiment-list panel" style="--stagger-i: 0">
-  <h2 class="panel-title">Experiment History</h2>
+<div class="experiment-list section-card" style="--stagger-i: 0">
+  <div class="section-card__header"><h2 class="section-card__title">Experiment History</h2></div>
   <div id="experiment-empty" class="loading-indicator" style="display:block;">
     Loading experiments...
   </div>
-  <table class="run-table" id="run-table" style="display:none;">
+  <table class="grouped-list" id="run-table" style="display:none;">
     <thead>
       <tr>
         <th>ID</th>
@@ -20,8 +20,8 @@
   </table>
 </div>
 
-<div class="panel" id="run-detail" style="display:none;--stagger-i: 1">
-  <h2 class="panel-title">Run Detail <span id="run-detail-id" class="text-muted"></span></h2>
+<div class="section-card" id="run-detail" style="display:none;--stagger-i: 1">
+  <div class="section-card__header"><h2 class="section-card__title">Run Detail <span id="run-detail-id" class="text-muted"></span></h2></div>
   <div id="run-detail-loading" class="loading-indicator">Loading...</div>
   <div id="run-detail-content" style="display:none;">
     <div class="metrics-grid">

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>anvil-workbench</title>
+<title>anvil</title>
 <script>
 (function(){var t=localStorage.getItem('theme');if(!t){t=window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'}document.documentElement.setAttribute('data-theme',t)})();
 </script>
@@ -18,9 +18,22 @@
 <div class="app-shell">
   <nav class="nav-bar">
     <a href="/" class="nav-title nav-title--forge">anvil</a>
-    <button type="button" class="theme-toggle" id="theme-toggle">dark</button>
+    <div class="nav-bar__tabs">
+      <a href="/v1/datasets-page" class="tab-item"><span class="tab-icon">📁</span><span class="tab-label">Data</span></a>
+      <a href="/v1/training-page" class="tab-item"><span class="tab-icon">🏋️</span><span class="tab-label">Train</span></a>
+      <a href="/v1/experiments-page" class="tab-item"><span class="tab-icon">🔬</span><span class="tab-label">Exps</span></a>
+      <a href="/v1/models-page" class="tab-item"><span class="tab-icon">🧠</span><span class="tab-label">Models</span></a>
+      <a href="/v1/inference-page" class="tab-item"><span class="tab-icon">🎮</span><span class="tab-label">Play</span></a>
+      <a href="/v1/learn" class="tab-item"><span class="tab-icon">📖</span><span class="tab-label">Learn</span></a>
+      <a href="/v1/operations-page" class="tab-item"><span class="tab-icon">⚙️</span><span class="tab-label">Ops</span></a>
+    </div>
+    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+      <svg class="theme-icon theme-icon--sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <svg class="theme-icon theme-icon--moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
   </nav>
   <main class="app-main">
+    {% block content %}{% endblock %}
     <div class="ambient-particles" aria-hidden="true">
       <span class="ambient-p" style="--x: 8%; --d: 0s; --s: 7s"></span>
       <span class="ambient-p ambient-p--warm" style="--x: 18%; --d: 1s; --s: 9s"></span>
@@ -44,15 +57,7 @@
       <span class="ambient-p" style="--x: 92%; --d: 6.5s; --s: 10s"></span>
     </div>
   </main>
-  <nav class="tab-bar">
-    <a href="/v1/datasets-page" class="tab-item"><span class="tab-icon">📁</span><span class="tab-label">Data</span></a>
-    <a href="/v1/training-page" class="tab-item"><span class="tab-icon">🏋️</span><span class="tab-label">Train</span></a>
-    <a href="/v1/experiments-page" class="tab-item"><span class="tab-icon">🔬</span><span class="tab-label">Exps</span></a>
-    <a href="/v1/models-page" class="tab-item"><span class="tab-icon">🧠</span><span class="tab-label">Models</span></a>
-    <a href="/v1/inference-page" class="tab-item"><span class="tab-icon">🎮</span><span class="tab-label">Play</span></a>
-    <a href="/v1/learn" class="tab-item"><span class="tab-icon">📖</span><span class="tab-label">Learn</span></a>
-    <a href="/v1/operations-page" class="tab-item"><span class="tab-icon">⚙️</span><span class="tab-label">Ops</span></a>
-  </nav>
+  <footer class="site-footer">anvil v{{ version }}</footer>
 </div>
 <div id="toast-container" class="toast-container"></div>
 <script src="/static/js/core.js"></script>
