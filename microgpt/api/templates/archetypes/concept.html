@@ -2,35 +2,59 @@
 {% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
 {% block content %}
 <div class="concept-lesson">
-  {% for step in steps %}
-  <div class="step">
-    <h2>{{ step.title }}</h2>
-    <p>{{ step.body }}</p>
-    {% if step.widget %}
-    <div class="concept-widget" data-widget="{{ step.widget }}"></div>
-    {% endif %}
-  </div>
-  {% endfor %}
   {% if arc %}
-  <div class="step" style="min-height:auto;border:none;">
+  <div class="concept-lesson-header">
+    <h1 class="concept-lesson-title">{{ arc[current_index].title }} <span class="lesson-count">&mdash; Lesson {{ current_index + 1 }} of {{ arc|length }}</span></h1>
     <nav class="learn-arc-nav" aria-label="Lesson navigation">
-      <p class="text-muted space-y-2" style="font-size:0.75rem;">
-        Lesson {{ current_index + 1 }} of {{ arc|length }}
-      </p>
       <div class="learn-arc-links">
-        {% if prev %}
-        <a href="{{ prev.path }}" class="btn btn-secondary">&larr; {{ prev.title }}</a>
-        {% endif %}
+        <a href="/v1/learn" class="btn btn-secondary">&larr; Back to Learning Index</a>
         {% if next %}
         <a href="{{ next.path }}" class="btn btn-secondary">{{ next.title }} &rarr;</a>
         {% endif %}
       </div>
-      <p class="space-y-2" style="margin-top:var(--space-2);">
-        <a href="/v1/learn" class="action-link">Back to Learning Index</a>
-      </p>
     </nav>
   </div>
   {% endif %}
+
+  <div class="concept-widget-area">
+    {% set ns = namespace(seen=[]) %}
+    {% for step in steps %}
+      {% if step.widget and step.widget not in ns.seen %}
+      {% set ns.seen = ns.seen + [step.widget] %}
+      <div class="concept-widget" data-widget="{{ step.widget }}"></div>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  <div class="concept-carousel" id="concept-carousel">
+    <div class="carousel-track" id="carousel-track">
+      {% for step in steps %}
+      <div class="carousel-slide" data-slide="{{ loop.index0 }}">
+        <div class="carousel-slide-content">
+          <p class="slide-step-label">Step {{ loop.index }} of {{ steps|length }}</p>
+          <h2>{{ step.title }}</h2>
+          <p>{{ step.body }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="carousel-foot">
+    <div class="carousel-nav">
+      <button type="button" class="carousel-btn carousel-prev" aria-label="Previous step">&larr; Back</button>
+      <div class="carousel-dots" id="carousel-dots">
+        {% for step in steps %}
+        <button type="button" class="carousel-dot{% if loop.first %} active{% endif %}" data-slide="{{ loop.index0 }}" aria-label="Go to step {{ loop.index }}"></button>
+        {% endfor %}
+      </div>
+      <button type="button" class="carousel-btn carousel-next" aria-label="Next step">Next &rarr;</button>
+    </div>
+    <div class="carousel-progress">
+      <span class="carousel-pos" id="carousel-pos">1</span>
+      <span class="carousel-pos-total">/ {{ steps|length }}</span>
+    </div>
+  </div>
 </div>
 {% endblock %}
 {% block scripts %}
@@ -45,6 +69,7 @@
 <script src="/static/js/widgets/adam.js"></script>
 <script>
 (function() {
+  /* ── Widget Classes Registry ── */
   var WIDGET_CLASSES = {
     tokenization: window.TokenizationWidget,
     embedding:   window.EmbeddingWidget,
@@ -57,6 +82,7 @@
     adam: window.AdamWidget,
   };
 
+  /* ── Init all widgets (rendered outside carousel, always visible) ── */
   document.querySelectorAll('.concept-widget').forEach(function(el) {
     var widgetType = el.getAttribute('data-widget');
     var WidgetClass = widgetType && WIDGET_CLASSES[widgetType];
@@ -64,6 +90,62 @@
       new WidgetClass(el);
     }
   });
+
+  /* ── Init carousel ── */
+  var track = document.getElementById('carousel-track');
+  var dots = document.getElementById('carousel-dots');
+  var posEl = document.getElementById('carousel-pos');
+  var prevBtn = document.querySelector('.carousel-prev');
+  var nextBtn = document.querySelector('.carousel-next');
+  var totalSlides = track ? track.children.length : 0;
+  var current = 0;
+  var touchStartX = 0;
+  var touchStartY = 0;
+  var carouselEl = document.getElementById('concept-carousel');
+
+  function goTo(idx) {
+    if (idx < 0) idx = 0;
+    if (idx >= totalSlides) idx = totalSlides - 1;
+    current = idx;
+    track.style.transform = 'translateX(-' + idx * 100 + '%)';
+    if (dots) {
+      Array.from(dots.children).forEach(function(dot, i) {
+        dot.classList.toggle('active', i === idx);
+      });
+    }
+    if (posEl) posEl.textContent = idx + 1;
+  }
+
+  if (dots) {
+    dots.addEventListener('click', function(e) {
+      var dot = e.target.closest('.carousel-dot');
+      if (dot) {
+        goTo(parseInt(dot.getAttribute('data-slide'), 10));
+      }
+    });
+  }
+
+  if (prevBtn) prevBtn.addEventListener('click', function() { goTo(current - 1); });
+  if (nextBtn) nextBtn.addEventListener('click', function() { goTo(current + 1); });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowLeft') { goTo(current - 1); e.preventDefault(); }
+    else if (e.key === 'ArrowRight') { goTo(current + 1); e.preventDefault(); }
+  });
+
+  if (carouselEl) {
+    carouselEl.addEventListener('touchstart', function(e) {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+    carouselEl.addEventListener('touchend', function(e) {
+      var dx = e.changedTouches[0].clientX - touchStartX;
+      var dy = e.changedTouches[0].clientY - touchStartY;
+      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+        if (dx < 0) goTo(current + 1); else goTo(current - 1);
+      }
+    }, { passive: true });
+  }
 })();
 </script>
 {% endblock %}

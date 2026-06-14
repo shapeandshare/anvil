@@ -154,12 +154,6 @@
       <div id="corpus-list"><span class="text-muted" style="font-size:0.78rem;">Loading...</span></div>
     </div>
 
-  </div>
-</div>
-
-{# ── Toast container ── #}
-<div id="toast-container" class="toast-container"></div>
-
 {# ── JavaScript (preserved in full) ── #}
 <script>
 (function() {
@@ -297,14 +291,20 @@
     list.innerHTML = data.data.map(function(c) {
       var ingestBtn = '<button class="btn btn-sm btn-secondary ingest-btn" data-id="' + c.id + '"><span class="btn-prefix">$</span> ingest</button>';
       var delBtn = '<button class="btn btn-sm btn-danger del-btn" data-id="' + c.id + '" style="margin-left:2px;"><span class="btn-prefix">$</span> rm</button>';
+      var warnBadge = '';
+      if (c.error_count > 0) {
+        warnBadge = ' <span class="corpus-warn-badge" data-id="' + c.id + '" style="color:var(--warning);cursor:pointer;font-size:0.65rem;" title="Click to view warnings">&#9888; ' + c.error_count + ' warn</span>';
+      }
       return '<div class="ls-line">' +
         '<span class="ls-perms">drwxr-xr-x</span>' +
         '<span class="ls-size">' + (c.file_count || 0) + ' files</span>' +
         '<span class="ls-date">' + (c.created_at || '').slice(0,10) + '</span>' +
         '<span class="ls-name">' + c.name + '</span>' +
         '<span style="color:var(--text-dim);font-size:0.72rem;"> ' + (c.document_count || 0) + ' docs, ' + (c.chunking_strategy || '?') + '</span>' +
+        warnBadge +
         '<span style="margin-left:8px;">' + ingestBtn + delBtn + '</span>' +
         '<div class="corpus-files" id="files-' + c.id + '" style="display:none;padding-left:20px;"></div>' +
+        '<div class="corpus-errors" id="errors-' + c.id + '" style="display:none;padding-left:20px;padding-top:4px;"></div>' +
         '</div>';
     }).join('');
   };
@@ -330,7 +330,11 @@
             return;
           }
           var d = res.body.data;
-          status.textContent = '> Ingested ' + d.file_count + ' files, ' + d.document_count + ' documents';
+          var msg = '> Ingested ' + d.file_count + ' files, ' + d.document_count + ' documents';
+          if (d.errors && d.errors.length > 0) {
+            msg += '  <span style="color:var(--warning);">' + d.errors.length + ' warning(s)</span>';
+          }
+          status.innerHTML = msg;
           loadCorpora();
         })
         .catch(function(err) {
@@ -343,6 +347,29 @@
       var btn = e.target.classList.contains('del-btn') ? e.target : e.target.closest('.del-btn');
       var id = btn.getAttribute('data-id');
       fetch('/v1/corpora/' + id, { method: 'DELETE' }).then(function() { loadCorpora(); });
+    }
+
+    /* toggle corpus errors */
+    if (e.target.classList.contains('corpus-warn-badge')) {
+      var badge = e.target;
+      var id = badge.getAttribute('data-id');
+      var errDiv = document.getElementById('errors-' + id);
+      if (errDiv.style.display !== 'none') {
+        errDiv.style.display = 'none';
+        return;
+      }
+      /* Fetch full corpus detail with errors */
+      fetch('/v1/corpora/' + id).then(function(r) { return r.json(); }).then(function(resp) {
+        var errors = resp.data && resp.data.errors;
+        if (!errors || errors.length === 0) {
+          errDiv.innerHTML = '<span style="color:var(--text-dim);font-size:0.65rem;">No warnings recorded.</span>';
+        } else {
+          errDiv.innerHTML = errors.map(function(e) {
+            return '<div style="color:var(--text-dim);font-size:0.62rem;padding:1px 0;">! ' + escHtml(e) + '</div>';
+          }).join('');
+        }
+        errDiv.style.display = '';
+      });
     }
 
     /* ── show inline edit ── */
@@ -878,9 +905,12 @@
       var msg = '> ingested ' + d.file_count + ' files, ' + d.document_count + ' documents';
       if (d.errors && d.errors.length > 0) {
         msg += '  <span style="color:var(--warning);">' + d.errors.length + ' warning(s)</span>';
-        d.errors.slice(0, 3).forEach(function(e) {
+        d.errors.slice(0, 5).forEach(function(e) {
           msg += '<br><span style="color:var(--text-dim);font-size:0.65rem;">! ' + e + '</span>';
         });
+        if (d.errors.length > 5) {
+          msg += '<br><span style="color:var(--text-dim);font-size:0.62rem;">... click the &#9888; badge in the corpus list for all ' + d.errors.length + ' warnings</span>';
+        }
       }
       status.innerHTML = msg;
       btn.disabled = false;
