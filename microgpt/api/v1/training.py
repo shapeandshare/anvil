@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import os
 import tempfile
 from datetime import UTC
@@ -12,6 +13,8 @@ from microgpt.gpu import detect_gpu, resolve_device
 from microgpt.services.metrics_collectors import MPSMetricsCollector, MPSSamplerThread
 from microgpt.services.tracking import TrackingService
 from microgpt.services.training import TrainingService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 svc = TrainingService()
@@ -183,14 +186,36 @@ async def start_training(config: dict):
         # Register model with MLflow after DB commit so experiment
         # is visible even if model registration hangs
         if mlflow_run_id:
+            registry_name = None
+            if dataset_id is not None:
+                from microgpt.db.repositories.datasets import DatasetRepository
+
+                async with AsyncSessionLocal() as sess:
+                    ds_repo = DatasetRepository(sess)
+                    ds = await ds_repo.get(dataset_id)
+                    if ds:
+                        registry_name = ds.name
+            elif corpus_id is not None:
+                from microgpt.db.repositories.corpora import CorpusRepository
+
+                async with AsyncSessionLocal() as sess:
+                    corp_repo = CorpusRepository(sess)
+                    corpus = await corp_repo.get(corpus_id)
+                    if corpus:
+                        registry_name = corpus.name
+
             try:
                 await tracking_svc.register_source_model(
                     run_id=mlflow_run_id,
+                    name=registry_name,
                     dataset_id=dataset_id,
                     corpus_id=corpus_id,
                 )
             except Exception:
-                pass
+                logger.exception(
+                    "Failed to register model for experiment %s",
+                    experiment_id,
+                )
 
     async def _run_training():
         try:

@@ -1,6 +1,11 @@
 {% extends "base.html" %}
-{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css"><link rel="stylesheet" href="/static/css/legacy.css">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
 {% block content %}
+
+<div class="panel">
+  <h2 class="panel-title">System Resources — compute details</h2>
+  <div id="system-resources"><span class="text-muted" style="font-size:0.78rem;">Polling...</span></div>
+</div>
 
 <div class="panel">
   <h2 class="panel-title">Operations — Service Control</h2>
@@ -28,11 +33,6 @@
   <div id="service-logs">
     <span class="text-muted" style="font-size:0.78rem;">Waiting for service data...</span>
   </div>
-</div>
-
-<div class="panel">
-  <h2 class="panel-title">System Resources — host info</h2>
-  <div id="system-resources"><span class="text-muted" style="font-size:0.78rem;">Polling...</span></div>
 </div>
 
 <div id="toast-container" class="toast-container"></div>

@@ -7,8 +7,8 @@
 
 .training-data-source { grid-column: 1 / 3; grid-row: 1; }
 .training-config { grid-column: 1 / 3; grid-row: 2; }
-.training-chart { grid-column: 1; grid-row: 3; }
-.training-metrics { grid-column: 2; grid-row: 3; }
+.training-chart { grid-column: 2; grid-row: 3; }
+.training-metrics { grid-column: 1; grid-row: 3; }
 .training-samples { grid-column: 1 / 3; grid-row: 4; }
 .training-output { grid-column: 1 / 3; grid-row: 5; }
 
@@ -217,16 +217,16 @@
 
 /* ── Concept Page (Archetype A) ── */
 .scroll-scene {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-6);
-  position: relative;
+  max-width: 720px;
+  margin: 0 auto;
 }
 
 .scroll-visual {
   position: sticky;
   top: 80px;
-  height: calc(100vh - 120px);
+  z-index: 1;
+  height: auto;
+  min-height: 280px;
   background: var(--surface);
   border: var(--border-width) solid var(--border);
   border-radius: var(--radius);
@@ -234,6 +234,7 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  margin-bottom: var(--space-6);
 }
 
 .scroll-narrative {
@@ -241,7 +242,6 @@
 }
 
 .step {
-  min-height: 60vh;
   padding: var(--space-6) 0;
   border-bottom: var(--border-width) solid var(--border);
 }
@@ -274,12 +274,8 @@
   .training-metrics,
   .training-samples { grid-column: 1; grid-row: auto; }
 
-  .scroll-scene {
-    grid-template-columns: 1fr;
-  }
   .scroll-visual {
-    position: static;
-    height: auto;
+    top: 60px;
     min-height: 200px;
   }
 }

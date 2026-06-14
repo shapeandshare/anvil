@@ -6,6 +6,14 @@
 
 microgpt-workbench is a pip-installable Python package wrapping Karpathy's microgpt.py with a FastAPI web server, MLflow experiment tracking, and a retro whimsical UI. The system follows a layered architecture: Repository → Service → God Class → Routes/CLI.
 
+## Design System
+
+This project uses a visual design system defined in @DESIGN.md.
+
+Follow strictly the rules defined in @DESIGN.md for all UI generation. Do not invent colors, fonts, spacing values, or component styles outside the design system. Match component states (hover, focus, active, disabled, pressed) to patterns defined in @DESIGN.md.
+
+The design system is implemented via CSS custom properties in `microgpt/api/static/css/tokens.css` (source of truth for token values), with components in `components.css`, layout archetypes in `archetypes.css`, and utilities in `utilities.css`. Always reference these tokens rather than raw values — a systemic restyle must be a token edit.
+
 ## Quick Reference
 
 ### Commands

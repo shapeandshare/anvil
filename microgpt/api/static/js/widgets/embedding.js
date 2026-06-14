@@ -40,7 +40,6 @@
     var h = Math.min(280, Math.max(200, w * 0.55));
     this._canvas.width = w * window.devicePixelRatio || 1;
     this._canvas.height = h * window.devicePixelRatio || 1;
-    this._canvas.style.width = w + 'px';
     this._canvas.style.height = h + 'px';
     this._w = w;
     this._h = h;
