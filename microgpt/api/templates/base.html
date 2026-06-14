@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>microgpt-workbench</title>
 <script>
 (function(){var t=localStorage.getItem('theme');if(!t){t=window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'}document.documentElement.setAttribute('data-theme',t)})();
@@ -12,44 +12,28 @@
 <link rel="stylesheet" href="/static/css/utilities.css">
 <link rel="stylesheet" href="/static/css/components.css">
 <link rel="stylesheet" href="/static/css/code.css">
-<link rel="stylesheet" href="/static/style.css">
 {% block extra_css %}{% endblock %}
 </head>
 <body>
 <div class="app-shell">
-  <header class="app-header">
-    <div class="app-logo">
-      <span class="logo-name">microgpt</span>
-      <span class="logo-version">v0.1.0</span>
-    </div>
-    <nav class="app-nav">
-      <span class="app-tab" data-target="/v1/datasets-page">Data</span>
-      <span class="app-tab" data-target="/v1/training-page">Train</span>
-      <span class="nav-divider"></span>
-      <span class="app-tab" data-target="/v1/experiments-page">Experiments</span>
-      <span class="app-tab" data-target="/v1/models-page">Models</span>
-      <span class="nav-divider"></span>
-      <span class="app-tab" data-target="/v1/inference-page">Playground</span>
-      <span class="app-tab" data-target="/v1/learn">Learn</span>
-    </nav>
-    <div class="app-header-right">
-      <span class="theme-toggle" id="theme-toggle">dark</span>
-      <span class="app-tab ops-tab" data-target="/v1/operations-page">Ops</span>
-    </div>
-  </header>
+  <nav class="nav-bar">
+    <div class="nav-title">microgpt</div>
+    <button type="button" class="theme-toggle" id="theme-toggle">dark</button>
+  </nav>
   <main class="app-main">
     {% block content %}{% endblock %}
   </main>
-  <footer class="app-statusbar">
-    <span class="status-item online" id="status-system">ONLINE</span>
-    <span class="status-item" id="status-time">--:--:--</span>
-    <span class="status-item" id="status-uptime">4h 12m 0s</span>
-    <span class="status-item" id="status-models" onclick="window.location.href='/v1/models-page'" style="cursor:pointer">models: --</span>
-    <span class="status-item" id="status-experiments" onclick="window.location.href='/v1/experiments-page'" style="cursor:pointer">exps: --</span>
-    <span class="status-item" id="status-datasets" onclick="window.location.href='/v1/datasets-page'" style="cursor:pointer">datasets: --</span>
-    <span class="status-item">localhost</span>
-  </footer>
+  <nav class="tab-bar">
+    <a href="/v1/datasets-page" class="tab-item"><span class="tab-icon">📁</span><span class="tab-label">Data</span></a>
+    <a href="/v1/training-page" class="tab-item"><span class="tab-icon">🏋️</span><span class="tab-label">Train</span></a>
+    <a href="/v1/experiments-page" class="tab-item"><span class="tab-icon">🔬</span><span class="tab-label">Exps</span></a>
+    <a href="/v1/models-page" class="tab-item"><span class="tab-icon">🧠</span><span class="tab-label">Models</span></a>
+    <a href="/v1/inference-page" class="tab-item"><span class="tab-icon">🎮</span><span class="tab-label">Play</span></a>
+    <a href="/v1/learn" class="tab-item"><span class="tab-icon">📖</span><span class="tab-label">Learn</span></a>
+    <a href="/v1/operations-page" class="tab-item"><span class="tab-icon">⚙️</span><span class="tab-label">Ops</span></a>
+  </nav>
 </div>
+<div id="toast-container" class="toast-container"></div>
 <script src="/static/js/core.js"></script>
 {% block scripts %}{% endblock %}
 </body>
