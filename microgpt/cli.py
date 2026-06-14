@@ -34,8 +34,8 @@ def _load_docs(corpus_id: int | None = None) -> list[str]:
     if corpus_id is not None:
         import asyncio
 
-        from microgpt.db.session import AsyncSessionLocal
         from microgpt.db.repositories.corpora import CorpusRepository
+        from microgpt.db.session import AsyncSessionLocal
         from microgpt.services.corpora import CorpusService
         from microgpt.services.corpus_loader import CorpusLoader
 
@@ -49,9 +49,7 @@ def _load_docs(corpus_id: int | None = None) -> list[str]:
         return asyncio.run(_load())
 
     if not os.path.exists("input.txt"):
-        url = (
-            "https://raw.githubusercontent.com/karpathy/makemore/988aa59/names.txt"
-        )
+        url = "https://raw.githubusercontent.com/karpathy/makemore/988aa59/names.txt"
         urllib.request.urlretrieve(url, "input.txt")
     with open("input.txt") as f:
         docs = [line.strip() for line in f if line.strip()]
@@ -74,14 +72,18 @@ def serve():
 
 
 def train():
-    parser = argparse.ArgumentParser(
-        description="Train GPT model"
-    )
+    parser = argparse.ArgumentParser(description="Train GPT model")
     parser.add_argument(
         "--corpus",
         type=int,
         default=None,
         help="Corpus ID to train on (default: input.txt)",
+    )
+    parser.add_argument(
+        "--dataset",
+        type=int,
+        default=None,
+        help="Dataset ID to train on",
     )
     parser.add_argument(
         "--gpu",
@@ -97,17 +99,122 @@ def train():
     args, _ = parser.parse_known_args()
     use_gpu = args.gpu or os.getenv("USE_GPU", "").lower() in ("true", "1", "yes")
 
+    from microgpt.gpu import resolve_device
+    from microgpt.services.tracking import TrackingService
     from microgpt.services.training import TrainingService
 
     svc = TrainingService()
+    tracking_svc = TrackingService()
+
+    engine_backend = "torch" if use_gpu else "stdlib"
+    device = resolve_device(use_gpu=use_gpu, preferred=args.device or None)
+
     config = {
         "use_gpu": use_gpu,
-        "device": args.device or "",
+        "device": device,
+        "corpus_id": args.corpus,
+        "dataset_id": args.dataset,
     }
 
     async def _run():
+        from microgpt.services.tracking import TrackingService
+
+        TrackingService.enable_system_metrics()
+        mlflow_run_id = await tracking_svc.start_run(
+            run_name=None,
+            params={
+                "corpus_id": args.corpus,
+                "dataset_id": args.dataset,
+                "use_gpu": use_gpu,
+            },
+            engine_backend=engine_backend,
+            device=device,
+        )
+
+        from microgpt.db.repositories.experiments import ExperimentRepository
+        from microgpt.db.session import AsyncSessionLocal
+
+        experiment_id = None
+        async with AsyncSessionLocal() as session:
+            repo = ExperimentRepository(session)
+            exp = await repo.create_running(
+                config_id=0,
+                run_name="cli-run",
+                mlflow_run_id=mlflow_run_id or None,
+                dataset_id=args.dataset,
+                corpus_id=args.corpus,
+                engine_backend=engine_backend,
+                device=device,
+            )
+            experiment_id = exp.id
+            await session.commit()
+
         run_id = svc.reserve_run()
-        await svc.start_training(config, run_id=run_id)
+
+        _progress_tasks: set[asyncio.Task] = set()
+
+        def progress_cb(step: int, loss: float) -> None:
+            try:
+                loop = asyncio.get_event_loop()
+                t = loop.create_task(
+                    tracking_svc.log_metric(mlflow_run_id, "loss", loss, step=step)
+                )
+                _progress_tasks.add(t)
+                t.add_done_callback(_progress_tasks.discard)
+            except Exception:
+                pass
+
+        final_loss_holder: list[float] = []
+
+        async def on_complete(
+            model, cfg: dict, final_loss: float, samples: list[str], uchars: list[str]
+        ) -> None:
+            final_loss_holder.append(final_loss)
+            await tracking_svc.finish_run(mlflow_run_id)
+            await tracking_svc.log_final_metric(mlflow_run_id, "final_loss", final_loss)
+            if mlflow_run_id:
+                try:
+                    await tracking_svc.register_source_model(
+                        run_id=mlflow_run_id,
+                        dataset_id=args.dataset,
+                        corpus_id=args.corpus,
+                    )
+                except Exception:
+                    pass
+            async with AsyncSessionLocal() as session:
+                from datetime import UTC, datetime
+
+                repo = ExperimentRepository(session)
+                await repo.mark_finished(
+                    experiment_id,
+                    final_loss=final_loss,
+                    generated_samples=None,
+                    completed_at=datetime.now(UTC),
+                )
+                await session.commit()
+
+        try:
+            await svc.start_training(
+                config,
+                run_id=run_id,
+                on_complete=on_complete,
+                progress_callback_override=progress_cb,
+            )
+        except Exception as e:
+            await tracking_svc.fail_run(mlflow_run_id, reason=str(e))
+            if experiment_id:
+                async with AsyncSessionLocal() as session:
+                    from datetime import UTC, datetime
+
+                    repo = ExperimentRepository(session)
+                    await repo.mark_failed(
+                        experiment_id,
+                        error_message=str(e),
+                        completed_at=datetime.now(UTC),
+                    )
+                    await session.commit()
+            raise
+
         queue = svc.get_queue(run_id)
         if queue is None:
             return
@@ -115,10 +222,14 @@ def train():
             msg = await queue.get()
             if msg["event"] == "metrics":
                 data = json.loads(msg["data"])
-                print(f"step {data['step']:6d} | loss {data['loss']:.4f} | device {data.get('device', 'cpu')}")
+                print(
+                    f"step {data['step']:6d} | loss {data['loss']:.4f} | device {data.get('device', 'cpu')}"
+                )
             elif msg["event"] == "complete":
                 data = json.loads(msg["data"])
-                print(f"\nFinal loss: {data['final_loss']:.4f} (device: {data.get('device', 'cpu')})")
+                print(
+                    f"\nFinal loss: {data['final_loss']:.4f} (device: {data.get('device', 'cpu')})"
+                )
                 print("\n--- Generated samples ---")
                 for i, sample in enumerate(data.get("samples", []), 1):
                     print(f"sample {i:2d}: {sample}")
@@ -132,9 +243,7 @@ def train():
 
 
 def corpus_main():
-    parser = argparse.ArgumentParser(
-        description="Manage training corpora"
-    )
+    parser = argparse.ArgumentParser(description="Manage training corpora")
     sub = parser.add_subparsers(dest="command")
 
     create_p = sub.add_parser("create", help="Create a new corpus")
@@ -158,7 +267,7 @@ def corpus_main():
     ingest_p = sub.add_parser("ingest", help="Ingest a corpus")
     ingest_p.add_argument("id", type=int, help="Corpus ID")
 
-    list_p = sub.add_parser("list", help="List all corpora")
+    sub.add_parser("list", help="List all corpora")
 
     show_p = sub.add_parser("show", help="Show corpus details")
     show_p.add_argument("id", type=int, help="Corpus ID")
@@ -173,8 +282,8 @@ def corpus_main():
 
     import asyncio
 
-    from microgpt.db.session import AsyncSessionLocal
     from microgpt.db.repositories.corpora import CorpusRepository
+    from microgpt.db.session import AsyncSessionLocal
     from microgpt.services.corpora import CorpusService
     from microgpt.services.corpus_loader import CorpusLoader
 
@@ -197,7 +306,7 @@ def corpus_main():
                 print(f"Created corpus {corpus.id}: {corpus.name}")
 
             elif args.command == "ingest":
-                corpus, errors = await svc.ingest(args.id)
+                corpus, _errors = await svc.ingest(args.id)
                 print(
                     f"Ingested corpus {corpus.id}: "
                     f"{corpus.file_count} files, "
@@ -250,7 +359,9 @@ def _find_pid_by_port(port: int) -> list[int]:
     try:
         result = subprocess.run(
             ["lsof", "-ti", f":{port}", "-sTCP:LISTEN"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         if result.returncode != 0 or not result.stdout.strip():
             return []
@@ -261,7 +372,9 @@ def _find_pid_by_port(port: int) -> list[int]:
             try:
                 comm = subprocess.run(
                     ["ps", "-p", str(pid), "-o", "comm="],
-                    capture_output=True, text=True, timeout=3,
+                    capture_output=True,
+                    text=True,
+                    timeout=3,
                 )
                 cmd = comm.stdout.strip().lower()
                 if any(kw in cmd for kw in ("python", "mlflow", "uvicorn")):
@@ -309,8 +422,29 @@ def stop():
         mlflow_pids = _find_pid_by_port(5000)
         if mlflow_pids:
             _kill_pids(mlflow_pids, signal.SIGTERM)
-            print(f"Stopped MLflow server (PID{' '.join(str(p) for p in mlflow_pids)}).")
+            print(
+                f"Stopped MLflow server (PID{' '.join(str(p) for p in mlflow_pids)})."
+            )
             killed = True
 
     if not killed:
         print("No running servers found.")
+
+
+def migrate_registry():
+    """Migrate local model registry entries to MLflow model registry."""
+
+    async def _run():
+        from microgpt.db.repositories.models import ModelRepository
+        from microgpt.db.session import AsyncSessionLocal
+        from microgpt.services.models import ModelRegistryService
+        from microgpt.services.tracking import TrackingService
+
+        tracking_svc = TrackingService()
+        async with AsyncSessionLocal() as session:
+            repo = ModelRepository(session)
+            svc = ModelRegistryService(repo)
+            result = await svc.migrate_local_registry_to_mlflow(tracking_svc)
+            print(f"Migration complete: {result}")
+
+    asyncio.run(_run())

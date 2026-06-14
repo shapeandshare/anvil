@@ -25,6 +25,16 @@ async def lifespan(app: FastAPI):
     mlflow_svc = MLflowService()
     mlflow_svc.start()
     app.state.mlflow = mlflow_svc
+
+    from microgpt.services.tracking import TrackingService
+
+    TrackingService.enable_system_metrics()
+
+    try:
+        await TrackingService().reconcile_orphans()
+    except Exception:
+        pass
+
     yield
     mlflow_svc.stop()
 

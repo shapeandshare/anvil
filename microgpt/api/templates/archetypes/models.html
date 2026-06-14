@@ -5,7 +5,7 @@
 <div class="panel">
   <h2 class="panel-title">Model Registry</h2>
   <p class="text-muted" style="margin-bottom:var(--space-4);font-size:0.75rem;">
-    Registered models are promoted from completed experiments. 
+    Registered models are promoted from finished experiments. 
     <a href="/v1/experiments-page" class="action-link">Go to Experiments</a> to register a new model.
   </p>
   <div id="models-empty" class="loading-indicator" style="display:block;">
@@ -57,7 +57,7 @@
     var models = data.models || [];
 
     if (models.length === 0) {
-      emptyEl.innerHTML = 'No models registered yet — <a href="/v1/experiments-page" class="action-link">register one from a completed experiment</a>.';
+      emptyEl.innerHTML = 'No models registered yet — <a href="/v1/experiments-page" class="action-link">register one from a finished experiment</a>.';
       return;
     }
 

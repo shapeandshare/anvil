@@ -55,8 +55,8 @@
       var row = document.createElement('tr');
       var badgeClass = '';
       var statusText = 'running';
-      if (exp.final_loss != null) {
-        statusText = 'completed';
+      if (exp.status === 'finished') {
+        statusText = 'finished';
         badgeClass = exp.final_loss < 0.5 ? 'badge-green' : exp.final_loss < 1.0 ? 'badge-yellow' : 'badge-red';
       }
       if (exp.status === 'failed' || exp.status === 'error') {

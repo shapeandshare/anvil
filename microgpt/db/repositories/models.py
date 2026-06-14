@@ -41,9 +41,7 @@ class ModelRepository:
             delete(RegisteredModel).where(RegisteredModel.id == model_id)
         )
 
-    async def get_versions(
-        self, model_id: int
-    ) -> Sequence[ModelVersion]:
+    async def get_versions(self, model_id: int) -> Sequence[ModelVersion]:
         result = await self._session.execute(
             select(ModelVersion)
             .where(ModelVersion.model_id == model_id)
@@ -51,9 +49,7 @@ class ModelRepository:
         )
         return result.scalars().all()
 
-    async def get_version(
-        self, model_id: int, version: int
-    ) -> ModelVersion | None:
+    async def get_version(self, model_id: int, version: int) -> ModelVersion | None:
         result = await self._session.execute(
             select(ModelVersion).where(
                 ModelVersion.model_id == model_id,
@@ -68,9 +64,7 @@ class ModelRepository:
         await self._session.refresh(version)
         return version
 
-    async def delete_version(
-        self, model_id: int, version: int
-    ) -> None:
+    async def delete_version(self, model_id: int, version: int) -> None:
         await self._session.execute(
             delete(ModelVersion).where(
                 ModelVersion.model_id == model_id,
@@ -87,9 +81,7 @@ class ModelRepository:
         val = result.scalar()
         return val if val is not None else 1
 
-    async def get_model_with_versions(
-        self, model_id: int
-    ) -> RegisteredModel | None:
+    async def get_model_with_versions(self, model_id: int) -> RegisteredModel | None:
         result = await self._session.execute(
             select(RegisteredModel)
             .where(RegisteredModel.id == model_id)

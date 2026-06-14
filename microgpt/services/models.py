@@ -1,10 +1,11 @@
+from __future__ import annotations
+
 import json
 import shutil
 from pathlib import Path
 
 from microgpt.db.models.registry import ModelVersion, RegisteredModel
 from microgpt.db.repositories.models import ModelRepository
-
 
 REGISTRY_BASE = Path("data/models/registry")
 
@@ -23,6 +24,9 @@ class ModelRegistryService:
         dataset_name: str | None = None,
         hyperparameters: dict | None = None,
     ) -> dict:
+        """DEPRECATED: Local model registry write path. New registrations go through
+        TrackingService.register_source_model() targeting the MLflow model registry.
+        Retained for read-only backward compatibility only."""
         existing = await self._repo.get_by_name(name)
         if existing is None:
             model = RegisteredModel(name=name, description=description)
@@ -33,9 +37,7 @@ class ModelRegistryService:
             model_id = existing.id
             version_num = await self._repo.get_next_version_number(model_id)
 
-        artifact_path = self._copy_artifact(
-            name, version_num, artifact_source_path
-        )
+        artifact_path = self._copy_artifact(name, version_num, artifact_source_path)
 
         version = ModelVersion(
             model_id=model_id,
@@ -116,16 +118,12 @@ class ModelRegistryService:
                     ),
                     "created_at": str(v.created_at),
                 }
-                for v in sorted(
-                    model.versions, key=lambda x: x.version, reverse=True
-                )
+                for v in sorted(model.versions, key=lambda x: x.version, reverse=True)
             ],
             "created_at": str(model.created_at),
         }
 
-    async def get_version(
-        self, model_id: int, version: int
-    ) -> dict | None:
+    async def get_version(self, model_id: int, version: int) -> dict | None:
         model = await self._repo.get(model_id)
         if model is None:
             return None
@@ -138,9 +136,7 @@ class ModelRegistryService:
             "dataset_name": v.dataset_name,
             "final_loss": v.final_loss,
             "hyperparameters": (
-                json.loads(v.hyperparameters_json)
-                if v.hyperparameters_json
-                else None
+                json.loads(v.hyperparameters_json) if v.hyperparameters_json else None
             ),
             "artifact_path": v.artifact_path,
             "created_at": str(v.created_at),
@@ -157,9 +153,7 @@ class ModelRegistryService:
             shutil.rmtree(model_dir)
         return name
 
-    async def delete_version(
-        self, model_id: int, version: int
-    ) -> str | None:
+    async def delete_version(self, model_id: int, version: int) -> str | None:
         model = await self._repo.get(model_id)
         if model is None:
             return None
@@ -192,3 +186,31 @@ class ModelRegistryService:
                 }
             )
         return result
+
+    async def migrate_local_registry_to_mlflow(self, tracking_svc) -> dict:
+        from microgpt.db.repositories.experiments import ExperimentRepository
+
+        models = await self._repo.get_all()
+        migrated, skipped, failed = 0, 0, 0
+        for model in models:
+            versions = await self._repo.get_versions(model.id)
+            for version in versions:
+                if version.experiment_id:
+                    exp_repo = ExperimentRepository(self._repo._session)
+                    exp = await exp_repo.get(version.experiment_id)
+                    if exp and exp.mlflow_run_id:
+                        try:
+                            await tracking_svc.register_source_model(
+                                run_id=exp.mlflow_run_id,
+                                dataset_id=exp.dataset_id,
+                                corpus_id=getattr(exp, "corpus_id", None),
+                                artifact_path="model.json",
+                            )
+                            migrated += 1
+                        except Exception:
+                            failed += 1
+                    else:
+                        skipped += 1
+                else:
+                    skipped += 1
+        return {"migrated": migrated, "skipped": skipped, "failed": failed}

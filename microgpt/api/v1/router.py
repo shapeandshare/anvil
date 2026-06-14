@@ -8,18 +8,18 @@ import time
 from pathlib import Path
 
 import psutil
-
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
 from microgpt.api.v1.corpora import router as corpora_router
 from microgpt.api.v1.datasets import router as datasets_router
 from microgpt.api.v1.eval import router as eval_router
-from microgpt.api.v1.inference import router as inference_router
-from microgpt.core.engine import GPT, softmax
+from microgpt.api.v1.eval_datasets import router as eval_datasets_router
 from microgpt.api.v1.experiments import router as experiments_router
-from microgpt.api.v1.training import router as training_router
+from microgpt.api.v1.inference import router as inference_router
 from microgpt.api.v1.registry import router as registry_router
+from microgpt.api.v1.training import router as training_router
+from microgpt.core.engine import GPT, softmax
 from microgpt.gpu import detect_gpu
 
 router = APIRouter()
@@ -29,6 +29,7 @@ router.include_router(datasets_router)
 router.include_router(corpora_router)
 router.include_router(registry_router)
 router.include_router(eval_router)
+router.include_router(eval_datasets_router)
 router.include_router(inference_router)
 
 MODELS_DIR = Path("data/models")
@@ -993,8 +994,8 @@ async def model_detail_page(request: Request, model_id: int):
 
 @router.get("/inference/models")
 async def list_inference_models():
-    from microgpt.db.session import AsyncSessionLocal
     from microgpt.db.repositories.models import ModelRepository
+    from microgpt.db.session import AsyncSessionLocal
     from microgpt.services.models import ModelRegistryService
 
     async with AsyncSessionLocal() as session:
@@ -1037,8 +1038,8 @@ async def inference_sample(body: dict):
                 detail="top_p must be a float in the range (0.0, 1.0]",
             )
 
-    from microgpt.db.session import AsyncSessionLocal
     from microgpt.db.repositories.models import ModelRepository
+    from microgpt.db.session import AsyncSessionLocal
     from microgpt.services.models import ModelRegistryService
 
     async with AsyncSessionLocal() as session:

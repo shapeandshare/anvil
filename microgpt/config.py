@@ -17,7 +17,9 @@ def get_config():
             "MICROGPT_DB_PATH", str(Path("data/microgpt.db").resolve())
         ),
         "log_dir": os.getenv("MICROGPT_LOG_DIR", "logs"),
-        "mlflow_uri": os.getenv("MICROGPT_MLFLOW_URI", "sqlite:///./mlruns/mlflow.db"),
+        "mlflow_uri": os.getenv("MICROGPT_MLFLOW_URI", "http://127.0.0.1:5000"),
+        "mlflow_backend_store_uri": "sqlite:///"
+        + str(Path("mlruns/mlflow.db").resolve()),
         "storage_backend": os.getenv("MICROGPT_STORAGE_BACKEND", "local"),
         "device": os.getenv("MICROGPT_DEVICE", ""),
     }
