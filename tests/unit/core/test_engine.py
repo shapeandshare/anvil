@@ -42,3 +42,21 @@ def test_train_reduces_loss():
     assert final_loss > 0
     assert isinstance(samples, list)
     assert len(samples) == 20
+
+
+def test_optimizer_state_callback():
+    """T047: optimizer_state_callback receives correct m/v/grad arrays."""
+    docs = ["emma", "olivia"]
+    captured = []
+
+    def cb(step, m, v, grads):
+        captured.append({"step": step, "m_len": len(m), "v_len": len(v), "grads_len": len(grads)})
+
+    from microgpt.core.engine import train as t
+
+    t(docs, num_steps=5, n_embd=8, n_head=2, optimizer_state_callback=cb)
+
+    assert len(captured) == 5
+    for entry in captured:
+        assert entry["m_len"] == entry["v_len"] == entry["grads_len"]
+        assert entry["m_len"] > 0

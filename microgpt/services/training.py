@@ -105,6 +105,25 @@ class TrainingService:
             if progress_callback_override:
                 progress_callback_override(step, loss)
 
+        def optimizer_state_callback(step: int, m: list, v: list, grads: list) -> None:
+            snapshot_step = config.get("optimizer_snapshot_interval", 10)
+            if step % snapshot_step == 0:
+                asyncio.run_coroutine_threadsafe(
+                    queue.put(
+                        {
+                            "event": "optimizer_state",
+                            "data": json.dumps({
+                                "step": step,
+                                "params": [
+                                    {"index": i, "m": round(m[i], 8), "v": round(v[i], 8), "grad": round(grads[i], 8)}
+                                    for i in range(min(10, len(m)))
+                                ],
+                            }),
+                        }
+                    ),
+                    loop,
+                )
+
         # Dispatch to GPU or CPU engine
         use_gpu_backend = device != "cpu"
 
@@ -147,6 +166,7 @@ class TrainingService:
                     learning_rate=config.get("learning_rate", 0.01),
                     temperature=config.get("temperature", 0.5),
                     progress_callback=progress_callback,
+                    optimizer_state_callback=optimizer_state_callback,
                 ),
             )
 

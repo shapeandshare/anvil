@@ -47,6 +47,10 @@
 <script src="/static/js/widgets/sampling.js"></script>
 <script src="/static/js/widgets/attention.js"></script>
 <script src="/static/js/widgets/training-loop.js"></script>
+<script src="/static/js/widgets/autograd.js"></script>
+<script src="/static/js/widgets/loss.js"></script>
+<script src="/static/js/widgets/params.js"></script>
+<script src="/static/js/widgets/adam.js"></script>
 <script>
 (function() {
   var WIDGET_CLASSES = {
@@ -55,6 +59,10 @@
     sampling:    window.SamplingWidget,
     attention:   window.AttentionWidget,
     trainingLoop: window.TrainingLoopWidget,
+    autograd: window.AutogradWidget,
+    loss: window.LossWidget,
+    params: window.ParamsWidget,
+    adam: window.AdamWidget,
   };
 
   var widgetInstances = {};

@@ -222,6 +222,7 @@ def train(
     beta2=0.99,
     temperature=0.5,
     progress_callback=None,
+    optimizer_state_callback=None,
 ):
     random.seed(42)
     uchars = sorted(set("".join(docs)))
@@ -260,6 +261,10 @@ def train(
             m_hat = m[i] / (1 - beta1 ** (step + 1))
             v_hat = v[i] / (1 - beta2 ** (step + 1))
             p.data -= lr_t * m_hat / (v_hat**0.5 + 1e-8)
+        if optimizer_state_callback:
+            grads = [p.grad for p in model.params]
+            optimizer_state_callback(step, m, v, grads)
+        for p in model.params:
             p.grad = 0
         if progress_callback:
             progress_callback(step, loss.data)
