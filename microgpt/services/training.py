@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 import random
+import threading
 import urllib.request
 from collections.abc import Awaitable, Callable
 
@@ -9,6 +10,11 @@ from microgpt.config import get_config
 from microgpt.core.engine import GPT, train
 from microgpt.core.torch_engine import torch_available, train_torch
 from microgpt.gpu import resolve_device
+
+
+class StopRequested(Exception):
+    """Raised when training is requested to stop."""
+    pass
 
 
 def _load_weights_into_model(model: GPT, weights: dict) -> None:
@@ -22,7 +28,23 @@ def _load_weights_into_model(model: GPT, weights: dict) -> None:
 class TrainingService:
     def __init__(self):
         self._queues: dict[int, asyncio.Queue] = {}
+        self._stop_events: dict[int, threading.Event] = {}
         self._running = 0
+        self._run_metadata: dict[int, dict] = {}
+
+    def store_run_metadata(self, run_id: int, *, mlflow_run_id: str | None = None, experiment_id: int | None = None) -> None:
+        self._run_metadata[run_id] = {
+            "mlflow_run_id": mlflow_run_id,
+            "experiment_id": experiment_id,
+        }
+
+    def get_mlflow_run_id(self, run_id: int) -> str | None:
+        meta = self._run_metadata.get(run_id)
+        return meta.get("mlflow_run_id") if meta else None
+
+    def get_experiment_id(self, run_id: int) -> int | None:
+        meta = self._run_metadata.get(run_id)
+        return meta.get("experiment_id") if meta else None
 
     def _load_docs(
         self, corpus_id: int | None = None, dataset_id: int | None = None
@@ -69,7 +91,14 @@ class TrainingService:
         run_id = self._running
         self._running += 1
         self._queues[run_id] = asyncio.Queue()
+        self._stop_events[run_id] = threading.Event()
         return run_id
+
+    def stop_run(self, run_id: int) -> None:
+        """Signal a running training to stop. Thread-safe."""
+        event = self._stop_events.get(run_id)
+        if event is not None:
+            event.set()
 
     async def start_training(
         self,
@@ -95,6 +124,9 @@ class TrainingService:
         device = resolve_device(use_gpu=use_gpu, preferred=preferred_device or None)
 
         def progress_callback(step: int, loss: float) -> None:
+            stop_event = self._stop_events.get(run_id)
+            if stop_event is not None and stop_event.is_set():
+                raise StopRequested(f"Training stopped at step {step}")
             asyncio.run_coroutine_threadsafe(
                 queue.put(
                     {
@@ -129,50 +161,66 @@ class TrainingService:
                 )
 
         # Dispatch to GPU or CPU engine
+        stop_event = self._stop_events.get(run_id)
+        stop_check = (lambda: stop_event.is_set()) if stop_event is not None else None
+
         use_gpu_backend = device != "cpu"
 
-        if use_gpu_backend and torch_available():
-            raw_weights, final_loss, samples, uchars = await loop.run_in_executor(
-                None,
-                lambda: train_torch(
-                    docs,
-                    device=device,
-                    num_steps=config.get("num_steps", 1000),
+        try:
+            if use_gpu_backend and torch_available():
+                raw_weights, final_loss, samples, uchars = await loop.run_in_executor(
+                    None,
+                    lambda: train_torch(
+                        docs,
+                        device=device,
+                        num_steps=config.get("num_steps", 1000),
+                        n_embd=config.get("n_embd", 16),
+                        n_head=config.get("n_head", 4),
+                        n_layer=config.get("n_layer", 1),
+                        block_size=config.get("block_size", 16),
+                        learning_rate=config.get("learning_rate", 0.01),
+                        temperature=config.get("temperature", 0.5),
+                        progress_callback=progress_callback,
+                        stop_check=stop_check,
+                    ),
+                )
+                # Wrap GPU weights into a CPU GPT model for downstream compatibility
+                model = GPT(
+                    vocab_size=len(uchars) + 1,
                     n_embd=config.get("n_embd", 16),
                     n_head=config.get("n_head", 4),
                     n_layer=config.get("n_layer", 1),
                     block_size=config.get("block_size", 16),
-                    learning_rate=config.get("learning_rate", 0.01),
-                    temperature=config.get("temperature", 0.5),
-                    progress_callback=progress_callback,
-                ),
-            )
-            # Wrap GPU weights into a CPU GPT model for downstream compatibility
-            model = GPT(
-                vocab_size=len(uchars) + 1,
-                n_embd=config.get("n_embd", 16),
-                n_head=config.get("n_head", 4),
-                n_layer=config.get("n_layer", 1),
-                block_size=config.get("block_size", 16),
-            )
-            _load_weights_into_model(model, raw_weights)
+                )
+                _load_weights_into_model(model, raw_weights)
 
-        else:
-            model, final_loss, samples, uchars = await loop.run_in_executor(
-                None,
-                lambda: train(
-                    docs,
-                    num_steps=config.get("num_steps", 1000),
-                    n_embd=config.get("n_embd", 16),
-                    n_head=config.get("n_head", 4),
-                    n_layer=config.get("n_layer", 1),
-                    block_size=config.get("block_size", 16),
-                    learning_rate=config.get("learning_rate", 0.01),
-                    temperature=config.get("temperature", 0.5),
-                    progress_callback=progress_callback,
-                    optimizer_state_callback=optimizer_state_callback,
-                ),
-            )
+            else:
+                model, final_loss, samples, uchars = await loop.run_in_executor(
+                    None,
+                    lambda: train(
+                        docs,
+                        num_steps=config.get("num_steps", 1000),
+                        n_embd=config.get("n_embd", 16),
+                        n_head=config.get("n_head", 4),
+                        n_layer=config.get("n_layer", 1),
+                        block_size=config.get("block_size", 16),
+                        learning_rate=config.get("learning_rate", 0.01),
+                        temperature=config.get("temperature", 0.5),
+                        progress_callback=progress_callback,
+                        optimizer_state_callback=optimizer_state_callback,
+                        stop_check=stop_check,
+                    ),
+                )
+
+        except StopRequested:
+            await queue.put({
+                "event": "error",
+                "data": json.dumps({"message": "Training stopped by user"}),
+            })
+            raise
+        finally:
+            self._queues.pop(run_id, None)
+            self._stop_events.pop(run_id, None)
 
         await queue.put(
             {
@@ -186,7 +234,6 @@ class TrainingService:
                 ),
             }
         )
-        self._queues.pop(run_id, None)
 
         if on_complete:
             await on_complete(model, config, final_loss, samples, uchars)
