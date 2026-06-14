@@ -223,6 +223,7 @@ def train(
     temperature=0.5,
     progress_callback=None,
     optimizer_state_callback=None,
+    stop_check=None,
 ):
     random.seed(42)
     uchars = sorted(set("".join(docs)))
@@ -240,6 +241,8 @@ def train(
     random.shuffle(docs)
 
     for step in range(num_steps):
+        if stop_check is not None and stop_check():
+            break
         doc = docs[step % len(docs)]
         tokens = [BOS] + [uchars.index(ch) for ch in doc] + [BOS]
         n = min(block_size, len(tokens) - 1)
