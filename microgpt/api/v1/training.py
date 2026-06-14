@@ -68,7 +68,7 @@ async def start_training(config: dict):
     async with AsyncSessionLocal() as session:
         repo = ExperimentRepository(session)
         exp = await repo.create_running(
-            config_id=0,
+            config_id=None,
             run_name=f"run-{run_id}" if not tracking_svc.is_degraded else None,
             mlflow_run_id=mlflow_run_id or None,
             dataset_id=dataset_id,
@@ -115,14 +115,13 @@ async def start_training(config: dict):
         mps_thread = MPSSamplerThread(tracking_svc, mlflow_run_id, interval=5.0)
         mps_thread.start()
 
-    progress_tasks: set[asyncio.Task] = set()
+    event_loop = asyncio.get_event_loop()
 
     def mlflow_progress_callback(step: int, loss: float) -> None:
-        t = asyncio.create_task(
-            tracking_svc.log_metric(mlflow_run_id, "loss", loss, step=step)
+        asyncio.run_coroutine_threadsafe(
+            tracking_svc.log_metric(mlflow_run_id, "loss", loss, step=step),
+            event_loop,
         )
-        progress_tasks.add(t)
-        t.add_done_callback(progress_tasks.discard)
 
     async def on_complete(
         model, config: dict, final_loss: float, samples: list[str], uchars: list[str]
@@ -176,20 +175,22 @@ async def start_training(config: dict):
             experiment_model_path = MODELS_DIR / f"experiment_{experiment_id}.json"
             model.save(str(experiment_model_path), uchars)
 
-            if mlflow_run_id:
-                try:
-                    await tracking_svc.register_source_model(
-                        run_id=mlflow_run_id,
-                        dataset_id=dataset_id,
-                        corpus_id=corpus_id,
-                    )
-                except Exception:
-                    pass
-
             if mps_thread is not None:
                 mps_thread.stop()
 
             await session.commit()
+
+        # Register model with MLflow after DB commit so experiment
+        # is visible even if model registration hangs
+        if mlflow_run_id:
+            try:
+                await tracking_svc.register_source_model(
+                    run_id=mlflow_run_id,
+                    dataset_id=dataset_id,
+                    corpus_id=corpus_id,
+                )
+            except Exception:
+                pass
 
     async def _run_training():
         try:

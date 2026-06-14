@@ -40,7 +40,9 @@ class Experiment(Base, TimestampMixin):
     )
     run_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="running")
-    config_id: Mapped[int] = mapped_column(Integer, ForeignKey("training_configs.id"))
+    config_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("training_configs.id"), nullable=True
+    )
     dataset_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("datasets.id"), nullable=True
     )
