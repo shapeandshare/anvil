@@ -126,6 +126,8 @@
     var muted = style.getPropertyValue('--text-muted').trim() || '#888';
     var border = style.getPropertyValue('--border').trim() || '#2a2c32';
     var textColor = style.getPropertyValue('--text').trim() || '#e8eaed';
+    var accent = style.getPropertyValue('--accent').trim() || '#007aff';
+    var accentOrange = style.getPropertyValue('--accent-orange').trim() || '#ff9500';
 
     var pad = { top: 10, right: 10, bottom: 22, left: 48 };
     var plotW = w - pad.left - pad.right;
@@ -189,7 +191,7 @@
     }
 
     /* Draw theoretical m curve (blue) */
-    ctx.strokeStyle = '#3b82f6';
+    ctx.strokeStyle = accent;
     ctx.lineWidth = 1.5;
     ctx.setLineDash([4, 3]);
     ctx.beginPath();
@@ -203,7 +205,7 @@
     ctx.setLineDash([]);
 
     /* Draw theoretical v curve (orange) */
-    ctx.strokeStyle = '#f97316';
+    ctx.strokeStyle = accentOrange;
     ctx.lineWidth = 1.5;
     ctx.setLineDash([4, 3]);
     ctx.beginPath();
@@ -218,7 +220,7 @@
 
     /* Draw real m data if available */
     if (showRealData) {
-      ctx.strokeStyle = '#3b82f6';
+      ctx.strokeStyle = accent;
       ctx.lineWidth = 2;
       ctx.globalAlpha = 0.9;
       ctx.beginPath();
@@ -231,7 +233,7 @@
       ctx.stroke();
 
       /* Draw real v data if available */
-      ctx.strokeStyle = '#f97316';
+      ctx.strokeStyle = accentOrange;
       ctx.lineWidth = 2;
       ctx.beginPath();
       for (var i = 0; i < this._vHistory.length; i++) {
@@ -249,7 +251,7 @@
     var legendX = pad.left + 4;
 
     /* m legend entry */
-    ctx.fillStyle = '#3b82f6';
+    ctx.fillStyle = accent;
     ctx.fillRect(legendX, legendY + 4, 12, 3);
     ctx.fillStyle = textColor;
     ctx.font = '8px "SF Mono","Fira Code",monospace';
@@ -258,7 +260,7 @@
     ctx.fillText('m (momentum)', legendX + 16, legendY + 6);
 
     /* v legend entry */
-    ctx.fillStyle = '#f97316';
+    ctx.fillStyle = accentOrange;
     ctx.fillRect(legendX + 90, legendY + 4, 12, 3);
     ctx.fillStyle = textColor;
     ctx.fillText('v (adaptive LR)', legendX + 106, legendY + 6);

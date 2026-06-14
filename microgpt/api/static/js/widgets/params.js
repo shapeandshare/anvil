@@ -92,7 +92,7 @@
     for (var i = 0; i < groups.length; i++) {
       var g = groups[i];
       var category = g.category || 'other';
-      var count = g.count || 0;
+      var count = g.num_params || 0;
       /* Apply scaling: embedding scales with n_embd^2-ish, attention/MLP with both */
       if (category === 'embedding') {
         count = Math.round(count * embdScale);
@@ -146,12 +146,16 @@
     var style = getComputedStyle(document.documentElement);
     var muted = style.getPropertyValue('--text-muted').trim() || '#888';
     var textColor = style.getPropertyValue('--text').trim() || '#e8eaed';
+    var accent = style.getPropertyValue('--accent').trim() || '#007aff';
+    var accentCyan = style.getPropertyValue('--accent-cyan').trim() || '#32d74b';
+    var accentOrange = style.getPropertyValue('--accent-orange').trim() || '#ff9500';
+    var accentPurple = style.getPropertyValue('--accent-purple').trim() || '#af52de';
 
     var catColors = {
-      embedding: '#3b82f6',
-      attention: '#06b6d4',
-      mlp: '#f97316',
-      output: '#a855f7'
+      embedding: accent,
+      attention: accentCyan,
+      mlp: accentOrange,
+      output: accentPurple
     };
     var catLabels = {
       embedding: 'embedding',

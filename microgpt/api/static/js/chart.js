@@ -154,6 +154,16 @@
     this._paint();
   };
 
+  LossChart.prototype.getPoints = function() {
+    return this._points.slice();
+  };
+
+  LossChart.prototype.loadPoints = function(points) {
+    this._points = points.slice();
+    this._dirty = true;
+    this._paint();
+  };
+
   LossChart.prototype.clear = function() {
     this._points = [];
     this._dirty = true;

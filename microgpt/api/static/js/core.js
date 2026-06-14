@@ -26,59 +26,12 @@
 
   function initNav() {
     var path = window.location.pathname;
-    document.querySelectorAll('.app-tab').forEach(function(tab) {
-      var target = tab.getAttribute('data-target');
-      if (path === target || (target === '/v1' && (path === '/' || path === '/v1'))) {
+    document.querySelectorAll('.tab-item').forEach(function(tab) {
+      var href = tab.getAttribute('href');
+      if (path === href) {
         tab.classList.add('active');
       }
-      tab.addEventListener('click', function() {
-        window.location.href = this.getAttribute('data-target');
-      });
     });
-  }
-
-  function initClock() {
-    function update() {
-      var now = new Date();
-      var h = now.getHours().toString().padStart(2, '0');
-      var m = now.getMinutes().toString().padStart(2, '0');
-      var s = now.getSeconds().toString().padStart(2, '0');
-      var el = document.getElementById('status-time');
-      if (el) el.textContent = h + ':' + m + ':' + s;
-    }
-    setInterval(update, 1000);
-    update();
-  }
-
-  function initStatusBar() {
-    var startTime = Date.now();
-
-    function formatUptime(ms) {
-      var total = Math.floor(ms / 1000);
-      var h = Math.floor(total / 3600);
-      var m = Math.floor((total % 3600) / 60);
-      var s = total % 60;
-      return h + 'h ' + m + 'm ' + s + 's';
-    }
-
-    function fetchStats() {
-      fetch('/v1/registry/models').then(function(r) { return r.json(); }).then(function(d) {
-        var el = document.getElementById('status-models');
-        if (el) el.textContent = 'models: ' + (d.models ? d.models.length : 0);
-      }).catch(function() {});
-      fetch('/v1/experiments').then(function(r) { return r.json(); }).then(function(d) {
-        var el = document.getElementById('status-experiments');
-        if (el) el.textContent = 'exps: ' + (d.experiments ? d.experiments.length : 0);
-      }).catch(function() {});
-      fetch('/v1/datasets').then(function(r) { return r.json(); }).then(function(d) {
-        var el = document.getElementById('status-datasets');
-        if (el) el.textContent = 'datasets: ' + (d.datasets ? d.datasets.length : 0);
-      }).catch(function() {});
-      var uptimeEl = document.getElementById('status-uptime');
-      if (uptimeEl) uptimeEl.textContent = formatUptime(Date.now() - startTime);
-    }
-    fetchStats();
-    setInterval(fetchStats, 15000);
   }
 
   function getUrlParams() {
@@ -91,11 +44,85 @@
     window.history.replaceState({}, '', url);
   }
 
+  /* ── Session State ────────────────────────────────────── */
+  /* Maintains workflow state across page navigations via sessionStorage.
+   *
+   * Keys (namespaced under 'microgpt:workflow'):
+   *   training: { runId, experimentId, mlflowRunId, status, config, metrics[], startedAt }
+   *   import:   { datasetId, corpusId, status }
+   */
+
+  var SS_KEY = 'microgpt:workflow';
+
+  function getSessionState() {
+    try {
+      var raw = sessionStorage.getItem(SS_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (_) { return {}; }
+  }
+
+  function setSessionState(key, val) {
+    try {
+      var state = getSessionState();
+      if (val === null) {
+        delete state[key];
+      } else {
+        state[key] = val;
+      }
+      sessionStorage.setItem(SS_KEY, JSON.stringify(state));
+    } catch (_) {}
+  }
+
+  function getWorkflow(key) {
+    return getSessionState()[key] || null;
+  }
+
+  window.coreSession = {
+    getWorkflow: getWorkflow,
+    setWorkflow: function(key, val) { setSessionState(key, val); },
+    clearWorkflow: function(key) { setSessionState(key, null); },
+    addRun: function(runId, data) {
+      var state = getSessionState();
+      var runs = state.training && state.training.runs ? state.training.runs : {};
+      runs[runId] = data;
+      state.training = { runs: runs, currentRunId: runId };
+      sessionStorage.setItem(SS_KEY, JSON.stringify(state));
+    },
+    updateRun: function(runId, data) {
+      var state = getSessionState();
+      if (!state.training || !state.training.runs || !state.training.runs[runId]) return;
+      state.training.runs[runId] = data;
+      sessionStorage.setItem(SS_KEY, JSON.stringify(state));
+    },
+    removeRun: function(runId) {
+      var state = getSessionState();
+      if (!state.training || !state.training.runs) return;
+      delete state.training.runs[runId];
+      var remaining = Object.keys(state.training.runs);
+      if (remaining.length === 0) {
+        delete state.training;
+      } else {
+        state.training.currentRunId = remaining[remaining.length - 1];
+      }
+      sessionStorage.setItem(SS_KEY, JSON.stringify(state));
+    },
+    getActiveRuns: function() {
+      var state = getSessionState();
+      if (!state.training || !state.training.runs) return {};
+      return state.training.runs;
+    },
+    getCurrentRunId: function() {
+      var state = getSessionState();
+      return state.training ? state.training.currentRunId : null;
+    },
+    clearAll: function() {
+      try { sessionStorage.removeItem(SS_KEY); } catch (_) {}
+    },
+  };
+
   document.addEventListener('DOMContentLoaded', function() {
     initTheme();
     initNav();
-    initClock();
-    initStatusBar();
     var btn = document.getElementById('theme-toggle');
     if (btn) btn.addEventListener('click', toggleTheme);
   });

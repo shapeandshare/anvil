@@ -11,20 +11,81 @@
   }
 
   TrainingLoopWidget.prototype._render = function () {
+    var self = this;
     this.container.innerHTML =
-'<div class="widget-label">Training loss curve — select a finished experiment to replay:</div>' +
-...
-/* Select first finished experiment by default */
-var finished = exps.filter(function (e) { return e.status === 'finished'; });
-var target = finished.length > 0 ? finished[0] : exps[0];
+      '<div class="widget-label">Training loss curve — select a finished experiment to replay:</div>' +
+      '<div class="widget-empty-state" id="loop-empty" style="display:none">' +
+      '  <p class="widget-empty-text">No experiments yet. ' +
+      '    <a href="/v1/training-page" class="widget-empty-link">Go train a model</a>' +
+      '    to see your loss curve here.</p>' +
+      '</div>' +
+      '<div id="loop-controls" style="display:none">' +
+      '  <select id="loop-select" class="widget-input" aria-label="Select experiment"></select>' +
+      '</div>' +
+      '<div id="loop-info"></div>' +
+      '<div id="loop-chart" style="margin-top:var(--space-3);">' +
+      '  <canvas id="loop-canvas" style="width:100%;height:180px;display:block;"></canvas>' +
+      '</div>' +
+      '<div id="loop-scrubber-row" style="display:none;" class="scrubber-container">' +
+      '  <span id="loop-step-label" class="scrubber-label">Step: —</span>' +
+      '  <input type="range" id="loop-scrubber" class="scrubber-slider" min="0" max="0" value="0" aria-label="Scrub through training steps">' +
+      '  <span id="loop-loss-label" class="scrubber-label">Loss: —</span>' +
+      '</div>';
+
+    this._emptyEl = this.container.querySelector('#loop-empty');
+    this._controlsEl = this.container.querySelector('#loop-controls');
+    this._selectEl = this.container.querySelector('#loop-select');
+    this._infoEl = this.container.querySelector('#loop-info');
+    this._canvas = this.container.querySelector('#loop-canvas');
+    this._scrubberRow = this.container.querySelector('#loop-scrubber-row');
+    this._scrubberEl = this.container.querySelector('#loop-scrubber');
+    this._stepLabel = this.container.querySelector('#loop-step-label');
+    this._lossLabel = this.container.querySelector('#loop-loss-label');
+
+    var dpr = window.devicePixelRatio || 1;
+    this._dpr = dpr;
+    var w = this._canvas.clientWidth || 400;
+    this._chartW = w;
+    this._chartH = 180;
+    this._canvas.width = w * dpr;
+    this._canvas.height = 180 * dpr;
+    this._ctx = this._canvas.getContext('2d');
+
+    this._selectEl.addEventListener('change', function () {
+      self._selectedExpId = parseInt(this.value, 10);
+      self._fetchMetrics(self._selectedExpId);
+    });
+
+    this._scrubberEl.addEventListener('input', function () {
+      self._currentStep = parseInt(this.value, 10);
+      self._updateScrubberDisplay();
+      self._drawCurve();
+    });
+
+    fetch('/v1/experiments')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var exps = data.experiments || [];
+        if (exps.length === 0) {
+          self._emptyEl.style.display = '';
+          self._controlsEl.style.display = 'none';
+          self._infoEl.innerHTML = '<p class="widget-hint">Run a training experiment first, then return here to inspect the loss curve.</p>';
+          return;
+        }
+        self._experiments = exps;
+        self._populateSelect(exps);
+        self._controlsEl.style.display = '';
+
+        var finished = exps.filter(function (e) { return e.status === 'finished'; });
+        var target = finished.length > 0 ? finished[0] : exps[0];
         self._selectedExpId = target.id;
         self._selectEl.value = target.id;
         self._fetchMetrics(target.id);
       })
       .catch(function () {
         self._emptyEl.style.display = '';
-        self._selectEl.innerHTML = '<option value="">Failed to load</option>';
-        self._infoEl.innerHTML = '';
+        self._controlsEl.style.display = 'none';
+        self._infoEl.innerHTML = '<p class="widget-hint">Could not connect to server.</p>';
       });
   };
 
@@ -43,6 +104,7 @@ var target = finished.length > 0 ? finished[0] : exps[0];
     var self = this;
     this._infoEl.innerHTML = '<div class="loading-indicator"><span class="spinner"></span> Loading loss curve...</div>';
     this._emptyEl.style.display = 'none';
+    this._controlsEl.style.display = '';
 
     fetch('/v1/experiments/' + expId + '/metrics')
       .then(function (r) { return r.json(); })
