@@ -36,7 +36,7 @@ class ExperimentRepository:
 
     async def create_running(
         self,
-        config_id: int,
+        config_id: int | None = None,
         run_name: str | None = None,
         mlflow_run_id: str | None = None,
         dataset_id: int | None = None,
