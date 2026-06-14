@@ -272,6 +272,7 @@
         + ' = ' + coverage + '% visit rate'
         + (coverage < 10
           ? ' <span class="ds-warn">(low &mdash; more steps recommended)</span>'
+          + ' <button class="btn btn-sm btn-accent" onclick="window.boostSteps()">boost steps</button>'
           : '')
         + '</div>';
     }
@@ -370,8 +371,10 @@
     blockSize = Math.min(1024, Math.max(8, blockSize));
     reasons.push('block_size=' + blockSize);
 
-    /* num_steps: proportional to data */
-    var numSteps = Math.min(10000, Math.max(500, Math.round(docCount * 10)));
+    /* num_steps: proportional to data, ensure minimum coverage */
+    var numSteps = Math.max(500, Math.round(docCount * 10));
+    numSteps = Math.max(numSteps, Math.ceil(docCount * 0.15));  /* at least 15% coverage */
+    numSteps = Math.min(50000, numSteps);
     reasons.push('steps=' + numSteps + ' (' + Math.round(numSteps / (docCount || 1)) + 'x data)');
 
     /* Set values */
@@ -388,6 +391,43 @@
 
     /* Feedback */
     fb.textContent = '✓ Tuned — ' + reasons.join(' · ');
+  };
+
+  /* ── Boost Steps ── */
+  window.boostSteps = function() {
+    var cid = corpusSelect.value;
+    var did = datasetSelect.value;
+    var docCount = 0;
+    if (cid && corpusCache[cid]) {
+      docCount = corpusCache[cid].document_count || 0;
+    } else if (did && datasetCache[did]) {
+      docCount = datasetCache[did].sample_count || 0;
+    }
+    if (docCount < 1) {
+      /* Cache miss — try a direct fetch instead of giving up */
+      if (cid) {
+        return fetch('/v1/corpora/' + cid).then(function(r) { return r.json(); }).then(function(res) {
+          if (res.data && res.data.document_count > 0) {
+            var target = Math.min(50000, Math.max(500, Math.ceil(res.data.document_count * 0.2)));
+            document.getElementById('num_steps').value = target;
+            updateModelStats(cid, did);
+          }
+        });
+      }
+      if (did) {
+        return fetch('/v1/datasets/' + did).then(function(r) { return r.json(); }).then(function(res) {
+          if (res.data && res.data.sample_count > 0) {
+            var target = Math.min(50000, Math.max(500, Math.ceil(res.data.sample_count * 0.2)));
+            document.getElementById('num_steps').value = target;
+            updateModelStats(cid, did);
+          }
+        });
+      }
+      return;
+    }
+    var targetSteps = Math.min(50000, Math.max(500, Math.ceil(docCount * 0.2)));
+    document.getElementById('num_steps').value = targetSteps;
+    updateModelStats(cid, did);
   };
 
   /* ── Register Model Modal ── */

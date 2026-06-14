@@ -216,29 +216,9 @@
 }
 
 /* ── Concept Page (Archetype A) ── */
-.scroll-scene {
+.concept-lesson {
   max-width: 720px;
   margin: 0 auto;
-}
-
-.scroll-visual {
-  position: sticky;
-  top: 80px;
-  z-index: 1;
-  height: auto;
-  min-height: 280px;
-  background: var(--surface);
-  border: var(--border-width) solid var(--border);
-  border-radius: var(--radius);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  margin-bottom: var(--space-6);
-}
-
-.scroll-narrative {
-  padding-bottom: var(--space-8);
 }
 
 .step {
@@ -273,11 +253,6 @@
   .training-chart,
   .training-metrics,
   .training-samples { grid-column: 1; grid-row: auto; }
-
-  .scroll-visual {
-    top: 60px;
-    min-height: 200px;
-  }
 }
 
 /* ── Experiment List (Archetype C) ── */

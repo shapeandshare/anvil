@@ -11,6 +11,7 @@ from microgpt.api.deps import get_db_session
 from microgpt.db.repositories.corpora import CorpusRepository
 from microgpt.services.corpora import CorpusService
 from microgpt.services.corpus_loader import CorpusLoader
+from microgpt.services.tracking import TrackingService
 
 WORKSPACE_ROOTS = [
     os.path.expanduser("~/Workbench/Repositories"),
@@ -22,6 +23,7 @@ WORKSPACE_ROOTS = [
 ]
 
 router = APIRouter()
+tracking_svc = TrackingService()
 
 
 async def get_service(session: AsyncSession = Depends(get_db_session)):
@@ -31,7 +33,11 @@ async def get_service(session: AsyncSession = Depends(get_db_session)):
 
 
 @router.post("/corpora")
-async def create_corpus(body: dict, svc: CorpusService = Depends(get_service)):
+async def create_corpus(
+    body: dict,
+    svc: CorpusService = Depends(get_service),
+    session: AsyncSession = Depends(get_db_session),
+):
     try:
         name = body["name"].strip()
         root_path = body["root_path"].strip()
@@ -51,7 +57,30 @@ async def create_corpus(body: dict, svc: CorpusService = Depends(get_service)):
             chunk_overlap=body.get("chunk_overlap", 0.5),
             block_size=body.get("block_size", 16),
         )
+
+        # Commit so MLflow tracking (which opens its own DB session) can read the corpus
+        await session.commit()
+
+        mlflow_run_id = await tracking_svc.start_run(
+            run_name=f"corpus-create-{corpus.id}",
+            params={
+                "name": corpus.name,
+                "root_path": corpus.root_path,
+                "chunking_strategy": str(corpus.chunking_strategy),
+                "chunk_overlap": str(corpus.chunk_overlap),
+                "block_size": str(corpus.block_size),
+            },
+            engine_backend="corpus",
+            device="n/a",
+        )
+        if mlflow_run_id:
+            await tracking_svc.log_corpus_input(
+                mlflow_run_id, corpus_id=corpus.id,
+            )
+            await tracking_svc.finish_run(mlflow_run_id)
+
     except ValueError as exc:
+        await session.rollback()
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return {"data": _corpus_to_dict(corpus), "error": None}
 
@@ -99,6 +128,25 @@ async def ingest_corpus(
         corpus, errors = await svc.ingest(id, max_files)
     except (ValueError, NotADirectoryError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    mlflow_run_id = await tracking_svc.start_run(
+        run_name=f"corpus-ingest-{corpus.id}",
+        params={
+            "name": corpus.name,
+            "file_count": str(corpus.file_count),
+            "document_count": str(corpus.document_count),
+            "root_path": corpus.root_path,
+            "chunking_strategy": str(corpus.chunking_strategy),
+        },
+        engine_backend="corpus",
+        device="n/a",
+    )
+    if mlflow_run_id:
+        await tracking_svc.log_corpus_input(
+            mlflow_run_id, corpus_id=corpus.id,
+        )
+        await tracking_svc.finish_run(mlflow_run_id)
+
     lang_map = None
     if corpus.language_map:
         try:
