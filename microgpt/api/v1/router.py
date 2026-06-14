@@ -1,6 +1,5 @@
 """Versioned API v1 router."""
 
-import json
 import os
 import random
 import signal
@@ -9,18 +8,18 @@ import time
 from pathlib import Path
 
 import psutil
-
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
 from microgpt.api.v1.corpora import router as corpora_router
 from microgpt.api.v1.datasets import router as datasets_router
 from microgpt.api.v1.eval import router as eval_router
-from microgpt.api.v1.inference import router as inference_router
-from microgpt.core.engine import GPT, softmax
+from microgpt.api.v1.eval_datasets import router as eval_datasets_router
 from microgpt.api.v1.experiments import router as experiments_router
-from microgpt.api.v1.training import router as training_router
+from microgpt.api.v1.inference import router as inference_router
 from microgpt.api.v1.registry import router as registry_router
+from microgpt.api.v1.training import router as training_router
+from microgpt.core.engine import GPT, softmax
 from microgpt.gpu import detect_gpu
 
 router = APIRouter()
@@ -30,6 +29,7 @@ router.include_router(datasets_router)
 router.include_router(corpora_router)
 router.include_router(registry_router)
 router.include_router(eval_router)
+router.include_router(eval_datasets_router)
 router.include_router(inference_router)
 
 MODELS_DIR = Path("data/models")
@@ -119,11 +119,15 @@ async def clear_service_logs(name: str):
 @router.post("/services/{name}/start")
 async def start_service(name: str, request: Request):
     if name == "web":
-        raise HTTPException(status_code=400, detail="web server cannot be managed via API")
+        raise HTTPException(
+            status_code=400, detail="web server cannot be managed via API"
+        )
     if name == "mlflow":
         mlflow = getattr(request.app.state, "mlflow", None)
         if mlflow is None:
-            raise HTTPException(status_code=500, detail="MLflow service not initialized")
+            raise HTTPException(
+                status_code=500, detail="MLflow service not initialized"
+            )
         if mlflow.is_running:
             return {"status": "already_running"}
         mlflow.start()
@@ -134,11 +138,15 @@ async def start_service(name: str, request: Request):
 @router.post("/services/{name}/stop")
 async def stop_service(name: str, request: Request):
     if name == "web":
-        raise HTTPException(status_code=400, detail="web server cannot be managed via API")
+        raise HTTPException(
+            status_code=400, detail="web server cannot be managed via API"
+        )
     if name == "mlflow":
         mlflow = getattr(request.app.state, "mlflow", None)
         if mlflow is None:
-            raise HTTPException(status_code=500, detail="MLflow service not initialized")
+            raise HTTPException(
+                status_code=500, detail="MLflow service not initialized"
+            )
         if not mlflow.is_running:
             return {"status": "already_stopped"}
         mlflow.stop()
@@ -149,11 +157,15 @@ async def stop_service(name: str, request: Request):
 @router.post("/services/{name}/restart")
 async def restart_service(name: str, request: Request):
     if name == "web":
-        raise HTTPException(status_code=400, detail="web server cannot be managed via API")
+        raise HTTPException(
+            status_code=400, detail="web server cannot be managed via API"
+        )
     if name == "mlflow":
         mlflow = getattr(request.app.state, "mlflow", None)
         if mlflow is None:
-            raise HTTPException(status_code=500, detail="MLflow service not initialized")
+            raise HTTPException(
+                status_code=500, detail="MLflow service not initialized"
+            )
         if mlflow.is_running:
             mlflow.stop()
         mlflow.start()
@@ -167,7 +179,9 @@ def _poll_port(port: int, timeout: float = 2.0) -> list[int]:
     while time.monotonic() < deadline:
         result = subprocess.run(
             ["lsof", "-ti", f":{port}"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         if not result.stdout.strip():
             return []
@@ -180,11 +194,15 @@ async def kill_service_port(name: str, request: Request):
     SERVICE_PORTS = {"mlflow": 5000}
     port = SERVICE_PORTS.get(name)
     if port is None:
-        raise HTTPException(status_code=404, detail=f"Unknown service or no port configured: {name}")
+        raise HTTPException(
+            status_code=404, detail=f"Unknown service or no port configured: {name}"
+        )
     try:
         result = subprocess.run(
             ["lsof", "-ti", f":{port}"],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         if not result.stdout.strip():
             return {"status": "port_free", "port": port, "killed": 0}
@@ -206,7 +224,9 @@ async def kill_service_port(name: str, request: Request):
     except subprocess.TimeoutExpired:
         raise HTTPException(status_code=500, detail="Timeout while scanning port")
     except FileNotFoundError:
-        raise HTTPException(status_code=500, detail="lsof not found — cannot scan ports")
+        raise HTTPException(
+            status_code=500, detail="lsof not found — cannot scan ports"
+        )
 
 
 @router.get("", response_class=HTMLResponse)
@@ -267,22 +287,44 @@ async def inference_page(request: Request):
 
 
 LEARNING_ARC = [
-    {"key": "tokenization", "title": "Tokenization", "path": "/v1/learn/tokenization",
-     "desc": "How the model chops text into character tokens and maps them to IDs."},
-    {"key": "embeddings", "title": "Embeddings", "path": "/v1/learn/embeddings",
-     "desc": "How each token ID becomes a dense vector the model can compute with."},
-    {"key": "attention", "title": "Attention", "path": "/v1/learn/attention",
-     "desc": "How each token looks at its predecessors to build context-aware representations."},
-    {"key": "sampling", "title": "Sampling", "path": "/v1/learn/sampling",
-     "desc": "How the model picks the next character from its probability distribution."},
-    {"key": "training-loop", "title": "Training Loop", "path": "/v1/learn/training-loop",
-     "desc": "How the model learns by minimizing prediction error step by step."},
+    {
+        "key": "tokenization",
+        "title": "Tokenization",
+        "path": "/v1/learn/tokenization",
+        "desc": "How the model chops text into character tokens and maps them to IDs.",
+    },
+    {
+        "key": "embeddings",
+        "title": "Embeddings",
+        "path": "/v1/learn/embeddings",
+        "desc": "How each token ID becomes a dense vector the model can compute with.",
+    },
+    {
+        "key": "attention",
+        "title": "Attention",
+        "path": "/v1/learn/attention",
+        "desc": "How each token looks at its predecessors to build context-aware representations.",
+    },
+    {
+        "key": "sampling",
+        "title": "Sampling",
+        "path": "/v1/learn/sampling",
+        "desc": "How the model picks the next character from its probability distribution.",
+    },
+    {
+        "key": "training-loop",
+        "title": "Training Loop",
+        "path": "/v1/learn/training-loop",
+        "desc": "How the model learns by minimizing prediction error step by step.",
+    },
 ]
 
 
 def _arc_context(current_key: str) -> dict:
     """Build prev/next navigation context from LEARNING_ARC."""
-    idx = next((i for i, item in enumerate(LEARNING_ARC) if item["key"] == current_key), -1)
+    idx = next(
+        (i for i, item in enumerate(LEARNING_ARC) if item["key"] == current_key), -1
+    )
     return {
         "arc": LEARNING_ARC,
         "current_key": current_key,
@@ -662,8 +704,8 @@ async def model_detail_page(request: Request, model_id: int):
 
 @router.get("/inference/models")
 async def list_inference_models():
-    from microgpt.db.session import AsyncSessionLocal
     from microgpt.db.repositories.models import ModelRepository
+    from microgpt.db.session import AsyncSessionLocal
     from microgpt.services.models import ModelRegistryService
 
     async with AsyncSessionLocal() as session:
@@ -680,9 +722,7 @@ async def list_inference_models():
 
 @router.post("/inference/sample")
 async def inference_sample(body: dict):
-    import random
     from microgpt.core.autograd import Value
-    from microgpt.core.engine import GPT, softmax
 
     model_id = body.get("model_id")
     version = body.get("version")
@@ -708,8 +748,8 @@ async def inference_sample(body: dict):
                 detail="top_p must be a float in the range (0.0, 1.0]",
             )
 
-    from microgpt.db.session import AsyncSessionLocal
     from microgpt.db.repositories.models import ModelRepository
+    from microgpt.db.session import AsyncSessionLocal
     from microgpt.services.models import ModelRegistryService
 
     async with AsyncSessionLocal() as session:
@@ -718,7 +758,9 @@ async def inference_sample(body: dict):
         v = await svc.get_version(model_id, version)
 
     if v is None:
-        raise HTTPException(status_code=404, detail="Model version not found in registry")
+        raise HTTPException(
+            status_code=404, detail="Model version not found in registry"
+        )
 
     model_path = Path(v["artifact_path"])
     if not model_path.exists():
@@ -740,7 +782,7 @@ async def inference_sample(body: dict):
                 status_code=400,
                 detail=f"Character {bad_char!r} not in model vocabulary",
             ) from err
-        prompt_ids = prompt_ids[:model.block_size]
+        prompt_ids = prompt_ids[: model.block_size]
 
     def apply_top_k(scaled, top_k_val, vocab_size):
         if top_k_val <= 0 or top_k_val >= vocab_size:

@@ -66,7 +66,9 @@ Copy `.env.example` to `.env` and customize:
 | `MICROGPT_PORT` | `8080` | Web server port |
 | `MICROGPT_DB_PATH` | `./data/microgpt.db` | Database file |
 | `MICROGPT_LOG_DIR` | `./logs/` | Log directory |
-| `MICROGPT_MLFLOW_URI` | `sqlite:///./mlruns/mlflow.db` | MLflow tracking |
+| `MICROGPT_MLFLOW_URI` | `http://127.0.0.1:5000` | MLflow HTTP tracking server URI (drives writers AND readers) |
+
+> **MLflow**: Requires MLflow 3.x (`mlflow>=3.1,<4`). Uses source-keyed model registry (one registered model per dataset/corpus source).
 | `MICROGPT_STORAGE_BACKEND` | `local` | Storage backend |
 
 ## License

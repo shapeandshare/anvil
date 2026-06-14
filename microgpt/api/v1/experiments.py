@@ -7,19 +7,18 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from microgpt.api.deps import get_db_session
+from microgpt.config import get_config
 from microgpt.core.engine import GPT
 from microgpt.db.models.training_config import TrainingConfig
 from microgpt.db.repositories import ExperimentRepository
 from microgpt.services.experiments import ExperimentService
 
 router = APIRouter()
-MLFLOW_UI_URI = "http://127.0.0.1:5000"
-MLFLOW_TRACKING_URI = "sqlite:///./mlruns/mlflow.db"
 
 
 def _get_mlflow_experiment_id() -> str | None:
     try:
-        client = MlflowClient(tracking_uri=MLFLOW_TRACKING_URI)
+        client = MlflowClient(tracking_uri=get_config()["mlflow_uri"])
         exp = client.get_experiment_by_name("microgpt-workbench")
         return exp.experiment_id if exp else None
     except Exception:
@@ -37,21 +36,36 @@ async def list_experiments(svc: ExperimentService = Depends(get_service)):
     mlflow_exp_id = _get_mlflow_experiment_id()
     return {
         "mlflow_experiment_id": mlflow_exp_id,
-        "mlflow_url": f"{MLFLOW_UI_URI}/#/experiments/{mlflow_exp_id}" if mlflow_exp_id else None,
+        "mlflow_url": (
+            f"{get_config()['mlflow_uri']}/#/experiments/{mlflow_exp_id}"
+            if mlflow_exp_id
+            else None
+        ),
         "experiments": [
             {
                 "id": e.id,
                 "status": e.status,
+                "run_name": e.run_name,
                 "final_loss": e.final_loss,
                 "config_id": e.config_id,
                 "mlflow_run_id": e.mlflow_run_id,
-                "mlflow_run_url": f"{MLFLOW_UI_URI}/#/experiments/{mlflow_exp_id}/runs/{e.mlflow_run_id}" if (mlflow_exp_id and e.mlflow_run_id) else None,
+                "mlflow_run_url": (
+                    f"{get_config()['mlflow_uri']}/#/experiments/{mlflow_exp_id}/runs/{e.mlflow_run_id}"
+                    if (mlflow_exp_id and e.mlflow_run_id)
+                    else None
+                ),
                 "created_at": str(e.created_at),
-                "artifact_available": Path(f"data/models/experiment_{e.id}.json").exists(),
+                "artifact_available": Path(
+                    f"data/models/experiment_{e.id}.json"
+                ).exists(),
                 "dataset_name": e.dataset.name if e.dataset_id else None,
+                "input_digest": e.input_digest,
+                "input_role": e.input_role,
+                "engine_backend": e.engine_backend,
+                "device": e.device,
             }
             for e in experiments
-        ]
+        ],
     }
 
 
@@ -149,15 +163,17 @@ async def get_experiment(
     mlflow_data = None
     if exp.mlflow_run_id:
         try:
-            client = MlflowClient(tracking_uri=MLFLOW_TRACKING_URI)
+            client = MlflowClient(tracking_uri=get_config()["mlflow_uri"])
             run = client.get_run(exp.mlflow_run_id)
             mlflow_exp_id = _get_mlflow_experiment_id()
             mlflow_data = {
                 "params": dict(run.data.params),
                 "metrics": dict(run.data.metrics),
-                "run_url": f"{MLFLOW_UI_URI}/#/experiments/{mlflow_exp_id}/runs/{exp.mlflow_run_id}"
-                if mlflow_exp_id
-                else None,
+                "run_url": (
+                    f"{get_config()['mlflow_uri']}/#/experiments/{mlflow_exp_id}/runs/{exp.mlflow_run_id}"
+                    if mlflow_exp_id
+                    else None
+                ),
             }
         except Exception:
             mlflow_data = None
@@ -165,6 +181,7 @@ async def get_experiment(
     return {
         "id": exp.id,
         "status": exp.status,
+        "run_name": exp.run_name,
         "final_loss": exp.final_loss,
         "generated_samples": generated_samples,
         "config_id": exp.config_id,
@@ -176,6 +193,10 @@ async def get_experiment(
         "hyperparameters": hyperparameters,
         "model_architecture": model_architecture,
         "mlflow": mlflow_data,
+        "input_digest": exp.input_digest,
+        "input_role": exp.input_role,
+        "engine_backend": exp.engine_backend,
+        "device": exp.device,
     }
 
 
@@ -195,7 +216,7 @@ async def get_experiment_mlflow(id: int, svc: ExperimentService = Depends(get_se
         }
 
     try:
-        client = MlflowClient(tracking_uri=MLFLOW_TRACKING_URI)
+        client = MlflowClient(tracking_uri=get_config()["mlflow_uri"])
         run = client.get_run(exp.mlflow_run_id)
 
         # Full per-step histories for all metrics
@@ -222,9 +243,11 @@ async def get_experiment_mlflow(id: int, svc: ExperimentService = Depends(get_se
             "metrics": dict(run.data.metrics),
             "metric_histories": metric_histories,
             "artifacts": artifact_paths,
-            "run_url": f"{MLFLOW_UI_URI}/#/experiments/{mlflow_exp_id}/runs/{exp.mlflow_run_id}"
-            if mlflow_exp_id
-            else None,
+            "run_url": (
+                f"{get_config()['mlflow_uri']}/#/experiments/{mlflow_exp_id}/runs/{exp.mlflow_run_id}"
+                if mlflow_exp_id
+                else None
+            ),
         }
     except Exception as e:
         return {
@@ -239,19 +262,18 @@ async def get_experiment_mlflow(id: int, svc: ExperimentService = Depends(get_se
 
 
 @router.get("/experiments/{id}/metrics")
-async def get_experiment_metrics(id: int, svc: ExperimentService = Depends(get_service)):
+async def get_experiment_metrics(
+    id: int, svc: ExperimentService = Depends(get_service)
+):
     exp = await svc.get_experiment(id)
     if exp is None:
         raise HTTPException(status_code=404, detail="Experiment not found")
     if not exp.mlflow_run_id:
         return {"metrics": [], "mlflow_run_id": None}
     try:
-        client = MlflowClient(tracking_uri=MLFLOW_TRACKING_URI)
+        client = MlflowClient(tracking_uri=get_config()["mlflow_uri"])
         metric_history = client.get_metric_history(exp.mlflow_run_id, "loss")
-        metrics = [
-            {"step": m.step, "loss": m.value}
-            for m in metric_history
-        ]
+        metrics = [{"step": m.step, "loss": m.value} for m in metric_history]
         return {"metrics": metrics, "mlflow_run_id": exp.mlflow_run_id}
     except Exception as e:
         return {"metrics": [], "mlflow_run_id": exp.mlflow_run_id, "error": str(e)}

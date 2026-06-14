@@ -2,44 +2,28 @@ import asyncio
 import json
 import os
 import tempfile
+from datetime import UTC
 from pathlib import Path
 
-import mlflow.entities
 from fastapi import APIRouter, HTTPException
-from mlflow.tracking import MlflowClient
 from starlette.responses import StreamingResponse
 
+from microgpt.gpu import detect_gpu, resolve_device
+from microgpt.services.metrics_collectors import MPSMetricsCollector, MPSSamplerThread
+from microgpt.services.tracking import TrackingService
 from microgpt.services.training import TrainingService
-from microgpt.gpu import detect_gpu
 
 router = APIRouter()
 svc = TrainingService()
+tracking_svc = TrackingService()
 _tasks: set[asyncio.Task] = set()
 MODELS_DIR = Path("data/models")
 MODELS_DIR.mkdir(parents=True, exist_ok=True)
-
-MLFLOW_TRACKING_URI = "sqlite:///./mlruns/mlflow.db"
-MLFLOW_EXPERIMENT_NAME = "microgpt-workbench"
-
-
-def _get_mlflow_client() -> MlflowClient:
-    return MlflowClient(tracking_uri=MLFLOW_TRACKING_URI)
-
-
-def _get_or_create_experiment() -> str:
-    client = _get_mlflow_client()
-    exp = client.get_experiment_by_name(MLFLOW_EXPERIMENT_NAME)
-    if exp:
-        return exp.experiment_id
-    return client.create_experiment(MLFLOW_EXPERIMENT_NAME)
 
 
 @router.post("/training/start")
 async def start_training(config: dict):
     run_id = svc.reserve_run()
-    exp_id = _get_or_create_experiment()
-    mlflow_run = _get_mlflow_client().create_run(exp_id)
-    mlflow_run_id = mlflow_run.info.run_id
 
     use_gpu = config.get("use_gpu", False)
     dataset_id = config.get("dataset_id")
@@ -58,115 +42,195 @@ async def start_training(config: dict):
         "corpus_id": corpus_id,
         "dataset_id": dataset_id,
     }
-    mlflow_params = [mlflow.entities.Param(k, str(v)) for k, v in hyperparams.items()]
 
-    # Log GPU info to MLflow
     gpu_info = detect_gpu()
-    mlflow_params.append(
-        mlflow.entities.Param("gpu_available", str(gpu_info.available))
-    )
-    mlflow_params.append(
-        mlflow.entities.Param("gpu_backend", str(gpu_info.backend or "cpu"))
-    )
-    if gpu_info.device_name:
-        mlflow_params.append(
-            mlflow.entities.Param("gpu_device_name", gpu_info.device_name)
-        )
-    if gpu_info.torch_version:
-        mlflow_params.append(
-            mlflow.entities.Param("torch_version", gpu_info.torch_version)
-        )
+    engine_backend = "torch" if use_gpu else "stdlib"
+    device = resolve_device(use_gpu=use_gpu)
 
-    _get_mlflow_client().log_batch(
-        run_id=mlflow_run_id,
-        params=mlflow_params,
+    hyperparams["gpu_available"] = str(gpu_info.available)
+    hyperparams["gpu_backend"] = str(gpu_info.backend or "cpu")
+    if gpu_info.device_name:
+        hyperparams["gpu_device_name"] = gpu_info.device_name
+    if gpu_info.torch_version:
+        hyperparams["torch_version"] = gpu_info.torch_version
+
+    mlflow_run_id = await tracking_svc.start_run(
+        run_name=None,
+        params=hyperparams,
+        engine_backend=engine_backend,
+        device=device,
     )
+
+    from microgpt.db.repositories.experiments import ExperimentRepository
+    from microgpt.db.session import AsyncSessionLocal
+
+    experiment_id = None
+    async with AsyncSessionLocal() as session:
+        repo = ExperimentRepository(session)
+        exp = await repo.create_running(
+            config_id=0,
+            run_name=f"run-{run_id}" if not tracking_svc.is_degraded else None,
+            mlflow_run_id=mlflow_run_id or None,
+            dataset_id=dataset_id,
+            corpus_id=corpus_id,
+            engine_backend=engine_backend,
+            device=device,
+        )
+        experiment_id = exp.id
+        await session.commit()
+
+    input_digest = None
+    input_role = None
+    if mlflow_run_id and dataset_id:
+        async with AsyncSessionLocal() as sess:
+            try:
+                input_digest = await tracking_svc.log_dataset_input(
+                    mlflow_run_id, dataset_id=dataset_id, role="training", session=sess
+                )
+                input_role = "training"
+            except Exception:
+                pass
+    elif mlflow_run_id and corpus_id:
+        async with AsyncSessionLocal() as sess:
+            try:
+                input_digest = await tracking_svc.log_corpus_input(
+                    mlflow_run_id, corpus_id=corpus_id, session=sess
+                )
+                input_role = "corpus"
+            except Exception:
+                pass
+
+    if input_digest:
+        async with AsyncSessionLocal() as sess:
+            repo = ExperimentRepository(sess)
+            exp_obj = await repo.get(experiment_id)
+            if exp_obj:
+                exp_obj.input_digest = input_digest
+                exp_obj.input_role = input_role
+                await repo.update(exp_obj)
+                await sess.commit()
+
+    mps_thread = None
+    if mlflow_run_id and MPSMetricsCollector.is_available():
+        mps_thread = MPSSamplerThread(tracking_svc, mlflow_run_id, interval=5.0)
+        mps_thread.start()
+
+    progress_tasks: set[asyncio.Task] = set()
 
     def mlflow_progress_callback(step: int, loss: float) -> None:
-        try:
-            _get_mlflow_client().log_metric(mlflow_run_id, "loss", loss, step=step)
-        except Exception:
-            pass
+        t = asyncio.create_task(
+            tracking_svc.log_metric(mlflow_run_id, "loss", loss, step=step)
+        )
+        progress_tasks.add(t)
+        t.add_done_callback(progress_tasks.discard)
 
     async def on_complete(
         model, config: dict, final_loss: float, samples: list[str], uchars: list[str]
     ):
-        client = _get_mlflow_client()
-        client.log_metric(mlflow_run_id, "final_loss", final_loss)
+        await tracking_svc.finish_run(mlflow_run_id)
+        await tracking_svc.log_final_metric(mlflow_run_id, "final_loss", final_loss)
 
         with tempfile.TemporaryDirectory() as tmpdir:
             samples_path = os.path.join(tmpdir, "samples.txt")
             with open(samples_path, "w") as f:
                 f.write("\n".join(samples))
-            client.log_artifact(mlflow_run_id, samples_path)
+            if mlflow_run_id:
+                try:
+                    client = tracking_svc._client
+                    if client:
+                        loop = asyncio.get_event_loop()
+                        await loop.run_in_executor(
+                            None,
+                            lambda: client.log_artifact(mlflow_run_id, samples_path),
+                        )
+                except Exception:
+                    pass
 
             model_path = os.path.join(tmpdir, "model.json")
             model.save(model_path, uchars)
-            client.log_artifact(mlflow_run_id, model_path)
+            if mlflow_run_id:
+                try:
+                    client = tracking_svc._client
+                    if client:
+                        loop = asyncio.get_event_loop()
+                        await loop.run_in_executor(
+                            None, lambda: client.log_artifact(mlflow_run_id, model_path)
+                        )
+                except Exception:
+                    pass
 
-        client.set_terminated(mlflow_run_id)
-
+        from microgpt.db.repositories.experiments import ExperimentRepository
         from microgpt.db.session import AsyncSessionLocal
-        from microgpt.db.models.training_config import Experiment, TrainingConfig
 
         async with AsyncSessionLocal() as session:
-            training_config = TrainingConfig(
-                **{
-                    k: v
-                    for k, v in hyperparams.items()
-                    if v is not None or k not in ("corpus_id", "dataset_id")
-                }
-            )
-            session.add(training_config)
-            await session.flush()
-            await session.refresh(training_config)
+            repo = ExperimentRepository(session)
+            from datetime import datetime
 
-            exp = Experiment(
-                status="completed",
-                config_id=training_config.id,
+            await repo.mark_finished(
+                experiment_id=experiment_id,
                 final_loss=final_loss,
                 generated_samples=json.dumps(samples),
-                mlflow_run_id=mlflow_run_id,
+                completed_at=datetime.now(UTC),
             )
-            session.add(exp)
-            await session.flush()
-            await session.refresh(exp)
 
-            # Persist model artifact for registry access
-            experiment_model_path = MODELS_DIR / f"experiment_{exp.id}.json"
+            experiment_model_path = MODELS_DIR / f"experiment_{experiment_id}.json"
             model.save(str(experiment_model_path), uchars)
 
-            # Register model in MLflow Model Registry
-            try:
-                from mlflow.tracking import MlflowClient as RegistryClient
-
-                registry_client = RegistryClient(tracking_uri=MLFLOW_TRACKING_URI)
-                model_name = f"microgpt-experiment-{exp.id}"
+            if mlflow_run_id:
                 try:
-                    registry_client.create_registered_model(model_name)
+                    await tracking_svc.register_source_model(
+                        run_id=mlflow_run_id,
+                        dataset_id=dataset_id,
+                        corpus_id=corpus_id,
+                    )
                 except Exception:
-                    pass  # Model already registered
-                registry_client.create_model_version(
-                    name=model_name,
-                    source=f"runs:/{mlflow_run_id}/model.json",
-                    run_id=mlflow_run_id,
-                )
-            except Exception:
-                pass  # Registration is non-critical
+                    pass
+
+            if mps_thread is not None:
+                mps_thread.stop()
 
             await session.commit()
 
-    task = asyncio.create_task(
-        svc.start_training(
-            config,
-            run_id,
-            on_complete=on_complete,
-            progress_callback_override=mlflow_progress_callback,
-        )
-    )
+    async def _run_training():
+        try:
+            await svc.start_training(
+                config,
+                run_id,
+                on_complete=on_complete,
+                progress_callback_override=mlflow_progress_callback,
+            )
+        except Exception as exc:
+            await tracking_svc.fail_run(mlflow_run_id, reason=str(exc))
+            if mps_thread is not None:
+                mps_thread.stop()
+            async with AsyncSessionLocal() as sess:
+                from datetime import datetime
+
+                from microgpt.db.repositories.experiments import ExperimentRepository
+
+                repo = ExperimentRepository(sess)
+                await repo.mark_failed(
+                    experiment_id=experiment_id,
+                    error_message=str(exc),
+                    completed_at=datetime.now(UTC),
+                )
+                await sess.commit()
+
+    task = asyncio.create_task(_run_training())
     _tasks.add(task)
     task.add_done_callback(_tasks.discard)
-    return {"run_id": run_id, "mlflow_run_id": mlflow_run_id, "status": "started"}
+
+    response = {
+        "run_id": run_id,
+        "mlflow_run_id": mlflow_run_id or None,
+        "experiment_id": experiment_id,
+        "status": "running",
+    }
+    if tracking_svc.is_degraded:
+        response["tracking"] = "degraded"
+    else:
+        response["tracking"] = "active"
+    return response
 
 
 @router.get("/training/stream/{run_id}")
@@ -197,9 +261,10 @@ async def stream_training(run_id: int):
 
 @router.get("/training/configs")
 async def list_configs():
-    from microgpt.db.session import AsyncSessionLocal
-    from microgpt.db.models.training_config import TrainingConfig
     from sqlalchemy import select
+
+    from microgpt.db.models.training_config import TrainingConfig
+    from microgpt.db.session import AsyncSessionLocal
 
     async with AsyncSessionLocal() as session:
         result = await session.execute(

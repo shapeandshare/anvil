@@ -18,13 +18,17 @@ class MLflowService:
         self.log_file = self.log_dir / "mlflow.log"
         self.process: subprocess.Popen | None = None
         self.port = 5000
+        self._tracking_uri = cfg["mlflow_uri"]
+        self._backend_store_uri = cfg["mlflow_backend_store_uri"]
 
     def _free_port(self) -> None:
         """Kill any zombie process occupying our target port before starting."""
         try:
             result = subprocess.run(
                 ["lsof", "-ti", f":{self.port}"],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True,
+                text=True,
+                timeout=5,
             )
             if not result.stdout.strip():
                 return
@@ -38,7 +42,9 @@ class MLflowService:
                 time.sleep(0.3)
                 check = subprocess.run(
                     ["lsof", "-ti", f":{self.port}"],
-                    capture_output=True, text=True, timeout=3,
+                    capture_output=True,
+                    text=True,
+                    timeout=3,
                 )
                 if not check.stdout.strip():
                     return
@@ -60,7 +66,7 @@ class MLflowService:
                 mlflow_bin,
                 "server",
                 "--backend-store-uri",
-                f"sqlite:///{self.mlruns_dir / 'mlflow.db'}",
+                self._backend_store_uri,
                 "--host",
                 "127.0.0.1",
                 "--port",
@@ -97,4 +103,4 @@ class MLflowService:
 
     @property
     def tracking_uri(self) -> str:
-        return f"sqlite:///{self.mlruns_dir / 'mlflow.db'}"
+        return self._tracking_uri

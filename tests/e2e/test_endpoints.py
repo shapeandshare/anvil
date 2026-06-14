@@ -14,7 +14,7 @@ async def test_health(client):
 async def test_list_datasets(client):
     r = await client.get("/v1/datasets")
     assert r.status_code == 200
-    assert "datasets" in r.json()
+    assert "datasets" in r.json().get("data", r.json())
 
 
 @pytest.mark.asyncio

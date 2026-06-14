@@ -12,84 +12,11 @@
 
   TrainingLoopWidget.prototype._render = function () {
     this.container.innerHTML =
-      '<div class="widget-label">Training loss curve — select a completed experiment to replay:</div>' +
-      '<div class="tl-select-row">' +
-      '  <select id="tl-experiment-select" class="heatmap-select" aria-label="Select experiment">' +
-      '    <option value="">— Loading experiments —</option>' +
-      '  </select>' +
-      '</div>' +
-      '<canvas id="tl-canvas" class="tl-canvas" aria-label="Loss curve over training steps"></canvas>' +
-      '<div class="scrubber-container" id="tl-scrubber-row" style="display:none">' +
-      '  <span class="scrubber-label" id="tl-step-label">Step: 0</span>' +
-      '  <input type="range" class="scrubber-slider" id="tl-scrubber" min="0" max="0" value="0" step="1" aria-label="Scrub through training steps">' +
-      '  <span class="scrubber-label" id="tl-loss-label">Loss: —</span>' +
-      '</div>' +
-      '<div class="widget-empty-state" id="tl-empty" style="display:none" role="alert">' +
-      '  <p class="widget-empty-text">No training runs yet — <a href="/v1/training-page" class="widget-empty-link">train a model</a> to see real loss curves</p>' +
-      '</div>' +
-      '<div class="tl-info" id="tl-info" aria-live="polite"></div>';
-    this._canvas = this.container.querySelector('#tl-canvas');
-    this._ctx = this._canvas.getContext('2d');
-    this._selectEl = this.container.querySelector('#tl-experiment-select');
-    this._scrubberEl = this.container.querySelector('#tl-scrubber');
-    this._scrubberRow = this.container.querySelector('#tl-scrubber-row');
-    this._stepLabel = this.container.querySelector('#tl-step-label');
-    this._lossLabel = this.container.querySelector('#tl-loss-label');
-    this._emptyEl = this.container.querySelector('#tl-empty');
-    this._infoEl = this.container.querySelector('#tl-info');
-
-    var self = this;
-
-    this._selectEl.addEventListener('change', function () {
-      var val = this.value;
-      if (val) {
-        self._selectedExpId = parseInt(val);
-        self._fetchMetrics(self._selectedExpId);
-      }
-    });
-
-    this._scrubberEl.addEventListener('input', function () {
-      self._currentStep = parseInt(this.value);
-      self._updateScrubberDisplay();
-      self._drawCurve();
-    });
-
-    this._resize();
-    this._fetchExperiments();
-  };
-
-  TrainingLoopWidget.prototype._resize = function () {
-    var w = this.container.clientWidth || 300;
-    var h = Math.min(220, Math.max(140, w * 0.4));
-    this._canvas.width = w * (window.devicePixelRatio || 1);
-    this._canvas.height = h * (window.devicePixelRatio || 1);
-    this._canvas.style.width = w + 'px';
-    this._canvas.style.height = h + 'px';
-    this._chartW = w;
-    this._chartH = h;
-    this._dpr = window.devicePixelRatio || 1;
-  };
-
-  TrainingLoopWidget.prototype._fetchExperiments = function () {
-    var self = this;
-    this._infoEl.innerHTML = '<div class="loading-indicator"><span class="spinner"></span> Loading experiments...</div>';
-
-    fetch('/v1/experiments')
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        var exps = data.experiments || [];
-        if (exps.length === 0) {
-          self._emptyEl.style.display = '';
-          self._selectEl.innerHTML = '<option value="">No experiments found</option>';
-          self._infoEl.innerHTML = '';
-          return;
-        }
-        self._experiments = exps;
-        self._populateSelect(exps);
-        self._infoEl.innerHTML = '<span class="token-stats-label">' + exps.length + ' experiment(s) available</span>';
-        /* Select first completed experiment by default */
-        var completed = exps.filter(function (e) { return e.status === 'completed'; });
-        var target = completed.length > 0 ? completed[0] : exps[0];
+'<div class="widget-label">Training loss curve — select a finished experiment to replay:</div>' +
+...
+/* Select first finished experiment by default */
+var finished = exps.filter(function (e) { return e.status === 'finished'; });
+var target = finished.length > 0 ? finished[0] : exps[0];
         self._selectedExpId = target.id;
         self._selectEl.value = target.id;
         self._fetchMetrics(target.id);

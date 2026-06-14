@@ -1,0 +1,40 @@
+"""Test that no legacy status vocabulary remains in Python source files."""
+
+from pathlib import Path
+
+
+def _iter_py_files(root: Path):
+    for p in root.rglob("*.py"):
+        rel = p.relative_to(root)
+        parts = rel.parts
+        if parts[0] in ("tests", "migrations"):
+            continue
+        if ".venv" in parts:
+            continue
+        yield p
+
+
+def test_no_completed_status_in_py_source():
+    root = Path(__file__).resolve().parent.parent.parent
+    pkg_root = root / "microgpt"
+    hits = []
+    for p in _iter_py_files(pkg_root):
+        text = p.read_text()
+        for i, line in enumerate(text.splitlines(), 1):
+            stripped = line.strip()
+            if '"completed"' in stripped or "'completed'" in stripped:
+                hits.append((p, i, stripped))
+    assert not hits, f"Found 'completed' status literals: {hits}"
+
+
+def test_no_pending_status_in_py_source():
+    root = Path(__file__).resolve().parent.parent.parent
+    pkg_root = root / "microgpt"
+    hits = []
+    for p in _iter_py_files(pkg_root):
+        text = p.read_text()
+        for i, line in enumerate(text.splitlines(), 1):
+            stripped = line.strip()
+            if '"pending"' in stripped or "'pending'" in stripped:
+                hits.append((p, i, stripped))
+    assert not hits, f"Found 'pending' status literals: {hits}"

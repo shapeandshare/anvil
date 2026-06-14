@@ -38,18 +38,26 @@ class Experiment(Base, TimestampMixin):
     mlflow_run_id: Mapped[str | None] = mapped_column(
         String(255), nullable=True, unique=True
     )
-    status: Mapped[str] = mapped_column(String(20), default="pending")
+    run_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="running")
     config_id: Mapped[int] = mapped_column(Integer, ForeignKey("training_configs.id"))
     dataset_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("datasets.id"), nullable=True
     )
+    corpus_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("corpora.id"), nullable=True
+    )
+    input_digest: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    input_role: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    engine_backend: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    device: Mapped[str | None] = mapped_column(String(16), nullable=True)
     final_loss: Mapped[float | None] = mapped_column(Float, nullable=True)
     started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     generated_samples: Mapped[str | None] = mapped_column(String, nullable=True)
     error_message: Mapped[str | None] = mapped_column(String, nullable=True)
 
-    dataset: Mapped["Dataset | None"] = relationship("Dataset", lazy="joined")
+    dataset: Mapped[Dataset | None] = relationship("Dataset", lazy="joined")
 
 
 class Dataset(Base, TimestampMixin):

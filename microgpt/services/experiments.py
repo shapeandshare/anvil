@@ -18,5 +18,5 @@ class ExperimentService:
     async def create_experiment(
         self, config_id: int, dataset_id: int | None = None
     ) -> Experiment:
-        exp = Experiment(config_id=config_id, dataset_id=dataset_id, status="pending")
+        exp = Experiment(config_id=config_id, dataset_id=dataset_id, status="running")
         return await self._repo.add(exp)

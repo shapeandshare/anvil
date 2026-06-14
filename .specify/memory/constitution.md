@@ -1,50 +1,51 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# microgpt-workbench Constitution (Spec Kit mirror)
+
+> **Authoritative source**: the root [`CONSTITUTION.md`](../../CONSTITUTION.md) (v1.1.0). This file mirrors it for Spec Kit tooling (`/speckit.analyze` etc.). If the two ever diverge, the root `CONSTITUTION.md` wins; update it first, then re-sync this mirror.
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### Article I — Zero-Dependency Core
+The core training engine (`microgpt/core/`) MUST have zero third-party Python dependencies (stdlib only). All additional functionality (web server, database, **experiment tracking**, **GPU**) MUST be opt-in layers.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### Article II — Educational Clarity
+Code MUST prioritize readability/educational value over performance. Comments explain WHY, not just WHAT.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### Article III — Seeded Reproducibility
+All training runs MUST be deterministic given the same seed and configuration; random state seeded explicitly; every experiment logs its configuration for exact reproduction.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### Article IV — TDD Mandatory
+Tests MUST be written before implementation (Red-Green-Refactor). **Unit test coverage MUST be 100% across all layers.** End-to-end system tests MUST exist and pass.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### Article V — Async-First
+Web, database, and service layers MUST be async. The core training engine is the only synchronous exception; blocking/CPU-bound calls dispatched off the event loop.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+### Article VI — Implicit Namespace
+PEP 420 implicit namespaces. `__init__.py` ONLY where a public API surface is exported — never for internal wiring or side-effect imports.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### Article VII — Layered Architecture
+Repository pattern for all data access; business logic in Services; services exposed through the God Class (`MicroGPTWorkbench`); routes/CLI/tests call the God Class. No DB primitives leak beyond the Repository layer.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+### Article VIII — Whimsy Without Compromise
+The UI MUST be delightful, but whimsy MUST NEVER undermine correctness, completeness, or robustness.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### Article IX — Pit of Success
+All optional capabilities (GPU, external services, advanced features) MUST work without manual configuration on capable hardware. The default do-nothing path SHALL always produce a working system. When an enabled capability is unavailable at runtime, the system SHALL **silently fall back** to the equivalent base capability — **never crash, never error, never block**. No `raise`/error response MAY be emitted solely because an optional capability's runtime dependency is absent. (Install: GPU extras auto-detected; Config: GPU opt-in via env/flag/UI; Runtime: CPU is the implicit default; explicit `make setup-gpu` forces extras.)
+
+## Additional Constraints
+
+- Schema changes via reversible Alembic migrations (`make db-revision`); data backfills accompany any vocabulary change.
+- No type-error suppression; `mypy --strict` passes.
+- Lean dependencies; new deps justified in an ADR/plan; optional/heavy deps (e.g. GPU) go in `[project.optional-dependencies]`.
+- Significant decisions recorded as ADRs in `docs/vault/Decisions/`; vault enriched per session.
+
+## Development Workflow & Quality Gates
+
+- Spec Kit flow (`specify → clarify → plan → tasks → analyze → implement`) for non-trivial features.
+- Merge gates: `make lint`, `make typecheck` (strict), `make test` (100% coverage). All MUST pass.
+- Commit only when explicitly requested.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+The root `CONSTITUTION.md` supersedes all other practices; amendments require an ADR, approval, and a version bump. `/speckit.analyze` treats violations of any MUST/NON-NEGOTIABLE article (incl. Article IX) as CRITICAL findings that block `/speckit.implement` until resolved.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.1.0 (mirrors root) | **Ratified**: 2026-06-10 | **Last Amended**: 2026-06-13

@@ -37,8 +37,9 @@ async def test_training_with_corpus(client):
         )
         assert r.status_code == 200
         data = r.json()
-        assert data["status"] == "started"
+        assert data["status"] == "running"
         assert data["run_id"] is not None
     finally:
         import shutil
+
         shutil.rmtree(td)

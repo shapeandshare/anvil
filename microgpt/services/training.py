@@ -7,8 +7,8 @@ from collections.abc import Awaitable, Callable
 
 from microgpt.config import get_config
 from microgpt.core.engine import GPT, train
-from microgpt.gpu import resolve_device
 from microgpt.core.torch_engine import torch_available, train_torch
+from microgpt.gpu import resolve_device
 
 
 def _load_weights_into_model(model: GPT, weights: dict) -> None:
@@ -24,10 +24,12 @@ class TrainingService:
         self._queues: dict[int, asyncio.Queue] = {}
         self._running = 0
 
-    def _load_docs(self, corpus_id: int | None = None, dataset_id: int | None = None) -> list[str]:
+    def _load_docs(
+        self, corpus_id: int | None = None, dataset_id: int | None = None
+    ) -> list[str]:
         if dataset_id is not None:
-            from microgpt.db.session import AsyncSessionLocal
             from microgpt.db.repositories.datasets import DatasetRepository
+            from microgpt.db.session import AsyncSessionLocal
             from microgpt.services.datasets import DatasetService
 
             async def _load_dataset():
@@ -39,10 +41,8 @@ class TrainingService:
             return asyncio.run(_load_dataset())
 
         if corpus_id is not None:
-            import asyncio
-
-            from microgpt.db.session import AsyncSessionLocal
             from microgpt.db.repositories.corpora import CorpusRepository
+            from microgpt.db.session import AsyncSessionLocal
             from microgpt.services.corpora import CorpusService
             from microgpt.services.corpus_loader import CorpusLoader
 
@@ -75,7 +75,9 @@ class TrainingService:
         self,
         config: dict,
         run_id: int | None = None,
-        on_complete: Callable[[GPT, dict, float, list[str], list[str]], Awaitable[None]] | None = None,
+        on_complete: (
+            Callable[[GPT, dict, float, list[str], list[str]], Awaitable[None]] | None
+        ) = None,
         progress_callback_override: Callable[[int, float], None] | None = None,
     ) -> int:
         if run_id is None:
@@ -97,7 +99,9 @@ class TrainingService:
                 queue.put(
                     {
                         "event": "metrics",
-                        "data": json.dumps({"step": step, "loss": loss, "device": device}),
+                        "data": json.dumps(
+                            {"step": step, "loss": loss, "device": device}
+                        ),
                     }
                 ),
                 loop,
@@ -153,11 +157,13 @@ class TrainingService:
         await queue.put(
             {
                 "event": "complete",
-                "data": json.dumps({
-                    "final_loss": final_loss,
-                    "samples": samples,
-                    "device": device,
-                }),
+                "data": json.dumps(
+                    {
+                        "final_loss": final_loss,
+                        "samples": samples,
+                        "device": device,
+                    }
+                ),
             }
         )
         self._queues.pop(run_id, None)
