@@ -138,7 +138,7 @@ def train():
         async with AsyncSessionLocal() as session:
             repo = ExperimentRepository(session)
             exp = await repo.create_running(
-                config_id=0,
+                config_id=None,
                 run_name="cli-run",
                 mlflow_run_id=mlflow_run_id or None,
                 dataset_id=args.dataset,
