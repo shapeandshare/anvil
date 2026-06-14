@@ -78,6 +78,8 @@ microgpt/          # Python package (implicit namespace)
 - Python 3.11+ + FastAPI, SQLAlchemy (async) + aiosqlite, Alembic, Jinja2; **CHANGED**: `mlflow>=3.1,<4` (was `>=2.16,<3`); **NEW**: `nvidia-ml-py>=12,<13` in `gpu` optional extra; custom `MPSMetricsCollector` via `ioreg`/IOKit (no sudo); new service modules: `tracking.py`, `mlflow_inputs.py`, `mlflow_capabilities.py`, `metrics_collectors.py`; source-keyed registry consolidation (dataset-<id>/corpus-<id>/default-source) (005-mlflow-experiment-tracking)
 - SQLite via async SQLAlchemy (app metadata: `data/microgpt.db`); MLflow tracking via the supervisor-managed `mlflow server` (SQLite backend `mlruns/mlflow.db`, artifacts under `mlruns/`), reached over HTTP. (005-mlflow-experiment-tracking)
 - App metadata in SQLite (`data/microgpt.db`, async SQLAlchemy + Alembic). MLflow data via the supervisor-managed `mlflow server` (SQLite backend `mlruns/mlflow.db`, artifacts under `mlruns/`), reached over HTTP. (005-mlflow-experiment-tracking)
+- Python 3.11+ (backend), JavaScript ES6+ (frontend widgets) + FastAPI, Jinja2, aiofiles (all existing); no new pip dependencies (005-learning-content-enrichment)
+- Demo model at `data/models/demo/model.json` (existing); optimizer state captured in-memory during training runs (005-learning-content-enrichment)
 
 ## Recent Changes
 - 002-directory-corpus-ingestion: Added Python 3.11+ + Existing project deps (FastAPI, SQLAlchemy, aiofiles) + `pathspec` (lightweight gitignore pattern matching, pure Python, no binary deps)

@@ -28,6 +28,7 @@ mlruns/
 # OS
 .DS_Store
 Thumbs.db
+*.log
 
 # Testing
 .coverage

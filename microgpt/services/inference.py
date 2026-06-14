@@ -327,7 +327,9 @@ class InferenceService:
             "temperature": temperature,
         }
 
-    def forward_graph(self, loaded: LoadedModel, max_nodes: int = 400) -> dict[str, Any]:
+    def forward_graph(
+        self, loaded: LoadedModel, max_nodes: int = 400
+    ) -> dict[str, Any]:
         n_layers = loaded.model.n_layer
         keys: list[list[Any]] = [[] for _ in range(n_layers)]
         values: list[list[Any]] = [[] for _ in range(n_layers)]
@@ -399,4 +401,203 @@ class InferenceService:
             "model": loaded.info(),
             "nodes": nodes,
             "edges": edges,
+        }
+
+    def backward_graph(
+        self, text: str, loaded: LoadedModel, max_nodes: int = 400
+    ) -> dict[str, Any]:
+        """Run forward + backward pass on input text, return computation graph with gradients."""
+
+        ids = loaded.vocab.encode(text)
+        n = min(len(ids) - 1, loaded.model.block_size)
+        ids = ids[: n + 1]
+
+        # Forward pass over the sequence
+        keys: list[list[Any]] = [[] for _ in range(loaded.model.n_layer)]
+        values: list[list[Any]] = [[] for _ in range(loaded.model.n_layer)]
+        losses: list[Any] = []
+        for pos_id in range(n):
+            token_id, target_id = ids[pos_id], ids[pos_id + 1]
+            logits = loaded.model.forward(token_id, pos_id, keys, values)
+            from microgpt.core.engine import softmax
+
+            probs = softmax(logits)
+            loss_t = -probs[target_id].log()
+            losses.append(loss_t)
+        loss = (1.0 / n) * sum(losses)
+
+        # Backward pass
+        loss.backward()
+
+        # Traverse graph from the last logit Value
+        logit_val = logits[-1]
+        nodes: list[dict[str, Any]] = []
+        edges: list[dict[str, Any]] = []
+        visited: set[int] = set()
+
+        def assign_op(val: Any) -> str:
+            n_children = len(val._children)
+            if n_children == 0:
+                return "input"
+            if n_children == 1:
+                child = val._children[0]
+                if hasattr(child, "_local_grads") and child._local_grads:
+                    lg = child._local_grads
+                    if len(lg) == 1 and lg[0] != 1.0:
+                        if isinstance(lg[0], (int, float)) and lg[0] != 1.0:
+                            return "pow"
+                return "relu"
+            if n_children == 2:
+                parent_types = [type(c).__name__ for c in val._children[:2]]
+                if "Value" in parent_types:
+                    return "add"
+                return "mul"
+            return "combine"
+
+        def traverse(v: Any, depth: int = 0) -> str | None:
+            if len(nodes) >= max_nodes:
+                return None
+            v_id = id(v)
+            if v_id in visited:
+                for n in nodes:
+                    if n["id"] == str(v_id):
+                        return n["id"]
+                return str(v_id)
+            visited.add(v_id)
+
+            node_id = str(v_id)
+            op = assign_op(v)
+            label = f"{op}[{depth}]"
+
+            local_grads: list[float] = []
+            for lg in v._local_grads:
+                if isinstance(lg, (int, float)):
+                    local_grads.append(round(float(lg), 6))
+                else:
+                    local_grads.append(round(lg.data, 6))
+
+            nodes.append(
+                {
+                    "id": node_id,
+                    "op": op,
+                    "label": label,
+                    "value": round(v.data, 6),
+                    "grad": round(v.grad, 6),
+                    "local_grads": local_grads,
+                    "depth": depth,
+                }
+            )
+
+            for child in v._children:
+                child_id = traverse(child, depth + 1)
+                if child_id is not None:
+                    edges.append({"from": node_id, "to": child_id})
+
+            return node_id
+
+        traverse(logit_val, depth=0)
+
+        max_depth = max((n.get("depth", 0) for n in nodes), default=0)
+        token_labels = [
+            {"char": loaded.chars[i] if i != loaded.vocab.bos_id else "<BOS>", "id": i}
+            for i in ids
+        ]
+
+        return {
+            "model": loaded.info(),
+            "nodes": nodes,
+            "edges": edges,
+            "metadata": {
+                "total_nodes": len(nodes),
+                "total_edges": len(edges),
+                "max_depth": max_depth,
+                "input_tokens": token_labels,
+                "loss_value": round(loss.data, 6),
+            },
+        }
+
+    def loss_breakdown(self, text: str, loaded: LoadedModel) -> dict[str, Any]:
+        """Compute per-token cross-entropy loss for input text."""
+        import math
+
+        ids = loaded.vocab.encode(text)
+        n = min(len(ids) - 1, loaded.model.block_size)
+        ids = ids[: n + 1]
+
+        from microgpt.core.engine import softmax
+
+        keys: list[list[Any]] = [[] for _ in range(loaded.model.n_layer)]
+        values: list[list[Any]] = [[] for _ in range(loaded.model.n_layer)]
+        losses: list[float] = []
+        for pos_id in range(n):
+            token_id, target_id = ids[pos_id], ids[pos_id + 1]
+            logits = loaded.model.forward(token_id, pos_id, keys, values)
+            probs = softmax(logits)
+            loss_t = -probs[target_id].log()
+            losses.append(round(loss_t.data, 6))
+
+        average_loss = round(sum(losses) / n, 6) if n > 0 else 0.0
+        random_baseline = round(-math.log(1.0 / loaded.vocab.vocab_size), 6)
+
+        token_labels = [
+            {"char": loaded.chars[i] if i != loaded.vocab.bos_id else "<BOS>", "id": i}
+            for i in ids
+        ]
+
+        return {
+            "model": loaded.info(),
+            "tokens": token_labels,
+            "losses": losses,
+            "average_loss": average_loss,
+            "random_baseline": random_baseline,
+            "vocab_size": loaded.vocab.vocab_size,
+        }
+
+    def model_params(self, loaded: LoadedModel) -> dict[str, Any]:
+        """Return named parameter breakdown with shapes and counts."""
+        groups: list[dict[str, Any]] = []
+        total_params = 0
+
+        for name, mat in loaded.model.state_dict.items():
+            rows = len(mat)
+            cols = len(mat[0]) if mat and len(mat) > 0 else 0
+            num_params = rows * cols
+            total_params += num_params
+
+            if name == "wte" or name == "wpe":
+                category = "embedding"
+            elif name == "lm_head":
+                category = "output"
+            elif ".attn_" in name:
+                category = "attention"
+            elif ".mlp_" in name:
+                category = "mlp"
+            else:
+                category = "other"
+
+            groups.append(
+                {
+                    "name": name,
+                    "category": category,
+                    "shape": [rows, cols],
+                    "num_params": num_params,
+                }
+            )
+
+        for g in groups:
+            g["percentage"] = (
+                round(g["num_params"] / total_params * 100, 2)
+                if total_params > 0
+                else 0.0
+            )
+
+        return {
+            "model": loaded.info(),
+            "total_params": total_params,
+            "n_embd": loaded.model.n_embd,
+            "n_layer": loaded.model.n_layer,
+            "n_head": loaded.model.n_head,
+            "block_size": loaded.model.block_size,
+            "vocab_size": loaded.model.vocab_size,
+            "groups": groups,
         }

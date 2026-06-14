@@ -79,3 +79,39 @@ async def inference_forward_graph(
     except (ValueError, FileNotFoundError) as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     return _svc.forward_graph(loaded)
+
+
+@router.post("/inference/backward-graph")
+async def inference_backward_graph(body: dict):
+    text = body.get("text")
+    if not isinstance(text, str) or not text:
+        raise HTTPException(status_code=400, detail="text must be a non-empty string")
+    try:
+        loaded = await _svc.load_model(body.get("model_id"), body.get("version"))
+    except (ValueError, FileNotFoundError) as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    return _call_or_400(_svc.backward_graph, text, loaded)
+
+
+@router.post("/inference/loss-breakdown")
+async def inference_loss_breakdown(body: dict):
+    text = body.get("text")
+    if not isinstance(text, str) or not text:
+        raise HTTPException(status_code=400, detail="text must be a non-empty string")
+    try:
+        loaded = await _svc.load_model(body.get("model_id"), body.get("version"))
+    except (ValueError, FileNotFoundError) as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    return _call_or_400(_svc.loss_breakdown, text, loaded)
+
+
+@router.get("/inference/model-params")
+async def inference_model_params(
+    model_id: int | None = Query(None),
+    version: int | None = Query(None),
+):
+    try:
+        loaded = await _svc.load_model(model_id, version)
+    except (ValueError, FileNotFoundError) as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    return _svc.model_params(loaded)
