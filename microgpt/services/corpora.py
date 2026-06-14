@@ -102,6 +102,7 @@ class CorpusService:
         corpus.file_count = len(result.files)
         corpus.document_count = result.total_docs
         corpus.language_map = json.dumps(result.language_map)
+        corpus.errors = json.dumps(result.errors) if result.errors else None
         return corpus, result.errors
 
     async def load_docs(self, corpus_id: int) -> list[str]:

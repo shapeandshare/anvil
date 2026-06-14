@@ -2,6 +2,11 @@
 {% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
 {% block content %}
 <div class="training-dashboard">
+  <div class="training-runs panel" id="runs-panel" style="display:none;">
+    <h2 class="panel-title">Active Training Runs</h2>
+    <div id="runs-list"></div>
+  </div>
+
   <div class="training-data-source panel">
     <h2 class="panel-title">1. Select Your Data</h2>
     <div class="ds-selectors">
@@ -374,7 +379,7 @@
     /* num_steps: proportional to data, ensure minimum coverage */
     var numSteps = Math.max(500, Math.round(docCount * 10));
     numSteps = Math.max(numSteps, Math.ceil(docCount * 0.15));  /* at least 15% coverage */
-    numSteps = Math.min(50000, numSteps);
+    numSteps = Math.min(maxAllowedSteps(), numSteps);
     reasons.push('steps=' + numSteps + ' (' + Math.round(numSteps / (docCount || 1)) + 'x data)');
 
     /* Set values */
@@ -394,10 +399,16 @@
   };
 
   /* ── Boost Steps ── */
+  function maxAllowedSteps() {
+    var el = document.getElementById('num_steps');
+    return parseInt(el.max) || 100000;
+  }
+
   window.boostSteps = function() {
     var cid = corpusSelect.value;
     var did = datasetSelect.value;
     var docCount = 0;
+    var maxSteps = maxAllowedSteps();
     if (cid && corpusCache[cid]) {
       docCount = corpusCache[cid].document_count || 0;
     } else if (did && datasetCache[did]) {
@@ -408,7 +419,7 @@
       if (cid) {
         return fetch('/v1/corpora/' + cid).then(function(r) { return r.json(); }).then(function(res) {
           if (res.data && res.data.document_count > 0) {
-            var target = Math.min(50000, Math.max(500, Math.ceil(res.data.document_count * 0.2)));
+            var target = Math.min(maxSteps, Math.max(500, Math.ceil(res.data.document_count * 0.2)));
             document.getElementById('num_steps').value = target;
             updateModelStats(cid, did);
           }
@@ -417,7 +428,7 @@
       if (did) {
         return fetch('/v1/datasets/' + did).then(function(r) { return r.json(); }).then(function(res) {
           if (res.data && res.data.sample_count > 0) {
-            var target = Math.min(50000, Math.max(500, Math.ceil(res.data.sample_count * 0.2)));
+            var target = Math.min(maxSteps, Math.max(500, Math.ceil(res.data.sample_count * 0.2)));
             document.getElementById('num_steps').value = target;
             updateModelStats(cid, did);
           }
@@ -425,7 +436,7 @@
       }
       return;
     }
-    var targetSteps = Math.min(50000, Math.max(500, Math.ceil(docCount * 0.2)));
+    var targetSteps = Math.min(maxSteps, Math.max(500, Math.ceil(docCount * 0.2)));
     document.getElementById('num_steps').value = targetSteps;
     updateModelStats(cid, did);
   };
@@ -447,6 +458,219 @@
     })
     .catch(function(err) { alert('Registration failed: ' + err); });
   };
+
+  /* ── Multi-run session persistence ── */
+  function saveTrainingState() {
+    if (!session || session.state === 'idle') return;
+    var state = {
+      runId: session.runId,
+      status: session.state,
+      config: {
+        n_embd: document.getElementById('n_embd').value,
+        n_layer: document.getElementById('n_layer').value,
+        n_head: document.getElementById('n_head').value,
+        block_size: document.getElementById('block_size').value,
+        num_steps: document.getElementById('num_steps').value,
+        learning_rate: document.getElementById('learning_rate').value,
+        temperature: document.getElementById('temperature').value,
+        use_gpu: document.getElementById('use_gpu').checked,
+        corpus_id: corpusSelect.value,
+        dataset_id: datasetSelect.value,
+      },
+      metrics: chart ? chart.getPoints() : [],
+      startedAt: Date.now(),
+    };
+    window.coreSession.addRun(session.runId, state);
+  }
+
+  function removeActiveRun(runId) {
+    window.coreSession.removeRun(runId);
+  }
+
+  function renderRunsList(runs) {
+    var list = document.getElementById('runs-list');
+    var runIds = Object.keys(runs);
+    if (runIds.length === 0) { document.getElementById('runs-panel').style.display = 'none'; return; }
+    document.getElementById('runs-panel').style.display = '';
+
+    var html = '<div style="display:flex;flex-direction:column;gap:var(--space-1);">';
+    runIds.forEach(function(id) {
+      var r = runs[id];
+      var statusClass = 'badge-cyan';
+      if (r.status === 'streaming') statusClass = 'badge-green';
+      else if (r.status === 'done') statusClass = 'badge';
+      else if (r.status === 'errored') statusClass = 'badge-red';
+      var steps = r.metrics ? r.metrics.length : 0;
+      var lastLoss = steps > 0 ? r.metrics[r.metrics.length - 1].loss : null;
+      var timeAgo = r.startedAt ? Math.floor((Date.now() - r.startedAt) / 1000) + 's ago' : '';
+      var isCurrent = id === session && session.state !== 'idle';
+      html += '<div class="rec-card" style="display:flex;align-items:center;gap:var(--space-2);padding:6px 10px;border:1px solid var(--border);border-radius:4px;font-size:0.72rem;">'
+        + '<span class="badge ' + statusClass + '">' + r.status + '</span>'
+        + '<span style="font-family:var(--font-mono);color:var(--info);">' + id.slice(0,12) + '</span>'
+        + '<span style="color:var(--text-dim);">' + steps + ' steps</span>'
+        + (lastLoss != null ? '<span style="color:var(--accent-cyan);">loss: ' + lastLoss.toFixed(4) + '</span>' : '')
+        + '<span style="color:var(--text-muted);font-size:0.62rem;">' + timeAgo + '</span>'
+        + '<span style="flex:1;"></span>';
+      if (!isCurrent && (r.status === 'streaming' || r.status === 'connecting')) {
+        html += '<button class="btn btn-sm btn-accent reconnect-btn" data-run="' + id + '">reconnect</button>';
+      }
+      if (r.status === 'done' || r.status === 'errored') {
+        html += '<button class="btn btn-sm btn-secondary dismiss-btn" data-run="' + id + '">dismiss</button>';
+      }
+      html += '</div>';
+    });
+    html += '</div>';
+    list.innerHTML = html;
+  }
+
+  function reconnectToRun(runId, saved) {
+    if (session) { session.destroy(); session = null; }
+    log('> Reconnecting to training run ' + runId + '...');
+    initChart();
+    chart.clear();
+    if (saved.metrics && saved.metrics.length > 0 && chart) {
+      chart.loadPoints(saved.metrics);
+      var last = saved.metrics[saved.metrics.length - 1];
+      if (last) {
+        document.getElementById('metric-step').textContent = last.step || '—';
+        document.getElementById('metric-loss').textContent = last.loss != null ? last.loss.toFixed(4) : '—';
+      }
+    }
+
+    session = new SSESession(runId);
+      session.onstatechange = function(s) {
+        updateState(s);
+        saveTrainingState();
+        renderRunsList(window.coreSession.getActiveRuns());
+      };
+      session.onmetrics = function(d) {
+        updateMetrics(d);
+        chart.appendPoint({ step: d.step, loss: d.loss });
+        log('step ' + String(d.step).padStart(6) + ' | loss ' + d.loss.toFixed(4));
+        saveTrainingState();
+      };
+      session.oncomplete = function(d) {
+        handleTrainingComplete(d, runId);
+      };
+      session.onerror = function(e) {
+        log('> Could not reconnect: ' + e.message);
+      };
+      session.start();
+      renderRunsList(window.coreSession.getActiveRuns());
+      window._currentSession = session;
+    }
+
+    function restoreTrainingSession() {
+    var runs = window.coreSession.getActiveRuns();
+    var runIds = Object.keys(runs);
+    if (runIds.length === 0) return;
+
+    var currentRunId = window.coreSession.getCurrentRunId();
+    var saved = currentRunId && runs[currentRunId] ? runs[currentRunId] : runs[runIds[runIds.length - 1]];
+
+    /* Restore config values */
+    if (saved.config) {
+      var c = saved.config;
+      if (c.n_embd) document.getElementById('n_embd').value = c.n_embd;
+      if (c.n_layer) document.getElementById('n_layer').value = c.n_layer;
+      if (c.n_head) document.getElementById('n_head').value = c.n_head;
+      if (c.block_size) document.getElementById('block_size').value = c.block_size;
+      if (c.num_steps) document.getElementById('num_steps').value = c.num_steps;
+      if (c.learning_rate) document.getElementById('learning_rate').value = c.learning_rate;
+      if (c.temperature) document.getElementById('temperature').value = c.temperature;
+      if (c.corpus_id) { corpusSelect.value = c.corpus_id; }
+      if (c.dataset_id) { datasetSelect.value = c.dataset_id; }
+    }
+    updateDataContext();
+    updateModelStats();
+
+    if (saved.status === 'streaming' || saved.status === 'connecting') {
+      reconnectToRun(currentRunId || saved.runId, saved);
+    } else if (saved.status === 'done') {
+      updateState('done');
+      initChart();
+      if (saved.metrics && saved.metrics.length > 0 && chart) {
+        chart.loadPoints(saved.metrics);
+        var last = saved.metrics[saved.metrics.length - 1];
+        log('');
+        log('═══════════════════════════════════════');
+        log(' FINAL loss: ' + (last.loss != null ? last.loss.toFixed(4) : '?'));
+        log(' (restored from previous session)');
+        log('═══════════════════════════════════════');
+      }
+      fetch('/v1/experiments').then(function(r) { return r.json(); }).then(function(expData) {
+        refreshOutputActions(expData);
+      }).catch(function() {});
+    } else if (saved.status === 'errored') {
+      updateState('errored');
+      log('> Training run ' + saved.runId + ' ended with errors.');
+    }
+
+    /* Show run list if there's more than one */
+    renderRunsList(runs);
+  }
+
+  function handleTrainingComplete(d, runId) {
+    var finalLoss = d.final_loss != null ? d.final_loss.toFixed(4) : '?';
+    log('');
+    log('═══════════════════════════════════════');
+    log(' FINAL loss: ' + finalLoss);
+    log('═══════════════════════════════════════');
+
+    if (d.samples && d.samples.length > 0) {
+      samplesPanel.style.display = 'block';
+      samplesDisplay.innerHTML = d.samples.map(function(s) {
+        return '<span class="sample-block">[SAMPLE] ' + escHtml(s) + '</span>';
+      }).join('');
+    }
+
+    fetch('/v1/experiments').then(function(r) { return r.json(); }).then(function(expData) {
+      refreshOutputActions(expData);
+      /* Keep in runs list but mark done — user can dismiss */
+      if (runId) {
+        var runs = window.coreSession.getActiveRuns();
+        if (runs[runId]) {
+          runs[runId].status = 'done';
+          window.coreSession.addRun(runId, runs[runId]);
+          renderRunsList(window.coreSession.getActiveRuns());
+        }
+      }
+    }).catch(function() {
+      if (runId) {
+        var runs = window.coreSession.getActiveRuns();
+        if (runs[runId]) {
+          runs[runId].status = 'done';
+          window.coreSession.addRun(runId, runs[runId]);
+          renderRunsList(window.coreSession.getActiveRuns());
+        }
+      }
+    });
+  }
+
+  function refreshOutputActions(expData) {
+    var exps = expData.experiments || [];
+    var latest = exps.length > 0 ? exps[exps.length - 1] : null;
+    if (latest) {
+      var html = '';
+      var finalLoss = latest.final_loss != null ? latest.final_loss.toFixed(4) : '?';
+
+      var qualityBadge = '';
+      if (latest.final_loss != null) {
+        if (latest.final_loss < 0.5) qualityBadge = '<span class="badge badge-green">good</span>';
+        else if (latest.final_loss < 1.0) qualityBadge = '<span class="badge badge-yellow">fair</span>';
+        else qualityBadge = '<span class="badge badge-red">high</span>';
+      }
+      html += '<span class="action-text">Experiment #' + latest.id + ' &mdash; loss ' + finalLoss + ' ' + qualityBadge + '</span>';
+
+      html += '<div class="action-buttons">';
+      html += '<button class="action-btn" onclick="openRegisterModal(' + latest.id + ')">register model</button>';
+      html += '<a class="action-link" href="/v1/experiments-page">view all experiments &rarr;</a>';
+      html += '<a class="action-link action-link-dim" href="' + (expData.mlflow_url || '#') + '" target="_blank">mlflow &rarr;</a>';
+      html += '</div>';
+
+      outputActions.innerHTML = html;
+    }
+  }
 
   /* ── Training Lifecycle ── */
   window.startTraining = async function startTraining() {
@@ -485,56 +709,35 @@
       log('> Run ID: ' + runId);
 
       session = new SSESession(runId);
-      session.onstatechange = function(s) { updateState(s); };
+      session.onstatechange = function(s) {
+        updateState(s);
+        saveTrainingState();
+        renderRunsList(window.coreSession.getActiveRuns());
+      };
       session.onmetrics = function(d) {
         updateMetrics(d);
         chart.appendPoint({ step: d.step, loss: d.loss });
         log('step ' + String(d.step).padStart(6) + ' | loss ' + d.loss.toFixed(4));
+        saveTrainingState();
       };
       session.oncomplete = function(d) {
-        var finalLoss = d.final_loss != null ? d.final_loss.toFixed(4) : '?';
-        log('');
-        log('═══════════════════════════════════════');
-        log(' FINAL loss: ' + finalLoss);
-        log('═══════════════════════════════════════');
-
-        /* Show generated samples */
-        if (d.samples && d.samples.length > 0) {
-          samplesPanel.style.display = 'block';
-          samplesDisplay.innerHTML = d.samples.map(function(s) {
-            return '<span class="sample-block">[SAMPLE] ' + escHtml(s) + '</span>';
-          }).join('');
-        }
-
-        /* Fetch experiment details for post-training actions */
-        fetch('/v1/experiments').then(function(r) { return r.json(); }).then(function(expData) {
-          var exps = expData.experiments || [];
-          var latest = exps.length > 0 ? exps[exps.length - 1] : null;
-          if (latest) {
-            var html = '';
-
-            var qualityBadge = '';
-            if (latest.final_loss != null) {
-              if (latest.final_loss < 0.5) qualityBadge = '<span class="badge badge-green">good</span>';
-              else if (latest.final_loss < 1.0) qualityBadge = '<span class="badge badge-yellow">fair</span>';
-              else qualityBadge = '<span class="badge badge-red">high</span>';
-            }
-            html += '<span class="action-text">Experiment #' + latest.id + ' &mdash; loss ' + finalLoss + ' ' + qualityBadge + '</span>';
-
-            html += '<div class="action-buttons">';
-            html += '<button class="action-btn" onclick="openRegisterModal(' + latest.id + ')">register model</button>';
-            html += '<a class="action-link" href="/v1/experiments-page">view all experiments &rarr;</a>';
-            html += '<a class="action-link action-link-dim" href="' + (expData.mlflow_url || '#') + '" target="_blank">mlflow &rarr;</a>';
-            html += '</div>';
-
-            outputActions.innerHTML = html;
-          }
-        }).catch(function() {});
+        handleTrainingComplete(d, runId);
       };
       session.onerror = function(e) {
         log('> Error: ' + e.message);
+        removeActiveRun(runId);
+        renderRunsList(window.coreSession.getActiveRuns());
       };
       session.start();
+      /* Save initial state immediately so new run shows in runs list */
+      window.coreSession.addRun(runId, {
+        runId: runId,
+        status: 'connecting',
+        config: config,
+        metrics: [],
+        startedAt: Date.now(),
+      });
+      renderRunsList(window.coreSession.getActiveRuns());
 
       window._currentSession = session;
     } catch (err) {
@@ -548,7 +751,26 @@
       session.stop();
       log('> Training stopped by user');
     }
+    renderRunsList(window.coreSession.getActiveRuns());
   };
+
+  /* ── Run selector clicks (delegated) ── */
+  document.addEventListener('click', function(e) {
+    var runId, runs;
+    var reconnectBtn = e.target.closest('.reconnect-btn');
+    if (reconnectBtn) {
+      runId = reconnectBtn.getAttribute('data-run');
+      runs = window.coreSession.getActiveRuns();
+      if (runs[runId]) reconnectToRun(runId, runs[runId]);
+      return;
+    }
+    var dismissBtn = e.target.closest('.dismiss-btn');
+    if (dismissBtn) {
+      runId = dismissBtn.getAttribute('data-run');
+      removeActiveRun(runId);
+      renderRunsList(window.coreSession.getActiveRuns());
+    }
+  });
 
   /* ── Init ── */
   var autotuneBtn = document.getElementById('autotune-btn');
@@ -573,11 +795,15 @@
   stopBtn.addEventListener('click', stopTraining);
 
   window.addEventListener('beforeunload', function() {
-    if (session) session.destroy();
+    saveTrainingState();
     if (chart) chart.destroy();
   });
 
-  updateState('idle');
+  /* Try to reconnect to a previously active training session */
+  restoreTrainingSession();
+  if (!session) {
+    updateState('idle');
+  }
 
   /* ── GPU availability check ── */
   fetch('/v1/health').then(function(r) { return r.json(); }).then(function(health) {

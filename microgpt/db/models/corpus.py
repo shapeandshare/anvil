@@ -35,6 +35,7 @@ class Corpus(Base, TimestampMixin):
         Integer, nullable=False, default=0
     )
     language_map: Mapped[str | None] = mapped_column(Text, nullable=True)
+    errors: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     files: Mapped[list["CorpusFile"]] = relationship(
         "CorpusFile", back_populates="corpus", cascade="all, delete-orphan"

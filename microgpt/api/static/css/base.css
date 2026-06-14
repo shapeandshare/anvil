@@ -6,7 +6,7 @@
 }
 
 html {
-  font-size: 20px;
+  font-size: 17px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -15,130 +15,134 @@ body {
   font-family: var(--font-body);
   color: var(--text);
   background-color: var(--bg);
-  line-height: 1.6;
-  min-height: 100vh;
+  line-height: 1.5;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 img, svg { display: block; max-width: 100%; }
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
-/* ── Shell Layout ── */
+/* ── App Shell ── */
 .app-shell {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100%;
+  overflow: hidden;
 }
 
-.app-header {
+/* ── Navigation Bar (top, glass) ── */
+.nav-bar {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-2) var(--space-4);
-  background: var(--surface);
-  border-bottom: var(--border-width) solid var(--border);
-  position: sticky;
-  top: 0;
+  justify-content: space-between;
+  padding: env(safe-area-inset-top, 0) var(--space-4) 0;
+  height: calc(56px + env(safe-area-inset-top, 0));
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--glass-border);
+  flex-shrink: 0;
   z-index: 100;
 }
 
-.app-logo {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-family: var(--font-mono);
-  font-size: 0.9rem;
-  color: var(--accent);
-  white-space: nowrap;
-}
-
-.app-logo .logo-version {
-  font-size: 0.65rem;
-  color: var(--text-muted);
-}
-
-.app-nav {
-  display: flex;
-  gap: var(--space-1);
-  flex: 1;
-  overflow-x: auto;
-}
-
-.app-tab {
-  padding: var(--space-1) var(--space-3);
-  font-size: 0.75rem;
-  font-family: var(--font-mono);
-  color: var(--text-muted);
-  cursor: pointer;
-  border-radius: var(--radius);
-  white-space: nowrap;
-  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
-}
-
-.app-tab:hover {
-  background: var(--border);
+.nav-title {
+  font-family: var(--font-body);
+  font-size: 1.65rem;
+  font-weight: 700;
   color: var(--text);
-}
-
-.app-tab.active {
-  background: var(--accent);
-  color: #ffffff;
-}
-
-.app-header-right {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin-left: auto;
+  letter-spacing: -0.02em;
 }
 
 .theme-toggle {
-  padding: var(--space-1) var(--space-2);
-  font-size: 0.7rem;
-  font-family: var(--font-mono);
-  color: var(--text-muted);
-  cursor: pointer;
-  border: var(--border-width) solid var(--border);
+  font-family: var(--font-body);
+  font-size: 0.76rem;
+  color: var(--accent);
+  background: var(--surface-2);
+  border: none;
+  padding: var(--space-1) var(--space-3);
   border-radius: var(--radius);
-  background: var(--surface);
-  transition: background var(--dur-fast) var(--ease);
+  cursor: pointer;
+  min-height: var(--touch-min);
+  transition: opacity var(--dur-fast) var(--ease);
 }
 
 .theme-toggle:hover {
-  background: var(--border);
+  opacity: 0.8;
 }
 
+/* ── Main Content ── */
 .app-main {
   flex: 1;
-  padding: var(--space-6) var(--space-5);
-  max-width: 1200px;
-  width: 100%;
-  margin: 0 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--space-4);
+  -webkit-overflow-scrolling: touch;
 }
 
-/* ── Status Bar ── */
-.app-statusbar {
+/* ── Tab Bar (bottom, glass) ── */
+.tab-bar {
   display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-1) var(--space-4);
-  background: var(--surface);
-  border-top: var(--border-width) solid var(--border);
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  color: var(--text-muted);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border-top: 1px solid var(--glass-border);
+  padding: 0 var(--space-2);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  flex-shrink: 0;
+  z-index: 100;
 }
 
-.status-item.online { color: var(--accent); }
+.tab-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.tab-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: var(--space-1) var(--space-3);
+  min-width: 60px;
+  min-height: var(--touch-min);
+  text-decoration: none;
+  color: var(--text-tertiary);
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  transition: color var(--dur-fast) var(--ease);
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tab-item:hover {
+  color: var(--text-secondary);
+}
+
+.tab-item.active {
+  color: var(--accent);
+}
+
+.tab-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.tab-label {
+  font-size: 0.65rem;
+  line-height: 1;
+}
 
 /* ── Responsive ── */
-@media (max-width: 768px) {
-  html { font-size: 17px; }
-  .app-header { flex-wrap: wrap; gap: var(--space-2); }
-  .app-nav { order: 3; width: 100%; }
-  .app-main { padding: var(--space-4); }
-}
-
 @media (max-width: 480px) {
   html { font-size: 16px; }
+  .app-main { padding: var(--space-3); }
+  .tab-item { min-width: 50px; padding: var(--space-1) var(--space-2); }
+  .tab-icon { font-size: 1.1rem; }
+  .tab-label { font-size: 0.6rem; }
 }

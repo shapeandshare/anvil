@@ -189,6 +189,7 @@ def train_torch(
     beta2: float = 0.99,
     temperature: float = 0.5,
     progress_callback: Any = None,
+    stop_check: Any = None,
 ) -> tuple[dict[str, list[list[float]]], float, list[str], list[str]]:
     if not _TORCH_AVAILABLE:
         msg = "torch is not installed — cannot run GPU training"
@@ -215,6 +216,8 @@ def train_torch(
     final_loss_val: float = 0.0
 
     for step in range(num_steps):
+        if stop_check is not None and stop_check():
+            break
         doc = docs[step % len(docs)]
         tokens = [BOS] + [uchars.index(ch) for ch in doc] + [BOS]
         n = min(block_size, len(tokens) - 1)

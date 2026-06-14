@@ -13,6 +13,7 @@ from fastapi.responses import HTMLResponse
 
 from microgpt.api.v1.corpora import router as corpora_router
 from microgpt.api.v1.datasets import router as datasets_router
+from microgpt.config import get_config
 from microgpt.api.v1.eval import router as eval_router
 from microgpt.api.v1.eval_datasets import router as eval_datasets_router
 from microgpt.api.v1.experiments import router as experiments_router
@@ -78,7 +79,7 @@ async def list_services(request: Request):
     return {
         "services": [
             {"name": "web", "status": "running"},
-            {"name": "mlflow", "status": mlflow_status, "port": 5000},
+            {"name": "mlflow", "status": mlflow_status, "port": get_config()["mlflow_port"]},
         ]
     }
 
@@ -191,7 +192,7 @@ def _poll_port(port: int, timeout: float = 2.0) -> list[int]:
 
 @router.post("/services/{name}/kill-port")
 async def kill_service_port(name: str, request: Request):
-    SERVICE_PORTS = {"mlflow": 5000}
+    SERVICE_PORTS = {"mlflow": get_config()["mlflow_port"]}
     port = SERVICE_PORTS.get(name)
     if port is None:
         raise HTTPException(
@@ -587,8 +588,10 @@ TRAINING_LOOP_STEPS = [
             "Training adjusts all model parameters to make better predictions. "
             "At each step: the model reads a sequence, predicts tokens one by one, "
             "measures how wrong it was (loss), and nudges every parameter to reduce that error. "
-            "The widget shows a loss curve from a real training run. "
-            "Scrub through it to watch the model improve."
+            "The widget below shows the loss curve from your training runs. "
+            "If you haven't trained a model yet, head to the "
+            "<a href=\"/v1/training-page\" class=\"action-link\">Training Dashboard</a> "
+            "first — then come back here to inspect the results."
         ),
         "widget": "trainingLoop",
     },
@@ -600,7 +603,7 @@ TRAINING_LOOP_STEPS = [
             "character. A decreasing curve means the model is learning patterns in the data. "
             "Early steps have high loss (the model is guessing blindly). "
             "Later steps have lower loss as the model picks up character-level patterns. "
-            "Drag the scrubber to see loss at any point in training."
+            "Select a finished experiment above and drag the scrubber to see loss at any point."
         ),
         "widget": "trainingLoop",
     },
@@ -611,7 +614,7 @@ TRAINING_LOOP_STEPS = [
             "The shape of the curve reveals training quality. A smooth downward slope "
             "means stable learning. Plateaus suggest the model needs more capacity or "
             "different hyperparameters. Spikes or oscillations may mean the learning rate "
-            "is too high. Compare curves from different experiments to build intuition."
+            "is too high. Compare curves from different experiments using the selector above."
         ),
         "widget": "trainingLoop",
     },
@@ -622,7 +625,8 @@ TRAINING_LOOP_STEPS = [
             "The optimizer (Adam) computes gradients for every parameter and updates them "
             "in the direction that reduces loss. The learning rate controls step size: "
             "too small = painfully slow progress, too big = overshooting and divergence. "
-            "This model uses linear learning rate decay: lr_t = lr * (1 - step/num_steps)."
+            "This model uses linear learning rate decay: lr_t = lr * (1 - step/num_steps). "
+            "The scrubber below lets you step through the gradient updates at each point."
         ),
         "widget": "trainingLoop",
     },
@@ -633,8 +637,9 @@ TRAINING_LOOP_STEPS = [
             "A trained model generates new text character by character: "
             "it predicts the next char, samples it (using the sampling lesson's techniques), "
             "feeds it back as input, and repeats. Better loss = more coherent output. "
-            "If no training run exists yet, the widget will prompt you to go Train a model. "
-            "When you do, return here to see your own loss curve."
+            "No experiments yet? "
+            "<a href=\"/v1/training-page\" class=\"action-link\">Go train a model</a> "
+            "to populate the loss curve above — then use the selector to switch between runs."
         ),
         "widget": "trainingLoop",
     },

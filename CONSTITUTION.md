@@ -30,9 +30,9 @@ All Python packages MUST use implicit namespace packages (PEP 420). `__init__.py
 
 All data access MUST follow the Repository pattern. Business logic MUST be in the Service layer. All services MUST be exposed through a single God Class (`MicroGPTWorkbench`). Routes, CLI, and tests call the God Class. No DB primitives leak beyond the Repository layer.
 
-### Article VIII — Whimsy Without Compromise
+### Article VIII — iOS-Grade Polish
 
-The UI MUST be delightful — pixel art, ASCII banners, SVG animations, emojis, a unicorn mascot 🦄. Whimsy MUST NEVER undermine correctness, completeness, or robustness.
+The UI MUST be polished and responsive — fluid animations, clear visual hierarchy, precise typography, and platform-appropriate interactions. Delight comes from craft and attention to detail: spring-based motion, glass materials (where accessible), consistent spacing, and thoughtful touch targets. The design language MUST follow the system's native aesthetic (iOS on Apple devices, platform-appropriate on others). Polish MUST NEVER undermine correctness, completeness, or robustness.
 
 ### Article IX — Pit of Success
 
@@ -47,4 +47,4 @@ All optional capabilities (GPU acceleration, external services, advanced feature
 
 This constitution supersedes all other practices in this repository. Amendments require documentation in an Architecture Decision Record (ADR), approval, and version bump. All PRs and agent sessions must verify compliance with these articles.
 
-**Version**: 1.1.0 | **Ratified**: 2026-06-10 | **Last Amended**: 2026-06-13
+**Version**: 1.2.0 | **Ratified**: 2026-06-10 | **Last Amended**: 2026-06-13

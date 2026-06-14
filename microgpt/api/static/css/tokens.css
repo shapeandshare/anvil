@@ -1,92 +1,133 @@
 :root {
   /* ── Color (Dark Mode — Default) ── */
-  --bg:             #0e0f12;
-  --surface:        #181a1f;
-  --text:           #e8eaed;
-  --text-muted:     #8a8c94;
-  --border:         #2a2c32;
-  --accent:         #3b82f6;
-  --accent-warn:    #f59e0b;
-  --accent-error:   #ef4444;
+  --bg:             #000000;    /* iOS dark system background */
+  --surface:        #1c1c1e;   /* iOS dark secondary surface (grouped table) */
+  --surface-2:      #2c2c2e;   /* iOS dark tertiary surface */
+  --grouped-bg:     #0c0c0d;   /* iOS dark grouped background */
+  --separator:      #38383a;   /* iOS dark separator */
+  --text:           #ffffff;   /* iOS dark label */
+  --text-secondary: #ebebf5;   /* iOS dark secondary label */
+  --text-tertiary:  #8e8e93;   /* iOS dark tertiary label */
+  --text-muted:     var(--text-tertiary);
+  --accent:         #007aff;   /* iOS system blue */
+  --accent-green:   #34c759;   /* iOS system green */
+  --accent-red:     #ff3b30;   /* iOS system red */
+  --accent-orange:  #ff9500;   /* iOS system orange */
+  --accent-yellow:  #ffcc00;   /* iOS system yellow */
+  --accent-purple:  #af52de;   /* iOS system purple */
+  --accent-cyan:    #32d74b;   /* iOS system green (used as cyan) */
 
-  /* ── Legacy aliases (old style.css compat) ── */
+  /* ── Glass Materials ── */
+  --glass-bg:       rgba(28, 28, 30, 0.85);
+  --glass-blur:     saturate(180%) blur(20px);
+  --glass-border:   rgba(255, 255, 255, 0.08);
+
+  /* ── Shadows ── */
+  --shadow-sm:      0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md:      0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-lg:      0 4px 16px rgba(0, 0, 0, 0.3);
+
+  /* ── Legacy Aliases (component compat) ── */
   --primary:        var(--accent);
+  --secondary:      var(--accent);
+  --success:        var(--accent-green);
+  --error:          var(--accent-red);
+  --warning:        var(--accent-orange);
+  --info:           var(--accent);
+  --accent-warn:    var(--accent-orange);
+  --accent-error:   var(--accent-red);
+  --accent-magenta: var(--accent-purple);
   --bg-panel:       var(--surface);
-  --bg-element:     #1c1c24;
-  --bg-input:       var(--bg);
-  --success:        #34d399;
-  --info:           #38bdf8;
-  --warning:        var(--accent-warn);
-  --error:          var(--accent-error);
-  --accent-cyan:    #38bdf8;
-  --accent-magenta: #a78bfa;
-  --accent-green:   #34d399;
-  --accent-yellow:  var(--accent-warn);
-  --accent-red:     var(--accent-error);
-  --border-sub:     var(--border);
+  --bg-element:     var(--surface-2);
+  --bg-input:       var(--surface-2);
+  --border:         var(--separator);
+  --border-sub:     var(--separator);
+  --text-dim:       var(--text-tertiary);
+  --text-bright:    #ffffff;
   --font:           var(--font-body);
   --t:              0.15s ease;
-  --secondary:      #818cf8;
-  --text-bright:    #ffffff;
 
-  /* ── Type ── */
-  --font-display:  'Times New Roman', 'Georgia', serif;
-  --font-body:     -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono:     'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace;
+  /* ── Typography ── */
+  --font-body:      -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono:      ui-monospace, 'SF Mono', Menlo, Monaco, 'Cascadia Code', 'JetBrains Mono', Consolas, monospace;
+  --font-display:   var(--font-body);
 
-  /* ── Spacing ── */
-  --space-1:   0.25rem;
-  --space-2:   0.5rem;
-  --space-3:   0.75rem;
-  --space-4:   1rem;
-  --space-5:   1.5rem;
-  --space-6:   2rem;
-  --space-7:   3rem;
-  --space-8:   4rem;
-  --space-9:   6rem;
-  --space-10:  8rem;
-  --space-11: 12rem;
-  --space-12: 16rem;
+  /* ── Spacing (iOS 8px grid) ── */
+  --space-1:   0.25rem;   /* 4px  */
+  --space-2:   0.5rem;    /* 8px  */
+  --space-3:   0.75rem;   /* 12px */
+  --space-4:   1rem;      /* 16px */
+  --space-5:   1.25rem;   /* 20px */
+  --space-6:   1.5rem;    /* 24px */
+  --space-7:   2rem;      /* 32px */
+  --space-8:   3rem;      /* 48px */
+  --space-9:   4rem;      /* 64px */
+  --space-10:  6rem;      /* 96px */
 
   /* ── Motion ── */
-  --ease:       cubic-bezier(0.4, 0, 0.2, 1);
-  --dur-fast:   150ms;
-  --dur-slow:   400ms;
+  --ease:          cubic-bezier(0.32, 0.94, 0.6, 1);
+  --spring-quick:  linear(0, 0.006, 0.025 2.2%, 0.104 5.6%, 0.467 14.3%, 0.752 22.5%, 0.896 29.7%, 0.981 36.7%, 1.016 43.7%, 1.012 52.5%, 0.938 66.2%, 0.867 79.6%, 0.83 89.9%, 0.819 100%);
+  --spring-slow:   linear(0, 0.009 18.2%, 0.584 40.9%, 0.898 57.7%, 1.016 73.9%, 0.991 91.4%, 1);
+  --dur-fast:      200ms;
+  --dur-slow:      400ms;
 
   /* ── Radii & Borders ── */
-  --radius:       8px;
-  --border-width: 1px;
+  --radius-sm:     8px;
+  --radius:        13px;     /* iOS standard */
+  --radius-lg:     20px;     /* iOS card */
+  --radius-xl:     30px;     /* iOS pill */
+  --border-width:  1px;
+
+  /* ── Touch ── */
+  --touch-min:     44px;
 }
 
+/* ── Light Mode ── */
 [data-theme="light"] {
-  --bg:             #fafafa;
-  --surface:        #ffffff;
-  --text:           #16181d;
-  --text-muted:     #6b6d74;
-  --border:         #e4e5e7;
-  --accent:         #2563eb;
-  --accent-warn:    #d97706;
-  --accent-error:   #dc2626;
-
-  /* ── Legacy aliases (light) ── */
-  --bg-element:     #f2f2f5;
-  --success:        #10b981;
-  --info:           #0ea5e9;
-  --accent-cyan:    #0ea5e9;
-  --accent-magenta: #8b5cf6;
-  --accent-green:   #10b981;
+  --bg:             #f2f2f7;   /* iOS light grouped background */
+  --surface:        #ffffff;   /* iOS light surface */
+  --surface-2:      #f2f2f7;   /* iOS light secondary surface */
+  --grouped-bg:     #f2f2f7;
+  --separator:      #c6c6c8;   /* iOS light separator */
+  --text:           #000000;
+  --text-secondary: #3c3c43;
+  --text-tertiary:  #8e8e93;
+  --accent:         #007aff;
+  --accent-green:   #34c759;
+  --accent-red:     #ff3b30;
+  --accent-orange:  #ff9500;
+  --accent-yellow:  #ffcc00;
+  --accent-purple:  #af52de;
+  --accent-cyan:    #34c759;
   --text-bright:    #000000;
+
+  --glass-bg:       rgba(255, 255, 255, 0.72);
+  --glass-border:   rgba(60, 60, 67, 0.12);
+
+  --shadow-sm:      0 1px 2px rgba(0, 0, 0, 0.1);
+  --shadow-md:      0 2px 8px rgba(0, 0, 0, 0.1);
+  --shadow-lg:      0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
+/* ── OS Preference Fallback ── */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) {
-    /* Defaults to :root dark values */
-  }
+  :root:not([data-theme]) { /* inherits dark defaults above */ }
 }
 
-@media (prefers-reduced-motion) {
+/* ── Reduced Motion ── */
+@media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;
     animation: none !important;
+  }
+}
+
+/* ── Reduced Transparency ── */
+@media (prefers-reduced-transparency: reduce) {
+  .nav-bar,
+  .tab-bar {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: var(--surface) !important;
   }
 }

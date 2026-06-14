@@ -17,7 +17,8 @@ def test_mlflow_service_tracking_uri_from_config():
     svc = MLflowService()
     cfg = get_config()
     assert svc.tracking_uri == cfg["mlflow_uri"]
-    assert svc.tracking_uri == "http://127.0.0.1:5000"
+    assert svc.tracking_uri == "http://127.0.0.1:5001"
+    assert svc.port == 5001
 
 
 def test_mlflow_service_no_hardcoded_sqlite_path():

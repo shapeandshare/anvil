@@ -15,15 +15,12 @@ DEMO_MODEL_PATH = Path("data/models/demo/model.json")
 DEMO_CORPUS = [
     "the quick brown fox jumps over the lazy dog",
     "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG",
-    "emma",
-    "olivia",
-    "ava",
-    "isabella",
-    "sophia",
-    "mia",
-    "charlotte",
-    "amelia",
-    "GPT demo 42",
+    "emma, olivia, ava, isabella, sophia,",
+    "mia, charlotte, amelia — hello!",
+    "what's GPT? it's a demo!",
+    "GPT demo 42: go, dog, go!",
+    "don't stop — keep going!",
+    "hi there, let's go!",
 ]
 _DEMO_TRAIN_LOCK = threading.Lock()
 

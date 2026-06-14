@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from microgpt.api.deps import get_db_session
-from microgpt.config import get_config
+from microgpt.config import get_config, get_mlflow_uri
 from microgpt.core.engine import GPT
 from microgpt.db.models.training_config import TrainingConfig
 from microgpt.db.repositories import ExperimentRepository
@@ -37,7 +37,7 @@ async def list_experiments(svc: ExperimentService = Depends(get_service)):
     return {
         "mlflow_experiment_id": mlflow_exp_id,
         "mlflow_url": (
-            f"{get_config()['mlflow_uri']}/#/experiments/{mlflow_exp_id}"
+            f"{get_mlflow_uri()}/#/experiments/{mlflow_exp_id}"
             if mlflow_exp_id
             else None
         ),
@@ -50,7 +50,7 @@ async def list_experiments(svc: ExperimentService = Depends(get_service)):
                 "config_id": e.config_id,
                 "mlflow_run_id": e.mlflow_run_id,
                 "mlflow_run_url": (
-                    f"{get_config()['mlflow_uri']}/#/experiments/{mlflow_exp_id}/runs/{e.mlflow_run_id}"
+                    f"{get_mlflow_uri()}/#/experiments/{mlflow_exp_id}/runs/{e.mlflow_run_id}"
                     if (mlflow_exp_id and e.mlflow_run_id)
                     else None
                 ),
@@ -170,7 +170,7 @@ async def get_experiment(
                 "params": dict(run.data.params),
                 "metrics": dict(run.data.metrics),
                 "run_url": (
-                    f"{get_config()['mlflow_uri']}/#/experiments/{mlflow_exp_id}/runs/{exp.mlflow_run_id}"
+                    f"{get_mlflow_uri()}/#/experiments/{mlflow_exp_id}/runs/{exp.mlflow_run_id}"
                     if mlflow_exp_id
                     else None
                 ),
@@ -244,7 +244,7 @@ async def get_experiment_mlflow(id: int, svc: ExperimentService = Depends(get_se
             "metric_histories": metric_histories,
             "artifacts": artifact_paths,
             "run_url": (
-                f"{get_config()['mlflow_uri']}/#/experiments/{mlflow_exp_id}/runs/{exp.mlflow_run_id}"
+                f"{get_mlflow_uri()}/#/experiments/{mlflow_exp_id}/runs/{exp.mlflow_run_id}"
                 if mlflow_exp_id
                 else None
             ),
