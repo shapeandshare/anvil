@@ -12,14 +12,14 @@ from starlette.responses import StreamingResponse
 from microgpt.gpu import detect_gpu, resolve_device
 from microgpt.services.metrics_collectors import MPSMetricsCollector, MPSSamplerThread
 from microgpt.services.tracking import TrackingService
-from microgpt.services.training import TrainingService
+from microgpt.services.training import StopRequested, TrainingService
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 svc = TrainingService()
 tracking_svc = TrackingService()
-_tasks: set[asyncio.Task] = set()
+_tasks: dict[int, asyncio.Task] = {}
 MODELS_DIR = Path("data/models")
 MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -243,8 +243,18 @@ async def start_training(config: dict):
                 await sess.commit()
 
     task = asyncio.create_task(_run_training())
-    _tasks.add(task)
-    task.add_done_callback(_tasks.discard)
+    _tasks[run_id] = task
+
+    def _cleanup(t: asyncio.Task) -> None:
+        _tasks.pop(run_id, None)
+
+    task.add_done_callback(_cleanup)
+
+    svc.store_run_metadata(
+        run_id,
+        mlflow_run_id=mlflow_run_id or None,
+        experiment_id=experiment_id,
+    )
 
     response = {
         "run_id": run_id,
@@ -319,6 +329,13 @@ async def list_configs():
 
 @router.post("/training/{run_id}/stop")
 async def stop_training(run_id: int):
+    svc.stop_run(run_id)
+    queue = svc.get_queue(run_id)
+    if queue is not None:
+        await queue.put({
+            "event": "error",
+            "data": json.dumps({"message": "Training stopped by user"}),
+        })
     return {"status": "stopped"}
 
 

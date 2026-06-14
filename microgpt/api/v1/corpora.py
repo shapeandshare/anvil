@@ -107,6 +107,11 @@ async def get_corpus(id: int, svc: CorpusService = Depends(get_service)):
             pass
     d = _corpus_to_dict(corpus)
     d["language_map"] = lang_map
+    if corpus.errors:
+        try:
+            d["errors"] = json.loads(corpus.errors)
+        except (json.JSONDecodeError, TypeError):
+            pass
     return {"data": d, "error": None}
 
 
@@ -395,7 +400,7 @@ def _build_recommendations(scan) -> list[dict]:
 
 
 def _corpus_to_dict(corpus) -> dict:
-    return {
+    d = {
         "id": corpus.id,
         "name": corpus.name,
         "description": corpus.description,
@@ -407,3 +412,11 @@ def _corpus_to_dict(corpus) -> dict:
         "document_count": corpus.document_count,
         "created_at": str(corpus.created_at),
     }
+    if corpus.errors:
+        try:
+            parsed = json.loads(corpus.errors)
+            if isinstance(parsed, list) and len(parsed) > 0:
+                d["error_count"] = len(parsed)
+        except (json.JSONDecodeError, TypeError):
+            pass
+    return d

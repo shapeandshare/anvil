@@ -12,9 +12,10 @@ def _call_or_400(svc_method, *args):
     try:
         return svc_method(*args)
     except KeyError as e:
+        missing_char = e.args[0] if e.args else "?"
         raise HTTPException(
             status_code=400,
-            detail=f"Character {e!r} is not in the model's vocabulary.",
+            detail=f"Character {missing_char!r} is not in the model's vocabulary.",
         ) from e
 
 
