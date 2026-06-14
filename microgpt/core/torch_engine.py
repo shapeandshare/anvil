@@ -95,7 +95,7 @@ class TorchGPT:
             elif isinstance(v, torch.nn.ParameterList):
                 yield from v
 
-    def forward(self, token_id: int, pos_id: int):
+    def forward(self, token_id: int, pos_id: int, keys: list[list], values: list[list]):
         tok_emb = self.wte[token_id]
         pos_emb = self.wpe[pos_id]
         x = tok_emb + pos_emb
@@ -109,16 +109,28 @@ class TorchGPT:
             k = F.linear(x, self.attn_wk[li])
             v = F.linear(x, self.attn_wv[li])
 
+            keys[li].append(k)
+            values[li].append(v)
+
             x_attn_parts = []
             for h in range(self.n_head):
                 hs = h * self.head_dim
                 q_h = q[hs : hs + self.head_dim]
-                k_h = k[hs : hs + self.head_dim]
-                v_h = v[hs : hs + self.head_dim]
 
-                attn_scores = torch.mv(k_h, q_h) / (self.head_dim**0.5)
-                attn_weights = F.softmax(attn_scores.unsqueeze(0), dim=1).squeeze(0)
-                head_out = attn_weights @ v_h
+                # Stack all previous keys/values for this head
+                k_h = torch.stack(
+                    [ki[hs : hs + self.head_dim] for ki in keys[li]]
+                )  # (T, head_dim)
+                v_h = torch.stack(
+                    [vi[hs : hs + self.head_dim] for vi in values[li]]
+                )  # (T, head_dim)
+
+                # attn_logits[t] = q_h · k_h[t] / sqrt(head_dim)
+                attn_logits = torch.mv(k_h, q_h) / (self.head_dim**0.5)  # (T,)
+                attn_weights = F.softmax(attn_logits, dim=0)  # (T,)
+
+                # head_out = weighted sum of values
+                head_out = v_h.T @ attn_weights  # (head_dim,)
                 x_attn_parts.append(head_out)
 
             x_attn = torch.cat(x_attn_parts)
@@ -207,13 +219,16 @@ def train_torch(
         tokens = [BOS] + [uchars.index(ch) for ch in doc] + [BOS]
         n = min(block_size, len(tokens) - 1)
 
+        keys = [[] for _ in range(n_layer)]
+        values = [[] for _ in range(n_layer)]
+
         total_loss = torch.tensor(0.0, device=device_obj)
 
         for pos_id in range(n):
             token_id = tokens[pos_id]
             target_id = tokens[pos_id + 1]
 
-            logits = model.forward(token_id, pos_id)
+            logits = model.forward(token_id, pos_id, keys, values)
             probs = F.softmax(logits, dim=0)
             loss_t = -torch.log(probs[target_id] + 1e-10)
             total_loss = total_loss + loss_t
@@ -236,8 +251,10 @@ def train_torch(
         for _ in range(20):
             token_id = BOS
             sample: list[str] = []
+            samp_keys = [[] for _ in range(model.n_layer)]
+            samp_values = [[] for _ in range(model.n_layer)]
             for pos_id in range(block_size):
-                logits = model.forward(token_id, pos_id)
+                logits = model.forward(token_id, pos_id, samp_keys, samp_values)
                 scaled = logits / temperature
                 probs = F.softmax(scaled, dim=0)
                 probs_np = probs.cpu().numpy()
