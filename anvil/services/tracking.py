@@ -483,6 +483,11 @@ class TrackingService:
         except Exception as e:
             return {"available": False, "files": [], "error": str(e)}
 
+    @staticmethod
+    def _sanitize_model_name(name: str) -> str:
+        """MLflow model registry rejects names containing '/' or ':'."""
+        return name.replace("/", "-").replace(":", "-")
+
     async def register_source_model(
         self,
         *,
@@ -495,7 +500,7 @@ class TrackingService:
         if self._degraded or not run_id:
             return {}
         if name:
-            registry_name = name
+            registry_name = self._sanitize_model_name(name)
         elif dataset_id is not None:
             registry_name = f"dataset-{dataset_id}"
         elif corpus_id is not None:
