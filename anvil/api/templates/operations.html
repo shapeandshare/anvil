@@ -225,8 +225,10 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
         var logResp = await fetch('/v1/services/logs/' + svc.name + '?lines=20');
         var logData = await logResp.json();
         if (logData.logs && logData.logs.length > 0) {
+          var ledClass = svc.status === 'running' ? 'output-indicator--active' : 'output-indicator--idle';
           logsHtml += '<div class="section-card" style="margin:var(--space-2) 0;">';
           logsHtml += '<div class="section-card__header" style="padding:var(--space-2) var(--space-3);margin-bottom:0;border-bottom:var(--border-width) solid var(--border);background:var(--bg-element);border-radius:var(--radius) var(--radius) 0 0;">';
+          logsHtml += '<span class="output-indicator ' + ledClass + '" style="margin-right:var(--space-2);"></span>';
           logsHtml += '<h2 class="section-card__title">' + svc.name + '</h2></div>';
           logsHtml += '<pre class="telemetry" style="max-height:180px;font-size:0.72rem;">';
           logsHtml += logData.logs.join('\n');

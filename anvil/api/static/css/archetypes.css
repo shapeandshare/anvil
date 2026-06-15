@@ -503,6 +503,84 @@
   }
 }
 
+/* ════════════════════════════════════════════════
+   Datasets Page — Spacing & Visual Hierarchy
+   ════════════════════════════════════════════════ */
+
+/* Form section grouping */
+.ds-section {
+  margin-bottom: var(--space-5);
+}
+.ds-section:last-child {
+  margin-bottom: 0;
+}
+
+.ds-section-divider {
+  border-top: 1px solid var(--separator);
+  padding-top: var(--space-4);
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.ds-section-label {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-2);
+}
+
+.ds-status-line {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-top: var(--space-2);
+  min-height: 1.5em;
+}
+
+/* Corpus wizard accent zones */
+.ds-zone {
+  position: relative;
+  padding: var(--space-4) 0 var(--space-4) var(--space-5);
+  margin-bottom: var(--space-4);
+}
+.ds-zone:last-child {
+  margin-bottom: 0;
+}
+.ds-zone::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 2px;
+}
+.ds-zone--analyze::before { background: var(--accent); }
+.ds-zone--patterns::before { background: var(--accent-purple); }
+.ds-zone--results::before { background: var(--accent-green); }
+.ds-zone--create::before { background: var(--accent-orange); }
+
+.ds-zone-label {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-3);
+}
+
+/* Help-box container for tighter grouping */
+.ds-help-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* Table wrapper spacing */
+.ds-table-wrapper {
+  margin-bottom: var(--space-3);
+}
+
 /* ── Mobile Responsive ── */
 @media (max-width: 768px) { .training-dashboard { gap: var(--space-3); } }
 @media (max-width: 600px) {
@@ -520,10 +598,14 @@
   background: var(--surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
-  padding: var(--space-5) var(--space-4);
-  margin-bottom: var(--space-4);
+  padding: var(--space-6) var(--space-5);
+  margin-bottom: var(--space-5);
   opacity: 0;
   animation: card-entrance 0.5s var(--spring-quick) calc(0.15s + var(--stagger-i, 0) * 0.08s) both;
+}
+
+.section-card + .section-card {
+  margin-top: 0;
 }
 
 @keyframes card-entrance {
@@ -701,15 +783,16 @@ margin-bottom: var(--space-2);
 
 .grouped-list th,
 .grouped-list td {
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-4) var(--space-4);
   text-align: left;
   border-bottom: 1px solid var(--separator);
 }
 
 .grouped-list th {
-  color: var(--text-tertiary);
-  font-weight: 500;
-  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
 }
 
 .grouped-list tr:hover td {

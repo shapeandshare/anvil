@@ -315,6 +315,7 @@
 
   function initDidYouKnow() {
     if (_dykTimer) clearInterval(_dykTimer);
+    if (!document.getElementById('didyouknow-banner')) return;
     showDidYouKnow();
     _dykTimer = setInterval(showDidYouKnow, 18000);
   }
