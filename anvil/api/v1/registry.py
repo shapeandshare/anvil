@@ -64,33 +64,84 @@ async def register_model(
 @router.get("/registry/models")
 async def list_registered_models(
     search: str | None = Query(None),
-    svc: ModelRegistryService = Depends(get_service),
 ):
-    models = await svc.list_models(search=search)
+    from anvil.services.tracking import TrackingService
+
+    tracking_svc = TrackingService()
+    models = await tracking_svc.list_registered_models(search=search)
     return {"models": models}
 
 
 @router.get("/registry/models/{model_id}")
 async def get_model(
     model_id: int,
-    svc: ModelRegistryService = Depends(get_service),
+    session: AsyncSession = Depends(get_db_session),
 ):
+    # Try local DB first (registered_models.id path)
+    repo = ModelRepository(session)
+    svc = ModelRegistryService(repo)
     model = await svc.get_model(model_id)
-    if model is None:
+    if model is not None:
+        return model
+
+    # Fallback: treat model_id as experiment_id
+    from anvil.db.repositories.experiments import ExperimentRepository
+
+    exp_repo = ExperimentRepository(session)
+    exp = await exp_repo.get(model_id)
+    if exp is None:
         raise HTTPException(status_code=404, detail="Model not found")
-    return model
+
+    from datetime import timezone
+
+    return {
+        "id": exp.id,
+        "name": exp.run_name or f"experiment-{exp.id}",
+        "description": f"Trained on dataset {exp.dataset_id or exp.corpus_id or '?'}",
+        "versions": [
+            {
+                "version": 1,
+                "experiment_id": exp.id,
+                "dataset_name": exp.dataset.name if exp.dataset_id else None,
+                "final_loss": exp.final_loss,
+                "hyperparameters": None,
+                "created_at": str(exp.completed_at or exp.created_at),
+            }
+        ],
+        "created_at": str(exp.created_at),
+    }
 
 
 @router.get("/registry/models/{model_id}/versions/{version}")
 async def get_version(
     model_id: int,
     version: int,
-    svc: ModelRegistryService = Depends(get_service),
+    session: AsyncSession = Depends(get_db_session),
 ):
+    # Try local DB first
+    repo = ModelRepository(session)
+    svc = ModelRegistryService(repo)
     v = await svc.get_version(model_id, version)
-    if v is None:
+    if v is not None:
+        return v
+
+    # Fallback: treat model_id as experiment_id
+    from anvil.db.repositories.experiments import ExperimentRepository
+
+    exp_repo = ExperimentRepository(session)
+    exp = await exp_repo.get(model_id)
+    if exp is None:
         raise HTTPException(status_code=404, detail="Version not found")
-    return v
+
+    return {
+        "version": version,
+        "experiment_id": exp.id,
+        "dataset_name": exp.dataset.name if exp.dataset_id else None,
+        "final_loss": exp.final_loss,
+        "hyperparameters": None,
+        "artifact_path": f"data/models/experiment_{exp.id}.json",
+        "created_at": str(exp.completed_at or exp.created_at),
+    }
 
 
 @router.delete("/registry/models/{model_id}/versions/{version}")
