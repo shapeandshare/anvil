@@ -142,7 +142,23 @@ async def upload_dataset(
 
 
 @router.delete("/datasets/{id}")
-async def delete_dataset(id: int, svc: DatasetService = Depends(get_service)):
+async def delete_dataset(
+    id: int,
+    svc: DatasetService = Depends(get_service),
+    force: bool = Query(False, description="Force delete demo dataset"),
+):
+    ds = await svc.get_dataset(id)
+    if ds is None:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+    if ds.name.startswith("Demo - ") and not force:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"Dataset '{ds.name}' is a bundled demo dataset. "
+                "Deleting it will free the name for re-import via 'anvil bootstrap-datasets'. "
+                "Set force=true to confirm deletion."
+            ),
+        )
     try:
         await svc.delete_dataset(id)
     except ValueError as e:
