@@ -442,6 +442,7 @@ class TrackingService:
             return {"available": False, "files": [], "error": None}
         loop = asyncio.get_event_loop()
         try:
+            await loop.run_in_executor(None, lambda: self._lazy_init())
             client = self._client
             if client is None:
                 return {"available": False, "files": [], "error": "client not initialized"}
