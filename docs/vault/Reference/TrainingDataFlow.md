@@ -1,10 +1,15 @@
 ---
 title: Training Render Loop & Data Flow
 type: reference
-tags: [type/reference, domain/core]
-created: 2026-06-12
-updated: 2026-06-14
-aliases: [render-loop, data-flow, training-pipeline]
+tags:
+  - type/reference
+  - domain/core
+created: 2026-06-12T00:00:00.000Z
+updated: '2026-06-14'
+aliases:
+  - render-loop
+  - data-flow
+  - training-pipeline
 ---
 
 # Training Render Loop & Data Flow
@@ -144,10 +149,11 @@ Key properties:
 After training finishes, `on_complete` fires:
 
 1. **MLflow**: Log final metric, upload samples.txt + model.json artifacts, terminate run
-2. **DB**: INSERT TrainingConfig + Experiment records (async SQLAlchemy)
+2. **DB**: INSERT Experiment record (async SQLAlchemy)
 3. **Disk**: Save `data/models/experiment_{id}.json` for registry access
-4. **SSE**: Send `complete` event with final loss + generated samples
-5. **Browser**: Display samples, enable "register model" action
+4. **MLflow Model Registry**: Auto-register model using dataset/corpus name
+5. **SSE**: Send `complete` event with final loss + device
+6. **Browser**: Enable "register model" action in Output section
 
 ## Inference Flow
 
