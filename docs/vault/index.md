@@ -4,7 +4,7 @@ title: anvil Vault
 
 # anvil Vault
 
-The canonical documentation surface for **anvil** — a pip-installable LLM training workbench built on Karpathy's microgpt.py.
+The canonical documentation surface for **anvil** — a pip-installable LLM training workbench. Inspired by Karpathy's microgpt.py, the engine has evolved with RoPE, SwiGLU, RMSNorm, and safetensors export.
 
 Open this vault in [Obsidian](https://obsidian.md) for graph navigation.
 

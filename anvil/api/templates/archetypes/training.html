@@ -578,6 +578,10 @@
           window.coreSession.addRun(runId, runs[runId]);
         }
         renderRunsList(window.coreSession.getActiveRuns());
+        /* If run already completed on the server, fetch experiment data */
+        fetch('/v1/experiments').then(function(r) { return r.json(); }).then(function(expData) {
+          refreshOutputActions(expData);
+        }).catch(function() {});
       };
       session.start();
       renderRunsList(window.coreSession.getActiveRuns());

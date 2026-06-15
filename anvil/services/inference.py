@@ -4,6 +4,7 @@ Follows layer discipline: services consume repositories, routes call services.
 """
 
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
@@ -94,7 +95,7 @@ class DemoModelProvider:
             from anvil.services.demo_bootstrap import DemoBootstrapService
             from anvil.db.repositories.corpora import CorpusRepository
 
-            async def _load():
+            async def _load() -> list[str] | None:
                 async with AsyncSessionLocal() as session:
                     bootstrap = DemoBootstrapService(session)
                     corpus = await bootstrap.get_default_corpus()
@@ -105,7 +106,19 @@ class DemoModelProvider:
                     svc = CorpusService(repo, loader)
                     return await svc.load_docs(corpus.id)
 
-            return asyncio.run(_load())
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+
+            if loop is None:
+                return asyncio.run(_load())
+            else:
+                # Running event loop detected (e.g. FastAPI startup).
+                # Run async DB access in a separate thread with its own loop.
+                with ThreadPoolExecutor(max_workers=1) as pool:
+                    future = pool.submit(asyncio.run, _load())
+                    return future.result()
         except Exception:
             return None
 
