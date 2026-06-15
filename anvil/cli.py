@@ -5,10 +5,8 @@ import asyncio
 import json
 import logging
 import os
-import random
 import signal
 import sys
-import urllib.request
 
 import uvicorn
 
@@ -51,13 +49,30 @@ def _load_docs(corpus_id: int | None = None) -> list[str]:
 
         return asyncio.run(_load())
 
-    if not os.path.exists("input.txt"):
-        url = "https://raw.githubusercontent.com/karpathy/makemore/988aa59/names.txt"
-        urllib.request.urlretrieve(url, "input.txt")
-    with open("input.txt") as f:
-        docs = [line.strip() for line in f if line.strip()]
-    random.shuffle(docs)
-    return docs
+    from anvil.db.session import AsyncSessionLocal
+    from anvil.services.demo_bootstrap import DemoBootstrapService, DEFAULT_CORPUS_NAME
+
+    async def _load_default():
+        import asyncio
+
+        async with AsyncSessionLocal() as session:
+            bootstrap = DemoBootstrapService(session)
+            corpus = await bootstrap.get_default_corpus()
+            if corpus is None:
+                raise RuntimeError(
+                    f"No demo corpus found. Run 'anvil bootstrap-datasets' first "
+                    f"to import demo data (expected corpus: {DEFAULT_CORPUS_NAME})"
+                )
+            from anvil.db.repositories.corpora import CorpusRepository
+            from anvil.services.corpus_loader import CorpusLoader
+            from anvil.services.corpora import CorpusService
+
+            repo = CorpusRepository(session)
+            loader = CorpusLoader()
+            svc = CorpusService(repo, loader)
+            return await svc.load_docs(corpus.id)
+
+    return asyncio.run(_load_default())
 
 
 def serve():
@@ -80,7 +95,7 @@ def train():
         "--corpus",
         type=int,
         default=None,
-        help="Corpus ID to train on (default: input.txt)",
+        help="Corpus ID to train on (default: bundled demo corpus)",
     )
     parser.add_argument(
         "--dataset",
@@ -555,5 +570,60 @@ def migrate_registry():
             svc = ModelRegistryService(repo)
             result = await svc.migrate_local_registry_to_mlflow(tracking_svc)
             print(f"Migration complete: {result}")
+
+    asyncio.run(_run())
+
+
+def bootstrap_datasets_main():
+    """Import bundled demo data (corpora and datasets) from ``data/demo/``."""
+    parser = argparse.ArgumentParser(description="Bootstrap demo datasets")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Scan and report what would be imported without making changes",
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Print detailed per-item progress",
+    )
+    args = parser.parse_args()
+
+    async def _run():
+        from anvil.db.session import AsyncSessionLocal
+        from anvil.services.demo_bootstrap import DemoBootstrapService
+
+        async with AsyncSessionLocal() as session:
+            svc = DemoBootstrapService(session)
+
+            if args.dry_run:
+                print("Dry-run mode — scanning data/demo/...")
+                bootstrap = await svc.bootstrap_all()
+                if bootstrap.errors:
+                    for err in bootstrap.errors:
+                        print(f"  ⚠ {err}")
+                print(f"\nWould create: {bootstrap.corpora_created} corpora, {bootstrap.datasets_created} datasets")
+                print(f"Would skip:   {bootstrap.corpora_skipped} corpora, {bootstrap.datasets_skipped} datasets")
+                return
+
+            print("Bootstrapping demo data from data/demo/...")
+            bootstrap = await svc.bootstrap_all()
+
+            for err in bootstrap.errors:
+                print(f"  ⚠ {err}")
+
+            print(
+                f"\nSummary: {bootstrap.corpora_created} corpora created, "
+                f"{bootstrap.datasets_created} datasets created, "
+                f"{bootstrap.corpora_skipped + bootstrap.datasets_skipped} skipped, "
+                f"{len(bootstrap.errors)} errors"
+            )
+            print(f"Done in {bootstrap.total_time_ms / 1000:.1f}s")
+
+            if bootstrap.errors:
+                await session.rollback()
+                sys.exit(1)
+            await session.commit()
+            sys.exit(0)
 
     asyncio.run(_run())

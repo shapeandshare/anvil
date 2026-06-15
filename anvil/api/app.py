@@ -43,6 +43,25 @@ async def lifespan(app: FastAPI):
     except Exception:
         pass
 
+    # Auto-bootstrap demo data if not yet imported (best-effort)
+    try:
+        from anvil.db.session import AsyncSessionLocal
+        from anvil.services.demo_bootstrap import DemoBootstrapService
+
+        async with AsyncSessionLocal() as session:
+            svc = DemoBootstrapService(session)
+            result = await svc.bootstrap_all()
+            if result.corpora_created > 0 or result.datasets_created > 0:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.info(
+                    "Bootstrapped %d corpora, %d datasets from data/demo/",
+                    result.corpora_created, result.datasets_created,
+                )
+            await session.commit()
+    except Exception:
+        pass
+
     yield
     mlflow_svc.stop()
 

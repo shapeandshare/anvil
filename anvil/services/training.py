@@ -1,9 +1,6 @@
 import asyncio
 import json
-import os
-import random
 import threading
-import urllib.request
 from collections.abc import Awaitable, Callable
 
 from anvil.config import get_config
@@ -88,15 +85,28 @@ class TrainingService:
 
             return asyncio.run(_load())
 
-        if not os.path.exists("input.txt"):
-            url = (
-                "https://raw.githubusercontent.com/karpathy/makemore/988aa59/names.txt"
-            )
-            urllib.request.urlretrieve(url, "input.txt")
-        with open("input.txt") as f:
-            docs = [line.strip() for line in f if line.strip()]
-        random.shuffle(docs)
-        return docs
+        # Fallback: use default demo corpus when no corpus/dataset specified
+        from anvil.db.repositories.corpora import CorpusRepository
+        from anvil.db.session import AsyncSessionLocal
+        from anvil.services.corpus_loader import CorpusLoader
+        from anvil.services.corpora import CorpusService
+        from anvil.services.demo_bootstrap import DemoBootstrapService, DEFAULT_CORPUS_NAME
+
+        async def _load_default():
+            async with AsyncSessionLocal() as session:
+                repo = CorpusRepository(session)
+                loader = CorpusLoader()
+                svc = CorpusService(repo, loader)
+                bootstrap = DemoBootstrapService(session)
+                corpus = await bootstrap.get_default_corpus()
+                if corpus is None:
+                    raise RuntimeError(
+                        f"No demo corpus found. Run 'anvil bootstrap-datasets' first "
+                        f"to import demo data (expected corpus: {DEFAULT_CORPUS_NAME})"
+                    )
+                return await svc.load_docs(corpus.id)
+
+        return asyncio.run(_load_default())
 
     def reserve_run(self) -> int:
         run_id = self._running

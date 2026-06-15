@@ -1,0 +1,582 @@
+# Math Facts Dataset (Hand-crafted)
+x / 5 = 6, x = 30
+40 divided by four equals ten
+12 - 1 = 11
+x / 3 = 5, x = 15
+8x = 64, x = 8
+3 + 16 = 19
+x - 6 = 2, x = 8
+4 * 5 = 20
+nine plus five equals fourteen
+25 - 12 = 13
+10 - x = 6, x = 4
+20 + 5 = 25
+x + 2 = 7, x = 5
+6 + x = 12, x = 6
+the square root of nine is three
+7 + x = 12, x = 5
+fifteen minus twelve equals three
+eleven minus two equals nine
+6 - 0 = 6
+30 / 10 = 3
+nine minus five equals four
+6 / 2 = 3
+twelve minus nine equals three
+two times five equals ten
+x / 4 = 6, x = 24
+two plus zero equals two
+23 - 20 = 3
+four plus ten equals fourteen
+5 + x = 6, x = 1
+16 + 8 = 24
+2^6 = 64
+5x = 25, x = 5
+x + 10 = 12, x = 2
+5 - 3 = 2
+x - 3 = 0, x = 3
+4 + x = 9, x = 5
+2 + 18 = 20
+7 - x = 3, x = 4
+5x = 10, x = 2
+6x = 6, x = 1
+five times one equals five
+the cube of four is sixty-four
+one times ten equals ten
+8 + x = 9, x = 1
+2^4 = 16
+14 - 11 = 3
+x + 4 = 7, x = 3
+6 + 13 = 19
+seven minus one equals six
+3 + x = 10, x = 7
+13^2 = 169
+x + 4 = 11, x = 7
+30 / 6 = 5
+10^1 = 10
+x / 8 = 1, x = 8
+x / 2 = 2, x = 4
+3x = 18, x = 6
+x + 9 = 13, x = 4
+0 + 13 = 13
+two to the power of ten is one thousand twenty-four
+x / 2 = 1, x = 2
+zero plus two equals two
+twenty divided by ten equals two
+7 - 3 = 4
+x + 3 = 4, x = 1
+twelve minus one equals eleven
+nine plus four equals thirteen
+5 + 5 = 10
+13 - 9 = 4
+x - 5 = 2, x = 7
+six plus one equals seven
+five minus zero equals five
+the square root of twenty-five is five
+14 + 0 = 14
+x - 7 = 6, x = 13
+six times four equals 24
+seven plus zero equals seven
+x / 6 = 2, x = 12
+13 - 10 = 3
+eight plus two equals ten
+36 / 9 = 4
+x / 5 = 3, x = 15
+16 - 6 = 10
+60 / 6 = 10
+ten to the power of three is one thousand
+x / 8 = 6, x = 48
+zero plus one equals one
+4 + 18 = 22
+8 * 8 = 64
+x + 2 = 3, x = 1
+22 - 1 = 21
+x + 7 = 13, x = 6
+5x = 15, x = 3
+3 - x = 0, x = 3
+zero plus ten equals ten
+x + 2 = 9, x = 7
+two plus four equals six
+2 + x = 8, x = 6
+x - 6 = 5, x = 11
+23 - 8 = 15
+17 - 7 = 10
+x - 2 = 2, x = 4
+x + 9 = 15, x = 6
+4x = 20, x = 5
+0 + 4 = 4
+3 - 0 = 3
+fifteen minus zero equals fifteen
+x + 10 = 17, x = 7
+one plus three equals four
+9 - x = 7, x = 2
+9 + 9 = 18
+seven times one equals seven
+seven plus two equals nine
+2 / 1 = 2
+18 + 0 = 18
+x - 3 = 6, x = 9
+x - 2 = 1, x = 3
+ten plus five equals fifteen
+2 - x = 0, x = 2
+six plus two equals eight
+the square root of one hundred is ten
+five plus seven equals twelve
+6 + 11 = 17
+four times three equals twelve
+x / 5 = 4, x = 20
+2 + 16 = 18
+3x = 24, x = 8
+3 + x = 4, x = 1
+zero plus nine equals nine
+0 + 3 = 3
+4x = 4, x = 1
+4x = 8, x = 2
+10^2 = 100
+2 + x = 3, x = 1
+x / 4 = 4, x = 16
+x / 7 = 1, x = 7
+eight plus ten equals eighteen
+x + 2 = 5, x = 3
+5 + x = 10, x = 5
+x - 8 = 3, x = 11
+6 - 1 = 5
+x - 3 = 4, x = 7
+a score equals twenty
+x / 2 = 3, x = 6
+seven plus five equals twelve
+81 / 9 = 9
+2^3 = 8
+x + 1 = 7, x = 6
+63 / 9 = 7
+3^2 = 9
+5 * 9 = 45
+4 + x = 6, x = 2
+2 + 11 = 13
+10 + 3 = 13
+x + 6 = 10, x = 4
+x / 4 = 5, x = 20
+6 + 5 = 11
+fourteen squared equals 196
+x / 7 = 3, x = 21
+9 - x = 1, x = 8
+two to the power of nine is five hundred twelve
+eleven minus one equals ten
+42 divided by seven equals six
+22 - 5 = 17
+x - 5 = 0, x = 5
+9 - x = 4, x = 5
+x + 7 = 8, x = 1
+x + 5 = 6, x = 1
+6 + 15 = 21
+six times nine equals 54
+3 / 1 = 3
+20 - 2 = 18
+ten plus four equals fourteen
+6 - x = 0, x = 6
+eleven squared equals 121
+x + 3 = 10, x = 7
+6 * 9 = 54
+5 + 12 = 17
+3 - 1 = 2
+10 + x = 15, x = 5
+90 divided by nine equals ten
+4x = 16, x = 4
+3 * 9 = 27
+zero plus eight equals eight
+2 * 1 = 2
+x + 10 = 15, x = 5
+24 - 5 = 19
+the cube of five is one hundred twenty-five
+thirteen squared equals 169
+eight divided by eight equals one
+7 * 7 = 49
+5 + x = 7, x = 2
+the square root of four is two
+7 + 6 = 13
+3 + x = 9, x = 6
+6 + x = 9, x = 3
+1 + x = 4, x = 3
+x + 7 = 14, x = 7
+24 - 16 = 8
+2x = 12, x = 6
+x / 2 = 6, x = 12
+twelve minus two equals ten
+eight times six equals 48
+9 - x = 3, x = 6
+x + 1 = 4, x = 3
+2x = 4, x = 2
+zero plus seven equals seven
+14 + 9 = 23
+5 * 2 = 10
+70 divided by seven equals ten
+12^2 = 144
+10 - x = 7, x = 3
+x / 8 = 5, x = 40
+5x = 20, x = 4
+7x = 56, x = 8
+x / 8 = 3, x = 24
+2 + x = 4, x = 2
+3 + 5 = 8
+5 + x = 12, x = 7
+fourteen minus eight equals six
+16 - 2 = 14
+4 + x = 5, x = 1
+8 - x = 5, x = 3
+six minus six equals zero
+7 * 8 = 56
+2x = 14, x = 7
+4 - x = 1, x = 3
+10^0 = 1
+x + 7 = 9, x = 2
+54 divided by six equals nine
+12 + 0 = 12
+7 + x = 13, x = 6
+fifteen minus eleven equals four
+4 * 4 = 16
+2x = 6, x = 3
+x + 5 = 7, x = 2
+x / 7 = 6, x = 42
+seven times eight equals 56
+13 + 1 = 14
+10 + x = 11, x = 1
+x - 8 = 6, x = 14
+1 + x = 5, x = 4
+8 + 13 = 21
+4 + x = 11, x = 7
+one hundred divided by ten equals ten
+x / 5 = 1, x = 5
+5 + x = 11, x = 6
+6 - x = 1, x = 5
+8 + x = 10, x = 2
+90 divided by ten equals nine
+x - 3 = 5, x = 8
+seven minus zero equals seven
+7 + x = 9, x = 2
+eight plus zero equals eight
+70 / 7 = 10
+6x = 48, x = 8
+x - 5 = 1, x = 6
+25 - 18 = 7
+10^3 = 1000
+two to the power of four is sixteen
+one times one equals one
+19 + 1 = 20
+9 + x = 16, x = 7
+one hundred is ten times ten
+56 divided by eight equals seven
+two to the power of three is eight
+5 - x = 1, x = 4
+10 + 10 = 20
+1 * 7 = 7
+6x = 18, x = 3
+eleven minus nine equals two
+x + 10 = 11, x = 1
+9 - x = 6, x = 3
+x + 2 = 4, x = 2
+3 + 19 = 22
+x - 1 = 4, x = 5
+fourteen minus zero equals fourteen
+x + 6 = 13, x = 7
+one times five equals five
+3x = 9, x = 3
+eight minus three equals five
+x + 9 = 12, x = 3
+7 + x = 8, x = 1
+two to the power of eight is two hundred fifty-six
+six plus five equals eleven
+zero plus three equals three
+25 - 6 = 19
+x + 4 = 10, x = 6
+14 - 8 = 6
+17 - 10 = 7
+7 - x = 2, x = 5
+ten times nine equals 90
+seven plus one equals eight
+five minus five equals zero
+5 + 4 = 9
+x + 5 = 9, x = 4
+12 - 9 = 3
+8 - x = 4, x = 4
+twelve minus five equals seven
+seven plus four equals eleven
+nine plus zero equals nine
+x + 8 = 11, x = 3
+2x = 10, x = 5
+seven times two equals fourteen
+1 + x = 2, x = 1
+4 * 3 = 12
+x + 5 = 12, x = 7
+nine times three equals 27
+3 + 13 = 16
+4 - x = 2, x = 2
+42 divided by six equals seven
+16 + 6 = 22
+x + 9 = 11, x = 2
+x + 10 = 14, x = 4
+fifteen minus ten equals five
+ten times three equals thirty
+x / 6 = 6, x = 36
+9 * 10 = 90
+one plus nine equals ten
+four plus nine equals thirteen
+0 + 0 = 0
+7 + 18 = 25
+8x = 24, x = 3
+10 - x = 0, x = 10
+x - 2 = 3, x = 5
+4^2 = 16
+7 + 7 = 14
+7x = 28, x = 4
+x - 1 = 6, x = 7
+9 - x = 0, x = 9
+21 - 6 = 15
+eight minus eight equals zero
+3 + x = 8, x = 5
+7 - x = 4, x = 3
+three squared equals nine
+x + 3 = 7, x = 4
+14 + 7 = 21
+0 + 1 = 1
+eight times four equals 32
+20 + 4 = 24
+4 + 10 = 14
+13 - 11 = 2
+8 - x = 1, x = 7
+fifteen minus two equals thirteen
+7 - 0 = 7
+2 + x = 7, x = 5
+four plus two equals six
+5^2 = 25
+11 - 11 = 0
+12 + 1 = 13
+fourteen minus six equals eight
+7 * 6 = 42
+7 + 16 = 23
+pi is approximately three point one four one five nine
+12 + 8 = 20
+7x = 49, x = 7
+4x = 12, x = 3
+10 + x = 14, x = 4
+x + 6 = 7, x = 1
+18 - 11 = 7
+one plus two equals three
+10 - x = 4, x = 6
+x - 7 = 4, x = 11
+fifteen minus four equals eleven
+10 + x = 16, x = 6
+4 + 16 = 20
+4 * 6 = 24
+9 + 7 = 16
+two to the power of one is two
+x / 4 = 1, x = 4
+one plus seven equals eight
+three plus eight equals eleven
+one plus one equals two
+one plus six equals seven
+x - 6 = 3, x = 9
+18 + 2 = 20
+eight times three equals 24
+ten is the base of the decimal system
+ten times ten equals one hundred
+9 - x = 2, x = 7
+8x = 8, x = 1
+35 / 5 = 7
+four times seven equals 28
+six times eight equals 48
+5 - x = 3, x = 2
+x - 5 = 6, x = 11
+40 / 5 = 8
+four plus eight equals twelve
+x + 9 = 14, x = 5
+nine times seven equals 63
+8x = 56, x = 7
+1 * 3 = 3
+seven squared equals 49
+6 + x = 8, x = 2
+1^2 = 1
+2 * 8 = 16
+4 + 4 = 8
+8 + 3 = 11
+seven plus three equals ten
+10 + 15 = 25
+10 + x = 12, x = 2
+2^1 = 2
+5 + 20 = 25
+x + 4 = 9, x = 5
+x - 5 = 5, x = 10
+1 + 3 = 4
+7x = 7, x = 1
+13 + 0 = 13
+x + 6 = 9, x = 3
+21 - 20 = 1
+six plus seven equals thirteen
+ten to the power of one is ten
+19 - 4 = 15
+5 - 0 = 5
+fifteen squared equals 225
+x - 6 = 4, x = 10
+x - 2 = 5, x = 7
+6 - x = 5, x = 1
+3 * 4 = 12
+x + 10 = 13, x = 3
+6x = 42, x = 7
+seven plus seven equals fourteen
+three minus two equals one
+21 - 16 = 5
+7 * 3 = 21
+14 - 0 = 14
+11 - 2 = 9
+7^2 = 49
+x + 9 = 10, x = 1
+10 - x = 9, x = 1
+3x = 21, x = 7
+x - 4 = 5, x = 9
+three times six equals eighteen
+2^2 = 4
+fourteen minus ten equals four
+5 / 5 = 1
+fourteen minus thirteen equals one
+23 - 15 = 8
+15 - 10 = 5
+nine divided by three equals three
+six divided by two equals three
+thirteen minus four equals nine
+x / 6 = 3, x = 18
+x + 3 = 5, x = 2
+x + 3 = 9, x = 6
+4 + x = 10, x = 6
+seven plus nine equals sixteen
+one times eight equals eight
+24 / 3 = 8
+x - 8 = 0, x = 8
+eight minus five equals three
+2^5 = 32
+one times nine equals nine
+9 + x = 11, x = 2
+ten plus zero equals ten
+17 - 9 = 8
+35 / 7 = 5
+6 + 18 = 24
+ten plus eight equals eighteen
+x - 1 = 5, x = 6
+x + 4 = 8, x = 4
+4 + x = 7, x = 3
+5 + 17 = 22
+19 - 17 = 2
+x / 3 = 4, x = 12
+12 / 2 = 6
+2 + 8 = 10
+ten to the power of zero is one
+7 - x = 1, x = 6
+3 + x = 5, x = 2
+eight divided by four equals two
+9 + x = 12, x = 3
+9^2 = 81
+8 - x = 2, x = 6
+x + 8 = 13, x = 5
+11 + 7 = 18
+25 - 22 = 3
+7 + x = 14, x = 7
+x - 4 = 1, x = 5
+ten divided by ten equals one
+three minus three equals zero
+7 - x = 6, x = 1
+x / 5 = 2, x = 10
+eight squared equals 64
+x / 7 = 2, x = 14
+90 / 10 = 9
+3x = 6, x = 2
+x - 2 = 4, x = 6
+x / 3 = 2, x = 6
+x + 6 = 11, x = 5
+2 + 5 = 7
+x / 6 = 5, x = 30
+10 + x = 17, x = 7
+8 + x = 12, x = 4
+5x = 35, x = 7
+six plus six equals twelve
+4 + 8 = 12
+17 - 8 = 9
+2 + x = 6, x = 4
+9 * 4 = 36
+7 + x = 10, x = 3
+8 + x = 13, x = 5
+4 + 19 = 23
+9 - 0 = 9
+4x = 28, x = 7
+9 + 0 = 9
+x + 5 = 10, x = 5
+x / 4 = 3, x = 12
+five plus ten equals fifteen
+two times six equals twelve
+2 + x = 5, x = 3
+two to the power of five is thirty-two
+the square root of eighty-one is nine
+nine minus one equals eight
+nine plus one equals ten
+6 + 0 = 6
+18 - 12 = 6
+two times one equals two
+1 * 5 = 5
+2x = 8, x = 4
+9 + x = 14, x = 5
+2^7 = 128
+0 + 15 = 15
+8 + x = 11, x = 3
+3 - x = 2, x = 1
+70 divided by ten equals seven
+x - 3 = 2, x = 5
+x / 3 = 6, x = 18
+two plus seven equals nine
+3 / 3 = 1
+x / 8 = 2, x = 16
+48 divided by eight equals six
+x - 1 = 2, x = 3
+seven plus ten equals seventeen
+8 + 4 = 12
+two plus eight equals ten
+x / 2 = 5, x = 10
+11 + 1 = 12
+two plus six equals eight
+15 + 5 = 20
+x / 3 = 3, x = 9
+10 - x = 8, x = 2
+10 / 1 = 10
+0 + 12 = 12
+five plus nine equals fourteen
+one times seven equals seven
+14^2 = 196
+8x = 48, x = 6
+four plus five equals nine
+1 + x = 6, x = 5
+10 * 4 = 40
+x - 8 = 4, x = 12
+17 + 1 = 18
+ten squared equals one hundred
+x + 1 = 6, x = 5
+nine times five equals 45
+x / 6 = 1, x = 6
+5 * 4 = 20
+three to the power of two is nine
+x - 4 = 2, x = 6
+3 * 5 = 15
+3x = 12, x = 4
+x + 8 = 15, x = 7
+x / 7 = 4, x = 28
+twelve squared equals one hundred forty-four
+1 + 1 = 2
+nine squared equals 81
+1 + 13 = 14
+25 - 5 = 20
+6 + x = 13, x = 7
+10 + x = 13, x = 3
+5 + x = 8, x = 3
+x + 5 = 8, x = 3
+4 - x = 3, x = 1
+7 * 2 = 14
+10 - x = 1, x = 9
+x + 1 = 3, x = 2
+56 / 8 = 7
+x - 2 = 6, x = 8
+x - 7 = 1, x = 8
+6 - x = 4, x = 2

@@ -1,6 +1,6 @@
 # anvil
 
-**Train and experiment with LLMs from scratch — all in your browser.**
+**Train and experiment with LLMs from scratch.**
 
 anvil is a pip-installable Python package wrapping [Karpathy's microgpt.py](https://gist.github.com/karpathy/8627fe009c40f57531cb18360106ce95) with a FastAPI web server, MLflow experiment tracking, and a whimsical retro UI.
 

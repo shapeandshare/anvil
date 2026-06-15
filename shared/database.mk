@@ -3,6 +3,7 @@
 setup: $(VENV_DIR)/activate ## Create venv, install deps, and run DB migrations
 	mkdir -p data
 	$(PYTHON) -m alembic upgrade heads
+	$(PYTHON) -m anvil.cli bootstrap_datasets_main
 	@echo "Setup complete"
 
 db-upgrade: $(VENV_DIR)/activate ## Run all pending Alembic migrations

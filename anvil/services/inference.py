@@ -12,24 +12,22 @@ from anvil.core.tokenizer import Vocabulary
 
 
 DEMO_MODEL_PATH = Path("data/models/demo/model.json")
-DEMO_CORPUS = [
+
+# Minimal embedded fallback — used when the demo dataset has not been
+# bootstrapped into the DB yet (e.g. first app startup before setup).
+_FALLBACK_CORPUS = [
     "the quick brown fox jumps over the lazy dog",
-    "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG",
-    "emma, olivia, ava, isabella, sophia,",
-    "mia, charlotte, amelia — hello!",
     "what's GPT? it's a demo!",
-    "GPT demo 42: go, dog, go!",
-    "don't stop — keep going!",
     "hi there, let's go!",
 ]
 _DEMO_TRAIN_LOCK = threading.Lock()
 
 
-def _train_demo_model() -> GPT:
+def _train_demo_model(docs: list[str] | None = None) -> GPT:
     from anvil.core.engine import train
 
     model, _loss, _samples, uchars = train(
-        DEMO_CORPUS,
+        docs or _FALLBACK_CORPUS,
         num_steps=400,
         n_embd=16,
         n_head=4,
@@ -77,11 +75,39 @@ class DemoModelProvider:
                     self._chars = model.chars
                     return model, model.chars
 
-            model = _train_demo_model()
+            docs = self._load_demo_docs()
+            model = _train_demo_model(docs)
             self._model = model
             self._chars = model.chars
             chars_list = self._chars if self._chars is not None else []
             return model, chars_list
+
+    @staticmethod
+    def _load_demo_docs() -> list[str] | None:
+        """Try to load docs from the bootstrapped demo corpus; return None on failure."""
+        try:
+            import asyncio
+
+            from anvil.db.session import AsyncSessionLocal
+            from anvil.services.corpus_loader import CorpusLoader
+            from anvil.services.corpora import CorpusService
+            from anvil.services.demo_bootstrap import DemoBootstrapService
+            from anvil.db.repositories.corpora import CorpusRepository
+
+            async def _load():
+                async with AsyncSessionLocal() as session:
+                    bootstrap = DemoBootstrapService(session)
+                    corpus = await bootstrap.get_default_corpus()
+                    if corpus is None:
+                        return None
+                    repo = CorpusRepository(session)
+                    loader = CorpusLoader()
+                    svc = CorpusService(repo, loader)
+                    return await svc.load_docs(corpus.id)
+
+            return asyncio.run(_load())
+        except Exception:
+            return None
 
     def info(self) -> dict[str, Any]:
         return {"id": None, "version": None, "name": "demo", "is_demo": True}

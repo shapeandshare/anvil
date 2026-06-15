@@ -14,7 +14,9 @@ venv/
 .env
 
 # Runtime data
-data/
+data/*
+!data/demo/
+!data/demo/**
 logs/
 mlruns/
 mlartifacts/
