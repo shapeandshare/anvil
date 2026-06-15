@@ -3,8 +3,9 @@
 {% block content %}
 
 <div class="section-card" style="--stagger-i: 0">
+  <div class="page-intro">Monitor system health, manage background services, and tail service logs. If MLflow stops responding or a port is stuck, this is where you fix it. Services auto-refresh every 10 seconds.</div>
   <div class="section-card__header">
-    <h2 class="section-card__title">System Resources — compute details</h2>
+    <h2 class="section-card__title">System Resources — CPU, Memory, GPU, Disk</h2>
   </div>
   <div id="system-resources"><span class="text-muted" style="font-size:0.78rem;">Polling...</span></div>
 </div>
@@ -35,11 +36,14 @@
 </div>
 
 <div class="section-card" style="--stagger-i: 3">
-  <div class="section-card__header">
+  <div class="section-card__header section-card__header--clickable" id="logs-header" role="button" tabindex="0" aria-expanded="false" aria-controls="logs-body">
     <h2 class="section-card__title">Service Logs — tail -f</h2>
+    <span class="output-toggle-icon collapsed" id="logs-toggle-icon">▼</span>
   </div>
-  <div id="service-logs">
-    <span class="text-muted" style="font-size:0.78rem;">Waiting for service data...</span>
+  <div id="logs-body" class="section-card__content-collapsible collapsed">
+    <div id="service-logs">
+      <span class="text-muted" style="font-size:0.78rem;">Waiting for service data...</span>
+    </div>
   </div>
 </div>
 
@@ -296,6 +300,25 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
 
   setInterval(loadResources, 10000);
   loadResources();
+
+  /* ── Logs collapsible toggle ── */
+  var logsHeader = document.getElementById('logs-header');
+  var logsBody = document.getElementById('logs-body');
+  var logsToggleIcon = document.getElementById('logs-toggle-icon');
+  function toggleLogs() {
+    var collapsed = logsBody.classList.toggle('collapsed');
+    logsHeader.setAttribute('aria-expanded', !collapsed);
+    logsToggleIcon.classList.toggle('collapsed', collapsed);
+  }
+  if (logsHeader) {
+    logsHeader.addEventListener('click', toggleLogs);
+    logsHeader.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggleLogs();
+      }
+    });
+  }
 })();
 </script>
 {% endblock %}
