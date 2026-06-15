@@ -242,6 +242,7 @@ class InferenceService:
             name = "cached"
             return LoadedModel(gpt_model, chars, model_id, cache_key[1], name)
 
+        # Try loading from local DB first (registered_models.id path)
         from anvil.db.session import AsyncSessionLocal
         from anvil.db.repositories.models import ModelRepository
         from anvil.services.models import ModelRegistryService
@@ -251,12 +252,29 @@ class InferenceService:
             svc = ModelRegistryService(repo)
             v = await svc.get_version(model_id, version if version is not None else 1)
 
-        if v is None:
+        if v is not None:
+            model_path = Path(v["artifact_path"])
+            if model_path.exists():
+                gpt_model = LlamaModel.load(str(model_path))
+                if gpt_model.chars is None:
+                    raise ValueError("Model has no character mapping")
+                name = v.get("hyperparameters", {}).get("name", f"model-{model_id}")
+                self._cache[cache_key] = (gpt_model, gpt_model.chars)
+                return LoadedModel(gpt_model, gpt_model.chars, model_id, cache_key[1], name)
+
+        # Fallback: treat model_id as experiment_id and load from saved artifact
+        async with AsyncSessionLocal() as session:
+            from anvil.db.repositories.experiments import ExperimentRepository
+
+            exp_repo = ExperimentRepository(session)
+            exp = await exp_repo.get(model_id)
+
+        if exp is None:
             raise ValueError(
-                f"Model version not found: model_id={model_id}, version={version}"
+                f"Model not found: model_id={model_id}, version={version}"
             )
 
-        model_path = Path(v["artifact_path"])
+        model_path = Path(f"data/models/experiment_{model_id}.json")
         if not model_path.exists():
             raise FileNotFoundError(f"Model artifact not found: {model_path}")
 
@@ -264,7 +282,7 @@ class InferenceService:
         if gpt_model.chars is None:
             raise ValueError("Model has no character mapping")
 
-        name = v.get("hyperparameters", {}).get("name", f"model-{model_id}")
+        name = exp.run_name or f"experiment-{model_id}"
         self._cache[cache_key] = (gpt_model, gpt_model.chars)
         return LoadedModel(gpt_model, gpt_model.chars, model_id, cache_key[1], name)
 

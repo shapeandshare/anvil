@@ -548,6 +548,108 @@ class TrackingService:
             "source": f"runs:/{run_id}/{artifact_path}",
         }
 
+    async def list_registered_models(self, search: str | None = None) -> list[dict]:
+        """Query MLflow model registry for all registered models, enriched with run metadata.
+
+        Returns a list of dicts, each with:
+          id:         local experiment_id (int) or None if not found in local DB
+          name:       MLflow registered model name (string)
+          version:    latest version number (int)
+          run_id:     MLflow run ID (string)
+          final_loss: final_loss metric from the run (float or None)
+          created_at: MLflow model creation timestamp (string or None)
+          total_versions: total number of versions (int or 0)
+        """
+        if self._degraded:
+            return []
+        loop = asyncio.get_event_loop()
+        try:
+            client = await loop.run_in_executor(None, lambda: self._lazy_init())
+            if client is None:
+                return []
+        except Exception:
+            return []
+
+        try:
+            filter_string = None
+            if search:
+                filter_string = f"name LIKE '%{search}%'"
+            registered_models = await loop.run_in_executor(
+                None,
+                lambda: client.search_registered_models(
+                    filter_string=filter_string,
+                ),
+            )
+        except Exception:
+            return []
+
+        # Import locally to avoid circular imports at module level
+        from anvil.db.repositories.experiments import ExperimentRepository
+        from anvil.db.session import AsyncSessionLocal
+
+        result = []
+        for rm in registered_models:
+            try:
+                latest_versions = await loop.run_in_executor(
+                    None,
+                    lambda name=rm.name: client.get_latest_versions(name),
+                )
+                if not latest_versions:
+                    continue
+                latest = latest_versions[0]
+
+                # Get run data for final_loss
+                final_loss = None
+                try:
+                    run = await loop.run_in_executor(
+                        None, lambda rid=latest.run_id: client.get_run(rid)
+                    )
+                    if run and run.data and run.data.metrics:
+                        final_loss = run.data.metrics.get("final_loss")
+                except Exception:
+                    pass
+
+                # Look up local experiment ID from mlflow_run_id
+                experiment_id = None
+                try:
+                    async with AsyncSessionLocal() as session:
+                        exp_repo = ExperimentRepository(session)
+                        exp = await exp_repo.find_by_mlflow_run_id(latest.run_id)
+                        if exp:
+                            experiment_id = exp.id
+                except Exception:
+                    pass
+
+                # Count total versions
+                all_versions = await loop.run_in_executor(
+                    None,
+                    lambda name=rm.name: client.search_model_versions(f"name='{rm.name}'"),
+                )
+                total_versions = len(list(all_versions)) if all_versions else 0
+
+                result.append({
+                    "id": experiment_id,
+                    "name": rm.name,
+                    "description": (
+                        rm.description if hasattr(rm, "description") else None
+                    ),
+                    "version": latest.version,
+                    "latest_version": latest.version,
+                    "run_id": latest.run_id,
+                    "final_loss": final_loss,
+                    "latest_loss": final_loss,
+                    "created_at": (
+                        str(latest.creation_timestamp)
+                        if hasattr(latest, "creation_timestamp") and latest.creation_timestamp
+                        else None
+                    ),
+                    "total_versions": total_versions,
+                })
+            except Exception:
+                continue
+
+        return result
+
 
 def _create_dataset_sync(name: str, tags: dict | None) -> Any:
     from mlflow.genai.datasets import create_dataset
