@@ -138,16 +138,32 @@ class TestSafetensorsExportService:
             assert result["safetensors_path"] is not None
             assert result["config_path"] is not None
             assert result["tokenizer_path"] is not None
+            assert result["mlmodel_path"] is not None
+            assert result["conda_path"] is not None
 
             # Verify files exist
             assert Path(result["safetensors_path"]).exists()
             assert Path(result["config_path"]).exists()
             assert Path(result["tokenizer_path"]).exists()
+            assert Path(result["mlmodel_path"]).exists()
+            assert Path(result["conda_path"]).exists()
 
             # Verify config.json parses
             with open(result["config_path"]) as f:
                 config = json.load(f)
             assert config["model_type"] == "llama"
+
+            # Verify MLmodel contains pyfunc flavor
+            with open(result["mlmodel_path"]) as f:
+                mlmodel = f.read()
+            assert "AnvilPyfuncModel" in mlmodel
+            assert "loader_module: anvil._pyfunc_model" in mlmodel
+
+            # Verify conda.yaml contains key deps
+            with open(result["conda_path"]) as f:
+                conda = f.read()
+            assert "transformers" in conda
+            assert "anvil" in conda
 
     def test_export_no_synthetic_tensors(self):
         """FR-009: every tensor maps to a trained parameter."""
