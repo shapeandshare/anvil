@@ -187,6 +187,7 @@ POST /v1/inference/sample  {model_id, version, temperature, num_samples}
 | **Autograd** | Reverse-mode AD via Value graph (micrograd pattern) |
 | **AdamW** | Full Adam with bias correction + linear LR decay |
 | **No batching** | Processes one token position at a time (educational simplicity) |
+| **Architecture** | Llama-style: RoPE (half-split), SwiGLU MLP, learned RMSNorm, final norm |
 
 ## See Also
 
