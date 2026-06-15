@@ -2,53 +2,140 @@
 {% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
 {% block content %}
 
-{# ── SECTION: DATASET MANAGER ───────────────────────── #}
+{# ── SECTION CARD #1: DOCUMENTATION (collapsible) ───── #}
 <div class="section-card" style="--stagger-i: 0">
-  <div class="section-card__header">
-    <h2 class="section-card__title">Dataset Manager</h2>
+  <div class="section-card__header section-card__header--clickable" id="docs-toggle">
+    <h2 class="section-card__title">Understanding Datasets &amp; Corpora</h2>
+    <span class="output-toggle-icon" id="docs-chevron">&#9660;</span>
   </div>
 
-  <div class="section-card__content" style="margin-bottom:var(--space-3);">
-    Upload <code>.txt</code> files as datasets for training, or create <b>corpora</b> that ingest files from directories using glob patterns. Corpora support gitignore-style filtering for code repos.
-  </div>
-
-  {# ── Upload form ── #}
-  <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-1);">Upload File</div>
-  <form id="upload-form" class="upload-zone">
-    <input type="file" class="form-input" id="file-input" accept=".txt">
-    <button type="submit" class="btn btn-primary btn-sm">upload</button>
-  </form>
-  <div class="section-card__content" id="upload-status" style="font-size:0.78rem;">Ready.</div>
-
-  {# ── Create dataset form ── #}
-  <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-1);margin-top:var(--space-4);">Create Dataset</div>
-  <div id="create-dataset-form" style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;">
-    <input type="text" class="form-input" id="new-dataset-name" placeholder="name" style="width:140px;">
-    <input type="text" class="form-input" id="new-dataset-description" placeholder="description (optional)" style="width:260px;">
-    <button class="btn btn-primary btn-sm" id="create-dataset-btn">create</button>
-  </div>
-  <div class="section-card__content" id="create-status" style="font-size:0.78rem;">Ready.</div>
-
-  {# ── Dataset list with search ── #}
-  <div style="margin-top:var(--space-4);">
-    <div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-2);">
-      <span class="label-text" style="flex-shrink:0;">DATASETS</span>
-      <input type="text" class="form-input" id="dataset-search" placeholder="filter..." style="width:130px;font-size:0.72rem;">
-      <button class="btn btn-sm btn-secondary" id="search-btn" style="font-size:0.72rem;">filter</button>
-    </div>
-    <div id="dataset-list"><span class="text-muted" style="font-size:0.78rem;">Loading...</span></div>
-  </div>
-
-</div>
-
-{# ── SECTION: CORPORA WIZARD ────────────────────────── #}
-<div class="section-card" style="--stagger-i: 1">
-  <div class="section-card__header">
-    <h2 class="section-card__title">Corpora Wizard</h2>
-  </div>
+  <div class="section-card__content-collapsible" id="docs-content" style="max-height:1200px;">
 
     <div class="section-card__content" style="margin-bottom:var(--space-3);">
-      Enter a directory path and optional glob patterns. The wizard scans the directory (no data read), shows file statistics, and recommends optimal chunking parameters based on file size and type. Pick a recommendation or customize, then create &amp; ingest.
+      anvil provides two mechanisms for sourcing training data: <b>datasets</b> and <b>corpora</b>.
+      Each serves a distinct purpose. Understanding when to use which is key to an efficient workflow.
+    </div>
+
+    <div class="help-box">
+      <div class="help-title">What are Datasets?</div>
+      <p style="margin:0 0 var(--space-2) 0;">
+        Datasets are <b>static collections of text samples</b> where each line in a <code>.txt</code> file becomes one training sample.
+        Upload plain-text files through the upload form, or create an empty dataset and add content programmatically.
+      </p>
+      <p style="margin:0 0 var(--space-1) 0;"><b>Pros:</b></p>
+      <ul style="margin:0 0 var(--space-2) 0;padding-left:var(--space-4);font-size:0.78rem;">
+        <li>Inline editing &mdash; rename, update descriptions, curate content (dedup, filter, replace)</li>
+        <li>Simple upload workflow &mdash; upload any <code>.txt</code> file directly</li>
+        <li>Ideal for small-to-medium curated collections, fine-tuning data, or evaluation sets</li>
+      </ul>
+      <p style="margin:0 0 var(--space-1) 0;"><b>Cons:</b></p>
+      <ul style="margin:0;padding-left:var(--space-4);font-size:0.78rem;">
+        <li>No automatic directory scanning &mdash; you must upload or create manually</li>
+        <li>Not suited for large code repository ingestion</li>
+      </ul>
+    </div>
+
+    <div class="help-box">
+      <div class="help-title">What are Corpora?</div>
+      <p style="margin:0 0 var(--space-2) 0;">
+        Corpora are <b>dynamic directory sources</b> scanned with glob patterns and chunking strategies.
+        Point the wizard at a directory, configure include/exclude patterns, and the system auto-detects
+        optimal chunking parameters based on file size and type distribution.
+      </p>
+      <p style="margin:0 0 var(--space-1) 0;"><b>Pros:</b></p>
+      <ul style="margin:0 0 var(--space-2) 0;padding-left:var(--space-4);font-size:0.78rem;">
+        <li>Auto-scan directories &mdash; discover files without manual upload</li>
+        <li>Glob pattern filtering &mdash; include/exclude by file extension or path (e.g. <code>*.py</code>, <code>!tests/</code>)</li>
+        <li>Chunking strategies &mdash; <code>windowed</code>, <code>file</code>, or <code>line</code> for different use cases</li>
+        <li>Gitignore-style pattern support for code repos</li>
+      </ul>
+      <p style="margin:0 0 var(--space-1) 0;"><b>Cons:</b></p>
+      <ul style="margin:0;padding-left:var(--space-4);font-size:0.78rem;">
+        <li>Read-only from source &mdash; no inline sample editing</li>
+        <li>Requires a stable directory path</li>
+      </ul>
+    </div>
+
+    <div class="help-box">
+      <div class="help-title">When to Use Which</div>
+      <p style="margin:0 0 var(--space-1) 0;">
+        <b>Use datasets</b> when you have curated text you want to edit, filter, or deduplicate.
+        Fine-tuning data, evaluation benchmarks, and small-to-medium training collections belong in datasets.
+      </p>
+      <p style="margin:0;">
+        <b>Use corpora</b> when you want to scan existing code repositories, documentation trees, or large
+        directory structures. Corpora excel at discovering files and chunking them optimally for training.
+      </p>
+    </div>
+
+    <div class="help-box">
+      <div class="help-title">Best Practices</div>
+      <ul style="margin:0;padding-left:var(--space-4);font-size:0.78rem;">
+        <li>Keep datasets small and curated &mdash; they are meant for quality-controlled training data</li>
+        <li>Use corpora with appropriate chunking for code repos &mdash; <code>windowed</code> with small overlap for source files, <code>file</code> for markdown docs</li>
+        <li>Combine corpora imports into datasets for final training &mdash; import corpus documents into a dataset to get the best of both worlds</li>
+        <li>Use the <b>All Data</b> table below to see everything at a glance and navigate quickly</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+{# ── SECTION CARD #2: TABS (Datasets / Corpora / Imports) ── #}
+<div class="section-card" style="--stagger-i: 1">
+  <div class="page-intro">Upload .txt files as training datasets, or create corpora that ingest files from directories using glob patterns. Corpora support gitignore-style filtering for code repos &mdash; great for training models on your own codebase. Start by uploading a text file, then watch your data transform into training-ready samples.</div>
+  <div class="section-card__header">
+    <h2 class="section-card__title">Data Manager</h2>
+  </div>
+
+  {# ── Tab navigation ── #}
+  <div class="wizard-tabs">
+    <button class="wizard-tab wizard-tab--active" data-tab="tab-datasets">Datasets</button>
+    <button class="wizard-tab" data-tab="tab-corpora">Corpora</button>
+    <button class="wizard-tab" data-tab="tab-imports">Imports</button>
+  </div>
+
+  {# ══════════════════════════════════════════════════════ #}
+  {# PANEL: Datasets (preserved content + IDs)            #}
+  {# ══════════════════════════════════════════════════════ #}
+  <div class="wizard-panel wizard-panel--active" id="tab-datasets">
+
+    {# ── Upload form ── #}
+    <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-1);">Upload File <span class="tooltip-trigger"><span class="tooltip-icon">i</span><span class="tooltip-content">Accepts .txt files. Each line becomes a training sample. Files with more diverse characters give the model more tokens to work with.</span></span></div>
+    <form id="upload-form" class="upload-zone">
+      <input type="file" class="form-input" id="file-input" accept=".txt">
+      <button type="submit" class="btn btn-primary btn-sm">upload</button>
+    </form>
+    <div class="section-card__content" id="upload-status" style="font-size:0.78rem;">Ready.</div>
+
+    {# ── Create dataset form ── #}
+    <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-1);margin-top:var(--space-4);">Create Dataset <span class="tooltip-trigger"><span class="tooltip-icon">i</span><span class="tooltip-content">Create an empty dataset first, then add samples by uploading files or curating existing data.</span></span></div>
+    <div id="create-dataset-form" style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;">
+      <input type="text" class="form-input" id="new-dataset-name" placeholder="name" style="width:140px;">
+      <input type="text" class="form-input" id="new-dataset-description" placeholder="description (optional)" style="width:260px;">
+      <button class="btn btn-primary btn-sm" id="create-dataset-btn">create</button>
+    </div>
+    <div class="section-card__content" id="create-status" style="font-size:0.78rem;">Ready.</div>
+
+    {# ── Dataset list with search ── #}
+    <div style="margin-top:var(--space-4);">
+      <div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-2);">
+        <span class="label-text" style="flex-shrink:0;">DATASETS</span>
+        <input type="text" class="form-input" id="dataset-search" placeholder="filter..." style="width:130px;font-size:0.72rem;">
+        <button class="btn btn-sm btn-secondary" id="search-btn" style="font-size:0.72rem;">filter</button>
+      </div>
+      <div id="dataset-list"><span class="text-muted" style="font-size:0.78rem;">Loading...</span></div>
+    </div>
+
+  </div>
+
+  {# ══════════════════════════════════════════════════════ #}
+  {# PANEL: Corpora (preserved wizard content + IDs)      #}
+  {# ══════════════════════════════════════════════════════ #}
+  <div class="wizard-panel" id="tab-corpora">
+
+    <div class="section-card__content" style="margin-bottom:var(--space-3);">
+      Enter a directory path and optional glob patterns. The wizard scans the directory (no data read), shows file statistics, and recommends optimal chunking parameters based on file size and type. Pick a recommendation or customize, then create &amp; ingest. This tool scans your directory, recommends optimal chunking parameters based on file sizes and types &mdash; just pick a recommendation and go.
     </div>
 
     {# ── Analyzer controls ── #}
@@ -65,7 +152,7 @@
       </div>
       <div class="filter-bag filter-bag--exclude">
         <div class="filter-bag__header">
-          <span class="filter-bag__label"><span class="filter-bag__label-icon">−</span> exclude</span>
+          <span class="filter-bag__label"><span class="filter-bag__label-icon">&minus;</span> exclude</span>
         </div>
         <input type="text" class="form-input" id="wiz-exclude" placeholder="e.g. tests/, node_modules" style="width:180px;">
       </div>
@@ -141,7 +228,63 @@
       <div id="corpus-list"><span class="text-muted" style="font-size:0.78rem;">Loading...</span></div>
     </div>
 
-{# ── JavaScript (preserved in full) ── #}
+  </div>
+
+  {# ══════════════════════════════════════════════════════ #}
+  {# PANEL: Imports (new - import corpus -> dataset)      #}
+  {# ══════════════════════════════════════════════════════ #}
+  <div class="wizard-panel" id="tab-imports">
+
+    <div class="section-card__content" style="margin-bottom:var(--space-3);">
+      Import documents from a corpus into a dataset. This copies the processed documents from the corpus into the selected dataset, making them available for training and curation.
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:flex-end;">
+
+      <div style="display:flex;flex-direction:column;gap:var(--space-1);">
+        <span class="label-text">Source Corpus</span>
+        <select class="form-select" id="import-corpus-select" style="min-width:200px;">
+          <option value="">Select a corpus...</option>
+        </select>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:var(--space-1);">
+        <span class="label-text">Target Dataset</span>
+        <select class="form-select" id="import-dataset-select" style="min-width:200px;">
+          <option value="">Select a dataset...</option>
+        </select>
+      </div>
+
+      <button class="btn btn-primary btn-sm" id="import-btn">import</button>
+    </div>
+
+    <div class="section-card__content" id="import-status" style="font-size:0.78rem;margin-top:var(--space-2);">Select a corpus and a dataset, then click import.</div>
+
+    {# ── Import history (quick summary) ── #}
+    <div style="margin-top:var(--space-3);padding-top:var(--space-2);border-top:1px solid var(--border);">
+      <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-1);">Usage Note</div>
+      <div class="section-card__content" style="font-size:0.78rem;">
+        After importing, the target dataset's documents will include the corpus documents. You can then curate, deduplicate, or filter in the dataset view. Corpora remain read-only and unaffected by the import.
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+{# ── SECTION CARD #3: COMBINED TABLE ────────────────── #}
+<div class="section-card" style="--stagger-i: 2">
+  <div class="section-card__header">
+    <h2 class="section-card__title">All Data</h2>
+    <span style="font-size:0.68rem;color:var(--text-tertiary);">datasets + corpora combined</span>
+  </div>
+
+  <div id="combined-table-container" style="overflow-x:auto;">
+    <span class="text-muted" style="font-size:0.78rem;">Loading...</span>
+  </div>
+</div>
+
+{# ── JavaScript (preserved in full + extensions) ── #}
 <script>
 (function() {
 
@@ -335,6 +478,7 @@
           }
           status.innerHTML = msg;
           loadCorpora();
+          loadCombinedData();
         })
         .catch(function(err) {
           status.textContent = '! Ingest error: ' + err.message;
@@ -345,7 +489,7 @@
     if (e.target.classList.contains('del-btn') || (e.target.closest && e.target.closest('.del-btn'))) {
       var btn = e.target.classList.contains('del-btn') ? e.target : e.target.closest('.del-btn');
       var id = btn.getAttribute('data-id');
-      fetch('/v1/corpora/' + id, { method: 'DELETE' }).then(function() { loadCorpora(); });
+      fetch('/v1/corpora/' + id, { method: 'DELETE' }).then(function() { loadCorpora(); loadCombinedData(); });
     }
 
     /* toggle corpus errors */
@@ -411,10 +555,12 @@
       .then(function() {
         showToast('Dataset updated', 'success');
         loadDatasets();
+        loadCombinedData();
       })
       .catch(function(err) {
         showToast(err.message, 'error');
         loadDatasets();
+        loadCombinedData();
       });
     }
 
@@ -440,10 +586,12 @@
       .then(function() {
         showToast('Dataset deleted', 'success');
         loadDatasets();
+        loadCombinedData();
       })
       .catch(function(err) {
         showToast(err.message, 'error');
         loadDatasets();
+        loadCombinedData();
       });
     }
 
@@ -467,6 +615,7 @@
       var data = await resp.json();
       status.textContent = '> uploaded "' + data.name + '" -- ' + data.document_count + ' lines, ' + data.vocabulary_size + ' unique chars';
       loadDatasets();
+      loadCombinedData();
     } catch (err) {
       status.textContent = '! Upload failed: ' + err.message;
     }
@@ -492,6 +641,7 @@
       document.getElementById('new-dataset-name').value = '';
       document.getElementById('new-dataset-description').value = '';
       loadDatasets();
+      loadCombinedData();
     } catch (err) {
       status.textContent = '! ' + err.message;
     }
@@ -780,12 +930,12 @@
     if (fileCount > maxFiles) {
       if (maxFiles < 1000000 && fileCount <= 1000000) {
         warnings.push(
-          '<span class="ds-warn">⚠ ' + fileCount + ' files found — max_files is ' + maxFiles + ', files beyond the limit will be skipped</span>'
+          '<span class="ds-warn">&#9888; ' + fileCount + ' files found &mdash; max_files is ' + maxFiles + ', files beyond the limit will be skipped</span>'
           + ' <button class="btn btn-sm btn-accent" onclick="window.boostMaxFiles(' + fileCount + ')">raise to ' + fileCount + '</button>'
         );
       } else {
         warnings.push(
-          '<span class="ds-warn">⚠ ' + fileCount + ' files found — max_files at UI limit (1,000,000), some files will be skipped</span>'
+          '<span class="ds-warn">&#9888; ' + fileCount + ' files found &mdash; max_files at UI limit (1,000,000), some files will be skipped</span>'
         );
       }
     }
@@ -810,7 +960,7 @@
           fixBut = ' <button class="btn btn-sm btn-accent" onclick="window.resetBlockSize(64)">reset to default (64)</button>';
         }
         warnings.push(
-          '<span class="ds-warn">⚠ block_size at maximum (1024)</span>' + fixBut
+          '<span class="ds-warn">&#9888; block_size at maximum (1024)</span>' + fixBut
         );
       }
     }
@@ -900,6 +1050,7 @@
         btn.innerHTML = origText;
         status.innerHTML = '! Ingest failed: ' + (ingestParsed.body ? (ingestParsed.body.detail || 'Unknown') : ingestParsed.raw);
         loadCorpora();
+        loadCombinedData();
         return;
       }
       var d = ingestParsed.body.data;
@@ -917,13 +1068,286 @@
       btn.disabled = false;
       btn.innerHTML = origText;
       loadCorpora();
+      loadCombinedData();
     } catch (err) { btn.disabled = false; btn.innerHTML = origText; status.textContent = '! ' + err.message; }
   });
+
+  /* ════════════════════════════════════════════════════════════
+     NEW: Tab switching
+     ════════════════════════════════════════════════════════════ */
+
+  function switchTab(tabId) {
+    /* Update tab buttons */
+    document.querySelectorAll('.wizard-tabs .wizard-tab').forEach(function(tab) {
+      var isActive = tab.getAttribute('data-tab') === tabId;
+      tab.classList.toggle('wizard-tab--active', isActive);
+    });
+    /* Update panels */
+    document.querySelectorAll('.wizard-panel').forEach(function(panel) {
+      var isActive = panel.id === tabId;
+      panel.classList.toggle('wizard-panel--active', isActive);
+    });
+  }
+
+  document.querySelectorAll('.wizard-tabs .wizard-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      var tabId = this.getAttribute('data-tab');
+      switchTab(tabId);
+      /* Refresh import selects when switching to imports tab */
+      if (tabId === 'tab-imports') {
+        populateImportSelects();
+      }
+    });
+  });
+
+  /* ════════════════════════════════════════════════════════════
+     NEW: Combined table
+     ════════════════════════════════════════════════════════════ */
+
+  window.loadCombinedData = async function loadCombinedData() {
+    var container = document.getElementById('combined-table-container');
+
+    try {
+      var [dsResp, corpResp] = await Promise.all([
+        fetch('/v1/datasets'),
+        fetch('/v1/corpora')
+      ]);
+
+      var dsData = await dsResp.json();
+      var corpData = await corpResp.json();
+
+      var datasets = extractDatasets(dsData);
+      var corpora = (corpData && corpData.data) || [];
+
+      /* Tag each item with type and normalized created_at */
+      var combined = [];
+
+      datasets.forEach(function(d) {
+        combined.push({
+          type: 'dataset',
+          id: d.id,
+          name: d.name,
+          description: d.description,
+          sizeInfo: (d.sample_count != null ? d.sample_count : '?') + ' samples / ' + formatBytes(d.total_size_bytes),
+          fileOrDocCount: d.sample_count,
+          secondaryCount: d.total_size_bytes,
+          statusOrStrategy: d.status || 'unknown',
+          created_at: d.created_at || d.updated_at || null,
+          curation_version: d.curation_version,
+          vocabulary_size: d.vocabulary_size,
+          document_count: d.document_count,
+          root_path: null,
+          chunking_strategy: null,
+          file_count: null,
+          error_count: null,
+        });
+      });
+
+      corpora.forEach(function(c) {
+        combined.push({
+          type: 'corpus',
+          id: c.id,
+          name: c.name,
+          description: c.root_path || '(no path)',
+          sizeInfo: (c.file_count || 0) + ' files / ' + (c.document_count || 0) + ' docs',
+          fileOrDocCount: c.file_count,
+          secondaryCount: c.document_count,
+          statusOrStrategy: c.chunking_strategy || '?',
+          created_at: c.created_at || null,
+          curation_version: null,
+          vocabulary_size: null,
+          document_count: c.document_count,
+          root_path: c.root_path,
+          chunking_strategy: c.chunking_strategy,
+          file_count: c.file_count,
+          error_count: c.error_count,
+        });
+      });
+
+      /* Sort by created_at descending (nulls last) */
+      combined.sort(function(a, b) {
+        if (!a.created_at && !b.created_at) return 0;
+        if (!a.created_at) return 1;
+        if (!b.created_at) return -1;
+        return b.created_at.localeCompare(a.created_at);
+      });
+
+      if (combined.length === 0) {
+        container.innerHTML = '<span style="color:var(--text-dim);font-size:0.78rem;">No datasets or corpora yet.</span>';
+        return;
+      }
+
+      var html = '<table class="grouped-list">'
+        + '<thead><tr>'
+        + '<th>Type</th><th>Name</th><th>Description / Path</th>'
+        + '<th style="text-align:right;">Size</th><th>Status / Strategy</th>'
+        + '<th>Created</th><th style="text-align:right;">Actions</th>'
+        + '</tr></thead><tbody>';
+
+      combined.forEach(function(item, i) {
+        var nameEsc = escHtml(item.name);
+        var descEsc = escHtml(item.description);
+        var typeBadge = item.type === 'dataset'
+          ? '<span class="ds-badge ds-badge-dataset">Dataset</span>'
+          : '<span class="ds-badge ds-badge-corpus">Corpus</span>';
+        var createdStr = item.created_at ? item.created_at.slice(0, 10) : '-';
+        var statStr = item.type === 'dataset'
+          ? statusBadge(item.statusOrStrategy)
+          : '<span style="color:var(--text-tertiary);font-size:0.75rem;">' + escHtml(item.statusOrStrategy) + '</span>';
+
+        var actionsHtml = '';
+        if (item.type === 'dataset') {
+          actionsHtml = '<div style="display:flex;gap:var(--space-1);justify-content:flex-end;">'
+            + '<button class="btn btn-sm btn-secondary edit-btn" data-id="' + item.id + '">edit</button>'
+            + '<button class="btn btn-sm btn-secondary curate-btn" data-id="' + item.id + '" title="Open dataset curation">curate</button>'
+            + '<button class="btn btn-sm btn-danger del-dataset-btn" data-id="' + item.id + '" data-name="' + nameEsc + '">rm</button>'
+            + '</div>';
+        } else {
+          actionsHtml = '<div style="display:flex;gap:var(--space-1);justify-content:flex-end;">'
+            + '<button class="btn btn-sm btn-secondary ingest-btn" data-id="' + item.id + '">ingest</button>'
+            + '<button class="btn btn-sm btn-danger del-btn" data-id="' + item.id + '">rm</button>'
+            + '</div>';
+        }
+
+        html += '<tr class="row-entrance" style="--row-i: ' + i + '">'
+          + '<td>' + typeBadge + '</td>'
+          + '<td><span style="color:var(--text);font-weight:500;">' + nameEsc + '</span></td>'
+          + '<td style="color:var(--text-dim);font-size:0.75rem;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + descEsc + '">'
+          + (item.description ? descEsc : '-') + '</td>'
+          + '<td style="text-align:right;color:var(--text-dim);font-size:0.75rem;white-space:nowrap;">' + item.sizeInfo + '</td>'
+          + '<td>' + statStr + '</td>'
+          + '<td style="color:var(--text-tertiary);font-size:0.75rem;">' + createdStr + '</td>'
+          + '<td style="text-align:right;white-space:nowrap;">' + actionsHtml + '</td>'
+          + '</tr>';
+      });
+
+      html += '</tbody></table>';
+      container.innerHTML = html;
+
+    } catch (err) {
+      container.innerHTML = '<span style="color:var(--accent-red);font-size:0.78rem;">Failed to load combined data: ' + escHtml(err.message) + '</span>';
+    }
+  };
+
+  /* ════════════════════════════════════════════════════════════
+     NEW: Import form — populate selects
+     ════════════════════════════════════════════════════════════ */
+
+  async function populateImportSelects() {
+    var corpusSelect = document.getElementById('import-corpus-select');
+    var datasetSelect = document.getElementById('import-dataset-select');
+
+    /* Save current selections */
+    var prevCorpus = corpusSelect.value;
+    var prevDataset = datasetSelect.value;
+
+    try {
+      var [dsResp, corpResp] = await Promise.all([
+        fetch('/v1/datasets'),
+        fetch('/v1/corpora')
+      ]);
+
+      var dsData = await dsResp.json();
+      var corpData = await corpResp.json();
+
+      var datasets = extractDatasets(dsData);
+      var corpora = (corpData && corpData.data) || [];
+
+      /* Populate corpus select */
+      corpusSelect.innerHTML = '<option value="">Select a corpus...</option>';
+      corpora.forEach(function(c) {
+        var sel = c.id === prevCorpus ? ' selected' : '';
+        corpusSelect.innerHTML += '<option value="' + c.id + '"' + sel + '>' + escHtml(c.name) + '</option>';
+      });
+
+      /* Populate dataset select */
+      datasetSelect.innerHTML = '<option value="">Select a dataset...</option>';
+      datasets.forEach(function(d) {
+        var sel = d.id === prevDataset ? ' selected' : '';
+        datasetSelect.innerHTML += '<option value="' + d.id + '"' + sel + '>' + escHtml(d.name) + '</option>';
+      });
+
+    } catch (err) {
+      corpusSelect.innerHTML = '<option value="">Error loading corpora</option>';
+      datasetSelect.innerHTML = '<option value="">Error loading datasets</option>';
+    }
+  }
+
+  /* ── import button handler ── */
+
+  document.getElementById('import-btn').addEventListener('click', async function() {
+    var corpusId = document.getElementById('import-corpus-select').value;
+    var datasetId = document.getElementById('import-dataset-select').value;
+    var status = document.getElementById('import-status');
+
+    if (!corpusId || !datasetId) {
+      status.textContent = '! Please select both a corpus and a dataset.';
+      return;
+    }
+
+    var btn = this;
+    btn.disabled = true;
+    var origText = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner"></span> importing';
+    status.textContent = '> importing...';
+
+    try {
+      var resp = await fetch('/v1/datasets/' + datasetId + '/import-corpus', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ corpus_id: corpusId }),
+      });
+      var data = await resp.json();
+
+      if (!resp.ok) {
+        status.textContent = '! Import failed: ' + (data.detail || data.message || 'Unknown error');
+        btn.disabled = false;
+        btn.innerHTML = origText;
+        return;
+      }
+
+      status.textContent = '> Import complete. Dataset updated.';
+      showToast('Corpus imported into dataset', 'success');
+      loadDatasets();
+      loadCombinedData();
+      btn.disabled = false;
+      btn.innerHTML = origText;
+
+    } catch (err) {
+      status.textContent = '! Import error: ' + err.message;
+      btn.disabled = false;
+      btn.innerHTML = origText;
+    }
+  });
+
+  /* ════════════════════════════════════════════════════════════
+     NEW: Documentation toggle (collapsible)
+     ════════════════════════════════════════════════════════════ */
+
+  document.getElementById('docs-toggle').addEventListener('click', function() {
+    var content = document.getElementById('docs-content');
+    var chevron = document.getElementById('docs-chevron');
+    var isCollapsed = content.classList.toggle('collapsed');
+    chevron.classList.toggle('collapsed', isCollapsed);
+    /* When collapsed, reduce max-height to 0; when expanded, restore it */
+    if (isCollapsed) {
+      content.style.maxHeight = '0';
+    } else {
+      content.style.maxHeight = '1200px';
+    }
+  });
+
+  /* ════════════════════════════════════════════════════════════
+     NEW: Handle combined table inline edit (same classes as dataset-list)
+     The existing click delegation already handles edit-btn / ie-cancel / ie-save / curate-btn / del-dataset-btn
+     for rows inside the combined table because it uses e.target.closest().
+     ════════════════════════════════════════════════════════════ */
 
   /* ── initial load ───────────────────────────────────── */
 
   loadDatasets();
   loadCorpora();
+  loadCombinedData();
 
 })();
 </script>
