@@ -52,6 +52,9 @@ def get_config():
     default_mlflow_uri = os.getenv(
         "ANVIL_MLFLOW_URI", "http://127.0.0.1:5001"
     )
+    mlflow_disable_local = os.getenv(
+        "ANVIL_MLFLOW_DISABLE_LOCAL", ""
+    ).lower() in ("true", "1", "yes")
     return {
         "port": int(os.getenv("ANVIL_PORT", "8080")),
         "db_path": os.getenv(
@@ -62,6 +65,7 @@ def get_config():
         "mlflow_port": _parse_port_from_uri(default_mlflow_uri),
         "mlflow_backend_store_uri": "sqlite:///"
         + str(Path("mlruns/mlflow.db").resolve()),
+        "mlflow_disable_local": mlflow_disable_local,
         "storage_backend": os.getenv("ANVIL_STORAGE_BACKEND", "local"),
         "device": os.getenv("ANVIL_DEVICE", ""),
     }

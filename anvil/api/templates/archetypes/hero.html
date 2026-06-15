@@ -19,33 +19,14 @@
 
     <div class="forge-icon" role="img" aria-label="Anvil">
       <svg viewBox="0 0 240 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="
-          M 192,62
-          C 202,59 213,51 224,40
-          C 213,29 203,23 192,21
-          L 192,5
-          L 60,5
-          L 60,17
-          L 15,17
-          C 23,38 41,53 60,58
-          L 60,77
-          L 94,77
-          C 88,98 76,115 60,129
-          L 47,129
-          L 47,141
-          L 47,156
-          L 212,156
-          L 212,129
-          L 194,129
-          C 177,115 165,98 159,77
-          L 192,77
-          Z
-        " fill="currentColor"/>
+        <g transform="translate(40, 0) scale(5)">
+          <path d="M26.375 14.833c1.548-0.494 3.096-1.594 4.644-3.19-1.549-1.624-3.063-2.424-4.644-2.725v-2.263h-18.874v1.643h-6.355c1.146 3.109 3.659 5.252 6.355 5.985v2.68h4.97c-0.863 2.931-2.652 5.337-4.839 7.419h-1.878v1.644c-0.008 0.007-0.016 0.013-0.024 0.02h0.024v2.223h23.505v-3.886h-2.499c-2.444-2.08-4.177-4.484-4.984-7.419h4.599v-2.131z" transform="translate(0, -1.5)" fill="currentColor"/>
+        </g>
       </svg>
     </div>
     <h1 class="hero-title hero-title--forge">anvil</h1>
     <p class="hero-tagline">Forging intelligence.</p>
-    <p class="hero-subtitle">Train and experiment with LLMs from scratch.</p>
+    <p class="hero-subtitle">Train and experiment with small LLMs from scratch. Configure your model, pick your data, and watch it learn character by character in real time.</p>
 
     <div class="hero-actions">
       <a href="/v1/training-page" class="hero-cta hero-cta--forge">Start Training</a>
@@ -53,41 +34,43 @@
     </div>
   </div>
 
+  <p class="page-intro page-intro--centered">This is an interactive workbench for understanding how language models work. Every concept here — from tokenization to attention — scales up directly to production models. Start training in seconds, then explore the interactive lessons to learn what's happening under the hood.</p>
+
   <div class="hero-features">
     <a href="/v1/datasets-page" class="hero-card" style="--i: 0">
       <span class="hero-card-icon"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg></span>
       <span class="hero-card-title">Data</span>
-      <span class="hero-card-desc">Upload and manage corpora, curate training datasets</span>
+      <span class="hero-card-desc">Upload and manage corpora, curate training datasets from your own text files</span>
     </a>
     <a href="/v1/training-page" class="hero-card" style="--i: 1">
       <span class="hero-card-icon"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><g stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="5" y1="6" x2="21" y2="14"/><line x1="5" y1="6" x2="16" y2="20"/><line x1="5" y1="6" x2="8" y2="20"/><line x1="12" y1="3" x2="21" y2="14"/><line x1="12" y1="3" x2="16" y2="20"/><line x1="12" y1="3" x2="8" y2="20"/><line x1="19" y1="6" x2="21" y2="14"/><line x1="19" y1="6" x2="16" y2="20"/><line x1="19" y1="6" x2="8" y2="20"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="16" y1="20" x2="3" y2="14"/><line x1="8" y1="20" x2="3" y2="14"/></g><circle cx="5" cy="6" r="1.6"/><circle cx="12" cy="3" r="1.6"/><circle cx="19" cy="6" r="1.6"/><circle cx="21" cy="14" r="1.6"/><circle cx="16" cy="20" r="1.6"/><circle cx="8" cy="20" r="1.6"/><circle cx="3" cy="14" r="1.6"/></svg></span>
       <span class="hero-card-title">Train</span>
-      <span class="hero-card-desc">Configure hyperparameters and train from scratch</span>
+      <span class="hero-card-desc">Configure hyperparameters and train from scratch with live loss curves</span>
     </a>
     <a href="/v1/experiments-page" class="hero-card" style="--i: 2">
       <span class="hero-card-icon"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M10 4v5l-4 9a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l-4-9V4"/><path d="M9 4h6" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="11" cy="2.5" r="1.5"/><circle cx="13.5" cy="1" r="1.2"/><circle cx="10" cy="0" r="1"/></svg></span>
       <span class="hero-card-title">Experiments</span>
-      <span class="hero-card-desc">Track runs, compare loss curves side-by-side</span>
+      <span class="hero-card-desc">Track runs, compare loss curves side-by-side, register your best models</span>
     </a>
     <a href="/v1/models-page" class="hero-card" style="--i: 3">
       <span class="hero-card-icon"><svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path fill="currentColor" d="M12 5 C11 4 9 4 7.5 4.5 C6 5 5 5.5 4.5 7 C3.5 8.5 3 11 3.5 13 C4 15 5.5 17 8 18 C9.5 18.5 11 18.5 12 18 Z"/><path fill="currentColor" d="M12 5 C13 4 15 4 16.5 4.5 C18 5 19 5.5 19.5 7 C20.5 8.5 21 11 20.5 13 C20 15 18.5 17 16 18 C14.5 18.5 13 18.5 12 18 Z"/><line x1="12" y1="5" x2="12" y2="10" stroke="var(--bg,#fff)" stroke-width="1"/><path fill="none" stroke="var(--bg,#fff)" stroke-width="0.75" stroke-linecap="round" d="M5 9 C6 11 6 14 5.5 16.5"/><path fill="none" stroke="var(--bg,#fff)" stroke-width="0.75" stroke-linecap="round" d="M19 9 C18 11 18 14 18.5 16.5"/><path fill="none" stroke="var(--bg,#fff)" stroke-width="0.75" stroke-linecap="round" d="M8 6 C8.5 8 9 11 8.5 15"/><path fill="none" stroke="var(--bg,#fff)" stroke-width="0.75" stroke-linecap="round" d="M16 6 C15.5 8 15 11 15.5 15"/></svg></span>
       <span class="hero-card-title">Models</span>
-      <span class="hero-card-desc">Register, version, and manage trained models</span>
+      <span class="hero-card-desc">Register, version, and manage trained models with safetensors export</span>
     </a>
     <a href="/v1/inference-page" class="hero-card" style="--i: 4">
       <span class="hero-card-icon"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M2 6h20v12h-20z M7 9v6h3v-6z M5 11h7v2h-7z M13 10h3v4h-3z M17 10h3v4h-3z"/></svg></span>
       <span class="hero-card-title">Play</span>
-      <span class="hero-card-desc">Generate text with trained models, tweak sampling params</span>
+      <span class="hero-card-desc">Generate text with trained models, tweak temperature and sampling parameters</span>
     </a>
     <a href="/v1/learn" class="hero-card" style="--i: 5">
       <span class="hero-card-icon"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M10.5 10v10.5l1.5-1 1.5 1V10z"/><polygon points="3.5,6 11,4.5 11,19 3.5,19"/><polygon points="3.5,6.5 11,5 11,19.5 3.5,19.5" opacity="0.15"/><polygon points="20.5,6 13,4.5 13,19 20.5,19"/><polygon points="20.5,6.5 13,5 13,19.5 20.5,19.5" opacity="0.15"/><rect x="11" y="4" width="2" height="15.5" rx="0.3"/><line x1="12" y1="4.5" x2="12" y2="19.5" stroke="currentColor" stroke-width="0.4" opacity="0.3"/></svg></span>
       <span class="hero-card-title">Learn</span>
-      <span class="hero-card-desc">Interactive walkthroughs from bigrams to full transformer</span>
+      <span class="hero-card-desc">Interactive walkthroughs from bigrams to full transformer with live widgets</span>
     </a>
     <a href="/v1/operations-page" class="hero-card" style="--i: 6">
       <span class="hero-card-icon"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><defs><mask id="og"><rect width="24" height="24" fill="white"/><circle cx="12" cy="12" r="3" fill="black"/></mask></defs><g mask="url(#og)"><circle cx="12" cy="12" r="7"/><rect x="10" y="2" width="4" height="4" rx="0.8"/><rect x="10" y="2" width="4" height="4" rx="0.8" transform="rotate(45 12 12)"/><rect x="10" y="2" width="4" height="4" rx="0.8" transform="rotate(90 12 12)"/><rect x="10" y="2" width="4" height="4" rx="0.8" transform="rotate(135 12 12)"/><rect x="10" y="2" width="4" height="4" rx="0.8" transform="rotate(180 12 12)"/><rect x="10" y="2" width="4" height="4" rx="0.8" transform="rotate(225 12 12)"/><rect x="10" y="2" width="4" height="4" rx="0.8" transform="rotate(270 12 12)"/><rect x="10" y="2" width="4" height="4" rx="0.8" transform="rotate(315 12 12)"/></g></svg></span>
       <span class="hero-card-title">Ops</span>
-      <span class="hero-card-desc">Manage services, monitor system resources, tail logs</span>
+      <span class="hero-card-desc">Manage services, monitor CPU/GPU/memory, tail logs, health checks</span>
     </a>
   </div>
 

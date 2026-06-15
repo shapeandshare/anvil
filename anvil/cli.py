@@ -495,13 +495,12 @@ def stop():
         print("Stopped web server.")
         web_killed = True
 
-    if kill_pid_file("mlflow", pid_dir=pid_dir):
-        print("Stopped MLflow server.")
-        mlflow_killed = True
+    if not cfg["mlflow_disable_local"]:
+        if kill_pid_file("mlflow", pid_dir=pid_dir):
+            print("Stopped MLflow server.")
+            mlflow_killed = True
 
     # Always try port-based fallback, regardless of PID file results.
-    # If PID file was found but the process didn't actually die (e.g. web
-    # shutdown hadn't cleaned up MLflow yet), we need the port scan.
     print("Verifying ports are free...")
     web_pids = _find_pid_by_port(cfg["port"])
     if web_pids:
@@ -510,14 +509,15 @@ def stop():
         print(f"Stopped web server (PID{' '.join(str(p) for p in web_pids)}).")
         web_killed = True
 
-    mlflow_pids = _find_pid_by_port(cfg["mlflow_port"])
-    if mlflow_pids:
-        _kill_pids(mlflow_pids, signal.SIGTERM)
-        _wait_and_sigkill(mlflow_pids, cfg["mlflow_port"])
-        print(
-            f"Stopped MLflow server (PID{' '.join(str(p) for p in mlflow_pids)})."
-        )
-        mlflow_killed = True
+    if not cfg["mlflow_disable_local"]:
+        mlflow_pids = _find_pid_by_port(cfg["mlflow_port"])
+        if mlflow_pids:
+            _kill_pids(mlflow_pids, signal.SIGTERM)
+            _wait_and_sigkill(mlflow_pids, cfg["mlflow_port"])
+            print(
+                f"Stopped MLflow server (PID{' '.join(str(p) for p in mlflow_pids)})."
+            )
+            mlflow_killed = True
 
     if not web_killed and not mlflow_killed:
         print("No running servers found.")

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -114,6 +115,40 @@ def generate_tokenizer(chars: list[str]) -> dict[str, Any]:
     }
 
 
+def _generate_mlmodel_yaml() -> str:
+    """Generate the ``MLmodel`` YAML for MLflow pyfunc loading.
+
+    The ``loader_module`` points to ``anvil._pyfunc_model`` so the
+    ``anvil`` package must be importable at inference time.
+    """
+    return """artifact_path: ""
+flavors:
+  python_function:
+    model:
+      loader_module: anvil._pyfunc_model
+      python_model: AnvilPyfuncModel
+    env:
+      conda: conda.yaml
+"""
+
+
+def _generate_conda_yaml() -> str:
+    """Generate a minimal ``conda.yaml`` for MLflow environment reproduction."""
+    return """channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+    - anvil>=0.1.0
+    - transformers>=4.30.0
+    - torch>=2.0.0
+    - safetensors>=0.4.0
+    - numpy>=1.24.0
+    - pandas
+"""
+
+
 class SafetensorsExportError(Exception):
     """Raised when safetensors export fails."""
 
@@ -124,9 +159,10 @@ class SafetensorsExportService:
     """Converts a trained Llama model to safetensors checkpoint artifacts."""
 
     def export(self, model: LlamaModel, output_dir: str | Path, chars: list[str]) -> dict[str, str | None]:
-        """Run full export: safetensors + config + tokenizer.
+        """Run full export: safetensors + config + tokenizer + MLflow MLmodel.
 
-        Returns dict with keys: safetensors_path, config_path, tokenizer_path, error
+        Returns dict with keys: safetensors_path, config_path, tokenizer_path,
+        mlmodel_path, conda_path, error
         On success, error is None. On failure, error is the message.
         """
         output_dir = Path(output_dir)
@@ -160,19 +196,31 @@ class SafetensorsExportService:
             with open(tokenizer_path, "w") as f:
                 json.dump(tokenizer_data, f, indent=2)
 
+            # 5. Write MLflow MLmodel for pyfunc loading
+            mlmodel_path = output_dir / "MLmodel"
+            with open(mlmodel_path, "w") as f:
+                f.write(_generate_mlmodel_yaml())
+
+            # 6. Write conda env spec
+            conda_path = output_dir / "conda.yaml"
+            with open(conda_path, "w") as f:
+                f.write(_generate_conda_yaml())
+
             return {
                 "safetensors_path": str(safetensors_path),
                 "config_path": str(config_path),
                 "tokenizer_path": str(tokenizer_path),
+                "mlmodel_path": str(mlmodel_path),
+                "conda_path": str(conda_path),
                 "error": None,
             }
 
         except ImportError as e:
             msg = f"safetensors export requires 'safetensors' and 'numpy' packages. Install with: pip install safetensors numpy. Original error: {e}"
-            return {"safetensors_path": None, "config_path": None, "tokenizer_path": None, "error": msg}
+            return {"safetensors_path": None, "config_path": None, "tokenizer_path": None, "mlmodel_path": None, "conda_path": None, "error": msg}
 
         except Exception as e:
-            return {"safetensors_path": None, "config_path": None, "tokenizer_path": None, "error": str(e)}
+            return {"safetensors_path": None, "config_path": None, "tokenizer_path": None, "mlmodel_path": None, "conda_path": None, "error": str(e)}
 
     def retry_export(self, model_path: str, output_dir: str | Path) -> dict[str, str | None]:
         """Retry safetensors export from an existing model.json file."""
@@ -182,4 +230,4 @@ class SafetensorsExportService:
             chars = model.chars or []
             return self.export(model, output_dir, chars)
         except Exception as e:
-            return {"safetensors_path": None, "config_path": None, "tokenizer_path": None, "error": str(e)}
+            return {"safetensors_path": None, "config_path": None, "tokenizer_path": None, "mlmodel_path": None, "conda_path": None, "error": str(e)}

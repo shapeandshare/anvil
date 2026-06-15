@@ -2,7 +2,8 @@
 {% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
 {% block content %}
 <div class="experiment-list section-card" style="--stagger-i: 0">
-  <div class="section-card__header"><h2 class="section-card__title">Experiment History</h2></div>
+  <div class="page-intro">Every training run you start gets recorded here. Compare loss curves side by side, inspect model artifacts, and register your best models to the registry. Loss below 0.5 means the model is doing better than random &mdash; try to beat your personal best!</div>
+  <div class="section-card__header"><h2 class="section-card__title">Experiment History &mdash; Track Every Training Run</h2></div>
   <div id="experiment-empty" class="loading-indicator" style="display:block;">
     Loading experiments...
   </div>
@@ -32,15 +33,9 @@
       <div class="metric"><span class="metric-label">MLflow</span><span class="metric-value" id="detail-mlflow">—</span></div>
     </div>
     <div id="detail-safetensors" style="margin-top:var(--space-4);padding-top:var(--space-3);border-top:var(--border-width) solid var(--border);display:none;">
-      <h3 class="section-card__title" style="font-size:0.75rem;">Safetensors Artifacts</h3>
-      <div class="metrics-grid" style="margin-top:var(--space-2);">
-        <div class="metric"><span class="metric-label">Artifact</span><span class="metric-value" id="detail-st-file">—</span></div>
-        <div class="metric"><span class="metric-label">File Size</span><span class="metric-value" id="detail-st-size">—</span></div>
-        <div class="metric"><span class="metric-label">Config</span><span class="metric-value" id="detail-st-config">—</span></div>
-        <div class="metric"><span class="metric-label">Tokenizer</span><span class="metric-value" id="detail-st-tokenizer">—</span></div>
-      </div>
+      <h3 class="section-card__title" style="font-size:0.75rem;">Model Artifacts</h3>
+      <div id="detail-artifact-list" style="margin-top:var(--space-2);"></div>
       <div style="margin-top:var(--space-3);display:flex;gap:var(--space-2);flex-wrap:wrap;">
-        <button class="btn btn-secondary btn-sm" id="btn-download-st" style="display:none;" onclick="downloadSafetensors()">Download Safetensors</button>
         <button class="btn btn-secondary btn-sm" id="btn-retry-export" style="display:none;" onclick="retryExport()">Retry Export</button>
       </div>
       <div id="detail-st-error" class="error-text" style="margin-top:var(--space-2);display:none;"></div>
@@ -146,49 +141,48 @@
 
       selectedMlflowRunId = exp.mlflow_run_id;
 
-      // Safetensors artifact info
+      // Model artifact file list
       var stSection = document.getElementById('detail-safetensors');
-      var stFile = document.getElementById('detail-st-file');
-      var stSize = document.getElementById('detail-st-size');
-      var stConfig = document.getElementById('detail-st-config');
-      var stTokenizer = document.getElementById('detail-st-tokenizer');
-      var btnDownload = document.getElementById('btn-download-st');
+      var artifactList = document.getElementById('detail-artifact-list');
       var btnRetry = document.getElementById('btn-retry-export');
       var stError = document.getElementById('detail-st-error');
 
       stSection.style.display = 'none';
-      btnDownload.style.display = 'none';
       btnRetry.style.display = 'none';
       stError.style.display = 'none';
 
       if (exp.safetensors_artifacts && exp.safetensors_artifacts.available) {
         stSection.style.display = '';
+        btnRetry.style.display = exp.status === 'finished' ? '' : 'none';
 
-        var safetensorsFile = exp.safetensors_artifacts.files.find(function(f) { return f.is_safetensors; });
-        var configFile = exp.safetensors_artifacts.files.find(function(f) { return f.is_config; });
-        var tokenizerFile = exp.safetensors_artifacts.files.find(function(f) { return f.is_tokenizer; });
+        // Build file list
+        var html = '<div class="grouped-list" style="width:100%;">';
+        html += '<table style="width:100%;border-collapse:collapse;">';
+        html += '<thead><tr>';
+        html += '<th style="text-align:left;padding:var(--space-1) var(--space-2);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-dim);">File</th>';
+        html += '<th style="text-align:right;padding:var(--space-1) var(--space-2);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-dim);">Size</th>';
+        html += '<th style="text-align:right;padding:var(--space-1) var(--space-2);"></th>';
+        html += '</tr></thead><tbody>';
 
-        stFile.textContent = safetensorsFile ? safetensorsFile.path : '—';
-        stSize.textContent = safetensorsFile ? formatFileSize(safetensorsFile.file_size) : '—';
-        stConfig.textContent = configFile ? '&#10003;' : '—';
-        stTokenizer.textContent = tokenizerFile ? '&#10003;' : '—';
+        exp.safetensors_artifacts.files.forEach(function(f) {
+          var icon = f.is_safetensors ? '🧠' : f.is_config ? '⚙' : f.is_tokenizer ? '📝' : '📄';
+          var downloadUrl = '/v1/experiments/' + selectedExpId + '/runs/' + encodeURIComponent(selectedMlflowRunId) + '/download?path=' + encodeURIComponent(f.path);
+          html += '<tr style="border-bottom:var(--border-width) solid var(--border);">';
+          html += '<td style="padding:var(--space-1) var(--space-2);font-family:var(--font-mono);font-size:0.7rem;">' + icon + ' ' + escHtml(f.path) + '</td>';
+          html += '<td style="text-align:right;padding:var(--space-1) var(--space-2);font-size:0.7rem;color:var(--text-dim);white-space:nowrap;">' + formatFileSize(f.file_size) + '</td>';
+          html += '<td style="text-align:right;padding:var(--space-1) var(--space-2);"><a href="' + downloadUrl + '" class="btn btn-secondary btn-sm" download>Download</a></td>';
+          html += '</tr>';
+        });
 
-        if (exp.mlflow_run_id && safetensorsFile) {
-          btnDownload.style.display = '';
-        }
-        if (exp.status === 'finished') {
-          btnRetry.style.display = '';
-        }
+        html += '</tbody></table></div>';
+        artifactList.innerHTML = html;
       } else if (exp.safetensors_artifacts && exp.safetensors_artifacts.error) {
         stSection.style.display = '';
         stError.style.display = '';
         stError.textContent = 'Artifact error: ' + escHtml(exp.safetensors_artifacts.error);
       } else if (exp.status === 'finished') {
         stSection.style.display = '';
-        stFile.textContent = 'No safetensors export found';
-        stSize.textContent = '—';
-        stConfig.textContent = '—';
-        stTokenizer.textContent = '—';
+        artifactList.innerHTML = '<div style="padding:var(--space-2);font-size:0.7rem;color:var(--text-dim);">No safetensors export found. Click <strong>Retry Export</strong> to generate artifacts.</div>';
         btnRetry.style.display = '';
       }
 
@@ -197,12 +191,6 @@
     }).catch(function() {
       loading.textContent = 'Failed to load experiment details.';
     });
-  };
-
-  window.downloadSafetensors = function() {
-    if (!selectedExpId || !selectedMlflowRunId) return;
-    var url = '/v1/experiments/' + selectedExpId + '/runs/' + encodeURIComponent(selectedMlflowRunId) + '/download/safetensors';
-    window.open(url, '_blank');
   };
 
   window.retryExport = function() {

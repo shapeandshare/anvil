@@ -261,6 +261,185 @@ textarea.terminal-input.terminal-textarea { min-height: 60px; resize: vertical; 
   to { opacity: 1; transform: translateX(0); }
 }
 
+/* ════════════════════════════════════════════════
+   Content Enrichment — Tooltips, Headers, Fun
+   ════════════════════════════════════════════════ */
+
+/* ── Did You Know? Banner ── */
+.didyouknow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  margin: var(--space-4) 0;
+  background: var(--surface);
+  border-radius: var(--radius);
+  border-left: 3px solid var(--accent-purple);
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  transition: opacity var(--dur-slow) var(--ease);
+}
+.didyouknow__icon {
+  flex-shrink: 0;
+  font-size: 1.1rem;
+  line-height: 1.3;
+  color: var(--accent-purple);
+}
+.didyouknow__label {
+  font-weight: 600;
+  color: var(--accent-purple);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.didyouknow__dismiss {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 2px;
+  line-height: 1;
+  font-size: 1rem;
+  transition: color var(--dur-fast) var(--ease);
+}
+.didyouknow__dismiss:hover { color: var(--text); }
+
+/* ── Page Narrative Intro ── */
+.page-intro {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: var(--space-4);
+  max-width: 680px;
+}
+.page-intro strong { color: var(--text); }
+.page-intro a { color: var(--accent); }
+.page-intro--centered { text-align: center; margin-left: auto; margin-right: auto; }
+
+/* ── Educational Tooltips (CSS-only, hover-to-reveal) ── */
+.tooltip-trigger {
+  position: relative;
+  cursor: help;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.tooltip-trigger .tooltip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+  color: var(--surface);
+  font-size: 0.55rem;
+  font-weight: 700;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: background var(--dur-fast) var(--ease);
+}
+.tooltip-trigger:hover .tooltip-icon {
+  background: var(--accent);
+}
+.tooltip-content {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  width: 260px;
+  max-width: 90vw;
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--separator);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  text-align: left;
+  animation: tooltip-in 0.2s var(--ease) both;
+}
+.tooltip-content::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--separator);
+}
+.tooltip-trigger:hover .tooltip-content,
+.tooltip-trigger:focus-within .tooltip-content {
+  display: block;
+}
+@keyframes tooltip-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(4px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ── Milestone / Achievement Badges ── */
+.milestone-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-xl);
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+  animation: milestone-pop 0.4s var(--spring-quick) both;
+  white-space: nowrap;
+}
+.milestone-badge--discovery { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); }
+.milestone-badge--pattern { background: color-mix(in srgb, var(--accent-purple) 15%, transparent); color: var(--accent-purple); }
+.milestone-badge--mastery { background: color-mix(in srgb, var(--accent-orange) 15%, transparent); color: var(--accent-orange); }
+.milestone-badge--expert { background: color-mix(in srgb, var(--accent-green) 15%, transparent); color: var(--accent-green); }
+@keyframes milestone-pop {
+  from { transform: scale(0); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* ── Fun Personality Labels ── */
+.fun-label {
+  display: inline-block;
+  padding: 0 var(--space-2);
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  font-weight: 500;
+  border-radius: var(--radius-xl);
+  line-height: 1.6;
+}
+.fun-label--cool { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); }
+.fun-label--warm { background: color-mix(in srgb, var(--accent-orange) 15%, transparent); color: var(--accent-orange); }
+.fun-label--hot { background: color-mix(in srgb, var(--accent-red) 15%, transparent); color: var(--accent-red); }
+
+/* ── Training Phase Label ── */
+.phase-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-xl);
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.phase-label--memorization { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
+.phase-label--generalization { background: color-mix(in srgb, var(--accent-purple) 12%, transparent); color: var(--accent-purple); }
+.phase-label--convergence { background: color-mix(in srgb, var(--accent-green) 12%, transparent); color: var(--accent-green); }
+
+/* ════════════════════════════════════════════════
+   End Content Enrichment
+   ════════════════════════════════════════════════ */
+
 /* ── Forge Start Button ── */
 .btn--forge {
   background: linear-gradient(135deg, var(--accent-orange), color-mix(in srgb, var(--accent-orange) 70%, var(--accent-yellow)));

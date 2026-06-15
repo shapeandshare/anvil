@@ -75,7 +75,10 @@ async def health():
 @router.get("/services")
 async def list_services(request: Request):
     mlflow = getattr(request.app.state, "mlflow", None)
-    mlflow_status = "running" if mlflow and mlflow.is_running else "stopped"
+    if mlflow is None:
+        mlflow_status = "external" if get_config()["mlflow_disable_local"] else "stopped"
+    else:
+        mlflow_status = "running" if mlflow.is_running else "stopped"
     return {
         "services": [
             {"name": "web", "status": "running"},

@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from anvil.api.v1.router import router as v1_router
+from anvil.config import get_config
 from anvil.db import models  # noqa: F401 — register ORM models with Base.metadata
 from anvil.db.base import Base
 from anvil.db.session import async_engine, init_engine
@@ -22,9 +23,13 @@ async def lifespan(app: FastAPI):
     await init_engine()
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    mlflow_svc = MLflowService()
-    mlflow_svc.start()
-    app.state.mlflow = mlflow_svc
+    cfg = get_config()
+    if cfg["mlflow_disable_local"]:
+        app.state.mlflow = None
+    else:
+        mlflow_svc = MLflowService()
+        mlflow_svc.start()
+        app.state.mlflow = mlflow_svc
 
     from anvil.services.tracking import TrackingService
 
@@ -63,7 +68,9 @@ async def lifespan(app: FastAPI):
         pass
 
     yield
-    mlflow_svc.stop()
+    svc = getattr(app.state, "mlflow", None)
+    if svc is not None:
+        svc.stop()
 
 
 from anvil import __version__ as anvil_version

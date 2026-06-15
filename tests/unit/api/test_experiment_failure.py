@@ -1,4 +1,5 @@
 import asyncio
+from unittest.mock import MagicMock, patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -153,3 +154,90 @@ async def test_successful_training_marks_finished(session: AsyncSession):
     assert updated is not None
     assert updated.status == "finished"
     assert updated.final_loss == 0.123
+
+
+@pytest.mark.asyncio
+async def test_list_artifacts_no_mlflow_run(session: AsyncSession, client: AsyncClient):
+    """GET /experiments/{id}/runs/{run_id}/artifacts returns 404 when experiment has no MLflow run."""
+    repo = ExperimentRepository(session)
+    exp = await repo.create_running(
+        config_id=0,
+        run_name="no-mlflow",
+        mlflow_run_id=None,
+        engine_backend="stdlib",
+        device="cpu",
+    )
+    await session.commit()
+
+    response = await client.get(f"/v1/experiments/{exp.id}/runs/nonexistent/artifacts")
+    assert response.status_code == 404
+    assert "No MLflow run associated" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_download_artifact_no_mlflow_run(session: AsyncSession, client: AsyncClient):
+    """GET /experiments/{id}/runs/{run_id}/download returns 404 when experiment has no MLflow run."""
+    repo = ExperimentRepository(session)
+    exp = await repo.create_running(
+        config_id=0,
+        run_name="no-mlflow-dl",
+        mlflow_run_id=None,
+        engine_backend="stdlib",
+        device="cpu",
+    )
+    await session.commit()
+
+    response = await client.get(
+        f"/v1/experiments/{exp.id}/runs/nonexistent/download",
+        params={"path": "model.safetensors"},
+    )
+    assert response.status_code == 404
+    assert "No MLflow run associated" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_download_artifact_not_found(session: AsyncSession, client: AsyncClient):
+    """GET /experiments/{id}/runs/{run_id}/download returns 404 when no artifacts exist for the run."""
+    from anvil.services.tracking import TrackingService
+
+    repo = ExperimentRepository(session)
+    exp = await repo.create_running(
+        config_id=0,
+        run_name="artifact-test",
+        mlflow_run_id="mlflow_artifact_test",
+        engine_backend="stdlib",
+        device="cpu",
+    )
+    await session.commit()
+
+    with patch.object(
+        TrackingService, "get_safetensors_artifacts", return_value={
+            "available": False, "files": [], "error": None,
+        }
+    ):
+        response = await client.get(
+            f"/v1/experiments/{exp.id}/runs/mlflow_artifact_test/download",
+            params={"path": "nonexistent.safetensors"},
+        )
+    assert response.status_code == 404
+    assert "No safetensors artifacts found" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_list_artifacts_run_id_mismatch(session: AsyncSession, client: AsyncClient):
+    """GET /experiments/{id}/runs/{run_id}/artifacts returns 400 when run_id doesn't match."""
+    repo = ExperimentRepository(session)
+    exp = await repo.create_running(
+        config_id=0,
+        run_name="mismatch-test",
+        mlflow_run_id="real_run_id",
+        engine_backend="stdlib",
+        device="cpu",
+    )
+    await session.commit()
+
+    response = await client.get(
+        f"/v1/experiments/{exp.id}/runs/wrong_run_id/artifacts"
+    )
+    assert response.status_code == 400
+    assert "does not match" in response.json()["detail"]

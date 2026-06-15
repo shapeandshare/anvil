@@ -47,3 +47,40 @@ def test_get_mlflow_uri_returns_config_when_no_resolved():
         assert get_mlflow_uri() == get_config()["mlflow_uri"]
     finally:
         _cfg_mod._resolved_mlflow_uri = original
+
+
+def test_mlflow_disable_local_defaults_false_for_localhost():
+    cfg = get_config()
+    assert cfg["mlflow_disable_local"] is False
+
+
+def test_mlflow_disable_local_explicit_true(monkeypatch):
+    monkeypatch.setenv("ANVIL_MLFLOW_DISABLE_LOCAL", "true")
+    get_config.cache_clear()
+    try:
+        cfg = get_config()
+        assert cfg["mlflow_disable_local"] is True
+    finally:
+        get_config.cache_clear()
+
+
+def test_mlflow_disable_local_explicit_false(monkeypatch):
+    monkeypatch.setenv("ANVIL_MLFLOW_DISABLE_LOCAL", "false")
+    get_config.cache_clear()
+    try:
+        cfg = get_config()
+        assert cfg["mlflow_disable_local"] is False
+    finally:
+        get_config.cache_clear()
+
+
+def test_mlflow_disable_local_remote_uri_no_env_var_stays_false(monkeypatch):
+    """A remote URI alone does NOT disable local server — must set env var."""
+    monkeypatch.setenv("ANVIL_MLFLOW_URI", "https://mlflow.example.com")
+    get_config.cache_clear()
+    try:
+        cfg = get_config()
+        assert cfg["mlflow_disable_local"] is False
+        assert cfg["mlflow_uri"] == "https://mlflow.example.com"
+    finally:
+        get_config.cache_clear()
