@@ -11,10 +11,12 @@
 
   <div class="section-card__content-collapsible" id="docs-content" style="max-height:1200px;">
 
-    <div class="section-card__content" style="margin-bottom:var(--space-3);">
+    <div class="section-card__content" style="margin-bottom:var(--space-4);">
       anvil provides two mechanisms for sourcing training data: <b>datasets</b> and <b>corpora</b>.
       Each serves a distinct purpose. Understanding when to use which is key to an efficient workflow.
     </div>
+
+    <div class="ds-help-group">
 
     <div class="help-box">
       <div class="help-title">What are Datasets?</div>
@@ -79,6 +81,8 @@
     </div>
 
   </div>
+
+  </div>
 </div>
 
 {# ── SECTION CARD #2: TABS (Datasets / Corpora / Imports) ── #}
@@ -100,28 +104,36 @@
   {# ══════════════════════════════════════════════════════ #}
   <div class="wizard-panel wizard-panel--active" id="tab-datasets">
 
-    {# ── Upload form ── #}
-    <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-1);">Upload File <span class="tooltip-trigger"><span class="tooltip-icon">i</span><span class="tooltip-content">Accepts .txt files. Each line becomes a training sample. Files with more diverse characters give the model more tokens to work with.</span></span></div>
-    <form id="upload-form" class="upload-zone">
-      <input type="file" class="form-input" id="file-input" accept=".txt">
-      <button type="submit" class="btn btn-primary btn-sm">upload</button>
-    </form>
-    <div class="section-card__content" id="upload-status" style="font-size:0.78rem;">Ready.</div>
-
-    {# ── Create dataset form ── #}
-    <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-1);margin-top:var(--space-4);">Create Dataset <span class="tooltip-trigger"><span class="tooltip-icon">i</span><span class="tooltip-content">Create an empty dataset first, then add samples by uploading files or curating existing data.</span></span></div>
-    <div id="create-dataset-form" style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;">
-      <input type="text" class="form-input" id="new-dataset-name" placeholder="name" style="width:140px;">
-      <input type="text" class="form-input" id="new-dataset-description" placeholder="description (optional)" style="width:260px;">
-      <button class="btn btn-primary btn-sm" id="create-dataset-btn">create</button>
+    {# ── Upload section ── #}
+    <div class="ds-section">
+      <div class="ds-section-label">Upload File <span class="tooltip-trigger"><span class="tooltip-icon">i</span><span class="tooltip-content">Accepts .txt files. Each line becomes a training sample. Files with more diverse characters give the model more tokens to work with.</span></span></div>
+      <form id="upload-form" class="upload-zone">
+        <input type="file" class="form-input" id="file-input" accept=".txt">
+        <button type="submit" class="btn btn-primary btn-sm">upload</button>
+      </form>
+      <div class="ds-status-line" id="upload-status">Ready.</div>
     </div>
-    <div class="section-card__content" id="create-status" style="font-size:0.78rem;">Ready.</div>
 
-    {# ── Dataset list with search ── #}
-    <div style="margin-top:var(--space-4);">
-      <div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-2);">
+    <div class="ds-section-divider"></div>
+
+    {# ── Create dataset section ── #}
+    <div class="ds-section">
+      <div class="ds-section-label">Create Dataset <span class="tooltip-trigger"><span class="tooltip-icon">i</span><span class="tooltip-content">Create an empty dataset first, then add samples by uploading files or curating existing data.</span></span></div>
+      <div id="create-dataset-form" style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;">
+        <input type="text" class="form-input" id="new-dataset-name" placeholder="name" style="width:140px;">
+        <input type="text" class="form-input" id="new-dataset-description" placeholder="description (optional)" style="width:260px;">
+        <button class="btn btn-primary btn-sm" id="create-dataset-btn">create</button>
+      </div>
+      <div class="ds-status-line" id="create-status">Ready.</div>
+    </div>
+
+    <div class="ds-section-divider"></div>
+
+    {# ── Dataset list section ── #}
+    <div class="ds-section">
+      <div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-3);">
         <span class="label-text" style="flex-shrink:0;">DATASETS</span>
-        <input type="text" class="form-input" id="dataset-search" placeholder="filter..." style="width:130px;font-size:0.72rem;">
+        <input type="text" class="form-input" id="dataset-search" placeholder="filter..." style="width:130px;font-size:0.75rem;">
         <button class="btn btn-sm btn-secondary" id="search-btn" style="font-size:0.72rem;">filter</button>
       </div>
       <div id="dataset-list"><span class="text-muted" style="font-size:0.78rem;">Loading...</span></div>
@@ -134,67 +146,74 @@
   {# ══════════════════════════════════════════════════════ #}
   <div class="wizard-panel" id="tab-corpora">
 
-    <div class="section-card__content" style="margin-bottom:var(--space-3);">
+    <div class="section-card__content" style="margin-bottom:var(--space-4);">
       Enter a directory path and optional glob patterns. The wizard scans the directory (no data read), shows file statistics, and recommends optimal chunking parameters based on file size and type. Pick a recommendation or customize, then create &amp; ingest. This tool scans your directory, recommends optimal chunking parameters based on file sizes and types &mdash; just pick a recommendation and go.
     </div>
 
-    {# ── Analyzer controls ── #}
-    <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-1);">Analyze Path</div>
-    <div id="wiz-drop-zone" style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:flex-start;">
-      <input type="text" class="form-input" id="wiz-root" placeholder="root_path" style="width:260px;">
-      <button class="btn btn-sm btn-secondary" id="wiz-browse-btn" title="Select folder via native dialog">browse</button>
-      <input type="file" id="wiz-folder-picker" webkitdirectory style="display:none;">
-      <div class="filter-bag filter-bag--include">
-        <div class="filter-bag__header">
-          <span class="filter-bag__label"><span class="filter-bag__label-icon">+</span> include</span>
+    {# ── Zone 1: Analyze Path ── #}
+    <div class="ds-zone ds-zone--analyze">
+      <div class="ds-zone-label">Analyze Path</div>
+      <div id="wiz-drop-zone" style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:flex-start;">
+        <input type="text" class="form-input" id="wiz-root" placeholder="root_path" style="width:260px;">
+        <button class="btn btn-sm btn-secondary" id="wiz-browse-btn" title="Select folder via native dialog">browse</button>
+        <input type="file" id="wiz-folder-picker" webkitdirectory style="display:none;">
+        <div class="filter-bag filter-bag--include">
+          <div class="filter-bag__header">
+            <span class="filter-bag__label"><span class="filter-bag__label-icon">+</span> include</span>
+          </div>
+          <input type="text" class="form-input" id="wiz-include" placeholder="e.g. **/*, *.py" style="width:180px;">
         </div>
-        <input type="text" class="form-input" id="wiz-include" placeholder="e.g. **/*, *.py" style="width:180px;">
-      </div>
-      <div class="filter-bag filter-bag--exclude">
-        <div class="filter-bag__header">
-          <span class="filter-bag__label"><span class="filter-bag__label-icon">&minus;</span> exclude</span>
+        <div class="filter-bag filter-bag--exclude">
+          <div class="filter-bag__header">
+            <span class="filter-bag__label"><span class="filter-bag__label-icon">&minus;</span> exclude</span>
+          </div>
+          <input type="text" class="form-input" id="wiz-exclude" placeholder="e.g. tests/, node_modules" style="width:180px;">
         </div>
-        <input type="text" class="form-input" id="wiz-exclude" placeholder="e.g. tests/, node_modules" style="width:180px;">
+        <button class="btn btn-sm btn-success" id="wiz-analyze-btn" title="Scan directory and auto-select best chunking params">auto-tune</button>
       </div>
-      <button class="btn btn-sm btn-success" id="wiz-analyze-btn" title="Scan directory and auto-select best chunking params">auto-tune</button>
+      <div class="ds-status-line" id="wiz-status">Enter a path, drag a folder from Finder here, or use <b>browse</b>.</div>
     </div>
 
-    {# ── Glob pattern chips ── #}
-    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:var(--space-1);align-items:flex-start;">
-      <div class="filter-bag__chips">
-        <span class="tag" data-target="include" data-value="**/*">All files</span>
-        <span class="tag" data-target="include" data-value="*.py">Python</span>
-        <span class="tag" data-target="include" data-value="*.js">JS</span>
-        <span class="tag" data-target="include" data-value="*.ts">TS</span>
-        <span class="tag" data-target="include" data-value="*.go">Go</span>
-        <span class="tag" data-target="include" data-value="*.rs">Rust</span>
-        <span class="tag" data-target="include" data-value="*.md">Markdown</span>
-        <span class="tag" data-target="include" data-value="*.{py,js,ts,go,rs,md}">Code+Docs</span>
-        <span class="tag" data-target="include" data-value="*.json">JSON</span>
-        <span class="tag" data-target="include" data-value="*.yaml">YAML</span>
-        <span class="tag" data-target="include" data-value="*.sh">Shell</span>
-        <span class="tag" data-target="include" data-value="*.css">CSS</span>
-        <span class="tag" data-target="include" data-value="*.html">HTML</span>
-      </div>
-      <div class="filter-bag__chips">
-        <span class="tag" data-target="exclude" data-value="tests/">! tests/</span>
-        <span class="tag" data-target="exclude" data-value="node_modules">! node_modules</span>
-        <span class="tag" data-target="exclude" data-value="__pycache__">! __pycache__</span>
-        <span class="tag" data-target="exclude" data-value=".git">! .git</span>
+    {# ── Zone 2: Glob Patterns ── #}
+    <div class="ds-zone ds-zone--patterns">
+      <div class="ds-zone-label">Glob Patterns</div>
+      <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:flex-start;">
+        <div class="filter-bag__chips">
+          <span class="tag" data-target="include" data-value="**/*">All files</span>
+          <span class="tag" data-target="include" data-value="*.py">Python</span>
+          <span class="tag" data-target="include" data-value="*.js">JS</span>
+          <span class="tag" data-target="include" data-value="*.ts">TS</span>
+          <span class="tag" data-target="include" data-value="*.go">Go</span>
+          <span class="tag" data-target="include" data-value="*.rs">Rust</span>
+          <span class="tag" data-target="include" data-value="*.md">Markdown</span>
+          <span class="tag" data-target="include" data-value="*.{py,js,ts,go,rs,md}">Code+Docs</span>
+          <span class="tag" data-target="include" data-value="*.json">JSON</span>
+          <span class="tag" data-target="include" data-value="*.yaml">YAML</span>
+          <span class="tag" data-target="include" data-value="*.sh">Shell</span>
+          <span class="tag" data-target="include" data-value="*.css">CSS</span>
+          <span class="tag" data-target="include" data-value="*.html">HTML</span>
+        </div>
+        <div class="filter-bag__chips">
+          <span class="tag" data-target="exclude" data-value="tests/">! tests/</span>
+          <span class="tag" data-target="exclude" data-value="node_modules">! node_modules</span>
+          <span class="tag" data-target="exclude" data-value="__pycache__">! __pycache__</span>
+          <span class="tag" data-target="exclude" data-value=".git">! .git</span>
+        </div>
       </div>
     </div>
-    <div class="section-card__content" id="wiz-status" style="font-size:0.78rem;">Enter a path, drag a folder from Finder here, or use <b>browse</b>.</div>
 
-    {# ── Analysis results (hidden until analyze) ── #}
-    <div id="wiz-results" style="display:none;margin-top:var(--space-3);">
+    {# ── Zone 3: Analysis Results + Zone 4: Create Corpus (hidden until analyze) ── #}
+    <div id="wiz-results" style="display:none;">
 
-      <div id="wiz-stats" class="section-card__content" style="margin-bottom:var(--space-2);"></div>
+      <div class="ds-zone ds-zone--results">
+        <div class="ds-zone-label">Analysis Results</div>
+        <div id="wiz-stats" class="section-card__content" style="margin-bottom:var(--space-3);"></div>
+        <div class="ds-section-label" style="margin-bottom:var(--space-2);">Recommendations</div>
+        <div id="wiz-recs" style="display:flex;flex-direction:column;gap:var(--space-2);"></div>
+      </div>
 
-      <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-2);">Recommendations</div>
-      <div id="wiz-recs" style="display:flex;flex-direction:column;gap:var(--space-1);"></div>
-
-      <div style="margin-top:var(--space-3);padding-top:var(--space-2);border-top:1px solid var(--border);">
-        <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-1);">Create &amp; Ingest Corpus</div>
+      <div class="ds-zone ds-zone--create">
+        <div class="ds-zone-label">Create &amp; Ingest Corpus</div>
         <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;">
           <input type="text" class="form-input" id="wiz-name" placeholder="corpus name" style="width:140px;">
           <span class="help-text">strategy:</span>
@@ -213,16 +232,16 @@
           <span id="wiz-ov-value" style="font-size:0.68rem;color:var(--accent-cyan);min-width:30px;">25%</span>
           <button class="btn btn-primary btn-sm" id="wiz-create-btn">create &amp; ingest</button>
         </div>
-        <div id="wiz-estimate" style="padding-left:16px;margin-top:var(--space-1);min-height:20px;font-size:0.72rem;"></div>
-        <div id="wiz-estimate-warnings" style="padding-left:16px;margin-top:var(--space-1);font-size:0.72rem;"></div>
-        <div class="section-card__content" id="wiz-create-status" style="font-size:0.78rem;"></div>
+        <div id="wiz-estimate" style="padding-left:var(--space-4);margin-top:var(--space-2);min-height:20px;font-size:0.72rem;"></div>
+        <div id="wiz-estimate-warnings" style="padding-left:var(--space-4);margin-top:var(--space-2);font-size:0.72rem;"></div>
+        <div class="ds-status-line" id="wiz-create-status"></div>
       </div>
 
     </div>
 
-    {# ── Corpus list ── #}
-    <div style="margin-top:var(--space-4);">
-      <div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-1);">
+    {# ── Corpus list section ── #}
+    <div class="ds-section" style="margin-top:var(--space-4);">
+      <div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-2);">
         <span class="label-text">CORPORA</span>
       </div>
       <div id="corpus-list"><span class="text-muted" style="font-size:0.78rem;">Loading...</span></div>
@@ -279,7 +298,7 @@
     <span style="font-size:0.68rem;color:var(--text-tertiary);">datasets + corpora combined</span>
   </div>
 
-  <div id="combined-table-container" style="overflow-x:auto;">
+  <div id="combined-table-container" class="ds-table-wrapper" style="overflow-x:auto;">
     <span class="text-muted" style="font-size:0.78rem;">Loading...</span>
   </div>
 </div>
@@ -1106,20 +1125,25 @@
 
   window.loadCombinedData = async function loadCombinedData() {
     var container = document.getElementById('combined-table-container');
+    var errors = [];
 
-    try {
-      var [dsResp, corpResp] = await Promise.all([
-        fetch('/v1/datasets'),
-        fetch('/v1/corpora')
-      ]);
+    /* Fetch both endpoints independently — one failure must not sink the other */
+    var dsFetch = fetch('/v1/datasets').then(function(r) {
+      if (!r.ok) { throw new Error('HTTP ' + r.status); }
+      return r.json();
+    }).then(function(d) { return extractDatasets(d); })
+    .catch(function(e) { errors.push('datasets: ' + e.message); return []; });
 
-      var dsData = await dsResp.json();
-      var corpData = await corpResp.json();
+    var corpFetch = fetch('/v1/corpora').then(function(r) {
+      if (!r.ok) { throw new Error('HTTP ' + r.status); }
+      return r.json();
+    }).then(function(d) { return (d && d.data) || []; })
+    .catch(function(e) { errors.push('corpora: ' + e.message); return []; });
 
-      var datasets = extractDatasets(dsData);
-      var corpora = (corpData && corpData.data) || [];
+    var datasets = await dsFetch;
+    var corpora = await corpFetch;
 
-      /* Tag each item with type and normalized created_at */
+    /* Tag each item with type and normalized created_at */
       var combined = [];
 
       datasets.forEach(function(d) {
@@ -1172,12 +1196,23 @@
         return b.created_at.localeCompare(a.created_at);
       });
 
-      if (combined.length === 0) {
+      if (combined.length === 0 && errors.length === 0) {
         container.innerHTML = '<span style="color:var(--text-dim);font-size:0.78rem;">No datasets or corpora yet.</span>';
         return;
       }
 
-      var html = '<table class="grouped-list">'
+      if (combined.length === 0 && errors.length > 0) {
+        container.innerHTML = '<span style="color:var(--accent-red);font-size:0.78rem;">Failed to load: ' + escHtml(errors.join('; ')) + '</span>';
+        return;
+      }
+
+      var warningHtml = '';
+      if (errors.length > 0) {
+        warningHtml = '<div style="color:var(--accent-orange);font-size:0.75rem;padding:var(--space-2);border:1px solid var(--accent-orange);border-radius:var(--radius-md);margin-bottom:var(--space-2);">'
+          + '⚠ Partial data — ' + escHtml(errors.join('; ')) + '</div>';
+      }
+
+      var html = warningHtml + '<table class="grouped-list">'
         + '<thead><tr>'
         + '<th>Type</th><th>Name</th><th>Description / Path</th>'
         + '<th style="text-align:right;">Size</th><th>Status / Strategy</th>'
@@ -1201,6 +1236,12 @@
             + '<button class="btn btn-sm btn-secondary edit-btn" data-id="' + item.id + '">edit</button>'
             + '<button class="btn btn-sm btn-secondary curate-btn" data-id="' + item.id + '" title="Open dataset curation">curate</button>'
             + '<button class="btn btn-sm btn-danger del-dataset-btn" data-id="' + item.id + '" data-name="' + nameEsc + '">rm</button>'
+            + '</div>'
+            + '<div class="inline-edit-form" style="display:none;margin-top:4px;gap:4px;flex-wrap:wrap;align-items:center;">'
+            + '<input type="text" class="form-input ie-name" placeholder="name" style="width:130px;font-size:0.72rem;" value="' + nameEsc + '">'
+            + '<input type="text" class="form-input ie-desc" placeholder="description" style="width:200px;font-size:0.72rem;" value="' + (item.description ? descEsc : '') + '">'
+            + '<button class="btn btn-sm btn-primary ie-save">save</button>'
+            + '<button class="btn btn-sm btn-secondary ie-cancel">cancel</button>'
             + '</div>';
         } else {
           actionsHtml = '<div style="display:flex;gap:var(--space-1);justify-content:flex-end;">'
@@ -1209,7 +1250,7 @@
             + '</div>';
         }
 
-        html += '<tr class="row-entrance" style="--row-i: ' + i + '">'
+        html += '<tr class="row-entrance" data-id="' + item.id + '" style="--row-i: ' + i + '">'
           + '<td>' + typeBadge + '</td>'
           + '<td><span style="color:var(--text);font-weight:500;">' + nameEsc + '</span></td>'
           + '<td style="color:var(--text-dim);font-size:0.75rem;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + descEsc + '">'
@@ -1224,10 +1265,7 @@
       html += '</tbody></table>';
       container.innerHTML = html;
 
-    } catch (err) {
-      container.innerHTML = '<span style="color:var(--accent-red);font-size:0.78rem;">Failed to load combined data: ' + escHtml(err.message) + '</span>';
-    }
-  };
+    };
 
   /* ════════════════════════════════════════════════════════════
      NEW: Import form — populate selects
@@ -1241,17 +1279,19 @@
     var prevCorpus = corpusSelect.value;
     var prevDataset = datasetSelect.value;
 
-    try {
-      var [dsResp, corpResp] = await Promise.all([
-        fetch('/v1/datasets'),
-        fetch('/v1/corpora')
-      ]);
+    /* Fetch independently — status codes checked before .json() */
+    var dsFetch = fetch('/v1/datasets').then(function(r) {
+      if (!r.ok) return [];
+      return r.json().then(function(d) { return extractDatasets(d); });
+    }).catch(function() { return []; });
 
-      var dsData = await dsResp.json();
-      var corpData = await corpResp.json();
+    var corpFetch = fetch('/v1/corpora').then(function(r) {
+      if (!r.ok) return [];
+      return r.json().then(function(d) { return (d && d.data) || []; });
+    }).catch(function() { return []; });
 
-      var datasets = extractDatasets(dsData);
-      var corpora = (corpData && corpData.data) || [];
+    var datasets = await dsFetch;
+    var corpora = await corpFetch;
 
       /* Populate corpus select */
       corpusSelect.innerHTML = '<option value="">Select a corpus...</option>';
@@ -1266,11 +1306,6 @@
         var sel = d.id === prevDataset ? ' selected' : '';
         datasetSelect.innerHTML += '<option value="' + d.id + '"' + sel + '>' + escHtml(d.name) + '</option>';
       });
-
-    } catch (err) {
-      corpusSelect.innerHTML = '<option value="">Error loading corpora</option>';
-      datasetSelect.innerHTML = '<option value="">Error loading datasets</option>';
-    }
   }
 
   /* ── import button handler ── */
