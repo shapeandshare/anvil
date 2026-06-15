@@ -40,6 +40,7 @@
   };
 
   SSESession.prototype._handleComplete = function(e) {
+    this._destroyed = true;
     try {
       var d = JSON.parse(e.data);
       if (typeof this.oncomplete === 'function') this.oncomplete(d);
@@ -53,6 +54,7 @@
 
     // SSE error event from backend (event: error with data) — clean terminal
     if (e && e.data) {
+      this._destroyed = true;
       if (this._es) {
         this._es.close();
         this._es = null;
