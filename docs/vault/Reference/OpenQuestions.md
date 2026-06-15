@@ -10,3 +10,5 @@
   → **Deferred**: Next UI consolidation pass
 - Could the [[wizard-stepper-pattern]] be extracted into a reusable partial or web component? Currently inlined in training.html. Would benefit dataset curation, corpus ingestion flows.
   → **Deferred**: Next UI consolidation pass
+- Should the app ship a `manifest.json` for full PWA support? Favicons are now in place (`favicon.svg` + `apple-touch-icon.png`). A web app manifest would add home-screen name/display/theme-color for iOS/Android installs. `theme_color: #000000` and `background_color: #1c1c1e` align with existing forge dark palette.
+  → **Open**
