@@ -25,6 +25,12 @@ class DatasetRepository:
         await self._session.refresh(dataset)
         return dataset
 
+    async def get_by_name(self, name: str) -> Dataset | None:
+        result = await self._session.execute(
+            select(Dataset).where(Dataset.name == name)
+        )
+        return result.scalar_one_or_none()
+
     async def update(self, dataset: Dataset) -> Dataset:
         await self._session.flush()
         await self._session.refresh(dataset)

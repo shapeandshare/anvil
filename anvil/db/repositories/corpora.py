@@ -33,6 +33,12 @@ class CorpusRepository:
         await self._session.refresh(corpus)
         return corpus
 
+    async def get_by_name(self, name: str) -> Corpus | None:
+        result = await self._session.execute(
+            select(Corpus).where(Corpus.name == name)
+        )
+        return result.scalar_one_or_none()
+
     async def delete(self, id: int) -> bool:
         result = await self._session.execute(
             delete(Corpus).where(Corpus.id == id)
