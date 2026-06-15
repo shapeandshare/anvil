@@ -5,35 +5,46 @@ from functools import lru_cache
 from pathlib import Path
 
 from dotenv import load_dotenv
+from starlette.requests import Request
 
 load_dotenv()
 
-# Allows the supervisor to override the MLflow URI with an auto-detected
-# LAN-accessible address after starting the MLflow server. Set to None
-# initially; the supervisor calls set_resolved_mlflow_uri() on startup if
-# the user hasn't explicitly configured ANVIL_MLFLOW_URI.
+# Optional override for the MLflow tracking URI used by the internal
+# Python client. Set to None by default; can be set programmatically
+# if the default config value is not reachable.
 _resolved_mlflow_uri: str | None = None
 
 
 def set_resolved_mlflow_uri(uri: str) -> None:
-    """Override the MLflow tracking URI used for browser-facing links.
-
-    Called by the supervisor after auto-detecting the LAN IP so that
-    MLflow URLs served to the web UI resolve correctly from other machines.
-    """
-    global _resolved_mlflow_uri  # noqa: PLW0603
+    """Override the MLflow tracking URI used for internal client connections."""
+    global _resolved_mlflow_uri
     _resolved_mlflow_uri = uri
 
 
 def get_mlflow_uri() -> str:
-    """Return the best MLflow tracking URI for browser-facing links.
+    """Return the MLflow tracking URI for internal Python client use.
 
-    Returns the supervisor-resolved (LAN-accessible) URI if set,
-    otherwise falls back to the static config value.
+    Returns the supervisor-resolved URI if set, otherwise falls back
+    to the static config value.
     """
     if _resolved_mlflow_uri is not None:
         return _resolved_mlflow_uri
     return get_config()["mlflow_uri"]
+
+
+def get_mlflow_browser_uri(request: Request) -> str:
+    """Return the MLflow base URL for browser-facing links.
+
+    Derives the hostname from the incoming HTTP request's Host header
+    so links always resolve relative to how the user reached the web UI.
+    For example, if the user accesses the app at http://192.168.1.10:8080,
+    MLflow links will point to http://192.168.1.10:5001.
+    """
+    host = request.headers.get("host", "127.0.0.1")
+    # Strip port from host header (e.g. "192.168.1.10:8080" -> "192.168.1.10")
+    hostname = host.split(":")[0]
+    mlflow_port = get_config()["mlflow_port"]
+    return f"http://{hostname}:{mlflow_port}"
 
 
 def _parse_port_from_uri(uri: str) -> int:

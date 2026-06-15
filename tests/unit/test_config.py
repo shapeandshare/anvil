@@ -4,7 +4,7 @@ import os
 
 import pytest
 from anvil import config as _cfg_mod
-from anvil.config import get_config, get_mlflow_uri, set_resolved_mlflow_uri
+from anvil.config import get_config, get_mlflow_browser_uri, get_mlflow_uri, set_resolved_mlflow_uri
 
 
 def test_mlflow_uri_defaults_to_http():
@@ -84,3 +84,34 @@ def test_mlflow_disable_local_remote_uri_no_env_var_stays_false(monkeypatch):
         assert cfg["mlflow_uri"] == "https://mlflow.example.com"
     finally:
         get_config.cache_clear()
+
+
+class _FakeRequest:
+    """Minimal request stub for testing get_mlflow_browser_uri."""
+
+    def __init__(self, host_header: str):
+        self.headers = {"host": host_header}
+
+
+def test_get_mlflow_browser_uri_uses_request_host():
+    request = _FakeRequest("192.168.1.10:8080")
+    uri = get_mlflow_browser_uri(request)
+    assert uri == "http://192.168.1.10:5001"
+
+
+def test_get_mlflow_browser_uri_localhost():
+    request = _FakeRequest("localhost:8080")
+    uri = get_mlflow_browser_uri(request)
+    assert uri == "http://localhost:5001"
+
+
+def test_get_mlflow_browser_uri_no_port_in_host():
+    request = _FakeRequest("myhost.local")
+    uri = get_mlflow_browser_uri(request)
+    assert uri == "http://myhost.local:5001"
+
+
+def test_get_mlflow_browser_uri_ipv4_no_port():
+    request = _FakeRequest("10.0.0.5")
+    uri = get_mlflow_browser_uri(request)
+    assert uri == "http://10.0.0.5:5001"

@@ -1,12 +1,11 @@
 import os
 import signal
-import socket
 import subprocess
 import sys
 import time
 from pathlib import Path
 
-from anvil.config import get_config, set_resolved_mlflow_uri
+from anvil.config import get_config
 
 
 class MLflowService:
@@ -21,25 +20,6 @@ class MLflowService:
         self.port = cfg["mlflow_port"]
         self._tracking_uri = cfg["mlflow_uri"]
         self._backend_store_uri = cfg["mlflow_backend_store_uri"]
-
-    @staticmethod
-    def _detect_lan_ip() -> str | None:
-        """Discover the primary LAN IP address of this host.
-
-        Connects to a public resolver to determine which interface
-        carries the default route, then returns that interface's IP.
-        Returns None if detection fails.
-        """
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-                s.settimeout(1.0)
-                s.connect(("1.1.1.1", 80))
-                ip = s.getsockname()[0]
-                if ip and not ip.startswith("127."):
-                    return ip
-            return None
-        except (OSError, socket.error):
-            return None
 
     def _free_port(self) -> None:
         """Kill any Python/MLflow zombie occupying our target port before starting.
@@ -122,16 +102,6 @@ class MLflowService:
             preexec_fn=os.setsid,
         )
         (self.log_dir / "mlflow.pid").write_text(str(self.process.pid))
-
-        # Auto-detect LAN IP so browser-facing MLflow links resolve from
-        # other machines. Only override if the user hasn't explicitly
-        # configured ANVIL_MLFLOW_URI (i.e. still points at 127.0.0.1).
-        cfg = get_config()
-        if cfg["mlflow_uri"] == f"http://127.0.0.1:{self.port}":
-            lan_ip = self._detect_lan_ip()
-            if lan_ip:
-                self._tracking_uri = f"http://{lan_ip}:{self.port}"
-                set_resolved_mlflow_uri(self._tracking_uri)
 
     def stop(self) -> None:
         pid_file = self.log_dir / "mlflow.pid"

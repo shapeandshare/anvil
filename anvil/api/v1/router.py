@@ -13,7 +13,7 @@ from fastapi.responses import HTMLResponse
 
 from anvil.api.v1.corpora import router as corpora_router
 from anvil.api.v1.datasets import router as datasets_router
-from anvil.config import get_config, get_mlflow_uri
+from anvil.config import get_config, get_mlflow_browser_uri
 from anvil.api.v1.eval import router as eval_router
 from anvil.api.v1.eval_datasets import router as eval_datasets_router
 from anvil.api.v1.experiments import router as experiments_router
@@ -86,7 +86,7 @@ async def list_services(request: Request):
                 "name": "mlflow",
                 "status": mlflow_status,
                 "port": get_config()["mlflow_port"],
-                "mlflow_url": get_mlflow_uri(),
+                "mlflow_url": get_mlflow_browser_uri(request),
             },
         ]
     }
