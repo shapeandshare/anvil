@@ -97,6 +97,8 @@ anvil/          # Python package (implicit namespace)
 - **Safetensors export**: Primary artifact format via `SafetensorsExportService` in `anvil/services/export.py`. Converts anvil internal state dict to HF-convention tensor names, generates `model.safetensors` + `config.json` + `tokenizer.json`. (006-llama-engine-evolution)
 - Python 3.11+ + Existing project deps — no new pip dependencies. Key modules: `CorpusService`, `CorpusLoader`, `DatasetService`, `DatasetImportService`, `LocalFileStore` (opencode/misty-panda)
 - SQLite via async SQLAlchemy (app metadata); filesystem (`data/demo/`) for source data; existing `data/datasets/` for imported sample conten (opencode/misty-panda)
+- Python 3.11+ (pyproject.toml config), YAML (GitHub Actions workflows), Shell (CI scripts) + `commitizen` (new dev dependency), GitHub Actions (`actions/checkout@v4`, `actions/cache@v4`), `gh` CLI (GitHub CLI, pre-installed on GitHub runners) (007-automated-semver-release)
+- `pyproject.toml` (version source), `CHANGELOG.md` (changelog), git tags (release markers), GitHub Releases API (release artifacts) (007-automated-semver-release)
 
 ## Recent Changes
 - 002-directory-corpus-ingestion: Added Python 3.11+ + Existing project deps (FastAPI, SQLAlchemy, aiofiles) + `pathspec` (lightweight gitignore pattern matching, pure Python, no binary deps)

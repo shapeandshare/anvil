@@ -17,3 +17,9 @@ run-gpu: run ## Start web server with GPU auto-detection
 train-gpu: export USE_GPU=true
 train-gpu: $(VENV_DIR)/activate ## Train with GPU acceleration (also defined in cli.mk)
 	$(PYTHON) -c "from anvil.cli import train; train()"
+
+setup-hooks: ## Enable conventional commit enforcement hook
+	@echo "Configuring git hooks path to .githooks/..."
+	git config core.hooksPath .githooks
+	@echo "Done. Hook will validate commit messages follow Conventional Commits format."
+	@echo "Types: feat, fix, perf, refactor, chore, docs, ci, test, style, build"
