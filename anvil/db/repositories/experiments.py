@@ -87,6 +87,12 @@ class ExperimentRepository:
         exp.completed_at = completed_at or datetime.now(UTC)
         return await self.update(exp)
 
+    async def find_by_mlflow_run_id(self, run_id: str) -> Experiment | None:
+        result = await self._session.execute(
+            select(Experiment).where(Experiment.mlflow_run_id == run_id)
+        )
+        return result.scalar_one_or_none()
+
     async def find_orphaned(self) -> Sequence[Experiment]:
         result = await self._session.execute(
             select(Experiment).where(Experiment.status == "running")
