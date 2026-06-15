@@ -806,6 +806,192 @@ margin-bottom: var(--space-2);
 }
 
 /* ════════════════════════════════════════════════
+   Training Wizard — Stepper + Tabs
+   ════════════════════════════════════════════════ */
+
+.training-wizard {
+  overflow: hidden;
+}
+
+/* ── Step Stepper ── */
+.wizard-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: var(--space-4);
+  padding: var(--space-2) 0;
+  user-select: none;
+}
+
+.wizard-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  cursor: pointer;
+  transition: opacity var(--dur-fast) var(--ease);
+  min-width: 56px;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  line-height: inherit;
+}
+.wizard-step:hover { opacity: 0.8; }
+
+.wizard-step-bubble {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 600;
+  background: var(--surface-2);
+  color: var(--text-tertiary);
+  border: 2px solid var(--separator);
+  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease), transform var(--dur-fast) var(--spring-quick);
+}
+
+.wizard-step--active .wizard-step-bubble {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent);
+  transform: scale(1.1);
+}
+
+.wizard-step--completed .wizard-step-bubble {
+  background: var(--accent-green);
+  border-color: var(--accent-green);
+  color: #fff;
+}
+
+.wizard-step--completed .wizard-step-bubble::after {
+  content: '✓';
+  font-size: 0.85rem;
+}
+
+.wizard-step--completed .wizard-step-bubble span {
+  display: none;
+}
+
+.wizard-step-label {
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.wizard-step--active .wizard-step-label {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.wizard-step--completed .wizard-step-label {
+  color: var(--accent-green);
+}
+
+/* ── Train Step (Forge) ── */
+.wizard-step--train .wizard-step-bubble {
+  font-size: 0.75rem;
+  background: var(--surface-2);
+  border-color: var(--separator);
+  color: var(--text-tertiary);
+}
+.wizard-step--train.wizard-step--active .wizard-step-bubble {
+  background: linear-gradient(135deg, var(--accent-orange), color-mix(in srgb, var(--accent-orange) 70%, var(--accent-yellow)));
+  border-color: var(--accent-orange);
+  color: #fff;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent-orange) 35%, transparent);
+}
+.wizard-step--train.wizard-step--completed .wizard-step-bubble {
+  background: var(--accent-green);
+  border-color: var(--accent-green);
+  color: #fff;
+  box-shadow: none;
+}
+
+/* ── Connector ── */
+.wizard-step-connector {
+  width: 48px;
+  height: 2px;
+  background: var(--separator);
+  flex-shrink: 0;
+  transition: background var(--dur-fast) var(--ease);
+  margin: 0 var(--space-1);
+  position: relative;
+  top: -10px;
+}
+
+.wizard-step-connector--filled {
+  background: var(--accent);
+}
+
+/* ── Tab Switcher ── */
+.wizard-tabs {
+  display: flex;
+  gap: var(--space-1);
+  padding: 0;
+  margin-bottom: var(--space-4);
+  border-bottom: 1px solid var(--separator);
+  padding-bottom: var(--space-2);
+}
+
+.wizard-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 500;
+  min-height: 36px;
+  padding: 0 var(--space-4);
+  border: none;
+  border-radius: var(--radius-xl);
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+  user-select: none;
+}
+.wizard-tab:hover { background: var(--surface-2); color: var(--text-secondary); }
+.wizard-tab--active {
+  background: var(--accent);
+  color: #fff;
+}
+.wizard-tab--active:hover { background: var(--accent); color: #fff; filter: brightness(1.1); }
+
+/* ── Tab Panels ── */
+.wizard-panel {
+  display: none;
+  animation: panel-slide-in 0.35s var(--spring-quick) both;
+}
+.wizard-panel--active { display: block; }
+
+@keyframes panel-slide-in {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .wizard-step-connector { width: 24px; }
+  .wizard-step { min-width: 44px; }
+  .wizard-step-bubble { width: 28px; height: 28px; font-size: 0.75rem; }
+  .wizard-tab { font-size: 0.72rem; padding: 0 var(--space-3); min-height: 32px; }
+}
+
+/* ════════════════════════════════════════════════
    Empty State (iOS-style)
    ════════════════════════════════════════════════ */
 
