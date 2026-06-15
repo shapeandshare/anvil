@@ -32,3 +32,7 @@ updated: 2026-06-14
 | **Dataset** | Static collection of text samples where each line in a `.txt` file becomes one training sample. Uploaded manually or created empty. Supports inline editing, curation (dedup, filter, replace), and export. Best for curated/fine-tuning data. |
 | **Corpus** | Dynamic directory source scanned with glob patterns and chunking strategies (windowed/file/line). Supports gitignore-style include/exclude filtering. Read-only from source (no inline sample editing). Best for code repos and large directory trees. |
 | **Run-in-Executor** | Python asyncio pattern for offloading blocking/sync code to a thread pool thread, used by `TrainingService` to run the core engine |
+| **Commitizen** | CLI tool for conventional commit enforcement and semantic version bump management (`cz commit`, `cz bump`, `cz check`) |
+| **Conventional Commits** | Structured commit message format: `<type>(<scope>): <description>` — types: feat, fix, perf, refactor, chore, docs, ci, test, style, build |
+| **SemVer** | Semantic Versioning (`MAJOR.MINOR.PATCH`) — bump rules: fix→PATCH, feat→MINOR, BREAKING CHANGE→MAJOR |
+| **BUMP_PAT** | Fine-grained GitHub Personal Access Token used by CI workflows to create auto-merge PRs (Contents+PRs+Workflows: write) |

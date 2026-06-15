@@ -21,3 +21,9 @@ train-gpu: $(VENV_DIR)/activate ## Train with GPU acceleration (also defined in 
 docker: ## Build and run via Docker
 	docker build -t anvil .
 	docker run -p 8080:8080 -p 5001:5001 anvil
+
+setup-hooks: ## Enable conventional commit enforcement hook
+	@echo "Configuring git hooks path to .githooks/..."
+	git config core.hooksPath .githooks
+	@echo "Done. Hook will validate commit messages follow Conventional Commits format."
+	@echo "Types: feat, fix, perf, refactor, chore, docs, ci, test, style, build"

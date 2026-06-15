@@ -1,0 +1,31 @@
+#!/bin/sh
+# Anvil commit-msg hook: enforce conventional commit format
+# Installed by 007-automated-semver-release feature.
+#
+# Uses commitizen to validate commit messages follow the
+# Conventional Commits format (e.g. "feat: add widget",
+# "fix(core): correct attention mask").
+#
+# To bypass (e.g. for WIP commits on non-main branches):
+#   git commit --no-verify -m "message"
+
+COMMIT_MSG_FILE="${1}"
+
+# Check if commitizen is available
+if ! python3 -m commitizen check --commit-msg-file "$COMMIT_MSG_FILE" 2>/dev/null; then
+  echo ""
+  echo "  ✗ Commit message does not follow Conventional Commits format."
+  echo ""
+  echo "  Expected format: <type>(<scope>): <description>"
+  echo "  Types: feat, fix, perf, refactor, chore, docs, ci, test, style, build"
+  echo ""
+  echo "  Examples:"
+  echo "    feat: add dataset comparison view"
+  echo "    fix(core): correct tokenizer overflow"
+  echo "    chore: update dependencies"
+  echo ""
+  echo "  To commit anyway (bypass hook): git commit --no-verify"
+  exit 1
+fi
+
+exit 0
