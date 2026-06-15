@@ -2,122 +2,162 @@
 {% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
 {% block content %}
 <div class="training-dashboard">
+  <div class="page-intro">
+    <p>This is where you configure and train a character-level transformer model from scratch. Select your data source, tune the architecture, then watch it learn in real time through live loss curves and streaming output. Every parameter below changes how the model learns — hover the ⓘ icons to learn what each one does.</p>
+  </div>
+
   <div class="training-runs section-card" id="runs-panel" style="display:none;--stagger-i: 0">
     <div class="section-card__header"><h2 class="section-card__title">Active Training Runs</h2></div>
     <div id="runs-list"></div>
   </div>
 
-  <div class="training-data-source section-card" style="--stagger-i: 1">
-    <div class="section-card__header"><h2 class="section-card__title">1. Select Your Data</h2></div>
-    <div class="ds-selectors">
-      <div class="ds-field">
-        <label class="ds-label" for="corpus_id">Corpus</label>
-        <select class="ds-select" id="corpus_id">
-          <option value="">input.txt (default)</option>
-        </select>
-      </div>
-      <div class="ds-field">
-        <label class="ds-label" for="dataset_id">Dataset</label>
-        <select class="ds-select" id="dataset_id">
-          <option value="">— none —</option>
-        </select>
-      </div>
+  <div class="training-data-source section-card training-wizard" style="--stagger-i: 1">
+    <div class="section-card__header">
+      <h2 class="section-card__title">Training Setup</h2>
     </div>
-    <div id="data-context" class="ds-card">
-      <div class="ds-card-empty">Select a corpus or dataset above.</div>
-    </div>
-    <div id="model-stats" class="ds-card">
-      <div class="ds-card-empty">Model stats will appear here.</div>
-    </div>
-  </div>
 
-  <div class="training-config section-card" style="--stagger-i: 2">
-    <div class="section-card__header"><h2 class="section-card__title">2. Configure &amp; Auto-Tune Parameters</h2></div>
-    <div class="config-grid">
-      <div class="param-block">
-        <label class="param-label">n_embd</label>
-        <input type="number" id="n_embd" value="16" min="4" max="256">
-        <p class="param-desc">Embedding size — powers of 2 (16, 32, 64…). Must be divisible by <code>n_head</code>.</p>
-      </div>
-      <div class="param-block">
-        <label class="param-label">n_layer</label>
-        <input type="number" id="n_layer" value="1" min="1" max="12">
-        <p class="param-desc">Transformer depth — 1–2 for simple patterns, 4+ for complex structure.</p>
-      </div>
-      <div class="param-block">
-        <label class="param-label">n_head</label>
-        <input type="number" id="n_head" value="4" min="1" max="16">
-        <p class="param-desc">Attention heads — must divide <code>n_embd</code> evenly (e.g. 64 &amp; 4 works).</p>
-      </div>
-      <div class="param-block">
-        <label class="param-label">block_size</label>
-        <input type="number" id="block_size" value="16" min="8" max="1024">
-        <p class="param-desc">Context window in characters — match to your corpus chunk size.</p>
-      </div>
-      <div class="param-block">
-        <label class="param-label">num_steps</label>
-        <input type="number" id="num_steps" value="1000" min="10" max="100000">
-        <p class="param-desc">Training steps — more = lower loss. Start with 1000.</p>
-      </div>
-      <div class="param-block">
-        <label class="param-label">learning_rate</label>
-        <input type="number" id="learning_rate" value="0.01" step="0.001" min="0.0001" max="1">
-        <p class="param-desc">Step size — 0.01 safe start. Drop if loss oscillates or spikes.</p>
-      </div>
-      <div class="param-block">
-        <label class="param-label">temperature</label>
-        <input type="number" id="temperature" value="0.5" step="0.1" min="0" max="2">
-        <p class="param-desc">Creativity — 0.1–0.3 predictable, 0.5–0.7 creative, 1.0+ chaos.</p>
-      </div>
-      <div class="param-block">
-        <label class="param-label">device</label>
-        <div class="device-toggle">
-          <label class="toggle-label">
-            <input type="checkbox" id="use_gpu" onchange="window.updateModelStats()">
-            <span class="toggle-track"><span class="toggle-thumb"></span></span>
-            <span class="toggle-text">GPU acceleration</span>
-          </label>
-          <p class="param-desc" id="gpu-status">Checking GPU availability...</p>
+    <div class="wizard-steps" id="wizard-steps">
+      <button type="button" class="wizard-step wizard-step--active" data-step="1" data-tab="data">
+        <div class="wizard-step-bubble"><span>1</span></div>
+        <span class="wizard-step-label">Data</span>
+      </button>
+      <div class="wizard-step-connector" id="conn-1"></div>
+      <button type="button" class="wizard-step" data-step="2" data-tab="config">
+        <div class="wizard-step-bubble"><span>2</span></div>
+        <span class="wizard-step-label">Configure</span>
+      </button>
+      <div class="wizard-step-connector" id="conn-2"></div>
+      <button type="button" class="wizard-step wizard-step--train" data-step="3" id="wizard-step-train">
+        <div class="wizard-step-bubble"><span>▶</span></div>
+        <span class="wizard-step-label">Train</span>
+      </button>
+    </div>
+
+    <div class="wizard-tabs" id="wizard-tabs">
+      <button type="button" class="wizard-tab wizard-tab--active" data-tab="data">Select Data</button>
+      <button type="button" class="wizard-tab" data-tab="config">Configure &amp; Auto-Tune</button>
+    </div>
+
+    <div class="wizard-panel wizard-panel--active" id="panel-data">
+      <div class="ds-selectors">
+        <div class="ds-field">
+          <label class="ds-label" for="corpus_id">Corpus</label>
+          <select class="ds-select" id="corpus_id">
+            <option value="">input.txt (default)</option>
+          </select>
+        </div>
+        <div class="ds-field">
+          <label class="ds-label" for="dataset_id">Dataset</label>
+          <select class="ds-select" id="dataset_id">
+            <option value="">— none —</option>
+          </select>
         </div>
       </div>
+      <div id="data-context" class="ds-card">
+        <div class="ds-card-empty">Select a corpus or dataset above.</div>
+      </div>
+      <div id="model-stats" class="ds-card">
+        <div class="ds-card-empty">Model stats will appear here.</div>
+      </div>
     </div>
 
-    <div class="config-actions">
-      <button class="btn btn-accent" id="autotune-btn">✨ Auto-Tune</button>
-      <button class="btn btn--forge btn-pulse" id="start-btn">Start Training</button>
-      <button class="btn btn-secondary" id="stop-btn" disabled>Stop</button>
+    <div class="wizard-panel" id="panel-config">
+      <div class="config-grid">
+        <div class="param-block">
+          <label class="param-label">n_embd</label>
+          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">The width of each layer's representation. Wider = more capacity to learn patterns, but more parameters and slower training. Powers of 2 are standard (16, 32, 64, 128).</span></span>
+          <input type="number" id="n_embd" value="16" min="4" max="256">
+          <p class="param-desc">Embedding size — powers of 2 (16, 32, 64…). Must be divisible by <code>n_head</code>.</p>
+        </div>
+        <div class="param-block">
+          <label class="param-label">n_layer</label>
+          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How many transformer blocks stack on top of each other. Deeper = more hierarchical pattern discovery. 1-2 layers learn simple patterns, 4+ can learn complex structure.</span></span>
+          <input type="number" id="n_layer" value="1" min="1" max="12">
+          <p class="param-desc">Transformer depth — 1–2 for simple patterns, 4+ for complex structure.</p>
+        </div>
+        <div class="param-block">
+          <label class="param-label">n_head</label>
+          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How many parallel attention computations happen at each layer. Each head can focus on different relationships. Must divide n_embd evenly.</span></span>
+          <input type="number" id="n_head" value="4" min="1" max="16">
+          <p class="param-desc">Attention heads — must divide <code>n_embd</code> evenly (e.g. 64 &amp; 4 works).</p>
+        </div>
+        <div class="param-block">
+          <label class="param-label">block_size</label>
+          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How many characters the model can 'see' at once when predicting the next character. Larger context = more coherent output but slower training.</span></span>
+          <input type="number" id="block_size" value="16" min="8" max="1024">
+          <p class="param-desc">Context window in characters — match to your corpus chunk size.</p>
+        </div>
+        <div class="param-block">
+          <label class="param-label">num_steps</label>
+          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How many gradient updates the model performs. More steps = lower loss, but diminishing returns. Start with 1000 and increase if loss is still falling.</span></span>
+          <input type="number" id="num_steps" value="1000" min="10" max="100000">
+          <p class="param-desc">Training steps — more = lower loss. Start with 1000.</p>
+        </div>
+        <div class="param-block">
+          <label class="param-label">learning_rate</label>
+          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How big each weight update is. Too high = loss bounces around. Too low = barely learns. 0.01 is a good starting point for this model scale.</span></span>
+          <input type="number" id="learning_rate" value="0.01" step="0.001" min="0.0001" max="1">
+          <p class="param-desc">Step size — 0.01 safe start. Drop if loss oscillates or spikes.</p>
+        </div>
+        <div class="param-block">
+          <label class="param-label">temperature</label>
+          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">Controls randomness in generation. 0 = always picks the most likely next character (boring but safe). 1.0+ = more creative but may produce gibberish.</span></span>
+          <input type="number" id="temperature" value="0.5" step="0.1" min="0" max="2">
+          <p class="param-desc">Creativity — 0.1-0.3 predictable, 0.5-0.7 creative, 1.0+ chaos.</p><span class="fun-label fun-label--cool" style="margin-left:var(--space-1)">cool &amp; precise</span> <span class="fun-label fun-label--warm">creative spark</span> <span class="fun-label fun-label--hot">chaos mode</span>
+        </div>
+        <div class="param-block">
+          <label class="param-label">device</label>
+          <div class="device-toggle">
+            <label class="toggle-label">
+              <input type="checkbox" id="use_gpu" onchange="window.updateModelStats()">
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span class="toggle-text">GPU acceleration</span>
+            </label>
+            <p class="param-desc" id="gpu-status">Checking GPU availability...</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="config-actions">
+        <button type="button" class="btn btn-accent" id="autotune-btn">✨ Auto-Tune</button>
+        <button type="button" class="btn btn--forge btn-pulse" id="start-btn">Start Training</button>
+        <button type="button" class="btn btn-secondary" id="stop-btn" disabled>Stop</button>
+      </div>
+      <p class="autotune-feedback" id="autotune-feedback"></p>
     </div>
-    <p class="autotune-feedback" id="autotune-feedback"></p>
   </div>
 
-  <div class="training-chart section-card" style="--stagger-i: 3">
+  <div class="training-chart section-card" style="--stagger-i: 2">
     <div class="section-card__header"><h2 class="section-card__title">Loss Curve</h2></div>
     <div class="connection-state" id="connection-state">idle</div>
+    <div id="training-phase" class="phase-label" style="display:none;"></div>
     <div class="chart-container">
       {% include "partials/streaming-chart.html" %}
     </div>
   </div>
 
-  <div class="training-metrics section-card" style="--stagger-i: 4">
+  <div class="training-metrics section-card" style="--stagger-i: 3">
     <div class="section-card__header"><h2 class="section-card__title">Metrics</h2></div>
     <div class="metrics-grid">
       <div class="metric"><span class="metric-label">Step</span><span class="metric-value" id="metric-step">—</span></div>
       <div class="metric"><span class="metric-label">Loss</span><span class="metric-value" id="metric-loss">—</span></div>
       <div class="metric"><span class="metric-label">Device</span><span class="metric-value" id="metric-device">—</span></div>
       <div class="metric"><span class="metric-label">Throughput</span><span class="metric-value" id="metric-Throughput">—</span></div>
+      <div class="metric"><span class="metric-label">Elapsed</span><span class="metric-value" id="metric-elapsed">—</span></div>
+      <div class="metric"><span class="metric-label">ETA</span><span class="metric-value" id="metric-eta">—</span></div>
     </div>
     <div class="loading-indicator" id="training-loading" style="display:none;">
       <span class="spinner"></span> Waiting for training data...
     </div>
   </div>
 
-  <div class="training-output section-card" style="--stagger-i: 5">
-    <div class="section-card__header section-card__header--clickable" id="output-header" role="button" tabindex="0" aria-expanded="true" aria-controls="output-body">
+  <div class="training-output section-card" style="--stagger-i: 4">
+    <div class="section-card__header section-card__header--clickable" id="output-header" role="button" tabindex="0" aria-expanded="false" aria-controls="output-body">
       <h2 class="section-card__title">Output</h2>
       <span class="output-indicator" id="output-indicator"></span>
-      <span class="output-toggle-icon" id="output-toggle-icon">▼</span>
+      <span class="output-toggle-icon collapsed" id="output-toggle-icon">▼</span>
     </div>
-    <div id="output-body" class="section-card__content-collapsible">
+    <div id="output-body" class="section-card__content-collapsible collapsed">
       <pre class="loss-display" id="loss-display"></pre>
       <div id="output-actions" class="output-actions"></div>
     </div>
@@ -165,6 +205,16 @@
     return String(n);
   }
 
+  function formatDuration(totalSec) {
+    if (totalSec == null || totalSec < 0) return '—';
+    var h = Math.floor(totalSec / 3600);
+    var m = Math.floor((totalSec % 3600) / 60);
+    var s = Math.floor(totalSec % 60);
+    if (h > 0) return h + 'h ' + m + 'm ' + s + 's';
+    if (m > 0) return m + 'm ' + s + 's';
+    return s + 's';
+  }
+
   function updateOutputIndicator(state) {
     if (!outputIndicator) return;
     if (state === 'streaming' || state === 'connecting') {
@@ -189,10 +239,84 @@
     updateOutputIndicator(state);
   }
 
-  function updateMetrics(d) {
+  /* ── Wizard Tab Switching ── */
+  function switchWizardTab(tab) {
+    var panels = document.querySelectorAll('.wizard-panel');
+    var tabs = document.querySelectorAll('.wizard-tab');
+    var steps = document.querySelectorAll('.wizard-step');
+
+    panels.forEach(function(p) { p.classList.remove('wizard-panel--active'); });
+    tabs.forEach(function(t) { t.classList.remove('wizard-tab--active'); });
+    steps.forEach(function(s) { s.classList.remove('wizard-step--active', 'wizard-step--completed'); });
+
+    /* Activate target tab */
+    var activePanel = document.getElementById('panel-' + tab);
+    var activeTab = document.querySelector('.wizard-tab[data-tab="' + tab + '"]');
+    if (activePanel) activePanel.classList.add('wizard-panel--active');
+    if (activeTab) activeTab.classList.add('wizard-tab--active');
+
+    /* Update step states */
+    var stepMap = { data: 1, config: 2 };
+    var stepNum = stepMap[tab];
+    if (stepNum) {
+      steps.forEach(function(s) {
+        var n = parseInt(s.getAttribute('data-step'));
+        if (n === stepNum) s.classList.add('wizard-step--active');
+        else if (n < stepNum) {
+          s.classList.add('wizard-step--completed');
+        }
+      });
+      /* Fill connectors before active step */
+      var conns = document.querySelectorAll('.wizard-step-connector');
+      conns.forEach(function(c, i) {
+        c.classList.toggle('wizard-step-connector--filled', i < stepNum - 1);
+      });
+    }
+  }
+
+  var _lastMilestone = null;
+
+  function updateTrainingPhase(loss) {
+    var phaseEl = document.getElementById('training-phase');
+    if (!phaseEl) return;
+    if (loss == null) { phaseEl.style.display = 'none'; return; }
+    phaseEl.style.display = 'inline-flex';
+
+    var phase, label;
+    if (loss >= 2.0) {
+      phase = 'memorization'; label = 'Phase 1 &middot; Memorization &mdash; learning the character set';
+    } else if (loss >= 1.0) {
+      phase = 'generalization'; label = 'Phase 2 &middot; Generalization &mdash; finding patterns';
+    } else {
+      phase = 'convergence'; label = 'Phase 3 &middot; Convergence &mdash; refining predictions';
+    }
+    phaseEl.className = 'phase-label phase-label--' + phase;
+    phaseEl.innerHTML = label;
+
+    /* Milestone celebration */
+    if (_lastMilestone !== phase) {
+      _lastMilestone = phase;
+      var badgeText, badgeClass;
+      if (phase === 'generalization') { badgeText = '&#9733; Pattern Discovery'; badgeClass = 'milestone-badge--pattern'; }
+      else if (phase === 'convergence') { badgeText = '&#9733; Convergence'; badgeClass = 'milestone-badge--mastery'; }
+      else { return; }
+      var badge = document.createElement('span');
+      badge.className = 'milestone-badge ' + badgeClass;
+      badge.innerHTML = badgeText;
+      phaseEl.parentNode.insertBefore(badge, phaseEl.nextSibling);
+      setTimeout(function() { if (badge.parentNode) badge.parentNode.removeChild(badge); }, 4000);
+    }
+  }
+
+function updateMetrics(d) {
     document.getElementById('metric-step').textContent = d.step || '—';
     document.getElementById('metric-loss').textContent = d.loss ? d.loss.toFixed(4) : '—';
     document.getElementById('metric-device').textContent = d.device || '—';
+    if (d.steps_per_sec != null) {
+      document.getElementById('metric-Throughput').textContent = d.steps_per_sec.toFixed(1) + ' st/s';
+    }
+    document.getElementById('metric-elapsed').textContent = formatDuration(d.elapsed_sec);
+    document.getElementById('metric-eta').textContent = d.eta_sec != null ? formatDuration(d.eta_sec) : '…';
   }
 
   function log(msg) {
@@ -851,6 +975,26 @@
 
   startBtn.addEventListener('click', startTraining);
   stopBtn.addEventListener('click', stopTraining);
+
+  /* ── Wizard tab clicks ── */
+  document.querySelectorAll('.wizard-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      switchWizardTab(this.getAttribute('data-tab'));
+    });
+  });
+
+  /* ── Wizard step clicks (steps 1 & 2 switch tabs, step 3 triggers train) ── */
+  document.querySelectorAll('.wizard-step[data-step]').forEach(function(step) {
+    step.addEventListener('click', function() {
+      var s = this.getAttribute('data-step');
+      var tab = this.getAttribute('data-tab');
+      if (tab) {
+        switchWizardTab(tab);
+      } else if (s === '3' && !startBtn.disabled) {
+        startTraining();
+      }
+    });
+  });
 
   /* ── Output collapsible toggle ── */
   function toggleOutput() {
