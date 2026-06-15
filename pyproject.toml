@@ -50,6 +50,7 @@ dev = [
     "pytest-asyncio>=0.24,<1",
     "pytest-cov>=5.0,<6",
     "coverage>=7.0,<8",
+    "commitizen>=3.0,<4",
 ]
 
 [project.scripts]
@@ -145,3 +146,12 @@ omit = ["tests/*", "migrations/*"]
 [tool.coverage.report]
 fail_under = 100
 show_missing = true
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+version_scheme = "semver"
+tag_format = "v$version"
+version_provider = "pep621"
+update_changelog_on_bump = true
+changelog_incremental = true
+changelog_file = "CHANGELOG.md"

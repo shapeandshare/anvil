@@ -1,0 +1,428 @@
+# Release workflow for anvil
+#
+# Publishes a GitHub Release whenever a PR with a conventional commit
+# title is merged to main. The PR title determines the version bump:
+#   feat   → MINOR (x.Y.0)
+#   fix    → PATCH (x.y.Z)
+#   BREAKING CHANGE → MAJOR (X.0.0)
+#   chore/docs/ci → no bump (changelog only)
+#
+# The version bump is delivered via an auto-merge PR (not direct push)
+# to avoid re-triggering the release workflow and to respect branch
+# protection rules. The bump commit includes [skip ci] to prevent loops.
+#
+# workflow_dispatch is available as an escape hatch for cases where
+# GitHub suppresses push-based workflows (merge commits touching
+# .github/workflows/ files will not fire push-based workflows).
+#
+# Required GitHub Secrets:
+# - BUMP_PAT: Fine-grained PAT with Contents: write, Pull requests: write,
+#   Workflows: write permissions. Used for PR creation because
+#   GITHUB_TOKEN PRs don't trigger CI checks under branch protection.
+
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: Reason for manual trigger
+        required: false
+        default: "manual trigger"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1 -- Detect version change and determine bump type
+  # ---------------------------------------------------------------------------
+  check-version:
+    name: Detect Version Bump
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version_changed: ${{ steps.check.outputs.version_changed }}
+      version: ${{ steps.check.outputs.version }}
+      increment: ${{ steps.check.outputs.increment }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Compare version and determine bump type
+        id: check
+        run: |
+          set -euo pipefail
+
+          # Extract version from pyproject.toml (PEP 621 format)
+          CURRENT=$(grep '^version =' pyproject.toml \
+            | sed 's/version = "\(.*\)"/\1/')
+
+          PREV=$(git show HEAD^:pyproject.toml 2>/dev/null \
+            | grep '^version =' \
+            | sed 's/version = "\(.*\)"/\1/' \
+            || echo "none")
+
+          echo "Version in this commit : ${CURRENT}"
+          echo "Version in parent commit: ${PREV}"
+
+          # On workflow_dispatch: always release
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Manual dispatch — bypassing version-change guard."
+            echo "version_changed=true" >> "$GITHUB_OUTPUT"
+            echo "increment=PATCH" >> "$GITHUB_OUTPUT"
+            echo "version=${CURRENT}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # If version was manually bumped, skip bump and go straight to release
+          if [ "${CURRENT}" != "${PREV}" ]; then
+            echo "Version was manually bumped from ${PREV} to ${CURRENT}."
+            echo "Skipping automatic bump — proceeding to tag and release."
+            echo "version_changed=true" >> "$GITHUB_OUTPUT"
+            echo "increment=SKIP" >> "$GITHUB_OUTPUT"
+            echo "version=${CURRENT}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Version not changed — determine bump type from merge commit message
+          MERGE_MSG=$(git log -1 --format=%B)
+          INCREMENT="NONE"
+
+          if echo "${MERGE_MSG}" | grep -qi "BREAKING CHANGE"; then
+            INCREMENT="MAJOR"
+          elif echo "${MERGE_MSG}" | grep -q "^feat"; then
+            INCREMENT="MINOR"
+          elif echo "${MERGE_MSG}" | grep -q "^fix"; then
+            INCREMENT="PATCH"
+          elif echo "${MERGE_MSG}" | grep -qE "^(perf|refactor|chore|docs|ci|test|style|build)"; then
+            INCREMENT="NONE"
+          fi
+
+          echo "Merge commit message: ${MERGE_MSG}"
+          echo "Detected increment: ${INCREMENT}"
+
+          echo "version=${CURRENT}" >> "$GITHUB_OUTPUT"
+          echo "increment=${INCREMENT}" >> "$GITHUB_OUTPUT"
+
+          if [ "${INCREMENT}" != "NONE" ]; then
+            echo "version_changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "version_changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # ---------------------------------------------------------------------------
+  # Job 2 -- Bump version, create changelog, open auto-merge PR, tag and release
+  # ---------------------------------------------------------------------------
+  bump-and-release:
+    name: Bump and Release
+    runs-on: ubuntu-latest
+    needs: check-version
+    if: needs.check-version.outputs.version_changed == 'true'
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install commitizen
+        run: |
+          pip install "commitizen>=3.0,<4"
+
+      - name: Determine bump increment
+        id: increment
+        run: |
+          INCREMENT="${{ needs.check-version.outputs.increment }}"
+          echo "increment=${INCREMENT}" >> "$GITHUB_OUTPUT"
+          if [ "${INCREMENT}" = "SKIP" ]; then
+            echo "Manually bumped version — no automatic bump needed."
+          fi
+
+      # -----------------------------------------------------------------------
+      # BUMP_PAT preflight check (T014)
+      # -----------------------------------------------------------------------
+      - name: Check BUMP_PAT preflight
+        id: preflight
+        run: |
+          set -euo pipefail
+
+          INCREMENT="${{ needs.check-version.outputs.increment }}"
+          if [ "${INCREMENT}" = "NONE" ]; then
+            echo "No version bump needed — skipping release."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "${INCREMENT}" = "SKIP" ]; then
+            echo "Version was already bumped manually — creating tag and release without additional bump."
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "skip-bump=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+          # BUMP_PAT is required for PR creation (GITHUB_TOKEN PRs don't
+          # trigger CI checks under branch protection rules).
+          if [ -z "${BUMP_PAT:-}" ]; then
+            echo "::error::BUMP_PAT secret is missing or empty."
+            echo "::error::"
+            echo "::error::The release workflow requires BUMP_PAT to create"
+            echo "::error::auto-merge bump PRs. GITHUB_TOKEN cannot be used"
+            echo "::error::because PRs opened by it don't trigger CI checks."
+            echo "::error::"
+            echo "::error::To fix:"
+            echo "::error::1. Create a fine-grained PAT in GitHub Settings →"
+            echo "::error::   Developer settings → Personal access tokens"
+            echo "::error::2. Required permissions: Contents: write,"
+            echo "::error::   Pull requests: write, Workflows: write"
+            echo "::error::3. Add it as a repository secret named BUMP_PAT"
+            echo "::error::   in Settings → Secrets and variables → Actions"
+            echo "::error::4. Re-run this workflow via Actions → Release"
+            exit 1
+          fi
+        env:
+          BUMP_PAT: ${{ secrets.BUMP_PAT }}
+
+      - name: Skip release (no bump needed)
+        if: steps.preflight.outputs.skip == 'true'
+        run: |
+          echo "Merge commit does not contain a version-affecting"
+          echo "conventional commit type (feat/fix/BREAKING CHANGE)."
+          echo "Skipping release. A changelog entry may still be created"
+          echo "for documentation purposes."
+
+      # -----------------------------------------------------------------------
+      # Run commitizen bump (T011)
+      # -----------------------------------------------------------------------
+      - name: Bump version and update changelog
+        id: bump
+        if: steps.preflight.outputs.skip != 'true' && steps.preflight.outputs.skip-bump != 'true'
+        run: |
+          set -euo pipefail
+
+          INCREMENT="${{ steps.increment.outputs.increment }}"
+          echo "Running cz bump --changelog --increment ${INCREMENT}"
+
+          # cz bump updates pyproject.toml version and appends CHANGELOG.md
+          python3 -m commitizen bump --yes --changelog --increment "${INCREMENT}"
+
+          NEW_VERSION=$(grep '^version =' pyproject.toml \
+            | sed 's/version = "\(.*\)"/\1/')
+          echo "new_version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Version bumped to: ${NEW_VERSION}"
+
+      # -----------------------------------------------------------------------
+      # Extract PR description for release notes (T017 — Phase 4 integration)
+      # -----------------------------------------------------------------------
+      - name: Fetch PR description
+        id: pr-description
+        if: steps.preflight.outputs.skip != 'true'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          # Get the branch name from the merge commit
+          BRANCH=$(git log -1 --merges --format=%P | head -n1 || echo "")
+          if [ -z "${BRANCH}" ]; then
+            echo "Not a merge commit — no PR description available."
+            exit 0
+          fi
+
+          PR_BODY=$(gh pr list --state merged --head "${BRANCH}" \
+            --json body --jq '.[0].body' 2>/dev/null || echo "")
+          echo "pr_body<<PR_EOF" >> "$GITHUB_OUTPUT"
+          echo "${PR_BODY}" >> "$GITHUB_OUTPUT"
+          echo "PR_EOF" >> "$GITHUB_OUTPUT"
+
+          if [ -n "${PR_BODY}" ]; then
+            echo "PR description fetched (${#PR_BODY} chars)"
+          else
+            echo "No PR description found or fetch failed — will use changelog only"
+          fi
+
+      # -----------------------------------------------------------------------
+      # Build release notes (T013)
+      # -----------------------------------------------------------------------
+      - name: Build release notes
+        id: release-notes
+        if: steps.preflight.outputs.skip != 'true'
+        run: |
+          set -euo pipefail
+
+          # Read version from pyproject.toml (works whether bumped or manually set)
+          VERSION=$(grep '^version =' pyproject.toml \
+            | sed 's/version = "\(.*\)"/\1/')
+
+          {
+            echo "## anvil v${VERSION}"
+            echo ""
+          } > release-notes.md
+
+          # Extract changelog entry for this version
+          if [ -f CHANGELOG.md ]; then
+            CHANGELOG_ENTRY=$(awk "/^## v${VERSION}/,/^## v/" CHANGELOG.md \
+              | grep -v "^## v${VERSION}\|^## v" \
+              | sed '/^---$/d' || true)
+            if [ -n "${CHANGELOG_ENTRY}" ]; then
+              echo "" >> release-notes.md
+              echo "### Changelog" >> release-notes.md
+              echo "${CHANGELOG_ENTRY}" >> release-notes.md
+            fi
+          fi
+
+          # Append PR description if available (T018 — Phase 4)
+          PR_BODY="${{ steps.pr-description.outputs.pr_body }}"
+          if [ -n "${PR_BODY}" ]; then
+            echo "" >> release-notes.md
+            echo "### Release Notes" >> release-notes.md
+            echo "${PR_BODY}" >> release-notes.md
+          fi
+
+          # Handle idempotent re-run: check if tag already exists (T015)
+          TAG="v${VERSION}"
+          if git tag --list "${TAG}" | grep -q "${TAG}"; then
+            echo "Tag ${TAG} already exists — idempotent re-run detected."
+            echo "Skipping tag and release creation."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      # -----------------------------------------------------------------------
+      # Create bump PR (T012) — auto-merge pattern with [skip ci]
+      # -----------------------------------------------------------------------
+      - name: Create bump PR with auto-merge
+        if: steps.release-notes.outputs.exists != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.BUMP_PAT }}
+        run: |
+          set -euo pipefail
+
+          VERSION="${{ steps.release-notes.outputs.version }}"
+          BRANCH="ci/bump-v${VERSION}"
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git checkout -b "${BRANCH}"
+          git add pyproject.toml CHANGELOG.md
+          git commit -m "chore: bump version to v${VERSION}
+
+          Automated version bump from release workflow.
+
+          [skip ci]"
+
+          git push origin "${BRANCH}"
+
+          PR_URL=$(gh pr create \
+            --title "chore: bump version to v${VERSION}" \
+            --body "Automated version bump from release workflow." \
+            --base main \
+            --head "${BRANCH}")
+
+          gh pr merge "${PR_URL}" --auto --squash
+          echo "Bump PR created and auto-merged: ${PR_URL}"
+
+      # -----------------------------------------------------------------------
+      # Wait for auto-merge and create tag (T013)
+      # -----------------------------------------------------------------------
+      - name: Create git tag and GitHub Release
+        if: steps.release-notes.outputs.exists != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          VERSION="${{ steps.release-notes.outputs.version }}"
+          TAG="v${VERSION}"
+
+          # If version was manually bumped, tag immediately (no bump PR to wait for)
+          if [ "${{ steps.preflight.outputs.skip-bump }}" = "true" ]; then
+            echo "Version was manually bumped — creating tag directly."
+          else
+            # Wait for auto-merge to complete (poll up to 2 minutes)
+            MAX_WAIT=120
+            WAIT=0
+            while [ "${WAIT}" -lt "${MAX_WAIT}" ]; do
+              git fetch origin main
+              # Check if the bump commit is on main
+              if git log origin/main --oneline -10 | grep -q "bump version to v${VERSION}"; then
+                echo "Bump commit detected on main after ${WAIT}s"
+                break
+              fi
+              sleep 5
+              WAIT=$((WAIT + 5))
+            done
+
+            if [ "${WAIT}" -ge "${MAX_WAIT}" ]; then
+              echo "::warning::Timed out waiting for bump PR to merge." \
+                "Tag may not reflect the latest main."
+            fi
+          fi
+
+          # Create tag and release from the merged result
+          git fetch --tags origin
+          git tag "${TAG}" origin/main
+          git push origin "${TAG}"
+
+          # Check if release already exists (idempotency)
+          if gh release view "${TAG}" &>/dev/null; then
+            echo "Release ${TAG} already exists — skipping."
+          else
+            gh release create "${TAG}" \
+              --title "anvil ${TAG}" \
+              --notes-file release-notes.md \
+              --target main
+            echo "Release ${TAG} created."
+          fi
+
+      # -----------------------------------------------------------------------
+      # Infinite loop prevention (T016)
+      # -----------------------------------------------------------------------
+      - name: Loop detection
+        if: always()
+        run: |
+          set -euo pipefail
+
+          # Check if the most recent commit message contains [skip ci]
+          LAST_MSG=$(git log -1 --format=%B)
+          if echo "${LAST_MSG}" | grep -q "\[skip ci\]"; then
+            echo "Last commit contains [skip ci] — loop prevention active."
+          else
+            echo "Last commit does not contain [skip ci] — this is a human commit."
+          fi
+
+          # Check for rapid successive triggers (two releases within 60s)
+          RECENT_TAGS=$(git tag --list 'v*' --sort=-creatordate | head -2)
+          TAG_COUNT=$(echo "${RECENT_TAGS}" | wc -l)
+          if [ "${TAG_COUNT}" -ge 2 ]; then
+            TAG1=$(echo "${RECENT_TAGS}" | sed -n '1p')
+            TAG2=$(echo "${RECENT_TAGS}" | sed -n '2p')
+            TIME1=$(git log -1 --format=%ct "${TAG1}")
+            TIME2=$(git log -1 --format=%ct "${TAG2}")
+            DIFF=$((TIME1 - TIME2))
+            if [ "${DIFF}" -lt 120 ] && [ "${DIFF}" -gt 0 ]; then
+              echo "::warning::Two releases within ${DIFF}s of each other."
+              echo "::warning::If these appear automated (no human commits),"
+              echo "::warning::check for a loop condition."
+            fi
+          fi
