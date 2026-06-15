@@ -61,29 +61,31 @@ The training pipeline bridges three execution paradigms: async web → sync CPU-
 │          │                                                          │
 │          ├── FORWARD PASS (autoregressive over block_size)          │
 │          │   │                                                      │
-│          │   ├── LlamaModel.forward(token_id, pos_id, keys, values)
-│          │   │     ├── token_emb = wte[token_id]                   │
-│          │   │     │   (NO learned position embeddings — RoPE      │
-│          │   │     │    encodes position in Q/K per-head)          │
+│          │   ├── GPT.forward(token_id, pos_id, keys, values)       │
+│          │   │     ├── x = wte[token_id]                           │
+│          │   │     │   (NO learned position embedding —            │
+│          │   │     │    replaced by RoPE. NO embedding-level       │
+│          │   │     │    norm — removed per Llama architecture)     │
 │          │   │     │                                                │
 │          │   │     └── FOR each layer:                              │
-│          │   │           ├── Pre-attention RMSNorm (learned rms_1) │
-│          │   │           ├── Q = x · Wq, K = x · Wk, V = x · Wv  │
-│          │   │           ├── Apply RoPE (half-split rotate_half)   │
-│          │   │           │   to Q and K per head                   │
-│          │   │           ├── Append rotated K + V to KV cache      │
-│          │   │           ├── FOR each head:                        │
+│          │   │           ├── Pre-attn RMSNorm:                    │
+│          │   │           │   r = rmsnorm(x) × rms_1               │
+│          │   │           │   Q = r · Wq; K = r · Wk; V = r · Wv   │
+│          │   │           │   RoPE (half-split): apply to Q and K  │
+│          │   │           │   Cache rotated K (not raw K)          │
+│          │   │           │   FOR each head:                        │
 │          │   │           │     attn = softmax(Q·Kᵀ / √d)          │
 │          │   │           │     out  = Σ attn·V                     │
-│          │   │           ├── x = attn_out · Wo + residual          │
-│          │   │           │                                          │
-│          │   │           └── MLP (SwiGLU):                          │
-│          │   │               ├── Pre-MLP RMSNorm (learned rms_2)  │
-│          │   │               ├── gate = SiLU(x · Wgate)            │
-│          │   │               ├── up   = x · Wup                    │
-│          │   │               └── x = (gate * up) · Wdown + residual│
+│          │   │           │   x = attn_out · Wo + residual          │
+│          │   │           │                                                │
+│          │   │           └── SwiGLU MLP:                           │
+│          │   │               r = rmsnorm(x) × rms_2               │
+│          │   │               gate = SiLU(r · Wgate)                │
+│          │   │               up   = r · Wup                       │
+│          │   │               x = (gate ⊙ up) · Wdown + residual   │
 │          │   │                                                      │
-│          │   └── Final RMSNorm (learned rms_final) → logits = x · lm_head
+│          │   ├── Final RMSNorm: x = rmsnorm(x) × rms_final        │
+│          │   └── logits = x · lm_head                              │
 │          │                                                          │
 │          ├── softmax(logits) → probs                               │
 │          ├── cross_entropy = -log(probs[target])                   │
@@ -176,8 +178,12 @@ POST /v1/inference/sample  {model_id, version, temperature, num_samples}
 |----------|---------------|
 | **Determinism** | `random.seed(42)` at train start; model init uses fixed std |
 | **Zero deps** | Core engine imports only `random` and `math` |
+| **RoPE** | Rotary Position Encoding via precomputed cos/sin tables — applied per-head, half-split (rotate_half) convention, replaces learned `wpe` |
+| **SwiGLU** | SiLU-gated gated MLP — `(SiLU(x·Wgate) ⊙ x·Wup)·Wdown` — replaces ReLU `fc1`/`fc2` |
+| **Learned RMSNorm** | Per-layer `rms_1`/`rms_2` + final `rms_final` scale vectors, initialized to 1.0, applied elementwise after RMSNorm computation |
+| **No embedding norm** | Embedding-level RMSNorm removed — Llama architecture has no corresponding tensor; norm occurs only at pre-attn, pre-MLP, and pre-output positions |
 | **Character-level** | No BPE/WordPiece — sorted unique chars + BOS sentinel |
-| **KV cache** | Per-layer lists appended each forward step (no recompute) |
+| **KV cache** | Per-layer lists appended each forward step (no recompute). Keys are rotated by RoPE BEFORE caching (one rotation per position — never double-rotated). Values are not rotated |
 | **Autograd** | Reverse-mode AD via Value graph (micrograd pattern) |
 | **AdamW** | Full Adam with bias correction + linear LR decay |
 | **No batching** | Processes one token position at a time (educational simplicity) |

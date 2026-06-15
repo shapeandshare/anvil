@@ -1,3 +1,13 @@
+---
+title: Session — Llama Engine Evolution & Safetensors Export
+type: session
+tags:
+  - type/session
+  - domain/core
+  - status/complete
+created: '2026-06-14T00:00:00.000Z'
+updated: '2026-06-14T00:00:00.000Z'
+---
 # Session: Llama Engine Evolution
 
 **Date**: 2026-06-14
