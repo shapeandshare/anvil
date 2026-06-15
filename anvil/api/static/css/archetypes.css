@@ -1,5 +1,6 @@
 /* ── Training Dashboard (iOS Grouped Sections) ── */
 .training-dashboard { display: flex; flex-direction: column; gap: var(--space-4); }
+.training-dashboard .section-card { margin-bottom: 0; }
 .training-data-source, .training-config, .training-chart,
 .training-metrics, .training-samples, .training-output { display: block; }
 .panel { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: var(--space-6); }
@@ -248,6 +249,7 @@
   font-size: 3.5rem;
   line-height: 1;
   margin-bottom: var(--space-1);
+  color: var(--accent-orange);
   filter: drop-shadow(0 0 12px color-mix(in srgb, var(--accent-orange) 40%, transparent));
   animation: forge-icon-bob 4s ease-in-out infinite;
   transition: transform var(--dur-slow) var(--spring-slow);
@@ -404,19 +406,22 @@
   box-shadow: var(--shadow-sm);
   text-decoration: none;
   transition: box-shadow var(--dur-fast) var(--ease), transform var(--dur-fast) var(--spring-quick), filter var(--dur-fast) var(--ease);
-  opacity: 0;
-  animation: card-entrance 0.6s var(--spring-quick) calc(0.4s + var(--i, 0) * 0.08s) both;
-}
-
-@keyframes card-entrance {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
 }
 
 .hero-card:hover {
+  opacity: 1;
   box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+  animation: card-bounce 1s ease-in-out infinite;
   text-decoration: none;
+}
+
+@keyframes card-bounce {
+  0%, 100% {
+    transform: scale(1.05) translateY(0);
+  }
+  50% {
+    transform: scale(1.05) translateY(-5px);
+  }
 }
 
 .hero-card:active {
@@ -427,11 +432,6 @@
   font-size: 1.5rem;
   line-height: 1;
   margin-bottom: var(--space-1);
-  transition: transform var(--dur-slow) var(--spring-slow);
-}
-
-.hero-card:hover .hero-card-icon {
-  transform: scale(1.15);
 }
 
 .hero-card-title {
@@ -496,14 +496,10 @@
   .hero-subtitle,
   .hero-actions,
   .hero-card {
-    animation: none !important;
-    opacity: 1 !important;
-    transform: none !important;
-  }
-  .hero-card {
     opacity: 1;
   }
   .hero-card:hover {
+    animation: none !important;
     transform: none;
   }
 }
@@ -526,8 +522,14 @@
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
   padding: var(--space-5) var(--space-4);
+  margin-bottom: var(--space-1);
   opacity: 0;
   animation: card-entrance 0.5s var(--spring-quick) calc(0.15s + var(--stagger-i, 0) * 0.08s) both;
+}
+
+@keyframes card-entrance {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .section-card--forge {
@@ -542,7 +544,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin-bottom: var(--space-3);
+margin-bottom: var(--space-2);
   padding-bottom: var(--space-2);
   border-bottom: 1px solid var(--separator);
 }
