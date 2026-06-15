@@ -17,3 +17,4 @@ updated: 2026-06-10
 | 2026-06-13 | ADR-005 | Source-keyed model registry consolidation | Accepted |
 | 2026-06-13 | ADR-006 | iOS Design Overhaul | Accepted |
 | 2026-06-14 | ADR-007 | Llama Engine Evolution | Accepted |
+| 2026-06-14 | ADR-008 | Automated Semantic Versioning & Release | Accepted |
