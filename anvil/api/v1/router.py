@@ -1003,11 +1003,22 @@ async def models_page(request: Request):
 
 
 @router.get("/model-detail/{model_id}", response_class=HTMLResponse)
-async def model_detail_page(request: Request, model_id: int):
+async def model_detail_page(request: Request, model_id: str):
+    try:
+        parsed = int(model_id)
+        if parsed <= 0:
+            raise ValueError
+    except (ValueError, TypeError):
+        return request.app.state.templates.TemplateResponse(
+            request,
+            "archetypes/model_detail.html",
+            {"model_id": 0, "error": f"Invalid model ID: {model_id}"},
+            status_code=404,
+        )
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/model_detail.html",
-        {"model_id": model_id},
+        {"model_id": parsed},
     )
 
 

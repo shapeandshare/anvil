@@ -6,7 +6,11 @@
   <div class="section-card__header"><h2 class="section-card__title">Model Detail <span class="text-muted">#{{ model_id }}</span></h2></div>
   <p class="page-intro" style="padding:0 var(--space-4) var(--space-3);">Inspect a registered model's architecture, version history, and download artifacts. Each version captures everything needed to reproduce or use the model.</p>
   <div id="model-detail" class="section-card__content">
+    {% if error %}
+    <div class="error-text">{{ error }}</div>
+    {% else %}
     <div class="loading-indicator" style="display:block;">Loading model...</div>
+    {% endif %}
   </div>
 </div>
 
@@ -33,6 +37,7 @@
 
 {% endblock %}
 {% block scripts %}
+{% if not error %}
 <script>
 (function() {
   'use strict';
@@ -137,4 +142,5 @@
   loadModelDetail();
 })();
 </script>
+{% endif %}
 {% endblock %}
