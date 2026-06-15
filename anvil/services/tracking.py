@@ -202,6 +202,8 @@ class TrackingService:
         safetensors_path: str | None = None,
         config_path: str | None = None,
         tokenizer_path: str | None = None,
+        mlmodel_path: str | None = None,
+        conda_path: str | None = None,
         samples: str | None = None,
         vocab: Any = None,
     ) -> None:
@@ -229,6 +231,16 @@ class TrackingService:
                     await loop.run_in_executor(
                         None,
                         lambda: client.log_artifact(run_id, tokenizer_path),
+                    )
+                if mlmodel_path:
+                    await loop.run_in_executor(
+                        None,
+                        lambda: client.log_artifact(run_id, mlmodel_path),
+                    )
+                if conda_path:
+                    await loop.run_in_executor(
+                        None,
+                        lambda: client.log_artifact(run_id, conda_path),
                     )
         except Exception:
             pass
@@ -495,7 +507,7 @@ class TrackingService:
         name: str | None = None,
         dataset_id: int | None = None,
         corpus_id: int | None = None,
-        artifact_path: str = "model.json",
+        artifact_path: str = "",
     ) -> dict:
         if self._degraded or not run_id:
             return {}
