@@ -127,7 +127,4 @@
   .nav-bar {
     background: var(--surface) !important;
   }
-  .nav-bar::before {
-    display: none !important;
-  }
 }
