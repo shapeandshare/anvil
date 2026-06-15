@@ -5,7 +5,7 @@ import math
 import pytest
 
 from anvil.core.autograd import Value
-from anvil.core.engine import GPT, apply_rope, precompute_rope, train
+from anvil.core.engine import LlamaModel, apply_rope, precompute_rope, train
 from anvil.core.tokenizer import Tokenizer
 
 
@@ -36,7 +36,7 @@ def test_tokenizer_roundtrip():
 
 
 def test_gpt_param_count():
-    model = GPT(vocab_size=27, n_embd=16, n_head=4, n_layer=1, block_size=16)
+    model = LlamaModel(vocab_size=27, n_embd=16, n_head=4, n_layer=1, block_size=16)
     # Llama architecture: wte(27*16) + lm_head(27*16) + attn_wq(16*16) + attn_wk(16*16)
     #   + attn_wv(16*16) + attn_wo(16*16) + mlp_gate(42*16) + mlp_up(42*16)
     #   + mlp_down(16*42) + rms_1(16) + rms_2(16) + rms_final(16)
@@ -128,7 +128,7 @@ def test_rope_half_split_pairing():
 
 def test_swiglu_param_count():
     """T014: SwiGLU MLP has ~8/3*n_embd^2 * 3 params (gate, up, down)."""
-    model = GPT(vocab_size=27, n_embd=16, n_head=4, n_layer=1, block_size=16)
+    model = LlamaModel(vocab_size=27, n_embd=16, n_head=4, n_layer=1, block_size=16)
     intermediate = int(8 * 16 / 3)
     # mlp_gate: intermediate * n_embd, mlp_up: intermediate * n_embd,
     # mlp_down: n_embd * intermediate
@@ -145,7 +145,7 @@ def test_swiglu_param_count():
 
 def test_swiglu_forward():
     """T014: SwiGLU forward produces valid output with gradient flow."""
-    model = GPT(vocab_size=27, n_embd=16, n_head=4, n_layer=1, block_size=16)
+    model = LlamaModel(vocab_size=27, n_embd=16, n_head=4, n_layer=1, block_size=16)
     keys = [[] for _ in range(model.n_layer)]
     values = [[] for _ in range(model.n_layer)]
     logits = model.forward(5, 0, keys, values)
@@ -164,7 +164,7 @@ def test_swiglu_forward():
 
 def test_rmsnorm_scale_initialization():
     """T019: RMSNorm scales initialize to 1.0."""
-    model = GPT(vocab_size=27, n_embd=16, n_head=4, n_layer=2, block_size=16)
+    model = LlamaModel(vocab_size=27, n_embd=16, n_head=4, n_layer=2, block_size=16)
     # Check rms_1, rms_2 for each layer, and rms_final
     for li in range(model.n_layer):
         for name in ["rms_1", "rms_2"]:
@@ -177,7 +177,7 @@ def test_rmsnorm_scale_initialization():
 
 def test_rmsnorm_gradient_flows_through_scales():
     """T019: Gradient flows through RMSNorm scale parameters."""
-    model = GPT(vocab_size=27, n_embd=16, n_head=4, n_layer=1, block_size=16)
+    model = LlamaModel(vocab_size=27, n_embd=16, n_head=4, n_layer=1, block_size=16)
     keys = [[] for _ in range(model.n_layer)]
     values = [[] for _ in range(model.n_layer)]
     logits = model.forward(5, 0, keys, values)
@@ -196,10 +196,10 @@ def test_rmsnorm_gradient_flows_through_scales():
 
 def test_save_load_roundtrip(tmp_path):
     """T022: Save and load a model, verify parameter values match."""
-    model = GPT(vocab_size=27, n_embd=16, n_head=4, n_layer=1, block_size=16)
+    model = LlamaModel(vocab_size=27, n_embd=16, n_head=4, n_layer=1, block_size=16)
     save_path = str(tmp_path / "test_model.json")
     model.save(save_path)
-    loaded = GPT.load(save_path)
+    loaded = LlamaModel.load(save_path)
     # Check all state dict values match
     for key in model.state_dict:
         orig = model.state_dict[key]
@@ -224,7 +224,7 @@ def test_load_old_format_raises_error(tmp_path):
     """T022: Loading old GPT-2 format raises ValueError."""
     import json
 
-    model = GPT(vocab_size=27, n_embd=16, n_head=4, n_layer=1, block_size=16)
+    model = LlamaModel(vocab_size=27, n_embd=16, n_head=4, n_layer=1, block_size=16)
     old_path = str(tmp_path / "old_model.json")
     # Create old-format state dict with wpe
     old_state = {}
@@ -246,12 +246,12 @@ def test_load_old_format_raises_error(tmp_path):
         json.dump(old_data, f)
 
     with pytest.raises(ValueError, match="Old GPT-2 format detected"):
-        GPT.load(old_path)
+        LlamaModel.load(old_path)
 
 
 def test_head_dim_even_passes():
     """T023b: Even head_dim passes validation."""
-    model = GPT(vocab_size=27, n_embd=16, n_head=4, block_size=16)
+    model = LlamaModel(vocab_size=27, n_embd=16, n_head=4, block_size=16)
     assert model.head_dim == 4
     assert model.head_dim % 2 == 0
 
@@ -259,7 +259,7 @@ def test_head_dim_even_passes():
 def test_head_dim_odd_raises():
     """T023b: Odd head_dim raises ValueError."""
     with pytest.raises(ValueError, match="head_dim=5 must be even"):
-        GPT(vocab_size=27, n_embd=30, n_head=6, block_size=16)
+        LlamaModel(vocab_size=27, n_embd=30, n_head=6, block_size=16)
 
 
 # --- Edge-case tests (T054) ---
@@ -267,7 +267,7 @@ def test_head_dim_odd_raises():
 
 def test_n_layer_zero():
     """T054: n_layer=0 produces a valid model (embedding -> final RMSNorm -> lm_head)."""
-    model = GPT(vocab_size=27, n_embd=16, n_head=4, n_layer=0, block_size=16)
+    model = LlamaModel(vocab_size=27, n_embd=16, n_head=4, n_layer=0, block_size=16)
     # State dict should have no layer keys
     for key in model.state_dict:
         assert not key.startswith("layer"), f"Unexpected layer key: {key}"
@@ -290,7 +290,7 @@ def test_n_layer_zero():
 
 def test_tiny_dimensions():
     """T054: n_embd=4, n_head=2 (head_dim=2, even -- valid)."""
-    model = GPT(vocab_size=27, n_embd=4, n_head=2, block_size=16)
+    model = LlamaModel(vocab_size=27, n_embd=4, n_head=2, block_size=16)
     assert model.head_dim == 2
     assert model.head_dim % 2 == 0
     # Forward pass should work
@@ -303,7 +303,7 @@ def test_tiny_dimensions():
 def test_odd_head_dim_n_embd_6_n_head_2():
     """T054: n_embd=6, n_head=2 -> head_dim=3 (odd) should be rejected."""
     with pytest.raises(ValueError, match="head_dim=3 must be even"):
-        GPT(vocab_size=27, n_embd=6, n_head=2, block_size=16)
+        LlamaModel(vocab_size=27, n_embd=6, n_head=2, block_size=16)
 
 
 def test_train_tiny_config():
@@ -317,9 +317,9 @@ def test_train_tiny_config():
 
 def test_llama_state_dict_keys():
     """T054: State dict keys match expected Llama keys (no wpe, no fc1/fc2; has mlp_gate, rms_*)."""
-    model = GPT(vocab_size=27, n_embd=16, n_head=4, n_layer=2, block_size=16)
+    model = LlamaModel(vocab_size=27, n_embd=16, n_head=4, n_layer=2, block_size=16)
     keys = set(model.state_dict.keys())
-    # Llama architecture should NOT have GPT-2 keys
+    # Llama architecture should NOT have GPT-2 keys (wpe, fc1, fc2)
     assert "wpe" not in keys
     assert not any("fc1" in k for k in keys)
     assert not any("fc2" in k for k in keys)

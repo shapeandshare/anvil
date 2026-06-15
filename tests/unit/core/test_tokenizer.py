@@ -2,7 +2,7 @@
 
 import tempfile
 
-from anvil.core.engine import GPT, train
+from anvil.core.engine import LlamaModel, train
 from anvil.core.tokenizer import Tokenizer, Vocabulary
 
 
@@ -58,7 +58,7 @@ def test_vocabulary_from_trained_model():
     with tempfile.NamedTemporaryFile(suffix=".json") as f:
         model.save(f.name, uchars)
 
-        loaded = GPT.load(f.name)
+        loaded = LlamaModel.load(f.name)
         loaded_vocab = Vocabulary.from_chars(loaded.chars)
 
         tok = Tokenizer(docs)

@@ -89,7 +89,6 @@ async def test_mark_finished(repo: ExperimentRepository):
     finished = await repo.mark_finished(
         experiment_id=exp.id,
         final_loss=0.123,
-        generated_samples="sample1\nsample2",
         completed_at=now,
     )
     assert finished.status == "finished"
@@ -122,7 +121,7 @@ async def test_find_orphaned(repo: ExperimentRepository):
     )
     now = datetime.now(UTC)
     await repo.mark_finished(
-        finished.id, final_loss=0.5, generated_samples="", completed_at=now
+        finished.id, final_loss=0.5, completed_at=now
     )
 
     orphans = await repo.find_orphaned()

@@ -226,7 +226,6 @@ async def start_training(config: dict):
             await repo.mark_finished(
                 experiment_id=experiment_id,
                 final_loss=final_loss,
-                generated_samples=json.dumps(samples),
                 completed_at=datetime.now(UTC),
             )
 

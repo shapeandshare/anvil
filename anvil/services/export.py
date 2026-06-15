@@ -9,7 +9,7 @@ from typing import Any
 import numpy as np
 from safetensors.numpy import save_file
 
-from anvil.core.engine import GPT
+from anvil.core.engine import LlamaModel
 
 
 # ── Name mapping: anvil internal keys → HF LlamaForCausalLM keys ──
@@ -31,7 +31,7 @@ ANVIL_TO_HF: dict[str, str] = {
 # layer{i}.rms_2 → model.layers.{i}.post_attention_layernorm.weight
 
 
-def export_state_dict(model: GPT) -> dict[str, list]:
+def export_state_dict(model: LlamaModel) -> dict[str, list]:
     """Map anvil internal state dict to HF-compatible tensor names.
 
     Returns dict mapping HF-convention tensor names to raw value lists.
@@ -76,8 +76,8 @@ def export_state_dict(model: GPT) -> dict[str, list]:
     return hf_sd
 
 
-def generate_config(model: GPT) -> dict[str, Any]:
-    """Generate LlamaConfig-compatible JSON dict from GPT hyperparameters."""
+def generate_config(model: LlamaModel) -> dict[str, Any]:
+    """Generate LlamaConfig-compatible JSON dict from LlamaModel hyperparameters."""
     return {
         "model_type": "llama",
         "vocab_size": model.vocab_size,
@@ -121,9 +121,9 @@ class SafetensorsExportError(Exception):
 
 
 class SafetensorsExportService:
-    """Converts a trained GPT model to safetensors checkpoint artifacts."""
+    """Converts a trained Llama model to safetensors checkpoint artifacts."""
 
-    def export(self, model: GPT, output_dir: str | Path, chars: list[str]) -> dict[str, str | None]:
+    def export(self, model: LlamaModel, output_dir: str | Path, chars: list[str]) -> dict[str, str | None]:
         """Run full export: safetensors + config + tokenizer.
 
         Returns dict with keys: safetensors_path, config_path, tokenizer_path, error
@@ -178,7 +178,7 @@ class SafetensorsExportService:
         """Retry safetensors export from an existing model.json file."""
         output_dir = Path(output_dir)
         try:
-            model = GPT.load(model_path)
+            model = LlamaModel.load(model_path)
             chars = model.chars or []
             return self.export(model, output_dir, chars)
         except Exception as e:

@@ -26,10 +26,10 @@ def torch_available() -> bool:
     return _TORCH_AVAILABLE
 
 
-class TorchGPT:
-    """GPT architecture built with torch.nn parameters.
+class TorchLlamaModel:
+    """Llama architecture built with torch.nn parameters.
 
-    Mirrors the architecture of ``anvil.core.engine.GPT`` but uses
+    Mirrors the architecture of ``anvil.core.engine.LlamaModel`` but uses
     torch tensors and autograd for GPU-accelerated training.
     Only usable when torch is installed (check ``torch_available()``).
     """
@@ -285,7 +285,7 @@ def train_torch(
     BOS = len(uchars)
     vocab_size = len(uchars) + 1
 
-    model = TorchGPT(vocab_size, n_embd, n_head, n_layer, block_size)
+    model = TorchLlamaModel(vocab_size, n_embd, n_head, n_layer, block_size)
     model.to(device_obj)
 
     optim = torch.optim.Adam(

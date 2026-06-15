@@ -20,7 +20,7 @@ from anvil.api.v1.experiments import router as experiments_router
 from anvil.api.v1.inference import router as inference_router
 from anvil.api.v1.registry import router as registry_router
 from anvil.api.v1.training import router as training_router
-from anvil.core.engine import GPT, softmax
+from anvil.core.engine import LlamaModel, softmax
 from anvil.gpu import detect_gpu
 
 router = APIRouter()
@@ -399,9 +399,10 @@ EMBEDDING_STEPS = [
         "body": (
             "The same character at different positions needs different representations. "
             "The letter 'e' at position 0 and position 5 mean different things. "
-            "The model adds a position embedding (WPE) to each token embedding. "
-            "WPE has one row per position up to block_size (16). "
-            "The widget shows the final combined embedding after both are summed."
+            "Rather than adding a learned position embedding, this model uses RoPE "
+            "(Rotary Position Embedding): it rotates the Query and Key vectors by an "
+            "angle that depends on the token's position. Position information is encoded "
+            "in the direction of these vectors, not added to the token embedding."
         ),
         "widget": "embedding",
     },
@@ -433,8 +434,9 @@ EMBEDDING_STEPS = [
         "body": (
             "Try typing different words and phrases. "
             "Notice how the cloud of points shifts as each character gets its own "
-            "token embedding plus a position offset. "
-            "These combined embeddings are what flow into the attention mechanism next."
+            "token embedding. Position is encoded via RoPE inside the attention "
+            "mechanism, not added to the embedding itself — the widget shows the "
+            "pure token embeddings before attention applies position-dependent rotation."
         ),
         "widget": "embedding",
     },
@@ -458,6 +460,8 @@ ATTENTION_STEPS = [
         "body": (
             "At each position, the model computes three vectors: Query (what am I looking for), "
             "Key (what do I contain), and Value (what info do I carry). "
+            "Position is encoded via RoPE: the Query and Key vectors are rotated by an "
+            "angle proportional to their position before the dot product. "
             "It takes the dot product of the current token's Query with every earlier token's Key. "
             "Those scores go through softmax to become attention weights (0 to 1, summing to 1)."
         ),
@@ -728,13 +732,14 @@ PARAMS_STEPS = [
         "widget": "params",
     },
     {
-        "key": "position-embeddings",
-        "title": "Position Embeddings (WPE)",
+        "key": "rope-position",
+        "title": "RoPE (Position Encoding)",
         "body": (
-            "WPE (Weight Position Embedding) is a matrix of shape block_size x n_embd. "
-            "Each of the 16 possible positions gets its own 16-dimensional vector. "
-            "WPE lets the model distinguish 'a' at position 0 from 'a' at position 5. "
-            "The widget shows WPE alongside WTE to highlight the additive structure."
+            "This model uses Rotary Position Embedding (RoPE) instead of learned "
+            "position embeddings. Precomputed cos and sin tables rotate the Query "
+            "and Key vectors by an angle proportional to position. There are no "
+            "learned position parameters — position encoding is baked into the "
+            "attention computation itself via a rotation matrix."
         ),
         "widget": "params",
     },
@@ -753,10 +758,11 @@ PARAMS_STEPS = [
         "key": "mlp-and-output",
         "title": "MLP and Output Head",
         "body": (
-            "After attention, a small MLP projects through fc1 (16 x 64) and fc2 (64 x 16). "
-            "The lm_head (16 x 27) produces logits over the vocabulary. "
-            "In this model, WTE and lm_head are the same tensor (tied embeddings). "
-            "Total: 4,192 parameters. The widget sums them up and verifies the count."
+            "After attention, a SwiGLU MLP projects through gate, up, and down "
+            "matrices. The gate (16 x ~42) is activated by SiLU then multiplied "
+            "element-wise with up (16 x ~42). The result projects through down "
+            "(~42 x 16). The lm_head (16 x 27) produces logits over the vocabulary. "
+            "Total: the widget sums all parameters and verifies the count."
         ),
         "widget": "params",
     },
@@ -1061,7 +1067,7 @@ async def inference_sample(body: dict):
     if not model_path.exists():
         raise HTTPException(status_code=404, detail="Model artifact not found")
 
-    model = GPT.load(str(model_path))
+    model = LlamaModel.load(str(model_path))
     chars = model.chars
     if not chars:
         raise HTTPException(status_code=400, detail="Model has no character mapping")

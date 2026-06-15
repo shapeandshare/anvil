@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from anvil.core.engine import GPT
+from anvil.core.engine import LlamaModel
 from anvil.services.export import (
     SafetensorsExportService,
     export_state_dict,
@@ -17,7 +17,7 @@ from anvil.services.export import (
 
 class TestExportStateDict:
     def test_maps_all_keys(self):
-        model = GPT(vocab_size=10, n_embd=8, n_head=2, n_layer=1, block_size=8)
+        model = LlamaModel(vocab_size=10, n_embd=8, n_head=2, n_layer=1, block_size=8)
         hf_sd = export_state_dict(model)
 
         # Should contain all expected HF keys
@@ -35,13 +35,13 @@ class TestExportStateDict:
         assert "model.layers.0.post_attention_layernorm.weight" in hf_sd
 
     def test_no_bias_keys(self):
-        model = GPT(vocab_size=10, n_embd=8, n_head=2)
+        model = LlamaModel(vocab_size=10, n_embd=8, n_head=2)
         hf_sd = export_state_dict(model)
         bias_keys = [k for k in hf_sd if "bias" in k]
         assert len(bias_keys) == 0, f"Found unexpected bias keys: {bias_keys}"
 
     def test_no_synthetic_keys(self):
-        model = GPT(vocab_size=10, n_embd=8, n_head=2)
+        model = LlamaModel(vocab_size=10, n_embd=8, n_head=2)
         hf_sd = export_state_dict(model)
         # Every tensor must correspond to a trained parameter in the model state dict
         internal_keys = set(model.state_dict.keys())
@@ -49,7 +49,7 @@ class TestExportStateDict:
         assert len(hf_sd) == len(internal_keys)
 
     def test_rms_weights_are_1d(self):
-        model = GPT(vocab_size=10, n_embd=8, n_head=2, n_layer=2)
+        model = LlamaModel(vocab_size=10, n_embd=8, n_head=2, n_layer=2)
         hf_sd = export_state_dict(model)
         # RMS weights should be 1D lists
         assert isinstance(hf_sd["model.norm.weight"], list)
@@ -58,7 +58,7 @@ class TestExportStateDict:
 
     def test_values_are_floats(self):
         """Verify exported values are plain floats, not Value objects."""
-        model = GPT(vocab_size=5, n_embd=4, n_head=2, n_layer=1)
+        model = LlamaModel(vocab_size=5, n_embd=4, n_head=2, n_layer=1)
         hf_sd = export_state_dict(model)
         # Check a 2D tensor
         embed_row = hf_sd["model.embed_tokens.weight"][0]
@@ -70,7 +70,7 @@ class TestExportStateDict:
 
 class TestGenerateConfig:
     def test_contains_all_required_fields(self):
-        model = GPT(vocab_size=27, n_embd=16, n_head=4, n_layer=2, block_size=32)
+        model = LlamaModel(vocab_size=27, n_embd=16, n_head=4, n_layer=2, block_size=32)
         config = generate_config(model)
         assert config["model_type"] == "llama"
         assert config["vocab_size"] == 27
@@ -87,18 +87,18 @@ class TestGenerateConfig:
         assert config["mlp_bias"] is False
 
     def test_head_dim_computed(self):
-        model = GPT(vocab_size=10, n_embd=16, n_head=4)
+        model = LlamaModel(vocab_size=10, n_embd=16, n_head=4)
         config = generate_config(model)
         assert config["head_dim"] == 4  # 16 / 4
 
     def test_num_kv_heads_equals_n_head(self):
         """MHA (not GQA) — kv heads equal query heads."""
-        model = GPT(vocab_size=10, n_embd=32, n_head=8)
+        model = LlamaModel(vocab_size=10, n_embd=32, n_head=8)
         config = generate_config(model)
         assert config["num_key_value_heads"] == config["num_attention_heads"]
 
     def test_tie_word_embeddings_false(self):
-        model = GPT(vocab_size=10, n_embd=8, n_head=2)
+        model = LlamaModel(vocab_size=10, n_embd=8, n_head=2)
         config = generate_config(model)
         assert config["tie_word_embeddings"] is False
 
@@ -128,7 +128,7 @@ class TestGenerateTokenizer:
 
 class TestSafetensorsExportService:
     def test_export_produces_files(self):
-        model = GPT(vocab_size=10, n_embd=8, n_head=2, n_layer=1)
+        model = LlamaModel(vocab_size=10, n_embd=8, n_head=2, n_layer=1)
         chars = ["a", "b"]
         svc = SafetensorsExportService()
 
@@ -151,7 +151,7 @@ class TestSafetensorsExportService:
 
     def test_export_no_synthetic_tensors(self):
         """FR-009: every tensor maps to a trained parameter."""
-        model = GPT(vocab_size=10, n_embd=8, n_head=2)
+        model = LlamaModel(vocab_size=10, n_embd=8, n_head=2)
         chars = []
         svc = SafetensorsExportService()
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -160,7 +160,7 @@ class TestSafetensorsExportService:
 
     def test_retry_export_from_json(self):
         """Retry export from an existing model.json file."""
-        model = GPT(vocab_size=10, n_embd=8, n_head=2, n_layer=1)
+        model = LlamaModel(vocab_size=10, n_embd=8, n_head=2, n_layer=1)
         chars = ["x", "y"]
         svc = SafetensorsExportService()
 
@@ -174,7 +174,7 @@ class TestSafetensorsExportService:
 
     def test_export_with_trained_model_values(self):
         """Verify export works with a model that has non-default parameter values."""
-        model = GPT(vocab_size=10, n_embd=8, n_head=2, n_layer=1)
+        model = LlamaModel(vocab_size=10, n_embd=8, n_head=2, n_layer=1)
         # Modify some weights to ensure they're exported correctly
         model.state_dict["wte"][0][0].data = 0.42
         model.state_dict["rms_final"][0].data = 0.99
@@ -188,7 +188,7 @@ class TestSafetensorsExportService:
 
     def test_export_output_dir_created(self):
         """Output directory is created if it doesn't exist."""
-        model = GPT(vocab_size=5, n_embd=4, n_head=2, n_layer=1)
+        model = LlamaModel(vocab_size=5, n_embd=4, n_head=2, n_layer=1)
         svc = SafetensorsExportService()
 
         with tempfile.TemporaryDirectory() as tmpdir:

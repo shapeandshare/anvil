@@ -90,7 +90,7 @@ def serve():
 
 
 def train():
-    parser = argparse.ArgumentParser(description="Train GPT model")
+    parser = argparse.ArgumentParser(description="Train Llama model")
     parser.add_argument(
         "--corpus",
         type=int,

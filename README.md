@@ -1,6 +1,6 @@
 <p align="center">
   <svg viewBox="0 0 240 160" width="120" height="80" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <path d="M 10,66 C 23,46 30,14 46,14 L 200,14 C 218,14 224,14 224,44 C 224,68 178,92 158,98 L 158,124 C 158,128 168,130 216,130 L 216,155 L 24,155 L 24,130 C 72,130 82,128 82,124 L 82,98 C 60,90 24,78 20,74 C 14,70 10,68 10,66 Z" fill="currentColor" opacity="0.9"/>
+    <path d="M 192,62 C 202,59 213,51 224,40 C 213,29 203,23 192,21 L 192,5 L 60,5 L 60,17 L 15,17 C 23,38 41,53 60,58 L 60,77 L 94,77 C 88,98 76,115 60,129 L 47,129 L 47,141 L 47,156 L 212,156 L 212,129 L 194,129 C 177,115 165,98 159,77 L 192,77 Z" fill="currentColor" opacity="0.9"/>
   </svg>
 </p>
 
@@ -8,7 +8,7 @@
 
 <p align="center"><strong>Forging intelligence.</strong></p>
 
-<p align="center">Train and experiment with LLMs from scratch — a pip-installable workbench built on Karpathy's microgpt.py with live training dashboards, MLflow experiment tracking, and an iOS-modern web UI.</p>
+<p align="center">Train and experiment with LLMs from scratch — a pip-installable workbench with live training dashboards, MLflow experiment tracking, and an iOS-modern web UI.</p>
 
 <p align="center">
   <a href="#quick-start"><kbd>Quick Start</kbd></a>&nbsp;&nbsp;
@@ -43,10 +43,10 @@ Open `http://<your-ip>:8080` from any device on your LAN.
 
 | | | |
 |---|---|---|
-| 🧠 **Train GPT from scratch** | 📊 **Experiment tracking** | 📁 **Dataset management** |
+| 🧠 **Train from scratch** | 📊 **Experiment tracking** | 📁 **Dataset management** |
 | Configure hyperparameters, watch loss in real-time via SSE | MLflow-backed, compare loss curves side-by-side | Upload custom `.txt` datasets, train on anything |
 | 🔧 **Operations dashboard** | ✨ **iOS-modern UI** | 📖 **Progressive walkthroughs** |
-| Manage services (web, MLflow), tail logs, health checks | Glass nav bar, spring animations, dark/light mode | 6 scripts from bigrams to full GPT, interactive widgets |
+| Manage services (web, MLflow), tail logs, health checks | Glass nav bar, spring animations, dark/light mode | 6 scripts from bigrams to full transformer, interactive widgets |
 
 <br>
 
@@ -145,4 +145,4 @@ MIT
 
 ---
 
-<p align="center"><sub>Built with Swift-like care for the craft of learning.</sub></p>
+

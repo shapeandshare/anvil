@@ -1,6 +1,6 @@
 # Testing Guide — anvil
 
-**Last updated**: 2026-06-11
+**Last updated**: 2026-06-14
 
 ## Quick Start
 
@@ -22,7 +22,7 @@ Tests for individual components in isolation. Currently covers:
 
 | Test file | What it tests | How to run |
 |-----------|---------------|------------|
-| `tests/unit/core/test_engine.py` | Autograd (Value backward + operations), Tokenizer (encode/decode roundtrip), GPT param count, training loop (loss decreases) | `pytest tests/unit/ -v` |
+| `tests/unit/core/test_engine.py` | Autograd (Value backward + operations), Tokenizer (encode/decode roundtrip), LlamaModel param count, training loop (loss decreases) | `pytest tests/unit/ -v` |
 
 **To add new unit tests:**
 1. Create `tests/unit/<module>/test_<name>.py`
@@ -71,7 +71,7 @@ curl http://localhost:8080/v1/experiments
 
 ## Testing the Core Engine
 
-The GPT training engine at `anvil/core/` is the heart of the project. Here's how to test it manually:
+The LlamaModel training engine at `anvil/core/` is the heart of the project. Here's how to test it manually:
 
 ### Autograd (Value class)
 
@@ -88,11 +88,11 @@ print(a.grad)  # Should be 4.0 (dL/da = b + 1 = 3 + 1)
 print(b.grad)  # Should be 2.0 (dL/db = a = 2)
 ```
 
-### GPT forward pass
+### LlamaModel forward pass
 
 ```python
-from anvil.core.engine import GPT
-model = GPT(vocab_size=27, n_embd=16, n_head=4, n_layer=1, block_size=16)
+from anvil.core.engine import LlamaModel
+model = LlamaModel(vocab_size=27, n_embd=16, n_head=4, n_layer=1, block_size=16)
 print(f"Parameters: {model.num_params()}")  # Should be 4192
 ```
 
@@ -115,7 +115,7 @@ python examples/train1.py   # MLP stub
 python examples/train2.py   # Autograd verification
 python examples/train3.py   # Attention stub
 python examples/train4.py   # Multi-head stub (delegates to anvil core)
-python examples/train5.py   # Full GPT training (delegates to anvil core)
+python examples/train5.py   # Full Llama training (delegates to anvil core)
 ```
 
 ---

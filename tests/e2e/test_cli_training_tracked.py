@@ -7,7 +7,7 @@ import argparse
 
 
 def test_cli_train_accepts_dataset_arg():
-    parser = argparse.ArgumentParser(description="Train GPT model")
+    parser = argparse.ArgumentParser(description="Train Llama model")
     parser.add_argument("--dataset", type=int, default=None)
     parser.add_argument("--corpus", type=int, default=None)
     parser.add_argument("--gpu", action="store_true")
@@ -17,7 +17,7 @@ def test_cli_train_accepts_dataset_arg():
 
 
 def test_cli_train_accepts_corpus_arg():
-    parser = argparse.ArgumentParser(description="Train GPT model")
+    parser = argparse.ArgumentParser(description="Train Llama model")
     parser.add_argument("--dataset", type=int, default=None)
     parser.add_argument("--corpus", type=int, default=None)
     parser.add_argument("--gpu", action="store_true")
@@ -27,7 +27,7 @@ def test_cli_train_accepts_corpus_arg():
 
 
 def test_cli_train_accepts_both_dataset_and_corpus():
-    parser = argparse.ArgumentParser(description="Train GPT model")
+    parser = argparse.ArgumentParser(description="Train Llama model")
     parser.add_argument("--dataset", type=int, default=None)
     parser.add_argument("--corpus", type=int, default=None)
     parser.add_argument("--gpu", action="store_true")
@@ -37,7 +37,7 @@ def test_cli_train_accepts_both_dataset_and_corpus():
 
 
 def test_cli_train_parses_gpu_flag():
-    parser = argparse.ArgumentParser(description="Train GPT model")
+    parser = argparse.ArgumentParser(description="Train Llama model")
     parser.add_argument("--dataset", type=int, default=None)
     parser.add_argument("--corpus", type=int, default=None)
     parser.add_argument("--gpu", action="store_true")

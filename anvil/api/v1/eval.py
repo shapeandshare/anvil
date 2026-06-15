@@ -5,7 +5,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 
-from anvil.core.engine import GPT, softmax
+from anvil.core.engine import LlamaModel, softmax
 
 router = APIRouter()
 
@@ -40,7 +40,7 @@ async def eval_perplexity(body: dict):
     if not model_path.exists():
         raise HTTPException(status_code=404, detail="Model artifact not found")
 
-    model = GPT.load(str(model_path))
+    model = LlamaModel.load(str(model_path))
     chars = model.chars
     if not chars:
         raise HTTPException(status_code=400, detail="Model has no character mapping")

@@ -1,4 +1,4 @@
-"""train5: Full Llama-aligned GPT using the engine's multi-layer GPT and Adam.
+"""train5: Full Llama architecture using the multi-layer LlamaModel and Adam.
 Demonstrates training loop via train() and safetensors export via
 SafetensorsExportService."""
 
@@ -8,7 +8,7 @@ import tempfile
 random.seed(42)
 
 from anvil.core.autograd import Value
-from anvil.core.engine import GPT, train, softmax
+from anvil.core.engine import LlamaModel, train, softmax
 from anvil.services.export import SafetensorsExportService
 
 # --- data ---
@@ -18,7 +18,7 @@ BOS = len(uchars)
 vocab_size = len(uchars) + 1
 
 # --- train with built-in Adam optimizer ---
-print("Training full Llama GPT (n_layer=2, n_embd=16, n_head=4)...")
+print("Training full Llama model (n_layer=2, n_embd=16, n_head=4)...")
 model, final_loss, samples, uchars = train(
     docs,
     num_steps=200,

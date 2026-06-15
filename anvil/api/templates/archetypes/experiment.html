@@ -139,7 +139,7 @@
       document.getElementById('detail-architecture').textContent = exp.architecture_type || '—';
       var mlflowEl = document.getElementById('detail-mlflow');
       if (exp.mlflow && exp.mlflow.run_url) {
-        mlflowEl.innerHTML = '<a href="' + exp.mlflow.run_url + '" target="_blank">open in MLflow →</a>';
+        mlflowEl.innerHTML = '<a href="' + exp.mlflow.run_url + '" target="_blank" class="btn btn-secondary btn-sm">open in MLflow →</a>';
       } else {
         mlflowEl.textContent = '—';
       }

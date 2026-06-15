@@ -145,7 +145,6 @@ async def test_reconcile_orphans_skips_finished_runs(
     await repo.mark_finished(
         experiment_id=exp_id,
         final_loss=0.5,
-        generated_samples="[]",
     )
     await session.commit()
 

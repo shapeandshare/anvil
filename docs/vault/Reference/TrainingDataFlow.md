@@ -3,7 +3,7 @@ title: Training Render Loop & Data Flow
 type: reference
 tags: [type/reference, domain/core]
 created: 2026-06-12
-updated: 2026-06-12
+updated: 2026-06-14
 aliases: [render-loop, data-flow, training-pipeline]
 ---
 
@@ -45,7 +45,7 @@ The training pipeline bridges three execution paradigms: async web → sync CPU-
 │  train(docs, num_steps, ...)                                        │
 │    │                                                                │
 │    ├── Tokenize: char-level, BOS sentinel                           │
-│    ├── Init GPT model (state_dict of Value matrices)                │
+│    ├── Init LlamaModel (state_dict of Value matrices)                │
 │    ├── Init AdamW buffers (m, v)                                    │
 │    │                                                                │
 │    └── STEP LOOP (for step in range(num_steps))                     │
@@ -56,27 +56,29 @@ The training pipeline bridges three execution paradigms: async web → sync CPU-
 │          │                                                          │
 │          ├── FORWARD PASS (autoregressive over block_size)          │
 │          │   │                                                      │
-│          │   ├── GPT.forward(token_id, pos_id, keys, values)       │
+│          │   ├── LlamaModel.forward(token_id, pos_id, keys, values)
 │          │   │     ├── token_emb = wte[token_id]                   │
-│          │   │     ├── pos_emb  = wpe[pos_id]                      │
-│          │   │     ├── x = tok_emb + pos_emb                       │
-│          │   │     ├── rmsnorm(x)                                  │
+│          │   │     │   (NO learned position embeddings — RoPE      │
+│          │   │     │    encodes position in Q/K per-head)          │
 │          │   │     │                                                │
 │          │   │     └── FOR each layer:                              │
-│          │   │           ├── Self-attention:                       │
-│          │   │           │   Q = x · Wq                            │
-│          │   │           │   K = x · Wk  → append to KV cache     │
-│          │   │           │   V = x · Wv  → append to KV cache     │
-│          │   │           │   FOR each head:                        │
+│          │   │           ├── Pre-attention RMSNorm (learned rms_1) │
+│          │   │           ├── Q = x · Wq, K = x · Wk, V = x · Wv  │
+│          │   │           ├── Apply RoPE (half-split rotate_half)   │
+│          │   │           │   to Q and K per head                   │
+│          │   │           ├── Append rotated K + V to KV cache      │
+│          │   │           ├── FOR each head:                        │
 │          │   │           │     attn = softmax(Q·Kᵀ / √d)          │
 │          │   │           │     out  = Σ attn·V                     │
-│          │   │           │   x = attn_out · Wo + residual          │
-│          │   │           │                                                │
-│          │   │           └── MLP:                                  │
-│          │   │               x = rmsnorm(x)                        │
-│          │   │               x = relu(x · Wfc1) · Wfc2 + residual  │
+│          │   │           ├── x = attn_out · Wo + residual          │
+│          │   │           │                                          │
+│          │   │           └── MLP (SwiGLU):                          │
+│          │   │               ├── Pre-MLP RMSNorm (learned rms_2)  │
+│          │   │               ├── gate = SiLU(x · Wgate)            │
+│          │   │               ├── up   = x · Wup                    │
+│          │   │               └── x = (gate * up) · Wdown + residual│
 │          │   │                                                      │
-│          │   └── logits = x · lm_head                              │
+│          │   └── Final RMSNorm (learned rms_final) → logits = x · lm_head
 │          │                                                          │
 │          ├── softmax(logits) → probs                               │
 │          ├── cross_entropy = -log(probs[target])                   │
@@ -152,12 +154,12 @@ POST /v1/inference/sample  {model_id, version, temperature, num_samples}
   │
   ├── DB lookup → get artifact_path from ModelRegistry
   ├── Load model.json from disk
-  ├── Reconstruct GPT with saved hyperparams + state_dict
+  ├── Reconstruct LlamaModel with saved hyperparams + state_dict
   │
   └── Autoregressive sampling (same as post-training loop)
         token = BOS
         for pos in range(block_size):
-          logits = GPT.forward(token, pos, keys, values)
+          logits = LlamaModel.forward(token, pos, keys, values)
           token = sample(softmax(logits / temperature))
           if token == BOS: break
 ```

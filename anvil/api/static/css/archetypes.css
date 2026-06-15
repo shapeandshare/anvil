@@ -172,7 +172,6 @@
   text-align: center;
   gap: var(--space-4);
   padding-top: var(--space-6);
-  overflow: hidden;
 }
 
 /* ── Forge Glow (behind icon) ── */
@@ -522,7 +521,7 @@
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
   padding: var(--space-5) var(--space-4);
-  margin-bottom: var(--space-1);
+  margin-bottom: var(--space-4);
   opacity: 0;
   animation: card-entrance 0.5s var(--spring-quick) calc(0.15s + var(--stagger-i, 0) * 0.08s) both;
 }
@@ -599,6 +598,65 @@ margin-bottom: var(--space-2);
   margin-top: var(--space-3);
   padding-top: var(--space-2);
   border-top: 1px solid var(--separator);
+}
+
+/* ── Collapsible Section Card Content ── */
+.section-card__content-collapsible {
+  overflow: hidden;
+  transition: max-height 0.35s var(--ease);
+  max-height: 600px;
+}
+.section-card__content-collapsible.collapsed {
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.section-card__header--clickable {
+  cursor: pointer;
+  user-select: none;
+}
+.section-card__header--clickable:hover {
+  opacity: 0.75;
+}
+
+/* ── Output Status Indicator ── */
+.output-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+  flex-shrink: 0;
+  transition: background var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+.output-indicator--idle {
+  background: var(--text-tertiary);
+  box-shadow: none;
+}
+.output-indicator--active {
+  background: var(--accent-green);
+  box-shadow: 0 0 6px var(--accent-green);
+  animation: output-pulse 1.5s ease-in-out infinite;
+}
+.output-indicator--done {
+  background: var(--accent-green);
+  box-shadow: 0 0 4px var(--accent-green);
+}
+@keyframes output-pulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.35); }
+}
+
+/* ── Toggle chevron ── */
+.output-toggle-icon {
+  font-size: 0.6rem;
+  color: var(--text-tertiary);
+  transition: transform var(--dur-fast) var(--ease);
+  flex-shrink: 0;
+  line-height: 1;
+}
+.output-toggle-icon.collapsed {
+  transform: rotate(-90deg);
 }
 
 /* ── Section Card Metrics Grid ── */
