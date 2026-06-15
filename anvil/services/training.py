@@ -1,6 +1,8 @@
 import asyncio
 import json
 import threading
+import time
+from collections import deque
 from collections.abc import Awaitable, Callable
 
 from anvil.config import get_config
@@ -144,16 +146,48 @@ class TrainingService:
         preferred_device = config.get("device", cfg["device"])
         device = resolve_device(use_gpu=use_gpu, preferred=preferred_device or None)
 
+        _num_steps = config.get("num_steps", 1000)
+        _start_time = time.monotonic()
+        _step_timestamps: deque = deque(maxlen=20)
+
         def progress_callback(step: int, loss: float) -> None:
             stop_event = self._stop_events.get(run_id)
             if stop_event is not None and stop_event.is_set():
                 raise StopRequested(f"Training stopped at step {step}")
+
+            now = time.monotonic()
+            _step_timestamps.append(now)
+            elapsed_sec = now - _start_time
+
+            steps_per_sec: float | None = None
+            eta_sec: float | None = None
+            if len(_step_timestamps) >= 2:
+                window_elapsed = _step_timestamps[-1] - _step_timestamps[0]
+                window_intervals = len(_step_timestamps) - 1
+                steps_per_sec = (
+                    window_intervals / window_elapsed if window_elapsed > 0 else 0.0
+                )
+                if len(_step_timestamps) >= 5:
+                    remaining = max(0, _num_steps - step - 1)
+                    eta_sec = (
+                        remaining / steps_per_sec
+                        if steps_per_sec and steps_per_sec > 0
+                        else None
+                    )
+
             asyncio.run_coroutine_threadsafe(
                 queue.put(
                     {
                         "event": "metrics",
                         "data": json.dumps(
-                            {"step": step, "loss": loss, "device": device}
+                            {
+                                "step": step,
+                                "loss": loss,
+                                "device": device,
+                                "elapsed_sec": elapsed_sec,
+                                "steps_per_sec": steps_per_sec,
+                                "eta_sec": eta_sec,
+                            }
                         ),
                     }
                 ),
