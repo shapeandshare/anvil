@@ -56,7 +56,6 @@ The training pipeline bridges three execution paradigms: async web → sync CPU-
 │          │                                                          │
 │          ├── FORWARD PASS (autoregressive over block_size)          │
 │          │   │                                                      │
-<<<<<<< HEAD
 │          │   ├── GPT.forward(token_id, pos_id, keys, values)       │
 │          │   │     ├── x = wte[token_id]                           │
 │          │   │     │   (NO learned position embedding —            │
