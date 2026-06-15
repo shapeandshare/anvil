@@ -65,7 +65,7 @@ def apply_rope(
     return result
 
 
-class GPT:
+class LlamaModel:
     def __init__(
         self,
         vocab_size: int,
@@ -240,7 +240,7 @@ class GPT:
             json.dump(data, f)
 
     @classmethod
-    def load(cls, path: str) -> "GPT":
+    def load(cls, path: str) -> "LlamaModel":
         import json
 
         with open(path) as f:
@@ -408,7 +408,7 @@ def train(
     vocab_size = len(uchars) + 1
 
     if model is None:
-        model = GPT(vocab_size, n_embd, n_head, n_layer, block_size)
+        model = LlamaModel(vocab_size, n_embd, n_head, n_layer, block_size)
         m = [0.0] * len(model.params)
         v = [0.0] * len(model.params)
     else:

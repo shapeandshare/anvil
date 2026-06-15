@@ -111,15 +111,16 @@
     </div>
   </div>
 
-  <div class="training-samples section-card" id="samples-panel" style="display:none;--stagger-i: 5">
-    <div class="section-card__header"><h2 class="section-card__title">Generated Samples</h2></div>
-    <div id="samples-display"></div>
-  </div>
-
-  <div class="training-output section-card" style="--stagger-i: 6">
-    <div class="section-card__header"><h2 class="section-card__title">Output</h2></div>
-    <pre class="loss-display" id="loss-display"></pre>
-    <div id="output-actions" class="output-actions"></div>
+  <div class="training-output section-card" style="--stagger-i: 5">
+    <div class="section-card__header section-card__header--clickable" id="output-header" role="button" tabindex="0" aria-expanded="true" aria-controls="output-body">
+      <h2 class="section-card__title">Output</h2>
+      <span class="output-indicator" id="output-indicator"></span>
+      <span class="output-toggle-icon" id="output-toggle-icon">▼</span>
+    </div>
+    <div id="output-body" class="section-card__content-collapsible">
+      <pre class="loss-display" id="loss-display"></pre>
+      <div id="output-actions" class="output-actions"></div>
+    </div>
   </div>
 </div>
 {% endblock %}
@@ -142,9 +143,12 @@
   var datasetSelect = document.getElementById('dataset_id');
   var dataContextEl = document.getElementById('data-context');
   var modelStatsEl = document.getElementById('model-stats');
-  var samplesPanel = document.getElementById('samples-panel');
-  var samplesDisplay = document.getElementById('samples-display');
   var outputActions = document.getElementById('output-actions');
+  var outputIndicator = document.getElementById('output-indicator');
+  var outputToggleIcon = document.getElementById('output-toggle-icon');
+  var outputHeader = document.getElementById('output-header');
+  var outputBody = document.getElementById('output-body');
+  var _outputHasContent = false;
 
   var corpusCache = {};
   var datasetCache = {};
@@ -161,12 +165,28 @@
     return String(n);
   }
 
+  function updateOutputIndicator(state) {
+    if (!outputIndicator) return;
+    if (state === 'streaming' || state === 'connecting') {
+      if (_outputHasContent) {
+        outputIndicator.className = 'output-indicator output-indicator--active';
+      } else {
+        outputIndicator.className = 'output-indicator output-indicator--idle';
+      }
+    } else if (state === 'done') {
+      outputIndicator.className = _outputHasContent ? 'output-indicator output-indicator--done' : 'output-indicator output-indicator--idle';
+    } else {
+      outputIndicator.className = 'output-indicator output-indicator--idle';
+    }
+  }
+
   function updateState(state) {
     stateEl.textContent = state;
     stateEl.className = 'connection-state cs-' + state;
     startBtn.disabled = (state === 'streaming' || state === 'connecting');
     stopBtn.disabled = (state !== 'streaming' && state !== 'connecting');
     loadingEl.style.display = (state === 'streaming' || state === 'connecting') ? 'block' : 'none';
+    updateOutputIndicator(state);
   }
 
   function updateMetrics(d) {
@@ -178,6 +198,10 @@
   function log(msg) {
     lossDisplay.textContent += msg + '\n';
     lossDisplay.scrollTop = lossDisplay.scrollHeight;
+    if (!_outputHasContent && msg.trim()) {
+      _outputHasContent = true;
+      updateOutputIndicator(stateEl.textContent);
+    }
   }
 
   function initChart() {
@@ -657,13 +681,6 @@
     log(' FINAL loss: ' + finalLoss);
     log('═══════════════════════════════════════');
 
-    if (d.samples && d.samples.length > 0) {
-      samplesPanel.style.display = 'block';
-      samplesDisplay.innerHTML = d.samples.map(function(s) {
-        return '<span class="sample-block">[SAMPLE] ' + escHtml(s) + '</span>';
-      }).join('');
-    }
-
     fetch('/v1/experiments').then(function(r) { return r.json(); }).then(function(expData) {
       refreshOutputActions(expData);
       /* Keep in runs list but mark done — user can dismiss */
@@ -704,8 +721,8 @@
 
       html += '<div class="action-buttons">';
       html += '<button class="action-btn" onclick="openRegisterModal(' + latest.id + ')">register model</button>';
-      html += '<a class="action-link" href="/v1/experiments-page">view all experiments &rarr;</a>';
-      html += '<a class="action-link action-link-dim" href="' + (expData.mlflow_url || '#') + '" target="_blank">mlflow &rarr;</a>';
+      html += '<a class="action-btn" href="/v1/experiments-page">view all experiments &rarr;</a>';
+      html += '<a class="btn btn-secondary" href="' + (expData.mlflow_url || '#') + '" target="_blank">mlflow &rarr;</a>';
       html += '</div>';
 
       outputActions.innerHTML = html;
@@ -717,9 +734,10 @@
     if (session) { session.destroy(); session = null; }
     initChart();
     chart.clear();
-    samplesPanel.style.display = 'none';
     outputActions.innerHTML = '';
     lossDisplay.textContent = '';
+    _outputHasContent = false;
+    updateOutputIndicator('idle');
 
     var config = {
       n_embd: parseInt(document.getElementById('n_embd').value),
@@ -833,6 +851,22 @@
 
   startBtn.addEventListener('click', startTraining);
   stopBtn.addEventListener('click', stopTraining);
+
+  /* ── Output collapsible toggle ── */
+  function toggleOutput() {
+    var collapsed = outputBody.classList.toggle('collapsed');
+    outputHeader.setAttribute('aria-expanded', !collapsed);
+    outputToggleIcon.classList.toggle('collapsed', collapsed);
+  }
+  if (outputHeader) {
+    outputHeader.addEventListener('click', toggleOutput);
+    outputHeader.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggleOutput();
+      }
+    });
+  }
 
   window.addEventListener('beforeunload', function() {
     saveTrainingState();

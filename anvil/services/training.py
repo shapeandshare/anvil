@@ -4,7 +4,7 @@ import threading
 from collections.abc import Awaitable, Callable
 
 from anvil.config import get_config
-from anvil.core.engine import GPT, train
+from anvil.core.engine import LlamaModel, train
 from anvil.core.torch_engine import torch_available, train_torch
 from anvil.gpu import resolve_device
 
@@ -14,8 +14,8 @@ class StopRequested(Exception):
     pass
 
 
-def _load_weights_into_model(model: GPT, weights: dict) -> None:
-    """Load exported weight lists into a CPU GPT model.
+def _load_weights_into_model(model: LlamaModel, weights: dict) -> None:
+    """Load exported weight lists into a CPU LlamaModel.
 
     Handles both 2D matrices (attention, SwiGLU, embeddings) and
     1D vectors (RMSNorm learned scale parameters).
@@ -126,7 +126,7 @@ class TrainingService:
         config: dict,
         run_id: int | None = None,
         on_complete: (
-            Callable[[GPT, dict, float, list[str], list[str]], Awaitable[None]] | None
+            Callable[[LlamaModel, dict, float, list[str], list[str]], Awaitable[None]] | None
         ) = None,
         progress_callback_override: Callable[[int, float], None] | None = None,
     ) -> int:
@@ -205,8 +205,8 @@ class TrainingService:
                         stop_check=stop_check,
                     ),
                 )
-                # Wrap GPU weights into a CPU GPT model for downstream compatibility
-                model = GPT(
+                # Wrap GPU weights into a CPU LlamaModel for downstream compatibility
+                model = LlamaModel(
                     vocab_size=len(uchars) + 1,
                     n_embd=config.get("n_embd", 16),
                     n_head=config.get("n_head", 4),

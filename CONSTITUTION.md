@@ -8,7 +8,7 @@ The core training engine (`anvil/core/`) MUST have zero third-party Python depen
 
 ### Article II — Educational Clarity
 
-Code MUST prioritize readability and educational value over performance optimization. The progressive walkthrough files (`train0.py` through `train5.py`) SHALL demonstrate the GPT algorithm one component at a time. Comments SHALL explain WHY not just WHAT.
+Code MUST prioritize readability and educational value over performance optimization. The progressive walkthrough files (`train0.py` through `train5.py`) SHALL demonstrate the Llama transformer architecture one component at a time. Comments SHALL explain WHY not just WHAT.
 
 ### Article III — Seeded Reproducibility
 

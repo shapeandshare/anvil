@@ -4,7 +4,7 @@
 
 ## Project Overview
 
-anvil is a pip-installable Python package for training and experimenting with small LLMs from scratch. Inspired by Karpathy's microgpt.py, it has evolved into a standalone engine with RoPE, SwiGLU MLP, RMSNorm, and safetensors export — wrapped in a FastAPI web server, MLflow experiment tracking, and an iOS-modern UI. The system follows a layered architecture: Repository → Service → God Class → Routes/CLI.
+anvil is a pip-installable Python package for training and experimenting with small LLMs from scratch. It has evolved into a standalone engine with RoPE, SwiGLU MLP, RMSNorm, and safetensors export — wrapped in a FastAPI web server, MLflow experiment tracking, and an iOS-modern UI. The system follows a layered architecture: Repository → Service → God Class → Routes/CLI.
 
 ## Design System
 

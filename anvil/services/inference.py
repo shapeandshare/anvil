@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
-from anvil.core.engine import GPT
+from anvil.core.engine import LlamaModel
 from anvil.core.tokenizer import Vocabulary
 
 
@@ -18,13 +18,13 @@ DEMO_MODEL_PATH = Path("data/models/demo/model.json")
 # bootstrapped into the DB yet (e.g. first app startup before setup).
 _FALLBACK_CORPUS = [
     "the quick brown fox jumps over the lazy dog",
-    "what's GPT? it's a demo!",
+    "what's this? it's a demo!",
     "hi there, let's go!",
 ]
 _DEMO_TRAIN_LOCK = threading.Lock()
 
 
-def _train_demo_model(docs: list[str] | None = None) -> GPT:
+def _train_demo_model(docs: list[str] | None = None) -> LlamaModel:
     from anvil.core.engine import train
 
     model, _loss, _samples, uchars = train(
@@ -48,10 +48,10 @@ class DemoModelProvider:
     """
 
     def __init__(self) -> None:
-        self._model: GPT | None = None
+        self._model: LlamaModel | None = None
         self._chars: list[str] | None = None
 
-    def get_model(self) -> tuple[GPT, list[str]]:
+    def get_model(self) -> tuple[LlamaModel, list[str]]:
         if self._model is not None:
             chars_list = self._chars if self._chars is not None else []
             return self._model, chars_list
@@ -63,7 +63,7 @@ class DemoModelProvider:
 
             if DEMO_MODEL_PATH.exists():
                 try:
-                    model = GPT.load(str(DEMO_MODEL_PATH))
+                    model = LlamaModel.load(str(DEMO_MODEL_PATH))
                 except ValueError:
                     # Old GPT-2 format detected — retrain with Llama architecture
                     model = _train_demo_model()
@@ -130,11 +130,11 @@ _demo_provider = DemoModelProvider()
 
 
 class LoadedModel:
-    """Container for a loaded GPT model with its vocabulary and metadata."""
+    """Container for a loaded LlamaModel with its vocabulary and metadata."""
 
     def __init__(
         self,
-        model: GPT,
+        model: LlamaModel,
         chars: list[str],
         model_id: int | None,
         version: int | None,
@@ -224,7 +224,7 @@ class InferenceService:
     """
 
     def __init__(self) -> None:
-        self._cache: dict[tuple[int, int], tuple[GPT, list[str]]] = {}
+        self._cache: dict[tuple[int, int], tuple[LlamaModel, list[str]]] = {}
         self._demo_provider = _demo_provider
 
     async def load_model(
@@ -260,7 +260,7 @@ class InferenceService:
         if not model_path.exists():
             raise FileNotFoundError(f"Model artifact not found: {model_path}")
 
-        gpt_model = GPT.load(str(model_path))
+        gpt_model = LlamaModel.load(str(model_path))
         if gpt_model.chars is None:
             raise ValueError("Model has no character mapping")
 

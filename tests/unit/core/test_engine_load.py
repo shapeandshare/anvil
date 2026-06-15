@@ -1,19 +1,19 @@
-"""Unit tests for GPT.load and forward_introspect."""
+"""Unit tests for LlamaModel.load and forward_introspect."""
 
 import json
 import tempfile
 
-from anvil.core.engine import GPT, train, softmax
+from anvil.core.engine import LlamaModel, train, softmax
 
 
 def test_gpt_save_load_roundtrip():
-    """GPT.save followed by GPT.load should produce identical model."""
+    """LlamaModel.save followed by LlamaModel.load should produce identical model."""
     docs = ["emma", "olivia", "ava"]
     model, _, _, uchars = train(docs, num_steps=10, n_embd=8, n_head=2)
 
     with tempfile.NamedTemporaryFile(suffix=".json") as f:
         model.save(f.name, uchars)
-        loaded = GPT.load(f.name)
+        loaded = LlamaModel.load(f.name)
 
     assert loaded.vocab_size == model.vocab_size
     assert loaded.n_embd == model.n_embd
@@ -32,21 +32,21 @@ def test_gpt_save_load_roundtrip():
 
 
 def test_gpt_load_returns_chars():
-    """GPT.load must attach chars from JSON to the model."""
+    """LlamaModel.load must attach chars from JSON to the model."""
     docs = ["test", "data"]
     model, _, _, uchars = train(docs, num_steps=5, n_embd=8, n_head=2)
 
     with tempfile.NamedTemporaryFile(suffix=".json") as f:
         model.save(f.name, uchars)
-        loaded = GPT.load(f.name)
+        loaded = LlamaModel.load(f.name)
 
     assert hasattr(loaded, "chars")
     assert loaded.chars == uchars
 
 
 def test_gpt_load_without_chars():
-    """GPT.load should handle models saved without chars gracefully."""
-    model = GPT(vocab_size=10, n_embd=8, n_head=2, n_layer=1, block_size=8)
+    """LlamaModel.load should handle models saved without chars gracefully."""
+    model = LlamaModel(vocab_size=10, n_embd=8, n_head=2, n_layer=1, block_size=8)
     with tempfile.NamedTemporaryFile(suffix=".json") as f:
         # Save without chars by writing directly
         data = {
@@ -63,7 +63,7 @@ def test_gpt_load_without_chars():
         }
         with open(f.name, "w") as fp:
             json.dump(data, fp)
-        loaded = GPT.load(f.name)
+        loaded = LlamaModel.load(f.name)
 
     assert loaded.chars is None
     assert loaded.vocab_size == 10
@@ -76,7 +76,7 @@ def test_loaded_model_can_forward():
 
     with tempfile.NamedTemporaryFile(suffix=".json") as f:
         model.save(f.name, uchars)
-        loaded = GPT.load(f.name)
+        loaded = LlamaModel.load(f.name)
 
     # Run a forward pass
     BOS = len(uchars)
@@ -91,7 +91,7 @@ def test_loaded_model_can_forward():
 
 def test_forward_introspect_returns_correct_structure():
     """forward_introspect should return dict with keys: attention, logits, embeddings."""
-    model = GPT(vocab_size=10, n_embd=8, n_head=2, n_layer=1, block_size=8)
+    model = LlamaModel(vocab_size=10, n_embd=8, n_head=2, n_layer=1, block_size=8)
     result = model.forward_introspect([0, 1, 2])
     assert isinstance(result, dict)
     assert "attention" in result
@@ -106,7 +106,7 @@ def test_forward_introspect_returns_correct_structure():
 
 def test_forward_introspect_attention_row_sums():
     """Attention weights should have rows that sum to ~1.0 (softmax property)."""
-    model = GPT(vocab_size=10, n_embd=8, n_head=2, n_layer=2, block_size=16)
+    model = LlamaModel(vocab_size=10, n_embd=8, n_head=2, n_layer=2, block_size=16)
     result = model.forward_introspect([1, 2, 3, 4])
     weights = result["attention"]
     n_layer = result["n_layer"]
@@ -129,7 +129,7 @@ def test_forward_introspect_attention_row_sums():
 
 def test_forward_introspect_logits_valid():
     """Final-position logits should be a list of Value objects with valid data."""
-    model = GPT(vocab_size=10, n_embd=8, n_head=2, n_layer=1, block_size=8)
+    model = LlamaModel(vocab_size=10, n_embd=8, n_head=2, n_layer=1, block_size=8)
     result = model.forward_introspect([0, 1, 2])
     logits = result["logits"]
     assert len(logits) == model.vocab_size
@@ -140,7 +140,7 @@ def test_forward_introspect_logits_valid():
 
 def test_forward_introspect_embeddings_per_position():
     """Embeddings should be one per position, each with n_embd dimensions."""
-    model = GPT(vocab_size=10, n_embd=8, n_head=2, n_layer=1, block_size=8)
+    model = LlamaModel(vocab_size=10, n_embd=8, n_head=2, n_layer=1, block_size=8)
     tokens = [0, 1, 2, 4]
     result = model.forward_introspect(tokens)
     embeddings = result["embeddings"]
@@ -153,7 +153,7 @@ def test_forward_introspect_embeddings_per_position():
 
 def test_forward_introspect_does_not_mutate_forward():
     """Calling forward_introspect should not affect subsequent forward() calls."""
-    model = GPT(vocab_size=10, n_embd=8, n_head=2, n_layer=1, block_size=8)
+    model = LlamaModel(vocab_size=10, n_embd=8, n_head=2, n_layer=1, block_size=8)
     # Forward pass first
     keys = [[] for _ in range(model.n_layer)]
     values = [[] for _ in range(model.n_layer)]

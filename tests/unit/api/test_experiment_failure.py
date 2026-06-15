@@ -145,7 +145,6 @@ async def test_successful_training_marks_finished(session: AsyncSession):
     await repo.mark_finished(
         experiment_id=experiment_id,
         final_loss=0.123,
-        generated_samples='["hello"]',
         completed_at=datetime.now(UTC),
     )
     await session.commit()

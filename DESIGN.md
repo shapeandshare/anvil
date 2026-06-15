@@ -138,7 +138,7 @@ motion:
 
 ## Overview
 
-anvil is an interactive ML learning tool for training and experimenting with small LLMs from scratch. Inspired by Karpathy's microgpt.py, it has evolved into a standalone engine (RoPE, SwiGLU, RMSNorm) with a live training dashboard, experiment tracking, and explorable concept pages. The design language is **iOS modern** — imagined as a native iOS app brought to the web.
+anvil is an interactive ML learning tool for training and experimenting with small LLMs from scratch. It has evolved into a standalone engine (RoPE, SwiGLU, RMSNorm) with a live training dashboard, experiment tracking, and explorable concept pages. The design language is **iOS modern** — imagined as a native iOS app brought to the web.
 
 The personality is clean, precise, and responsive. Light and dark modes follow Apple's system color semantics. Glass navigation bars provide depth hierarchy. Spring animations make interactions feel tactile. System sans-serif typography ensures maximum readability across all devices.
 

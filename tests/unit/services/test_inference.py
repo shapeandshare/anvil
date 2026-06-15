@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from anvil.core.engine import GPT, train
+from anvil.core.engine import LlamaModel, train
 from anvil.core.tokenizer import Vocabulary
 from anvil.services.inference import (
     DemoModelProvider,
@@ -28,7 +28,7 @@ def trained_loaded_model():
     with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
         model.save(f.name, uchars)
         fpath = f.name
-    gpt = GPT.load(fpath)
+    gpt = LlamaModel.load(fpath)
     loaded = LoadedModel(gpt, uchars, None, None, "test", is_demo=True)
     yield loaded
     Path(fpath).unlink(missing_ok=True)

@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from anvil.api.deps import get_db_session
 from anvil.config import get_config, get_mlflow_uri
-from anvil.core.engine import GPT
+from anvil.core.engine import LlamaModel
 from anvil.db.models.training_config import TrainingConfig
 from anvil.db.repositories import ExperimentRepository
 from anvil.services.experiments import ExperimentService
@@ -86,7 +86,6 @@ async def compare_experiments(
                     "id": exp.id,
                     "status": exp.status,
                     "final_loss": exp.final_loss,
-                    "generated_samples": exp.generated_samples,
                     "created_at": str(exp.created_at),
                 }
             )
@@ -116,11 +115,6 @@ async def get_experiment(
     if exp.started_at and exp.completed_at:
         duration_seconds = (exp.completed_at - exp.started_at).total_seconds()
 
-    # Parse generated samples
-    generated_samples = (
-        json.loads(exp.generated_samples) if exp.generated_samples else None
-    )
-
     # Model architecture from saved artifact
     model_architecture = None
     model_path = Path(f"data/models/experiment_{exp.id}.json")
@@ -133,7 +127,7 @@ async def get_experiment(
             n_head = model_data["n_head"]
             n_layer = model_data["n_layer"]
             block_size = model_data["block_size"]
-            gpt = GPT(vocab_size, n_embd, n_head, n_layer, block_size)
+            gpt = LlamaModel(vocab_size, n_embd, n_head, n_layer, block_size)
             model_architecture = {
                 "vocab_size": vocab_size,
                 "n_embd": n_embd,
@@ -204,7 +198,6 @@ async def get_experiment(
         "status": exp.status,
         "run_name": exp.run_name,
         "final_loss": exp.final_loss,
-        "generated_samples": generated_samples,
         "config_id": exp.config_id,
         "mlflow_run_id": exp.mlflow_run_id,
         "created_at": str(exp.created_at),

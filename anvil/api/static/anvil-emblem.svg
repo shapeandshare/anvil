@@ -1,32 +1,41 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" fill="currentColor" aria-hidden="true">
   <!--
-    Blacksmith's anvil — left-facing side profile, single closed path.
-    Horn curves smoothly into the flat face (arrives horizontally at face-left).
-    Right heel stays flat then drops. Waist snaps in hard. Wide feet.
+    Blacksmith's anvil — right-facing side profile (English pattern), single closed path.
+    Adapted from svgrepo.com anvil reference; scaled 7× into 240×160 viewBox.
+    Horn curves smoothly from upper-right body out to tip on the right.
+    Face is flat at top; heel/step extends lower-left.
+    Waist snaps in hard below body. Wide feet with left heel beveled step.
 
-    Landmark coords:
-      Horn tip:     (10, 66) — leftmost, ~41% down
-      Face:         x=46..200, y=14 (flat horizontal)
-      Heel:         stays y=14 to x=224, drops to y=44
-      Waist:        x=82..158, y=98  (76px = 36% of 214px span)
-      Pedestal:     x=82..158, y=98..124
-      Feet:         x=24..216, y=130..155
+    Landmark coords (240×160 viewBox):
+      Horn tip:     (224, 40) — rightmost, ~25% down
+      Face:         x=60..192, y=5   (flat horizontal, main work surface)
+      Heel:         x=15..60,  y=17  (lower extended left section)
+      Left body:    x=15→60,   y=17→58  (left undercut curve)
+      Waist:        x=60..94 (left), x=159..192 (right), y=77
+      Left foot:    x=47..60,  y=129  (outer overhang + beveled step)
+      Base:         x=47..212, y=156  (bottom)
+      Right foot:   x=194..212, y=129
   -->
   <path d="
-    M 10,66
-    C 23,46 30,14 46,14
-    L 200,14
-    C 218,14 224,14 224,44
-    C 224,68 178,92 158,98
-    L 158,124
-    C 158,128 168,130 216,130
-    L 216,155
-    L 24,155
-    L 24,130
-    C 72,130 82,128 82,124
-    L 82,98
-    C 60,90 24,78 20,74
-    C 14,70 10,68 10,66
+    M 192,62
+    C 202,59 213,51 224,40
+    C 213,29 203,23 192,21
+    L 192,5
+    L 60,5
+    L 60,17
+    L 15,17
+    C 23,38 41,53 60,58
+    L 60,77
+    L 94,77
+    C 88,98 76,115 60,129
+    L 47,129
+    L 47,141
+    L 47,156
+    L 212,156
+    L 212,129
+    L 194,129
+    C 177,115 165,98 159,77
+    L 192,77
     Z
   "/>
 </svg>

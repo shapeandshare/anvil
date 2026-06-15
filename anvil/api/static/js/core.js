@@ -3,9 +3,8 @@
 
   function initTheme() {
     var theme = localStorage.getItem('theme');
-    var osDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     if (!theme) {
-      theme = osDark ? 'dark' : 'light';
+      theme = 'dark';
     }
     document.documentElement.setAttribute('data-theme', theme);
     updateThemeUI(theme);
