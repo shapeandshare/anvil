@@ -181,11 +181,27 @@ class TrackingService:
         except Exception:
             pass
 
+    async def set_tag(self, run_id: str, key: str, value: str) -> None:
+        if self._degraded or not run_id:
+            return
+        loop = asyncio.get_event_loop()
+        try:
+            client = self._client
+            if client is not None:
+                await loop.run_in_executor(
+                    None, lambda: client.set_tag(run_id, key, value)
+                )
+        except Exception:
+            pass
+
     async def log_artifacts(
         self,
         run_id: str,
         *,
         model_path: str | None = None,
+        safetensors_path: str | None = None,
+        config_path: str | None = None,
+        tokenizer_path: str | None = None,
         samples: str | None = None,
         vocab: Any = None,
     ) -> None:
@@ -198,6 +214,21 @@ class TrackingService:
                 if model_path:
                     await loop.run_in_executor(
                         None, lambda: client.log_artifact(run_id, model_path)
+                    )
+                if safetensors_path:
+                    await loop.run_in_executor(
+                        None,
+                        lambda: client.log_artifact(run_id, safetensors_path),
+                    )
+                if config_path:
+                    await loop.run_in_executor(
+                        None,
+                        lambda: client.log_artifact(run_id, config_path),
+                    )
+                if tokenizer_path:
+                    await loop.run_in_executor(
+                        None,
+                        lambda: client.log_artifact(run_id, tokenizer_path),
                     )
         except Exception:
             pass
@@ -398,6 +429,58 @@ class TrackingService:
         except Exception:
             pass
         return reconciled
+
+    async def get_safetensors_artifacts(self, run_id: str) -> dict:
+        """Query MLflow for safetensors artifact info for a given run.
+
+        Returns dict with keys:
+          available: bool
+          files: list of {path, file_size, is_safetensors, is_config, is_tokenizer}
+          error: str or None
+        """
+        if self._degraded or not run_id:
+            return {"available": False, "files": [], "error": None}
+        loop = asyncio.get_event_loop()
+        try:
+            client = self._client
+            if client is None:
+                return {"available": False, "files": [], "error": "client not initialized"}
+            artifacts = await loop.run_in_executor(
+                None, lambda: client.list_artifacts(run_id)
+            )
+            safetensors_files = []
+            for a in artifacts:
+                if a.path.endswith(".safetensors"):
+                    safetensors_files.append({
+                        "path": a.path,
+                        "file_size": a.file_size if hasattr(a, "file_size") else None,
+                        "is_safetensors": True,
+                        "is_config": False,
+                        "is_tokenizer": False,
+                    })
+                elif a.path.endswith("config.json"):
+                    safetensors_files.append({
+                        "path": a.path,
+                        "file_size": a.file_size if hasattr(a, "file_size") else None,
+                        "is_safetensors": False,
+                        "is_config": True,
+                        "is_tokenizer": False,
+                    })
+                elif a.path.endswith("tokenizer.json"):
+                    safetensors_files.append({
+                        "path": a.path,
+                        "file_size": a.file_size if hasattr(a, "file_size") else None,
+                        "is_safetensors": False,
+                        "is_config": False,
+                        "is_tokenizer": True,
+                    })
+            return {
+                "available": any(f["is_safetensors"] for f in safetensors_files),
+                "files": safetensors_files,
+                "error": None,
+            }
+        except Exception as e:
+            return {"available": False, "files": [], "error": str(e)}
 
     async def register_source_model(
         self,

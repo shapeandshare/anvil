@@ -132,6 +132,8 @@ async def start_training(config: dict):
         await tracking_svc.finish_run(mlflow_run_id)
         await tracking_svc.log_final_metric(mlflow_run_id, "final_loss", final_loss)
 
+        await tracking_svc.set_tag(mlflow_run_id, "architectures", "LlamaForCausalLM")
+
         with tempfile.TemporaryDirectory() as tmpdir:
             samples_path = os.path.join(tmpdir, "samples.txt")
             with open(samples_path, "w") as f:
@@ -160,6 +162,59 @@ async def start_training(config: dict):
                         )
                 except Exception:
                     pass
+
+            # NEW: Auto-export safetensors after every successful training
+            from anvil.services.export import SafetensorsExportService
+
+            export_svc = SafetensorsExportService()
+            export_result = await asyncio.get_event_loop().run_in_executor(
+                None, lambda: export_svc.export(model, tmpdir, uchars)
+            )
+
+            if export_result["error"]:
+                # FR-016: training is still successful, failure is flagged
+                logger.warning(
+                    "Safetensors export failed: %s", export_result["error"]
+                )
+                # Emit error event for SSE stream
+                queue = svc.get_queue(run_id)
+                if queue:
+                    await queue.put({
+                        "event": "export_error",
+                        "data": json.dumps({"error": export_result["error"]}),
+                    })
+            else:
+                if mlflow_run_id and export_result["safetensors_path"]:
+                    try:
+                        client = tracking_svc._client
+                        if client:
+                            loop = asyncio.get_event_loop()
+                            await loop.run_in_executor(
+                                None,
+                                lambda: client.log_artifact(
+                                    mlflow_run_id, export_result["safetensors_path"]
+                                ),
+                            )
+                            if export_result["config_path"]:
+                                await loop.run_in_executor(
+                                    None,
+                                    lambda: client.log_artifact(
+                                        mlflow_run_id,
+                                        export_result["config_path"],
+                                    ),
+                                )
+                            if export_result["tokenizer_path"]:
+                                await loop.run_in_executor(
+                                    None,
+                                    lambda: client.log_artifact(
+                                        mlflow_run_id,
+                                        export_result["tokenizer_path"],
+                                    ),
+                                )
+                    except Exception:
+                        logger.exception(
+                            "Failed to log safetensors artifacts to MLflow"
+                        )
 
         from anvil.db.repositories.experiments import ExperimentRepository
         from anvil.db.session import AsyncSessionLocal

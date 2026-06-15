@@ -63,7 +63,15 @@ class DemoModelProvider:
                 return self._model, chars_list
 
             if DEMO_MODEL_PATH.exists():
-                model = GPT.load(str(DEMO_MODEL_PATH))
+                try:
+                    model = GPT.load(str(DEMO_MODEL_PATH))
+                except ValueError:
+                    # Old GPT-2 format detected — retrain with Llama architecture
+                    model = _train_demo_model()
+                    self._model = model
+                    self._chars = model.chars
+                    chars_list = self._chars if self._chars is not None else []
+                    return model, chars_list
                 if model.chars is not None:
                     self._model = model
                     self._chars = model.chars
@@ -278,6 +286,11 @@ class InferenceService:
             "n_layer": loaded.model.n_layer,
             "n_head": loaded.model.n_head,
             "weights": weights,
+            "rope": {
+                "cos_table": loaded.model._cos_table[:max_len],
+                "sin_table": loaded.model._sin_table[:max_len],
+                "head_dim": loaded.model.head_dim,
+            },
         }
 
     def sampling_distribution(
@@ -556,19 +569,27 @@ class InferenceService:
         total_params = 0
 
         for name, mat in loaded.model.state_dict.items():
-            rows = len(mat)
-            cols = len(mat[0]) if mat and len(mat) > 0 else 0
-            num_params = rows * cols
+            is_1d = not (mat and isinstance(mat[0], list))
+            if is_1d:
+                rows = len(mat)
+                cols = 1
+                num_params = rows
+            else:
+                rows = len(mat)
+                cols = len(mat[0]) if mat and rows > 0 else 0
+                num_params = rows * cols
             total_params += num_params
 
-            if name == "wte" or name == "wpe":
+            if name == "wte":
                 category = "embedding"
             elif name == "lm_head":
                 category = "output"
             elif ".attn_" in name:
-                category = "attention"
+                category = "attention projections"
             elif ".mlp_" in name:
-                category = "mlp"
+                category = "SwiGLU MLP"
+            elif name == "rms_final" or ".rms_" in name:
+                category = "RMSNorm scales"
             else:
                 category = "other"
 

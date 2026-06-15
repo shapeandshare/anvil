@@ -203,6 +203,56 @@ def train():
                     )
                 except Exception:
                     logger.exception("Failed to register model for CLI training run")
+
+            # NEW: Auto-export safetensors after every successful training
+            import tempfile
+
+            from anvil.services.export import SafetensorsExportService
+
+            export_svc = SafetensorsExportService()
+            with tempfile.TemporaryDirectory() as tmpdir:
+                export_result = await asyncio.get_event_loop().run_in_executor(
+                    None, lambda: export_svc.export(model, tmpdir, uchars)
+                )
+                if export_result["error"]:
+                    # FR-016: training is still successful, failure is flagged
+                    logger.warning(
+                        "Safetensors export failed: %s", export_result["error"]
+                    )
+                else:
+                    if mlflow_run_id and export_result["safetensors_path"]:
+                        try:
+                            client = tracking_svc._client
+                            if client:
+                                loop = asyncio.get_event_loop()
+                                await loop.run_in_executor(
+                                    None,
+                                    lambda: client.log_artifact(
+                                        mlflow_run_id,
+                                        export_result["safetensors_path"],
+                                    ),
+                                )
+                                if export_result["config_path"]:
+                                    await loop.run_in_executor(
+                                        None,
+                                        lambda: client.log_artifact(
+                                            mlflow_run_id,
+                                            export_result["config_path"],
+                                        ),
+                                    )
+                                if export_result["tokenizer_path"]:
+                                    await loop.run_in_executor(
+                                        None,
+                                        lambda: client.log_artifact(
+                                            mlflow_run_id,
+                                            export_result["tokenizer_path"],
+                                        ),
+                                    )
+                        except Exception:
+                            logger.exception(
+                                "Failed to log safetensors artifacts to MLflow"
+                            )
+
             async with AsyncSessionLocal() as session:
                 from datetime import UTC, datetime
 

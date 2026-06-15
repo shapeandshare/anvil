@@ -45,9 +45,10 @@ async def test_model_params_endpoint(client):
     assert group_sum == data["total_params"]
     cats = {g["category"] for g in data["groups"]}
     assert "embedding" in cats
-    assert "attention" in cats
-    assert "mlp" in cats
+    assert "attention projections" in cats
+    assert "SwiGLU MLP" in cats
     assert "output" in cats
+    assert "RMSNorm scales" in cats
 
 
 @pytest.mark.asyncio

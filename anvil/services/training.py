@@ -18,11 +18,22 @@ class StopRequested(Exception):
 
 
 def _load_weights_into_model(model: GPT, weights: dict) -> None:
-    """Load exported weight lists into a CPU GPT model."""
-    for k, mat_data in weights.items():
-        for i, row in enumerate(mat_data):
-            for j, val in enumerate(row):
-                model.state_dict[k][i][j].data = val
+    """Load exported weight lists into a CPU GPT model.
+
+    Handles both 2D matrices (attention, SwiGLU, embeddings) and
+    1D vectors (RMSNorm learned scale parameters).
+    """
+    for k, data in weights.items():
+        mat = model.state_dict[k]
+        if isinstance(mat[0], list):
+            # 2D matrix
+            for i, row in enumerate(data):
+                for j, val in enumerate(row):
+                    mat[i][j].data = val
+        else:
+            # 1D vector (RMSNorm scales)
+            for i, val in enumerate(data):
+                mat[i].data = val
 
 
 class TrainingService:
