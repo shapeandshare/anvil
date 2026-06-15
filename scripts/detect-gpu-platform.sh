@@ -2,7 +2,7 @@
 # detect-gpu-platform.sh
 #
 # Detects whether the current platform can use GPU-accelerated PyTorch.
-# Outputs ",gpu" (for pip extras) if GPU support is available, empty string otherwise.
+# Outputs "gpu" if GPU support is available, empty string otherwise.
 #
 # Detection logic:
 #   - macOS ARM64      → MPS is built into PyPI torch → always install GPU extras
@@ -15,13 +15,13 @@ case "$(uname -s)" in
     Darwin)
         # macOS Apple Silicon has MPS built into the standard PyTorch wheel
         if [ "$(uname -m)" = "arm64" ]; then
-            echo ",gpu"
+            echo "gpu"
         fi
         ;;
     Linux)
         # NVIDIA GPU: nvidia-smi is the standard driver diagnostic tool
         if command -v nvidia-smi &>/dev/null; then
-            echo ",gpu"
+            echo "gpu"
         fi
         ;;
 esac
