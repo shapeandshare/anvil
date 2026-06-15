@@ -310,16 +310,43 @@ async def delete_experiment(id: int, svc: ExperimentService = Depends(get_servic
     return {"status": "deleted"}
 
 
-@router.get("/experiments/{experiment_id}/runs/{run_id}/download/safetensors")
-async def download_safetensors(
+@router.get("/experiments/{experiment_id}/runs/{run_id}/artifacts")
+async def list_artifacts(
     experiment_id: int,
     run_id: str,
     svc: ExperimentService = Depends(get_service),
 ):
-    """Download safetensors checkpoint for a given experiment/run.
+    """List all safetensors export artifacts for a given experiment/run.
 
-    The run_id is the MLflow run ID. Looks up the file from MLflow artifact store
-    and streams it to the client.
+    Returns the same structure as get_safetensors_artifacts:
+      available: bool
+      files: list of {path, file_size, is_safetensors, is_config, is_tokenizer}
+      error: str or None
+    """
+    exp = await svc.get_experiment(experiment_id)
+    if exp is None:
+        raise HTTPException(status_code=404, detail="Experiment not found")
+    if not exp.mlflow_run_id:
+        raise HTTPException(status_code=404, detail="No MLflow run associated")
+    if exp.mlflow_run_id != run_id:
+        raise HTTPException(status_code=400, detail="Run ID does not match experiment")
+
+    tracking_svc = TrackingService(tracking_uri=get_config()["mlflow_uri"])
+    artifacts_info = await tracking_svc.get_safetensors_artifacts(run_id)
+    return artifacts_info
+
+
+@router.get("/experiments/{experiment_id}/runs/{run_id}/download")
+async def download_artifact(
+    experiment_id: int,
+    run_id: str,
+    path: str = Query(..., description="Artifact file path to download"),
+    svc: ExperimentService = Depends(get_service),
+):
+    """Download a single artifact file for a given experiment/run.
+
+    The path parameter is the artifact path as returned by the artifacts endpoint
+    (e.g. 'model.safetensors', 'config.json', 'tokenizer.json').
     """
     exp = await svc.get_experiment(experiment_id)
     if exp is None:
@@ -337,13 +364,12 @@ async def download_safetensors(
             detail="No safetensors artifacts found for this run",
         )
 
-    safetensors_file = next(
-        (f for f in artifacts_info["files"] if f["is_safetensors"]), None
-    )
-    if safetensors_file is None:
+    # Verify the requested path exists in the artifact list
+    matching = [f for f in artifacts_info["files"] if f["path"] == path]
+    if not matching:
         raise HTTPException(
             status_code=404,
-            detail="No safetensors file found",
+            detail=f"Artifact '{path}' not found. Available: {[f['path'] for f in artifacts_info['files']]}",
         )
 
     # Download artifact from MLflow to a temp location
@@ -353,23 +379,25 @@ async def download_safetensors(
         local_path = await loop.run_in_executor(
             None,
             lambda: client.download_artifacts(
-                run_id, safetensors_file["path"], dst_path=None
+                run_id, path, dst_path=None
             ),
         )
         if not os.path.isfile(local_path):
             raise HTTPException(
                 status_code=500, detail="Downloaded artifact is not a file"
             )
+        # Use the original filename for the download
+        filename = os.path.basename(path)
         return FileResponse(
             path=local_path,
-            filename="model.safetensors",
+            filename=filename,
             media_type="application/octet-stream",
         )
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Failed to download safetensors: {str(e)}"
+            status_code=500, detail=f"Failed to download artifact: {str(e)}"
         )
 
 
@@ -411,6 +439,8 @@ async def retry_export(experiment_id: int, svc: ExperimentService = Depends(get_
                 safetensors_path=result["safetensors_path"],
                 config_path=result.get("config_path"),
                 tokenizer_path=result.get("tokenizer_path"),
+                mlmodel_path=result.get("mlmodel_path"),
+                conda_path=result.get("conda_path"),
             )
 
     return {
