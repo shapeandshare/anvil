@@ -211,6 +211,22 @@ async def start_training(config: dict):
                                         export_result["tokenizer_path"],
                                     ),
                                 )
+                            if export_result.get("mlmodel_path"):
+                                await loop.run_in_executor(
+                                    None,
+                                    lambda: client.log_artifact(
+                                        mlflow_run_id,
+                                        export_result["mlmodel_path"],
+                                    ),
+                                )
+                            if export_result.get("conda_path"):
+                                await loop.run_in_executor(
+                                    None,
+                                    lambda: client.log_artifact(
+                                        mlflow_run_id,
+                                        export_result["conda_path"],
+                                    ),
+                                )
                     except Exception:
                         logger.exception(
                             "Failed to log safetensors artifacts to MLflow"
