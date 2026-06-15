@@ -29,4 +29,6 @@ updated: 2026-06-14
 | **Softmax** | Normalized exponential function — `e^x_i / Σ e^x_j` — converts logits to probability distribution over vocabulary |
 | **Cross-Entropy** | Loss function for classification — `-log(p_target)` — negative log probability of the correct next token |
 | **State Dict** | The model's parameter dictionary — maps weight names (wte, lm_head, layer.N.attn_wq, layer.N.mlp_gate, layer.N.rms_*) to matrix of Value objects |
+| **Dataset** | Static collection of text samples where each line in a `.txt` file becomes one training sample. Uploaded manually or created empty. Supports inline editing, curation (dedup, filter, replace), and export. Best for curated/fine-tuning data. |
+| **Corpus** | Dynamic directory source scanned with glob patterns and chunking strategies (windowed/file/line). Supports gitignore-style include/exclude filtering. Read-only from source (no inline sample editing). Best for code repos and large directory trees. |
 | **Run-in-Executor** | Python asyncio pattern for offloading blocking/sync code to a thread pool thread, used by `TrainingService` to run the core engine |
