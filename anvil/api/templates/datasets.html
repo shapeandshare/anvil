@@ -275,24 +275,37 @@
       list.innerHTML = '<span style="color:var(--text-dim);font-size:0.78rem;">No corpora created yet.</span>';
       return;
     }
-    list.innerHTML = data.data.map(function(c, i) {
+    list.innerHTML = '<div style="overflow-x:auto;"><table class="grouped-list">'
+      + '<thead><tr>'
+      + '<th>Name</th><th style="text-align:right;">Files</th><th style="text-align:right;">Docs</th>'
+      + '<th>Created</th><th>Strategy</th><th style="text-align:center;">Warnings</th>'
+      + '<th style="text-align:right;">Actions</th>'
+      + '</tr></thead><tbody>'
+      + data.data.map(function(c, i) {
+      var nameEsc = escHtml(c.name);
       var ingestBtn = '<button class="btn btn-sm btn-secondary ingest-btn" data-id="' + c.id + '">ingest</button>';
       var delBtn = '<button class="btn btn-sm btn-danger del-btn" data-id="' + c.id + '" style="margin-left:2px;">rm</button>';
       var warnBadge = '';
       if (c.error_count > 0) {
-        warnBadge = ' <span class="corpus-warn-badge" data-id="' + c.id + '" style="color:var(--warning);cursor:pointer;font-size:0.65rem;" title="Click to view warnings">&#9888; ' + c.error_count + ' warn</span>';
+        warnBadge = '<span class="corpus-warn-badge" data-id="' + c.id + '" style="color:var(--warning);cursor:pointer;font-size:0.65rem;" title="Click to view warnings">&#9888; ' + c.error_count + '</span>';
+      } else {
+        warnBadge = '<span style="color:var(--text-tertiary);font-size:0.65rem;">-</span>';
       }
-      return '<div class="row-entrance" style="--row-i: ' + i + ';display:flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-3);background:var(--surface);border-radius:var(--radius-sm);margin-bottom:2px;">' +
-        '<span style="color:var(--text);font-weight:500;min-width:100px;">' + c.name + '</span>' +
-        '<span style="color:var(--text-dim);font-size:0.72rem;">' + (c.file_count || 0) + ' files, ' + (c.document_count || 0) + ' docs</span>' +
-        '<span style="color:var(--text-tertiary);font-size:0.68rem;">' + (c.created_at || '').slice(0,10) + '</span>' +
-        '<span style="color:var(--text-tertiary);font-size:0.68rem;">' + (c.chunking_strategy || '?') + '</span>' +
-        warnBadge +
-        '<span style="margin-left:auto;">' + ingestBtn + delBtn + '</span>' +
-        '<div class="corpus-files" id="files-' + c.id + '" style="display:none;padding-left:20px;"></div>' +
-        '<div class="corpus-errors" id="errors-' + c.id + '" style="display:none;padding-left:20px;padding-top:4px;"></div>' +
-        '</div>';
-    }).join('');
+      return '<tr data-id="' + c.id + '" class="row-entrance" style="--row-i: ' + i + '">'
+        + '<td><span style="color:var(--text);font-weight:500;">' + nameEsc + '</span></td>'
+        + '<td style="text-align:right;color:var(--text-dim);">' + (c.file_count || 0) + '</td>'
+        + '<td style="text-align:right;color:var(--info);">' + (c.document_count || 0) + '</td>'
+        + '<td style="color:var(--text-tertiary);font-size:0.75rem;">' + (c.created_at || '').slice(0,10) + '</td>'
+        + '<td style="color:var(--text-tertiary);font-size:0.75rem;">' + (c.chunking_strategy || '?') + '</td>'
+        + '<td style="text-align:center;">' + warnBadge + '</td>'
+        + '<td style="text-align:right;white-space:nowrap;">' + ingestBtn + delBtn + '</td>'
+        + '</tr>'
+        + '<tr class="corpus-detail-row" id="detail-' + c.id + '" style="display:none;">'
+        + '<td colspan="7" style="padding:0 var(--space-4) var(--space-2) var(--space-4);">'
+        + '<div class="corpus-files" id="files-' + c.id + '" style="display:none;"></div>'
+        + '<div class="corpus-errors" id="errors-' + c.id + '" style="display:none;"></div>'
+        + '</td></tr>';
+    }).join('') + '</tbody></table></div>';
   };
 
   /* ── event delegation ───────────────────────────────── */
@@ -339,9 +352,10 @@
     if (e.target.classList.contains('corpus-warn-badge')) {
       var badge = e.target;
       var id = badge.getAttribute('data-id');
+      var detailRow = document.getElementById('detail-' + id);
       var errDiv = document.getElementById('errors-' + id);
-      if (errDiv.style.display !== 'none') {
-        errDiv.style.display = 'none';
+      if (detailRow.style.display !== 'none') {
+        detailRow.style.display = 'none';
         return;
       }
       /* Fetch full corpus detail with errors */
@@ -355,6 +369,7 @@
           }).join('');
         }
         errDiv.style.display = '';
+        detailRow.style.display = '';
       });
     }
 
