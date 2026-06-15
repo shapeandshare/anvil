@@ -20,7 +20,7 @@ The design system is implemented via CSS custom properties in `anvil/api/static/
 
 | Command | Purpose |
 |---------|---------|
-| `make setup` | Create venv, install deps from lock file, init DB |
+| `make setup` | Create venv, install deps from lock file via uv, init DB |
 | `make run` | Start all background services (web + MLflow) |
 | `make stop` | Stop all background services |
 | `make train` | Run training from CLI |

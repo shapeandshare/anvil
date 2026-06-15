@@ -24,6 +24,21 @@
 
 <br>
 
+## Prerequisites
+
+| Requirement | Notes |
+|-------------|-------|
+| **Python** ≥ 3.11 | Must be on `PATH` as `python3` or `python3.11`. [python.org](https://www.python.org/downloads/) |
+| **git** | [Download](https://git-scm.com/downloads) |
+| **GNU make** | macOS: Xcode CLI tools (`xcode-select --install`). Debian: `apt install build-essential` |
+| **bash** | Pre-installed on macOS / Linux |
+| **uv** (fast Python package manager) | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
+| **nvidia-smi** (optional) | Linux only — enables CUDA GPU auto-detection |
+
+> **Windows users**: Install [WSL2](https://learn.microsoft.com/en-us/windows/wsl/install) with Ubuntu, then follow the Linux instructions.
+
+<br>
+
 ## Quick Start
 
 ```bash
@@ -128,7 +143,8 @@ Copy `.env.example` to `.env` to customize.
 
 | Command | Purpose |
 |---------|---------|
-| `make setup` | Create venv, install deps, init DB |
+| `make setup` | Create venv, install deps from lock file via uv, init DB |
+| `make setup-gpu` | Force GPU extras (auto-detected on Apple Silicon / NVIDIA Linux) |
 | `make run` | Start all background services (web + MLflow) |
 | `make stop` | Stop all background services |
 | `make train` | Run training from CLI |
@@ -136,6 +152,21 @@ Copy `.env.example` to `.env` to customize.
 | `make lint` | Run ruff → black --check → isort --check → pylint |
 | `make format` | Auto-format (black + isort) |
 | `make typecheck` | Run mypy/pyright |
+| `make docker` | Build and run via Docker |
+
+<br>
+
+## Troubleshooting
+
+| Problem | Likely cause | Fix |
+|---------|-------------|-----|
+| `make setup`: `Python 3.11+ not found` | Python missing or not on PATH | Install Python ≥ 3.11, ensure `python3` or `python3.11` is on your `PATH` |
+| `make setup`: `uv: command not found` | uv not installed | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
+| `make run`: `Address already in use` | Port 8080 (or 5001 for MLflow) is taken | Set `ANVIL_PORT=9090` in `.env` |
+| `Alembic migration fails` | Stale or corrupted database | `rm -f data/anvil.db` then re-run `make setup` |
+| `GPU not detected` | No compatible GPU, or driver missing | Auto-detection logs at setup. Force GPU extras: `make setup-gpu` |
+| Web UI slow on first load | Bootstrapping demo datasets | Normal — only on first `make run` after `make setup` |
+| `make` fails on Windows | Windows lacks native `make` | Install WSL2 with Ubuntu and run from there |
 
 <br>
 
