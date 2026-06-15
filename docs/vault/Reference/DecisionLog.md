@@ -21,3 +21,4 @@ updated: 2026-06-10
 | 2026-06-14 | — | Install Portability Overhaul (uv sync, prerequisites, Docker, troubleshooting) | Completed |
 | 2026-06-14 | ADR-009 | MLflow PyFunc Model Compliance | Accepted |
 | 2026-06-14 | ADR-010 | Hosted MLflow support — disable local server | Accepted |
+| 2026-06-14 | ADR-011 | Name-Based Idempotency for Demo Data Bootstrap | Accepted |
