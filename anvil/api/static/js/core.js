@@ -239,7 +239,10 @@
           tab.classList.toggle('active', tab.getAttribute('href') === url);
         });
 
-        /* 7. Scroll to top */
+        /* 7. Restart did-you-know timer for new page */
+        initDidYouKnow();
+
+        /* 8. Scroll to top */
         window.scrollTo(0, 0);
       })
       .catch(function(err) {
@@ -253,17 +256,18 @@
   document.addEventListener('DOMContentLoaded', function() {
     initTheme();
     initNav();
+    initDidYouKnow();
 
     /* Initialise history state so popstate at root works */
     if (!history.state) {
       history.replaceState({ path: window.location.pathname }, '', window.location.href);
     }
 
-    /* Intercept nav clicks */
+    /* Intercept nav clicks — handles both nav-bar tabs and hero-page cards */
     document.addEventListener('click', function(e) {
-      var tab = e.target.closest('.tab-item');
-      if (!tab) return;
-      var href = tab.getAttribute('href');
+      var link = e.target.closest('.tab-item, .hero-card, .hero-cta, .hero-secondary');
+      if (!link) return;
+      var href = link.getAttribute('href');
       if (!href || href.indexOf(':') !== -1 || href.charAt(0) === '#') return;
       e.preventDefault();
       loadContent(href, true);
@@ -280,10 +284,53 @@
     if (btn) btn.addEventListener('click', toggleTheme);
   });
 
+  /* ── Did You Know? Rotator ───────────────────────────── */
+  var DID_YOU_KNOW = [
+    'The model has <strong>4,192 parameters</strong> &mdash; that&rsquo;s about 10 million&times; fewer than ChatGPT.',
+    'Each training step, the model compares its prediction against the actual next character and adjusts its weights by a tiny amount.',
+    'The &ldquo;loss&rdquo; you see is <strong>cross-entropy</strong> &mdash; it measures how surprised the model is by the actual next character.',
+    'With <strong>4 heads of attention</strong>, this tiny transformer can focus on up to 4 different positions simultaneously.',
+    'RoPE encodes position by <strong>rotating pairs of embedding dimensions</strong> &mdash; no learned position table needed.',
+    'The <strong>SwiGLU</strong> activation uses a gating mechanism: one path decides what to pass, another provides the value.',
+    '<strong>RMSNorm</strong> normalizes each token&rsquo;s representation by its root-mean-square, then scales by a learned parameter.',
+    'The <strong>temperature</strong> parameter controls randomness: 0 = always pick the most likely token, 2 = near-random chaos.',
+    'The demo model trains on <strong>medieval guild names</strong> &mdash; &ldquo;The Guild of Witcheraft &amp; Brewers&rdquo; and friends.',
+    'Tokenization here is <strong>character-level</strong>: every unique character in the training data gets its own ID.',
+    '<strong>Gradient descent</strong> works by taking small steps downhill on a high-dimensional error surface.',
+    'The <strong>Adam optimizer</strong> keeps a moving average of both gradients (momentum) and squared gradients (adaptive LR).',
+    'A single forward pass through this transformer involves about <strong>50,000 multiply-add operations</strong>.',
+    'The <strong>attention mechanism</strong> computes a weighted sum where each token &ldquo;asks&rdquo; how relevant every other token is.',
+    'With a context window of <strong>16 tokens</strong>, the model can only see 16 characters ahead at a time.',
+  ];
+  var _dykIndex = -1;
+  var _dykTimer = null;
+  var _dykBanner = null;
+
+  function showDidYouKnow() {
+    var el = document.getElementById('didyouknow-text');
+    if (!el) return;
+    _dykIndex = (_dykIndex + 1) % DID_YOU_KNOW.length;
+    el.innerHTML = DID_YOU_KNOW[_dykIndex];
+  }
+
+  function initDidYouKnow() {
+    if (_dykTimer) clearInterval(_dykTimer);
+    showDidYouKnow();
+    _dykTimer = setInterval(showDidYouKnow, 18000);
+  }
+
+  document.addEventListener('click', function(e) {
+    if (e.target.closest && e.target.closest('.didyouknow__dismiss')) {
+      _dykBanner = document.getElementById('didyouknow-banner');
+      if (_dykBanner) _dykBanner.style.display = 'none';
+    }
+  });
+
   window.core = {
     toggleTheme: toggleTheme,
     getUrlParams: getUrlParams,
     setUrlParams: setUrlParams,
     loadContent: loadContent,
+    initDidYouKnow: initDidYouKnow,
   };
 })();
