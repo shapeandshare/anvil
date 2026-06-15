@@ -38,9 +38,14 @@ format: $(VENV_DIR)/activate ## Auto-format code with black + isort
 typecheck: $(VENV_DIR)/activate ## Run mypy type checking
 	$(PYTHON) -m mypy anvil/
 
-clean: ## Remove artifacts and caches
-	rm -rf $(VENV_DIR) __pycache__ .pytest_cache .mypy_cache .ruff_cache
+clean: ## Remove artifacts, caches, and all runtime data
+	rm -rf $(VENV_DIR)
 	rm -rf build dist *.egg-info
+	rm -rf .pytest_cache .mypy_cache .ruff_cache
+	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+	rm -rf logs/ mlruns/ mlartifacts/
+	rm -f data/anvil.db data/anvil.db-wal data/anvil.db-shm
+	rm -rf data/datasets/ data/models/
 	@echo "Cleaned up."
 
 .PHONY: install lint format typecheck clean
