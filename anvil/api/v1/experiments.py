@@ -3,14 +3,14 @@ import json
 import os
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import FileResponse
 from mlflow.tracking import MlflowClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from anvil.api.deps import get_db_session
-from anvil.config import get_config, get_mlflow_uri
+from anvil.config import get_config, get_mlflow_browser_uri
 from anvil.core.engine import LlamaModel
 from anvil.db.models.training_config import TrainingConfig
 from anvil.db.repositories import ExperimentRepository
@@ -35,13 +35,13 @@ async def get_service(session: AsyncSession = Depends(get_db_session)):
 
 
 @router.get("/experiments")
-async def list_experiments(svc: ExperimentService = Depends(get_service)):
+async def list_experiments(request: Request, svc: ExperimentService = Depends(get_service)):
     experiments = await svc.list_experiments()
     mlflow_exp_id = _get_mlflow_experiment_id()
     return {
         "mlflow_experiment_id": mlflow_exp_id,
         "mlflow_url": (
-            f"{get_mlflow_uri()}/#/experiments/{mlflow_exp_id}"
+            f"{get_mlflow_browser_uri(request)}/#/experiments/{mlflow_exp_id}"
             if mlflow_exp_id
             else None
         ),
@@ -54,7 +54,7 @@ async def list_experiments(svc: ExperimentService = Depends(get_service)):
                 "config_id": e.config_id,
                 "mlflow_run_id": e.mlflow_run_id,
                 "mlflow_run_url": (
-                    f"{get_mlflow_uri()}/#/experiments/{mlflow_exp_id}/runs/{e.mlflow_run_id}"
+                    f"{get_mlflow_browser_uri(request)}/#/experiments/{mlflow_exp_id}/runs/{e.mlflow_run_id}"
                     if (mlflow_exp_id and e.mlflow_run_id)
                     else None
                 ),
@@ -95,6 +95,7 @@ async def compare_experiments(
 @router.get("/experiments/{id}")
 async def get_experiment(
     id: int,
+    request: Request,
     svc: ExperimentService = Depends(get_service),
     session: AsyncSession = Depends(get_db_session),
 ):
@@ -169,7 +170,7 @@ async def get_experiment(
                 "params": dict(run.data.params),
                 "metrics": dict(run.data.metrics),
                 "run_url": (
-                    f"{get_mlflow_uri()}/#/experiments/{mlflow_exp_id}/runs/{exp.mlflow_run_id}"
+                    f"{get_mlflow_browser_uri(request)}/#/experiments/{mlflow_exp_id}/runs/{exp.mlflow_run_id}"
                     if mlflow_exp_id
                     else None
                 ),
@@ -217,7 +218,7 @@ async def get_experiment(
 
 
 @router.get("/experiments/{id}/mlflow")
-async def get_experiment_mlflow(id: int, svc: ExperimentService = Depends(get_service)):
+async def get_experiment_mlflow(id: int, request: Request, svc: ExperimentService = Depends(get_service)):
     exp = await svc.get_experiment(id)
     if exp is None:
         raise HTTPException(status_code=404, detail="Experiment not found")
@@ -268,7 +269,7 @@ async def get_experiment_mlflow(id: int, svc: ExperimentService = Depends(get_se
             "artifacts": artifact_paths,
             "safetensors_artifacts": safetensors_artifacts,
             "run_url": (
-                f"{get_mlflow_uri()}/#/experiments/{mlflow_exp_id}/runs/{exp.mlflow_run_id}"
+                f"{get_mlflow_browser_uri(request)}/#/experiments/{mlflow_exp_id}/runs/{exp.mlflow_run_id}"
                 if mlflow_exp_id
                 else None
             ),
