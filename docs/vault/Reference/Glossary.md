@@ -30,3 +30,7 @@ updated: 2026-06-14
 | **Cross-Entropy** | Loss function for classification — `-log(p_target)` — negative log probability of the correct next token |
 | **State Dict** | The model's parameter dictionary — maps weight names (wte, lm_head, layer.N.attn_wq, layer.N.mlp_gate, layer.N.rms_*) to matrix of Value objects |
 | **Run-in-Executor** | Python asyncio pattern for offloading blocking/sync code to a thread pool thread, used by `TrainingService` to run the core engine |
+| **Commitizen** | CLI tool for conventional commit enforcement and semantic version bump management (`cz commit`, `cz bump`, `cz check`) |
+| **Conventional Commits** | Structured commit message format: `<type>(<scope>): <description>` — types: feat, fix, perf, refactor, chore, docs, ci, test, style, build |
+| **SemVer** | Semantic Versioning (`MAJOR.MINOR.PATCH`) — bump rules: fix→PATCH, feat→MINOR, BREAKING CHANGE→MAJOR |
+| **BUMP_PAT** | Fine-grained GitHub Personal Access Token used by CI workflows to create auto-merge PRs (Contents+PRs+Workflows: write) |
