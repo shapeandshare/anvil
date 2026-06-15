@@ -114,6 +114,8 @@ class MLflowService:
                 str(self.port),
                 "--workers",
                 "1",
+                "--allowed-hosts",
+                "*",
             ],
             stdout=open(self.log_file, "w"),
             stderr=subprocess.STDOUT,

@@ -186,7 +186,7 @@
       var badgeClass = s.status === 'running' ? 'badge-green' : 'badge-red';
       var statusText = s.status === 'running' ? 'RUNNING' : (s.status || 'STOPPED').toUpperCase();
       var port = s.port ? ':' + s.port : '';
-      var linkHtml = (s.status === 'running' && s.port) ? ' <a href="http://127.0.0.1' + port + '" target="_blank" style="font-size:0.65rem;">[open]</a>' : '';
+      var linkHtml = (s.status === 'running' && s.port) ? ' <a href="' + (s.mlflow_url || ('http://' + window.location.hostname + ':' + s.port)) + '" target="_blank" style="font-size:0.65rem;">[open]</a>' : '';
       var isRunning = s.status === 'running';
 
       servicesHtml += '<tr class="row-entrance" style="--row-i: ' + (si + 1) + '">';

@@ -13,7 +13,7 @@ from fastapi.responses import HTMLResponse
 
 from anvil.api.v1.corpora import router as corpora_router
 from anvil.api.v1.datasets import router as datasets_router
-from anvil.config import get_config
+from anvil.config import get_config, get_mlflow_uri
 from anvil.api.v1.eval import router as eval_router
 from anvil.api.v1.eval_datasets import router as eval_datasets_router
 from anvil.api.v1.experiments import router as experiments_router
@@ -82,7 +82,12 @@ async def list_services(request: Request):
     return {
         "services": [
             {"name": "web", "status": "running"},
-            {"name": "mlflow", "status": mlflow_status, "port": get_config()["mlflow_port"]},
+            {
+                "name": "mlflow",
+                "status": mlflow_status,
+                "port": get_config()["mlflow_port"],
+                "mlflow_url": get_mlflow_uri(),
+            },
         ]
     }
 
@@ -998,30 +1003,37 @@ async def models_page(request: Request):
 
 
 @router.get("/model-detail/{model_id}", response_class=HTMLResponse)
-async def model_detail_page(request: Request, model_id: int):
+async def model_detail_page(request: Request, model_id: str):
+    try:
+        parsed = int(model_id)
+        if parsed <= 0:
+            raise ValueError
+    except (ValueError, TypeError):
+        return request.app.state.templates.TemplateResponse(
+            request,
+            "archetypes/model_detail.html",
+            {"model_id": 0, "error": f"Invalid model ID: {model_id}"},
+            status_code=404,
+        )
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/model_detail.html",
-        {"model_id": model_id},
+        {"model_id": parsed},
     )
 
 
 @router.get("/inference/models")
 async def list_inference_models():
-    from anvil.db.repositories.models import ModelRepository
-    from anvil.db.session import AsyncSessionLocal
-    from anvil.services.models import ModelRegistryService
+    from anvil.services.tracking import TrackingService
 
-    async with AsyncSessionLocal() as session:
-        repo = ModelRepository(session)
-        svc = ModelRegistryService(repo)
-        models = await svc.get_inference_models()
-        if not models:
-            return {
-                "models": [],
-                "message": "No models registered. Train an experiment and register it first.",
-            }
-        return {"models": models}
+    tracking_svc = TrackingService()
+    models = await tracking_svc.list_registered_models()
+    if not models:
+        return {
+            "models": [],
+            "message": "No models registered. Train an experiment and register it first.",
+        }
+    return {"models": models}
 
 
 @router.post("/inference/sample")
@@ -1056,22 +1068,40 @@ async def inference_sample(body: dict):
     from anvil.db.session import AsyncSessionLocal
     from anvil.services.models import ModelRegistryService
 
+    # Try loading from local DB first (registered_models.id path)
+    model = None
+    chars = None
     async with AsyncSessionLocal() as session:
         repo = ModelRepository(session)
         svc = ModelRegistryService(repo)
         v = await svc.get_version(model_id, version)
 
-    if v is None:
-        raise HTTPException(
-            status_code=404, detail="Model version not found in registry"
-        )
+    if v is not None:
+        model_path = Path(v["artifact_path"])
+        if model_path.exists():
+            model = LlamaModel.load(str(model_path))
+            chars = model.chars
 
-    model_path = Path(v["artifact_path"])
-    if not model_path.exists():
-        raise HTTPException(status_code=404, detail="Model artifact not found")
+    # Fallback: treat model_id as experiment_id and load from saved artifact
+    if model is None:
+        async with AsyncSessionLocal() as session:
+            from anvil.db.repositories.experiments import ExperimentRepository
 
-    model = LlamaModel.load(str(model_path))
-    chars = model.chars
+            exp_repo = ExperimentRepository(session)
+            exp = await exp_repo.get(model_id)
+
+        if exp is None:
+            raise HTTPException(
+                status_code=404, detail="Model version not found in registry"
+            )
+
+        model_path = Path(f"data/models/experiment_{model_id}.json")
+        if not model_path.exists():
+            raise HTTPException(status_code=404, detail="Model artifact not found")
+
+        model = LlamaModel.load(str(model_path))
+        chars = model.chars
+
     if not chars:
         raise HTTPException(status_code=400, detail="Model has no character mapping")
 
