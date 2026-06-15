@@ -21,6 +21,10 @@ After the v2.1.0 DESIGN.md update, three cleanup issues were identified and fixe
 - **Hero card infinite bounce**: Hover triggers a 1s ease-in-out infinite bounce animation — a departure from the spec's 150ms restrained hover pattern.
 - **glass-border token**: Border var for glass surfaces, not in original spec.
 
+## Anvil emblem re-path (2026-06-14)
+
+The `anvil-emblem.svg` path was replaced with one derived from an SVGRepo reference (English-pattern, right-facing horn). The original was a handcrafted left-facing shape; the new path traces the reference through a 7× coordinate transform into the 240×160 viewBox. The shape lives in three places that must stay in sync: `anvil/api/static/anvil-emblem.svg`, `hero.html` forge section inline SVG, and the `README.md` header. A favicon set was also added: `favicon.svg` (SVG, dark/light adaptive) and `apple-touch-icon.png` (180×180 PNG), both wired into `base.html`.
+
 ## Things that stayed consistent
 
 - Token color values (still match iOS HIG)
