@@ -252,14 +252,6 @@ textarea.terminal-input.terminal-textarea { min-height: 60px; resize: vertical; 
 .info-grid .meter { display: inline-block; width: 48px; height: 6px; background: var(--separator); border-radius: 3px; vertical-align: middle; margin-left: var(--space-1); overflow: hidden; }
 .info-grid .meter span { display: block; height: 100%; background: var(--accent); border-radius: 3px; transition: width var(--dur-slow) var(--ease); }
 
-/* ── Nav Title Forge Gradient ── */
-.nav-title--forge {
-  background: linear-gradient(135deg, var(--accent-orange), var(--accent-yellow));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
 /* ── Table Row Entrance ── */
 .row-entrance {
   animation: row-entrance 0.4s var(--spring-quick) calc(0.2s + var(--row-i, 0) * 0.03s) both;

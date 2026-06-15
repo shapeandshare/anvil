@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" fill="currentColor" aria-hidden="true">
+  <!--
+    Blacksmith's anvil — left-facing side profile, single closed path.
+    Topology: horn emerges below face level, curving down-left from upper body.
+    Sides of upper body are steep (not oval). Waist snaps in hard.
+    Pedestal column with flared feet.
+
+    Landmark coords:
+      Horn tip:     (4, 68)  — leftmost, ~42% down
+      Face arch:    x=34..210, peak y=10
+      Heel:         x=234, y=52
+      Waist:        x=78..162, y=98  (84px = 37% of 226px span)
+      Pedestal:     x=78..162, y=98..124
+      Feet:         x=44..196, y=124..156
+  -->
+  <path d="
+    M 10,66
+    C 20,50 30,18 42,14
+    L 200,14
+    C 218,14 226,22 224,48
+    C 224,72 178,92 158,98
+    L 158,124
+    C 158,128 168,130 216,130
+    L 216,155
+    L 24,155
+    L 24,130
+    C 72,130 82,128 82,124
+    L 82,98
+    C 60,90 24,78 20,74
+    C 14,70 10,68 10,66
+    Z
+  "/>
+</svg>
