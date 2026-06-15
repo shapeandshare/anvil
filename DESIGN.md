@@ -1,13 +1,13 @@
 ---
 name: anvil
 platform: ios
-version: 2.0.0
+version: 2.1.0
 
 ## iOS Design Tokens (Dark)
 colors:
   bg: "#000000"            # iOS dark system background
   surface: "#1c1c1e"       # iOS dark secondary surface (grouped table background)
-  surface-secondary: "#2c2c2e"  # iOS dark tertiary surface
+  surface-2: "#2c2c2e"  # iOS dark tertiary surface
   grouped-bg: "#0c0c0d"    # iOS dark grouped background
   separator: "#38383a"     # iOS dark separator
   text: "#ffffff"           # iOS dark label
@@ -24,13 +24,14 @@ colors:
   fill-secondary: "#686870" # iOS secondary fill
   glass-bg: "rgba(28, 28, 30, 0.85)"    # dark nav bar glass
   glass-blur: "sat(180%) blur(20px)"
+  glass-border: "rgba(255, 255, 255, 0.08)"
   shadow: "rgba(0, 0, 0, 0.3)"
 
 ## iOS Design Tokens (Light)
 colors-light:
   bg: "#f2f2f7"            # iOS light grouped background
   surface: "#ffffff"        # iOS light surface
-  surface-secondary: "#f2f2f7"  # iOS light secondary surface
+  surface-2: "#f2f2f7"  # iOS light secondary surface
   grouped-bg: "#f2f2f7"     # iOS light grouped background
   separator: "#c6c6c8"      # iOS light separator
   text: "#000000"           # iOS light label
@@ -47,6 +48,7 @@ colors-light:
   fill-secondary: "#686870"
   glass-bg: "rgba(255, 255, 255, 0.72)"  # iOS light nav bar
   glass-blur: "sat(180%) blur(20px)"
+  glass-border: "rgba(60, 60, 67, 0.12)"
   shadow: "rgba(0, 0, 0, 0.1)"
 
 typography:
@@ -136,15 +138,19 @@ motion:
 
 ## Overview
 
-anvil is an interactive ML learning tool that wraps Karpathy's microgpt.py with a live training dashboard, experiment tracking, and explorable concept pages. The design language is **iOS modern** — imagined as a native iOS app brought to the web.
+anvil is an interactive ML learning tool for training and experimenting with small LLMs from scratch. Inspired by Karpathy's microgpt.py, it has evolved into a standalone engine (RoPE, SwiGLU, RMSNorm) with a live training dashboard, experiment tracking, and explorable concept pages. The design language is **iOS modern** — imagined as a native iOS app brought to the web.
 
 The personality is clean, precise, and responsive. Light and dark modes follow Apple's system color semantics. Glass navigation bars provide depth hierarchy. Spring animations make interactions feel tactile. System sans-serif typography ensures maximum readability across all devices.
 
-**Brand keywords**: clean, precise, responsive, tactile, data-literate, native-feeling.
+**Brand keywords**: clean, precise, responsive, tactile, data-literate, native-feeling, forged.
+
+The hero/landing page uses a **forge** sub-theme — orange/amber glows, floating ember particles, and an anvil icon — that establishes the "forging intelligence" metaphor. This sub-theme is exclusive to the hero page; all other pages use the standard iOS palette with blue as the primary interactive color.
 
 ## Colors
 
 The palette follows Apple's iOS Human Interface Guidelines for both light and dark mode. The system blue (`#007aff`) is the primary interactive color — buttons, links, active states, and focus rings. It means "things you can touch." Never use primary for body text or decorative borders.
+
+The forge sub-theme (hero page only) elevates **orange** (`#ff9500`) and **yellow** (`#ffcc00`) as decorative brand colors — used for gradient text, ambient glow, ember particles, CTA accent, and decorative borders. On the hero page only, orange functions as a secondary brand accent; everywhere else it remains a warning color.
 
 ### Dark Mode
 - **Background** (`#000000`): True black — OLED-friendly for mobile devices, rich contrast for data display
@@ -163,8 +169,8 @@ System colors serve single semantic jobs:
 - **Blue (system)**: Interactive elements, links, active states, primary actions
 - **Green (system)**: Success states, completed training runs, positive metrics, start actions
 - **Red (system)**: Errors, failures, destructive actions, stop buttons
-- **Orange (system)**: Warnings, degraded states, caution indicators, retry actions
-- **Yellow (system)**: Warnings, attention indicators
+- **Orange (system)**: Warnings, degraded states, caution indicators, retry actions — also forge brand accent (hero page only)
+- **Yellow (system)**: Warnings, attention indicators — also forge accent (hero page only)
 - **Purple (system)**: Special labels, section markers
 
 ### Mode switching
@@ -203,54 +209,71 @@ The type system follows Apple's iOS type scale with a single type family:
 - SF Pro is NOT embedded via `@font-face` due to Apple's licensing restrictions
 
 ### Scale
-The base font size on `<html>` is 17px (down from the current 20px) — matching iOS's standard body text size. It scales down to 16px on phones.
+The base font size on `<html>` is 17px — matching iOS's standard body text size. It scales down to 16px on phones.
 
 ## Layout & Spacing
 
 ### App shell
 Every page lives inside a shared app shell with three structural layers:
 
-1. **Navigation bar** (sticky, top): Large title (left), theme toggle (right), glass backdrop. Title collapses to inline when scrolled (standard iOS navigation bar behavior).
-2. **Main** (scrollable, center): Content area with padding matching iOS standard margins (16px on each side)
-3. **Tab bar** (sticky, bottom): Scrollable tab bar with all navigation items. Glass backdrop. `100dvh` flexbox layout with `env(safe-area-inset-bottom)` for home indicator clearance.
+1. **Navigation bar** (fixed top, glass): Horizontal scrollable tab strip (all nav items) with glass backdrop and vertical fade mask. Theme toggle button at the right. No large title — the nav bar is purely navigational. Height: `56px + env(safe-area-inset-top)`.
+2. **Main** (scrollable, center): Content area with padding matching iOS standard margins (16px on each side). Has an ambient orange radial gradient at the top for depth.
+3. **Footer**: Subtle centered footer with version, separated by a hairline rule. Uses `env(safe-area-inset-bottom)` for home indicator clearance.
+
+The layout uses a `100dvh` flexbox column: `app-shell` → `app-main` (flex: 1, scrollable) → `site-footer` (flex-shrink: 0). No bottom tab bar exists — all navigation is in the top nav bar.
 
 ### Page archetypes
-Pages follow four layout archetypes:
+Pages follow five layout archetypes:
 
 - **Archetype A (Single Column)**: Full-width content with iOS grouped sections. Used for concept pages, FAQ, learn index.
 - **Archetype B (Dashboard)**: Multi-section vertical stack with optional side-by-side on wider screens. Used for training, operations.
 - **Archetype C (List/Detail)**: iOS grouped table view with selection → detail drill-down. Used for experiments, models, datasets.
 - **Archetype D (Playground)**: Single-column sandbox with grouped form sections. Used for inference/playground.
+- **Archetype E (Hero/Landing)**: Centered single-column layout with forge visual elements (glow, embers, anvil icon), tagline, subtitle, CTA buttons, and a 2-column feature card grid. Used for the root `/` route only. Max-width: 720px. Content is vertically centered with generous top padding (`var(--space-8)`). Feature cards collapse to single column at ≤480px.
 
 ### Spacing scale
-The spacing scale follows iOS's 8px grid:
+The spacing scale follows iOS's 8px grid with additional tokens for large spacing:
 
-- **`xs` (4px)**: Inner gaps in chips, token lists
-- **`sm` (8px)**: Tight element gaps, chip spacing, form element padding — base grid unit
-- **`md` (16px)**: Default component padding, card internal gutters, page margins
-- **`lg` (20px)**: Section spacing, panel padding
-- **`xl` (24px)**: Major section breaks, large button padding
-- **`xxl` (32px)**: Large narrative spacing
+| Token | Value | Where Used |
+|-------|-------|------------|
+| `space-1` | 4px | Inner gaps in chips, token lists |
+| `space-2` | 8px | Tight element gaps, chip spacing, base grid unit |
+| `space-3` | 12px | Medium gaps, form element padding |
+| `space-4` | 16px | Default component padding, card gutters, page margins |
+| `space-5` | 20px | Section spacing, panel padding |
+| `space-6` | 24px | Major section breaks, large button padding |
+| `space-7` | 32px | Large narrative spacing |
+| `space-8` | 48px | Hero section gaps, large vertical padding |
+| `space-9` | 64px | Extra-large spacing, panel margins |
+| `space-10` | 96px | Maximum spacing breaks |
 
 ### Safe areas
 All layouts use `env(safe-area-inset-*)` variables for iOS PWA and notch support:
 - Top nav bar: `padding-top: env(safe-area-inset-top)`
-- Bottom tab bar: `padding-bottom: env(safe-area-inset-bottom)`
-- Page content: standard padding (safe areas handled by nav/tab bars)
+- Page content: `padding-top: calc(56px + env(safe-area-inset-top) + padding)` — safe areas handled by nav bar offset
+- Footer: `padding-bottom: calc(tight-padding + env(safe-area-inset-bottom))`
 
 ### Responsive behavior
 - **≤768px** (tablet/phone): Base font stays at 17px. Side-by-side layouts collapse to single column. Standard iOS margins.
-- **≤480px** (phone): Base font drops to 16px. Tighter margins (12px). Tab bar labels may shorten.
+- **≤480px** (phone): Base font drops to 16px. Tighter margins (12px). Hero title shrinks to 1.8rem. Feature cards collapse to single column. Forge icon shrinks to 2.8rem.
+
+### Ambient background
+Every page (via `base.css`) has:
+- A **radial gradient** at the top of `.app-main`: `radial-gradient(ellipse 1200px 700px at 50% 8%, color-mix(in srgb, var(--accent-orange) 12%, transparent), transparent)` — a subtle orange glow at the top of the content area.
+- **Floating ambient particles** in `.ambient-particles`: fixed-position, pointer-events-none ember-like circles that float upward from random positions across the viewport. 20 particles with varied delays and speeds (`--s: 6-12s`, `--d: 0-12s`). Warm variants glow with a yellow box-shadow. These are always present on every page.
 
 ## Elevation & Depth
 
-Depth is communicated through glass materials and subtle shadows, not through heavy borders.
+Depth is communicated through glass materials, subtle shadows, and ambient glow — not through heavy borders.
 
 ### Glass Navigation
-The navigation bar and tab bar use `backdrop-filter: saturate(180%) blur(20px)` with a translucent backing (`rgba(28, 28, 30, 0.85)` in dark, `rgba(255, 255, 255, 0.72)` in light). This creates the standard iOS frosted glass effect.
+The navigation bar uses `backdrop-filter: saturate(180%) blur(20px)` with a translucent backing (`rgba(28, 28, 30, 0.85)` in dark, `rgba(255, 255, 255, 0.72)` in light). The glass has a **vertical fade mask**: `mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%)` — the glass effect fades out at the bottom of the nav bar. A subtle `--glass-border` provides the bottom edge definition.
 
 ### Glass Fallback
-When `backdrop-filter` is unsupported or `prefers-reduced-transparency` is active, both bars fall back to solid `--surface` background with a 1px bottom/top separator border. No information is lost.
+When `backdrop-filter` is unsupported or `prefers-reduced-transparency` is active, the nav bar falls back to solid `--surface` background with a 1px bottom separator. No information is lost.
+
+### Forge Glow (Hero only)
+The hero page's forge section has a pulsing orange radial glow behind the anvil icon: `radial-gradient(circle, color-mix(in srgb, orange 35%, transparent), transparent 70%)`. Animates via `forge-pulse`: scale(0.9→1.1), opacity(0.5→1), 3s infinite alternate.
 
 ### Cards & Panels
 Cards use subtle shadows (iOS material shadow) rather than borders:
@@ -276,18 +299,31 @@ Border radius follows iOS conventions:
 ## Components
 
 ### Navigation Bar
-Large title on the left, theme toggle on the right. Glass backdrop (`backdrop-filter`). When the user scrolls, the large title should collapse to a standard inline title (handled via JS `IntersectionObserver` on the title element). Bottom border separator when scrolled.
+Fixed top bar with inline horizontal-scrolling tab strip and a theme toggle button on the right. Glass backdrop (`backdrop-filter`) with vertical fade mask. Height: `56px + env(safe-area-inset-top)`.
 
-### Tab Bar
-Scrollable bottom tab bar with all navigation items. Each tab shows an SF Symbols-style icon (emoji/unicode symbol as placeholder) + label. Active tab shows the accent color. Glass backdrop. `env(safe-area-inset-bottom)` clearance.
+- Tabs are `<a href>` elements with icon + label
+- Active tab shows `--accent` color
+- Tab labels: 0.65rem (caption-2 size)
+- Tab icon: 1.2rem
+- Scrollable on overflow with hidden scrollbar
+- Theme toggle: `--surface-2` background, `--accent` color, 44px touch target
 
-- Tab labels are 10-11px (caption-2)
-- Minimum tab width accommodates label + icon
-- Tabs are `<a href>` elements for proper accessibility
-- Active tab has colored icon + label
+### Hero Page (Archetype E)
+
+**Forge Section**: Centered hero block with:
+- **Glow**: Pulsing orange radial glow behind the icon
+- **Embers**: 8 floating particles (orange/yellow dots rising upward with varied timing), aria-hidden
+- **Anvil icon**: Custom SVG of an anvil, `--accent-orange` color, drop-shadow glow, gentle bob animation (translateY -4px, 4s ease-in-out)
+- **Title**: "anvil" in gradient text — `linear-gradient(135deg, orange, yellow)` with `background-clip: text`
+- **Tagline**: "Forging intelligence." in `--accent-orange`, 1.15rem, fade-in animation
+- **Subtitle**: Product description, `--text-secondary`, max-width 480px, fade-in animation (delayed)
+- **Actions**: "Start Training" CTA (orange gradient button with glow box-shadow) + "Learn the Concepts" secondary button (surface-2), fade-in animation (delayed further)
+- Feature cards: 2-column grid (`grid-template-columns: 1fr 1fr`), 7 feature cards (Data, Train, Experiments, Models, Play, Learn, Ops), each with SVG icon + title + description. Cards have staggered entrance animations via `--i` custom property. On hover: scale(1.05) + bounce animation + shadow-md.
+
+**Responsive**: At ≤480px, feature cards collapse to 1 column, title shrinks to 1.8rem, gap/padding reduces, forge icon shrinks to 2.8rem.
 
 ### Buttons
-iOS-style system buttons:
+iOS-style system buttons with forge variants:
 
 **Primary (filled)**: Blue background, white text. The primary action on any screen. Rounded (13px). Height: 44px (touch target minimum). Use one per viewport section.
 
@@ -295,10 +331,20 @@ iOS-style system buttons:
 
 **Semantic**: Filled with semantic colors — green for start, red for stop/destructive, orange for retry. Same shape as primary.
 
+**Accent gradient** (`btn-accent`): Blue-to-purple gradient button for special call-to-action emphasis. Uses `linear-gradient(135deg, --accent, --accent-purple)`.
+
+**Forge** (`btn--forge`, `hero-cta--forge`): Orange-to-yellow gradient button with glow box-shadow. Used exclusively on the hero page and forge-themed section cards. Optional pulse animation (`btn-pulse-forge`) for emphasis.
+
 **Plain/Tertiary**: Text-only or tinted with no fill. For least prominent actions.
 
+### Section Cards (Forge/Accent variants)
+Cards used in content sections below the hero, with optional left accent border:
+- `section-card--forge`: 3px orange left border
+- `section-card--accent`: 3px blue left border
+- Title variant `section-card__title--forge`: gradient text (orange→yellow)
+
 ### Grouped List (iOS)
-The primary data layout pattern. Replaces the current table/panel/htop patterns:
+The primary data layout pattern:
 
 - Sections are separated by `--separator` color
 - Each section has an optional header (uppercase, caption-1 weight, `--text-tertiary`)
@@ -306,20 +352,21 @@ The primary data layout pattern. Replaces the current table/panel/htop patterns:
 - Row height: 44px minimum
 - Optional accessory icons (chevron, toggle, badge)
 - Content inset matches standard iOS (16px left/right)
+- Staggered entrance animation via `--row-i`
 
 ### Cards
-Rounded (13px) containers on `--surface` background. Subtle shadow. Internal padding of 16px. Used for data source summaries, model info blocks, metric displays.
+Rounded (13px) containers on `--surface` background. Subtle shadow. Internal padding of 16px. Used for data source summaries, model info blocks, metric displays. Staggered entrance animation via `--stagger-i`.
 
 ### Forms
 iOS-style form inputs:
-- **Text inputs**: Rounded (13px), `--surface-secondary` background, inset appearance
-- **Select menus**: System-like picker appearance
+- **Text inputs**: Rounded (13px), `--surface-2` background, inset appearance
+- **Select menus**: System-like picker appearance with custom chevron arrow
 - **Sliders**: Native `accent-color: var(--accent)`
-- **Toggles**: iOS switch appearance (custom CSS)
+- **Toggles**: iOS switch appearance (custom CSS with slide thumb)
 - **File inputs**: Styled as iOS document picker buttons
 
 ### Badges
-Small rounded pills (13px or 20px radius) with colored background and white text. Inline with content. Unlike the previous outline badges, iOS badges are filled.
+Small rounded pills (13px or 20px radius) with colored background and white text. Inline with content. Filled style.
 
 - Success: green fill
 - Error: red fill  
@@ -328,7 +375,7 @@ Small rounded pills (13px or 20px radius) with colored background and white text
 - Neutral: gray fill
 
 ### Toasts
-iOS notification-style banners that slide down from the top of the screen (not from the bottom-right as before). Same semantic colors. Banner width matches the screen width on mobile, max 400px on desktop.
+iOS notification-style banners that slide down from the top of the screen. Semantic colors with tinted left border and gradient background. Banner width matches the screen width on mobile, max 400px on desktop.
 
 ### Tables
 iOS grouped table style:
@@ -336,16 +383,17 @@ iOS grouped table style:
 - Rows with separators
 - Sticky section headers
 - Selection highlights
+- Staggered row entrance animations
 
 ### Spinner
-Single rotating loading indicator using the standard iOS activity indicator style (a spinning circle via CSS animation, not the ASCII text spinner). Uses `--accent` color.
+Single rotating loading indicator using the standard iOS activity indicator style (a spinning circle via CSS animation, not the ASCII text spinner). Uses `--accent` color. 20px, 2.5px border, 0.6s spin.
 
 ## Motion
 
 ### Spring Animations
 Animations use CSS `linear()` timing functions that produce iOS-style spring overshoot:
 
-- **Entrance** (spring-quick): Elements entering the screen or appearing (toasts, sheets, expanding sections). ~400ms with slight overshoot.
+- **Entrance** (spring-quick): Elements entering the screen or appearing (toasts, sheets, expanding sections, hero text fade-ins, card entrances). ~400ms with slight overshoot.
 - **Exit** (spring-slow): Elements leaving the screen. ~350ms with deceleration.
 - **Hover/Tap** (150ms, ease): Interactive state changes (button press, link hover, toggle switch).
 
@@ -356,18 +404,27 @@ Animations use CSS `linear()` timing functions that produce iOS-style spring ove
 - Toggle switches → 200ms spring between on/off positions
 - List row selection → brief highlight fade
 - Section expansion → height + opacity transitions
+- Section/card entrance → stagger entrance (translateY + opacity) with `--stagger-i` / `--row-i`
+- Hero title/tagline/actions → cascade fade-in (0.15s delays)
+- Feature cards on hover → **infinite bounce**: scale(1.05) + translateY(0→-5px), 1s ease-in-out infinite
+- Forge glow → pulse: scale(0.9→1.1), 3s infinite alternate
+- Forge icon → bob: translateY(0→-4px), 4s ease-in-out infinite
+- Ember particles → float upward: translateY(0→-280px) + scale(1→0.2) + fade, 2.8-5s infinite
 
 ### Reduced Motion
-When `prefers-reduced-motion: reduce` is active, ALL transitions and animations are disabled via `transition: none !important; animation: none !important;`. State changes become instant. No information is lost — motion was never carrying semantic content.
+When `prefers-reduced-motion: reduce` is active, ALL transitions and animations are disabled globally via `transition: none !important; animation: none !important;`. Additionally, hero-specific animations (glow, icon, embers, text fade-ins, card hover bounce) are explicitly reset to static state (opacity: 1, transform: none). State changes become instant. No information is lost — motion was never carrying semantic content.
 
 ### Reduced Transparency
-When `prefers-reduced-transparency: reduce` is active, all `backdrop-filter` glass effects are replaced with solid `--surface` backgrounds. Nav bar and tab bar lose the blur but maintain the scrim color.
+When `prefers-reduced-transparency: reduce` is active, all `backdrop-filter` glass effects are replaced with solid `--surface` backgrounds. The nav bar loses the blur but maintains the scrim color.
+
+**Intentional exemption**: The global ambient radial gradient on `.app-main` and the floating ambient particles are CSS `radial-gradient` and positioned elements (not `backdrop-filter`), so they are deliberately unaffected by this preference. These effects create visual atmosphere and carry no functional content — no information is lost if a user has reduced-transparency enabled.
 
 ## Do's and Don'ts
 
 - **Do** use the system blue accent for interactive elements only. One interactive accent per viewport section maximum.
+- **Do** use orange/yellow as forge decorative colors on the hero page — they are brand accents there, not warnings.
 - **Do** use `ui-monospace` for all data display — token values, tensor scalars, loss numbers, code blocks, step counts.
-- **Do** use the 8px spacing grid strictly. Never invent spacing values between defined steps.
+- **Do** use the spacing grid strictly. Prefer using named variables (`var(--space-*)`) over raw values.
 - **Do** use system sans-serif for ALL text. No serif or decorative fonts.
 - **Do** use filled (not outlined) buttons as the primary button pattern.
 - **Do** respect WCAG AA contrast (4.5:1 minimum) for all text/background pairs in both modes.
@@ -379,9 +436,9 @@ When `prefers-reduced-transparency: reduce` is active, all `backdrop-filter` gla
 - **Don't** use serif fonts for anything.
 - **Don't** use text-based ASCII spinners (| / - \). Use CSS spinning indicators.
 - **Don't** use outlined buttons (fill → outline was the old pattern).
-- **Don't** add drop shadows to nav bars or tab bars — use glass instead.
-- **Don't** use `position: fixed; bottom: 0` for tab bars — use `100dvh` flexbox.
+- **Don't** add drop shadows to nav bars — use glass instead.
 - **Don't** use `@font-face` to embed SF Pro.
 - **Don't** apply `backdrop-filter` to more than 3 simultaneous surfaces.
-- **Don't** create new bespoke page layouts. Every page must fit into one of the four archetypes.
+- **Don't** create new bespoke page layouts. Every page must fit into one of the five archetypes.
 - **Don't** suppress reduced-motion or reduced-transparency preferences.
+- **Don't** use forge glow or hero ember particles outside Archetype E — those are hero-exclusive effects. (Note: the global ambient particles in `base.html` are present on all pages, not hero-only.)

@@ -339,7 +339,7 @@
   font-size: 0.94rem;
   font-weight: 600;
   min-height: var(--touch-min);
-  padding: 0 var(--space-6);
+  padding: var(--space-1) var(--space-6);
   background: var(--accent);
   color: #fff;
   border-radius: var(--radius);
@@ -374,7 +374,7 @@
   font-size: 0.94rem;
   font-weight: 500;
   min-height: var(--touch-min);
-  padding: 0 var(--space-6);
+  padding: var(--space-1) var(--space-6);
   background: var(--surface-2);
   color: var(--text-secondary);
   border-radius: var(--radius);
