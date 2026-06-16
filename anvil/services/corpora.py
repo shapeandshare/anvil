@@ -49,6 +49,76 @@ class CorpusService:
         )
         return await self._repo.add(corpus)
 
+    async def fork(
+        self,
+        source_id: int,
+        name: str,
+        description: str | None = None,
+        include_patterns: list[str] | None = None,
+        exclude_patterns: list[str] | None = None,
+        chunking_strategy: str | None = None,
+        chunk_overlap: float | None = None,
+        block_size: int | None = None,
+    ) -> Corpus:
+        """Create a new corpus variant (fork) from an existing one.
+
+        Copies the source corpus's parameters (root_path, chunking config,
+        include/exclude patterns) and applies any overrides. The new corpus
+        has ``parent_id`` set to the source corpus for lineage tracking.
+
+        Does NOT ingest automatically — call ``ingest()`` separately.
+        """
+        source = await self._repo.get(source_id)
+        if source is None:
+            raise ValueError(f"Corpus {source_id} not found")
+
+        resolved_chunking = chunking_strategy or source.chunking_strategy
+        if resolved_chunking not in ("line", "windowed", "file"):
+            raise ValueError(
+                f"chunking_strategy must be one of: line, windowed, file"
+            )
+        resolved_overlap = (
+            chunk_overlap if chunk_overlap is not None else source.chunk_overlap
+        )
+        if not 0.0 <= resolved_overlap <= 1.0:
+            raise ValueError(
+                f"chunk_overlap must be in [0.0, 1.0], got {resolved_overlap}"
+            )
+
+        inc = (
+            include_patterns
+            if include_patterns is not None
+            else (
+                json.loads(source.include_patterns)
+                if source.include_patterns
+                else None
+            )
+        )
+        exc = (
+            exclude_patterns
+            if exclude_patterns is not None
+            else (
+                json.loads(source.exclude_patterns)
+                if source.exclude_patterns
+                else None
+            )
+        )
+
+        corpus = Corpus(
+            name=name,
+            description=description if description is not None else source.description,
+            root_path=source.root_path,
+            include_patterns=json.dumps(inc) if inc else None,
+            exclude_patterns=json.dumps(exc) if exc else None,
+            chunking_strategy=resolved_chunking,
+            chunk_overlap=resolved_overlap,
+            block_size=(
+                block_size if block_size is not None else source.block_size
+            ),
+            parent_id=source.id,
+        )
+        return await self._repo.add(corpus)
+
     async def list(self):
         return await self._repo.get_all()
 

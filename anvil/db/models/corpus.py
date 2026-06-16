@@ -30,6 +30,9 @@ class Corpus(Base, TimestampMixin):
     block_size: Mapped[int] = mapped_column(
         Integer, nullable=False, default=16
     )
+    parent_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("corpora.id", ondelete="SET NULL"), nullable=True
+    )
     file_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     document_count: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0
@@ -39,6 +42,12 @@ class Corpus(Base, TimestampMixin):
 
     files: Mapped[list["CorpusFile"]] = relationship(
         "CorpusFile", back_populates="corpus", cascade="all, delete-orphan"
+    )
+    parent: Mapped["Corpus | None"] = relationship(
+        "Corpus", remote_side="Corpus.id", back_populates="forks"
+    )
+    forks: Mapped[list["Corpus"]] = relationship(
+        "Corpus", back_populates="parent"
     )
 
 
