@@ -3,7 +3,7 @@ title: Decision Log
 type: reference
 tags: [type/reference, domain/governance]
 created: 2026-06-10
-updated: 2026-06-10
+updated: 2026-06-15
 ---
 
 # Decision Log
@@ -23,3 +23,4 @@ updated: 2026-06-10
 | 2026-06-14 | ADR-010 | Hosted MLflow support — disable local server | Accepted |
 | 2026-06-14 | ADR-011 | Name-Based Idempotency for Demo Data Bootstrap | Accepted |
 | 2026-06-15 | ADR-012 | Derive MLflow browser URL from HTTP request Host header | Accepted |
+| 2026-06-15 | ADR-013 | Training Config Footgun Guards — Multi-Layer Hyperparameter Validation | Accepted |
