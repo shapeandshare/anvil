@@ -44,7 +44,7 @@ anvil/          # Python package (implicit namespace)
 
 ## Agent Behavioral Principles
 
-1. **Constitution First** — Read `CONSTITUTION.md` before writing any code. All work must comply.
+1. **Constitution First** — Read `.specify/memory/constitution.md` before writing any code. All work must comply.
 2. **TDD Always** — Write tests before implementation (Red-Green-Refactor). 100% coverage required.
 3. **Vault Enrichment** — Record discoveries in `docs/vault/` during sessions. Enrich vault at session end.
 4. **ADR for Decisions** — Every significant architecture decision gets an ADR in `docs/vault/Decisions/`.

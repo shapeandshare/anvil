@@ -18,7 +18,7 @@ updated: 2026-06-14
 | **UoW** | Unit of Work — transaction boundary spanning multiple repository operations |
 | **ADR** | Architecture Decision Record — documents significant architecture decisions |
 | **Vault** | Obsidian-compatible documentation directory at `docs/vault/` |
-| **Constitution** | Project governance document (`CONSTITUTION.md`) defining non-negotiable principles |
+| **Constitution** | Project governance document (`.specify/memory/constitution.md`) defining non-negotiable principles |
 | **Value** | Autograd scalar node in `anvil/core/autograd.py` — stores `data`, `grad`, children and local partial derivatives for reverse-mode AD |
 | **Autograd** | Automatic differentiation via computation graph — forward pass builds DAG, `.backward()` traverses in topological order applying chain rule |
 | **KV Cache** | Key-Value cache for causal self-attention — per-layer lists appended at each autoregressive step, avoids recomputing previous positions |

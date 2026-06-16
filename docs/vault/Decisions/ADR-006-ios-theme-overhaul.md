@@ -65,6 +65,6 @@ This requires amending Constitution Article VIII (Whimsy Without Compromise) and
 - All existing functionality preserved
 
 ## Dependencies
-- Supersedes Article VIII of CONSTITUTION.md
+- Supersedes Article VIII of `.specify/memory/constitution.md`
 - Supersedes the entire DESIGN.md specification
 - Constitution version bumped to 1.2.0

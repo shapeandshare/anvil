@@ -12,7 +12,7 @@
 - Q: What feature scope should the bootstrap cover? → A: Broad — include optional web dashboard, GPU training path, and alternative dataset support alongside core training and boilerplate.
 - Q: What level of experiment tracking and checkpointing? → A: MLflow (not W&B) with SQLite backend — external experiment management tool integration (adds pip dependencies).
 - Q: How should the 5-stage progression be organized? → A: Separate standalone files (`train0.py` through `train5.py`) with a `diff_stages.py` helper to show what changed between versions.
-- Q: Where should the constitution and specs live? → A: Default locations — `CONSTITUTION.md` at repo root, specs in `specs/` directory.
+- Q: Where should the constitution and specs live? → A: Default locations — `.specify/memory/constitution.md` (canonical), specs in `specs/` directory.
 - User clarified: ALL functionality (including experiment tracking) must be exposed through a web UI using Python server-side rendering with Jinja templates, with exceptions only for `make setup` and `make run`. Multiple UI pages/paths are expected. All Python code uses implicit namespace packages by default — `__init__.py` files allowed only for package public API exports.
 - User clarified: Web UI must be accessible on the local network (bind to `0.0.0.0`, not localhost-only). All server processes (web server, MLflow, training jobs) run in the background as daemons with lifecycle management (start/stop/restart) from the UI. An operations/service management page in the UI provides process status, log tailing, and service controls. Logs for all processes must be easily accessible through the UI.
 - User clarified: Core logic components MUST use implicit namespace packaging. The entire system MUST be redistributable as a Python package (`pip install`). Python implementation is favored over bash scripts (Makefile and related tooling is acceptable). Favor MLflow for experiment tracking over alternatives; SQLite is acceptable for persistent storage.
@@ -34,7 +34,7 @@
 
 The following execution order is mandatory:
 
-1. **Phase 1 — Agentic Harness Setup**: CONSTITUTION.md, AGENTS.md, vault initialization, ADR framework, `.specify/` tooling, `opencode.json`, session management, vault population with initial discoveries. This phase MUST complete before any code is written.
+1. **Phase 1 — Agentic Harness Setup**: `.specify/memory/constitution.md`, AGENTS.md, vault initialization, ADR framework, `.specify/` tooling, `opencode.json`, session management, vault population with initial discoveries. This phase MUST complete before any code is written.
 2. **Phase 2 — Project Boilerplating**: `pyproject.toml`, Makefile, linting configs (ruff, black, isort, pylint), `.gitignore`, package structure with implicit namespace, CI pipeline, `CONTRIBUTING.md`.
 3. **Phase 3 — Remainder**: Core training (`anvil.py`, progressive files), FastAPI web server, MLflow integration, operations dashboard, dataset management, experiment tracking UI, GPU support, Alembic migrations, all CRUD endpoints, versioned API.
 
@@ -50,7 +50,7 @@ An AI agent begins a session, reads the constitution and AGENTS.md to understand
 
 **Acceptance Scenarios**:
 
-1. **Given** the harness is initialized, **When** an AI agent begins a session, **Then** it can read `CONSTITUTION.md` and `AGENTS.md` to determine project rules before writing code
+1. **Given** the harness is initialized, **When** an AI agent begins a session, **Then** it can read `.specify/memory/constitution.md` and `AGENTS.md` to determine project rules before writing code
 2. **Given** the vault exists with ADRs, **When** the agent makes an architecture decision, **Then** it records it as an ADR in `docs/vault/Decisions/` following the vault's note conventions
 3. **Given** a discovery is made during implementation, **When** the session ends, **Then** the vault is enriched with a discovery note
 4. **Given** the `.specify/` tooling is configured, **When** the user runs `/speckit.plan`, **Then** a plan is generated from the active spec
@@ -144,7 +144,7 @@ A developer or AI agent can consult the project constitution to understand non-n
 
 **Why this priority**: Following oldgrowth's pattern, a constitution and vault provide the governance backbone that keeps AI agents aligned with project values and gives humans a browsable knowledge graph. This enables AI-assisted development at scale.
 
-**Independent Test**: Can be verified by checking that `CONSTITUTION.md` exists at the repo root (or inside the vault) with at least 3 articles defining core principles, and that `docs/vault/` contains an `index.md` with navigation and at least one governance note.
+**Independent Test**: Can be verified by checking that `.specify/memory/constitution.md` exists with at least 3 articles defining core principles, and that `docs/vault/` contains an `index.md` with navigation and at least one governance note.
 
 **Acceptance Scenarios**:
 
@@ -210,7 +210,7 @@ A learner can step through the 5-stage progression (bigram → MLP → autograd 
 - **FR-010**: Repository MUST support a `make lint` target that runs ruff (fast linting/formatting), black (formatting check), isort (import sorting check), and pylint (deep analysis) sequentially. All MUST pass for CI. Formatting is auto-applied via `make format` (black + isort).
 - **FR-011**: Repository SHOULD include a `CONTRIBUTING.md` with contribution guidelines, commit message conventions, and development workflow.
 - **FR-012**: Repository SHOULD include a `Makefile` target `make progressive` that runs all 5 progressive training scripts sequentially to validate they work.
-- **FR-013**: Repository MUST include a `CONSTITUTION.md` at the repo root defining the project's non-negotiable principles: zero-dependency core, educational clarity over optimization, seeded reproducibility, and progressive disclosure. A copy or reference SHOULD exist in the vault's Governance section.
+- **FR-013**: Repository MUST include a `.specify/memory/constitution.md` defining the project's non-negotiable principles: zero-dependency core, educational clarity over optimization, seeded reproducibility, and progressive disclosure. A reference SHOULD exist in the vault's Governance section.
 - **FR-014**: Repository MUST include an Obsidian-compatible documentation vault at `docs/vault/` with at minimum: `index.md` (entry point with navigation), `Governance/Constitution.md` (governance principles), `Decisions/` (architecture decision records), and `Reference/` (glossary, open questions).
 - **FR-015**: The vault MUST use Obsidian-compatible Markdown with YAML frontmatter (`title`, `type`, `tags`, `created`, `updated`) on every note, following oldgrowth's vault conventions.
 - **FR-016**: Repository MUST include a `Makefile` target `make vault` that opens or serves the vault documentation (e.g., `make vault-serve` for local preview, or instructions for opening in Obsidian).
@@ -266,7 +266,7 @@ The following features are intentionally excluded from this bootstrapping effort
 - **Progressive Training Files (train0.py through train5.py)**: Incremental implementations that build from bigram counting to the full GPT. Each file is independently runnable and demonstrates one new concept.
 - **Makefile**: Build system with targets for setup, training, linting, cleaning, and progressive validation. Follows oldgrowth conventions.
 - **AGENTS.md**: Agent behavioral guidelines document defining how AI agents should operate in this repo, what commands are available, and project conventions.
-- **CONSTITUTION.md / docs/vault/Governance/Constitution.md**: The project constitution — defines non-negotiable principles (zero-dependency, educational clarity, reproducibility, progressive disclosure) that all specs, plans, and implementations must comply with.
+- **`.specify/memory/constitution.md`** (canonical; root `CONSTITUTION.md` and `docs/vault/Governance/Constitution.md` redirect here): The project constitution — defines non-negotiable principles (zero-dependency, educational clarity, reproducibility, progressive disclosure) that all specs, plans, and implementations must comply with.
 - **docs/vault/**: Obsidian-compatible documentation vault. Contains governance notes, architecture decision records (Decisions/), reference materials (Reference/), and experiment session logs. Uses YAML frontmatter and Obsidian wikilinks for cross-referencing.
 - **input.txt**: Training dataset of ~32,000 names (one per line). Bundled as a fallback; also auto-downloadable from the makemore repository.
 - **Web Server (app.py)**: FastAPI web server (async handlers) with Jinja2 templates for SSR UI pages. Binds to `0.0.0.0` for LAN access. Serves versioned REST API at `/v1/` with auto-generated Swagger/OpenAPI docs. Uses Pydantic DTOs for all request/response contracts. Runs as a background daemon managed by the process supervisor.
@@ -294,7 +294,7 @@ The following features are intentionally excluded from this bootstrapping effort
 - **SC-002**: All progressive training scripts (`train0.py` through `train5.py`) run without errors when executed sequentially.
 - **SC-003**: The repo passes a basic structure audit: Makefile, README.md, AGENTS.md, .gitignore, .specify/, and at least one training script exist at the root.
 - **SC-004**: A developer unfamiliar with transformers can understand the full GPT algorithm by reading the progressive files and comments, without external references.
-- **SC-005**: The project constitution exists at `CONSTITUTION.md` (repo root) with at least 3 articles defining non-negotiable principles, and an AI agent can read it to determine project rules.
+- **SC-005**: The project constitution exists at `.specify/memory/constitution.md` with at least 3 articles defining non-negotiable principles, and an AI agent can read it to determine project rules.
 - **SC-006**: The documentation vault at `docs/vault/` contains an index page with navigation links, at least one Governance note, one Decision record, and one Reference note — all with valid YAML frontmatter.
 - **SC-007**: The web UI is accessible from any device on the local network at `http://<host-ip>:PORT`, serving multiple pages (training dashboard, experiment history, dataset management, inference, operations) server-side rendered with Jinja2 templates.
 - **SC-008**: Starting a training run from the web UI updates the loss chart in real-time via SSE (Server-Sent Events), and generated samples appear on the page upon completion without a page refresh. The training process runs in the background and survives terminal exit.

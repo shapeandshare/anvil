@@ -27,7 +27,7 @@ Audited and completed the GPT→Llama architecture migration — the class renam
 | Document | Key Changes |
 |----------|-------------|
 | **README.md** | "Train GPT from scratch" → "Train from scratch"; "full GPT" → "full transformer" |
-| **CONSTITUTION.md** | Article II: "GPT algorithm" → "Llama transformer architecture" |
+| **`.specify/memory/constitution.md`** | Article II: "GPT algorithm" → "Llama transformer architecture" |
 | **Glossary.md** | "GPT training engine" → "Llama training engine"; `MicroGPTWorkbench` → `AnvilWorkbench`; weight names to Llama convention; `wpe` removed from State Dict entry |
 | **TrainingDataFlow.md** | Full forward pass diagram rewritten — previously described GPT-2 (wpe, ReLU MLP, embedding-level norm). Now correctly describes Llama (RoPE, SwiGLU, learned RMSNorm scales, rms_final before lm_head). |
 | **testing-guide.md** | Code examples (`GPT(...)` → `LlamaModel(...)`), test descriptions, walkthrough labels updated |
