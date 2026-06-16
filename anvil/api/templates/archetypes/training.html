@@ -398,13 +398,16 @@ function updateMetrics(d) {
         : '~50';
     }
 
-    var wte = estVocab !== '-' ? parseInt(estVocab.replace('~','')) * n_embd : 0;
-    var wpe = block_size * n_embd;
-    var lmHead = estVocab !== '-' ? parseInt(estVocab.replace('~','')) * n_embd : 0;
-    var perLayer = 4 * n_embd * n_embd
-      + 4 * n_embd * (4 * n_embd)
-      + (4 * n_embd) * n_embd;
-    var totalParams = wte + wpe + lmHead + n_layer * perLayer;
+    var vocab = estVocab !== '-' ? parseInt(estVocab.replace('~','')) : 0;
+    var wte = vocab * n_embd;
+    var lmHead = vocab * n_embd;
+    var rmsFinal = n_embd;
+    var intermediate = Math.floor(8 * n_embd / 3);
+    var attnPerLayer = 4 * n_embd * n_embd;
+    var mlpPerLayer = 3 * intermediate * n_embd;
+    var rmsPerLayer = 2 * n_embd;
+    var perLayer = attnPerLayer + mlpPerLayer + rmsPerLayer;
+    var totalParams = wte + lmHead + rmsFinal + n_layer * perLayer;
 
     var coverage = docCount > 0
       ? Math.min(100, Math.round((num_steps / docCount) * 100))
