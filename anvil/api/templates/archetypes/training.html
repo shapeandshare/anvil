@@ -957,13 +957,19 @@ function updateMetrics(d) {
   /* ── Init ── */
   var autotuneBtn = document.getElementById('autotune-btn');
 
-  function handleDataSourceChange() {
+  function handleDataSourceChange(changed) {
+    /* Mutual exclusion: selecting one clears the other */
+    if (changed === 'corpus') {
+      datasetSelect.value = '';
+    } else if (changed === 'dataset') {
+      corpusSelect.value = '';
+    }
     updateDataContext();
     autotuneParameters();
   }
 
-  corpusSelect.addEventListener('change', handleDataSourceChange);
-  datasetSelect.addEventListener('change', handleDataSourceChange);
+  corpusSelect.addEventListener('change', function () { handleDataSourceChange('corpus'); });
+  datasetSelect.addEventListener('change', function () { handleDataSourceChange('dataset'); });
   patchParamListeners();
   loadCorpora();
   loadDatasets();
