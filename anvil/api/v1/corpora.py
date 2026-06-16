@@ -19,6 +19,9 @@ WORKSPACE_ROOTS = [
     os.path.expanduser("~/Repositories"),
     os.path.expanduser("~/code"),
     os.path.expanduser("~/src"),
+    os.path.expanduser("~/Desktop"),
+    os.path.expanduser("~/Downloads"),
+    os.path.expanduser("~/Documents"),
     os.path.expanduser("~"),
 ]
 
