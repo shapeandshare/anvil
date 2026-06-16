@@ -247,6 +247,43 @@
       <div id="corpus-list"><span class="text-muted" style="font-size:0.78rem;">Loading...</span></div>
     </div>
 
+    {# ── Import corpus as dataset (custom chunking) ── #}
+    <div class="ds-section" style="margin-top:var(--space-4);padding-top:var(--space-3);border-top:1px solid var(--border);">
+      <div class="ds-section-label">Import as Dataset <span class="tooltip-trigger"><span class="tooltip-icon">i</span><span class="tooltip-content">Create a new dataset from a corpus with custom chunking parameters — different from the corpus's original settings.</span></span></div>
+      <div id="corpus-to-dataset" style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:flex-end;">
+        <div style="display:flex;flex-direction:column;gap:var(--space-1);">
+          <span class="label-text">Source Corpus</span>
+          <select class="form-select" id="cd-corpus-select" style="min-width:180px;">
+            <option value="">Select a corpus...</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-1);">
+          <span class="label-text">Name</span>
+          <input type="text" class="form-input" id="cd-name" placeholder="dataset name" style="width:150px;font-size:0.72rem;">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-1);">
+          <span class="label-text">Strategy</span>
+          <select class="form-select" id="cd-strategy" style="width:100px;">
+            <option value="windowed">windowed</option>
+            <option value="file">file</option>
+            <option value="line">line</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-1);">
+          <span class="label-text" id="cd-bs-label">Block Size</span>
+          <input type="range" id="cd-block-size" min="8" max="1024" value="64" step="8" style="width:100px;accent-color:var(--primary);vertical-align:middle;">
+          <span id="cd-bs-value" style="font-size:0.68rem;color:var(--accent-cyan);min-width:35px;text-align:center;">64</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-1);">
+          <span class="label-text" id="cd-ov-label">Overlap</span>
+          <input type="range" id="cd-overlap" min="0" max="50" value="25" style="width:80px;accent-color:var(--primary);vertical-align:middle;">
+          <span id="cd-ov-value" style="font-size:0.68rem;color:var(--accent-cyan);min-width:30px;text-align:center;">25%</span>
+        </div>
+        <button class="btn btn-primary btn-sm" id="cd-create-btn">create dataset</button>
+      </div>
+      <div class="ds-status-line" id="cd-status"></div>
+    </div>
+
   </div>
 
   {# ══════════════════════════════════════════════════════ #}
@@ -412,6 +449,7 @@
         + '<div style="display:flex;gap:var(--space-1);justify-content:flex-end;">'
         + '<button class="btn btn-sm btn-secondary edit-btn" data-id="' + d.id + '">edit</button>'
         + '<button class="btn btn-sm btn-secondary curate-btn" data-id="' + d.id + '" title="Open dataset curation">curate</button>'
+        + '<button class="btn btn-sm btn-secondary fork-btn" data-id="' + d.id + '" title="Clone this dataset">fork</button>'
         + '<button class="btn btn-sm btn-danger del-dataset-btn" data-id="' + d.id + '" data-name="' + nameEsc + '">rm</button>'
         + '</div>'
         + '<div class="inline-edit-form" style="display:none;margin-top:4px;gap:4px;flex-wrap:wrap;align-items:center;">'
@@ -419,6 +457,12 @@
         + '<input type="text" class="form-input ie-desc" placeholder="description" style="width:200px;font-size:0.72rem;" value="' + (d.description ? descEsc : '') + '">'
         + '<button class="btn btn-sm btn-primary ie-save">save</button>'
         + '<button class="btn btn-sm btn-secondary ie-cancel">cancel</button>'
+        + '</div>'
+        + '<div class="fork-form" style="display:none;margin-top:4px;gap:4px;flex-wrap:wrap;align-items:center;">'
+        + '<input type="text" class="form-input fork-name" placeholder="name" style="width:160px;font-size:0.72rem;" value="' + nameEsc + ' (copy)">'
+        + '<input type="text" class="form-input fork-desc" placeholder="description" style="width:200px;font-size:0.72rem;" value="' + (d.description ? descEsc : '') + '">'
+        + '<button class="btn btn-sm btn-primary fork-execute">clone</button>'
+        + '<button class="btn btn-sm btn-secondary fork-cancel">cancel</button>'
         + '</div></td>'
         + '</tr>';
     });
@@ -614,6 +658,55 @@
       });
     }
 
+    /* ── fork button → show fork form ── */
+    if (e.target.closest && e.target.closest('.fork-btn')) {
+      var btn = e.target.closest('.fork-btn');
+      var tr = btn.closest('tr');
+      tr.querySelector('.fork-form').style.display = 'flex';
+      btn.style.display = 'none';
+    }
+
+    /* ── fork cancel ── */
+    if (e.target.closest && e.target.closest('.fork-cancel')) {
+      var btn = e.target.closest('.fork-cancel');
+      var tr = btn.closest('tr');
+      tr.querySelector('.fork-form').style.display = 'none';
+      tr.querySelector('.fork-btn').style.display = '';
+    }
+
+    /* ── fork execute (clone) ── */
+    if (e.target.closest && e.target.closest('.fork-execute')) {
+      var btn = e.target.closest('.fork-execute');
+      var tr = btn.closest('tr');
+      var id = tr.getAttribute('data-id');
+      var name = tr.querySelector('.fork-name').value.trim();
+      var desc = tr.querySelector('.fork-desc').value.trim();
+      if (!name) { showToast('Name is required.', 'error'); return; }
+      fetch('/v1/datasets/' + id + '/clone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name, description: desc || null })
+      })
+      .then(function(r) {
+        if (!r.ok) return r.json().then(function(d) { throw new Error(d.detail || 'Clone failed'); });
+        return r.json();
+      })
+      .then(function() {
+        showToast('Dataset cloned', 'success');
+        tr.querySelector('.fork-form').style.display = 'none';
+        tr.querySelector('.fork-btn').style.display = '';
+        loadDatasets();
+        loadCombinedData();
+      })
+      .catch(function(err) {
+        showToast(err.message, 'error');
+        tr.querySelector('.fork-form').style.display = 'none';
+        tr.querySelector('.fork-btn').style.display = '';
+        loadDatasets();
+        loadCombinedData();
+      });
+    }
+
   });
 
   /* ── upload form ────────────────────────────────────── */
@@ -734,15 +827,43 @@
     e.preventDefault();
     dropZone.style.outline = '';
     dropZone.style.outlineOffset = '';
-    /* On macOS, dragging from Finder exposes the POSIX path in text/plain */
-    var path = e.dataTransfer.getData('text/plain');
+
+    var status = document.getElementById('wiz-status');
+    var path = '';
+
+    /* Try text/plain first (works for some file managers) */
+    path = e.dataTransfer.getData('text/plain');
     if (path) {
       path = path.trim();
-      /* Strip trailing slash if present */
       if (path.endsWith('/')) path = path.slice(0, -1);
       document.getElementById('wiz-root').value = path;
-      /* Auto-trigger analyze */
       document.getElementById('wiz-analyze-btn').click();
+      return;
+    }
+
+    /* Fallback: text/uri-list (macOS Finder puts file:// URIs here for folders) */
+    var uriList = e.dataTransfer.getData('text/uri-list');
+    if (uriList) {
+      var match = uriList.trim().match(/^file:\/\/(.+)$/m);
+      if (match) {
+        path = decodeURIComponent(match[1]).trim();
+        if (path.endsWith('/')) path = path.slice(0, -1);
+        document.getElementById('wiz-root').value = path;
+        document.getElementById('wiz-analyze-btn').click();
+        return;
+      }
+    }
+
+    /* Last resort: dropped files detected but path unavailable via dataTransfer */
+    var files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      var dirName = '(unknown)';
+      if (files[0].webkitRelativePath) {
+        dirName = files[0].webkitRelativePath.split('/')[0];
+      } else if (files[0].name) {
+        dirName = files[0].name;
+      }
+      status.innerHTML = '> Folder "' + dirName + '" dropped (' + files.length + ' files). Could not resolve path. Paste the full path above or use <b>browse</b>.';
     }
   });
 
@@ -1235,6 +1356,7 @@
           actionsHtml = '<div style="display:flex;gap:var(--space-1);justify-content:flex-end;">'
             + '<button class="btn btn-sm btn-secondary edit-btn" data-id="' + item.id + '">edit</button>'
             + '<button class="btn btn-sm btn-secondary curate-btn" data-id="' + item.id + '" title="Open dataset curation">curate</button>'
+            + '<button class="btn btn-sm btn-secondary fork-btn" data-id="' + item.id + '" title="Clone this dataset">fork</button>'
             + '<button class="btn btn-sm btn-danger del-dataset-btn" data-id="' + item.id + '" data-name="' + nameEsc + '">rm</button>'
             + '</div>'
             + '<div class="inline-edit-form" style="display:none;margin-top:4px;gap:4px;flex-wrap:wrap;align-items:center;">'
@@ -1242,6 +1364,12 @@
             + '<input type="text" class="form-input ie-desc" placeholder="description" style="width:200px;font-size:0.72rem;" value="' + (item.description ? descEsc : '') + '">'
             + '<button class="btn btn-sm btn-primary ie-save">save</button>'
             + '<button class="btn btn-sm btn-secondary ie-cancel">cancel</button>'
+            + '</div>'
+            + '<div class="fork-form" style="display:none;margin-top:4px;gap:4px;flex-wrap:wrap;align-items:center;">'
+            + '<input type="text" class="form-input fork-name" placeholder="name" style="width:160px;font-size:0.72rem;" value="' + nameEsc + ' (copy)">'
+            + '<input type="text" class="form-input fork-desc" placeholder="description" style="width:200px;font-size:0.72rem;" value="' + (item.description ? descEsc : '') + '">'
+            + '<button class="btn btn-sm btn-primary fork-execute">clone</button>'
+            + '<button class="btn btn-sm btn-secondary fork-cancel">cancel</button>'
             + '</div>';
         } else {
           actionsHtml = '<div style="display:flex;gap:var(--space-1);justify-content:flex-end;">'
@@ -1379,6 +1507,105 @@
      ════════════════════════════════════════════════════════════ */
 
   /* ── initial load ───────────────────────────────────── */
+
+  /* ── corpus-to-dataset: populate select on tab switch ── */
+
+  function populateCorpusToDatasetSelect() {
+    var select = document.getElementById('cd-corpus-select');
+    select.innerHTML = '<option value="">Select a corpus...</option>';
+    fetch('/v1/corpora').then(function(r) { return r.json(); }).then(function(data) {
+      var corpora = (data && data.data) || [];
+      corpora.forEach(function(c) {
+        select.innerHTML += '<option value="' + c.id + '">' + escHtml(c.name) + '</option>';
+      });
+    }).catch(function() {});
+  }
+
+  /* ── corpus-to-dataset: strategy toggle ── */
+
+  function updateCdParams() {
+    var strat = document.getElementById('cd-strategy').value;
+    var show = strat === 'windowed';
+    ['cd-block-size', 'cd-bs-label', 'cd-bs-value', 'cd-overlap', 'cd-ov-label', 'cd-ov-value'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = show ? '' : 'none';
+    });
+    document.getElementById('cd-bs-value').textContent = document.getElementById('cd-block-size').value;
+    document.getElementById('cd-ov-value').textContent = document.getElementById('cd-overlap').value + '%';
+  }
+
+  document.getElementById('cd-strategy').addEventListener('change', updateCdParams);
+  document.getElementById('cd-block-size').addEventListener('input', function() {
+    document.getElementById('cd-bs-value').textContent = this.value;
+  });
+  document.getElementById('cd-overlap').addEventListener('input', function() {
+    document.getElementById('cd-ov-value').textContent = this.value + '%';
+  });
+
+  /* ── corpus-to-dataset: create button ── */
+
+  document.getElementById('cd-create-btn').addEventListener('click', async function() {
+    var select = document.getElementById('cd-corpus-select');
+    var name = document.getElementById('cd-name').value.trim();
+    var strategy = document.getElementById('cd-strategy').value;
+    var blockSize = parseInt(document.getElementById('cd-block-size').value, 10);
+    var overlap = parseInt(document.getElementById('cd-overlap').value, 10) / 100;
+    var status = document.getElementById('cd-status');
+    var corpusId = select.value;
+
+    if (!corpusId) { status.textContent = '! Select a source corpus.'; return; }
+    if (!name) { status.textContent = '! Dataset name is required.'; return; }
+
+    var btn = this;
+    btn.disabled = true;
+    var origText = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner"></span> creating';
+
+    var body = {
+      corpus_id: parseInt(corpusId),
+      name: name,
+      chunking_strategy: strategy,
+      block_size: blockSize,
+      chunk_overlap: overlap,
+    };
+
+    try {
+      var resp = await fetch('/v1/datasets/from-corpus', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      var data = await resp.json();
+      if (!resp.ok) {
+        status.textContent = '! ' + (data.detail || 'Create failed');
+        btn.disabled = false;
+        btn.innerHTML = origText;
+        return;
+      }
+      status.innerHTML = '> Created dataset "' + escHtml(name) + '"';
+      document.getElementById('cd-name').value = '';
+      btn.disabled = false;
+      btn.innerHTML = origText;
+      showToast('Dataset created from corpus', 'success');
+      loadDatasets();
+      loadCombinedData();
+    } catch (err) {
+      status.textContent = '! ' + err.message;
+      btn.disabled = false;
+      btn.innerHTML = origText;
+    }
+  });
+
+  /* ── Hook into existing tab switch for corpora tab ── */
+
+  var _origSwitchTab = switchTab;
+  switchTab = function(tabId) {
+    _origSwitchTab(tabId);
+    if (tabId === 'tab-corpora') {
+      populateCorpusToDatasetSelect();
+      updateCdParams();
+    }
+  };
 
   loadDatasets();
   loadCorpora();

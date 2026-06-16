@@ -1,4 +1,5 @@
 import hashlib
+import json
 
 from starlette.responses import StreamingResponse
 
@@ -51,6 +52,20 @@ class ReplaceBody(BaseModel):
 
 class UpdateSampleBody(BaseModel):
     text: str
+
+
+class CloneDatasetBody(BaseModel):
+    name: str
+    description: str | None = None
+
+
+class CreateFromCorpusBody(BaseModel):
+    corpus_id: int
+    name: str
+    description: str | None = None
+    chunking_strategy: str = "windowed"
+    block_size: int | None = None
+    chunk_overlap: float = 0.25
 
 
 async def get_service(session: AsyncSession = Depends(get_db_session)):
@@ -166,6 +181,60 @@ async def delete_dataset(
     return {"data": {"message": "Dataset deleted"}, "error": None}
 
 
+@router.post("/datasets/{id}/clone")
+async def clone_dataset(
+    id: int,
+    body: CloneDatasetBody,
+    session: AsyncSession = Depends(get_db_session),
+):
+    ds_repo = DatasetRepository(session)
+    source = await ds_repo.get(id)
+    if source is None:
+        raise HTTPException(status_code=404, detail="Source dataset not found")
+
+    name = body.name.strip()
+    if not name:
+        raise HTTPException(status_code=422, detail="Dataset name must not be empty")
+    if await ds_repo.get_by_name(name):
+        raise HTTPException(
+            status_code=422,
+            detail=f"Dataset name '{name}' already exists",
+        )
+
+    sample_repo = SampleRepository(session)
+    source_samples = await sample_repo.get_active_texts(id)
+    if not source_samples:
+        raise HTTPException(
+            status_code=422,
+            detail="Source dataset has no active samples to clone",
+        )
+
+    store = LocalFileStore("data/datasets")
+
+    docs = []
+    for sample in source_samples:
+        text_bytes = b""
+        async for chunk in store.get(sample.file_path):
+            text_bytes += chunk
+        docs.append(text_bytes.decode("utf-8"))
+
+    ds_svc = DatasetService(ds_repo)
+    new_dataset = await ds_svc.create_dataset(
+        name=name,
+        description=body.description or source.description,
+    )
+
+    import_svc = DatasetImportService(session, new_dataset.id, store)
+    await import_svc.commit_docs_import(
+        docs=docs,
+        source_label=f"clone:dataset-{id}",
+        source_format="clone",
+    )
+
+    await session.refresh(new_dataset)
+    return {"data": _serialize(new_dataset), "error": None}
+
+
 @router.post("/datasets/{id}/import")
 async def import_dataset(
     id: int,
@@ -214,6 +283,103 @@ async def import_dataset_from_corpus(
         },
         "error": None,
     }
+
+
+@router.post("/datasets/from-corpus")
+async def create_dataset_from_corpus(
+    body: CreateFromCorpusBody,
+    session: AsyncSession = Depends(get_db_session),
+):
+    corpus_repo = CorpusRepository(session)
+    corpus = await corpus_repo.get(body.corpus_id)
+    if corpus is None:
+        raise HTTPException(status_code=404, detail="Corpus not found")
+
+    name = body.name.strip()
+    if not name:
+        raise HTTPException(status_code=422, detail="Dataset name must not be empty")
+    ds_repo = DatasetRepository(session)
+    if await ds_repo.get_by_name(name):
+        raise HTTPException(
+            status_code=422,
+            detail=f"Dataset name '{name}' already exists",
+        )
+
+    if body.chunking_strategy == "windowed" and body.block_size is None:
+        raise HTTPException(
+            status_code=422,
+            detail="block_size is required when chunking_strategy is 'windowed'",
+        )
+    if body.chunking_strategy not in ("line", "windowed", "file"):
+        raise HTTPException(
+            status_code=422,
+            detail=f"Unsupported chunking strategy: {body.chunking_strategy}",
+        )
+
+    inc = (
+        json.loads(corpus.include_patterns)
+        if corpus.include_patterns
+        else None
+    )
+    exc = (
+        json.loads(corpus.exclude_patterns)
+        if corpus.exclude_patterns
+        else None
+    )
+
+    loader = CorpusLoader()
+    load_result = loader.ingest(
+        root_path=corpus.root_path,
+        include_patterns=inc,
+        exclude_patterns=exc,
+        chunking_strategy=body.chunking_strategy,
+        chunk_overlap=body.chunk_overlap,
+        block_size=body.block_size,
+    )
+
+    docs = []
+    for f in load_result.files:
+        file_path = f["relative_path"]
+        full_path = corpus.root_path.rstrip("/") + "/" + file_path.lstrip("/")
+        try:
+            text = open(full_path, encoding="utf-8").read()
+        except (FileNotFoundError, UnicodeDecodeError):
+            continue
+
+        if body.chunking_strategy == "line":
+            for line in text.splitlines():
+                stripped = line.strip()
+                if stripped:
+                    docs.append(stripped)
+        elif body.chunking_strategy == "file":
+            docs.append(text)
+        else:
+            from anvil.services.chunking import FixedSizeWindowChunker
+
+            bs = body.block_size  # validated non-None for windowed above
+            assert bs is not None
+            chunker = FixedSizeWindowChunker(
+                block_size=bs,
+                overlap=body.chunk_overlap,
+            )
+            for chunk in chunker.chunk(text):
+                docs.append(chunk)
+
+    ds_svc = DatasetService(ds_repo)
+    new_dataset = await ds_svc.create_dataset(
+        name=name,
+        description=body.description or f"Re-chunked from corpus '{corpus.name}'",
+    )
+
+    import_svc = DatasetImportService(session, new_dataset.id)
+    await import_svc.commit_docs_import(
+        docs=docs,
+        source_label=f"corpus:{body.corpus_id}",
+        source_format="docs",
+    )
+
+    await session.refresh(new_dataset)
+    return {"data": _serialize(new_dataset), "error": None}
 
 
 @router.get("/datasets/{id}/preview-import")
