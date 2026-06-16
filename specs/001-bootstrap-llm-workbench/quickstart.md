@@ -159,6 +159,6 @@ specs/001-bootstrap-llm-workbench/
 └── tasks.md      # Implementation tasks
 
 docs/vault/       # Documentation vault
-CONSTITUTION.md   # Project constitution
+.specify/memory/constitution.md   # Project constitution
 AGENTS.md         # Agent guidelines
 ```

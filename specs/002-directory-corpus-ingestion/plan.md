@@ -28,7 +28,7 @@ Add support for ingesting entire source code directories as training corpora for
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-**Gates derived from CONSTITUTION.md:**
+**Gates derived from `.specify/memory/constitution.md`:**
 
 1. ✅ **Zero-Dependency Core** (`core/` must remain stdlib-only) — CorpusLoader lives in `services/`, not `core/`. No changes to `core/engine.py` or `core/autograd.py`. `pathspec` is a service-layer dep only.
 2. ✅ **TDD Mandatory** — Tests before code; 100% coverage on new modules (CorpusRepository, CorpusLoader, chunking logic, API endpoints, CLI commands).

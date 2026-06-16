@@ -45,10 +45,10 @@ All paths relative to repository root. Package root: `anvil/`. Tests root: `test
 
 ### Implementation for User Story 0
 
-- [X] T006 [US0] Create `CONSTITUTION.md` at repo root — define non-negotiable principles: zero-dependency core, educational clarity, seeded reproducibility, TDD, async-first, implicit namespace, layered architecture, agentic design
+- [X] T006 [US0] Create `CONSTITUTION.md` at repo root (now redirects to `.specify/memory/constitution.md`) — define non-negotiable principles: zero-dependency core, educational clarity, seeded reproducibility, TDD, async-first, implicit namespace, layered architecture, agentic design
 - [X] T007 [US0] [P] Create `docs/vault/` directory structure: `Governance/`, `Decisions/`, `Reference/`, `Sessions/`
 - [X] T008 [US0] [P] Create `docs/vault/index.md` — vault entry point with navigation links to Governance, Reference, Decisions, Sessions
-- [X] T009 [US0] [P] Create `docs/vault/Governance/Constitution.md` — copy of CONSTITUTION.md in vault format with YAML frontmatter
+- [X] T009 [US0] [P] Create `docs/vault/Governance/Constitution.md` — copy of CONSTITUTION.md in vault format with YAML frontmatter (now redirects to `.specify/memory/constitution.md`)
 - [X] T010 [US0] [P] Create `docs/vault/Decisions/` with initial ADR template note and first ADR documenting the architecture decisions in this spec
 - [X] T011 [US0] [P] Create `docs/vault/Reference/Glossary.md` — canonical project terms (microgpt, god class, FileStore, etc.)
 - [X] T012 [US0] Create `AGENTS.md` — agent behavioral guidelines: project structure, available commands, vault enrichment protocol (discoveries during session, summary at end), ADR creation workflow, coding conventions

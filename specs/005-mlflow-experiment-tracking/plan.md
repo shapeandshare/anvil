@@ -33,7 +33,7 @@ Technical approach: a single async `TrackingService` (`anvil/services/tracking.p
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-Authoritative constitution: root `CONSTITUTION.md` v1.1.0 (mirrored in `.specify/memory/constitution.md`). Compliance:
+Authoritative constitution: `.specify/memory/constitution.md` v1.2.0. Compliance:
 
 | Article | Compliance | Status |
 |---|---|---|

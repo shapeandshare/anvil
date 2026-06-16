@@ -13,7 +13,7 @@ Full bootstrap implementation of the anvil repository. All 125 tasks completed a
 
 ## Artifacts Created
 - `anvil/` — Python package (core, db, services, api, storage, supervisor)
-- `CONSTITUTION.md`, `AGENTS.md`, `docs/vault/` — governance and agentic harness
+- `.specify/memory/constitution.md`, `AGENTS.md`, `docs/vault/` — governance and agentic harness
 - `Makefile`, `pyproject.toml`, `requirements.lock` — build system
 - `train0.py`–`train5.py`, `diff_stages.py` — progressive walkthrough
 

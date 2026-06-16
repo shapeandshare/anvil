@@ -133,7 +133,7 @@ mlruns/                            # MLflow tracking store (gitignored)
 pyproject.toml                     # Package config + deps + entry points + tool config
 alembic.ini                        # Alembic configuration
 Makefile                           # Build targets (auto-venv, delegate to Python)
-CONSTITUTION.md                    # Project constitution
+.specify/memory/constitution.md    # Project constitution
 AGENTS.md                          # Agent behavioral guidelines
 README.md                          # Quick-start guide
 CONTRIBUTING.md                    # Contribution guidelines

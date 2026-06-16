@@ -55,6 +55,6 @@ Complete bootstrap of the anvil repository through iterative spec crafting and f
 ## Artifacts Created
 - `specs/001-bootstrap-llm-workbench/spec.md` — full feature specification
 - `anvil/` — complete Python package (22 modules)
-- `CONSTITUTION.md`, `AGENTS.md`, `docs/vault/` — governance and agentic harness
+- `.specify/memory/constitution.md`, `AGENTS.md`, `docs/vault/` — governance and agentic harness
 - 10 passing tests (unit + e2e HTTP + DB CRUD + training)
 - `docs/user-requirements.md` — consolidated user requirements reference
