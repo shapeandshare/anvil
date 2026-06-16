@@ -51,6 +51,11 @@ class TorchLlamaModel:
         self.block_size = block_size
         self.head_dim = n_embd // n_head
 
+        if self.head_dim % 2 != 0:
+            raise ValueError(
+                f"head_dim={self.head_dim} must be even for RoPE"
+            )
+
         self.intermediate_size = int(8 * n_embd / 3)
 
         self.wte = torch.nn.Parameter(torch.randn(vocab_size, n_embd) * 0.08)
