@@ -157,9 +157,121 @@ class DatasetImportService:
             await self._dataset_repo.update(dataset)
             raise
 
+    async def commit_docs_import(
+        self,
+        docs: list[str],
+        source_label: str = "import",
+        source_format: str = "docs",
+    ) -> ImportResult:
+        if not docs:
+            return ImportResult(
+                import_source_id=0,
+                rows_imported=0,
+                errors=[],
+                preview=[],
+            )
+
+        dataset = await self._dataset_repo.get(self._dataset_id)
+        if dataset is None:
+            raise ValueError(f"Dataset {self._dataset_id} not found")
+
+        dataset.status = "importing"
+        await self._dataset_repo.update(dataset)
+
+        samples = [
+            ParsedSample(text, idx)
+            for idx, text in enumerate(docs)
+        ]
+
+        try:
+            import_source = ImportSource(
+                dataset_id=self._dataset_id,
+                filename=source_label,
+                format=source_format,
+                row_count=len(samples),
+                error_count=0,
+            )
+            import_source = await self._import_repo.add(import_source)
+
+            sample_records = []
+            for s in samples:
+                file_rel = f"{self._dataset_id}/{import_source.id}/{s.index}.txt"
+                sample_records.append(
+                    Sample(
+                        dataset_id=self._dataset_id,
+                        index=s.index,
+                        content_hash=s.content_hash,
+                        length=s.length,
+                        file_path=file_rel,
+                        is_removed=False,
+                        import_source_id=import_source.id,
+                    )
+                )
+
+            sample_records = await self._sample_repo.add_bulk(sample_records)
+
+            for s, rec in zip(samples, sample_records):
+                rel_path = f"{self._dataset_id}/{import_source.id}/{s.index}.txt"
+                await self._store.put(
+                    rel_path,
+                    self._text_stream(s.text),
+                )
+
+            before_count = await self._sample_repo.count_active(self._dataset_id)
+            after_count = before_count + len(sample_records)
+
+            op = CurationOperation(
+                dataset_id=self._dataset_id,
+                operation_type="import",
+                parameters=json.dumps({
+                    "format": source_format,
+                    "source": source_label,
+                    "row_count": len(samples),
+                }),
+                sample_count_before=before_count,
+                sample_count_after=after_count,
+            )
+            await self._op_repo.add(op)
+
+            dataset.sample_count = after_count
+            dataset.total_size_bytes = (dataset.total_size_bytes or 0) + sum(
+                s.length for s in samples
+            )
+            dataset.curation_version = (dataset.curation_version or 0) + 1
+            dataset.status = "ready" if after_count > 0 else "empty"
+            await self._dataset_repo.update(dataset)
+
+            preview = [
+                {"index": s.index, "text_preview": s.text[:200], "length": s.length}
+                for s in samples[:20]
+            ]
+
+            await self._session.commit()
+
+            return ImportResult(
+                import_source_id=import_source.id,
+                rows_imported=len(sample_records),
+                errors=[],
+                preview=preview,
+            )
+        except Exception:
+            await self._session.rollback()
+            dataset.status = "ready" if dataset.sample_count > 0 else "empty"
+            await self._dataset_repo.update(dataset)
+            raise
+
     async def commit_corpus_import(self, docs: list[str]) -> ImportResult:
-        text = "\n".join(docs)
-        return await self.commit_import(text, fmt="corpus")
+        """Import pre-chunked corpus documents, preserving each document as-is.
+
+        Unlike the legacy join-then-split approach (which fragmented multi-line
+        chunks), this delegates to :meth:`commit_docs_import` for byte-for-byte
+        preservation of each document.
+        """
+        return await self.commit_docs_import(
+            docs=docs,
+            source_label="corpus",
+            source_format="corpus",
+        )
 
     def _parse(self, text: str, fmt: str) -> tuple[list[ParsedSample], list[dict]]:
         errors: list[dict] = []
