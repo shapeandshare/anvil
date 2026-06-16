@@ -1,6 +1,7 @@
 import hashlib
 import json
 
+from starlette.requests import Request
 from starlette.responses import StreamingResponse
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile
@@ -71,6 +72,23 @@ class CreateFromCorpusBody(BaseModel):
 async def get_service(session: AsyncSession = Depends(get_db_session)):
     repo = DatasetRepository(session)
     return DatasetService(repo)
+
+
+@router.get("/datasets/{id}/curate")
+async def curate_dataset_page(
+    id: int,
+    request: Request,
+    session: AsyncSession = Depends(get_db_session),
+):
+    repo = DatasetRepository(session)
+    dataset = await repo.get(id)
+    if dataset is None:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "dataset_curation.html",
+        {"dataset": _serialize(dataset)},
+    )
 
 
 def _serialize(d: Dataset) -> dict:

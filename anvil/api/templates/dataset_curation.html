@@ -1,0 +1,409 @@
+{% extends "base.html" %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
+{% block content %}
+
+{# ── SECTION CARD #1: Dataset Info ── #}
+<div class="section-card" style="--stagger-i: 0">
+  <div class="section-card__header">
+    <h2 class="section-card__title">{{ dataset.name }}</h2>
+    <a href="/v1/datasets-page" class="btn btn-sm btn-secondary" style="text-decoration:none;">&larr; Back</a>
+  </div>
+  <div class="section-card__content" style="margin-bottom:var(--space-3);">
+    {% if dataset.description %}
+    <p style="margin:0;color:var(--text-secondary);font-size:0.88rem;">{{ dataset.description }}</p>
+    {% endif %}
+  </div>
+  <div class="hp-grid" id="dataset-stats">
+    <div class="hp-item">
+      <span class="hp-label">Samples</span>
+      <span class="hp-value">{{ dataset.sample_count or 0 }}</span>
+    </div>
+    <div class="hp-item">
+      <span class="hp-label">Size</span>
+      <span class="hp-value" id="dataset-size">{{ dataset.total_size_bytes or 0 }}</span>
+    </div>
+    <div class="hp-item">
+      <span class="hp-label">Status</span>
+      <span class="hp-value"><span class="badge badge-green">{{ dataset.status or 'ready' }}</span></span>
+    </div>
+    <div class="hp-item">
+      <span class="hp-label">Curation Version</span>
+      <span class="hp-value">{{ dataset.curation_version or 0 }}</span>
+    </div>
+    <div class="hp-item">
+      <span class="hp-label">Vocabulary</span>
+      <span class="hp-value">{{ dataset.vocabulary_size or 0 }} chars</span>
+    </div>
+    <div class="hp-item">
+      <span class="hp-label">Documents</span>
+      <span class="hp-value">{{ dataset.document_count or 0 }}</span>
+    </div>
+  </div>
+</div>
+
+{# ── SECTION CARD #2: Metrics ── #}
+<div class="section-card" style="--stagger-i: 1">
+  <div class="section-card__header">
+    <h2 class="section-card__title">Metrics</h2>
+    <span style="font-size:0.68rem;color:var(--text-tertiary);">live</span>
+  </div>
+  <div class="section-card__metrics" id="metrics-container">
+    <div class="section-card__metric">
+      <span class="section-card__metric-label">Samples</span>
+      <span class="section-card__metric-value" id="metric-samples">--</span>
+    </div>
+    <div class="section-card__metric">
+      <span class="section-card__metric-label">Total Characters</span>
+      <span class="section-card__metric-value" id="metric-chars">--</span>
+    </div>
+    <div class="section-card__metric">
+      <span class="section-card__metric-label">Estimated Tokens (4 chars/token)</span>
+      <span class="section-card__metric-value" id="metric-tokens">--</span>
+    </div>
+    <div class="section-card__metric">
+      <span class="section-card__metric-label">Vocabulary Size</span>
+      <span class="section-card__metric-value" id="metric-vocab">--</span>
+    </div>
+    <div class="section-card__metric">
+      <span class="section-card__metric-label">Duplicates</span>
+      <span class="section-card__metric-value" id="metric-dupes">--</span>
+    </div>
+  </div>
+</div>
+
+{# ── SECTION CARD #3: Curation Controls ── #}
+<div class="section-card" style="--stagger-i: 2">
+  <div class="section-card__header">
+    <h2 class="section-card__title">Curation Operations</h2>
+    <span style="font-size:0.68rem;color:var(--text-tertiary);">apply transformations</span>
+  </div>
+
+  <div class="section-card__content" style="margin-bottom:var(--space-3);">
+    <div class="ops-actions-bar">
+
+      {# ── Dedup ── #}
+      <button class="btn btn-sm btn-secondary" id="curate-dedup-btn" title="Remove exact duplicate samples">
+        <span class="spinner" id="dedup-spinner" style="display:none;width:14px;height:14px;border-width:2px;"></span>
+        Deduplicate
+      </button>
+
+      {# ── Filter by length ── #}
+      <input type="number" class="form-input" id="filter-min" placeholder="min chars" style="width:80px;font-size:0.72rem;">
+      <input type="number" class="form-input" id="filter-max" placeholder="max chars" style="width:80px;font-size:0.72rem;">
+      <button class="btn btn-sm btn-secondary" id="curate-filter-btn">Filter Length</button>
+
+      {# ── Regex replace ── #}
+      <input type="text" class="form-input" id="replace-pattern" placeholder="pattern" style="width:100px;font-size:0.72rem;">
+      <input type="text" class="form-input" id="replace-replacement" placeholder="replacement" style="width:100px;font-size:0.72rem;">
+      <button class="btn btn-sm btn-secondary" id="curate-replace-btn">Regex Replace</button>
+
+    </div>
+    <div class="ds-status-line" id="curate-status">Ready.</div>
+  </div>
+</div>
+
+{# ── SECTION CARD #4: Samples ── #}
+<div class="section-card" style="--stagger-i: 3">
+  <div class="section-card__header">
+    <h2 class="section-card__title">Samples</h2>
+    <div style="display:flex;gap:var(--space-2);align-items:center;">
+      <input type="text" class="form-input" id="sample-search" placeholder="search..." style="width:120px;font-size:0.72rem;">
+      <button class="btn btn-sm btn-secondary" id="sample-search-btn" style="font-size:0.72rem;">search</button>
+      <span style="font-size:0.68rem;color:var(--text-tertiary);" id="sample-count-label">--</span>
+    </div>
+  </div>
+  <div id="samples-container" class="ds-table-wrapper" style="overflow-x:auto;">
+    <span class="text-muted" style="font-size:0.78rem;">Loading...</span>
+  </div>
+  <div style="display:flex;gap:var(--space-2);align-items:center;margin-top:var(--space-3);padding-top:var(--space-2);border-top:1px solid var(--separator);">
+    <button class="btn btn-sm btn-secondary" id="sample-prev-btn" disabled>&larr; Prev</button>
+    <span style="font-size:0.72rem;color:var(--text-tertiary);" id="sample-page-info">Page 1</span>
+    <button class="btn btn-sm btn-secondary" id="sample-next-btn">Next &rarr;</button>
+  </div>
+</div>
+
+{# ── SECTION CARD #5: Operations History ── #}
+<div class="section-card" style="--stagger-i: 4">
+  <div class="section-card__header">
+    <h2 class="section-card__title">Operation History</h2>
+    <span style="font-size:0.68rem;color:var(--text-tertiary);">curation log</span>
+  </div>
+  <div id="operations-container" class="ds-table-wrapper" style="overflow-x:auto;">
+    <span class="text-muted" style="font-size:0.78rem;">Loading...</span>
+  </div>
+</div>
+
+<script>
+(function() {
+  var DATASET_ID = {{ dataset.id }};
+
+  /* ── Pagination state ── */
+  var samplePage = { offset: 0, limit: 50, search: '' };
+
+  /* ── Helpers ── */
+  function escHtml(s) {
+    if (s == null) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function formatBytes(b) {
+    if (b == null || b === 0) return '0 B';
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+    return (b / 1048576).toFixed(1) + ' MB';
+  }
+
+  function showToast(msg, type) {
+    var container = document.getElementById('toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'toast-container';
+      container.className = 'toast-container';
+      document.body.appendChild(container);
+    }
+    var toast = document.createElement('div');
+    toast.className = 'toast toast-' + (type || 'info');
+    toast.textContent = msg;
+    container.appendChild(toast);
+    setTimeout(function() {
+      toast.style.opacity = '0';
+      toast.style.transition = 'opacity 0.3s ease';
+      setTimeout(function() { toast.remove(); }, 300);
+    }, 3000);
+  }
+
+  /* ── Format dataset size ── */
+  (function() {
+    var el = document.getElementById('dataset-size');
+    if (el) el.textContent = formatBytes(parseInt(el.textContent, 10) || 0);
+  })();
+
+  /* ── Load metrics ── */
+  async function loadMetrics() {
+    try {
+      var resp = await fetch('/v1/datasets/' + DATASET_ID + '/metrics');
+      if (!resp.ok) return;
+      var data = await resp.json();
+      var m = data && data.data;
+      if (!m) return;
+      document.getElementById('metric-samples').textContent = m.sample_count != null ? m.sample_count : '--';
+      document.getElementById('metric-chars').textContent = m.total_chars != null ? m.total_chars.toLocaleString() : '--';
+      document.getElementById('metric-tokens').textContent = m.estimated_tokens != null ? m.estimated_tokens.toLocaleString() : '--';
+      document.getElementById('metric-vocab').textContent = m.vocabulary_size != null ? m.vocabulary_size : '--';
+      document.getElementById('metric-dupes').textContent = m.duplicate_count != null ? m.duplicate_count : '--';
+    } catch(e) {}
+  }
+
+  /* ── Load samples ── */
+  async function loadSamples() {
+    var container = document.getElementById('samples-container');
+    container.innerHTML = '<span class="text-muted" style="font-size:0.78rem;">Loading...</span>';
+    try {
+      var params = 'offset=' + samplePage.offset + '&limit=' + samplePage.limit;
+      if (samplePage.search) params += '&search=' + encodeURIComponent(samplePage.search);
+      var resp = await fetch('/v1/datasets/' + DATASET_ID + '/samples?' + params);
+      if (!resp.ok) { container.innerHTML = '<span class="text-muted" style="font-size:0.78rem;">Failed to load samples.</span>'; return; }
+      var data = await resp.json();
+      var d = data && data.data;
+      if (!d || !d.samples || d.samples.length === 0) {
+        container.innerHTML = '<span class="text-muted" style="font-size:0.78rem;">No samples' + (samplePage.search ? ' matching "' + escHtml(samplePage.search) + '"' : '') + '.</span>';
+        document.getElementById('sample-count-label').textContent = '0';
+        return;
+      }
+      document.getElementById('sample-count-label').textContent = d.total + ' total';
+
+      var html = '<table class="grouped-list"><thead><tr>'
+        + '<th style="width:40px;">Index</th><th>Content (preview)</th><th style="width:60px;text-align:right;">Length</th><th style="width:50px;text-align:center;">Actions</th>'
+        + '</tr></thead><tbody>';
+
+      d.samples.forEach(function(s, i) {
+        var preview = escHtml(s.text_preview || '');
+        html += '<tr class="row-entrance" style="--row-i: ' + i + '">'
+          + '<td style="color:var(--text-tertiary);">' + s.index + '</td>'
+          + '<td style="max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--font-mono);font-size:0.78rem;color:var(--accent-green);" title="' + preview + '">' + preview + '</td>'
+          + '<td style="text-align:right;color:var(--text-dim);">' + (s.length || 0) + '</td>'
+          + '<td style="text-align:center;"><button class="btn btn-sm btn-danger sample-delete-btn" data-sample-id="' + s.id + '" data-index="' + s.index + '" style="font-size:0.65rem;min-height:28px;padding:0 var(--space-2);">del</button></td>'
+          + '</tr>';
+      });
+
+      html += '</tbody></table>';
+      container.innerHTML = html;
+
+      /* Update pagination */
+      var total = d.total || 0;
+      var currentPage = Math.floor(samplePage.offset / samplePage.limit) + 1;
+      var totalPages = Math.ceil(total / samplePage.limit) || 1;
+      document.getElementById('sample-page-info').textContent = 'Page ' + currentPage + ' of ' + totalPages;
+      document.getElementById('sample-prev-btn').disabled = samplePage.offset <= 0;
+      document.getElementById('sample-next-btn').disabled = (samplePage.offset + samplePage.limit) >= total;
+
+    } catch(e) {
+      container.innerHTML = '<span class="text-muted" style="font-size:0.78rem;">Error loading samples: ' + escHtml(e.message) + '</span>';
+    }
+  }
+
+  /* ── Load operations history ── */
+  async function loadOperations() {
+    var container = document.getElementById('operations-container');
+    try {
+      var resp = await fetch('/v1/datasets/' + DATASET_ID + '/operations');
+      if (!resp.ok) { container.innerHTML = '<span class="text-muted" style="font-size:0.78rem;">Failed to load operations.</span>'; return; }
+      var data = await resp.json();
+      var ops = data && data.data && data.data.operations;
+      if (!ops || ops.length === 0) {
+        container.innerHTML = '<span class="text-muted" style="font-size:0.78rem;">No curation operations yet.</span>';
+        return;
+      }
+      var html = '<table class="grouped-list"><thead><tr>'
+        + '<th>Type</th><th style="text-align:right;">Before</th><th style="text-align:right;">After</th><th>Date</th>'
+        + '</tr></thead><tbody>';
+      ops.forEach(function(op) {
+        html += '<tr class="row-entrance">'
+          + '<td><span class="badge badge-cyan">' + escHtml(op.operation_type) + '</span></td>'
+          + '<td style="text-align:right;">' + (op.sample_count_before != null ? op.sample_count_before : '--') + '</td>'
+          + '<td style="text-align:right;">' + (op.sample_count_after != null ? op.sample_count_after : '--') + '</td>'
+          + '<td style="color:var(--text-tertiary);font-size:0.75rem;">' + (op.created_at || '').slice(0, 19).replace('T', ' ') + '</td>'
+          + '</tr>';
+      });
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    } catch(e) {
+      container.innerHTML = '<span class="text-muted" style="font-size:0.78rem;">Error: ' + escHtml(e.message) + '</span>';
+    }
+  }
+
+  /* ── Curation: Dedup ── */
+  document.getElementById('curate-dedup-btn').addEventListener('click', async function() {
+    var btn = this;
+    var spinner = document.getElementById('dedup-spinner');
+    var status = document.getElementById('curate-status');
+    spinner.style.display = '';
+    btn.disabled = true;
+    status.textContent = '> deduplicating...';
+    try {
+      var resp = await fetch('/v1/datasets/' + DATASET_ID + '/curate/dedup', { method: 'POST' });
+      var data = await resp.json();
+      if (!resp.ok) throw new Error(data.detail || 'Dedup failed');
+      var r = data.data;
+      status.textContent = '> Dedup: ' + r.samples_removed + ' duplicates removed (' + r.samples_before + ' -> ' + r.samples_after + ' samples)';
+      showToast('Deduplication complete', 'success');
+      loadMetrics();
+      loadSamples();
+      loadOperations();
+    } catch(e) {
+      status.textContent = '! ' + e.message;
+    } finally {
+      spinner.style.display = 'none';
+      btn.disabled = false;
+    }
+  });
+
+  /* ── Curation: Filter by length ── */
+  document.getElementById('curate-filter-btn').addEventListener('click', async function() {
+    var min = document.getElementById('filter-min').value;
+    var max = document.getElementById('filter-max').value;
+    var status = document.getElementById('curate-status');
+    if (!min && !max) { status.textContent = '! Enter min or max length.'; return; }
+    var body = {};
+    if (min) body.min_length = parseInt(min, 10);
+    if (max) body.max_length = parseInt(max, 10);
+    status.textContent = '> filtering...';
+    try {
+      var resp = await fetch('/v1/datasets/' + DATASET_ID + '/curate/filter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      var data = await resp.json();
+      if (!resp.ok) throw new Error(data.detail || 'Filter failed');
+      var r = data.data;
+      status.textContent = '> Filter: ' + r.samples_removed + ' samples removed (' + r.samples_before + ' -> ' + r.samples_after + ')';
+      showToast('Filter applied', 'success');
+      loadMetrics();
+      loadSamples();
+      loadOperations();
+    } catch(e) {
+      status.textContent = '! ' + e.message;
+    }
+  });
+
+  /* ── Curation: Regex replace ── */
+  document.getElementById('curate-replace-btn').addEventListener('click', async function() {
+    var pattern = document.getElementById('replace-pattern').value;
+    var replacement = document.getElementById('replace-replacement').value;
+    var status = document.getElementById('curate-status');
+    if (!pattern) { status.textContent = '! Enter a regex pattern.'; return; }
+    status.textContent = '> replacing...';
+    try {
+      var resp = await fetch('/v1/datasets/' + DATASET_ID + '/curate/replace', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pattern: pattern, replacement: replacement }),
+      });
+      var data = await resp.json();
+      if (!resp.ok) throw new Error(data.detail || 'Replace failed');
+      var r = data.data;
+      status.textContent = '> Replace: ' + r.samples_affected + ' samples affected';
+      showToast('Regex replacement complete', 'success');
+      loadMetrics();
+      loadSamples();
+      loadOperations();
+    } catch(e) {
+      status.textContent = '! ' + e.message;
+    }
+  });
+
+  /* ── Delete sample (delegated) ── */
+  document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.sample-delete-btn');
+    if (!btn) return;
+    var sampleId = btn.getAttribute('data-sample-id');
+    var index = btn.getAttribute('data-index');
+    if (!confirm('Delete sample #' + index + '?')) return;
+    var status = document.getElementById('curate-status');
+    status.textContent = '> deleting sample #' + index + '...';
+    fetch('/v1/datasets/' + DATASET_ID + '/samples/' + sampleId, { method: 'DELETE' })
+      .then(function(r) {
+        if (!r.ok) return r.json().then(function(d) { throw new Error(d.detail || 'Delete failed'); });
+        showToast('Sample #' + index + ' deleted', 'success');
+        status.textContent = '> Sample #' + index + ' deleted.';
+        loadMetrics();
+        loadSamples();
+        loadOperations();
+      })
+      .catch(function(err) {
+        status.textContent = '! ' + err.message;
+      });
+  });
+
+  /* ── Pagination ── */
+  document.getElementById('sample-prev-btn').addEventListener('click', function() {
+    if (samplePage.offset <= 0) return;
+    samplePage.offset = Math.max(0, samplePage.offset - samplePage.limit);
+    loadSamples();
+  });
+
+  document.getElementById('sample-next-btn').addEventListener('click', function() {
+    samplePage.offset += samplePage.limit;
+    loadSamples();
+  });
+
+  /* ── Sample search ── */
+  function doSampleSearch() {
+    samplePage.search = document.getElementById('sample-search').value.trim();
+    samplePage.offset = 0;
+    loadSamples();
+  }
+  document.getElementById('sample-search-btn').addEventListener('click', doSampleSearch);
+  document.getElementById('sample-search').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') doSampleSearch();
+  });
+
+  /* ── Initial load ── */
+  loadMetrics();
+  loadSamples();
+  loadOperations();
+
+})();
+</script>
+{% endblock %}
