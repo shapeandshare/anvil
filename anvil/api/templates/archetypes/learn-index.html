@@ -6,7 +6,7 @@
     <div class="section-card__title">Learning Path</div>
   </div>
   <div class="section-card__content">
-    <p class="page-intro">Eight interactive lessons that walk you through how this character-level LLM works, from raw text to trained generation. Each lesson pairs a scrollable tutorial with a live widget that shows the model's real internals in action — see attention heads, watch loss fall, and explore embeddings as they train.</p>
+    <p class="page-intro">{{ arc|length }} interactive lessons that walk you through how this character-level Llama-model LLM works, from raw text to trained generation. Each lesson pairs a scrollable tutorial with a live widget that shows the model's real internals in action — see attention heads, watch loss fall, explore embeddings, follow the full data flow, and understand the safetensors export pipeline.</p>
     <ol class="learn-arc-list">
       {% for item in arc %}
       <li class="learn-arc-item">
@@ -78,5 +78,14 @@
 }
 </style>
 {% endblock %}
-{% block didyouknow_banner %}{% endblock %}
+{% block didyouknow_banner %}
+<div id="didyouknow-banner" class="didyouknow">
+  <span class="didyouknow__icon" aria-hidden="true">&#9670;</span>
+  <div>
+    <div class="didyouknow__label">&#9670; Did You Know?</div>
+    <span id="didyouknow-text"></span>
+  </div>
+  <button type="button" class="didyouknow__dismiss" aria-label="Dismiss">&#10005;</button>
+</div>
+{% endblock %}
 {% block scripts %}{% endblock %}

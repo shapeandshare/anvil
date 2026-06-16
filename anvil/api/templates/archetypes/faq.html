@@ -57,10 +57,163 @@
               This is the same fundamental architecture: a decoder-only transformer with
               self-attention, trained to predict the next token. The differences are scale:
               ChatGPT has billions of parameters, was trained on trillions of tokens, and
-              used thousands of GPUs for weeks. anvil has 4,192 parameters, trains on
-              kilobytes of text in seconds, and fits on a single CPU. Every concept here
-              scales up directly to production models — just with 10,000,000&times; more
-              data and compute.
+              used thousands of GPUs for weeks. anvil has 4,192+ parameters (depending on
+              architecture config), trains on kilobytes of text in seconds, and fits on a
+              single CPU or laptop GPU. Every concept here scales up directly to production
+              models — just with 10,000,000&times; more data and compute.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item section-card" style="cursor: pointer; margin-bottom: var(--space-2);" onclick="toggleFaq(this)">
+          <div class="faq-question section-card__header" style="margin-bottom: 0; cursor: pointer;">
+            <span class="section-card__title">What architecture does anvil use?</span>
+            <span class="faq-toggle" style="font-family: var(--font-mono); font-size: 0.7rem; flex-shrink:0;">[+]</span>
+          </div>
+          <div class="faq-answer section-card__content" style="display: none; margin-top: var(--space-3);">
+            <p class="text-muted">
+              anvil uses the Llama architecture: a decoder-only transformer with Rotary
+              Position Embedding (RoPE), SwiGLU gated MLP, RMSNorm with learned scale
+              parameters, and bias-free linear layers. It does NOT use learned position
+              embeddings (WPE), ReLU activations, or LayerNorm — those were removed in
+              the Llama migration (see ADR-007). The architecture is identical whether
+              training on CPU (pure Python) or GPU (PyTorch). See the
+              <a href="/v1/learn/parameters" class="action-link">Parameters walkthrough</a>
+              for a full breakdown of every weight matrix.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item section-card" style="cursor: pointer; margin-bottom: var(--space-2);" onclick="toggleFaq(this)">
+          <div class="faq-question section-card__header" style="margin-bottom: 0; cursor: pointer;">
+            <span class="section-card__title">Can I export and use the model elsewhere?</span>
+            <span class="faq-toggle" style="font-family: var(--font-mono); font-size: 0.7rem; flex-shrink:0;">[+]</span>
+          </div>
+          <div class="faq-answer section-card__content" style="display: none; margin-top: var(--space-3);">
+            <p class="text-muted">
+              Yes. After training, a trained model can be exported to safetensors — the
+              standard format used by HuggingFace transformers. The export generates
+              <code>model.safetensors</code> (weights with HF-convention tensor names),
+              <code>config.json</code> (LlamaConfig-compatible), and
+              <code>tokenizer.json</code> (character-level tokenizer metadata).
+              These can be loaded by any Llama-compatible tool: HuggingFace, llama.cpp,
+              vLLM, or custom PyTorch code. See the
+              <a href="/v1/learn/export" class="action-link">Model Export walkthrough</a>
+              for details on the tensor name mapping and config generation.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item section-card" style="cursor: pointer; margin-bottom: var(--space-2);" onclick="toggleFaq(this)">
+          <div class="faq-question section-card__header" style="margin-bottom: 0; cursor: pointer;">
+            <span class="section-card__title">Can I train on GPU, or only CPU?</span>
+            <span class="faq-toggle" style="font-family: var(--font-mono); font-size: 0.7rem; flex-shrink:0;">[+]</span>
+          </div>
+          <div class="faq-answer section-card__content" style="display: none; margin-top: var(--space-3);">
+            <p class="text-muted">
+              Both. anvil has two training backends with identical Llama architecture.
+              The CPU backend uses pure Python (zero dependencies) with a custom Value
+              autograd graph — this is the default and requires no additional packages.
+              The GPU backend uses PyTorch tensors and runs 10-100x faster on CUDA
+              (NVIDIA) or MPS (Apple Silicon). Switching is automatic: TrainingService
+              detects the best available device and dispatches accordingly. GPU-trained
+              weights are bridged back into a CPU LlamaModel so downstream code never
+              knows which backend ran. Check the Operations page to see detected GPU info.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item section-card" style="cursor: pointer; margin-bottom: var(--space-2);" onclick="toggleFaq(this)">
+          <div class="faq-question section-card__header" style="margin-bottom: 0; cursor: pointer;">
+            <span class="section-card__title">How does training data flow through the system?</span>
+            <span class="faq-toggle" style="font-family: var(--font-mono); font-size: 0.7rem; flex-shrink:0;">[+]</span>
+          </div>
+          <div class="faq-answer section-card__content" style="display: none; margin-top: var(--space-3);">
+            <p class="text-muted">
+              When you click "Start Training," the browser POSTs a config to FastAPI,
+              which delegates to TrainingService. The service loads documents from the
+              database or filesystem in a thread pool, resolves the compute device,
+              then dispatches to the core engine (CPU or GPU). The engine calls a progress
+              callback every step, which uses <code>asyncio.run_coroutine_threadsafe()</code>
+              to push metrics into an SSE queue. The browser receives real-time events:
+              loss, steps/sec, ETA, and optimizer state. After training completes,
+              the model is logged to MLflow, saved to disk, and optionally exported to
+              safetensors. See the
+              <a href="/v1/learn/data-flow" class="action-link">Data Flow walkthrough</a>
+              for the full pipeline diagram.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item section-card" style="cursor: pointer; margin-bottom: var(--space-2);" onclick="toggleFaq(this)">
+          <div class="faq-question section-card__header" style="margin-bottom: 0; cursor: pointer;">
+            <span class="section-card__title">What MLflow integration exists?</span>
+            <span class="faq-toggle" style="font-family: var(--font-mono); font-size: 0.7rem; flex-shrink:0;">[+]</span>
+          </div>
+          <div class="faq-answer section-card__content" style="display: none; margin-top: var(--space-3);">
+            <p class="text-muted">
+              Every training run is automatically tracked via MLflow. Hyperparameters
+              (n_embd, n_head, n_layer, learning rate, etc.) are logged as params.
+              Final loss, device, and elapsed time are logged as metrics. Model artifacts
+              (model.json, samples.txt, and safetensors exports) are uploaded to the
+              MLflow artifact store. The model is auto-registered in the MLflow Model
+              Registry under a name derived from the training data source (dataset or
+              corpus), grouping all versions trained from the same data. You can open
+              the MLflow UI directly from the operations page or experiments page.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item section-card" style="cursor: pointer; margin-bottom: var(--space-2);" onclick="toggleFaq(this)">
+          <div class="faq-question section-card__header" style="margin-bottom: 0; cursor: pointer;">
+            <span class="section-card__title">Why does it say "8 interactive lessons" but there are more?</span>
+            <span class="faq-toggle" style="font-family: var(--font-mono); font-size: 0.7rem; flex-shrink:0;">[+]</span>
+          </div>
+          <div class="faq-answer section-card__content" style="display: none; margin-top: var(--space-3);">
+            <p class="text-muted">
+              The learning arc grows as new content is added. The Learning Index page
+              dynamically shows all available lessons — check it for the full up-to-date
+              list. Recent additions include the Data Flow walkthrough (end-to-end
+              pipeline from browser to engine to persistence) and the Model Export
+              walkthrough (safetensors export and HuggingFace compatibility).
+              The learning arc is defined in <code>LEARNING_ARC</code> in
+              <code>anvil/api/v1/router.py</code> and automatically wired with
+              prev/next navigation.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item section-card" style="cursor: pointer; margin-bottom: var(--space-2);" onclick="toggleFaq(this)">
+          <div class="faq-question section-card__header" style="margin-bottom: 0; cursor: pointer;">
+            <span class="section-card__title">Where are the progressive code examples (train0–train5)?</span>
+            <span class="faq-toggle" style="font-family: var(--font-mono); font-size: 0.7rem; flex-shrink:0;">[+]</span>
+          </div>
+          <div class="faq-answer section-card__content" style="display: none; margin-top: var(--space-3);">
+            <p class="text-muted">
+              The progressive walkthroughs live in <code>examples/train0.py</code> through
+              <code>examples/train5.py</code>. They progress from bigram counting (no
+              neural net) through manual backprop, RMSNorm, RoPE attention, and full
+              Llama blocks to a complete multi-layer model with safetensors export.
+              Each script is self-contained and runnable. See the Progressive Walkthroughs
+              reference in the vault for a detailed breakdown of what each script teaches
+              and the pedagogical design behind the progression.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item section-card" style="cursor: pointer; margin-bottom: var(--space-2);" onclick="toggleFaq(this)">
+          <div class="faq-question section-card__header" style="margin-bottom: 0; cursor: pointer;">
+            <span class="section-card__title">Is there a glossary of terms?</span>
+            <span class="faq-toggle" style="font-family: var(--font-mono); font-size: 0.7rem; flex-shrink:0;">[+]</span>
+          </div>
+          <div class="faq-answer section-card__content" style="display: none; margin-top: var(--space-3);">
+            <p class="text-muted">
+              Yes. The documentation vault includes a
+              <a href="/v1/learn/faq" class="action-link">Glossary</a>
+              with definitions for every technical term: Value, RMSNorm, KV Cache,
+              AdamW, BOS, Softmax, Cross-Entropy, State Dict, RoPE, SwiGLU, Safetensors,
+              Dual Backend, and more. It lives at <code>docs/vault/Reference/Glossary.md</code>
+              and is accessible from the learning page.
             </p>
           </div>
         </div>
@@ -142,4 +295,13 @@ function toggleFaq(el) {
 }
 </script>
 {% endblock %}
-{% block didyouknow_banner %}{% endblock %}
+{% block didyouknow_banner %}
+<div id="didyouknow-banner" class="didyouknow">
+  <span class="didyouknow__icon" aria-hidden="true">&#9670;</span>
+  <div>
+    <div class="didyouknow__label">&#9670; Did You Know?</div>
+    <span id="didyouknow-text"></span>
+  </div>
+  <button type="button" class="didyouknow__dismiss" aria-label="Dismiss">&#10005;</button>
+</div>
+{% endblock %}

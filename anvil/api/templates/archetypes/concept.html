@@ -16,6 +16,7 @@
   </div>
   {% endif %}
 
+  {% if steps | selectattr('widget') | list %}
   <div class="concept-widget-area">
     {% set ns = namespace(seen=[]) %}
     {% for step in steps %}
@@ -25,6 +26,7 @@
       {% endif %}
     {% endfor %}
   </div>
+  {% endif %}
 
   <div class="concept-carousel" id="concept-carousel">
     <div class="carousel-track" id="carousel-track">
@@ -33,7 +35,7 @@
         <div class="carousel-slide-content">
           <p class="slide-step-label">Step {{ loop.index }} of {{ steps|length }}</p>
           <h2>{{ step.title }}</h2>
-          <p>{{ step.body }}</p>
+          <p>{{ step.body | safe }}</p>
         </div>
       </div>
       {% endfor %}
@@ -67,6 +69,8 @@
 <script src="/static/js/widgets/loss.js"></script>
 <script src="/static/js/widgets/params.js"></script>
 <script src="/static/js/widgets/adam.js"></script>
+<script src="/static/js/widgets/architecture.js"></script>
+<script src="/static/js/widgets/dataflow.js"></script>
 <script>
 (function() {
   /* ── Widget Classes Registry ── */
@@ -80,6 +84,8 @@
     loss: window.LossWidget,
     params: window.ParamsWidget,
     adam: window.AdamWidget,
+    architecture: window.ArchitectureWidget,
+    dataflow: window.DataFlowWidget,
   };
 
   /* ── Init all widgets (rendered outside carousel, always visible) ── */
@@ -149,4 +155,13 @@
 })();
 </script>
 {% endblock %}
-{% block didyouknow_banner %}{% endblock %}
+{% block didyouknow_banner %}
+<div id="didyouknow-banner" class="didyouknow">
+  <span class="didyouknow__icon" aria-hidden="true">&#9670;</span>
+  <div>
+    <div class="didyouknow__label">&#9670; Did You Know?</div>
+    <span id="didyouknow-text"></span>
+  </div>
+  <button type="button" class="didyouknow__dismiss" aria-label="Dismiss">&#10005;</button>
+</div>
+{% endblock %}

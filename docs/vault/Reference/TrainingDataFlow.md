@@ -51,7 +51,7 @@ The training pipeline bridges three execution paradigms: async web → sync CPU-
 │    │                                                                │
 │    ├── Tokenize: char-level, BOS sentinel                           │
 │    ├── Init LlamaModel (state_dict of Value matrices)                │
-│    ├── Init AdamW buffers (m, v)                                    │
+│    ├── Init Adam buffers (m, v)                                     │
 │    │                                                                │
 │    └── STEP LOOP (for step in range(num_steps))                     │
 │          │                                                          │
@@ -95,7 +95,7 @@ The training pipeline bridges three execution paradigms: async web → sync CPU-
 │          │   └── loss.backward()                                   │
 │          │       (reverse-mode autograd on Value graph)            │
 │          │                                                          │
-│          ├── ADAMW UPDATE                                          │
+│          ├── ADAM UPDATE                                           │
 │          │   lr_t = lr * (1 - step/num_steps)                     │
 │          │   FOR each param:                                       │
 │          │     m = β₁·m + (1-β₁)·grad                              │
@@ -185,11 +185,14 @@ POST /v1/inference/sample  {model_id, version, temperature, num_samples}
 | **Character-level** | No BPE/WordPiece — sorted unique chars + BOS sentinel |
 | **KV cache** | Per-layer lists appended each forward step (no recompute). Keys are rotated by RoPE BEFORE caching (one rotation per position — never double-rotated). Values are not rotated |
 | **Autograd** | Reverse-mode AD via Value graph (micrograd pattern) |
-| **AdamW** | Full Adam with bias correction + linear LR decay |
+| **Adam** | Plain Adam (not AdamW — no weight decay) with bias correction + linear LR decay |
 | **No batching** | Processes one token position at a time (educational simplicity) |
 | **Architecture** | Llama-style: RoPE (half-split), SwiGLU MLP, learned RMSNorm, final norm |
 
 ## See Also
 
-- [[Glossary]] — Value, RMSNorm, KV cache, AdamW definitions
+- [[Glossary]] — Value, RMSNorm, KV cache, Adam definitions
+- [[ArchitectureOverview]] — High-level system architecture and layer discipline
+- [[DualBackend]] — CPU vs GPU training bridge
+- [[Hyperparameters]] — Hyperparameter interaction guide
 - [[Decisions/ADR-002-sync-core-async-bridge|ADR-002: Sync Core / Async Bridge]]

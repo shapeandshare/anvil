@@ -2,14 +2,33 @@
 {% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
 {% block content %}
 <div class="graph-page">
+  {% if arc %}
+  <div class="concept-lesson-header">
+    <h1 class="concept-lesson-title">Forward Pass Explorer <span class="lesson-count">&mdash; Lesson {{ current_index + 1 }} of {{ arc|length }}</span></h1>
+    <nav class="learn-arc-nav" aria-label="Lesson navigation">
+      <div class="learn-arc-links">
+        <a href="/v1/learn" class="btn btn-secondary">&larr; Back to Learning Index</a>
+        {% if prev %}
+        <a href="{{ prev.path }}" class="btn btn-secondary">&larr; {{ prev.title }}</a>
+        {% endif %}
+        {% if next %}
+        <a href="{{ next.path }}" class="btn btn-secondary">{{ next.title }} &rarr;</a>
+        {% endif %}
+      </div>
+    </nav>
+  </div>
+  {% endif %}
   <div class="section-card" style="--stagger-i: 0">
     <div class="section-card__header">
-      <div class="section-card__title">Computation Graph — Forward Pass Explorer</div>
+      <div class="section-card__title">Computation Graph — Llama Forward Pass Explorer</div>
     </div>
     <div class="section-card__content">
       <p class="text-muted" style="margin-bottom:var(--space-4);">
-        Scrub through the forward pass to see how a computation graph builds from token input to attention output.
-        Each step adds real operations — no static diagrams.
+        Scrub through the Llama architecture forward pass to see how the computation graph builds from token input to output logits.
+        Each step adds real operations — no static diagrams. This graph mirrors the actual <code>LlamaModel.forward()</code> in <code>anvil/core/engine.py</code>.
+      </p>
+      <p class="text-muted" style="font-size:0.72rem;">
+        See the <a href="/v1/learn/autograd" class="action-link">Autograd walkthrough</a> for an interactive computation graph with real gradients.
       </p>
     </div>
   </div>
@@ -28,7 +47,7 @@
     </div>
     <div class="section-card__content">
       <div id="graph-description" class="graph-description">
-        <p class="text-muted">Drag the scrubber to step through the forward pass. Each step adds nodes to the computation graph showing real operations.</p>
+        <p class="text-muted">Drag the scrubber to step through the Llama forward pass. Each step adds nodes to the computation graph showing real operations from <code>LlamaModel.forward()</code>.</p>
       </div>
     </div>
   </div>
@@ -46,14 +65,14 @@
   var descEl = document.getElementById('graph-description');
 
   var STEP_INFO = [
-    { label: 'Token Embedding', desc: 'Input token is mapped to a dense vector via the embedding matrix (WTE). This converts discrete token IDs into continuous representations.' },
-    { label: 'Position Embedding', desc: 'Position information is added via the position embedding matrix (WPE). This lets the model know where each token sits in the sequence.' },
-    { label: 'LayerNorm 1', desc: 'The combined embedding is normalized to stabilize activations. LayerNorm ensures consistent scale across the embedding dimension.' },
-    { label: 'Attention QKV', desc: 'Query, Key, and Value vectors are computed from the normalized embedding using learned weight matrices. Q and K determine pairwise attention scores.' },
-    { label: 'Attention Scores', desc: 'Dot products between Query and Key vectors produce attention scores. Each token "looks at" every other token to determine relevance.' },
-    { label: 'Softmax + Weighted Sum', desc: 'Attention scores are normalized via softmax to produce attention weights (0-1). Values are summed weighted by these attention scores.' },
-    { label: 'MLP Feed-Forward', desc: 'Attention output passes through a multi-layer perceptron (MLP). This is where the model transforms attended information.' },
-    { label: 'Output Logits', desc: 'Final LayerNorm and linear projection produce logits — scores for each token in the vocabulary. The highest-scoring token is the model\'s prediction.' },
+    { label: 'Token Embedding', desc: 'Input token ID is mapped to a dense vector via the embedding matrix (WTE). No learned position embedding is added — position is encoded later via RoPE rotation of Q/K vectors.' },
+    { label: 'Pre-Attention RMSNorm', desc: 'The token embedding is normalized via RMSNorm (Root Mean Square Normalization): x / sqrt(mean(x²) + ε). Unlike LayerNorm, RMSNorm does not subtract the mean. A learned scale vector (rms_1) is applied elementwise after normalization.' },
+    { label: 'QKV Projections + RoPE', desc: 'Query, Key, and Value vectors are computed from the normalized embedding. Then RoPE (Rotary Position Encoding) is applied to Q and K — they are rotated by an angle proportional to position. V is NOT rotated (values carry absolute content).' },
+    { label: 'Attention Scores', desc: 'Dot products between the rotated Query and rotated Key vectors produce attention scores. Each token "looks at" itself and all preceding tokens (causal mask). Scores are scaled by sqrt(head_dim).' },
+    { label: 'Softmax + Weighted Sum', desc: 'Attention scores are normalized via softmax to produce attention weights (0-1, summing to 1 per query). Values are summed weighted by these attention scores. This produces a context-aware representation per token.' },
+    { label: 'Attention Output + Residual', desc: 'All attention heads are concatenated and projected through Wo (Output matrix). The original input is added back: output = attention(x) + x. This residual connection creates a gradient highway through the network.' },
+    { label: 'Pre-MLP RMSNorm + SwiGLU', desc: 'The attention output is normalized again via RMSNorm with learned scale (rms_2). Then a SwiGLU MLP transforms it: gate = SiLU(x·Wgate), up = x·Wup, combined = gate ⊙ up, projected through Wdown. SiLU (Swish) is x · sigmoid(x).' },
+    { label: 'Final RMSNorm + Logits', desc: 'The SwiGLU output is added to its residual (output = mlp(x) + x). Then final RMSNorm with learned scale (rms_final) normalizes before the lm_head linear projection produces logits — scores for each token in the vocabulary.' },
   ];
 
   /* Build synthetic graph data — one node per step with increasing complexity */
@@ -62,7 +81,8 @@
     edges: []
   };
 
-  var ids = ['tok', 'pos', 'ln1', 'qkv', 'att', 'smax', 'mlp', 'out'];
+  /* Llama architecture forward pass node IDs (matches engine.py forward flow) */
+  var ids = ['emb', 'rms1', 'qkv', 'attn', 'smax', 'res1', 'swiglu', 'out'];
   var layers = [0, 0, 1, 1, 2, 2, 3, 3];
 
   ids.forEach(function(id, i) {
@@ -75,14 +95,14 @@
     });
   });
 
-  /* Edges (data flow) */
-  graphData.edges.push({ from: 'tok', to: 'pos' });
-  graphData.edges.push({ from: 'pos', to: 'ln1' });
-  graphData.edges.push({ from: 'ln1', to: 'qkv' });
-  graphData.edges.push({ from: 'qkv', to: 'att' });
-  graphData.edges.push({ from: 'att', to: 'smax' });
-  graphData.edges.push({ from: 'smax', to: 'mlp' });
-  graphData.edges.push({ from: 'mlp', to: 'out' });
+  /* Edges (data flow) — follows LlamaModel.forward() */
+  graphData.edges.push({ from: 'emb', to: 'rms1' });
+  graphData.edges.push({ from: 'rms1', to: 'qkv' });
+  graphData.edges.push({ from: 'qkv', to: 'attn' });
+  graphData.edges.push({ from: 'attn', to: 'smax' });
+  graphData.edges.push({ from: 'smax', to: 'res1' });
+  graphData.edges.push({ from: 'res1', to: 'swiglu' });
+  graphData.edges.push({ from: 'swiglu', to: 'out' });
 
   var view = new GraphView(canvas, { steps: STEP_INFO });
   view.setGraph(graphData);
@@ -105,4 +125,13 @@
 })();
 </script>
 {% endblock %}
-{% block didyouknow_banner %}{% endblock %}
+{% block didyouknow_banner %}
+<div id="didyouknow-banner" class="didyouknow">
+  <span class="didyouknow__icon" aria-hidden="true">&#9670;</span>
+  <div>
+    <div class="didyouknow__label">&#9670; Did You Know?</div>
+    <span id="didyouknow-text"></span>
+  </div>
+  <button type="button" class="didyouknow__dismiss" aria-label="Dismiss">&#10005;</button>
+</div>
+{% endblock %}

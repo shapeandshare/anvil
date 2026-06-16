@@ -268,6 +268,7 @@ async def graph_concept_page(request: Request):
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/graph.html",
+        _arc_context("graph"),
     )
 
 
@@ -301,7 +302,7 @@ LEARNING_ARC = [
     {"key": "embeddings", "title": "Embeddings", "path": "/v1/learn/embeddings",
      "desc": "How each token ID becomes a dense vector the model can compute with."},
     {"key": "parameters", "title": "Parameters", "path": "/v1/learn/parameters",
-     "desc": "Where the model's 4,192 parameters live and what each matrix does."},
+     "desc": "Where the model's ~4K parameters live and what each matrix does."},
     {"key": "autograd", "title": "Autograd", "path": "/v1/learn/autograd",
      "desc": "How gradients flow backward through the computation graph to train the model."},
     {"key": "attention", "title": "Attention", "path": "/v1/learn/attention",
@@ -314,6 +315,16 @@ LEARNING_ARC = [
      "desc": "How momentum and adaptive learning rates make training converge faster."},
     {"key": "training-loop", "title": "Training Loop", "path": "/v1/learn/training-loop",
      "desc": "How the model learns by minimizing prediction error step by step."},
+    {"key": "architecture", "title": "Architecture", "path": "/v1/learn/architecture",
+     "desc": "The full Llama decoder stack — RoPE, RMSNorm, SwiGLU — visualized end to end."},
+    {"key": "graph", "title": "Forward Pass", "path": "/v1/learn/graph",
+     "desc": "Scrub through the Llama forward pass step by step on an interactive computation graph."},
+    {"key": "data-flow", "title": "Data Flow", "path": "/v1/learn/data-flow",
+     "desc": "How a training request travels from browser to engine and back via SSE."},
+    {"key": "export", "title": "Model Export", "path": "/v1/learn/export",
+     "desc": "How trained models are exported to safetensors for HuggingFace compatibility."},
+    {"key": "faq", "title": "FAQ", "path": "/v1/learn/faq",
+     "desc": "Frequently asked questions about how anvil works and what it can do."},
 ]
 
 
@@ -384,6 +395,21 @@ TOKENIZATION_STEPS = [
             "The model receives [BOS, id_of_a, id_of_b, ..., BOS]. "
             "Each position in this sequence will get its own embedding in the next lesson. "
             "Type longer or shorter text and see how the token count changes."
+        ),
+        "widget": "tokenization",
+    },
+    {
+        "key": "tokenizer-vocabulary-classes",
+        "title": "Tokenizer vs Vocabulary",
+        "body": (
+            "anvil has two classes for this. Tokenizer (anvil/core/tokenizer.py) "
+            "builds its vocabulary from training documents at construction time. "
+            "Vocabulary is reconstructable from a saved chars list — it is what "
+            "gets loaded for inference when you register and reload a model. "
+            "Both produce identical encode/decode semantics (BOS-wrapped, "
+            "same vocab_size calculation, same char-to-id mapping). "
+            "The saved model stores its chars list so it can be reloaded "
+            "without the original training data."
         ),
         "widget": "tokenization",
     },
@@ -530,6 +556,19 @@ ATTENTION_STEPS = [
             "faster, and works well for transformer training."
         ),
     },
+    {
+        "key": "kv-cache-mechanics",
+        "title": "KV Cache Mechanics",
+        "body": (
+            "During autoregressive generation, the model caches Key and Value vectors "
+            "for every previous position instead of recomputing them. At each new position, "
+            "it computes Q, K, V for the current token, appends K and V to per-layer lists, "
+            "then attends to all cached positions. This turns O(n) into O(n) per step. "
+            "An important detail: Keys are rotated by RoPE BEFORE caching — each key is "
+            "rotated exactly once at its position and never double-rotated. Values are "
+            "not rotated (they carry absolute content, not relative position)."
+        ),
+    },
 ]
 
 SAMPLING_STEPS = [
@@ -655,6 +694,21 @@ TRAINING_LOOP_STEPS = [
         ),
         "widget": "trainingLoop",
     },
+    {
+        "key": "dual-backend",
+        "title": "CPU vs GPU Training",
+        "body": (
+            "anvil has two training backends with identical Llama architecture. "
+            "The CPU backend uses pure Python (zero dependencies) with a custom "
+            "Value autograd graph. The GPU backend uses PyTorch tensors for "
+            "10-100x speed on CUDA or MPS. Switching between them is transparent: "
+            "TrainingService resolves the device and dispatches automatically. "
+            "GPU-trained weights are bridged back into a CPU LlamaModel via "
+            "_load_weights_into_model(), so downstream code never knows which "
+            "backend ran. See the Architecture reference for details."
+        ),
+        "widget": "trainingLoop",
+    },
 ]
 
 LOSS_STEPS = [
@@ -774,6 +828,21 @@ PARAMS_STEPS = [
         ),
         "widget": "params",
     },
+    {
+        "key": "export-mapping",
+        "title": "Safetensors Export Names",
+        "body": (
+            "When exported to safetensors (HF-compatible format), each anvil "
+            "parameter maps to a HuggingFace LlamaForCausalLM tensor name. "
+            "For example, layer0.attn_wq becomes "
+            "model.layers.0.self_attn.q_proj.weight. "
+            "layer{i}.rms_1 maps to input_layernorm.weight, and "
+            "layer{i}.rms_2 maps to post_attention_layernorm.weight. "
+            "No biases are exported (Llama uses bias-free linear layers). "
+            "See the Safetensors Export reference for the full mapping table."
+        ),
+        "widget": "params",
+    },
 ]
 
 ADAM_STEPS = [
@@ -834,6 +903,21 @@ ADAM_STEPS = [
         ),
         "widget": "adam",
     },
+    {
+        "key": "weight-decay",
+        "title": "Weight Decay (AdamW)",
+        "body": (
+            "The optimizer in anvil's core engine is technically Adam, not AdamW — "
+            "there is no explicit weight decay term. In full AdamW, each parameter "
+            "has its own learning rate and a small decay factor that gently pulls "
+            "weights toward zero (L2 regularization). This prevents weights from "
+            "growing unbounded. For anvil's small educational models, the effect "
+            "is negligible. The GPU backend uses torch.optim.Adam (also without "
+            "weight decay). Adding weight_decay to the config is a natural "
+            "extension for more serious training runs."
+        ),
+        "widget": "adam",
+    },
 ]
 
 AUTOGRAD_STEPS = [
@@ -891,6 +975,218 @@ AUTOGRAD_STEPS = [
             "final accumulated gradient (g) at each node."
         ),
         "widget": "autograd",
+    },
+]
+
+DATA_FLOW_STEPS = [
+    {
+        "key": "browser-button",
+        "title": "Browser Button Click",
+        "body": (
+            "When you click 'Start Training' in the Training Dashboard, the browser "
+            "POSTs a JSON config body to /v1/training/start. This body includes all "
+            "hyperparameters (n_embd, n_head, n_layer, num_steps, etc.) along with "
+            "the data source ID (dataset_id or corpus_id). The route handler creates "
+            "an asyncio task and returns immediately with a run_id — training runs "
+            "in the background."
+        ),
+        "widget": "dataflow",
+    },
+    {
+        "key": "service-orchestration",
+        "title": "Service Orchestration",
+        "body": (
+            "The route delegates to TrainingService.start_training() which: "
+            "(1) reserves a run_id with an SSE event queue and stop event, "
+            "(2) loads training documents in a thread pool (run_in_executor), "
+            "(3) resolves the compute device (CUDA > MPS > CPU), "
+            "(4) dispatches to train() or train_torch() — the CPU or GPU backend. "
+            "All of this runs in the async event loop, with the sync engine "
+            "offloaded to a thread pool to avoid blocking the web server."
+        ),
+        "widget": "dataflow",
+    },
+    {
+        "key": "sse-bridge",
+        "title": "The SSE Bridge",
+        "body": (
+            "The core engine calls a progress callback every training step. This "
+            "callback runs in the thread pool thread, so it uses "
+            "asyncio.run_coroutine_threadsafe() to push events into an asyncio.Queue. "
+            "The SSE endpoint at /v1/training/stream/{run_id} reads from that same "
+            "queue and sends Server-Sent Events to the browser. Events include: "
+            "metrics (step, loss, steps/sec, ETA), optimizer_state (per-parameter "
+            "m/v/grad snapshots), complete (final loss + samples), and error."
+        ),
+        "widget": "dataflow",
+    },
+    {
+        "key": "persistence-chain",
+        "title": "Persistence Chain",
+        "body": (
+            "When training finishes, on_complete fires a chain of actions: "
+            "(1) TrackingService logs params + metrics to MLflow, "
+            "(2) the model.json artifact is uploaded to MLflow storage, "
+            "(3) the model is registered in MLflow Model Registry, "
+            "(4) the local DB gets an Experiment record, "
+            "(5) model.json is saved to data/models/ for inference loading, "
+            "(6) SafetensorsExportService generates model.safetensors + "
+            "config.json + tokenizer.json for HuggingFace compatibility. "
+            "Finally, the SSE 'complete' event reaches the browser."
+        ),
+        "widget": "dataflow",
+    },
+    {
+        "key": "inference-path",
+        "title": "Inference Path",
+        "body": (
+            "Loading a trained model for inference reverses the pipeline: "
+            "POST to /v1/inference/sample with model_id and version. The endpoint "
+            "looks up the artifact path in the Model Registry (or falls back to "
+            "the experiment), loads model.json from disk, reconstructs a LlamaModel, "
+            "and runs autoregressive sampling. The sampling code supports temperature "
+            "scaling, top-K filtering, and top-P (nucleus) filtering — the same "
+            "techniques explained in the Sampling lesson."
+        ),
+        "widget": "dataflow",
+    },
+]
+
+ARCHITECTURE_STEPS = [
+    {
+        "key": "the-big-picture",
+        "title": "The Big Picture",
+        "body": (
+            "anvil is a Llama-style decoder-only transformer. Text flows in as token "
+            "IDs, through a token embedding, then through one or more identical "
+            "transformer blocks, and finally through a normalization + output head "
+            "that produces logits over the vocabulary. The diagram shows the full "
+            "stack — use it as a map for the components you learned in earlier lessons."
+        ),
+        "widget": "architecture",
+    },
+    {
+        "key": "token-embedding-input",
+        "title": "Token Embedding (Input)",
+        "body": (
+            "Each token ID indexes a row of the wte matrix to produce a dense vector "
+            "of size n_embd. Unlike GPT-2, there is NO learned position embedding "
+            "added here — position is injected later via RoPE inside attention. The "
+            "embedding is the only thing fed into the first transformer block."
+        ),
+        "widget": "architecture",
+    },
+    {
+        "key": "the-transformer-block",
+        "title": "The Transformer Block",
+        "body": (
+            "The heart of the model is the transformer block, repeated n_layer times. "
+            "Each block has two sublayers: a self-attention sublayer and a SwiGLU MLP "
+            "sublayer. Both use pre-normalization (RMSNorm before the sublayer) and a "
+            "residual connection (the input is added back to the output). Highlighted "
+            "in the diagram, this block is where nearly all the parameters live."
+        ),
+        "widget": "architecture",
+    },
+    {
+        "key": "attention-sublayer",
+        "title": "Attention Sublayer",
+        "body": (
+            "First sublayer: RMSNorm (scaled by rms_1) → Q/K/V projections → RoPE "
+            "rotation applied to Q and K → multi-head causal attention → output "
+            "projection (Wo) → add residual. RoPE is what encodes position, by "
+            "rotating the query and key vectors by an angle proportional to their "
+            "position before the attention dot-product."
+        ),
+        "widget": "architecture",
+    },
+    {
+        "key": "swiglu-sublayer",
+        "title": "SwiGLU MLP Sublayer",
+        "body": (
+            "Second sublayer: RMSNorm (scaled by rms_2) → SwiGLU MLP → add residual. "
+            "SwiGLU computes gate = SiLU(x·Wgate), up = x·Wup, then (gate ⊙ up)·Wdown. "
+            "The intermediate size is int(8·n_embd/3), preserving parameter parity "
+            "with the classic 4× ReLU MLP it replaces. SiLU (Swish) is x·sigmoid(x)."
+        ),
+        "widget": "architecture",
+    },
+    {
+        "key": "output-head",
+        "title": "Output Head",
+        "body": (
+            "After the final transformer block, one more RMSNorm (rms_final) "
+            "normalizes the representation, then the lm_head linear projection maps "
+            "it from n_embd back to vocab_size — producing one logit per possible "
+            "next character. Softmax turns those logits into probabilities. The lm_head "
+            "is a separate matrix from wte (no weight tying)."
+        ),
+        "widget": "architecture",
+    },
+]
+
+EXPORT_STEPS = [
+    {
+        "key": "why-export",
+        "title": "Why Export?",
+        "body": (
+            "After training, the model is stored as model.json — a Python-serializable "
+            "dict of Value objects. This format is anvil-native: it preserves autograd "
+            "state and is loadable by LlamaModel.load(). But other tools don't understand "
+            "anvil's format. The export pipeline converts the trained weights into "
+            "safetensors, the standard format for HuggingFace transformers. This lets "
+            "you load your trained model in Llama.cpp, vLLM, or any Llama-compatible "
+            "inference server."
+        ),
+    },
+    {
+        "key": "tensor-mapping",
+        "title": "Tensor Name Mapping",
+        "body": (
+            "The critical bridge is export_state_dict() in anvil/services/export.py. "
+            "Every anvil internal key maps to a HuggingFace LlamaForCausalLM tensor name. "
+            "For example, layer0.attn_wq becomes model.layers.0.self_attn.q_proj.weight. "
+            "layer0.rms_1 maps to input_layernorm.weight. rms_final maps to model.norm.weight. "
+            "No biases are exported — Llama uses bias-free linear layers. No wpe is exported "
+            " RoPE is a computation, not a parameter. See the Safetensors Export reference "
+            "for the full mapping table."
+        ),
+    },
+    {
+        "key": "config-generation",
+        "title": "Config Generation",
+        "body": (
+            "Alongside the weights, the export generates a config.json compatible with "
+            "HuggingFace LlamaConfig. Key fields: model_type=llama, hidden_size=n_embd, "
+            "intermediate_size=int(8*n_embd/3), num_hidden_layers=n_layer, "
+            "num_attention_heads=n_head, hidden_act=silu, rms_norm_eps=1e-5, "
+            "rope_theta=10000.0. The config also marks tie_word_embeddings=false "
+            "(wte and lm_head are separate) and attention_bias=false."
+        ),
+    },
+    {
+        "key": "tokenizer-export",
+        "title": "Tokenizer Export",
+        "body": (
+            "The character-level tokenizer is exported as tokenizer.json with: "
+            "the sorted character list, char-to-ID mapping, BOS token ID, and "
+            "tokenizer type flag. This ensures the same encoding is used at "
+            "inference time as during training. The exported tokenizer is not "
+            "compatible with HuggingFace tokenizers (which use BPE/WordPiece), "
+            "but the format is self-documenting for anvil's use case."
+        ),
+    },
+    {
+        "key": "mlflow-pyfunc",
+        "title": "MLflow Pyfunc Model",
+        "body": (
+            "The export also generates MLmodel and conda.yaml for MLflow's pyfunc "
+            "loading path. The MLmodel points to anvil._pyfunc_model.AnvilPyfuncModel "
+            "as the loader module. The conda.yaml lists anvil, transformers, torch, "
+            "safetensors, and numpy as dependencies. This enables MLflow Model Registry "
+            "to deploy the model as a REST endpoint or load it in Python for inference. "
+            "The demo model at data/models/demo/ is the canonical example."
+        ),
     },
 ]
 
@@ -982,6 +1278,33 @@ async def adam_concept_page(request: Request):
         request,
         "archetypes/concept.html",
         {"steps": ADAM_STEPS, **_arc_context("adam")},
+    )
+
+
+@router.get("/learn/architecture", response_class=HTMLResponse)
+async def architecture_concept_page(request: Request):
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "archetypes/concept.html",
+        {"steps": ARCHITECTURE_STEPS, **_arc_context("architecture")},
+    )
+
+
+@router.get("/learn/data-flow", response_class=HTMLResponse)
+async def data_flow_concept_page(request: Request):
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "archetypes/concept.html",
+        {"steps": DATA_FLOW_STEPS, **_arc_context("data-flow")},
+    )
+
+
+@router.get("/learn/export", response_class=HTMLResponse)
+async def export_concept_page(request: Request):
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "archetypes/concept.html",
+        {"steps": EXPORT_STEPS, **_arc_context("export")},
     )
 
 

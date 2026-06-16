@@ -420,7 +420,7 @@ class InferenceService:
                     if len(lg) == 1 and lg[0] != 1.0:
                         if isinstance(lg[0], (int, float)) and lg[0] != 1.0:
                             return "pow"
-                return "relu"
+                return "silu"
             if n_children == 2:
                 parent_types = [type(c).__name__ for c in val._children[:2]]
                 if "Value" in parent_types:
@@ -513,7 +513,7 @@ class InferenceService:
                     if len(lg) == 1 and lg[0] != 1.0:
                         if isinstance(lg[0], (int, float)) and lg[0] != 1.0:
                             return "pow"
-                return "relu"
+                return "silu"
             if n_children == 2:
                 parent_types = [type(c).__name__ for c in val._children[:2]]
                 if "Value" in parent_types:

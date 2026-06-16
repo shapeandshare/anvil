@@ -46,7 +46,7 @@
     var colors = {
       'input': '#34d399', 'add': '#3b82f6', 'mul': '#f59e0b',
       'pow': '#a78bfa', 'log': '#f59e0b', 'exp': '#ef4444',
-      'relu': '#38bdf8', 'combine': '#8a8c94'
+      'silu': '#38bdf8', 'combine': '#8a8c94'
     };
     var html = '';
     for (var op in colors) {
@@ -115,7 +115,7 @@
       'pow': style.getPropertyValue('--accent-magenta').trim() || '#a78bfa',
       'log': style.getPropertyValue('--accent-warn').trim() || '#f59e0b',
       'exp': style.getPropertyValue('--accent-error').trim() || '#ef4444',
-      'relu': style.getPropertyValue('--accent-cyan').trim() || '#38bdf8',
+      'silu': style.getPropertyValue('--accent-cyan').trim() || '#38bdf8',
       'combine': style.getPropertyValue('--text-muted').trim() || '#8a8c94'
     };
 
