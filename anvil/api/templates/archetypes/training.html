@@ -53,6 +53,8 @@
           </select>
         </div>
       </div>
+      <span id="data-conflict-warn" class="ds-warn" style="display:none;">&#9888; Both corpus and dataset selected — dataset takes priority, corpus will be ignored.</span>
+      <span id="empty-data-warn" class="ds-warn" style="display:none;">&#9888; No data source selected — training will use the default demo corpus.</span>
       <div id="data-context" class="ds-card">
         <div class="ds-card-empty">Select a corpus or dataset above.</div>
       </div>
@@ -80,12 +82,14 @@
           <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How many parallel attention computations happen at each layer. Each head can focus on different relationships. Must divide n_embd evenly.</span></span>
           <input type="number" id="n_head" value="4" min="1" max="16">
           <p class="param-desc">Attention heads — must divide <code>n_embd</code> evenly (e.g. 64 &amp; 4 works).</p>
+          <span id="attn-geom-warn" class="ds-warn" style="display:none;"></span>
         </div>
         <div class="param-block">
           <label class="param-label">block_size</label>
           <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How many characters the model can 'see' at once when predicting the next character. Larger context = more coherent output but slower training.</span></span>
           <input type="number" id="block_size" value="16" min="8" max="1024">
           <p class="param-desc">Context window in characters — match to your corpus chunk size.</p>
+          <span id="bs-mismatch-warn" class="ds-warn" style="display:none;">&#9888; block_size exceeds corpus chunk size — only chunks up to the corpus block_size will be used per step. Increase corpus chunk size or lower training block_size.</span>
         </div>
         <div class="param-block">
           <label class="param-label">num_steps</label>
@@ -431,6 +435,35 @@ function updateMetrics(d) {
     }
 
     modelStatsEl.innerHTML = html;
+
+    /* Warn if training block_size exceeds corpus chunk size */
+    var bsWarn = document.getElementById('bs-mismatch-warn');
+    if (cid && corpusCache[cid] && corpusCache[cid].block_size && block_size > corpusCache[cid].block_size) {
+      bsWarn.style.display = 'block';
+    } else {
+      bsWarn.style.display = 'none';
+    }
+
+    /* Warn about n_embd / n_head geometry issues */
+    var attnWarn = document.getElementById('attn-geom-warn');
+    var msgs = [];
+    if (n_head > n_embd) {
+      msgs.push('&#9888; n_head (' + n_head + ') exceeds n_embd (' + n_embd + ') &mdash; head_dim = 0, model will produce zeros');
+    } else if (n_embd % n_head !== 0) {
+      var usedDims = n_head * Math.floor(n_embd / n_head);
+      msgs.push('&#9888; n_embd (' + n_embd + ') not divisible by n_head (' + n_head + ') &mdash; only ' + usedDims + ' of ' + n_embd + ' dims used in attention');
+    } else {
+      var headDim = n_embd / n_head;
+      if (headDim % 2 !== 0) {
+        msgs.push('&#9888; head_dim=' + headDim + ' is odd &mdash; RoPE requires even head_dim, model will crash');
+      }
+    }
+    if (msgs.length > 0) {
+      attnWarn.innerHTML = msgs.join('<br>');
+      attnWarn.style.display = 'block';
+    } else {
+      attnWarn.style.display = 'none';
+    }
   }
 
   function patchParamListeners() {
@@ -880,6 +913,28 @@ function updateMetrics(d) {
 
     log('> Starting training with: ' + JSON.stringify(config));
 
+    /* Log block_size mismatch warning if applicable */
+    var bsWarn = document.getElementById('bs-mismatch-warn');
+    if (bsWarn && bsWarn.style.display !== 'none' && cid && corpusCache[cid]) {
+      log('⚠️  Warning: block_size (' + config.block_size + ') > corpus chunk size (' + corpusCache[cid].block_size + ') — only chunks of ' + corpusCache[cid].block_size + ' chars will be used per step');
+    }
+
+    /* Log data source warnings */
+    var dataConflictWarn = document.getElementById('data-conflict-warn');
+    if (dataConflictWarn && dataConflictWarn.style.display !== 'none') {
+      log('⚠️  Warning: Both corpus and dataset selected — dataset will be used, corpus ignored');
+    }
+    var emptyDataWarn = document.getElementById('empty-data-warn');
+    if (emptyDataWarn && emptyDataWarn.style.display !== 'none') {
+      log('⚠️  Warning: No data source selected — will use default demo corpus');
+    }
+
+    /* Log attention geometry warnings */
+    var attnWarn = document.getElementById('attn-geom-warn');
+    if (attnWarn && attnWarn.style.display !== 'none') {
+      log('⚠️  Warning: ' + attnWarn.textContent.replace(/\s+/g, ' ').trim());
+    }
+
     try {
       var resp = await fetch('/v1/training/start', {
         method: 'POST',
@@ -960,6 +1015,21 @@ function updateMetrics(d) {
   function handleDataSourceChange() {
     updateDataContext();
     autotuneParameters();
+
+    var cid = corpusSelect.value;
+    var did = datasetSelect.value;
+    var conflictWarn = document.getElementById('data-conflict-warn');
+    var emptyWarn = document.getElementById('empty-data-warn');
+    if (cid && did) {
+      conflictWarn.style.display = 'block';
+      emptyWarn.style.display = 'none';
+    } else if (!cid && !did) {
+      conflictWarn.style.display = 'none';
+      emptyWarn.style.display = 'block';
+    } else {
+      conflictWarn.style.display = 'none';
+      emptyWarn.style.display = 'none';
+    }
   }
 
   corpusSelect.addEventListener('change', handleDataSourceChange);

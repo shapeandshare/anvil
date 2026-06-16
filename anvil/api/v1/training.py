@@ -26,6 +26,30 @@ MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
 @router.post("/training/start")
 async def start_training(config: dict):
+    n_embd = config.get("n_embd", 16)
+    n_head = config.get("n_head", 4)
+    block_size = config.get("block_size", 16)
+
+    if n_head > n_embd:
+        raise HTTPException(
+            status_code=422,
+            detail=f"n_head ({n_head}) exceeds n_embd ({n_embd}) — head_dim would be 0. n_head must be <= n_embd."
+        )
+    if n_embd % n_head != 0:
+        raise HTTPException(
+            status_code=422,
+            detail=f"n_embd ({n_embd}) is not divisible by n_head ({n_head}). "
+                   f"The embedding dimension must be evenly divisible by the number of attention heads. "
+                   f"Try n_head={max(h for h in range(1, n_head + 1) if n_embd % h == 0)}."
+        )
+    head_dim = n_embd // n_head
+    if head_dim % 2 != 0:
+        raise HTTPException(
+            status_code=422,
+            detail=f"head_dim={head_dim} is odd — RoPE (Rotary Position Embedding) requires an even head dimension. "
+                   f"Try adjusting n_embd or n_head so that n_embd / n_head is even."
+        )
+
     run_id = svc.reserve_run()
 
     use_gpu = config.get("use_gpu", False)
@@ -33,9 +57,9 @@ async def start_training(config: dict):
     corpus_id = config.get("corpus_id")
     hyperparams = {
         "n_layer": config.get("n_layer", 1),
-        "n_embd": config.get("n_embd", 16),
-        "n_head": config.get("n_head", 4),
-        "block_size": config.get("block_size", 16),
+        "n_embd": n_embd,
+        "n_head": n_head,
+        "block_size": block_size,
         "num_steps": config.get("num_steps", 1000),
         "learning_rate": config.get("learning_rate", 0.01),
         "beta1": config.get("beta1", 0.85),
