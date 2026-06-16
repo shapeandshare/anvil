@@ -1,6 +1,6 @@
 ---
 title: anvil Vault
-...
+---
 
 # anvil Vault
 
@@ -14,5 +14,14 @@ Open this vault in [Obsidian](https://obsidian.md) for graph navigation.
 |---------|-------------|
 | [[Governance]] | Constitution, policies, principles |
 | [[Decisions]] | Architecture Decision Records |
-| [[Reference]] | Glossary, open questions |
+| [[Reference]] | Glossary, architecture guides, topic references |
 | [[Sessions]] | Agent session logs |
+
+## Quick Links
+
+| Topic | Docs |
+|-------|------|
+| **Architecture** | [[Reference/ArchitectureOverview|Architecture & Data Flow]] · [[Reference/DualBackend|CPU vs GPU Bridge]] · [[Reference/Hyperparameters|Hyperparameter Guide]] |
+| **Training Pipeline** | [[Reference/TrainingDataFlow|Training Render Loop]] · [[Reference/MlflowIntegration|MLflow Tracking]] · [[Reference/ProgressiveWalkthroughs|train0→train5 Progression]] |
+| **Model Export** | [[Reference/SafetensorsExport|Safetensors & HF Interop]] |
+| **Reference** | [[Reference/Glossary|Glossary]] · [[Reference/OpenQuestions|Open Questions]] |

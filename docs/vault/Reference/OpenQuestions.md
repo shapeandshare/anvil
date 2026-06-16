@@ -20,5 +20,7 @@ updated: '2026-06-14T00:00:00.000Z'
   → **Deferred**: Next UI consolidation pass
 - Could the [[wizard-stepper-pattern]] be extracted into a reusable partial or web component? Currently inlined in training.html. Would benefit dataset curation, corpus ingestion flows.
   → **Deferred**: Next UI consolidation pass
+- Should detailed learning content about data flow, export pipeline, hyperparameters, and dual backend be part of the walkthrough library?
+  → **Resolved (2026-06-15)**: 6 new vault reference docs and 2 new walkthroughs added. Covered: safetensors export, HF interop, dual backend bridge, hyperparameter interactions, progressive walkthrough reference, MLflow integration, end-to-end data flow.
 - Should the app ship a `manifest.json` for full PWA support? Favicons are now in place (`favicon.svg` + `apple-touch-icon.png`). A web app manifest would add home-screen name/display/theme-color for iOS/Android installs. `theme_color: #000000` and `background_color: #1c1c1e` align with existing forge dark palette.
   → **Open**
