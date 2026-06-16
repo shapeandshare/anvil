@@ -88,6 +88,66 @@ async def create_corpus(
     return {"data": _corpus_to_dict(corpus), "error": None}
 
 
+@router.post("/corpora/{id}/fork")
+async def fork_corpus(
+    id: int,
+    body: dict,
+    svc: CorpusService = Depends(get_service),
+    session: AsyncSession = Depends(get_db_session),
+):
+    """Create a new corpus variant from an existing one.
+
+    Copies the source corpus's parameters and applies any overrides
+    from the request body. The new corpus tracks its lineage via
+    ``parent_id``. Does NOT ingest — call ``POST /corpora/{id}/ingest``
+    separately.
+    """
+    try:
+        name = body["name"].strip()
+        inc = body.get("include_patterns")
+        exc = body.get("exclude_patterns")
+        if inc:
+            inc = [p.strip() for p in inc]
+        if exc:
+            exc = [p.strip() for p in exc]
+        corpus = await svc.fork(
+            source_id=id,
+            name=name,
+            description=body.get("description"),
+            include_patterns=inc,
+            exclude_patterns=exc,
+            chunking_strategy=body.get("chunking_strategy"),
+            chunk_overlap=body.get("chunk_overlap"),
+            block_size=body.get("block_size"),
+        )
+
+        await session.commit()
+
+        mlflow_run_id = await tracking_svc.start_run(
+            run_name=f"corpus-fork-{corpus.id}",
+            params={
+                "name": corpus.name,
+                "parent_id": str(corpus.parent_id),
+                "root_path": corpus.root_path,
+                "chunking_strategy": str(corpus.chunking_strategy),
+                "chunk_overlap": str(corpus.chunk_overlap),
+                "block_size": str(corpus.block_size),
+            },
+            engine_backend="corpus",
+            device="n/a",
+        )
+        if mlflow_run_id:
+            await tracking_svc.log_corpus_input(
+                mlflow_run_id, corpus_id=corpus.id,
+            )
+            await tracking_svc.finish_run(mlflow_run_id)
+
+    except ValueError as exc:
+        await session.rollback()
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"data": _corpus_to_dict(corpus), "error": None}
+
+
 @router.get("/corpora")
 async def list_corpora(svc: CorpusService = Depends(get_service)):
     corpora = await svc.list()
@@ -411,6 +471,7 @@ def _corpus_to_dict(corpus) -> dict:
         "chunking_strategy": corpus.chunking_strategy,
         "chunk_overlap": corpus.chunk_overlap,
         "block_size": corpus.block_size,
+        "parent_id": corpus.parent_id,
         "file_count": corpus.file_count,
         "document_count": corpus.document_count,
         "created_at": str(corpus.created_at),
