@@ -8,12 +8,26 @@
 .p-2 { padding: var(--space-2); }
 .p-4 { padding: var(--space-4); }
 
-/* Typography */
+/* Typography — family */
 .text-mono { font-family: var(--font-mono); }
 .text-body { font-family: var(--font-body); }
 .text-display { font-family: var(--font-display); }
 .text-muted { color: var(--text-muted); }
 .text-accent { color: var(--accent); }
+
+/* Typography — fluid size scale (1:1 with --text-* tokens) */
+.type-large-title { font-size: var(--text-large-title); }
+.type-title-1     { font-size: var(--text-title-1); }
+.type-title-2     { font-size: var(--text-title-2); }
+.type-title-3     { font-size: var(--text-title-3); }
+.type-headline    { font-size: var(--text-headline); }
+.type-body        { font-size: var(--text-body); }
+.type-callout     { font-size: var(--text-callout); }
+.type-subhead     { font-size: var(--text-subhead); }
+.type-footnote    { font-size: var(--text-footnote); }
+.type-caption-1   { font-size: var(--text-caption-1); }
+.type-caption-2   { font-size: var(--text-caption-2); }
+.type-data        { font-size: var(--text-mono); }
 
 /* Layout */
 .flex { display: flex; }

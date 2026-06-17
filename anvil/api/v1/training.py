@@ -58,8 +58,7 @@ async def start_training(config: dict):
     dataset_id = config.get("dataset_id")
     corpus_id = config.get("corpus_id")
 
-    # If the legacy use_gpu field is set but compute_backend isn't,
-    # map it to the new backend value for backward compat.
+    # Backward compat: if legacy use_gpu is set without compute_backend, map it
     if "compute_backend" not in config and use_gpu:
         compute_backend = "local-gpu"
     elif "compute_backend" not in config and not use_gpu:

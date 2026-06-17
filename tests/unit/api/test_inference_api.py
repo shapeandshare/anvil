@@ -71,13 +71,26 @@ async def test_inference_sampling_distribution_demo(client):
     assert "tokens" in data
     assert "temperature" in data
     assert data["temperature"] == 0.5
+    assert data["prompt"] == "a"
+    assert data["vocab_size"] > 0
+    assert data["top_k"] == data["vocab_size"]
+    assert data["top_k_effective"] == data["vocab_size"]
     assert len(data["tokens"]) > 0
     for t in data["tokens"]:
         assert "char" in t
         assert "id" in t
         assert "prob" in t
+        assert "raw_logit" in t
+        assert "scaled_logit" in t
+        assert "prob_pre_top_k" in t
+        assert "prob_final" in t
+        assert "in_top_k" in t
+        assert t["prob"] == t["prob_final"]
     probs = [t["prob"] for t in data["tokens"]]
     assert abs(sum(probs) - 1.0) < 1e-4
+    prob_pre = [t["prob_pre_top_k"] for t in data["tokens"]]
+    assert abs(sum(prob_pre) - 1.0) < 1e-4
+    assert all(t["in_top_k"] for t in data["tokens"])
 
 
 @pytest.mark.asyncio
@@ -88,8 +101,40 @@ async def test_inference_sampling_distribution_with_top_k(client):
     )
     assert resp.status_code == 200
     data = resp.json()
-    nonzero = sum(1 for t in data["tokens"] if t["prob"] > 0)
-    assert nonzero <= 3
+    assert data["top_k"] == 3
+    assert data["top_k_effective"] >= 3
+    assert sum(1 for t in data["tokens"] if t["in_top_k"]) == data["top_k_effective"]
+    for t in data["tokens"]:
+        if t["in_top_k"]:
+            assert t["prob_final"] > 0
+        else:
+            assert t["prob_final"] < 1e-6
+
+
+@pytest.mark.asyncio
+async def test_inference_sampling_distribution_full_pipeline(client):
+    resp = await client.post(
+        "/v1/inference/sampling-distribution",
+        json={"prompt": "ab", "temperature": 0.8},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["prompt"] == "ab"
+    assert data["vocab_size"] > 0
+    # no top_k passed → full distribution
+    assert data["top_k"] == data["vocab_size"]
+    assert data["top_k_effective"] == data["vocab_size"]
+    assert all(t["in_top_k"] for t in data["tokens"])
+    for t in data["tokens"]:
+        assert abs(t["scaled_logit"] - t["raw_logit"] / data["temperature"]) < 1e-6
+    # prob_pre_top_k sums to 1
+    prob_pre = [t["prob_pre_top_k"] for t in data["tokens"]]
+    assert abs(sum(prob_pre) - 1.0) < 1e-4
+    # prob_final sums to 1
+    prob_final_vals = [t["prob_final"] for t in data["tokens"]]
+    assert abs(sum(prob_final_vals) - 1.0) < 1e-4
+    # prob == prob_final
+    assert all(t["prob"] == t["prob_final"] for t in data["tokens"])
 
 
 @pytest.mark.asyncio

@@ -1369,7 +1369,7 @@ async def adam_concept_page(request: Request):
 async def architecture_concept_page(request: Request):
     return request.app.state.templates.TemplateResponse(
         request,
-        "archetypes/concept.html",
+        "archetypes/architecture.html",
         {"steps": ARCHITECTURE_STEPS, **_arc_context("architecture")},
     )
 

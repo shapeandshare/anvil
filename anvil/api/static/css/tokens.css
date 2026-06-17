@@ -52,6 +52,25 @@
   --font-mono:      ui-monospace, 'SF Mono', Menlo, Monaco, 'Cascadia Code', 'JetBrains Mono', Consolas, monospace;
   --font-display:   var(--font-body);
 
+  /* ── Fluid Type Scale (iOS semantic steps) ──
+     Single source of truth for ALL text sizing. Each token is a fluid
+     clamp(min, preferred, max): the MIN is tuned for comfortable mobile
+     reading, the MAX matches the DESIGN.md desktop scale, interpolating
+     smoothly across a ~360px → ~1280px viewport with no breakpoints.
+     Components must reference these tokens — never hardcode font-size. */
+  --text-large-title: clamp(1.76rem, 1.67rem + 0.43vw, 2rem);     /* 30 → 34px */
+  --text-title-1:     clamp(1.47rem, 1.40rem + 0.33vw, 1.65rem);  /* 25 → 28px */
+  --text-title-2:     clamp(1.18rem, 1.13rem + 0.22vw, 1.30rem);  /* 20 → 22px */
+  --text-title-3:     clamp(1.12rem, 1.09rem + 0.11vw, 1.18rem);  /* 19 → 20px */
+  --text-headline:    clamp(0.94rem, 0.92rem + 0.11vw, 1rem);     /* 16 → 17px */
+  --text-body:        clamp(0.94rem, 0.92rem + 0.11vw, 1rem);     /* 16 → 17px */
+  --text-callout:     clamp(0.88rem, 0.86rem + 0.11vw, 0.94rem);  /* 15 → 16px */
+  --text-subhead:     clamp(0.85rem, 0.84rem + 0.05vw, 0.88rem);  /* 14.5 → 15px */
+  --text-footnote:    clamp(0.79rem, 0.78rem + 0.05vw, 0.82rem);  /* 13.5 → 14px */
+  --text-caption-1:   clamp(0.74rem, 0.72rem + 0.05vw, 0.76rem);  /* 12.5 → 13px */
+  --text-caption-2:   clamp(0.68rem, 0.66rem + 0.05vw, 0.71rem);  /* 11.5 → 12px */
+  --text-mono:        clamp(0.85rem, 0.84rem + 0.05vw, 0.88rem);  /* 14.5 → 15px (data/code) */
+
   /* ── Spacing (iOS 8px grid) ── */
   --space-1:   0.25rem;   /* 4px  */
   --space-2:   0.5rem;    /* 8px  */

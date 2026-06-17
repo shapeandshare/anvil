@@ -2,13 +2,23 @@
 (function () {
   'use strict';
 
+  var EXAMPLE_ENDPOINT = '/v1/inference/autograd-example';
+  var FULL_MODEL_ENDPOINT = '/v1/inference/backward-graph';
+
   function AutogradWidget(container) {
     this.container = container;
     this._data = null;
     this._inputVal = 'the quick fox';
     this._debounceTimer = null;
+    this._showFull = false;
+    this._maxVisibleDepth = 6;
     this._render();
   }
+
+  AutogradWidget.prototype._token = function (name, fallback) {
+    var style = getComputedStyle(document.documentElement);
+    return style.getPropertyValue(name).trim() || fallback;
+  };
 
   AutogradWidget.prototype._render = function () {
     this.container.innerHTML =
@@ -16,6 +26,7 @@
       + '<input type="text" class="widget-input" id="ag-input" '
       + '  value="' + this._inputVal + '" placeholder="Type text to trace...">'
       + '<button class="btn btn-secondary btn-sm" id="ag-trace-btn">Trace</button>'
+      + '<button class="btn btn-secondary btn-sm" id="ag-expand-btn" style="display:none;" aria-label="Toggle full graph visibility"></button>'
       + '</div>'
       + '<div class="widget-stats" id="ag-stats" style="display:flex;gap:var(--space-4);margin-bottom:var(--space-2);font-size:0.75rem;color:var(--text-muted);font-family:var(--font-mono);"></div>'
       + '<div class="widget-legend" id="ag-legend" style="display:flex;gap:var(--space-2);flex-wrap:wrap;margin-bottom:var(--space-2);font-size:0.65rem;font-family:var(--font-mono);"></div>'
@@ -27,6 +38,7 @@
     this._canvas = this.container.querySelector('#ag-canvas');
     this._ctx = this._canvas.getContext('2d');
     this._traceBtn = this.container.querySelector('#ag-trace-btn');
+    this._toggleBtn = this.container.querySelector('#ag-expand-btn');
 
     var self = this;
     this._input.addEventListener('input', function () {
@@ -35,6 +47,10 @@
     });
     this._traceBtn.addEventListener('click', function () {
       self._inputVal = self._input.value;
+      self._fetch();
+    });
+    this._toggleBtn.addEventListener('click', function () {
+      self._showFull = !self._showFull;
       self._fetch();
     });
 
@@ -68,7 +84,8 @@
     var text = this._inputVal.trim();
     if (!text) return;
 
-    fetch('/v1/inference/backward-graph', {
+    var endpoint = this._showFull ? FULL_MODEL_ENDPOINT : EXAMPLE_ENDPOINT;
+    fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: text })
@@ -77,6 +94,7 @@
       .then(function (data) {
         self._data = data;
         self._renderStats(data);
+        self._updateToggleBtn();
         self._draw();
       })
       .catch(function () { /* silent fail */ });
@@ -84,11 +102,29 @@
 
   AutogradWidget.prototype._renderStats = function (data) {
     var m = data.metadata || {};
-    this._statsEl.innerHTML =
+    var html =
       '<span>nodes: ' + (m.total_nodes || '?') + '</span>'
       + '<span>edges: ' + (m.total_edges || '?') + '</span>'
       + '<span>depth: ' + (m.max_depth || '?') + '</span>'
       + '<span>loss: ' + (m.loss_value != null ? m.loss_value.toFixed(4) : '?') + '</span>';
+    if (!this._showFull) {
+      html += '<span>simplified example</span>';
+    } else if (m.max_depth != null && m.max_depth > this._maxVisibleDepth) {
+      html += '<span>showing depth 0\u2013' + this._maxVisibleDepth + ' of 0\u2013' + m.max_depth + '</span>';
+    }
+    this._statsEl.innerHTML = html;
+  };
+
+  AutogradWidget.prototype._updateToggleBtn = function () {
+    var label = this._showFull ? 'Show simplified graph' : 'Show full model graph';
+    this._toggleBtn.textContent = label;
+    this._toggleBtn.setAttribute(
+      'aria-label',
+      this._showFull
+        ? 'Switch to the simplified single-neuron example graph'
+        : 'Switch to the full model computation graph'
+    );
+    this._toggleBtn.style.display = '';
   };
 
   AutogradWidget.prototype._draw = function () {
@@ -124,14 +160,28 @@
       if (n.depth > maxDepth) maxDepth = n.depth;
     });
 
+    var cap = this._maxVisibleDepth;
+    var truncated = maxDepth > cap;
+    var visibleMax = truncated ? cap : maxDepth;
+
     var pad = 20;
     var nodeW = 100;
     var nodeH = 44;
     var vGap = 20;
     var hGap = 12;
 
-    // Compute canvas height to fit all depth levels
-    var neededH = pad + (maxDepth + 1) * (nodeH + vGap) + pad;
+// Build visible depth map (only nodes with depth <= visibleMax when truncated)
+    var visibleDepthMap = {};
+    nodes.forEach(function (n) {
+      if (n.depth <= visibleMax) {
+        if (!visibleDepthMap[n.depth]) visibleDepthMap[n.depth] = [];
+        visibleDepthMap[n.depth].push(n);
+      }
+    });
+
+    // Compute canvas height — truncated mode fits visible levels + banner
+    var bannerH = truncated ? 28 : 0;
+    var neededH = pad + (visibleMax + 1) * (nodeH + vGap) + pad + bannerH;
     var h = Math.max(neededH, 200);
     canvas.width = w * dpr;
     canvas.height = h * dpr;
@@ -140,7 +190,7 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
 
-    var depths = Object.keys(depthMap).sort(function (a, b) { return parseInt(a) - parseInt(b); });
+var depths = Object.keys(visibleDepthMap).sort(function (a, b) { return parseInt(a) - parseInt(b); });
 
     var yPositions = {};
     depths.forEach(function (d) {
@@ -149,7 +199,7 @@
 
     var nodePositions = {};
     depths.forEach(function (d) {
-      var layer = depthMap[d];
+      var layer = visibleDepthMap[d];
       var totalW = layer.length * nodeW + (layer.length - 1) * hGap;
       var startX = (w - totalW) / 2;
       layer.forEach(function (n, i) {
@@ -157,7 +207,7 @@
       });
     });
 
-    // Draw edges
+    // Draw edges (only if both endpoints are in the visible set)
     ctx.lineWidth = 1;
     edges.forEach(function (e) {
       var from = nodePositions[e.from];
@@ -170,7 +220,7 @@
       ctx.stroke();
     });
 
-    // Draw nodes
+    // Draw nodes (only visible ones)
     nodes.forEach(function (n) {
       var pos = nodePositions[n.id];
       if (!pos) return;
@@ -208,6 +258,37 @@
         ctx.fillText('g=' + n.grad, bx + nodeW - 50, by + 26);
       }
     });
+
+    // Truncation banner: dashed separator + muted text when graph is capped
+    if (truncated) {
+      var hiddenLevels = maxDepth - cap;
+      var hiddenNodes = 0;
+      nodes.forEach(function (n) {
+        if (n.depth > cap) hiddenNodes++;
+      });
+      var bannerY = pad + (visibleMax + 1) * (nodeH + vGap) + 14;
+
+      // Dashed separator line
+      var borderColor = this._token('--border', '#38383a');
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(pad, bannerY);
+      ctx.lineTo(w - pad, bannerY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Centered muted text
+      var mutedColor = this._token('--text-muted', '#8e8e93');
+      ctx.fillStyle = mutedColor;
+      ctx.font = '10px "SF Mono","Fira Code",monospace';
+      ctx.textAlign = 'center';
+      var bannerText = '+' + hiddenLevels + ' more depth level' + (hiddenLevels === 1 ? '' : 's')
+        + ' hidden (' + hiddenNodes + ' node' + (hiddenNodes === 1 ? '' : 's') + ')';
+      ctx.fillText(bannerText, w / 2, bannerY + 14);
+      ctx.textAlign = 'start';
+    }
   };
 
   window.AutogradWidget = AutogradWidget;
