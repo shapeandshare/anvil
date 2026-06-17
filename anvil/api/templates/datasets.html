@@ -2,6 +2,24 @@
 {% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
 {% block content %}
 
+{# ── WIZARD STEPS (visual progress legend) ── #}
+<div class="wizard-steps" role="list" aria-label="Data management workflow: three steps">
+  <div class="wizard-step wizard-step--active">
+    <div class="wizard-step-bubble"><span>1</span></div>
+    <span class="wizard-step-label">Add Data</span>
+  </div>
+  <div class="wizard-step-connector wizard-step-connector--filled"></div>
+  <div class="wizard-step">
+    <div class="wizard-step-bubble"><span>2</span></div>
+    <span class="wizard-step-label">Organize Sources</span>
+  </div>
+  <div class="wizard-step-connector wizard-step-connector--filled"></div>
+  <div class="wizard-step">
+    <div class="wizard-step-bubble"><span>3</span></div>
+    <span class="wizard-step-label">Combine &amp; Curate</span>
+  </div>
+</div>
+
 {# ── SECTION CARD #1: DOCUMENTATION (collapsible) ───── #}
 <div class="section-card" style="--stagger-i: 0">
   <div class="section-card__header section-card__header--clickable" id="docs-toggle">
@@ -85,31 +103,41 @@
   </div>
 </div>
 
-{# ── SECTION CARD #2: TABS (Datasets / Corpora / Imports) ── #}
+{# ── SECTION CARD #2: GUIDED DATA MANAGER (all panels visible) ── #}
 <div class="section-card" style="--stagger-i: 1">
-  <div class="page-intro">Upload .txt files as training datasets, or create corpora that ingest files from directories using glob patterns. Corpora support gitignore-style filtering for code repos &mdash; great for training models on your own codebase. Start by uploading a text file, then watch your data transform into training-ready samples.</div>
+  <div class="page-intro">Upload .txt files as training datasets, or create corpora that ingest files from directories using glob patterns. Corpora support gitignore-style filtering for code repos &mdash; great for training models on your own codebase. Start with step one, then work your way through.</div>
   <div class="section-card__header">
     <h2 class="section-card__title">Data Manager</h2>
   </div>
 
-  {# ── Tab navigation ── #}
+  {# ── Tab navigation (jump-nav to panels — all visible) ── #}
   <div class="wizard-tabs">
-    <button class="wizard-tab wizard-tab--active" data-tab="tab-datasets">Datasets</button>
-    <button class="wizard-tab" data-tab="tab-corpora">Corpora</button>
-    <button class="wizard-tab" data-tab="tab-imports">Imports</button>
+    <button class="wizard-tab wizard-tab--active" data-tab="tab-datasets">(1) Add Data</button>
+    <button class="wizard-tab" data-tab="tab-corpora">(2) Organize Sources</button>
+    <button class="wizard-tab" data-tab="tab-imports">(3) Combine &amp; Curate</button>
   </div>
 
   {# ══════════════════════════════════════════════════════ #}
-  {# PANEL: Datasets (preserved content + IDs)            #}
+  {# PANEL (1): Add Data — upload + create + list         #}
   {# ══════════════════════════════════════════════════════ #}
   <div class="wizard-panel wizard-panel--active" id="tab-datasets">
+    <div class="ds-flow-section" data-step="1">
+      <div class="ds-flow-header">
+        <div class="ds-flow-bubble"><span>1</span></div>
+        <div>
+          <div class="ds-flow-label">Step One</div>
+          <div class="ds-flow-title">Add Data</div>
+        </div>
+      </div>
+      <p class="ds-flow-desc">Upload <code>.txt</code> files as training datasets, or create empty datasets to fill later. Each line becomes a training sample &mdash; curated, quality-controlled data you can edit and refine.</p>
+    </div>
 
     {# ── Upload section ── #}
     <div class="ds-section">
       <div class="ds-section-label">Upload File <span class="tooltip-trigger"><span class="tooltip-icon">i</span><span class="tooltip-content">Accepts .txt files. Each line becomes a training sample. Files with more diverse characters give the model more tokens to work with.</span></span></div>
       <form id="upload-form" class="upload-zone">
         <input type="file" class="form-input" id="file-input" accept=".txt">
-        <button type="submit" class="btn btn-primary btn-sm">upload</button>
+        <button type="submit" class="btn btn-primary">upload</button>
       </form>
       <div class="ds-status-line" id="upload-status">Ready.</div>
     </div>
@@ -120,9 +148,9 @@
     <div class="ds-section">
       <div class="ds-section-label">Create Dataset <span class="tooltip-trigger"><span class="tooltip-icon">i</span><span class="tooltip-content">Create an empty dataset first, then add samples by uploading files or curating existing data.</span></span></div>
       <div id="create-dataset-form" style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;">
-        <input type="text" class="form-input" id="new-dataset-name" placeholder="name" style="width:140px;">
-        <input type="text" class="form-input" id="new-dataset-description" placeholder="description (optional)" style="width:260px;">
-        <button class="btn btn-primary btn-sm" id="create-dataset-btn">create</button>
+        <input type="text" class="form-input" id="new-dataset-name" placeholder="name">
+        <input type="text" class="form-input" id="new-dataset-description" placeholder="description (optional)">
+        <button class="btn btn-primary" id="create-dataset-btn">create</button>
       </div>
       <div class="ds-status-line" id="create-status">Ready.</div>
     </div>
@@ -131,45 +159,54 @@
 
     {# ── Dataset list section ── #}
     <div class="ds-section">
-      <div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-3);">
+      <div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-3);flex-wrap:wrap;">
         <span class="label-text" style="flex-shrink:0;">DATASETS</span>
-        <input type="text" class="form-input type-footnote" id="dataset-search" placeholder="filter..." style="width:130px;">
+        <input type="text" class="form-input type-footnote" id="dataset-search" placeholder="filter...">
         <button class="btn btn-sm btn-secondary type-caption-1" id="search-btn">filter</button>
       </div>
       <div id="dataset-list"><span class="text-muted type-subhead">Loading...</span></div>
     </div>
-
   </div>
 
   {# ══════════════════════════════════════════════════════ #}
-  {# PANEL: Corpora (preserved wizard content + IDs)      #}
+  {# PANEL (2): Organize Sources — corpus wizard + list   #}
   {# ══════════════════════════════════════════════════════ #}
   <div class="wizard-panel" id="tab-corpora">
+    <div class="ds-flow-section" data-step="2">
+      <div class="ds-flow-header">
+        <div class="ds-flow-bubble"><span>2</span></div>
+        <div>
+          <div class="ds-flow-label">Step Two</div>
+          <div class="ds-flow-title">Organize Sources</div>
+        </div>
+      </div>
+      <p class="ds-flow-desc">Scan directories with glob patterns for automatic file discovery. The wizard recommends optimal chunking parameters based on file size and type distribution &mdash; pick a recommendation and go.</p>
+    </div>
 
     <div class="section-card__content" style="margin-bottom:var(--space-4);">
-      Enter a directory path and optional glob patterns. The wizard scans the directory (no data read), shows file statistics, and recommends optimal chunking parameters based on file size and type. Pick a recommendation or customize, then create &amp; ingest. This tool scans your directory, recommends optimal chunking parameters based on file sizes and types &mdash; just pick a recommendation and go.
+      Enter a directory path and optional glob patterns. The wizard scans the directory (no data read), shows file statistics, and recommends optimal chunking parameters based on file size and type. Pick a recommendation or customize, then create &amp; ingest.
     </div>
 
     {# ── Zone 1: Analyze Path ── #}
     <div class="ds-zone ds-zone--analyze">
       <div class="ds-zone-label">Analyze Path</div>
       <div id="wiz-drop-zone" style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:flex-start;">
-        <input type="text" class="form-input" id="wiz-root" placeholder="root_path" style="width:260px;">
-        <button class="btn btn-sm btn-secondary" id="wiz-browse-btn" title="Select folder via native dialog">browse</button>
+        <input type="text" class="form-input" id="wiz-root" placeholder="root_path">
+        <button class="btn btn-secondary" id="wiz-browse-btn" title="Select folder via native dialog">browse</button>
         <input type="file" id="wiz-folder-picker" webkitdirectory style="display:none;">
         <div class="filter-bag filter-bag--include">
           <div class="filter-bag__header">
             <span class="filter-bag__label"><span class="filter-bag__label-icon">+</span> include</span>
           </div>
-          <input type="text" class="form-input" id="wiz-include" placeholder="e.g. **/*, *.py" style="width:180px;">
+          <input type="text" class="form-input" id="wiz-include" placeholder="e.g. **/*, *.py">
         </div>
         <div class="filter-bag filter-bag--exclude">
           <div class="filter-bag__header">
             <span class="filter-bag__label"><span class="filter-bag__label-icon">&minus;</span> exclude</span>
           </div>
-          <input type="text" class="form-input" id="wiz-exclude" placeholder="e.g. tests/, node_modules" style="width:180px;">
+          <input type="text" class="form-input" id="wiz-exclude" placeholder="e.g. tests/, node_modules">
         </div>
-        <button class="btn btn-sm btn-success" id="wiz-analyze-btn" title="Scan directory and auto-select best chunking params">auto-tune</button>
+        <button class="btn btn-success" id="wiz-analyze-btn" title="Scan directory and auto-select best chunking params">auto-tune</button>
       </div>
       <div class="ds-status-line" id="wiz-status">Enter a path, drag a folder from Finder here, or use <b>browse</b>.</div>
     </div>
@@ -215,22 +252,22 @@
       <div class="ds-zone ds-zone--create">
         <div class="ds-zone-label">Create &amp; Ingest Corpus</div>
         <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;">
-          <input type="text" class="form-input" id="wiz-name" placeholder="corpus name" style="width:140px;">
+          <input type="text" class="form-input" id="wiz-name" placeholder="corpus name">
           <span class="help-text">strategy:</span>
-          <select class="form-select" id="wiz-strategy" style="width:100px;">
+          <select class="form-select" id="wiz-strategy">
             <option value="windowed">windowed</option>
             <option value="file">file</option>
             <option value="line">line</option>
           </select>
           <span class="help-text">max files:</span>
-          <input type="number" class="form-input" id="wiz-max-files" value="10000" min="100" max="1000000" step="1000" style="width:80px;">
+          <input type="number" class="form-input" id="wiz-max-files" value="10000" min="100" max="1000000" step="1000">
           <span class="help-text" id="wiz-bs-label">block_size:</span>
-          <input type="range" id="wiz-block-size" min="8" max="1024" value="64" step="8" style="width:100px;accent-color:var(--primary);vertical-align:middle;">
+          <input type="range" id="wiz-block-size" min="8" max="1024" value="64" step="8" style="accent-color:var(--primary);vertical-align:middle;">
           <span id="wiz-bs-value" class="type-caption-1" style="color:var(--accent-cyan);min-width:35px;">64</span>
           <span class="help-text" id="wiz-ov-label">overlap:</span>
-          <input type="range" id="wiz-overlap" min="0" max="50" value="25" style="width:80px;accent-color:var(--primary);vertical-align:middle;">
+          <input type="range" id="wiz-overlap" min="0" max="50" value="25" style="accent-color:var(--primary);vertical-align:middle;">
           <span id="wiz-ov-value" class="type-caption-1" style="color:var(--accent-cyan);min-width:30px;">25%</span>
-          <button class="btn btn-primary btn-sm" id="wiz-create-btn">create &amp; ingest</button>
+          <button class="btn btn-primary" id="wiz-create-btn">create &amp; ingest</button>
         </div>
         <div id="wiz-estimate" class="type-caption-1" style="padding-left:var(--space-4);margin-top:var(--space-2);min-height:20px;"></div>
         <div id="wiz-estimate-warnings" class="type-caption-1" style="padding-left:var(--space-4);margin-top:var(--space-2);"></div>
@@ -253,17 +290,17 @@
       <div id="corpus-to-dataset" style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:flex-end;">
         <div style="display:flex;flex-direction:column;gap:var(--space-1);">
           <span class="label-text">Source Corpus</span>
-          <select class="form-select" id="cd-corpus-select" style="min-width:180px;">
+          <select class="form-select" id="cd-corpus-select">
             <option value="">Select a corpus...</option>
           </select>
         </div>
         <div style="display:flex;flex-direction:column;gap:var(--space-1);">
           <span class="label-text">Name</span>
-          <input type="text" class="form-input type-caption-1" id="cd-name" placeholder="dataset name" style="width:150px;">
+          <input type="text" class="form-input type-caption-1" id="cd-name" placeholder="dataset name">
         </div>
         <div style="display:flex;flex-direction:column;gap:var(--space-1);">
           <span class="label-text">Strategy</span>
-          <select class="form-select" id="cd-strategy" style="width:100px;">
+          <select class="form-select" id="cd-strategy">
             <option value="windowed">windowed</option>
             <option value="file">file</option>
             <option value="line">line</option>
@@ -271,15 +308,15 @@
         </div>
         <div style="display:flex;flex-direction:column;gap:var(--space-1);">
           <span class="label-text" id="cd-bs-label">Block Size</span>
-          <input type="range" id="cd-block-size" min="8" max="1024" value="64" step="8" style="width:100px;accent-color:var(--primary);vertical-align:middle;">
+          <input type="range" id="cd-block-size" min="8" max="1024" value="64" step="8" style="accent-color:var(--primary);vertical-align:middle;">
           <span id="cd-bs-value" class="type-caption-1" style="color:var(--accent-cyan);min-width:35px;text-align:center;">64</span>
         </div>
         <div style="display:flex;flex-direction:column;gap:var(--space-1);">
           <span class="label-text" id="cd-ov-label">Overlap</span>
-          <input type="range" id="cd-overlap" min="0" max="50" value="25" style="width:80px;accent-color:var(--primary);vertical-align:middle;">
+          <input type="range" id="cd-overlap" min="0" max="50" value="25" style="accent-color:var(--primary);vertical-align:middle;">
           <span id="cd-ov-value" class="type-caption-1" style="color:var(--accent-cyan);min-width:30px;text-align:center;">25%</span>
         </div>
-        <button class="btn btn-primary btn-sm" id="cd-create-btn">create dataset</button>
+        <button class="btn btn-primary" id="cd-create-btn">create dataset</button>
       </div>
       <div class="ds-status-line" id="cd-status"></div>
     </div>
@@ -287,9 +324,19 @@
   </div>
 
   {# ══════════════════════════════════════════════════════ #}
-  {# PANEL: Imports (new - import corpus -> dataset)      #}
+  {# PANEL (3): Combine & Curate — imports + All Data      #}
   {# ══════════════════════════════════════════════════════ #}
   <div class="wizard-panel" id="tab-imports">
+    <div class="ds-flow-section" data-step="3">
+      <div class="ds-flow-header">
+        <div class="ds-flow-bubble"><span>3</span></div>
+        <div>
+          <div class="ds-flow-label">Step Three</div>
+          <div class="ds-flow-title">Combine &amp; Curate</div>
+        </div>
+      </div>
+      <p class="ds-flow-desc">Import processed corpus documents into a dataset for final curation, then review everything at a glance in the combined view below.</p>
+    </div>
 
     <div class="section-card__content" style="margin-bottom:var(--space-3);">
       Import documents from a corpus into a dataset. This copies the processed documents from the corpus into the selected dataset, making them available for training and curation.
@@ -299,19 +346,19 @@
 
       <div style="display:flex;flex-direction:column;gap:var(--space-1);">
         <span class="label-text">Source Corpus</span>
-        <select class="form-select" id="import-corpus-select" style="min-width:200px;">
+        <select class="form-select" id="import-corpus-select">
           <option value="">Select a corpus...</option>
         </select>
       </div>
 
       <div style="display:flex;flex-direction:column;gap:var(--space-1);">
         <span class="label-text">Target Dataset</span>
-        <select class="form-select" id="import-dataset-select" style="min-width:200px;">
+        <select class="form-select" id="import-dataset-select">
           <option value="">Select a dataset...</option>
         </select>
       </div>
 
-      <button class="btn btn-primary btn-sm" id="import-btn">import</button>
+      <button class="btn btn-primary" id="import-btn">import</button>
     </div>
 
     <div class="section-card__content type-subhead" id="import-status" style="margin-top:var(--space-2);">Select a corpus and a dataset, then click import.</div>
@@ -452,14 +499,14 @@
         + '<button class="btn btn-sm btn-danger del-dataset-btn" data-id="' + d.id + '" data-name="' + nameEsc + '">rm</button>'
         + '</div>'
         + '<div class="inline-edit-form" style="display:none;margin-top:4px;gap:4px;flex-wrap:wrap;align-items:center;">'
-        + '<input type="text" class="form-input ie-name type-caption-1" placeholder="name" style="width:130px;" value="' + nameEsc + '">'
-        + '<input type="text" class="form-input ie-desc type-caption-1" placeholder="description" style="width:200px;" value="' + (d.description ? descEsc : '') + '">'
+        + '<input type="text" class="form-input ie-name type-caption-1" placeholder="name" value="' + nameEsc + '">'
+        + '<input type="text" class="form-input ie-desc type-caption-1" placeholder="description" value="' + (d.description ? descEsc : '') + '">'
         + '<button class="btn btn-sm btn-primary ie-save">save</button>'
         + '<button class="btn btn-sm btn-secondary ie-cancel">cancel</button>'
         + '</div>'
         + '<div class="fork-form" style="display:none;margin-top:4px;gap:4px;flex-wrap:wrap;align-items:center;">'
-        + '<input type="text" class="form-input fork-name type-caption-1" placeholder="name" style="width:160px;" value="' + nameEsc + ' (copy)">'
-        + '<input type="text" class="form-input fork-desc type-caption-1" placeholder="description" style="width:200px;" value="' + (d.description ? descEsc : '') + '">'
+        + '<input type="text" class="form-input fork-name type-caption-1" placeholder="name" value="' + nameEsc + ' (copy)">'
+        + '<input type="text" class="form-input fork-desc type-caption-1" placeholder="description" value="' + (d.description ? descEsc : '') + '">'
         + '<button class="btn btn-sm btn-primary fork-execute">clone</button>'
         + '<button class="btn btn-sm btn-secondary fork-cancel">cancel</button>'
         + '</div></td>'
@@ -1212,27 +1259,26 @@
   });
 
   /* ════════════════════════════════════════════════════════════
-     NEW: Tab switching
+     Tab switching (panels are always visible — tabs become jump-nav)
      ════════════════════════════════════════════════════════════ */
 
   function switchTab(tabId) {
-    /* Update tab buttons */
+    /* Update tab button active state */
     document.querySelectorAll('.wizard-tabs .wizard-tab').forEach(function(tab) {
       var isActive = tab.getAttribute('data-tab') === tabId;
       tab.classList.toggle('wizard-tab--active', isActive);
     });
-    /* Update panels */
-    document.querySelectorAll('.wizard-panel').forEach(function(panel) {
-      var isActive = panel.id === tabId;
-      panel.classList.toggle('wizard-panel--active', isActive);
-    });
+    /* Panels are always visible — scroll to the target section */
+    var targetPanel = document.getElementById(tabId);
+    if (targetPanel) {
+      targetPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }
 
   document.querySelectorAll('.wizard-tabs .wizard-tab').forEach(function(tab) {
     tab.addEventListener('click', function() {
       var tabId = this.getAttribute('data-tab');
       switchTab(tabId);
-      /* Refresh import selects when switching to imports tab */
       if (tabId === 'tab-imports') {
         populateImportSelects();
       }
@@ -1240,7 +1286,7 @@
   });
 
   /* ════════════════════════════════════════════════════════════
-     NEW: Combined table
+     Combined table
      ════════════════════════════════════════════════════════════ */
 
   window.loadCombinedData = async function loadCombinedData() {
@@ -1359,14 +1405,14 @@
             + '<button class="btn btn-sm btn-danger del-dataset-btn" data-id="' + item.id + '" data-name="' + nameEsc + '">rm</button>'
             + '</div>'
             + '<div class="inline-edit-form" style="display:none;margin-top:4px;gap:4px;flex-wrap:wrap;align-items:center;">'
-            + '<input type="text" class="form-input ie-name type-caption-1" placeholder="name" style="width:130px;" value="' + nameEsc + '">'
-            + '<input type="text" class="form-input ie-desc type-caption-1" placeholder="description" style="width:200px;" value="' + (item.description ? descEsc : '') + '">'
+            + '<input type="text" class="form-input ie-name type-caption-1" placeholder="name" value="' + nameEsc + '">'
+            + '<input type="text" class="form-input ie-desc type-caption-1" placeholder="description" value="' + (item.description ? descEsc : '') + '">'
             + '<button class="btn btn-sm btn-primary ie-save">save</button>'
             + '<button class="btn btn-sm btn-secondary ie-cancel">cancel</button>'
             + '</div>'
             + '<div class="fork-form" style="display:none;margin-top:4px;gap:4px;flex-wrap:wrap;align-items:center;">'
-            + '<input type="text" class="form-input fork-name type-caption-1" placeholder="name" style="width:160px;" value="' + nameEsc + ' (copy)">'
-            + '<input type="text" class="form-input fork-desc type-caption-1" placeholder="description" style="width:200px;" value="' + (item.description ? descEsc : '') + '">'
+            + '<input type="text" class="form-input fork-name type-caption-1" placeholder="name" value="' + nameEsc + ' (copy)">'
+            + '<input type="text" class="form-input fork-desc type-caption-1" placeholder="description" value="' + (item.description ? descEsc : '') + '">'
             + '<button class="btn btn-sm btn-primary fork-execute">clone</button>'
             + '<button class="btn btn-sm btn-secondary fork-cancel">cancel</button>'
             + '</div>';
@@ -1395,7 +1441,7 @@
     };
 
   /* ════════════════════════════════════════════════════════════
-     NEW: Import form — populate selects
+     Import form — populate selects
      ════════════════════════════════════════════════════════════ */
 
   async function populateImportSelects() {
@@ -1483,7 +1529,7 @@
   });
 
   /* ════════════════════════════════════════════════════════════
-     NEW: Documentation toggle (collapsible)
+     Documentation toggle (collapsible)
      ════════════════════════════════════════════════════════════ */
 
   document.getElementById('docs-toggle').addEventListener('click', function() {
@@ -1499,15 +1545,9 @@
     }
   });
 
-  /* ════════════════════════════════════════════════════════════
-     NEW: Handle combined table inline edit (same classes as dataset-list)
-     The existing click delegation already handles edit-btn / ie-cancel / ie-save / curate-btn / del-dataset-btn
-     for rows inside the combined table because it uses e.target.closest().
-     ════════════════════════════════════════════════════════════ */
+  /* ── Handle combined table inline edit (same classes as dataset-list) ── */
 
-  /* ── initial load ───────────────────────────────────── */
-
-  /* ── corpus-to-dataset: populate select on tab switch ── */
+  /* ── corpus-to-dataset: populate select ── */
 
   function populateCorpusToDatasetSelect() {
     var select = document.getElementById('cd-corpus-select');
@@ -1595,16 +1635,12 @@
     }
   });
 
-  /* ── Hook into existing tab switch for corpora tab ── */
+  /* ── Initialization: all panels visible, populate selects ── */
 
-  var _origSwitchTab = switchTab;
-  switchTab = function(tabId) {
-    _origSwitchTab(tabId);
-    if (tabId === 'tab-corpora') {
-      populateCorpusToDatasetSelect();
-      updateCdParams();
-    }
-  };
+  /* Populate corpus-to-dataset + imports selects on page load (panels always visible) */
+  populateCorpusToDatasetSelect();
+  updateCdParams();
+  populateImportSelects();
 
   loadDatasets();
   loadCorpora();

@@ -14,6 +14,7 @@ from fastapi.responses import HTMLResponse
 from anvil.api.v1.compute import router as compute_router
 from anvil.api.v1.corpora import router as corpora_router
 from anvil.api.v1.datasets import router as datasets_router
+from anvil import __version__ as anvil_version
 from anvil.config import get_config, get_mlflow_browser_uri
 from anvil.api.v1.eval import router as eval_router
 from anvil.api.v1.eval_datasets import router as eval_datasets_router
@@ -49,7 +50,7 @@ async def health():
     gpu = detect_gpu()
     return {
         "status": "healthy",
-        "version": "0.1.0",
+        "version": anvil_version,
         "uptime_seconds": int(time.time() - _start_time),
         "system": {
             "cpu_percent": cpu_percent,
