@@ -10,6 +10,7 @@ from fastapi import APIRouter, HTTPException
 from starlette.responses import StreamingResponse
 
 from anvil.gpu import detect_gpu, resolve_device
+from anvil.services.memory_estimator import estimate_training_memory
 from anvil.services.metrics_collectors import MPSMetricsCollector, MPSSamplerThread
 from anvil.services.tracking import TrackingService
 from anvil.services.training import TrainingService
@@ -50,11 +51,51 @@ async def start_training(config: dict):
                    f"Try adjusting n_embd or n_head so that n_embd / n_head is even."
         )
 
-    run_id = svc.reserve_run()
-
     use_gpu = config.get("use_gpu", False)
     dataset_id = config.get("dataset_id")
     corpus_id = config.get("corpus_id")
+
+    gpu_info = detect_gpu()
+    engine_backend = "torch" if use_gpu else "stdlib"
+    device = resolve_device(use_gpu=use_gpu)
+
+    memory_est = None
+    if use_gpu:
+        memory_est = estimate_training_memory(
+            vocab_size=200,
+            n_embd=n_embd,
+            n_head=n_head,
+            n_layer=config.get("n_layer", 1),
+            block_size=block_size,
+            use_gpu=True,
+            gpu_info=gpu_info,
+        )
+        if memory_est.would_oom:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Model config would likely OOM your GPU. "
+                    f"Estimated peak memory: {memory_est.peak_gb:.1f} GB, "
+                    f"available: {memory_est.available_gb:.1f} GB "
+                    f"({memory_est.device_backend}, {memory_est.device_name}). "
+                    f"Try reducing n_embd, n_layer, n_head, or block_size. "
+                    f"Breakdown: {memory_est.param_count:,} params, "
+                    f"{memory_est.weights_bytes / (1024**2):.0f} MB weights, "
+                    f"{memory_est.gradients_bytes / (1024**2):.0f} MB gradients, "
+                    f"{memory_est.optimizer_bytes / (1024**2):.0f} MB optimizer, "
+                    f"{memory_est.kv_cache_bytes / (1024**2):.0f} MB KV cache."
+                ),
+            )
+
+    run_id = svc.reserve_run()
+
+    if memory_est is not None and memory_est.warnings:
+        logger.warning(
+            "Memory estimate for run %d: %s",
+            run_id,
+            "; ".join(memory_est.warnings),
+        )
+
     hyperparams = {
         "n_layer": config.get("n_layer", 1),
         "n_embd": n_embd,
@@ -69,10 +110,6 @@ async def start_training(config: dict):
         "corpus_id": corpus_id,
         "dataset_id": dataset_id,
     }
-
-    gpu_info = detect_gpu()
-    engine_backend = "torch" if use_gpu else "stdlib"
-    device = resolve_device(use_gpu=use_gpu)
 
     hyperparams["gpu_available"] = str(gpu_info.available)
     hyperparams["gpu_backend"] = str(gpu_info.backend or "cpu")
