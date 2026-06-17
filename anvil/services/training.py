@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import json
 import threading
@@ -6,33 +8,18 @@ from collections import deque
 from collections.abc import Awaitable, Callable
 
 from anvil.config import get_config
-from anvil.core.engine import LlamaModel, train
-from anvil.core.torch_engine import torch_available, train_torch
-from anvil.gpu import resolve_device
+
+# ── compute backend framework ──────────────────────────────────────────
+from anvil.services.compute import ComputeResult, get_backend, register, resolve_backend
+
+# Side-effect imports: each module registers its backends at module level.
+import anvil.services.compute.local  # noqa: F401 — registers local-stdlib, local-torch
+import anvil.services.compute.modal_backend  # noqa: F401 — registers modal
 
 
 class StopRequested(Exception):
     """Raised when training is requested to stop."""
     pass
-
-
-def _load_weights_into_model(model: LlamaModel, weights: dict) -> None:
-    """Load exported weight lists into a CPU LlamaModel.
-
-    Handles both 2D matrices (attention, SwiGLU, embeddings) and
-    1D vectors (RMSNorm learned scale parameters).
-    """
-    for k, data in weights.items():
-        mat = model.state_dict[k]
-        if isinstance(mat[0], list):
-            # 2D matrix
-            for i, row in enumerate(data):
-                for j, val in enumerate(row):
-                    mat[i][j].data = val
-        else:
-            # 1D vector (RMSNorm scales)
-            for i, val in enumerate(data):
-                mat[i].data = val
 
 
 class TrainingService:
@@ -128,7 +115,7 @@ class TrainingService:
         config: dict,
         run_id: int | None = None,
         on_complete: (
-            Callable[[LlamaModel, dict, float, list[str], list[str]], Awaitable[None]] | None
+            Callable[[ComputeResult, dict], Awaitable[None]] | None
         ) = None,
         progress_callback_override: Callable[[int, float], None] | None = None,
     ) -> int:
@@ -141,10 +128,14 @@ class TrainingService:
         dataset_id = config.get("dataset_id")
         docs = await loop.run_in_executor(None, self._load_docs, corpus_id, dataset_id)
 
-        use_gpu = config.get("use_gpu", False)
-        cfg = get_config()
-        preferred_device = config.get("device", cfg["device"])
-        device = resolve_device(use_gpu=use_gpu, preferred=preferred_device or None)
+        # ── resolve backend ───────────────────────────────────────────
+        resolved = resolve_backend(config)
+        backend_name: str = resolved["backend"]  # "local" | "modal"
+        engine_name: str = resolved["engine"]  # "stdlib" | "torch"
+        device: str = resolved["device"]  # "cpu" | "cuda:0" | "mps"
+
+        # Inject device into config so backends can read it
+        config["device"] = device
 
         _num_steps = config.get("num_steps", 1000)
         _start_time = time.monotonic()
@@ -196,76 +187,32 @@ class TrainingService:
             if progress_callback_override:
                 progress_callback_override(step, loss)
 
-        def optimizer_state_callback(step: int, m: list, v: list, grads: list) -> None:
-            snapshot_step = config.get("optimizer_snapshot_interval", 10)
-            if step % snapshot_step == 0:
-                asyncio.run_coroutine_threadsafe(
-                    queue.put(
-                        {
-                            "event": "optimizer_state",
-                            "data": json.dumps({
-                                "step": step,
-                                "params": [
-                                    {"index": i, "m": round(m[i], 8), "v": round(v[i], 8), "grad": round(grads[i], 8)}
-                                    for i in range(min(10, len(m)))
-                                ],
-                            }),
-                        }
-                    ),
-                    loop,
-                )
+        # ── get backend from registry ─────────────────────────────────
+        backend = get_backend(backend_name)
 
-        # Dispatch to GPU or CPU engine
         stop_event = self._stop_events.get(run_id)
-        stop_check = (lambda: stop_event.is_set()) if stop_event is not None else None
+        stop_check = (lambda: stop_event.is_set()) if stop_event is not None else (lambda: False)
 
-        use_gpu_backend = device != "cpu"
+        # ── remote: emit submitted event before launching ─────────────
+        if backend_name == "modal":
+            asyncio.run_coroutine_threadsafe(
+                queue.put({
+                    "event": "submitted",
+                    "data": json.dumps({
+                        "backend": backend_name,
+                        "device": device,
+                    }),
+                }),
+                loop,
+            )
 
         try:
-            if use_gpu_backend and torch_available():
-                raw_weights, final_loss, samples, uchars = await loop.run_in_executor(
-                    None,
-                    lambda: train_torch(
-                        docs,
-                        device=device,
-                        num_steps=config.get("num_steps", 1000),
-                        n_embd=config.get("n_embd", 16),
-                        n_head=config.get("n_head", 4),
-                        n_layer=config.get("n_layer", 1),
-                        block_size=config.get("block_size", 16),
-                        learning_rate=config.get("learning_rate", 0.01),
-                        temperature=config.get("temperature", 0.5),
-                        progress_callback=progress_callback,
-                        stop_check=stop_check,
-                    ),
-                )
-                # Wrap GPU weights into a CPU LlamaModel for downstream compatibility
-                model = LlamaModel(
-                    vocab_size=len(uchars) + 1,
-                    n_embd=config.get("n_embd", 16),
-                    n_head=config.get("n_head", 4),
-                    n_layer=config.get("n_layer", 1),
-                    block_size=config.get("block_size", 16),
-                )
-                _load_weights_into_model(model, raw_weights)
-
-            else:
-                model, final_loss, samples, uchars = await loop.run_in_executor(
-                    None,
-                    lambda: train(
-                        docs,
-                        num_steps=config.get("num_steps", 1000),
-                        n_embd=config.get("n_embd", 16),
-                        n_head=config.get("n_head", 4),
-                        n_layer=config.get("n_layer", 1),
-                        block_size=config.get("block_size", 16),
-                        learning_rate=config.get("learning_rate", 0.01),
-                        temperature=config.get("temperature", 0.5),
-                        progress_callback=progress_callback,
-                        optimizer_state_callback=optimizer_state_callback,
-                        stop_check=stop_check,
-                    ),
-                )
+            result = await backend.run(
+                docs,
+                config,
+                progress_callback=progress_callback,
+                stop_check=stop_check,
+            )
 
         except StopRequested:
             await queue.put({
@@ -277,13 +224,14 @@ class TrainingService:
             self._queues.pop(run_id, None)
             self._stop_events.pop(run_id, None)
 
+        # ── emit complete SSE event ───────────────────────────────────
         await queue.put(
             {
                 "event": "complete",
                 "data": json.dumps(
                     {
-                        "final_loss": final_loss,
-                        "samples": samples,
+                        "final_loss": result.final_loss,
+                        "samples": result.samples,
                         "device": device,
                     }
                 ),
@@ -291,7 +239,7 @@ class TrainingService:
         )
 
         if on_complete:
-            await on_complete(model, config, final_loss, samples, uchars)
+            await on_complete(result, config)
 
         return run_id
 

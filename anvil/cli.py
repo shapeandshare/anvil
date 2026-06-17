@@ -104,9 +104,20 @@ def train():
         help="Dataset ID to train on",
     )
     parser.add_argument(
+        "--backend",
+        type=str,
+        default=None,
+        choices=["auto", "local-cpu", "local-gpu", "modal"],
+        help=(
+            "Compute backend. "
+            "auto=best available, local-cpu=CPU only, "
+            "local-gpu=GPU if available else CPU, modal=Modal cloud GPU"
+        ),
+    )
+    parser.add_argument(
         "--gpu",
         action="store_true",
-        help="Enable GPU acceleration (uses CUDA/MPS if available)",
+        help="Alias for --backend local-gpu (mutually exclusive with --backend)",
     )
     parser.add_argument(
         "--device",
@@ -115,20 +126,26 @@ def train():
         help='Device override (e.g. "cuda:0", "mps", "cpu")',
     )
     args, _ = parser.parse_known_args()
-    use_gpu = args.gpu or os.getenv("USE_GPU", "").lower() in ("true", "1", "yes")
 
-    from anvil.gpu import resolve_device
+    # Resolve backend from --gpu/--backend
+    if args.backend and args.gpu:
+        parser.error("--backend and --gpu are mutually exclusive")
+    use_gpu = args.gpu or os.getenv("USE_GPU", "").lower() in ("true", "1", "yes")
+    compute_backend = args.backend or ("local-gpu" if use_gpu else "auto")
+
+    from anvil.services.compute import resolve_backend
     from anvil.services.tracking import TrackingService
     from anvil.services.training import TrainingService
 
     svc = TrainingService()
     tracking_svc = TrackingService()
 
-    engine_backend = "torch" if use_gpu else "stdlib"
-    device = resolve_device(use_gpu=use_gpu, preferred=args.device or None)
+    resolved = resolve_backend({"compute_backend": compute_backend, "device": args.device or None})
+    engine_backend: str = resolved["engine"]
+    device: str = resolved["device"]
 
     config = {
-        "use_gpu": use_gpu,
+        "compute_backend": compute_backend,
         "device": device,
         "corpus_id": args.corpus,
         "dataset_id": args.dataset,
@@ -143,7 +160,7 @@ def train():
             params={
                 "corpus_id": args.corpus,
                 "dataset_id": args.dataset,
-                "use_gpu": use_gpu,
+                "compute_backend": compute_backend,
             },
             engine_backend=engine_backend,
             device=device,
@@ -184,9 +201,11 @@ def train():
 
         final_loss_holder: list[float] = []
 
-        async def on_complete(
-            model, cfg: dict, final_loss: float, samples: list[str], uchars: list[str]
-        ) -> None:
+        async def on_complete(result, cfg: dict) -> None:
+            final_loss = result.final_loss or 0.0
+            model = result.model
+            samples = result.samples
+            uchars = result.uchars
             final_loss_holder.append(final_loss)
             await tracking_svc.finish_run(mlflow_run_id)
             await tracking_svc.log_final_metric(mlflow_run_id, "final_loss", final_loss)
@@ -219,54 +238,55 @@ def train():
                 except Exception:
                     logger.exception("Failed to register model for CLI training run")
 
-            # NEW: Auto-export safetensors after every successful training
-            import tempfile
+            # Auto-export safetensors after every successful local training
+            # (remote jobs export inside the cloud — Q-B corrected)
+            if model is not None:
+                import tempfile
 
-            from anvil.services.export import SafetensorsExportService
+                from anvil.services.export import SafetensorsExportService
 
-            export_svc = SafetensorsExportService()
-            with tempfile.TemporaryDirectory() as tmpdir:
-                export_result = await asyncio.get_event_loop().run_in_executor(
-                    None, lambda: export_svc.export(model, tmpdir, uchars)
-                )
-                if export_result["error"]:
-                    # FR-016: training is still successful, failure is flagged
-                    logger.warning(
-                        "Safetensors export failed: %s", export_result["error"]
+                export_svc = SafetensorsExportService()
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    export_result = await asyncio.get_event_loop().run_in_executor(
+                        None, lambda: export_svc.export(model, tmpdir, uchars)
                     )
-                else:
-                    if mlflow_run_id and export_result["safetensors_path"]:
-                        try:
-                            client = tracking_svc._client
-                            if client:
-                                loop = asyncio.get_event_loop()
-                                await loop.run_in_executor(
-                                    None,
-                                    lambda: client.log_artifact(
-                                        mlflow_run_id,
-                                        export_result["safetensors_path"],
-                                    ),
+                    if export_result["error"]:
+                        logger.warning(
+                            "Safetensors export failed: %s", export_result["error"]
+                        )
+                    else:
+                        if mlflow_run_id and export_result["safetensors_path"]:
+                            try:
+                                client = tracking_svc._client
+                                if client:
+                                    loop = asyncio.get_event_loop()
+                                    await loop.run_in_executor(
+                                        None,
+                                        lambda: client.log_artifact(
+                                            mlflow_run_id,
+                                            export_result["safetensors_path"],
+                                        ),
+                                    )
+                                    if export_result["config_path"]:
+                                        await loop.run_in_executor(
+                                            None,
+                                            lambda: client.log_artifact(
+                                                mlflow_run_id,
+                                                export_result["config_path"],
+                                            ),
+                                        )
+                                    if export_result["tokenizer_path"]:
+                                        await loop.run_in_executor(
+                                            None,
+                                            lambda: client.log_artifact(
+                                                mlflow_run_id,
+                                                export_result["tokenizer_path"],
+                                            ),
+                                        )
+                            except Exception:
+                                logger.exception(
+                                    "Failed to log safetensors artifacts to MLflow"
                                 )
-                                if export_result["config_path"]:
-                                    await loop.run_in_executor(
-                                        None,
-                                        lambda: client.log_artifact(
-                                            mlflow_run_id,
-                                            export_result["config_path"],
-                                        ),
-                                    )
-                                if export_result["tokenizer_path"]:
-                                    await loop.run_in_executor(
-                                        None,
-                                        lambda: client.log_artifact(
-                                            mlflow_run_id,
-                                            export_result["tokenizer_path"],
-                                        ),
-                                    )
-                        except Exception:
-                            logger.exception(
-                                "Failed to log safetensors artifacts to MLflow"
-                            )
 
             async with AsyncSessionLocal() as session:
                 from datetime import UTC, datetime
