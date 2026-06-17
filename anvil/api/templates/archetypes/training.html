@@ -66,54 +66,54 @@
     <div class="wizard-panel" id="panel-config">
       <div class="config-grid">
         <div class="param-block">
-          <label class="param-label">n_embd</label>
-          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">The width of each layer's representation. Wider = more capacity to learn patterns, but more parameters and slower training. Powers of 2 are standard (16, 32, 64, 128).</span></span>
+          <div class="param-label-row"><label class="param-label">n_embd</label>
+          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">The width of each layer's representation. Wider = more capacity to learn patterns, but more parameters and slower training. Powers of 2 are standard (16, 32, 64, 128).</span></span></div>
           <input type="number" id="n_embd" value="16" min="4" max="256">
           <p class="param-desc">Embedding size — powers of 2 (16, 32, 64…). Must be divisible by <code>n_head</code>.</p>
         </div>
         <div class="param-block">
-          <label class="param-label">n_layer</label>
-          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How many transformer blocks stack on top of each other. Deeper = more hierarchical pattern discovery. 1-2 layers learn simple patterns, 4+ can learn complex structure.</span></span>
+          <div class="param-label-row"><label class="param-label">n_layer</label>
+          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How many transformer blocks stack on top of each other. Deeper = more hierarchical pattern discovery. 1-2 layers learn simple patterns, 4+ can learn complex structure.</span></span></div>
           <input type="number" id="n_layer" value="1" min="1" max="12">
           <p class="param-desc">Transformer depth — 1–2 for simple patterns, 4+ for complex structure.</p>
         </div>
         <div class="param-block">
-          <label class="param-label">n_head</label>
-          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How many parallel attention computations happen at each layer. Each head can focus on different relationships. Must divide n_embd evenly.</span></span>
+          <div class="param-label-row"><label class="param-label">n_head</label>
+          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How many parallel attention computations happen at each layer. Each head can focus on different relationships. Must divide n_embd evenly.</span></span></div>
           <input type="number" id="n_head" value="4" min="1" max="16">
           <p class="param-desc">Attention heads — must divide <code>n_embd</code> evenly (e.g. 64 &amp; 4 works).</p>
           <span id="attn-geom-warn" class="ds-warn" style="display:none;"></span>
         </div>
         <div class="param-block">
-          <label class="param-label">block_size</label>
-          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How many characters the model can 'see' at once when predicting the next character. Larger context = more coherent output but slower training.</span></span>
+          <div class="param-label-row"><label class="param-label">block_size</label>
+          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How many characters the model can 'see' at once when predicting the next character. Larger context = more coherent output but slower training.</span></span></div>
           <input type="number" id="block_size" value="16" min="8" max="1024">
           <p class="param-desc">Context window in characters — match to your corpus chunk size.</p>
           <span id="bs-mismatch-warn" class="ds-warn" style="display:none;">&#9888; block_size exceeds corpus chunk size — only chunks up to the corpus block_size will be used per step. Increase corpus chunk size or lower training block_size.</span>
         </div>
         <div class="param-block">
-          <label class="param-label">num_steps</label>
-          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How many gradient updates the model performs. More steps = lower loss, but diminishing returns. Start with 1000 and increase if loss is still falling.</span></span>
+          <div class="param-label-row"><label class="param-label">num_steps</label>
+          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How many gradient updates the model performs. More steps = lower loss, but diminishing returns. Start with 1000 and increase if loss is still falling.</span></span></div>
           <input type="number" id="num_steps" value="1000" min="10" max="100000">
           <p class="param-desc">Training steps — more = lower loss. Start with 1000.</p>
         </div>
         <div class="param-block">
-          <label class="param-label">learning_rate</label>
-          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How big each weight update is. Too high = loss bounces around. Too low = barely learns. 0.01 is a good starting point for this model scale.</span></span>
+          <div class="param-label-row"><label class="param-label">learning_rate</label>
+          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How big each weight update is. Too high = loss bounces around. Too low = barely learns. 0.01 is a good starting point for this model scale.</span></span></div>
           <input type="number" id="learning_rate" value="0.01" step="0.001" min="0.0001" max="1">
           <p class="param-desc">Step size — 0.01 safe start. Drop if loss oscillates or spikes.</p>
         </div>
         <div class="param-block">
-          <label class="param-label">temperature</label>
-          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">Controls randomness in generation. 0 = always picks the most likely next character (boring but safe). 1.0+ = more creative but may produce gibberish.</span></span>
+          <div class="param-label-row"><label class="param-label">temperature</label>
+          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">Controls randomness in generation. 0 = always picks the most likely next character (boring but safe). 1.0+ = more creative but may produce gibberish.</span></span></div>
           <input type="number" id="temperature" value="0.5" step="0.1" min="0" max="2">
           <p class="param-desc">Creativity — 0.1-0.3 predictable, 0.5-0.7 creative, 1.0+ chaos.</p><span class="fun-label fun-label--cool" style="margin-left:var(--space-1)">cool &amp; precise</span> <span class="fun-label fun-label--warm">creative spark</span> <span class="fun-label fun-label--hot">chaos mode</span>
         </div>
         <div class="param-block">
-          <label class="param-label">device</label>
+          <div class="param-label-row"><label class="param-label">device</label></div>
           <div class="device-toggle">
             <label class="toggle-label">
-              <input type="checkbox" id="use_gpu" onchange="window.updateModelStats()">
+              <input type="checkbox" id="use_gpu" checked onchange="window.updateModelStats()">
               <span class="toggle-track"><span class="toggle-thumb"></span></span>
               <span class="toggle-text">GPU acceleration</span>
             </label>
@@ -121,6 +121,9 @@
           </div>
         </div>
       </div>
+
+      <div id="config-mem-estimate" class="config-mem-estimate"></div>
+      <span id="oom-warn" class="ds-warn oom-warn" style="display:none;"></span>
 
       <div class="config-actions">
         <button type="button" class="btn btn-accent" id="autotune-btn">✨ Auto-Tune</button>
@@ -279,6 +282,7 @@
   }
 
   var _lastMilestone = null;
+  var _gpuInfo = {};
 
   function updateTrainingPhase(loss) {
     var phaseEl = document.getElementById('training-phase');
@@ -424,6 +428,64 @@ function updateMetrics(d) {
       + '<div class="ds-stat"><span class="ds-stat-value">' + n_head + ' heads</span><span class="ds-stat-label">Attention</span></div>'
       + '</div>';
 
+    /* ── Memory estimate ── */
+    var useGpu = document.getElementById('use_gpu').checked;
+    var fp32 = 4;
+    var weightsMb = totalParams * fp32 / (1024 * 1024);
+    var gradsMb = totalParams * fp32 / (1024 * 1024);
+    var optimMb = totalParams * fp32 * 2 / (1024 * 1024);  /* Adam: m + v */
+    var kvCacheMb = n_layer * 2 * block_size * n_embd * fp32 / (1024 * 1024);
+    var totalMb = weightsMb + gradsMb + optimMb + kvCacheMb;
+    var peakMb = totalMb * 2;  /* activation headroom during backward */
+
+    html += '<div style="height:var(--space-2);"></div>'
+      + '<div class="ds-card-header">'
+      + '<span class="ds-badge ds-badge-model" style="background:var(--accent-purple);color:var(--bg);">MEMORY</span>'
+      + '<span class="ds-card-title">GPU Estimate</span>'
+      + '</div>';
+
+    var availMb = null;
+    if (useGpu && _gpuInfo.available) {
+      availMb = (_gpuInfo.memory_available_gb || _gpuInfo.memory_total_gb) * 1024;
+    }
+
+    if (availMb != null) {
+      var utilPct = (peakMb / availMb * 100);
+      var color, label;
+      if (utilPct >= 90) {
+        color = 'var(--danger)';
+        label = 'likely OOM';
+      } else if (utilPct >= 75) {
+        color = 'var(--warning)';
+        label = 'close to limit';
+      } else {
+        color = 'var(--accent-green)';
+        label = 'within range';
+      }
+      var barPct = Math.max(2, Math.min(100, utilPct));
+      html += '<div style="margin:var(--space-1) var(--space-2);">'
+        + '<div style="display:flex;justify-content:space-between;font-size:0.62rem;margin-bottom:2px;">'
+        + '<span style="color:var(--text-dim);">Peak: ' + peakMb.toFixed(1) + ' MB</span>'
+        + '<span style="color:' + color + ';font-weight:600;">' + label + '</span>'
+        + '<span style="color:var(--text-dim);">Avail: ' + availMb.toFixed(0) + ' MB</span>'
+        + '</div>'
+        + '<div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;">'
+        + '<div style="width:' + barPct + '%;min-width:2%;height:100%;background:' + color + ';border-radius:3px;transition:width 0.3s;"></div>'
+        + '</div>'
+        + '</div>';
+    } else if (_gpuInfo.available === undefined) {
+      html += '<div class="ds-card-body" style="color:var(--text-dim);font-size:0.62rem;">Detecting GPU...</div>';
+    } else if (useGpu) {
+      html += '<div class="ds-card-body" style="color:var(--text-dim);font-size:0.62rem;">GPU memory info unavailable</div>';
+    } else {
+      html += '<div class="ds-card-body" style="color:var(--text-dim);font-size:0.62rem;">Enable GPU to see memory estimate</div>';
+    }
+
+    html += '<div class="ds-card-body" style="font-size:0.62rem;color:var(--text-muted);">'
+      + 'weights ' + weightsMb.toFixed(0) + ' · grads ' + gradsMb.toFixed(0)
+      + ' · optim ' + optimMb.toFixed(0) + ' · KV cache ' + kvCacheMb.toFixed(0)
+      + ' MB</div>';
+
     if (coverage > 0) {
       html += '<div style="height:var(--space-2);"></div>'
         + '<div class="ds-card-body">'
@@ -467,6 +529,58 @@ function updateMetrics(d) {
     } else {
       attnWarn.style.display = 'none';
     }
+
+    /* Warn about OOM risk in config panel */
+    var oomWarn = document.getElementById('oom-warn');
+    if (useGpu && availMb != null && peakMb / availMb >= 0.9) {
+      var pct = (peakMb / availMb * 100);
+      oomWarn.innerHTML = '&#9888;&#65039; <strong>OOM risk:</strong> estimated peak memory '
+        + peakMb.toFixed(0) + ' MB uses ' + pct.toFixed(0) + '% of available '
+        + availMb.toFixed(0) + ' MB. Reduce n_embd, n_layer, n_head, or block_size '
+        + 'or disable GPU acceleration.'
+        + '<br><span style="font-size:0.62rem;">weights '
+        + weightsMb.toFixed(0) + ' &middot; grads ' + gradsMb.toFixed(0)
+        + ' &middot; optim ' + optimMb.toFixed(0) + ' &middot; KV cache '
+        + kvCacheMb.toFixed(0) + ' MB</span>';
+      oomWarn.style.display = 'block';
+    } else {
+      oomWarn.style.display = 'none';
+    }
+
+    /* Live memory bar inside the Config tab (always visible while tuning) */
+    var configMem = document.getElementById('config-mem-estimate');
+    if (configMem) {
+      var cmHtml = '';
+      var cmColor, cmLabel, cmBarPct;
+      if (useGpu && availMb != null) {
+        var cmUtil = peakMb / availMb * 100;
+        if (cmUtil >= 90) { cmColor = 'var(--danger)'; cmLabel = 'likely OOM'; }
+        else if (cmUtil >= 75) { cmColor = 'var(--warning)'; cmLabel = 'close to limit'; }
+        else { cmColor = 'var(--accent-green)'; cmLabel = 'within range'; }
+        cmBarPct = Math.max(2, Math.min(100, cmUtil));
+        cmHtml = '<div style="display:flex;justify-content:space-between;align-items:baseline;font-size:0.7rem;margin-bottom:4px;">'
+          + '<span style="font-weight:600;">Estimated GPU memory</span>'
+          + '<span style="color:' + cmColor + ';font-weight:600;">' + cmLabel
+          + ' &middot; ' + peakMb.toFixed(0) + ' / ' + availMb.toFixed(0) + ' MB</span>'
+          + '</div>'
+          + '<div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden;">'
+          + '<div style="width:' + cmBarPct + '%;min-width:2%;height:100%;background:' + cmColor + ';border-radius:4px;transition:width 0.3s;"></div>'
+          + '</div>'
+          + '<div style="font-size:0.6rem;color:var(--text-muted);margin-top:3px;">'
+          + formatParams(totalParams) + ' params &middot; weights ' + weightsMb.toFixed(0)
+          + ' &middot; grads ' + gradsMb.toFixed(0) + ' &middot; optim ' + optimMb.toFixed(0)
+          + ' &middot; KV ' + kvCacheMb.toFixed(0) + ' MB</div>';
+      } else if (useGpu && _gpuInfo.available === undefined) {
+        cmHtml = '<div style="font-size:0.7rem;color:var(--text-dim);">Detecting GPU…</div>';
+      } else if (useGpu) {
+        cmHtml = '<div style="font-size:0.7rem;color:var(--text-dim);">GPU memory info unavailable &middot; '
+          + formatParams(totalParams) + ' params, peak ~' + peakMb.toFixed(0) + ' MB</div>';
+      } else {
+        cmHtml = '<div style="font-size:0.7rem;color:var(--text-dim);">CPU mode &middot; '
+          + formatParams(totalParams) + ' params, peak ~' + peakMb.toFixed(0) + ' MB (limited by system RAM)</div>';
+      }
+      configMem.innerHTML = cmHtml;
+    }
   }
 
   function patchParamListeners() {
@@ -475,6 +589,10 @@ function updateMetrics(d) {
       if (el) el.addEventListener('input', function() {
         updateModelStats(corpusSelect.value, datasetSelect.value);
       });
+    });
+    var gpuToggle = document.getElementById('use_gpu');
+    if (gpuToggle) gpuToggle.addEventListener('change', function() {
+      updateModelStats(corpusSelect.value, datasetSelect.value);
     });
   }
 
@@ -1105,6 +1223,7 @@ function updateMetrics(d) {
   /* ── GPU availability check ── */
   fetch('/v1/health').then(function(r) { return r.json(); }).then(function(health) {
     var gpu = health.gpu || {};
+    _gpuInfo = gpu;
     var statusEl = document.getElementById('gpu-status');
     var toggle = document.getElementById('use_gpu');
     if (gpu.available) {
@@ -1119,6 +1238,7 @@ function updateMetrics(d) {
       toggle.disabled = true;
       toggle.checked = false;
     }
+    updateModelStats(corpusSelect.value, datasetSelect.value);
   }).catch(function() {
     document.getElementById('gpu-status').innerHTML = '<span class="text-muted">Could not detect GPU</span>';
   });
