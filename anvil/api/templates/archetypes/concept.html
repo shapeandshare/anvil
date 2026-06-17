@@ -31,7 +31,7 @@
   <div class="concept-carousel" id="concept-carousel">
     <div class="carousel-track" id="carousel-track">
       {% for step in steps %}
-      <div class="carousel-slide" data-slide="{{ loop.index0 }}">
+      <div class="carousel-slide" data-slide="{{ loop.index0 }}" data-step-key="{{ step.key }}">
         <div class="carousel-slide-content">
           <p class="slide-step-label">Step {{ loop.index }} of {{ steps|length }}</p>
           <h2>{{ step.title }}</h2>
@@ -120,6 +120,9 @@
       });
     }
     if (posEl) posEl.textContent = idx + 1;
+    var slide = track.children[idx];
+    var stepKey = slide ? slide.getAttribute('data-step-key') : null;
+    document.dispatchEvent(new CustomEvent('concept:stepchange', { detail: { stepKey: stepKey, index: idx } }));
   }
 
   if (dots) {
@@ -152,6 +155,8 @@
       }
     }, { passive: true });
   }
+
+  if (totalSlides > 0) goTo(0);
 })();
 </script>
 {% endblock %}
