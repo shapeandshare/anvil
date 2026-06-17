@@ -25,13 +25,13 @@
         Upload plain-text files through the upload form, or create an empty dataset and add content programmatically.
       </p>
       <p style="margin:0 0 var(--space-1) 0;"><b>Pros:</b></p>
-      <ul style="margin:0 0 var(--space-2) 0;padding-left:var(--space-4);font-size:0.78rem;">
+      <ul class="type-subhead" style="margin:0 0 var(--space-2) 0;padding-left:var(--space-4);">
         <li>Inline editing &mdash; rename, update descriptions, curate content (dedup, filter, replace)</li>
         <li>Simple upload workflow &mdash; upload any <code>.txt</code> file directly</li>
         <li>Ideal for small-to-medium curated collections, fine-tuning data, or evaluation sets</li>
       </ul>
       <p style="margin:0 0 var(--space-1) 0;"><b>Cons:</b></p>
-      <ul style="margin:0;padding-left:var(--space-4);font-size:0.78rem;">
+      <ul class="type-subhead" style="margin:0;padding-left:var(--space-4);">
         <li>No automatic directory scanning &mdash; you must upload or create manually</li>
         <li>Not suited for large code repository ingestion</li>
       </ul>
@@ -45,14 +45,14 @@
         optimal chunking parameters based on file size and type distribution.
       </p>
       <p style="margin:0 0 var(--space-1) 0;"><b>Pros:</b></p>
-      <ul style="margin:0 0 var(--space-2) 0;padding-left:var(--space-4);font-size:0.78rem;">
+      <ul class="type-subhead" style="margin:0 0 var(--space-2) 0;padding-left:var(--space-4);">
         <li>Auto-scan directories &mdash; discover files without manual upload</li>
         <li>Glob pattern filtering &mdash; include/exclude by file extension or path (e.g. <code>*.py</code>, <code>!tests/</code>)</li>
         <li>Chunking strategies &mdash; <code>windowed</code>, <code>file</code>, or <code>line</code> for different use cases</li>
         <li>Gitignore-style pattern support for code repos</li>
       </ul>
       <p style="margin:0 0 var(--space-1) 0;"><b>Cons:</b></p>
-      <ul style="margin:0;padding-left:var(--space-4);font-size:0.78rem;">
+      <ul class="type-subhead" style="margin:0;padding-left:var(--space-4);">
         <li>Read-only from source &mdash; no inline sample editing</li>
         <li>Requires a stable directory path</li>
       </ul>
@@ -72,7 +72,7 @@
 
     <div class="help-box">
       <div class="help-title">Best Practices</div>
-      <ul style="margin:0;padding-left:var(--space-4);font-size:0.78rem;">
+      <ul class="type-subhead" style="margin:0;padding-left:var(--space-4);">
         <li>Keep datasets small and curated &mdash; they are meant for quality-controlled training data</li>
         <li>Use corpora with appropriate chunking for code repos &mdash; <code>windowed</code> with small overlap for source files, <code>file</code> for markdown docs</li>
         <li>Combine corpora imports into datasets for final training &mdash; import corpus documents into a dataset to get the best of both worlds</li>
@@ -133,10 +133,10 @@
     <div class="ds-section">
       <div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-3);">
         <span class="label-text" style="flex-shrink:0;">DATASETS</span>
-        <input type="text" class="form-input" id="dataset-search" placeholder="filter..." style="width:130px;font-size:0.75rem;">
-        <button class="btn btn-sm btn-secondary" id="search-btn" style="font-size:0.72rem;">filter</button>
+        <input type="text" class="form-input type-footnote" id="dataset-search" placeholder="filter..." style="width:130px;">
+        <button class="btn btn-sm btn-secondary type-caption-1" id="search-btn">filter</button>
       </div>
-      <div id="dataset-list"><span class="text-muted" style="font-size:0.78rem;">Loading...</span></div>
+      <div id="dataset-list"><span class="text-muted type-subhead">Loading...</span></div>
     </div>
 
   </div>
@@ -226,14 +226,14 @@
           <input type="number" class="form-input" id="wiz-max-files" value="10000" min="100" max="1000000" step="1000" style="width:80px;">
           <span class="help-text" id="wiz-bs-label">block_size:</span>
           <input type="range" id="wiz-block-size" min="8" max="1024" value="64" step="8" style="width:100px;accent-color:var(--primary);vertical-align:middle;">
-          <span id="wiz-bs-value" style="font-size:0.68rem;color:var(--accent-cyan);min-width:35px;">64</span>
+          <span id="wiz-bs-value" class="type-caption-1" style="color:var(--accent-cyan);min-width:35px;">64</span>
           <span class="help-text" id="wiz-ov-label">overlap:</span>
           <input type="range" id="wiz-overlap" min="0" max="50" value="25" style="width:80px;accent-color:var(--primary);vertical-align:middle;">
-          <span id="wiz-ov-value" style="font-size:0.68rem;color:var(--accent-cyan);min-width:30px;">25%</span>
+          <span id="wiz-ov-value" class="type-caption-1" style="color:var(--accent-cyan);min-width:30px;">25%</span>
           <button class="btn btn-primary btn-sm" id="wiz-create-btn">create &amp; ingest</button>
         </div>
-        <div id="wiz-estimate" style="padding-left:var(--space-4);margin-top:var(--space-2);min-height:20px;font-size:0.72rem;"></div>
-        <div id="wiz-estimate-warnings" style="padding-left:var(--space-4);margin-top:var(--space-2);font-size:0.72rem;"></div>
+        <div id="wiz-estimate" class="type-caption-1" style="padding-left:var(--space-4);margin-top:var(--space-2);min-height:20px;"></div>
+        <div id="wiz-estimate-warnings" class="type-caption-1" style="padding-left:var(--space-4);margin-top:var(--space-2);"></div>
         <div class="ds-status-line" id="wiz-create-status"></div>
       </div>
 
@@ -244,7 +244,7 @@
       <div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-2);">
         <span class="label-text">CORPORA</span>
       </div>
-      <div id="corpus-list"><span class="text-muted" style="font-size:0.78rem;">Loading...</span></div>
+      <div id="corpus-list"><span class="text-muted type-subhead">Loading...</span></div>
     </div>
 
     {# ── Import corpus as dataset (custom chunking) ── #}
@@ -259,7 +259,7 @@
         </div>
         <div style="display:flex;flex-direction:column;gap:var(--space-1);">
           <span class="label-text">Name</span>
-          <input type="text" class="form-input" id="cd-name" placeholder="dataset name" style="width:150px;font-size:0.72rem;">
+          <input type="text" class="form-input type-caption-1" id="cd-name" placeholder="dataset name" style="width:150px;">
         </div>
         <div style="display:flex;flex-direction:column;gap:var(--space-1);">
           <span class="label-text">Strategy</span>
@@ -272,12 +272,12 @@
         <div style="display:flex;flex-direction:column;gap:var(--space-1);">
           <span class="label-text" id="cd-bs-label">Block Size</span>
           <input type="range" id="cd-block-size" min="8" max="1024" value="64" step="8" style="width:100px;accent-color:var(--primary);vertical-align:middle;">
-          <span id="cd-bs-value" style="font-size:0.68rem;color:var(--accent-cyan);min-width:35px;text-align:center;">64</span>
+          <span id="cd-bs-value" class="type-caption-1" style="color:var(--accent-cyan);min-width:35px;text-align:center;">64</span>
         </div>
         <div style="display:flex;flex-direction:column;gap:var(--space-1);">
           <span class="label-text" id="cd-ov-label">Overlap</span>
           <input type="range" id="cd-overlap" min="0" max="50" value="25" style="width:80px;accent-color:var(--primary);vertical-align:middle;">
-          <span id="cd-ov-value" style="font-size:0.68rem;color:var(--accent-cyan);min-width:30px;text-align:center;">25%</span>
+          <span id="cd-ov-value" class="type-caption-1" style="color:var(--accent-cyan);min-width:30px;text-align:center;">25%</span>
         </div>
         <button class="btn btn-primary btn-sm" id="cd-create-btn">create dataset</button>
       </div>
@@ -314,12 +314,12 @@
       <button class="btn btn-primary btn-sm" id="import-btn">import</button>
     </div>
 
-    <div class="section-card__content" id="import-status" style="font-size:0.78rem;margin-top:var(--space-2);">Select a corpus and a dataset, then click import.</div>
+    <div class="section-card__content type-subhead" id="import-status" style="margin-top:var(--space-2);">Select a corpus and a dataset, then click import.</div>
 
     {# ── Import history (quick summary) ── #}
     <div style="margin-top:var(--space-3);padding-top:var(--space-2);border-top:1px solid var(--border);">
-      <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-1);">Usage Note</div>
-      <div class="section-card__content" style="font-size:0.78rem;">
+      <div class="type-footnote" style="font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-1);">Usage Note</div>
+      <div class="section-card__content type-subhead">
         After importing, the target dataset's documents will include the corpus documents. You can then curate, deduplicate, or filter in the dataset view. Corpora remain read-only and unaffected by the import.
       </div>
     </div>
@@ -332,12 +332,11 @@
 <div class="section-card" style="--stagger-i: 2">
   <div class="section-card__header">
     <h2 class="section-card__title">All Data</h2>
-    <span style="font-size:0.68rem;color:var(--text-tertiary);">datasets + corpora combined</span>
+    <span class="text-muted type-caption-1">datasets + corpora combined</span>
   </div>
 
   <div id="combined-table-container" class="ds-table-wrapper" style="overflow-x:auto;">
-    <span class="text-muted" style="font-size:0.78rem;">Loading...</span>
-  </div>
+    <span class="text-muted type-subhead">Loading...</span>
 </div>
 
 {# ── JavaScript (preserved in full + extensions) ── #}
@@ -417,13 +416,13 @@
     var list = document.getElementById('dataset-list');
 
     if (datasets.length === 0) {
-      list.innerHTML = '<span style="color:var(--text-dim);font-size:0.78rem;">No datasets'
+      list.innerHTML = '<span class="text-muted type-subhead">No datasets'
         + (currentQuery ? ' matching &quot;' + escHtml(currentQuery) + '&quot;' : ' uploaded yet')
         + '.</span>';
       return;
     }
 
-    var html = '<div style="overflow-x:auto;"><table class="grouped-list">'
+    var html = '<div class="table-scroll"><table class="grouped-list">'
       + '<thead><tr>'
       + '<th>Name</th><th>Description</th><th style="text-align:right;">Samples</th>'
       + '<th style="text-align:right;">Size</th><th>Status</th>'
@@ -440,12 +439,12 @@
 
       html += '<tr data-id="' + d.id + '" class="row-entrance" style="--row-i: ' + i + '">'
         + '<td><span class="edit-target" data-field="name" style="color:var(--text);font-weight:500;">' + nameEsc + '</span></td>'
-        + '<td><span class="edit-target" data-field="description" style="color:var(--text-dim);font-size:0.75rem;">' + (d.description ? descEsc : '-') + '</span></td>'
-        + '<td style="text-align:right;color:var(--info);">' + sampleCount + '</td>'
-        + '<td style="text-align:right;color:var(--text-dim);">' + sizeStr + '</td>'
+        + '<td><span class="edit-target text-muted type-footnote" data-field="description">' + (d.description ? descEsc : '-') + '</span></td>'
+        + '<td class="cell-numeric" style="color:var(--info);">' + sampleCount + '</td>'
+        + '<td class="cell-numeric text-muted">' + sizeStr + '</td>'
         + '<td>' + badge + '</td>'
-        + '<td style="text-align:center;color:var(--text-dim);">' + curVer + '</td>'
-        + '<td style="text-align:right;white-space:nowrap;">'
+        + '<td class="text-muted" style="text-align:center;">' + curVer + '</td>'
+        + '<td class="cell-numeric">'
         + '<div style="display:flex;gap:var(--space-1);justify-content:flex-end;">'
         + '<button class="btn btn-sm btn-secondary edit-btn" data-id="' + d.id + '">edit</button>'
         + '<button class="btn btn-sm btn-secondary curate-btn" data-id="' + d.id + '" title="Open dataset curation">curate</button>'
@@ -453,14 +452,14 @@
         + '<button class="btn btn-sm btn-danger del-dataset-btn" data-id="' + d.id + '" data-name="' + nameEsc + '">rm</button>'
         + '</div>'
         + '<div class="inline-edit-form" style="display:none;margin-top:4px;gap:4px;flex-wrap:wrap;align-items:center;">'
-        + '<input type="text" class="form-input ie-name" placeholder="name" style="width:130px;font-size:0.72rem;" value="' + nameEsc + '">'
-        + '<input type="text" class="form-input ie-desc" placeholder="description" style="width:200px;font-size:0.72rem;" value="' + (d.description ? descEsc : '') + '">'
+        + '<input type="text" class="form-input ie-name type-caption-1" placeholder="name" style="width:130px;" value="' + nameEsc + '">'
+        + '<input type="text" class="form-input ie-desc type-caption-1" placeholder="description" style="width:200px;" value="' + (d.description ? descEsc : '') + '">'
         + '<button class="btn btn-sm btn-primary ie-save">save</button>'
         + '<button class="btn btn-sm btn-secondary ie-cancel">cancel</button>'
         + '</div>'
         + '<div class="fork-form" style="display:none;margin-top:4px;gap:4px;flex-wrap:wrap;align-items:center;">'
-        + '<input type="text" class="form-input fork-name" placeholder="name" style="width:160px;font-size:0.72rem;" value="' + nameEsc + ' (copy)">'
-        + '<input type="text" class="form-input fork-desc" placeholder="description" style="width:200px;font-size:0.72rem;" value="' + (d.description ? descEsc : '') + '">'
+        + '<input type="text" class="form-input fork-name type-caption-1" placeholder="name" style="width:160px;" value="' + nameEsc + ' (copy)">'
+        + '<input type="text" class="form-input fork-desc type-caption-1" placeholder="description" style="width:200px;" value="' + (d.description ? descEsc : '') + '">'
         + '<button class="btn btn-sm btn-primary fork-execute">clone</button>'
         + '<button class="btn btn-sm btn-secondary fork-cancel">cancel</button>'
         + '</div></td>'
@@ -478,10 +477,10 @@
     var data = await resp.json();
     var list = document.getElementById('corpus-list');
     if (!data.data || data.data.length === 0) {
-      list.innerHTML = '<span style="color:var(--text-dim);font-size:0.78rem;">No corpora created yet.</span>';
+      list.innerHTML = '<span class="text-muted type-subhead">No corpora created yet.</span>';
       return;
     }
-    list.innerHTML = '<div style="overflow-x:auto;"><table class="grouped-list">'
+    list.innerHTML = '<div class="table-scroll"><table class="grouped-list">'
       + '<thead><tr>'
       + '<th>Name</th><th style="text-align:right;">Files</th><th style="text-align:right;">Docs</th>'
       + '<th>Created</th><th>Strategy</th><th style="text-align:center;">Warnings</th>'
@@ -493,18 +492,18 @@
       var delBtn = '<button class="btn btn-sm btn-danger del-btn" data-id="' + c.id + '" style="margin-left:2px;">rm</button>';
       var warnBadge = '';
       if (c.error_count > 0) {
-        warnBadge = '<span class="corpus-warn-badge" data-id="' + c.id + '" style="color:var(--warning);cursor:pointer;font-size:0.65rem;" title="Click to view warnings">&#9888; ' + c.error_count + '</span>';
+        warnBadge = '<span class="corpus-warn-badge type-caption-2" data-id="' + c.id + '" style="color:var(--warning);cursor:pointer;" title="Click to view warnings">&#9888; ' + c.error_count + '</span>';
       } else {
-        warnBadge = '<span style="color:var(--text-tertiary);font-size:0.65rem;">-</span>';
+        warnBadge = '<span class="text-muted type-caption-2">-</span>';
       }
       return '<tr data-id="' + c.id + '" class="row-entrance" style="--row-i: ' + i + '">'
         + '<td><span style="color:var(--text);font-weight:500;">' + nameEsc + '</span></td>'
-        + '<td style="text-align:right;color:var(--text-dim);">' + (c.file_count || 0) + '</td>'
-        + '<td style="text-align:right;color:var(--info);">' + (c.document_count || 0) + '</td>'
-        + '<td style="color:var(--text-tertiary);font-size:0.75rem;">' + (c.created_at || '').slice(0,10) + '</td>'
-        + '<td style="color:var(--text-tertiary);font-size:0.75rem;">' + (c.chunking_strategy || '?') + '</td>'
+        + '<td class="cell-numeric text-muted">' + (c.file_count || 0) + '</td>'
+        + '<td class="cell-numeric" style="color:var(--info);">' + (c.document_count || 0) + '</td>'
+        + '<td class="text-muted type-footnote">' + (c.created_at || '').slice(0,10) + '</td>'
+        + '<td class="text-muted type-footnote">' + (c.chunking_strategy || '?') + '</td>'
         + '<td style="text-align:center;">' + warnBadge + '</td>'
-        + '<td style="text-align:right;white-space:nowrap;">' + ingestBtn + delBtn + '</td>'
+        + '<td class="cell-numeric">' + ingestBtn + delBtn + '</td>'
         + '</tr>'
         + '<tr class="corpus-detail-row" id="detail-' + c.id + '" style="display:none;">'
         + '<td colspan="7" style="padding:0 var(--space-4) var(--space-2) var(--space-4);">'
@@ -569,10 +568,10 @@
       fetch('/v1/corpora/' + id).then(function(r) { return r.json(); }).then(function(resp) {
         var errors = resp.data && resp.data.errors;
         if (!errors || errors.length === 0) {
-          errDiv.innerHTML = '<span style="color:var(--text-dim);font-size:0.65rem;">No warnings recorded.</span>';
+          errDiv.innerHTML = '<span class="text-muted type-caption-2">No warnings recorded.</span>';
         } else {
           errDiv.innerHTML = errors.map(function(e) {
-            return '<div style="color:var(--text-dim);font-size:0.62rem;padding:1px 0;">! ' + escHtml(e) + '</div>';
+            return '<div class="text-muted type-caption-2" style="padding:1px 0;">! ' + escHtml(e) + '</div>';
           }).join('');
         }
         errDiv.style.display = '';
@@ -934,18 +933,18 @@
           var extra = '';
           var st = langStats[l];
           if (st && st.avg_bytes) {
-            extra = ' <span style="color:var(--text-dim);font-size:0.62rem;">avg ' + formatBytes(st.avg_bytes) + '</span>';
+            extra = ' <span class="text-muted type-caption-2">avg ' + formatBytes(st.avg_bytes) + '</span>';
           }
           return '<span style="color:var(--accent-cyan);">' + l + '</span> ' + data.language_breakdown[l] + ' files' + extra;
         }).join(' &middot; ')
       : 'No language data';
     document.getElementById('wiz-stats').innerHTML =
-      '<div style="display:flex;gap:20px;flex-wrap:wrap;font-size:0.72rem;">'
+      '<div class="type-caption-1" style="display:flex;gap:20px;flex-wrap:wrap;">'
       + '<span><b>Files</b>: ' + data.file_count + '</span>'
       + '<span><b>Total</b>: ' + formatBytes(data.total_bytes) + '</span>'
       + '<span><b>Avg</b>: ' + formatBytes(data.avg_bytes) + '</span>'
       + '<span><b>Median</b>: ' + formatBytes(data.median_bytes) + '</span>'
-      + '</div><div style="font-size:0.68rem;margin-top:4px;color:var(--text-dim);">' + langHtml + '</div>';
+      + '</div><div class="text-muted type-caption-1" style="margin-top:4px;">' + langHtml + '</div>';
 
     /* recommendations */
     var recs = data.recommendations || [];
@@ -954,15 +953,15 @@
       var selected = i === 0 && r.strategy ? ' selected-rec' : '';
       var stratAttr = r.strategy ? ' data-strategy="' + r.strategy + '"' : '';
       var cardStyle = r.strategy
-        ? 'style="display:flex;gap:8px;align-items:flex-start;padding:6px 10px;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:0.72rem;"'
-        : 'style="display:flex;gap:8px;align-items:flex-start;padding:6px 10px;border:1px dashed var(--border);border-radius:4px;font-size:0.7rem;color:var(--text-dim);"';
+        ? 'class="type-caption-1" style="display:flex;gap:8px;align-items:flex-start;padding:6px 10px;border:1px solid var(--border);border-radius:4px;cursor:pointer;"'
+        : 'class="text-muted type-caption-1" style="display:flex;gap:8px;align-items:flex-start;padding:6px 10px;border:1px dashed var(--border);border-radius:4px;"';
       return '<div class="rec-card' + selected + '" data-idx="' + i + '"' + stratAttr + ' ' + cardStyle + '>'
         + '<input type="radio" name="wiz-rec" value="' + i + '"' + (i === 0 ? ' checked' : '') + ' style="margin-top:2px;accent-color:var(--primary);">'
         + '<div style="flex:1;">'
         + '<div style="color:var(--accent-green);font-weight:bold;">' + r.label + '</div>'
         + '<div style="color:var(--text-dim);">' + r.detail + '</div>'
         + '</div>'
-        + '<div style="text-align:right;white-space:nowrap;color:var(--info);font-size:0.68rem;">' + docs + '</div>'
+        + '<div class="type-caption-1" style="text-align:right;white-space:nowrap;color:var(--info);">' + docs + '</div>'
         + '</div>';
     }).join('');
     var recsContainer = document.getElementById('wiz-recs');
@@ -1095,7 +1094,7 @@
         if (recBs && recBs < 1024) {
           fixBut = ' <button class="btn btn-sm btn-accent" onclick="window.resetBlockSize(' + recBs + ')">reset to recommended (' + recBs + ')</button>';
         } else if (recBs === 1024) {
-          fixBut = ' <span style="color:var(--text-dim);font-size:0.62rem;">(at recommended value)</span>';
+          fixBut = ' <span class="text-muted type-caption-2">(at recommended value)</span>';
         } else {
           fixBut = ' <button class="btn btn-sm btn-accent" onclick="window.resetBlockSize(64)">reset to default (64)</button>';
         }
@@ -1198,10 +1197,10 @@
       if (d.errors && d.errors.length > 0) {
         msg += '  <span style="color:var(--warning);">' + d.errors.length + ' warning(s)</span>';
         d.errors.slice(0, 5).forEach(function(e) {
-          msg += '<br><span style="color:var(--text-dim);font-size:0.65rem;">! ' + e + '</span>';
+          msg += '<br><span class="text-muted type-caption-2">! ' + e + '</span>';
         });
         if (d.errors.length > 5) {
-          msg += '<br><span style="color:var(--text-dim);font-size:0.62rem;">... click the &#9888; badge in the corpus list for all ' + d.errors.length + ' warnings</span>';
+          msg += '<br><span class="text-muted type-caption-2">... click the &#9888; badge in the corpus list for all ' + d.errors.length + ' warnings</span>';
         }
       }
       status.innerHTML = msg;
@@ -1318,22 +1317,22 @@
       });
 
       if (combined.length === 0 && errors.length === 0) {
-        container.innerHTML = '<span style="color:var(--text-dim);font-size:0.78rem;">No datasets or corpora yet.</span>';
+        container.innerHTML = '<span class="text-muted type-subhead">No datasets or corpora yet.</span>';
         return;
       }
 
       if (combined.length === 0 && errors.length > 0) {
-        container.innerHTML = '<span style="color:var(--accent-red);font-size:0.78rem;">Failed to load: ' + escHtml(errors.join('; ')) + '</span>';
+        container.innerHTML = '<span class="type-subhead" style="color:var(--accent-red);">Failed to load: ' + escHtml(errors.join('; ')) + '</span>';
         return;
       }
 
       var warningHtml = '';
       if (errors.length > 0) {
-        warningHtml = '<div style="color:var(--accent-orange);font-size:0.75rem;padding:var(--space-2);border:1px solid var(--accent-orange);border-radius:var(--radius-md);margin-bottom:var(--space-2);">'
+        warningHtml = '<div class="type-footnote" style="color:var(--accent-orange);padding:var(--space-2);border:1px solid var(--accent-orange);border-radius:var(--radius-md);margin-bottom:var(--space-2);">'
           + '⚠ Partial data — ' + escHtml(errors.join('; ')) + '</div>';
       }
 
-      var html = warningHtml + '<table class="grouped-list">'
+      var html = warningHtml + '<div class="table-scroll"><table class="grouped-list">'
         + '<thead><tr>'
         + '<th>Type</th><th>Name</th><th>Description / Path</th>'
         + '<th style="text-align:right;">Size</th><th>Status / Strategy</th>'
@@ -1349,7 +1348,7 @@
         var createdStr = item.created_at ? item.created_at.slice(0, 10) : '-';
         var statStr = item.type === 'dataset'
           ? statusBadge(item.statusOrStrategy)
-          : '<span style="color:var(--text-tertiary);font-size:0.75rem;">' + escHtml(item.statusOrStrategy) + '</span>';
+          : '<span class="text-muted type-footnote">' + escHtml(item.statusOrStrategy) + '</span>';
 
         var actionsHtml = '';
         if (item.type === 'dataset') {
@@ -1360,14 +1359,14 @@
             + '<button class="btn btn-sm btn-danger del-dataset-btn" data-id="' + item.id + '" data-name="' + nameEsc + '">rm</button>'
             + '</div>'
             + '<div class="inline-edit-form" style="display:none;margin-top:4px;gap:4px;flex-wrap:wrap;align-items:center;">'
-            + '<input type="text" class="form-input ie-name" placeholder="name" style="width:130px;font-size:0.72rem;" value="' + nameEsc + '">'
-            + '<input type="text" class="form-input ie-desc" placeholder="description" style="width:200px;font-size:0.72rem;" value="' + (item.description ? descEsc : '') + '">'
+            + '<input type="text" class="form-input ie-name type-caption-1" placeholder="name" style="width:130px;" value="' + nameEsc + '">'
+            + '<input type="text" class="form-input ie-desc type-caption-1" placeholder="description" style="width:200px;" value="' + (item.description ? descEsc : '') + '">'
             + '<button class="btn btn-sm btn-primary ie-save">save</button>'
             + '<button class="btn btn-sm btn-secondary ie-cancel">cancel</button>'
             + '</div>'
             + '<div class="fork-form" style="display:none;margin-top:4px;gap:4px;flex-wrap:wrap;align-items:center;">'
-            + '<input type="text" class="form-input fork-name" placeholder="name" style="width:160px;font-size:0.72rem;" value="' + nameEsc + ' (copy)">'
-            + '<input type="text" class="form-input fork-desc" placeholder="description" style="width:200px;font-size:0.72rem;" value="' + (item.description ? descEsc : '') + '">'
+            + '<input type="text" class="form-input fork-name type-caption-1" placeholder="name" style="width:160px;" value="' + nameEsc + ' (copy)">'
+            + '<input type="text" class="form-input fork-desc type-caption-1" placeholder="description" style="width:200px;" value="' + (item.description ? descEsc : '') + '">'
             + '<button class="btn btn-sm btn-primary fork-execute">clone</button>'
             + '<button class="btn btn-sm btn-secondary fork-cancel">cancel</button>'
             + '</div>';
@@ -1381,16 +1380,16 @@
         html += '<tr class="row-entrance" data-id="' + item.id + '" style="--row-i: ' + i + '">'
           + '<td>' + typeBadge + '</td>'
           + '<td><span style="color:var(--text);font-weight:500;">' + nameEsc + '</span></td>'
-          + '<td style="color:var(--text-dim);font-size:0.75rem;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + descEsc + '">'
+          + '<td class="cell-meta cell-wrap" title="' + descEsc + '">'
           + (item.description ? descEsc : '-') + '</td>'
-          + '<td style="text-align:right;color:var(--text-dim);font-size:0.75rem;white-space:nowrap;">' + item.sizeInfo + '</td>'
+          + '<td class="cell-numeric text-muted">' + item.sizeInfo + '</td>'
           + '<td>' + statStr + '</td>'
-          + '<td style="color:var(--text-tertiary);font-size:0.75rem;">' + createdStr + '</td>'
+          + '<td class="cell-meta">' + createdStr + '</td>'
           + '<td style="text-align:right;white-space:nowrap;">' + actionsHtml + '</td>'
           + '</tr>';
       });
 
-      html += '</tbody></table>';
+      html += '</tbody></table></div>';
       container.innerHTML = html;
 
     };

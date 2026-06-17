@@ -116,7 +116,7 @@ a:hover { text-decoration: underline; }
   flex-shrink: 0;
   text-align: center;
   font-family: var(--font-body);
-  font-size: 0.72rem;
+  font-size: var(--text-caption-1);
   color: var(--text-tertiary);
   opacity: 0.55;
   padding: var(--space-2) var(--space-4) calc(var(--space-2) + env(safe-area-inset-bottom, 0));
@@ -169,7 +169,7 @@ a:hover { text-decoration: underline; }
   text-decoration: none;
   color: var(--text-tertiary);
   font-family: var(--font-body);
-  font-size: 0.65rem;
+  font-size: var(--text-caption-2);
   transition: color var(--dur-fast) var(--ease);
   flex-shrink: 0;
   -webkit-tap-highlight-color: transparent;
@@ -189,15 +189,13 @@ a:hover { text-decoration: underline; }
 }
 
 .tab-label {
-  font-size: 0.65rem;
+  font-size: var(--text-caption-2);
   line-height: 1;
 }
 
 /* ── Responsive ── */
 @media (max-width: 480px) {
-  html { font-size: 16px; }
   .app-main { padding: calc(56px + env(safe-area-inset-top, 0) + var(--space-3)) var(--space-5) var(--space-5); }
   .tab-item { min-width: 50px; padding: var(--space-1) var(--space-2); }
   .tab-icon { font-size: 1.1rem; }
-  .tab-label { font-size: 0.6rem; }
 }

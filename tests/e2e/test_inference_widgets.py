@@ -116,6 +116,19 @@ async def test_loss_breakdown_oov_skipped(client):
 
 
 @pytest.mark.asyncio
+async def test_architecture_page_returns_200(client):
+    """TARCH: Architecture lesson page returns 200 with expected structure."""
+    r = await client.get("/v1/learn/architecture")
+    assert r.status_code == 200
+    assert "text/html" in r.headers.get("content-type", "")
+    html = r.text
+    assert 'id="arch-experience"' in html
+    assert 'id="arch-steps"' in html
+    assert "Architecture" in html
+    assert "the-big-picture" in html
+
+
+@pytest.mark.asyncio
 async def test_attention_oov_skipped(client):
     """T054: FR-020 — OOV characters are silently skipped for attention endpoint."""
     r = await client.post("/v1/inference/attention", json={"text": "test \U0001f436"})

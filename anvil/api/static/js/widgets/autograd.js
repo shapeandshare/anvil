@@ -170,7 +170,7 @@
     var vGap = 20;
     var hGap = 12;
 
-    // Build visible depth map (only nodes with depth <= visibleMax when truncated)
+// Build visible depth map (only nodes with depth <= visibleMax when truncated)
     var visibleDepthMap = {};
     nodes.forEach(function (n) {
       if (n.depth <= visibleMax) {
@@ -190,7 +190,7 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
 
-    var depths = Object.keys(visibleDepthMap).sort(function (a, b) { return parseInt(a) - parseInt(b); });
+var depths = Object.keys(visibleDepthMap).sort(function (a, b) { return parseInt(a) - parseInt(b); });
 
     var yPositions = {};
     depths.forEach(function (d) {
