@@ -94,6 +94,18 @@ async def inference_backward_graph(body: dict):
     return _call_or_400(_svc.backward_graph, text, loaded)
 
 
+@router.post("/inference/autograd-example")
+async def inference_autograd_example(body: dict):
+    text = body.get("text")
+    if not isinstance(text, str) or not text:
+        raise HTTPException(status_code=400, detail="text must be a non-empty string")
+    try:
+        loaded = await _svc.load_model(body.get("model_id"), body.get("version"))
+    except (ValueError, FileNotFoundError) as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    return _call_or_400(_svc.autograd_example_graph, text, loaded)
+
+
 @router.post("/inference/loss-breakdown")
 async def inference_loss_breakdown(body: dict):
     text = body.get("text")
