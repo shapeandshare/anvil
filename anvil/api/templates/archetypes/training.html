@@ -464,7 +464,7 @@ function updateMetrics(d) {
       }
       var barPct = Math.max(2, Math.min(100, utilPct));
       html += '<div style="margin:var(--space-1) var(--space-2);">'
-        + '<div style="display:flex;justify-content:space-between;font-size:0.62rem;margin-bottom:2px;">'
+        + '<div style="display:flex;justify-content:space-between;margin-bottom:2px;" class="type-caption-2">'
         + '<span style="color:var(--text-dim);">Peak: ' + peakMb.toFixed(1) + ' MB</span>'
         + '<span style="color:' + color + ';font-weight:600;">' + label + '</span>'
         + '<span style="color:var(--text-dim);">Avail: ' + availMb.toFixed(0) + ' MB</span>'
@@ -474,14 +474,14 @@ function updateMetrics(d) {
         + '</div>'
         + '</div>';
     } else if (_gpuInfo.available === undefined) {
-      html += '<div class="ds-card-body" style="color:var(--text-dim);font-size:0.62rem;">Detecting GPU...</div>';
+      html += '<div class="ds-card-body text-muted type-caption-2">Detecting GPU...</div>';
     } else if (useGpu) {
-      html += '<div class="ds-card-body" style="color:var(--text-dim);font-size:0.62rem;">GPU memory info unavailable</div>';
+      html += '<div class="ds-card-body text-muted type-caption-2">GPU memory info unavailable</div>';
     } else {
-      html += '<div class="ds-card-body" style="color:var(--text-dim);font-size:0.62rem;">Enable GPU to see memory estimate</div>';
+      html += '<div class="ds-card-body text-muted type-caption-2">Enable GPU to see memory estimate</div>';
     }
 
-    html += '<div class="ds-card-body" style="font-size:0.62rem;color:var(--text-muted);">'
+    html += '<div class="ds-card-body text-muted type-caption-2">'
       + 'weights ' + weightsMb.toFixed(0) + ' · grads ' + gradsMb.toFixed(0)
       + ' · optim ' + optimMb.toFixed(0) + ' · KV cache ' + kvCacheMb.toFixed(0)
       + ' MB</div>';
@@ -489,7 +489,7 @@ function updateMetrics(d) {
     if (coverage > 0) {
       html += '<div style="height:var(--space-2);"></div>'
         + '<div class="ds-card-body">'
-        + '<span class="ds-badge ds-badge-model" style="font-size:0.55rem;">COVERAGE</span> '
+        + '<span class="ds-badge ds-badge-model type-caption-2">COVERAGE</span> '
         + num_steps + ' steps \u00d7 ' + docCount + ' docs'
         + ' = ' + coverage + '% visit rate'
         + (coverage < 10
@@ -538,7 +538,7 @@ function updateMetrics(d) {
         + peakMb.toFixed(0) + ' MB uses ' + pct.toFixed(0) + '% of available '
         + availMb.toFixed(0) + ' MB. Reduce n_embd, n_layer, n_head, or block_size '
         + 'or disable GPU acceleration.'
-        + '<br><span style="font-size:0.62rem;">weights '
+        + '<br><span class="type-caption-2">weights '
         + weightsMb.toFixed(0) + ' &middot; grads ' + gradsMb.toFixed(0)
         + ' &middot; optim ' + optimMb.toFixed(0) + ' &middot; KV cache '
         + kvCacheMb.toFixed(0) + ' MB</span>';
@@ -558,7 +558,7 @@ function updateMetrics(d) {
         else if (cmUtil >= 75) { cmColor = 'var(--warning)'; cmLabel = 'close to limit'; }
         else { cmColor = 'var(--accent-green)'; cmLabel = 'within range'; }
         cmBarPct = Math.max(2, Math.min(100, cmUtil));
-        cmHtml = '<div style="display:flex;justify-content:space-between;align-items:baseline;font-size:0.7rem;margin-bottom:4px;">'
+        cmHtml = '<div class="type-caption-1" style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">'
           + '<span style="font-weight:600;">Estimated GPU memory</span>'
           + '<span style="color:' + cmColor + ';font-weight:600;">' + cmLabel
           + ' &middot; ' + peakMb.toFixed(0) + ' / ' + availMb.toFixed(0) + ' MB</span>'
@@ -566,17 +566,17 @@ function updateMetrics(d) {
           + '<div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden;">'
           + '<div style="width:' + cmBarPct + '%;min-width:2%;height:100%;background:' + cmColor + ';border-radius:4px;transition:width 0.3s;"></div>'
           + '</div>'
-          + '<div style="font-size:0.6rem;color:var(--text-muted);margin-top:3px;">'
+          + '<div class="type-caption-2 text-muted" style="margin-top:3px;">'
           + formatParams(totalParams) + ' params &middot; weights ' + weightsMb.toFixed(0)
           + ' &middot; grads ' + gradsMb.toFixed(0) + ' &middot; optim ' + optimMb.toFixed(0)
           + ' &middot; KV ' + kvCacheMb.toFixed(0) + ' MB</div>';
       } else if (useGpu && _gpuInfo.available === undefined) {
-        cmHtml = '<div style="font-size:0.7rem;color:var(--text-dim);">Detecting GPU…</div>';
+        cmHtml = '<div class="type-caption-1 text-muted">Detecting GPU…</div>';
       } else if (useGpu) {
-        cmHtml = '<div style="font-size:0.7rem;color:var(--text-dim);">GPU memory info unavailable &middot; '
+        cmHtml = '<div class="type-caption-1 text-muted">GPU memory info unavailable &middot; '
           + formatParams(totalParams) + ' params, peak ~' + peakMb.toFixed(0) + ' MB</div>';
       } else {
-        cmHtml = '<div style="font-size:0.7rem;color:var(--text-dim);">CPU mode &middot; '
+        cmHtml = '<div class="type-caption-1 text-muted">CPU mode &middot; '
           + formatParams(totalParams) + ' params, peak ~' + peakMb.toFixed(0) + ' MB (limited by system RAM)</div>';
       }
       configMem.innerHTML = cmHtml;
@@ -806,12 +806,12 @@ function updateMetrics(d) {
       var lastLoss = steps > 0 ? r.metrics[r.metrics.length - 1].loss : null;
       var timeAgo = r.startedAt ? Math.floor((Date.now() - r.startedAt) / 1000) + 's ago' : '';
       var isCurrent = session && String(session.runId) === id && session.state !== 'idle';
-      html += '<div class="rec-card" style="display:flex;align-items:center;gap:var(--space-2);padding:6px 10px;border:1px solid var(--border);border-radius:4px;font-size:0.72rem;">'
+      html += '<div class="rec-card type-caption-1" style="display:flex;align-items:center;gap:var(--space-2);padding:6px 10px;border:1px solid var(--border);border-radius:4px;">'
         + '<span class="badge ' + statusClass + '">' + r.status + '</span>'
         + '<span style="font-family:var(--font-mono);color:var(--info);">' + id.slice(0,12) + '</span>'
         + '<span style="color:var(--text-dim);">' + steps + ' steps</span>'
         + (lastLoss != null ? '<span style="color:var(--accent-cyan);">loss: ' + lastLoss.toFixed(4) + '</span>' : '')
-        + '<span style="color:var(--text-muted);font-size:0.62rem;">' + timeAgo + '</span>'
+        + '<span class="type-caption-2 text-muted">' + timeAgo + '</span>'
         + '<span style="flex:1;"></span>';
       if (!isCurrent && (r.status === 'streaming' || r.status === 'connecting')) {
         html += '<button class="btn btn-sm btn-accent reconnect-btn" data-run="' + id + '">reconnect</button>';
