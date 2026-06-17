@@ -93,6 +93,15 @@ class ExperimentRepository:
         )
         return result.scalar_one_or_none()
 
+    async def set_remote_job_id(
+        self, experiment_id: int, job_id: str
+    ) -> Experiment:
+        exp = await self.get(experiment_id)
+        if exp is None:
+            raise ValueError(f"Experiment {experiment_id} not found")
+        exp.remote_job_id = job_id
+        return await self.update(exp)
+
     async def find_orphaned(self) -> Sequence[Experiment]:
         result = await self._session.execute(
             select(Experiment).where(Experiment.status == "running")

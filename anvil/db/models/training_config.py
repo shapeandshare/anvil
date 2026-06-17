@@ -59,6 +59,9 @@ class Experiment(Base, TimestampMixin):
     generated_samples: Mapped[str | None] = mapped_column(String, nullable=True)
     error_message: Mapped[str | None] = mapped_column(String, nullable=True)
 
+    execution_backend: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    remote_job_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+
     dataset: Mapped[Dataset | None] = relationship("Dataset", lazy="joined")
 
 
