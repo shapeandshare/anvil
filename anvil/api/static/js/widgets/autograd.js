@@ -98,14 +98,7 @@
     var canvas = this._canvas;
     var dpr = window.devicePixelRatio || 1;
     var w = canvas.clientWidth || 400;
-    var h = canvas.clientHeight || 300;
-    canvas.width = w * dpr;
-    canvas.height = h * dpr;
-    canvas.style.width = w + 'px';
-    canvas.style.height = h + 'px';
     var ctx = this._ctx;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, w, h);
 
     var style = getComputedStyle(document.documentElement);
     var colors = {
@@ -136,6 +129,17 @@
     var nodeH = 44;
     var vGap = 20;
     var hGap = 12;
+
+    // Compute canvas height to fit all depth levels
+    var neededH = pad + (maxDepth + 1) * (nodeH + vGap) + pad;
+    var h = Math.max(neededH, 200);
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+
     var depths = Object.keys(depthMap).sort(function (a, b) { return parseInt(a) - parseInt(b); });
 
     var yPositions = {};

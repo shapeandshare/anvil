@@ -286,7 +286,6 @@
 
   /* ── Did You Know? Rotator ───────────────────────────── */
   var DID_YOU_KNOW = [
-    'The model has <strong>4,192 parameters</strong> &mdash; that&rsquo;s about 10 million&times; fewer than ChatGPT.',
     'Each training step, the model compares its prediction against the actual next character and adjusts its weights by a tiny amount.',
     'The &ldquo;loss&rdquo; you see is <strong>cross-entropy</strong> &mdash; it measures how surprised the model is by the actual next character.',
     'With <strong>4 heads of attention</strong>, this tiny transformer can focus on up to 4 different positions simultaneously.',

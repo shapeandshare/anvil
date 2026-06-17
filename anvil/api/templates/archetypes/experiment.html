@@ -30,6 +30,10 @@
       <div class="metric"><span class="metric-label">Final Loss</span><span class="metric-value" id="detail-loss">—</span></div>
       <div class="metric"><span class="metric-label">Dataset</span><span class="metric-value" id="detail-dataset">—</span></div>
       <div class="metric"><span class="metric-label">Architecture</span><span class="metric-value" id="detail-architecture">—</span></div>
+      <div class="metric"><span class="metric-label">Parameters</span><span class="metric-value" id="detail-params">—</span></div>
+      <div class="metric"><span class="metric-label">Est. Train Memory</span><span class="metric-value" id="detail-mem-est">—</span></div>
+      <div class="metric"><span class="metric-label">Peak GPU Memory</span><span class="metric-value" id="detail-gpu-mem">—</span></div>
+      <div class="metric"><span class="metric-label">Peak GPU Util</span><span class="metric-value" id="detail-gpu-util">—</span></div>
       <div class="metric"><span class="metric-label">MLflow</span><span class="metric-value" id="detail-mlflow">—</span></div>
     </div>
     <div id="detail-safetensors" style="margin-top:var(--space-4);padding-top:var(--space-3);border-top:var(--border-width) solid var(--border);display:none;">
@@ -132,6 +136,27 @@
       document.getElementById('detail-loss').textContent = exp.final_loss != null ? exp.final_loss.toFixed(4) : '—';
       document.getElementById('detail-dataset').textContent = exp.dataset_name || '—';
       document.getElementById('detail-architecture').textContent = exp.architecture_type || '—';
+
+      var arch = exp.model_architecture;
+      var mem = exp.memory_estimate;
+      document.getElementById('detail-params').textContent =
+        (arch && arch.num_params != null) ? arch.num_params.toLocaleString() : '—';
+      var memEstEl = document.getElementById('detail-mem-est');
+      if (mem && mem.peak_mb != null) {
+        memEstEl.textContent = mem.peak_mb >= 1024
+          ? (mem.peak_mb / 1024).toFixed(2) + ' GB'
+          : mem.peak_mb.toFixed(0) + ' MB';
+        memEstEl.title = mem.param_count.toLocaleString() + ' params · weights '
+          + mem.weights_mb + ' · grads ' + mem.gradients_mb
+          + ' · optim ' + mem.optimizer_mb + ' · KV ' + mem.kv_cache_mb + ' MB';
+      } else {
+        memEstEl.textContent = '—';
+      }
+      document.getElementById('detail-gpu-mem').textContent =
+        exp.gpu_memory_peak_gb != null ? exp.gpu_memory_peak_gb.toFixed(2) + ' GB' : '—';
+      document.getElementById('detail-gpu-util').textContent =
+        exp.gpu_util_peak_pct != null ? exp.gpu_util_peak_pct.toFixed(0) + '%' : '—';
+
       var mlflowEl = document.getElementById('detail-mlflow');
       if (exp.mlflow && exp.mlflow.run_url) {
         mlflowEl.innerHTML = '<a href="' + exp.mlflow.run_url + '" target="_blank" class="btn btn-secondary btn-sm">open in MLflow →</a>';

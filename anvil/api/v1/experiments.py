@@ -15,9 +15,44 @@ from anvil.core.engine import LlamaModel
 from anvil.db.models.training_config import TrainingConfig
 from anvil.db.repositories import ExperimentRepository
 from anvil.services.experiments import ExperimentService
+from anvil.services.memory_estimator import estimate_training_memory
 from anvil.services.tracking import TrackingService
 
 router = APIRouter()
+
+GPU_MEMORY_METRIC = "system/gpu_memory_gb"
+GPU_UTIL_METRIC = "system/gpu_util_pct"
+
+_HYPERPARAM_COERCERS: dict[str, type] = {
+    "n_layer": int,
+    "n_embd": int,
+    "n_head": int,
+    "block_size": int,
+    "num_steps": int,
+    "learning_rate": float,
+    "beta1": float,
+    "beta2": float,
+    "temperature": float,
+}
+
+
+def _hyperparams_from_mlflow(params: dict[str, str]) -> dict:
+    """Reconstruct typed hyperparameters from string-valued MLflow params.
+
+    Used as a fallback when the experiment has no linked TrainingConfig row.
+    """
+    result: dict = {}
+    for key, caster in _HYPERPARAM_COERCERS.items():
+        raw = params.get(key)
+        if raw is None:
+            continue
+        try:
+            result[key] = caster(raw)
+        except (ValueError, TypeError):
+            continue
+    if "use_gpu" in params:
+        result["use_gpu"] = str(params["use_gpu"]).lower() in ("true", "1", "yes")
+    return result
 
 
 def _get_mlflow_experiment_id() -> str | None:
@@ -161,6 +196,8 @@ async def get_experiment(
     # MLflow data
     mlflow_data = None
     safetensors_artifacts = None
+    gpu_memory_peak_gb = None
+    gpu_util_peak_pct = None
     if exp.mlflow_run_id:
         try:
             client = MlflowClient(tracking_uri=get_config()["mlflow_uri"])
@@ -175,6 +212,22 @@ async def get_experiment(
                     else None
                 ),
             }
+            # Peak GPU memory / utilization from per-step metric histories
+            if GPU_MEMORY_METRIC in run.data.metrics:
+                mem_hist = client.get_metric_history(
+                    exp.mlflow_run_id, GPU_MEMORY_METRIC
+                )
+                if mem_hist:
+                    gpu_memory_peak_gb = max(m.value for m in mem_hist)
+            if GPU_UTIL_METRIC in run.data.metrics:
+                util_hist = client.get_metric_history(
+                    exp.mlflow_run_id, GPU_UTIL_METRIC
+                )
+                if util_hist:
+                    gpu_util_peak_pct = max(m.value for m in util_hist)
+            # Fallback hyperparameters from MLflow params when no config row exists
+            if not hyperparameters:
+                hyperparameters = _hyperparams_from_mlflow(mlflow_data["params"])
             # T049: Query safetensors artifacts from MLflow
             tracking_svc = TrackingService(tracking_uri=get_config()["mlflow_uri"])
             safetensors_artifacts = await tracking_svc.get_safetensors_artifacts(
@@ -182,6 +235,27 @@ async def get_experiment(
             )
         except Exception:
             mlflow_data = None
+
+    # Estimated training memory footprint from architecture (always shown if model exists)
+    memory_estimate = None
+    if model_architecture:
+        est = estimate_training_memory(
+            vocab_size=model_architecture["vocab_size"],
+            n_embd=model_architecture["n_embd"],
+            n_head=model_architecture["n_head"],
+            n_layer=model_architecture["n_layer"],
+            block_size=model_architecture["block_size"],
+            use_gpu=False,
+        )
+        memory_estimate = {
+            "param_count": est.param_count,
+            "weights_mb": round(est.weights_bytes / (1024**2), 1),
+            "gradients_mb": round(est.gradients_bytes / (1024**2), 1),
+            "optimizer_mb": round(est.optimizer_bytes / (1024**2), 1),
+            "kv_cache_mb": round(est.kv_cache_bytes / (1024**2), 1),
+            "peak_mb": round(est.peak_mb, 1),
+            "peak_gb": round(est.peak_gb, 3),
+        }
 
     # Architecture type from safetensors config or tag
     architecture_type = None
@@ -207,6 +281,9 @@ async def get_experiment(
         "duration_seconds": duration_seconds,
         "hyperparameters": hyperparameters,
         "model_architecture": model_architecture,
+        "memory_estimate": memory_estimate,
+        "gpu_memory_peak_gb": gpu_memory_peak_gb,
+        "gpu_util_peak_pct": gpu_util_peak_pct,
         "mlflow": mlflow_data,
         "safetensors_artifacts": safetensors_artifacts,
         "architecture_type": architecture_type,

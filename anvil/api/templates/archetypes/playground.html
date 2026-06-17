@@ -181,6 +181,20 @@
         var display = f[0] === 'num_params' ? val.toLocaleString() : val;
         html += '<tr><td style="color:var(--text-dim);width:40%">' + f[1] + '</td><td style="font-family:var(--font-mono);text-align:right">' + display + '</td></tr>';
       });
+      if (arch.num_params != null) {
+        var infFp32 = 4;
+        var weightsMb = arch.num_params * infFp32 / (1024 * 1024);
+        var kvMb = (arch.n_layer && arch.block_size && arch.n_embd)
+          ? arch.n_layer * 2 * arch.block_size * arch.n_embd * infFp32 / (1024 * 1024)
+          : 0;
+        var infMemMb = weightsMb + kvMb;
+        var infDisplay = infMemMb >= 1024
+          ? (infMemMb / 1024).toFixed(2) + ' GB'
+          : infMemMb.toFixed(1) + ' MB';
+        html += '<tr><td style="color:var(--text-dim);width:40%">Inference Memory</td>'
+          + '<td style="font-family:var(--font-mono);text-align:right" title="weights + KV cache (no gradients/optimizer needed for inference)">~'
+          + infDisplay + '</td></tr>';
+      }
       html += '</tbody></table></div>';
     }
 

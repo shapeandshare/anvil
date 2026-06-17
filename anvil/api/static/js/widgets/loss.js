@@ -96,8 +96,12 @@
   LossWidget.prototype._drawChart = function () {
     var ctx = this._ctx;
     if (!ctx || !this._data) return;
-    var tokens = this._data.tokens || [];
+    var tokens_raw = this._data.tokens || [];
     var losses = this._data.losses || [];
+    /* Support both string[] and {char, id}[] formats */
+    var tokens = tokens_raw.map(function (t) {
+      return typeof t === 'string' ? t : t.char;
+    });
     var vocabSize = this._data.vocab_size || 0;
     var avgLoss = this._data.average_loss || 0;
     if (tokens.length === 0 || losses.length === 0) {

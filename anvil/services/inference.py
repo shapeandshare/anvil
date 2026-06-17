@@ -16,10 +16,15 @@ DEMO_MODEL_PATH = Path("data/models/demo/model.json")
 
 # Minimal embedded fallback — used when the demo dataset has not been
 # bootstrapped into the DB yet (e.g. first app startup before setup).
+# Includes both uppercase and lowercase so the demo model's vocabulary
+# supports any alphanumeric input in the tokenization widget.
 _FALLBACK_CORPUS = [
     "the quick brown fox jumps over the lazy dog",
+    "The Quick Brown Fox Jumps Over The Lazy Dog",
     "what's this? it's a demo!",
-    "hi there, let's go!",
+    "HI there, let's GO!",
+    "hello HELLO",
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz",
 ]
 _DEMO_TRAIN_LOCK = threading.Lock()
 
@@ -326,7 +331,7 @@ class InferenceService:
 
     def attention(self, text: str, loaded: LoadedModel) -> dict[str, Any]:
         ids = loaded.vocab.encode(text)
-        max_len = min(loaded.model.block_size, 32)
+        max_len = min(loaded.model.block_size, 256)
         ids = ids[:max_len]
 
         result = loaded.model.forward_introspect(ids)
