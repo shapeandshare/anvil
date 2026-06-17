@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
+{% block content %}
+<div class="concept-lesson arch-lesson">
+  {% if arc %}
+  <div class="concept-lesson-header">
+    <h1 class="concept-lesson-title">{{ arc[current_index].title }} <span class="lesson-count">&mdash; Lesson {{ current_index + 1 }} of {{ arc|length }}</span></h1>
+    <nav class="learn-arc-nav" aria-label="Lesson navigation">
+      <div class="learn-arc-links">
+        <a href="/v1/learn" class="btn btn-secondary">&larr; Back to Learning Index</a>
+        {% if prev %}
+        <a href="{{ prev.path }}" class="btn btn-secondary">&larr; {{ prev.title }}</a>
+        {% endif %}
+        {% if next %}
+        <a href="{{ next.path }}" class="btn btn-secondary">{{ next.title }} &rarr;</a>
+        {% endif %}
+      </div>
+    </nav>
+  </div>
+  {% endif %}
+
+  <script type="application/json" id="arch-steps">{{ steps | tojson }}</script>
+  <div id="arch-experience" class="arch-experience"></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/widgets/architecture.js"></script>
+{% endblock %}
+{% block didyouknow_banner %}
+<div id="didyouknow-banner" class="didyouknow">
+  <span class="didyouknow__icon" aria-hidden="true">&#9670;</span>
+  <div>
+    <div class="didyouknow__label">&#9670; Did You Know?</div>
+    <span id="didyouknow-text"></span>
+  </div>
+  <button type="button" class="didyouknow__dismiss" aria-label="Dismiss">&#10005;</button>
+</div>
+{% endblock %}

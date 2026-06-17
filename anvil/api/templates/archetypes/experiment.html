@@ -37,7 +37,7 @@
       <div class="metric"><span class="metric-label">MLflow</span><span class="metric-value" id="detail-mlflow">—</span></div>
     </div>
     <div id="detail-safetensors" style="margin-top:var(--space-4);padding-top:var(--space-3);border-top:var(--border-width) solid var(--border);display:none;">
-      <h3 class="section-card__title" style="font-size:0.75rem;">Model Artifacts</h3>
+      <h3 class="section-card__title type-footnote">Model Artifacts</h3>
       <div id="detail-artifact-list" style="margin-top:var(--space-2);"></div>
       <div style="margin-top:var(--space-3);display:flex;gap:var(--space-2);flex-wrap:wrap;">
         <button class="btn btn-secondary btn-sm" id="btn-retry-export" style="display:none;" onclick="retryExport()">Retry Export</button>
@@ -50,7 +50,7 @@
 <style>
 .error-text {
   color: var(--danger);
-  font-size: 0.7rem;
+  font-size: var(--text-caption-1);
   font-family: var(--font-mono);
 }
 </style>
@@ -108,7 +108,7 @@
         '<td><span class="badge ' + badgeClass + '">' + statusText + '</span></td>' +
         '<td class="loss-value">' + (exp.final_loss != null ? exp.final_loss.toFixed(4) : '—') + '</td>' +
         '<td>' + (exp.dataset_name || '—') + '</td>' +
-        '<td class="text-dim" style="font-family:var(--font-mono);font-size:0.65rem;">' + (exp.engine_backend === 'torch' ? 'GPU' : 'CPU') + '</td>' +
+        '<td class="text-dim cell-mono type-caption-2">' + (exp.engine_backend === 'torch' ? 'GPU' : 'CPU') + '</td>' +
         '<td><button class="btn btn-secondary" onclick="selectRun(' + exp.id + ')">View</button></td>';
       row.addEventListener('click', function() { selectRun(exp.id); });
       tbody.appendChild(row);
@@ -184,8 +184,8 @@
         var html = '<div class="grouped-list" style="width:100%;">';
         html += '<table style="width:100%;border-collapse:collapse;">';
         html += '<thead><tr>';
-        html += '<th style="text-align:left;padding:var(--space-1) var(--space-2);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-dim);">File</th>';
-        html += '<th style="text-align:right;padding:var(--space-1) var(--space-2);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-dim);">Size</th>';
+        html += '<th class="type-caption-2 text-muted" style="text-align:left;padding:var(--space-1) var(--space-2);text-transform:uppercase;letter-spacing:0.05em;">File</th>';
+        html += '<th class="type-caption-2 text-muted" style="text-align:right;padding:var(--space-1) var(--space-2);text-transform:uppercase;letter-spacing:0.05em;">Size</th>';
         html += '<th style="text-align:right;padding:var(--space-1) var(--space-2);"></th>';
         html += '</tr></thead><tbody>';
 
@@ -193,8 +193,8 @@
           var icon = f.is_safetensors ? '🧠' : f.is_config ? '⚙' : f.is_tokenizer ? '📝' : '📄';
           var downloadUrl = '/v1/experiments/' + selectedExpId + '/runs/' + encodeURIComponent(selectedMlflowRunId) + '/download?path=' + encodeURIComponent(f.path);
           html += '<tr style="border-bottom:var(--border-width) solid var(--border);">';
-          html += '<td style="padding:var(--space-1) var(--space-2);font-family:var(--font-mono);font-size:0.7rem;">' + icon + ' ' + escHtml(f.path) + '</td>';
-          html += '<td style="text-align:right;padding:var(--space-1) var(--space-2);font-size:0.7rem;color:var(--text-dim);white-space:nowrap;">' + formatFileSize(f.file_size) + '</td>';
+          html += '<td class="cell-mono" style="padding:var(--space-1) var(--space-2);">' + icon + ' ' + escHtml(f.path) + '</td>';
+          html += '<td class="cell-numeric cell-mono text-muted" style="padding:var(--space-1) var(--space-2);">' + formatFileSize(f.file_size) + '</td>';
           html += '<td style="text-align:right;padding:var(--space-1) var(--space-2);"><a href="' + downloadUrl + '" class="btn btn-secondary btn-sm" download>Download</a></td>';
           html += '</tr>';
         });
@@ -207,7 +207,7 @@
         stError.textContent = 'Artifact error: ' + escHtml(exp.safetensors_artifacts.error);
       } else if (exp.status === 'finished') {
         stSection.style.display = '';
-        artifactList.innerHTML = '<div style="padding:var(--space-2);font-size:0.7rem;color:var(--text-dim);">No safetensors export found. Click <strong>Retry Export</strong> to generate artifacts.</div>';
+        artifactList.innerHTML = '<div class="type-caption-1 text-muted" style="padding:var(--space-2);">No safetensors export found. Click <strong>Retry Export</strong> to generate artifacts.</div>';
         btnRetry.style.display = '';
       }
 
