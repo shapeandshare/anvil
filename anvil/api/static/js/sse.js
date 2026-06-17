@@ -14,6 +14,8 @@
     this.onmetrics = null;
     this.oncomplete = null;
     this.onerror = null;
+    this.onsubmitted = null;
+    this.onstatus = null;
   }
 
   SSESession.prototype._setState = function(s) {
@@ -47,6 +49,20 @@
     } catch(_) {}
     this._setState('done');
     if (this._es) this._es.close();
+  };
+
+  SSESession.prototype._handleSubmitted = function(e) {
+    try {
+      var d = JSON.parse(e.data);
+      if (typeof this.onsubmitted === 'function') this.onsubmitted(d);
+    } catch(_) {}
+  };
+
+  SSESession.prototype._handleStatus = function(e) {
+    try {
+      var d = JSON.parse(e.data);
+      if (typeof this.onstatus === 'function') this.onstatus(d);
+    } catch(_) {}
   };
 
   SSESession.prototype._handleError = function(e) {
@@ -97,6 +113,8 @@
     this._es.addEventListener('metrics', function(e) { self._handleMetrics(e); });
     this._es.addEventListener('complete', function(e) { self._handleComplete(e); });
     this._es.addEventListener('error', function(e) { self._handleError(e); });
+    this._es.addEventListener('submitted', function(e) { self._handleSubmitted(e); });
+    this._es.addEventListener('status', function(e) { self._handleStatus(e); });
   };
 
   SSESession.prototype.start = function() {

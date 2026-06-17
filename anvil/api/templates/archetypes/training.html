@@ -110,14 +110,16 @@
           <p class="param-desc">Creativity — 0.1-0.3 predictable, 0.5-0.7 creative, 1.0+ chaos.</p><span class="fun-label fun-label--cool" style="margin-left:var(--space-1)">cool &amp; precise</span> <span class="fun-label fun-label--warm">creative spark</span> <span class="fun-label fun-label--hot">chaos mode</span>
         </div>
         <div class="param-block">
-          <div class="param-label-row"><label class="param-label">device</label></div>
+          <div class="param-label-row"><label class="param-label">Compute Backend</label>
+          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">Where training runs. Auto picks the best available. Local CPU uses pure Python (stdlib). Local GPU uses PyTorch (CUDA/MPS). Modal runs on cloud GPUs — requires the modal package.</span></span></div>
           <div class="device-toggle">
-            <label class="toggle-label">
-              <input type="checkbox" id="use_gpu" checked onchange="window.updateModelStats()">
-              <span class="toggle-track"><span class="toggle-thumb"></span></span>
-              <span class="toggle-text">GPU acceleration</span>
-            </label>
-            <p class="param-desc" id="gpu-status">Checking GPU availability...</p>
+            <select id="compute_backend" onchange="window.updateModelStats()" style="width:100%;padding:6px 8px;border-radius:var(--radius-sm,6px);border:1px solid var(--border,#38383a);background:var(--surface,#1c1c1e);color:var(--text,#fff);font-size:0.8rem;font-family:var(--font-body,sans-serif);">
+              <option value="auto">Auto</option>
+              <option value="local-cpu">Local (CPU)</option>
+              <option value="local-gpu">Local (GPU)</option>
+              <option value="modal">Modal (cloud GPU)</option>
+            </select>
+            <p class="param-desc" id="gpu-status">Checking compute backends...</p>
           </div>
         </div>
       </div>
@@ -429,7 +431,8 @@ function updateMetrics(d) {
       + '</div>';
 
     /* ── Memory estimate ── */
-    var useGpu = document.getElementById('use_gpu').checked;
+    var backend = document.getElementById('compute_backend').value;
+    var useGpu = backend === 'local-gpu' || backend === 'modal' || (backend === 'auto' && _gpuInfo.available);
     var fp32 = 4;
     var weightsMb = totalParams * fp32 / (1024 * 1024);
     var gradsMb = totalParams * fp32 / (1024 * 1024);
@@ -537,7 +540,7 @@ function updateMetrics(d) {
       oomWarn.innerHTML = '&#9888;&#65039; <strong>OOM risk:</strong> estimated peak memory '
         + peakMb.toFixed(0) + ' MB uses ' + pct.toFixed(0) + '% of available '
         + availMb.toFixed(0) + ' MB. Reduce n_embd, n_layer, n_head, or block_size '
-        + 'or disable GPU acceleration.'
+        + 'or switch to Local (CPU) in the Compute Backend selector.'
         + '<br><span style="font-size:0.62rem;">weights '
         + weightsMb.toFixed(0) + ' &middot; grads ' + gradsMb.toFixed(0)
         + ' &middot; optim ' + optimMb.toFixed(0) + ' &middot; KV cache '
@@ -590,7 +593,7 @@ function updateMetrics(d) {
         updateModelStats(corpusSelect.value, datasetSelect.value);
       });
     });
-    var gpuToggle = document.getElementById('use_gpu');
+    var gpuToggle = document.getElementById('compute_backend');
     if (gpuToggle) gpuToggle.addEventListener('change', function() {
       updateModelStats(corpusSelect.value, datasetSelect.value);
     });
@@ -775,7 +778,7 @@ function updateMetrics(d) {
         num_steps: document.getElementById('num_steps').value,
         learning_rate: document.getElementById('learning_rate').value,
         temperature: document.getElementById('temperature').value,
-        use_gpu: document.getElementById('use_gpu').checked,
+        compute_backend: document.getElementById('compute_backend').value,
         corpus_id: corpusSelect.value,
         dataset_id: datasetSelect.value,
       },
@@ -920,6 +923,7 @@ function updateMetrics(d) {
       if (c.num_steps) document.getElementById('num_steps').value = c.num_steps;
       if (c.learning_rate) document.getElementById('learning_rate').value = c.learning_rate;
       if (c.temperature) document.getElementById('temperature').value = c.temperature;
+      if (c.compute_backend) document.getElementById('compute_backend').value = c.compute_backend;
       if (c.corpus_id) { corpusSelect.value = c.corpus_id; }
       if (c.dataset_id) { datasetSelect.value = c.dataset_id; }
     }
@@ -1025,7 +1029,7 @@ function updateMetrics(d) {
       num_steps: parseInt(document.getElementById('num_steps').value),
       learning_rate: parseFloat(document.getElementById('learning_rate').value),
       temperature: parseFloat(document.getElementById('temperature').value),
-      use_gpu: document.getElementById('use_gpu').checked,
+      compute_backend: document.getElementById('compute_backend').value,
     };
     var cid = corpusSelect.value;
     var did = datasetSelect.value;
@@ -1220,27 +1224,51 @@ function updateMetrics(d) {
     updateState('idle');
   }
 
-  /* ── GPU availability check ── */
-  fetch('/v1/health').then(function(r) { return r.json(); }).then(function(health) {
-    var gpu = health.gpu || {};
-    _gpuInfo = gpu;
+  /* ── Compute backend availability check ── */
+  fetch('/v1/compute/backends').then(function(r) { return r.json(); }).then(function(backends) {
+    var select = document.getElementById('compute_backend');
     var statusEl = document.getElementById('gpu-status');
-    var toggle = document.getElementById('use_gpu');
-    if (gpu.available) {
-      statusEl.innerHTML = '<span style="color:var(--accent-green);">GPU ready: '
-        + (gpu.device_name || gpu.backend) + ' (' + gpu.backend + ')'
-        + (gpu.memory_total_gb ? ' &middot; ' + gpu.memory_total_gb.toFixed(1) + ' GB' : '')
-        + '</span>';
-      toggle.disabled = false;
-    } else {
-      var reason = gpu.errors && gpu.errors.length ? gpu.errors[0] : 'torch not installed';
-      statusEl.innerHTML = '<span class="text-muted">GPU not available: ' + reason + '</span>';
-      toggle.disabled = true;
-      toggle.checked = false;
-    }
-    updateModelStats(corpusSelect.value, datasetSelect.value);
+    var backendMap = {};
+    backends.forEach(function(b) { backendMap[b.value] = b; });
+
+    /* Disable unavailable options with tooltip showing reason */
+    Array.from(select.options).forEach(function(opt) {
+      var info = backendMap[opt.value];
+      if (info && !info.available) {
+        opt.disabled = true;
+        if (info.reason) {
+          opt.title = info.reason;
+        }
+      }
+    });
+
+    /* Update status text */
+    var autoInfo = backendMap['auto'];
+    var gpuInfo = backendMap['local-gpu'];
+    var modalInfo = backendMap['modal'];
+    var parts = [];
+    if (autoInfo && autoInfo.available) parts.push('auto');
+    if (gpuInfo && gpuInfo.available) parts.push('GPU detected');
+    else if (gpuInfo && !gpuInfo.available) parts.push('GPU: ' + (gpuInfo.reason || 'unavailable'));
+    if (modalInfo && modalInfo.available) parts.push('Modal ready');
+    if (parts.length === 0) parts.push('no backends detected');
+    statusEl.innerHTML = '<span style="color:var(--text-muted);font-size:0.62rem;">' + parts.join(' · ') + '</span>';
+
+    /* Also fetch GPU details for memory estimation */
+    fetch('/v1/health').then(function(r) { return r.json(); }).then(function(health) {
+      var gpu = health.gpu || {};
+      _gpuInfo = gpu;
+      updateModelStats(corpusSelect.value, datasetSelect.value);
+    }).catch(function() {
+      updateModelStats(corpusSelect.value, datasetSelect.value);
+    });
   }).catch(function() {
-    document.getElementById('gpu-status').innerHTML = '<span class="text-muted">Could not detect GPU</span>';
+    document.getElementById('gpu-status').innerHTML = '<span class="text-muted">Could not detect compute backends</span>';
+    /* Fallback: still try to get GPU info from health */
+    fetch('/v1/health').then(function(r) { return r.json(); }).then(function(health) {
+      _gpuInfo = health.gpu || {};
+      updateModelStats(corpusSelect.value, datasetSelect.value);
+    }).catch(function() {});
   });
 })();
 </script>
