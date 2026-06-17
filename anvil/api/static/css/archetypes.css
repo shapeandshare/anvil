@@ -1078,6 +1078,258 @@ margin-bottom: var(--space-2);
 }
 
 /* ════════════════════════════════════════════════
+   Dataset Page — Guided (1)→(2)→(3) Flow Sections
+   ════════════════════════════════════════════════ */
+
+/* Numbered stage section header */
+.ds-flow-section {
+  margin-bottom: var(--space-5);
+}
+
+.ds-flow-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--separator);
+}
+
+.ds-flow-bubble {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.94rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--accent);
+  flex-shrink: 0;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+/* Step colors via data-step attribute */
+.ds-flow-section[data-step="2"] .ds-flow-bubble {
+  background: var(--accent-purple);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-purple) 25%, transparent);
+}
+
+.ds-flow-section[data-step="3"] .ds-flow-bubble {
+  background: var(--accent-green);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-green) 25%, transparent);
+}
+
+.ds-flow-label {
+  font-family: var(--font-body);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: var(--space-1);
+}
+
+.ds-flow-title {
+  font-family: var(--font-body);
+  font-size: var(--text-title-2);
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.ds-flow-desc {
+  font-family: var(--font-body);
+  font-size: var(--text-callout);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: var(--space-4);
+}
+
+/* Panel restyle — always visible (tabs become jump-nav) */
+.wizard-panel {
+  display: block;
+}
+
+/* Mobile responsive — datasets page */
+@media (max-width: 768px) {
+  /* Stack form rows, full-width inputs */
+  .wizard-panel .upload-zone {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .wizard-panel .upload-zone .form-input {
+    width: 100%;
+  }
+
+  .wizard-panel .upload-zone .btn {
+    width: 100%;
+  }
+
+  /* Create dataset form */
+  .wizard-panel #create-dataset-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .wizard-panel #create-dataset-form .form-input {
+    width: 100% !important;
+  }
+
+  .wizard-panel #create-dataset-form .btn {
+    width: 100%;
+  }
+
+  /* Dataset search bar */
+  .ds-section > div:first-child {
+    flex-wrap: wrap;
+  }
+
+  .wizard-panel #dataset-search {
+    width: 100% !important;
+    flex: 1 1 auto;
+  }
+
+  /* Corpus wizard zones */
+  #wiz-drop-zone {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  #wiz-drop-zone .form-input,
+  #wiz-drop-zone .filter-bag .form-input {
+    width: 100% !important;
+  }
+
+  #wiz-drop-zone .btn {
+    width: 100%;
+  }
+
+  /* Drop zone filter bags */
+  #wiz-drop-zone .filter-bag {
+    width: 100%;
+  }
+
+  /* Glob pattern chips — wrap naturally */
+  .ds-zone--patterns > div {
+    flex-direction: column;
+  }
+
+  .filter-bag__chips {
+    width: 100%;
+  }
+
+  /* Create corpus form */
+  .ds-zone--create > div {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ds-zone--create .form-input,
+  .ds-zone--create .form-select {
+    width: 100% !important;
+  }
+
+  .ds-zone--create .btn {
+    width: 100%;
+  }
+
+  /* Range sliders go full width */
+  .ds-zone--create input[type="range"] {
+    width: 100% !important;
+  }
+
+  /* Corpus-to-dataset form */
+  #corpus-to-dataset {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  #corpus-to-dataset > div {
+    width: 100%;
+  }
+
+  #corpus-to-dataset .form-select,
+  #corpus-to-dataset .form-input {
+    width: 100% !important;
+  }
+
+  #corpus-to-dataset .btn {
+    width: 100%;
+  }
+
+  /* Imports form */
+  #tab-imports > div:first-of-type {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  #tab-imports > div:first-of-type > div {
+    width: 100%;
+  }
+
+  #tab-imports .form-select {
+    width: 100% !important;
+  }
+
+  #tab-imports .btn {
+    width: 100%;
+  }
+
+  /* Touch targets: ensure all interactive elements ≥44px */
+  .wizard-panel .btn {
+    min-height: var(--touch-min);
+  }
+
+  .wizard-panel .btn-sm {
+    min-height: var(--touch-min);
+    padding: 0 var(--space-4);
+  }
+}
+
+/* Tight mobile */
+@media (max-width: 480px) {
+  .ds-flow-bubble {
+    width: 32px;
+    height: 32px;
+    font-size: 0.85rem;
+  }
+
+  .ds-flow-title {
+    font-size: var(--text-title-3);
+  }
+
+  /* Ensure action button groups wrap and buttons fill width */
+  .wizard-panel [style*="justify-content:flex-end"] {
+    flex-wrap: wrap;
+  }
+
+  .wizard-panel [style*="justify-content:flex-end"] .btn {
+    flex: 1 1 auto;
+  }
+
+  /* Inline edit forms stack */
+  .inline-edit-form,
+  .fork-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .inline-edit-form .form-input,
+  .fork-form .form-input {
+    width: 100% !important;
+  }
+
+  .inline-edit-form .btn,
+  .fork-form .btn {
+    flex: 1;
+  }
+}
+
+/* ════════════════════════════════════════════════
    Empty State (iOS-style)
    ════════════════════════════════════════════════ */
 
