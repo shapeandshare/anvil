@@ -3,6 +3,7 @@
 Follows layer discipline: services consume repositories, routes call services.
 """
 
+import math
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -372,24 +373,49 @@ class InferenceService:
         last_pos = len(ids)
         dummy_tid = ids[-1] if ids else loaded.vocab.bos_id
         logits = loaded.model.forward(dummy_tid, last_pos - 1, keys, values)
-        scaled = [logit.data / temperature for logit in logits]
-        truncated = _top_k_logits(scaled, top_k)
 
-        import math
+        raw_logits: list[float] = [logit.data for logit in logits]
+        scaled: list[float] = [r / temperature for r in raw_logits]
+        vocab_size = loaded.vocab.vocab_size
 
-        max_val = max(truncated)
-        exps = [math.exp(v - max_val) for v in truncated]
-        total = sum(exps)
-        probs = [e / total for e in exps]
+        # Determine top-k threshold and compute in_top_k / truncated
+        resolved_top_k: int = vocab_size if top_k is None or top_k <= 0 else top_k
+        if top_k is None or top_k <= 0:
+            in_top_k: list[bool] = [True] * vocab_size
+            truncated: list[float] = list(scaled)
+        else:
+            sorted_vals = sorted(scaled, reverse=True)
+            threshold = sorted_vals[min(resolved_top_k - 1, vocab_size - 1)]
+            in_top_k = [s >= threshold for s in scaled]
+            truncated = [s if ok else -1e10 for s, ok in zip(scaled, in_top_k, strict=True)]
+
+        top_k_effective = sum(in_top_k)
+
+        # Softmax over all scaled logits → prob_pre_top_k
+        max_pre = max(scaled)
+        exps_pre = [math.exp(s - max_pre) for s in scaled]
+        total_pre = sum(exps_pre)
+        prob_pre_top_k = [e / total_pre for e in exps_pre]
+
+        # Softmax over truncated logits → prob_final
+        max_final = max(truncated)
+        exps_final = [math.exp(v - max_final) for v in truncated]
+        total_final = sum(exps_final)
+        probs_final = [e / total_final for e in exps_final]
 
         all_tokens = []
-        for i in range(loaded.vocab.vocab_size):
+        for i in range(vocab_size):
             char = loaded.chars[i] if i != loaded.vocab.bos_id else "<BOS>"
             all_tokens.append(
                 {
                     "char": char,
                     "id": i,
-                    "prob": probs[i],
+                    "raw_logit": raw_logits[i],
+                    "scaled_logit": scaled[i],
+                    "prob_pre_top_k": prob_pre_top_k[i],
+                    "prob_final": probs_final[i],
+                    "prob": probs_final[i],
+                    "in_top_k": in_top_k[i],
                 }
             )
 
@@ -397,6 +423,10 @@ class InferenceService:
             "model": loaded.info(),
             "tokens": all_tokens,
             "temperature": temperature,
+            "prompt": prompt,
+            "vocab_size": vocab_size,
+            "top_k": resolved_top_k,
+            "top_k_effective": top_k_effective,
         }
 
     def forward_graph(
