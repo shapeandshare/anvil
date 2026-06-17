@@ -325,7 +325,7 @@ textarea.terminal-input.terminal-textarea { min-height: 60px; resize: vertical; 
   cursor: pointer;
   padding: 2px;
   line-height: 1;
-  font-size: var(--text-body);
+font-size: var(--text-body);
   margin-left: auto;
   transition: color var(--dur-fast) var(--ease);
 }

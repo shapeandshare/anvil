@@ -464,7 +464,7 @@ function updateMetrics(d) {
       }
       var barPct = Math.max(2, Math.min(100, utilPct));
       html += '<div style="margin:var(--space-1) var(--space-2);">'
-        + '<div style="display:flex;justify-content:space-between;margin-bottom:2px;" class="type-caption-2">'
++ '<div style="display:flex;justify-content:space-between;margin-bottom:2px;" class="type-caption-2">'
         + '<span style="color:var(--text-dim);">Peak: ' + peakMb.toFixed(1) + ' MB</span>'
         + '<span style="color:' + color + ';font-weight:600;">' + label + '</span>'
         + '<span style="color:var(--text-dim);">Avail: ' + availMb.toFixed(0) + ' MB</span>'
@@ -474,7 +474,7 @@ function updateMetrics(d) {
         + '</div>'
         + '</div>';
     } else if (_gpuInfo.available === undefined) {
-      html += '<div class="ds-card-body text-muted type-caption-2">Detecting GPU...</div>';
+html += '<div class="ds-card-body text-muted type-caption-2">Detecting GPU...</div>';
     } else if (useGpu) {
       html += '<div class="ds-card-body text-muted type-caption-2">GPU memory info unavailable</div>';
     } else {
@@ -538,7 +538,7 @@ function updateMetrics(d) {
         + peakMb.toFixed(0) + ' MB uses ' + pct.toFixed(0) + '% of available '
         + availMb.toFixed(0) + ' MB. Reduce n_embd, n_layer, n_head, or block_size '
         + 'or disable GPU acceleration.'
-        + '<br><span class="type-caption-2">weights '
++ '<br><span class="type-caption-2">weights '
         + weightsMb.toFixed(0) + ' &middot; grads ' + gradsMb.toFixed(0)
         + ' &middot; optim ' + optimMb.toFixed(0) + ' &middot; KV cache '
         + kvCacheMb.toFixed(0) + ' MB</span>';
@@ -558,7 +558,7 @@ function updateMetrics(d) {
         else if (cmUtil >= 75) { cmColor = 'var(--warning)'; cmLabel = 'close to limit'; }
         else { cmColor = 'var(--accent-green)'; cmLabel = 'within range'; }
         cmBarPct = Math.max(2, Math.min(100, cmUtil));
-        cmHtml = '<div class="type-caption-1" style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">'
+cmHtml = '<div class="type-caption-1" style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">'
           + '<span style="font-weight:600;">Estimated GPU memory</span>'
           + '<span style="color:' + cmColor + ';font-weight:600;">' + cmLabel
           + ' &middot; ' + peakMb.toFixed(0) + ' / ' + availMb.toFixed(0) + ' MB</span>'
@@ -566,11 +566,12 @@ function updateMetrics(d) {
           + '<div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden;">'
           + '<div style="width:' + cmBarPct + '%;min-width:2%;height:100%;background:' + cmColor + ';border-radius:4px;transition:width 0.3s;"></div>'
           + '</div>'
-          + '<div class="type-caption-2 text-muted" style="margin-top:3px;">'
++ '<div class="type-caption-2 text-muted" style="margin-top:3px;">'
           + formatParams(totalParams) + ' params &middot; weights ' + weightsMb.toFixed(0)
           + ' &middot; grads ' + gradsMb.toFixed(0) + ' &middot; optim ' + optimMb.toFixed(0)
           + ' &middot; KV ' + kvCacheMb.toFixed(0) + ' MB</div>';
       } else if (useGpu && _gpuInfo.available === undefined) {
+} else if (useGpu && _gpuInfo.available === undefined) {
         cmHtml = '<div class="type-caption-1 text-muted">Detecting GPU…</div>';
       } else if (useGpu) {
         cmHtml = '<div class="type-caption-1 text-muted">GPU memory info unavailable &middot; '

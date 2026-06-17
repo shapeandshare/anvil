@@ -618,6 +618,118 @@ class InferenceService:
             },
         }
 
+    def autograd_example_graph(self, text: str, loaded: LoadedModel) -> dict[str, Any]:
+        """Return a small, complete teaching graph computed by the real Value engine.
+
+        Companion to :meth:`backward_graph`: the full model graph is hundreds of
+        nodes deep, so the lesson's concepts (SiLU, gradient accumulation) are
+        unreadable there. This builds a tiny single-neuron-with-loss expression
+        seeded with genuine embedding scalars from ``text`` and runs an authentic
+        forward + backward pass, so every value and gradient is real at a legible
+        scale. Same response schema as :meth:`backward_graph`.
+        """
+        from anvil.core.autograd import Value
+
+        ids = loaded.vocab.encode(text)
+        seed_id = next(
+            (t for t in ids if t != loaded.vocab.bos_id),
+            ids[0] if ids else loaded.vocab.bos_id,
+        )
+        row = [v.data for v in loaded.model.state_dict["wte"][seed_id]]
+
+        def _seed(i: int, fallback: float) -> float:
+            return round(float(row[i]), 4) if i < len(row) else fallback
+
+        x_val = _seed(0, 0.5)
+        w1_val = _seed(1, 0.8)
+        w2_val = _seed(2, -0.4)
+        b_val = _seed(3, 0.1)
+        target = 1.0
+
+        op_by_id: dict[int, str] = {}
+
+        def reg(value: Value, op: str) -> Value:
+            op_by_id[id(value)] = op
+            return value
+
+        x = reg(Value(x_val), "input")
+        w1 = reg(Value(w1_val), "input")
+        w2 = reg(Value(w2_val), "input")
+        b = reg(Value(b_val), "input")
+        neg_target = reg(Value(-target), "input")
+
+        weighted_1 = reg(x * w1, "mul")
+        weighted_2 = reg(x * w2, "mul")  # x reused -> its gradient accumulates here
+        summed = reg(weighted_1 + weighted_2, "add")
+        pre_activation = reg(summed + b, "add")
+        activation = reg(pre_activation.silu(), "silu")
+        prediction_error = reg(activation + neg_target, "add")
+        loss = reg(prediction_error**2, "pow")
+
+        loss.backward()
+
+        order: list[Value] = []
+        visited_ids: set[int] = set()
+        edges: list[dict[str, Any]] = []
+        stack: list[Value] = [loss]
+        while stack:
+            v = stack.pop()
+            v_id = id(v)
+            if v_id in visited_ids:
+                continue
+            visited_ids.add(v_id)
+            order.append(v)
+            for child in v._children:
+                edges.append({"from": str(v_id), "to": str(id(child))})
+                stack.append(child)
+
+        # Longest path from the loss (root=0) so edges always flow downward and a
+        # reused input settles at its deepest layer (Bellman-Ford relaxation on a DAG).
+        depth: dict[int, int] = {id(loss): 0}
+        children_ids = {id(v): [id(c) for c in v._children] for v in order}
+        for _ in range(len(order)):
+            for v in order:
+                d = depth.get(id(v), 0)
+                for child_id in children_ids[id(v)]:
+                    if depth.get(child_id, -1) < d + 1:
+                        depth[child_id] = d + 1
+
+        nodes: list[dict[str, Any]] = []
+        for v in order:
+            v_id = id(v)
+            op = op_by_id.get(v_id, "combine")
+            local_grads = [round(float(lg), 6) for lg in v._local_grads]
+            nodes.append(
+                {
+                    "id": str(v_id),
+                    "op": op,
+                    "label": f"{op}[{depth[v_id]}]",
+                    "value": round(v.data, 6),
+                    "grad": round(v.grad, 6),
+                    "local_grads": local_grads,
+                    "depth": depth[v_id],
+                }
+            )
+
+        max_depth = max(depth.values(), default=0)
+        token_labels = [
+            {"char": loaded.chars[i] if i != loaded.vocab.bos_id else "<BOS>", "id": i}
+            for i in ids
+        ]
+
+        return {
+            "model": loaded.info(),
+            "nodes": nodes,
+            "edges": edges,
+            "metadata": {
+                "total_nodes": len(nodes),
+                "total_edges": len(edges),
+                "max_depth": max_depth,
+                "input_tokens": token_labels,
+                "loss_value": round(loss.data, 6),
+            },
+        }
+
     def loss_breakdown(self, text: str, loaded: LoadedModel) -> dict[str, Any]:
         """Compute per-token cross-entropy loss for input text."""
         import math

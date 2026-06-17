@@ -136,3 +136,53 @@ async def test_attention_oov_skipped(client):
     data = r.json()
     assert "tokens" in data
     assert "weights" in data
+
+
+@pytest.mark.asyncio
+async def test_autograd_example_is_small_and_complete(client):
+    """Pedagogical autograd graph stays tiny and legible, unlike the full model graph."""
+    r = await client.post("/v1/inference/autograd-example", json={"text": "hi"})
+    assert r.status_code == 200
+    data = r.json()
+    nodes = data["nodes"]
+    assert 0 < len(nodes) <= 50
+    assert data["metadata"]["total_nodes"] == len(nodes)
+    assert data["metadata"]["max_depth"] <= 12
+
+
+@pytest.mark.asyncio
+async def test_autograd_example_teaches_every_concept(client):
+    """Graph must exercise each lesson concept: ops, real gradients, and accumulation."""
+    from collections import Counter
+
+    r = await client.post("/v1/inference/autograd-example", json={"text": "hi"})
+    assert r.status_code == 200
+    data = r.json()
+    nodes, edges = data["nodes"], data["edges"]
+
+    ops = {n["op"] for n in nodes}
+    assert {"input", "mul", "add", "silu", "pow"} <= ops
+
+    assert any(n["grad"] != 0 for n in nodes)
+
+    incoming = Counter(e["to"] for e in edges)
+    assert any(count >= 2 for count in incoming.values())
+
+
+@pytest.mark.asyncio
+async def test_autograd_example_demo_fallback(client):
+    """FR-019 — autograd-example works without model_id (demo fallback)."""
+    r = await client.post("/v1/inference/autograd-example", json={"text": "test"})
+    assert r.status_code == 200
+    assert r.json().get("model", {}).get("is_demo", False) is True
+
+
+@pytest.mark.asyncio
+async def test_autograd_example_oov_skipped(client):
+    """FR-020 — OOV characters are silently skipped, endpoint still returns a graph."""
+    r = await client.post(
+        "/v1/inference/autograd-example", json={"text": "hi \U0001f60a there"}
+    )
+    assert r.status_code == 200
+    data = r.json()
+    assert len(data["nodes"]) > 0
