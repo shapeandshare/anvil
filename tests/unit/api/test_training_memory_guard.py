@@ -31,9 +31,12 @@ def _tiny_cuda():
 @pytest.mark.asyncio
 async def test_oom_config_rejected_with_422(db_ready, monkeypatch):
     from anvil.api.v1 import training as training_module
+    from anvil.services.compute import resolve as resolve_module
 
     monkeypatch.setattr(training_module, "detect_gpu", _tiny_cuda)
-    monkeypatch.setattr(training_module, "resolve_device", lambda **kw: "cuda:0")
+    # Force resolve_backend to detect CUDA so the OOM guard fires
+    monkeypatch.setattr(resolve_module, "_detect_device", lambda: "cuda")
+    monkeypatch.setattr(resolve_module, "_torch_available", lambda: True)
 
     svc = training_module.svc
     running_before = svc._running
@@ -62,6 +65,7 @@ async def test_oom_config_rejected_with_422(db_ready, monkeypatch):
 @pytest.mark.asyncio
 async def test_oom_guard_skipped_for_cpu(db_ready, monkeypatch):
     from anvil.api.v1 import training as training_module
+    from anvil.services.compute import resolve as resolve_module
 
     called = {"detect": False}
 
@@ -70,7 +74,9 @@ async def test_oom_guard_skipped_for_cpu(db_ready, monkeypatch):
         return _tiny_cuda()
 
     monkeypatch.setattr(training_module, "detect_gpu", _should_not_block)
-    monkeypatch.setattr(training_module, "resolve_device", lambda **kw: "cpu")
+    # CPU backend — OOM guard is skipped
+    monkeypatch.setattr(resolve_module, "_detect_device", lambda: "cpu")
+    monkeypatch.setattr(resolve_module, "_torch_available", lambda: False)
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
