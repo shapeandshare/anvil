@@ -7,7 +7,7 @@
   <div class="section-card__header">
     <h2 class="section-card__title">System Resources — CPU, Memory, GPU, Disk</h2>
   </div>
-  <div id="system-resources"><span class="text-muted" style="font-size:0.78rem;">Polling...</span></div>
+  <div id="system-resources"><span class="text-muted type-subhead">Polling...</span></div>
 </div>
 
 <div class="section-card" style="--stagger-i: 1">
@@ -15,12 +15,12 @@
     <h2 class="section-card__title">Operations — Service Control</h2>
   </div>
   <div style="margin-bottom:var(--space-3);">
-    <div style="color:var(--accent);font-weight:600;font-size:0.75rem;margin-bottom:var(--space-1);">Service Control</div>
+    <div class="type-footnote" style="color:var(--accent);font-weight:600;margin-bottom:var(--space-1);">Service Control</div>
     <div>Manage background services (MLflow tracking server, etc.). Use <b>Start</b>/<b>Stop</b> to control individual services, or <b>Restart All</b> to cycle everything.</div>
     <div style="margin-top:var(--space-1);">Services list refreshes automatically every 10 seconds. Logs show the last 20 lines from each service.</div>
   </div>
   <div id="services-list">
-    <span class="text-muted" style="font-size:0.78rem;">Polling services...</span>
+    <span class="text-muted type-subhead">Polling services...</span>
   </div>
 </div>
 
@@ -42,7 +42,7 @@
   </div>
   <div id="logs-body" class="section-card__content-collapsible collapsed">
     <div id="service-logs">
-      <span class="text-muted" style="font-size:0.78rem;">Waiting for service data...</span>
+      <span class="text-muted type-subhead">Waiting for service data...</span>
     </div>
   </div>
 </div>
@@ -178,7 +178,7 @@
     servicesHtml += '<td><span class="badge badge-green">RUNNING</span></td>';
     servicesHtml += '<td class="text-muted">' + hours + 'h ' + mins + 'm ' + secs + 's</td>';
     servicesHtml += '<td class="text-muted">-</td>';
-    servicesHtml += '<td><span class="text-muted" style="font-size:0.65rem;">—</span></td>';
+    servicesHtml += '<td><span class="text-muted type-caption-2">—</span></td>';
     servicesHtml += '</tr>';
 
     svcData.services.forEach(function(s, si) {
@@ -186,7 +186,7 @@
       var badgeClass = s.status === 'running' ? 'badge-green' : 'badge-red';
       var statusText = s.status === 'running' ? 'RUNNING' : (s.status || 'STOPPED').toUpperCase();
       var port = s.port ? ':' + s.port : '';
-      var linkHtml = (s.status === 'running' && s.port) ? ' <a href="' + (s.mlflow_url || ('http://' + window.location.hostname + ':' + s.port)) + '" target="_blank" style="font-size:0.65rem;">[open]</a>' : '';
+      var linkHtml = (s.status === 'running' && s.port) ? ' <a href="' + (s.mlflow_url || ('http://' + window.location.hostname + ':' + s.port)) + '" target="_blank" class="type-caption-2">[open]</a>' : '';
       var isRunning = s.status === 'running';
 
       servicesHtml += '<tr class="row-entrance" style="--row-i: ' + (si + 1) + '">';
@@ -230,7 +230,7 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
           logsHtml += '<div class="section-card__header" style="padding:var(--space-2) var(--space-3);margin-bottom:0;border-bottom:var(--border-width) solid var(--border);background:var(--bg-element);border-radius:var(--radius) var(--radius) 0 0;">';
           logsHtml += '<span class="output-indicator ' + ledClass + '" style="margin-right:var(--space-2);"></span>';
           logsHtml += '<h2 class="section-card__title">' + svc.name + '</h2></div>';
-          logsHtml += '<pre class="telemetry" style="max-height:180px;font-size:0.72rem;">';
+          logsHtml += '<pre class="telemetry type-caption-1" style="max-height:180px;">';
           logsHtml += logData.logs.join('\n');
           logsHtml += '</pre></div>';
         }
@@ -239,7 +239,7 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
     if (logsHtml) {
       logsDiv.innerHTML = logsHtml;
     } else {
-      logsDiv.innerHTML = '<span class="text-muted" style="font-size:0.78rem;">No log data available.</span>';
+      logsDiv.innerHTML = '<span class="text-muted type-subhead">No log data available.</span>';
     }
   };
 
@@ -291,7 +291,7 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
         : '<span class="text-muted">not available</span>')
         + (gpu.backend ? ' <span class="badge badge-green">READY</span>' : '')
         + (gpu.memory_total_gb ? ' &middot; ' + gpu.memory_total_gb.toFixed(1) + ' GB' : '')
-        + (gpuErrors ? '<br><span class="text-muted" style="font-size:0.65rem;">' + gpuErrors + '</span>' : '')
+        + (gpuErrors ? '<br><span class="text-muted type-caption-2">' + gpuErrors + '</span>' : '')
         + '</span>';
       if (gpu.available && gpu.memory_total_gb) {
         var gpuAvail = gpu.memory_available_gb;
@@ -304,13 +304,13 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
         } else {
           html += '<span class="info-key">gpu mem</span><span class="info-val">'
             + gpu.memory_total_gb.toFixed(1) + ' GB total'
-            + ' <span class="text-muted" style="font-size:0.65rem;">(usage tracked during training)</span></span>';
+            + ' <span class="text-muted type-caption-2">(usage tracked during training)</span></span>';
         }
       }
       html += '</div>';
       el.innerHTML = html;
     } catch(e) {
-      el.innerHTML = '<span class="text-muted" style="font-size:0.78rem;">Could not fetch system info.</span>';
+      el.innerHTML = '<span class="text-muted type-subhead">Could not fetch system info.</span>';
     }
   };
 

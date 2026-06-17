@@ -186,22 +186,24 @@ All text/background pairs must meet WCAG AA contrast (4.5:1 minimum for normal t
 
 ## Typography
 
-The type system follows Apple's iOS type scale with a single type family:
+The type system follows Apple's iOS type scale with a single type family. Every step is a **fluid `clamp()` token** (the `--text-*` variables in `tokens.css`) — sizing interpolates smoothly between a comfortable mobile minimum and the iOS desktop maximum across a ~360px → ~1280px viewport, with **no breakpoints**. The min column is the phone size; the max column is the large-screen size.
 
-| Style | Size (rem) | Weight | Where Used |
-|-------|-----------|--------|------------|
-| **Large Title** | 2.0rem (34px) | Bold | Page headers, screen titles |
-| **Title 1** | 1.65rem (28px) | Regular | Section headers in content |
-| **Title 2** | 1.3rem (22px) | Regular | Subsection headers |
-| **Title 3** | 1.18rem (20px) | Semibold | Card titles, panel headers |
-| **Headline** | 0.94rem (16px) | Semibold | Bold body, key metrics |
-| **Body** | 0.94rem (16px) | Regular | Default body text |
-| **Callout** | 0.88rem (15px) | Regular | Secondary content |
-| **Subhead** | 0.82rem (14px) | Regular | Tertiary content |
-| **Footnote** | 0.76rem (13px) | Regular | Captions, help text |
-| **Caption 1** | 0.71rem (12px) | Regular | Small labels, timestamps |
-| **Caption 2** | 0.65rem (11px) | Regular | Tiny status, badges |
-| **Mono** | 0.88rem | Regular | Code, data values, metrics |
+| Style | Token | Min → Max | Weight | Where Used |
+|-------|-------|-----------|--------|------------|
+| **Large Title** | `--text-large-title` | 30 → 34px | Bold | Page headers, screen titles |
+| **Title 1** | `--text-title-1` | 25 → 28px | Regular | Section headers in content |
+| **Title 2** | `--text-title-2` | 20 → 22px | Regular | Subsection headers |
+| **Title 3** | `--text-title-3` | 19 → 20px | Semibold | Card titles, panel headers |
+| **Headline** | `--text-headline` | 16 → 17px | Semibold | Bold body, key metrics |
+| **Body** | `--text-body` | 16 → 17px | Regular | Default body text |
+| **Callout** | `--text-callout` | 15 → 16px | Regular | Secondary content |
+| **Subhead** | `--text-subhead` | 14.5 → 15px | Regular | Tertiary content |
+| **Footnote** | `--text-footnote` | 13.5 → 14px | Regular | Captions, help text |
+| **Caption 1** | `--text-caption-1` | 12.5 → 13px | Regular | Small labels, timestamps |
+| **Caption 2** | `--text-caption-2` | 11.5 → 12px | Regular | Tiny status, badges |
+| **Mono** | `--text-mono` | 14.5 → 15px | Regular | Code, data values, metrics |
+
+These tokens are the **single source of truth for all text sizing**. Components reference them either directly (`font-size: var(--text-footnote)`) or via the `.type-*` utility classes in `utilities.css` (e.g. `.type-footnote`). Never hardcode a `font-size` in rem/px — a systemic type restyle must be a token edit. Decorative glyph/icon sizing (emoji icons, chevrons, arrows, numbered bubbles) is exempt and may use raw sizes, since those size shapes rather than reading text.
 
 ### Font Selection
 - **Body/UI**: `-apple-system, BlinkMacSystemFont, system-ui, sans-serif` — resolves to SF Pro on Apple devices
@@ -209,7 +211,7 @@ The type system follows Apple's iOS type scale with a single type family:
 - SF Pro is NOT embedded via `@font-face` due to Apple's licensing restrictions
 
 ### Scale
-The base font size on `<html>` is 17px — matching iOS's standard body text size. It scales down to 16px on phones.
+The base font size on `<html>` is a fixed 17px — matching iOS's standard body text size — on **all** viewports. Phones are no longer shrunk via a root-size override; instead, each `--text-*` token carries its own fluid `clamp()` range, so text stays readable on small screens (minimums are tuned up for mobile legibility) while growing gently on large displays. The fluid `vw` term in each token handles responsive scaling, which removes the need for per-component `font-size` overrides inside media queries.
 
 ## Layout & Spacing
 
@@ -254,8 +256,10 @@ All layouts use `env(safe-area-inset-*)` variables for iOS PWA and notch support
 - Footer: `padding-bottom: calc(tight-padding + env(safe-area-inset-bottom))`
 
 ### Responsive behavior
-- **≤768px** (tablet/phone): Base font stays at 17px. Side-by-side layouts collapse to single column. Standard iOS margins.
-- **≤480px** (phone): Base font drops to 16px. Tighter margins (12px). Hero title shrinks to 1.8rem. Feature cards collapse to single column. Forge icon shrinks to 2.8rem.
+Text sizing is handled by the fluid `--text-*` tokens (see Typography), not by breakpoints — type scales continuously with the viewport, so media queries are reserved for **layout** changes only.
+- **Root font**: fixed 17px on all viewports (no per-phone shrink).
+- **≤768px** (tablet/phone): Side-by-side layouts collapse to single column. Standard iOS margins.
+- **≤480px** (phone): Tighter margins (12px). Feature cards collapse to single column. Forge icon shrinks to 2.8rem. (Hero display text and decorative glyph sizes retain their own bespoke overrides; standard text does not need any, because its token already scales.)
 
 ### Ambient background
 Every page (via `base.css`) has:
