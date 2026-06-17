@@ -14,7 +14,7 @@
   AttentionWidget.prototype._render = function () {
     this.container.innerHTML =
       '<label class="widget-label">Attention heatmap — type text to see real attention weights:</label>' +
-      '<input type="text" class="widget-input" id="attn-input" value="the quick fox" aria-label="Input text for attention" maxlength="16">' +
+      '<textarea class="widget-input widget-textarea" id="attn-input" aria-label="Input text for attention" rows="2">the quick fox</textarea>' +
       '<div class="heatmap-controls" id="heatmap-controls" style="display:none">' +
       '  <label class="heatmap-select-label">Layer: <select id="layer-select" class="heatmap-select" aria-label="Select attention layer"></select></label>' +
       '  <label class="heatmap-select-label">Head: <select id="head-select" class="heatmap-select" aria-label="Select attention head"></select></label>' +
@@ -41,7 +41,14 @@
 
     var self = this;
     var input = this.container.querySelector('#attn-input');
+
+    function autoResize() {
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 200) + 'px';
+    }
+
     input.addEventListener('input', function () {
+      autoResize();
       self._debouncedFetch(this.value);
     });
 
@@ -59,6 +66,10 @@
     }
 
     this._bindKeys();
+
+    /* Set initial textarea height for default value */
+    autoResize();
+
     this._fetch(input.value);
   };
 

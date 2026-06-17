@@ -88,11 +88,19 @@
     var embdScale = this._nEmbd / baseNEmbd;
     var layerScale = this._nLayer / baseNLayer;
 
+    /* Normalize backend category names for scaling and rendering */
     var scaledGroups = [];
     for (var i = 0; i < groups.length; i++) {
       var g = groups[i];
-      var category = g.category || 'other';
+      var rawCategory = g.category || 'other';
       var count = g.num_params || 0;
+
+      /* Map backend category names to canonical form */
+      var category = rawCategory;
+      if (rawCategory === 'attention projections') category = 'attention';
+      else if (rawCategory === 'SwiGLU MLP') category = 'mlp';
+      else if (rawCategory === 'RMSNorm scales') category = 'rmsnorm';
+
       /* Apply scaling: embedding scales with n_embd^2-ish, attention/MLP with both */
       if (category === 'embedding') {
         count = Math.round(count * embdScale);
@@ -102,6 +110,8 @@
         count = Math.round(count * embdScale * embdScale * layerScale);
       } else if (category === 'output') {
         count = Math.round(count * embdScale);
+      } else if (category === 'rmsnorm') {
+        count = Math.round(count * layerScale);
       }
       scaledGroups.push({
         name: g.name,
@@ -155,13 +165,17 @@
       embedding: accent,
       attention: accentCyan,
       mlp: accentOrange,
-      output: accentPurple
+      output: accentPurple,
+      rmsnorm: muted,
+      other: muted
     };
     var catLabels = {
       embedding: 'embedding',
       attention: 'attention',
       mlp: 'mlp',
-      output: 'output'
+      output: 'output',
+      rmsnorm: 'rmsnorm',
+      other: 'other'
     };
 
     var barX = 0;

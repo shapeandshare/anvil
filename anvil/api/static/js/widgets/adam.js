@@ -52,6 +52,7 @@
     });
 
     this._connectSSE();
+    this._drawChart();
   };
 
   AdamWidget.prototype._connectSSE = function () {
