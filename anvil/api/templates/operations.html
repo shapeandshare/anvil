@@ -293,6 +293,20 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
         + (gpu.memory_total_gb ? ' &middot; ' + gpu.memory_total_gb.toFixed(1) + ' GB' : '')
         + (gpuErrors ? '<br><span class="text-muted" style="font-size:0.65rem;">' + gpuErrors + '</span>' : '')
         + '</span>';
+      if (gpu.available && gpu.memory_total_gb) {
+        var gpuAvail = gpu.memory_available_gb;
+        if (gpuAvail != null) {
+          var gpuUsed = gpu.memory_total_gb - gpuAvail;
+          var gpuPct = Math.round((gpuUsed / gpu.memory_total_gb) * 100);
+          html += '<span class="info-key">gpu mem</span><span class="info-val">'
+            + gpuPct + '% (' + gpuUsed.toFixed(1) + '/' + gpu.memory_total_gb.toFixed(1) + ' GB used)'
+            + bar(gpuPct) + '</span>';
+        } else {
+          html += '<span class="info-key">gpu mem</span><span class="info-val">'
+            + gpu.memory_total_gb.toFixed(1) + ' GB total'
+            + ' <span class="text-muted" style="font-size:0.65rem;">(usage tracked during training)</span></span>';
+        }
+      }
       html += '</div>';
       el.innerHTML = html;
     } catch(e) {
