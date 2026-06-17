@@ -24,81 +24,81 @@
 <div class="section-card" style="--stagger-i: 0">
   <div class="section-card__header section-card__header--clickable" id="docs-toggle">
     <h2 class="section-card__title">Understanding Datasets &amp; Corpora</h2>
-    <span class="output-toggle-icon" id="docs-chevron">&#9660;</span>
+    <span class="output-toggle-icon collapsed" id="docs-chevron">&#9660;</span>
   </div>
 
-  <div class="section-card__content-collapsible" id="docs-content" style="max-height:1200px;">
+  <div class="section-card__content-collapsible collapsed" id="docs-content" style="max-height:0;">
 
-    <div class="section-card__content" style="margin-bottom:var(--space-4);">
-      anvil provides two mechanisms for sourcing training data: <b>datasets</b> and <b>corpora</b>.
-      Each serves a distinct purpose. Understanding when to use which is key to an efficient workflow.
+    <div class="section-card__content" style="margin-bottom:var(--space-3);">
+      anvil provides two mechanisms for sourcing training data. Each feeds into training but serves a distinct purpose. The pipeline below shows how they relate.
     </div>
 
-    <div class="ds-help-group">
+    {# ── Visual Pipeline Diagram ── #}
+    <div class="ds-flow-diagram">
 
-    <div class="help-box">
-      <div class="help-title">What are Datasets?</div>
-      <p style="margin:0 0 var(--space-2) 0;">
-        Datasets are <b>static collections of text samples</b> where each line in a <code>.txt</code> file becomes one training sample.
-        Upload plain-text files through the upload form, or create an empty dataset and add content programmatically.
-      </p>
-      <p style="margin:0 0 var(--space-1) 0;"><b>Pros:</b></p>
-      <ul class="type-subhead" style="margin:0 0 var(--space-2) 0;padding-left:var(--space-4);">
-        <li>Inline editing &mdash; rename, update descriptions, curate content (dedup, filter, replace)</li>
-        <li>Simple upload workflow &mdash; upload any <code>.txt</code> file directly</li>
-        <li>Ideal for small-to-medium curated collections, fine-tuning data, or evaluation sets</li>
-      </ul>
-      <p style="margin:0 0 var(--space-1) 0;"><b>Cons:</b></p>
-      <ul class="type-subhead" style="margin:0;padding-left:var(--space-4);">
-        <li>No automatic directory scanning &mdash; you must upload or create manually</li>
-        <li>Not suited for large code repository ingestion</li>
-      </ul>
+      {# ── Dataset Path ── #}
+      <div class="ds-flow-diagram-path ds-flow-diagram-path--dataset">
+        <div class="ds-flow-diagram-node">
+          <span class="ds-flow-diagram-node--badge ds-flow-diagram-node--badge">Dataset</span>
+          <div class="ds-flow-diagram-node--title">Upload or Create</div>
+          <div class="ds-flow-diagram-node--sub">Upload .txt files or create empty datasets &mdash; each line = one sample</div>
+        </div>
+        <div class="ds-flow-diagram-arrow">&#9660;</div>
+        <div class="ds-flow-diagram-node">
+          <div class="ds-flow-diagram-node--title">Curate &amp; Edit</div>
+          <div class="ds-flow-diagram-node--sub">Dedup, filter by length, regex-replace, inline edit, export</div>
+        </div>
+      </div>
+
+      {# ── Corpus Path ── #}
+      <div class="ds-flow-diagram-path ds-flow-diagram-path--corpus">
+        <div class="ds-flow-diagram-node">
+          <span class="ds-flow-diagram-node--badge ds-flow-diagram-node--badge">Corpus</span>
+          <div class="ds-flow-diagram-node--title">Scan a Directory</div>
+          <div class="ds-flow-diagram-node--sub">Point at any folder, apply glob filters, auto-detect chunking</div>
+        </div>
+        <div class="ds-flow-diagram-arrow">&#9660;</div>
+        <div class="ds-flow-diagram-node">
+          <div class="ds-flow-diagram-node--title">Auto-Chunk Files</div>
+          <div class="ds-flow-diagram-node--sub">Windowed, file-as-doc, or line-by-line &mdash; read-only from source</div>
+        </div>
+        <div class="ds-flow-diagram-arrow">&#9660;</div>
+        <div class="ds-flow-diagram-node">
+          <div class="ds-flow-diagram-node--title">Import as Dataset</div>
+          <div class="ds-flow-diagram-node--sub">Re-chunk with custom parameters, then curate like any dataset</div>
+        </div>
+      </div>
+
+      {# ── Converge → Training ── #}
+      <div class="ds-flow-diagram-converge">
+        <div class="ds-flow-diagram-arrow">&#9660;</div>
+        <div class="ds-flow-diagram-node ds-flow-diagram-node--target">
+          <div class="ds-flow-diagram-node--title">&#9878;&#65039; Training Engine</div>
+          <div class="ds-flow-diagram-node--sub">Pick a Dataset or a Corpus as your data source &mdash; both work</div>
+        </div>
+      </div>
+
     </div>
 
-    <div class="help-box">
-      <div class="help-title">What are Corpora?</div>
-      <p style="margin:0 0 var(--space-2) 0;">
-        Corpora are <b>dynamic directory sources</b> scanned with glob patterns and chunking strategies.
-        Point the wizard at a directory, configure include/exclude patterns, and the system auto-detects
-        optimal chunking parameters based on file size and type distribution.
-      </p>
-      <p style="margin:0 0 var(--space-1) 0;"><b>Pros:</b></p>
-      <ul class="type-subhead" style="margin:0 0 var(--space-2) 0;padding-left:var(--space-4);">
-        <li>Auto-scan directories &mdash; discover files without manual upload</li>
-        <li>Glob pattern filtering &mdash; include/exclude by file extension or path (e.g. <code>*.py</code>, <code>!tests/</code>)</li>
-        <li>Chunking strategies &mdash; <code>windowed</code>, <code>file</code>, or <code>line</code> for different use cases</li>
-        <li>Gitignore-style pattern support for code repos</li>
-      </ul>
-      <p style="margin:0 0 var(--space-1) 0;"><b>Cons:</b></p>
-      <ul class="type-subhead" style="margin:0;padding-left:var(--space-4);">
-        <li>Read-only from source &mdash; no inline sample editing</li>
-        <li>Requires a stable directory path</li>
-      </ul>
+    {# ── Compact Quick Reference ── #}
+    <div class="ds-flow-mini-help">
+      <div class="ds-flow-mini-help-item">
+        <strong>Use Datasets when</strong>
+        You have curated text you want to edit, filter, or deduplicate. Fine-tuning data, evaluation sets &mdash; small to medium collections.
+      </div>
+      <div class="ds-flow-mini-help-item">
+        <strong>Use Corpora when</strong>
+        You want to scan existing code repos, documentation trees, or large directory structures and auto-chunk them optimally.
+      </div>
+      <div class="ds-flow-mini-help-item">
+        <strong>Combine both</strong>
+        Scan with a corpus for discovery, then import into a dataset for curation &mdash; get the best of both worlds.
+      </div>
+      <div class="ds-flow-mini-help-item">
+        <strong>Pro tip</strong>
+        Start with step 1 (Add Data), then work through. The <b>All Data</b> table shows everything at a glance.
+      </div>
     </div>
-
-    <div class="help-box">
-      <div class="help-title">When to Use Which</div>
-      <p style="margin:0 0 var(--space-1) 0;">
-        <b>Use datasets</b> when you have curated text you want to edit, filter, or deduplicate.
-        Fine-tuning data, evaluation benchmarks, and small-to-medium training collections belong in datasets.
-      </p>
-      <p style="margin:0;">
-        <b>Use corpora</b> when you want to scan existing code repositories, documentation trees, or large
-        directory structures. Corpora excel at discovering files and chunking them optimally for training.
-      </p>
-    </div>
-
-    <div class="help-box">
-      <div class="help-title">Best Practices</div>
-      <ul class="type-subhead" style="margin:0;padding-left:var(--space-4);">
-        <li>Keep datasets small and curated &mdash; they are meant for quality-controlled training data</li>
-        <li>Use corpora with appropriate chunking for code repos &mdash; <code>windowed</code> with small overlap for source files, <code>file</code> for markdown docs</li>
-        <li>Combine corpora imports into datasets for final training &mdash; import corpus documents into a dataset to get the best of both worlds</li>
-        <li>Use the <b>All Data</b> table below to see everything at a glance and navigate quickly</li>
-      </ul>
-    </div>
-
-  </div>
 
   </div>
 </div>
