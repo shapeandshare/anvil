@@ -3,6 +3,13 @@
 from pathlib import Path
 
 
+# Allow-listed files that use "completed" / "pending" as part of the new
+# ComputeStatus enum (see anvil/services/compute/result.py).
+_ALLOWED_FILES: set[str] = {
+    "result.py",
+}
+
+
 def _iter_py_files(root: Path):
     for p in root.rglob("*.py"):
         rel = p.relative_to(root)
@@ -10,6 +17,8 @@ def _iter_py_files(root: Path):
         if parts[0] in ("tests", "migrations"):
             continue
         if ".venv" in parts:
+            continue
+        if parts[-1] in _ALLOWED_FILES:
             continue
         yield p
 

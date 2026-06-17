@@ -40,6 +40,9 @@ gpu = [
     "torch>=2.0",
     "nvidia-ml-py>=12,<13",
 ]
+compute = [
+    "modal>=0.70,<1",
+]
 dev = [
     "ruff>=0.5,<1",
     "black>=24.0,<25",

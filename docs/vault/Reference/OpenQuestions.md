@@ -5,7 +5,7 @@ tags:
   - type/reference
   - domain/governance
 created: 2026-06-10T00:00:00.000Z
-updated: '2026-06-14T00:00:00.000Z'
+updated: '2026-06-16T00:00:00.000Z'
 ---
 
 # Open Questions
@@ -24,3 +24,5 @@ updated: '2026-06-14T00:00:00.000Z'
   → **Resolved (2026-06-15)**: 6 new vault reference docs and 2 new walkthroughs added. Covered: safetensors export, HF interop, dual backend bridge, hyperparameter interactions, progressive walkthrough reference, MLflow integration, end-to-end data flow.
 - Should the app ship a `manifest.json` for full PWA support? Favicons are now in place (`favicon.svg` + `apple-touch-icon.png`). A web app manifest would add home-screen name/display/theme-color for iOS/Android installs. `theme_color: #000000` and `background_color: #1c1c1e` align with existing forge dark palette.
   → **Open**
+- `train_torch()` runs as a single-example, single-token Python loop (`for pos_id in range(n)`) — no batching, no vectorized sequence dimension. This means anvil is CPU-bound even on GPU hardware. Batching the sequence dimension is the single highest-leverage prerequisite before any GPU vendor choice matters.
+  → **Open — planned as engine evolution work. See [[Decisions/ADR-014-ml-infrastructure-tier-strategy]] and [[Reference/InfraParadigms]].**

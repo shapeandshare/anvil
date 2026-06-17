@@ -11,6 +11,7 @@ import psutil
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
+from anvil.api.v1.compute import router as compute_router
 from anvil.api.v1.corpora import router as corpora_router
 from anvil.api.v1.datasets import router as datasets_router
 from anvil.config import get_config, get_mlflow_browser_uri
@@ -32,6 +33,7 @@ router.include_router(registry_router)
 router.include_router(eval_router)
 router.include_router(eval_datasets_router)
 router.include_router(inference_router)
+router.include_router(compute_router)
 
 MODELS_DIR = Path("data/models")
 
@@ -325,6 +327,8 @@ LEARNING_ARC = [
      "desc": "How trained models are exported to safetensors for HuggingFace compatibility."},
     {"key": "faq", "title": "FAQ", "path": "/v1/learn/faq",
      "desc": "Frequently asked questions about how anvil works and what it can do."},
+    {"key": "cloud-compute", "title": "Training in the Cloud", "path": "/v1/learn/cloud-compute",
+     "desc": "Run training on external compute with Modal, Modal GPUs, MLflow artifact sync, and the submitted/poll/complete lifecycle."},
 ]
 
 
@@ -1190,6 +1194,86 @@ EXPORT_STEPS = [
     },
 ]
 
+CLOUD_COMPUTE_STEPS = [
+    {
+        "key": "why-cloud-compute",
+        "title": "Why Cloud Compute?",
+        "body": (
+            "Local training is limited by your hardware. A 16-parameter model fits anywhere, "
+            "but serious models need more memory and faster computation. Cloud compute (Modal) "
+            "lets you train on powerful remote GPUs without buying hardware. The workflow "
+            "stays the same: config→submit→poll→artifacts. The widget below walks through "
+            "each stage of a remote training run."
+        ),
+        "widget": "cloudCompute",
+    },
+    {
+        "key": "backend-selector",
+        "title": "Backend Selector",
+        "body": (
+            "The Training Dashboard now shows a Compute Backend selector instead of a simple "
+            "GPU toggle. Options: Auto (best available), Local (CPU), Local (GPU), and "
+            "Modal (cloud GPU). Unavailable options are greyed out with an explanation. "
+            "The endpoint /v1/compute/backends returns availability from the compute registry."
+        ),
+    },
+    {
+        "key": "submitted-event",
+        "title": "The 'submitted' SSE Event",
+        "body": (
+            "When training is dispatched to Modal, the server sends a new \"submitted\" "
+            "SSE event to the browser with the remote_job_id. This tells the dashboard "
+            "the job was accepted by Modal and is waiting in the queue. "
+            "The connection state changes to 'submitted' and shows the remote job ID."
+        ),
+    },
+    {
+        "key": "status-event",
+        "title": "The 'status' SSE Event",
+        "body": (
+            "As Modal runs the job, the server polls for state transitions and emits "
+            "\"status\" SSE events. These carry the current lifecycle phase: "
+            "RUNNING (training started), with step/loss metrics when available, "
+            "and COMPLETED (training finished). The dashboard updates the loss chart "
+            "and metrics in real time, exactly like local training."
+        ),
+    },
+    {
+        "key": "artifact-flow",
+        "title": "Artifact Flow",
+        "body": (
+            "On remote completion, Modal logs artifacts directly to the shared MLflow "
+            "server: model.safetensors, config.json, samples.txt, and MLmodel metadata. "
+            "The anvil server picks up the completion, records the experiment in the "
+            "local SQLite DB, and registers the model in MLflow Model Registry with "
+            "a runs:/ URI. No local model download — the artifact stays in MLflow."
+        ),
+    },
+    {
+        "key": "d4-failure-mode",
+        "title": "D4 Failure Mode",
+        "body": (
+            "If you select Modal but the modal package is missing or unauthenticated, "
+            "the server returns a 422 error with a clear message: "
+            "\"Modal selected but not available. Install via: pip install anvil[compute] "
+            "and authenticate via: modal token new\". This follows the D4 rule: "
+            "implicit backends (auto, local-cpu/gpu) silently fall back; "
+            "explicit selection of an unavailable backend raises an error."
+        ),
+    },
+    {
+        "key": "polling-lifecycle",
+        "title": "Polling Lifecycle",
+        "body": (
+            "The polling loop uses exponential backoff: starts at 1-second intervals "
+            "during SUBMITTED, extends to 5 seconds during RUNNING, and switches to "
+            "15-second intervals once COMPLETED (waiting for artifact sync). "
+            "The loop has a configurable timeout (default 30 minutes). "
+            "If the timeout expires, the experiment is marked failed."
+        ),
+    },
+]
+
 
 @router.get("/learn", response_class=HTMLResponse)
 async def learn_index(request: Request):
@@ -1314,6 +1398,15 @@ async def faq_page(request: Request):
         request,
         "archetypes/faq.html",
         {"arc": LEARNING_ARC},
+    )
+
+
+@router.get("/learn/cloud-compute", response_class=HTMLResponse)
+async def cloud_compute_concept_page(request: Request):
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "archetypes/concept.html",
+        {"steps": CLOUD_COMPUTE_STEPS, **_arc_context("cloud-compute")},
     )
 
 
