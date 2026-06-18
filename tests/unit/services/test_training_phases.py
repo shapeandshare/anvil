@@ -361,8 +361,9 @@ class TestBackendSelection:
 
         mock_get.assert_called_once()
         name, _deps = mock_get.call_args
-        # get_backend should be called with "local" (from resolve_backend)
-        assert name[0] == "local"
+        # get_backend receives engine-qualified name (resolve_backend returns "local",
+        # training.py maps it to "local-{engine}" for registry lookup)
+        assert name[0] == "local-stdlib"
 
     async def test_modal_selects_modal_backend(self, svc):
         """config with compute_backend='modal' selects modal backend."""

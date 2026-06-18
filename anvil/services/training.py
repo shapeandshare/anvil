@@ -134,6 +134,11 @@ class TrainingService:
         engine_name: str = resolved["engine"]  # "stdlib" | "torch"
         device: str = resolved["device"]  # "cpu" | "cuda:0" | "mps"
 
+        # Map generic "local" to engine-qualified registry name
+        # (registry has "local-stdlib" and "local-torch", not bare "local")
+        if backend_name == "local":
+            backend_name = f"local-{engine_name}"
+
         # Inject device into config so backends can read it
         config["device"] = device
 
