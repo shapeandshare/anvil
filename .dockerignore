@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+
+# Environment
+.env
+
+# Runtime data
+data/*
+!data/demo/
+!data/demo/**
+logs/
+mlruns/
+mlartifacts/
+
+# Testing
+.coverage
+coverage/
+.pytest_cache/
+htmlcov/
+test-results/
+
+# Type checking
+.mypy_cache/
+.ruff_cache/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# Git
+.git/
+.gitignore
+.gitattributes
+.gitmodules
+
+# Docker
+Dockerfile
+.dockerignore
+*.dockerfile

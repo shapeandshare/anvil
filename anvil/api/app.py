@@ -1,5 +1,6 @@
 """FastAPI web application factory."""
 
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -11,9 +12,11 @@ from fastapi.templating import Jinja2Templates
 from anvil.api.v1.router import router as v1_router
 from anvil.config import get_config
 from anvil.db import models  # noqa: F401 — register ORM models with Base.metadata
-from anvil.db.base import Base
-from anvil.db.session import async_engine, init_engine
+from anvil.db.migration import MigrationService
+from anvil.db.session import init_engine
 from anvil.supervisor.services import MLflowService
+
+logger = logging.getLogger(__name__)
 
 MLFLOW_EXPERIMENT_NAME = "anvil"
 
@@ -21,8 +24,8 @@ MLFLOW_EXPERIMENT_NAME = "anvil"
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_engine()
-    async with async_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    migration_svc = MigrationService()
+    await migration_svc.ensure_migrated()
     cfg = get_config()
     if cfg["mlflow_disable_local"]:
         app.state.mlflow = None

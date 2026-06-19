@@ -89,6 +89,8 @@ def get_config():
         "mlflow_backend_store_uri": "sqlite:///"
         + str(Path("mlruns/mlflow.db").resolve()),
         "mlflow_disable_local": mlflow_disable_local,
+        "db_auto_migrate": os.getenv("ANVIL_DB_AUTO_MIGRATE", "true").lower()
+        in ("true", "1", "yes"),
         "storage_backend": os.getenv("ANVIL_STORAGE_BACKEND", "local"),
         "device": os.getenv("ANVIL_DEVICE", ""),
     }

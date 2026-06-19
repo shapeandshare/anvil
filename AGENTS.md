@@ -1,6 +1,6 @@
 # anvil — Agent Guidelines
 
-**Last updated**: 2026-06-14
+**Last updated**: 2026-06-18
 
 ## Project Overview
 
@@ -99,6 +99,8 @@ anvil/          # Python package (implicit namespace)
 - SQLite via async SQLAlchemy (app metadata); filesystem (`data/demo/`) for source data; existing `data/datasets/` for imported sample conten (opencode/misty-panda)
 - Python 3.11+ (pyproject.toml config), YAML (GitHub Actions workflows), Shell (CI scripts) + `commitizen` (new dev dependency), GitHub Actions (`actions/checkout@v4`, `actions/cache@v4`), `gh` CLI (GitHub CLI, pre-installed on GitHub runners) (007-automated-semver-release)
 - `pyproject.toml` (version source), `CHANGELOG.md` (changelog), git tags (release markers), GitHub Releases API (release artifacts) (007-automated-semver-release)
+- Python 3.11+ (stdlib for migration service, async for web layer) + Alembic >=1.13 (existing), SQLAlchemy[asyncio] >=2.0 (existing), aiosqlite >=0.20 (existing) (008-auto-db-schema)
+- SQLite via async SQLAlchemy (`data/anvil-state.db`, configurable via `ANVIL_STATE_DB_PATH`) (008-auto-db-schema)
 
 ## Recent Changes
 - 002-directory-corpus-ingestion: Added Python 3.11+ + Existing project deps (FastAPI, SQLAlchemy, aiofiles) + `pathspec` (lightweight gitignore pattern matching, pure Python, no binary deps)

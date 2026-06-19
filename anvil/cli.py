@@ -589,3 +589,71 @@ def bootstrap_datasets_main():
             sys.exit(0)
 
     asyncio.run(_run())
+
+
+def db_main(argv: list[str] | None = None) -> None:
+    """CLI subcommands for database schema management.
+
+    Usage: anvil db <upgrade|downgrade|current|history|revision|stamp>
+    """
+    parser = argparse.ArgumentParser(description="Manage database schema migrations")
+    sub = parser.add_subparsers(dest="command")
+
+    sub.add_parser("upgrade", help="Apply all pending migrations")
+    sub.add_parser("current", help="Show current migration revision")
+    sub.add_parser("history", help="Show migration history")
+
+    downgrade_p = sub.add_parser("downgrade", help="Roll back one or more migrations")
+    downgrade_p.add_argument(
+        "revision", nargs="?", default="-1",
+        help="Revision to downgrade to (default: -1 = one step back)",
+    )
+
+    revision_p = sub.add_parser("revision", help="Auto-generate a new migration")
+    revision_p.add_argument("-m", "--message", required=True, help="Migration description")
+
+    stamp_p = sub.add_parser("stamp", help="Stamp the database at a revision")
+    stamp_p.add_argument("revision", help="Revision hash to stamp")
+
+    args = parser.parse_args(argv)
+
+    import asyncio
+
+    from anvil.db.migration import MigrationError, MigrationService
+
+    async def _run() -> None:
+        svc = MigrationService()
+        try:
+            if args.command == "upgrade":
+                before, after = await svc.upgrade()
+                print(
+                    f"All migrations applied. Database at revision: {after or '<base>'} (HEAD)"
+                    if before != after
+                    else f"Database already at latest revision: {after or '<base>'} (HEAD)"
+                )
+            elif args.command == "downgrade":
+                result = await svc.downgrade(args.revision)
+                print(f"Downgraded to revision: {result or '<base>'}")
+            elif args.command == "current":
+                rev = await svc.current()
+                print(rev or "<base>")
+            elif args.command == "history":
+                entries = await svc.history()
+                current_rev = await svc.current()
+                for entry in entries:
+                    down = entry["down_revision"]
+                    rev = entry["revision"]
+                    msg = entry["message"]
+                    head = " (HEAD)" if rev == current_rev else ""
+                    print(f"{down} -> {rev}{head} {msg}".strip())
+            elif args.command == "revision":
+                rev = await svc.create_revision(args.message)
+                print(f"Generated migration revision: {rev}")
+            elif args.command == "stamp":
+                await svc.stamp(args.revision)
+                print(f"Stamped database at revision: {args.revision}")
+        except MigrationError as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            sys.exit(1)
+
+    asyncio.run(_run())
