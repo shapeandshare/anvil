@@ -7,7 +7,9 @@ normalises both paths into a single typed value.
 
 from pydantic import BaseModel, Field
 
+from .compute_backend_result import ComputeBackendResult
 from .compute_status import ComputeStatus
+from .training_engine import TrainingEngine
 
 
 class ComputeResult(BaseModel):
@@ -47,10 +49,10 @@ class ComputeResult(BaseModel):
         applicable.
     error_message : str | None
         Human-readable error description, or ``None`` on success.
-    engine : str
-        Training engine identifier (``"stdlib"`` or ``"torch"``).
-    backend : str
-        Compute backend identifier (``"local"``, ``"modal"``, etc.).
+    engine : TrainingEngine
+        Training engine used for the run.
+    backend : ComputeBackendResult
+        Compute backend that executed the run.
     """
 
     status: ComputeStatus
@@ -87,8 +89,8 @@ class ComputeResult(BaseModel):
     error_message: str | None = None
 
     # provenance
-    # Training engine identifier (``"stdlib"`` or ``"torch"``).
-    engine: str = "stdlib"
+    # Training engine used for the run.
+    engine: TrainingEngine = TrainingEngine.STDLIB
 
-    # Compute backend identifier (``"local"``, ``"modal"``, etc.).
-    backend: str = "local"
+    # Compute backend that executed the run.
+    backend: ComputeBackendResult = ComputeBackendResult.LOCAL

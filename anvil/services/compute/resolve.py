@@ -16,7 +16,11 @@ function.
 
 from typing import Any
 
+from .._shared.device_type import DeviceType
+from .compute_backend import ComputeBackend
+from .compute_backend_result import ComputeBackendResult
 from .compute_backend_unavailable import ComputeBackendUnavailable
+from .training_engine import TrainingEngine
 
 #: Cache for resolution results keyed by input config fingerprint.
 #: Used to avoid redundant device probing during repeated resolution
@@ -24,27 +28,29 @@ from .compute_backend_unavailable import ComputeBackendUnavailable
 _RESOLUTION_CACHE: dict[str, dict[str, Any]] = {}
 
 
-def _detect_device() -> str:
+def _detect_device() -> DeviceType:
     """Detect the best available compute device on the current host.
 
     Checks for CUDA GPUs first, then Apple Silicon MPS, and falls back
-    to CPU.  Silently returns ``"cpu"`` if PyTorch is not installed.
+    to CPU.  Silently returns ``DeviceType.CPU`` if PyTorch is not
+    installed.
 
     Returns
     -------
-    str
-        Device identifier: ``"cuda"``, ``"mps"``, or ``"cpu"``.
+    DeviceType
+        Device identifier: ``DeviceType.CUDA``, ``DeviceType.MPS``, or
+        ``DeviceType.CPU``.
     """
     try:
         import torch
 
         if torch.cuda.is_available():
-            return "cuda"
+            return DeviceType.CUDA
         if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
-            return "mps"
+            return DeviceType.MPS
     except ImportError:
         pass
-    return "cpu"
+    return DeviceType.CPU
 
 
 def _modal_available() -> bool:
@@ -90,32 +96,57 @@ def resolve_backend(config: dict[str, Any]) -> dict[str, Any]:
         is not installed, or if the value is not a recognised backend
         identifier.
     """
-    backend = config.get("compute_backend", "auto")
+    compute_backend_default: str = ComputeBackend.AUTO
+    backend = config.get("compute_backend", compute_backend_default)
 
-    if backend == "modal":
+    if backend == ComputeBackend.MODAL:
         if not _modal_available():
             raise ComputeBackendUnavailable(
                 "Modal selected but not available. "
                 "Install via: pip install anvil[compute] "
                 "and authenticate via: modal token new"
             )
-        return {"engine": "torch", "device": "cuda", "backend": "modal"}
+        return {
+            "engine": TrainingEngine.TORCH,
+            "device": DeviceType.CUDA,
+            "backend": ComputeBackendResult.MODAL,
+        }
 
-    if backend == "local-gpu":
+    if backend == ComputeBackend.LOCAL_GPU:
         device = _detect_device()
-        if device != "cpu" and _torch_available():
-            return {"engine": "torch", "device": device, "backend": "local"}
-        return {"engine": "stdlib", "device": "cpu", "backend": "local"}
+        if device != DeviceType.CPU and _torch_available():
+            return {
+                "engine": TrainingEngine.TORCH,
+                "device": device,
+                "backend": ComputeBackendResult.LOCAL,
+            }
+        return {
+            "engine": TrainingEngine.STDLIB,
+            "device": DeviceType.CPU,
+            "backend": ComputeBackendResult.LOCAL,
+        }
 
-    if backend == "local-cpu":
-        return {"engine": "stdlib", "device": "cpu", "backend": "local"}
+    if backend == ComputeBackend.LOCAL_CPU:
+        return {
+            "engine": TrainingEngine.STDLIB,
+            "device": DeviceType.CPU,
+            "backend": ComputeBackendResult.LOCAL,
+        }
 
     # auto -- prefer GPU if available
-    if backend == "auto":
+    if backend == ComputeBackend.AUTO:
         device = _detect_device()
-        if device != "cpu" and _torch_available():
-            return {"engine": "torch", "device": device, "backend": "local"}
-        return {"engine": "stdlib", "device": "cpu", "backend": "local"}
+        if device != DeviceType.CPU and _torch_available():
+            return {
+                "engine": TrainingEngine.TORCH,
+                "device": device,
+                "backend": ComputeBackendResult.LOCAL,
+            }
+        return {
+            "engine": TrainingEngine.STDLIB,
+            "device": DeviceType.CPU,
+            "backend": ComputeBackendResult.LOCAL,
+        }
 
     raise ComputeBackendUnavailable(f"Unknown compute_backend: {backend!r}")
 

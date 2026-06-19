@@ -14,9 +14,12 @@ import asyncio
 from collections.abc import Callable
 from typing import Any
 
+from .compute_backend_result import ComputeBackendResult
 from .protocol import ProgressCallback, StopCheck
 from .registry import register
+from .registry_backend import RegistryBackend
 from .result import ComputeResult, ComputeStatus
+from .training_engine import TrainingEngine
 
 #: Module-level flag so ``is_available()`` does not retry the import on
 #: every call.  Set once at module load time.
@@ -42,7 +45,7 @@ class ModalBackend:
     """
 
     #: Backend identifier used by the registry and resolution layer.
-    name = "modal"
+    name = RegistryBackend.MODAL
 
     def __init__(self, function_factory: Callable[[], Any] | None = None):
         """Initialise the Modal backend with an optional function factory.
@@ -132,8 +135,8 @@ class ModalBackend:
                     error_message="Training cancelled by user",
                     remote_job_id=job_id,
                     exported_remotely=True,
-                    backend="modal",
-                    engine="torch",
+                    backend=ComputeBackendResult.MODAL,
+                    engine=TrainingEngine.TORCH,
                 )
 
             status: str = await loop.run_in_executor(None, lambda: call.get_status())
@@ -150,11 +153,12 @@ class ModalBackend:
                     artifact_uris=result_data.get("artifact_uris", {}),
                     remote_job_id=job_id,
                     remote_mlflow_run_id=result_data.get("mlflow_run_id"),
-                    backend="modal",
-                    engine="torch",
+                    backend=ComputeBackendResult.MODAL,
+                    engine=TrainingEngine.TORCH,
                 )
 
             if status in ("failed", "error"):
+                # MLflow status strings, not ComputeStatus
                 error: str | None = await loop.run_in_executor(
                     None, lambda: call.get_error()
                 )
@@ -163,8 +167,8 @@ class ModalBackend:
                     error_message=str(error) if error else "Remote job failed",
                     remote_job_id=job_id,
                     exported_remotely=True,
-                    backend="modal",
-                    engine="torch",
+                    backend=ComputeBackendResult.MODAL,
+                    engine=TrainingEngine.TORCH,
                 )
 
             await asyncio.sleep(2)
@@ -321,4 +325,4 @@ def _modal_factory() -> ModalBackend:
     return ModalBackend()
 
 
-register("modal", _modal_factory)
+register(RegistryBackend.MODAL, _modal_factory)

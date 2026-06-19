@@ -12,6 +12,7 @@ maps user-facing config strings to concrete backends.
 
 from collections.abc import Callable
 
+from .compute_backend import ComputeBackend
 from .compute_backend_unavailable import ComputeBackendUnavailable
 from .protocol import ComputeBackendProtocol
 
@@ -112,12 +113,13 @@ def available_backends() -> list[dict[str, object]]:
 
 
 def _label_for(name: str) -> str:
-    """Map a backend identifier to a human-readable display label.
+    """Map a ``ComputeBackend`` identifier to a human-readable display label.
 
     Parameters
     ----------
     name : str
-        Backend identifier (e.g. ``"local-cpu"``, ``"modal"``).
+        ``ComputeBackend`` identifier (e.g. ``ComputeBackend.LOCAL_CPU``,
+        ``ComputeBackend.MODAL``).
 
     Returns
     -------
@@ -125,9 +127,9 @@ def _label_for(name: str) -> str:
         Human-readable label, or the raw ``name`` if no mapping exists.
     """
     labels = {
-        "auto": "Auto",
-        "local-cpu": "Local (CPU)",
-        "local-gpu": "Local (GPU)",
-        "modal": "Modal (cloud GPU)",
+        ComputeBackend.AUTO: "Auto",
+        ComputeBackend.LOCAL_CPU: "Local (CPU)",
+        ComputeBackend.LOCAL_GPU: "Local (GPU)",
+        ComputeBackend.MODAL: "Modal (cloud GPU)",
     }
     return labels.get(name, name)
