@@ -4,7 +4,6 @@ This is an artifact-inspection test: it opens the .whl with zipfile and
 checks dist-info/METADATA. It does NOT import or exercise anvil source,
 so it correctly lives under tests/system/ (coverage-excluded).
 """
-from __future__ import annotations
 
 import sys
 from pathlib import Path

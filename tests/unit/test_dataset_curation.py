@@ -2,7 +2,8 @@
 
 import json
 
-from anvil.services.dataset_curation import DatasetCurationService, MetricsResult
+from anvil.services.dataset_curation import DatasetCurationService
+from anvil.services.metrics_result import MetricsResult
 
 
 class TestMetrics:
@@ -40,7 +41,6 @@ class TestMetrics:
 class TestCurationService:
     def test_service_instantiation(self):
         """Verify DatasetCurationService can be instantiated with a session."""
-        from anvil.services.dataset_curation import DatasetCurationService
         assert hasattr(DatasetCurationService, "deduplicate")
         assert hasattr(DatasetCurationService, "filter_by_length")
         assert hasattr(DatasetCurationService, "regex_replace")
@@ -49,7 +49,7 @@ class TestCurationService:
 
     def test_serialization_roundtrip(self):
         """Verify curation result can be serialized to JSON."""
-        from anvil.services.dataset_curation import CurationResult
+        from anvil.services.curation_result import CurationResult
         result = CurationResult(
             operation_id=1,
             samples_removed=10,

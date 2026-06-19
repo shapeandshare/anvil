@@ -30,9 +30,15 @@ def fake_platform():
 
 
 def _svc_and_mock_run():
-    import anvil.services.metrics_collectors as mc
+    import anvil.services.mps_metrics_collector as mc
 
     return mc
+
+
+def _sampler_mod():
+    import anvil.services.mps_sampler_thread as st
+
+    return st
 
 
 class TestMPSMetricsCollector:
@@ -112,10 +118,11 @@ class TestMPSSamplerThread:
     @pytest.mark.asyncio
     async def test_sampler_logs_metrics_at_intervals(self):
         mc_mod = _svc_and_mock_run()
+        st_mod = _sampler_mod()
         mock_tracking = MagicMock()
         mock_tracking.log_metric = AsyncMock()
 
-        thread = mc_mod.MPSSamplerThread(mock_tracking, "run_123", interval=0.05)
+        thread = st_mod.MPSSamplerThread(mock_tracking, "run_123", interval=0.05)
 
         with (
             patch.object(
@@ -133,10 +140,11 @@ class TestMPSSamplerThread:
     @pytest.mark.asyncio
     async def test_sampler_does_not_log_when_metrics_none(self):
         mc_mod = _svc_and_mock_run()
+        st_mod = _sampler_mod()
         mock_tracking = MagicMock()
         mock_tracking.log_metric = AsyncMock()
 
-        thread = mc_mod.MPSSamplerThread(mock_tracking, "run_123", interval=0.05)
+        thread = st_mod.MPSSamplerThread(mock_tracking, "run_123", interval=0.05)
 
         with (
             patch.object(
@@ -156,10 +164,11 @@ class TestMPSSamplerThread:
     @pytest.mark.asyncio
     async def test_sampler_graceful_on_exception(self):
         mc_mod = _svc_and_mock_run()
+        st_mod = _sampler_mod()
         mock_tracking = MagicMock()
         mock_tracking.log_metric = AsyncMock()
 
-        thread = mc_mod.MPSSamplerThread(mock_tracking, "run_123", interval=0.05)
+        thread = st_mod.MPSSamplerThread(mock_tracking, "run_123", interval=0.05)
 
         with patch.object(
             mc_mod.MPSMetricsCollector,

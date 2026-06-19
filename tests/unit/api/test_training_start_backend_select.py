@@ -9,7 +9,7 @@ from httpx import ASGITransport, AsyncClient
 from anvil.api.app import app
 from anvil.db.base import Base
 from anvil.db.session import async_engine
-from anvil.services.compute.errors import ComputeBackendUnavailable
+from anvil.services.compute.compute_backend_unavailable import ComputeBackendUnavailable
 
 
 class FakeMlflowClient:
@@ -62,7 +62,7 @@ def fake_tracking():
     return svc
 
 
-def _make_config(overrides: Optional[dict] = None) -> dict:
+def _make_config(overrides: dict | None = None) -> dict:
     base = {
         "n_layer": 1,
         "n_embd": 16,

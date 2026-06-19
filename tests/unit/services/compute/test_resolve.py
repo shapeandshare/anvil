@@ -1,17 +1,16 @@
 """Tests for backend resolution (D4 fallback logic)."""
 
-from __future__ import annotations
 
 import pytest
 
-from anvil.services.compute.errors import ComputeBackendUnavailable
+from anvil.services.compute.compute_backend_unavailable import ComputeBackendUnavailable
 
 
 # We test resolve_backend by patching its internal helpers
 
 
 def test_auto_with_torch_available(monkeypatch):
-    from anvil.services.compute import resolve_backend
+    from anvil.services.compute.resolve import resolve_backend
 
     monkeypatch.setattr(
         "anvil.services.compute.resolve._detect_device",
@@ -28,7 +27,7 @@ def test_auto_with_torch_available(monkeypatch):
 
 
 def test_auto_without_torch(monkeypatch):
-    from anvil.services.compute import resolve_backend
+    from anvil.services.compute.resolve import resolve_backend
 
     monkeypatch.setattr(
         "anvil.services.compute.resolve._detect_device",
@@ -41,7 +40,7 @@ def test_auto_without_torch(monkeypatch):
 
 
 def test_local_cpu_always_stdlib(monkeypatch):
-    from anvil.services.compute import resolve_backend
+    from anvil.services.compute.resolve import resolve_backend
 
     monkeypatch.setattr(
         "anvil.services.compute.resolve._detect_device",
@@ -54,7 +53,7 @@ def test_local_cpu_always_stdlib(monkeypatch):
 
 def test_local_gpu_falls_back_to_cpu_when_torch_missing(monkeypatch):
     """D4: implicit capability downgrade — silent fallback."""
-    from anvil.services.compute import resolve_backend
+    from anvil.services.compute.resolve import resolve_backend
 
     monkeypatch.setattr(
         "anvil.services.compute.resolve._detect_device",
@@ -66,7 +65,7 @@ def test_local_gpu_falls_back_to_cpu_when_torch_missing(monkeypatch):
 
 
 def test_local_gpu_uses_cuda_when_available(monkeypatch):
-    from anvil.services.compute import resolve_backend
+    from anvil.services.compute.resolve import resolve_backend
 
     monkeypatch.setattr(
         "anvil.services.compute.resolve._detect_device",
@@ -83,7 +82,7 @@ def test_local_gpu_uses_cuda_when_available(monkeypatch):
 
 def test_modal_raises_when_not_available(monkeypatch):
     """D4: explicit remote selection must NOT silently fall back."""
-    from anvil.services.compute import resolve_backend
+    from anvil.services.compute.resolve import resolve_backend
 
     monkeypatch.setattr(
         "anvil.services.compute.resolve._modal_available",
@@ -95,7 +94,7 @@ def test_modal_raises_when_not_available(monkeypatch):
 
 
 def test_modal_succeeds_when_available(monkeypatch):
-    from anvil.services.compute import resolve_backend
+    from anvil.services.compute.resolve import resolve_backend
 
     monkeypatch.setattr(
         "anvil.services.compute.resolve._modal_available",
@@ -107,7 +106,7 @@ def test_modal_succeeds_when_available(monkeypatch):
 
 
 def test_default_is_auto(monkeypatch):
-    from anvil.services.compute import resolve_backend
+    from anvil.services.compute.resolve import resolve_backend
 
     monkeypatch.setattr(
         "anvil.services.compute.resolve._detect_device",
@@ -118,7 +117,7 @@ def test_default_is_auto(monkeypatch):
 
 
 def test_unknown_backend_raises():
-    from anvil.services.compute import resolve_backend
+    from anvil.services.compute.resolve import resolve_backend
 
     with pytest.raises(ComputeBackendUnavailable):
         resolve_backend({"compute_backend": "nonexistent"})

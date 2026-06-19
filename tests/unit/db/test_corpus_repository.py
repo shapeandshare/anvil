@@ -3,7 +3,8 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from anvil.db.models.corpus import Corpus, CorpusFile
+from anvil.db.models.corpus import Corpus
+from anvil.db.models.corpus_file import CorpusFile
 from anvil.db.repositories.corpora import CorpusRepository
 from anvil.db.base import Base
 from anvil.db.session import async_engine, AsyncSessionLocal

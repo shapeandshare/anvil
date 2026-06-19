@@ -2,7 +2,6 @@
 
 Provides httpx client fixture and docker compose exec helper.
 """
-from __future__ import annotations
 
 import shlex
 import subprocess

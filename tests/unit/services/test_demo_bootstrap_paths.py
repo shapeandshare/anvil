@@ -4,7 +4,6 @@ These tests describe the DESIRED behavior after the packaging refactor:
 DEMO_DIR is resolved via importlib.resources, not CWD.
 They should fail (or at least be skipped) until T011 is implemented.
 """
-from __future__ import annotations
 
 from pathlib import Path
 
@@ -56,7 +55,6 @@ def test_demo_bootstrap_all_finds_content() -> None:
     # This test is a contract marker — it requires an async session + real DB
     # to run fully. The key assertion is that DEMO_DIR resolves correctly.
     from anvil.db.session import AsyncSessionLocal
-    from anvil.services.demo_bootstrap import DemoBootstrapService
 
     async def _test():
         async with AsyncSessionLocal() as session:

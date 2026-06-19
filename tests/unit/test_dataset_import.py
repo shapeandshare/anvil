@@ -4,7 +4,8 @@ import hashlib
 
 import pytest
 
-from anvil.services.dataset_import import DatasetImportService, ParsedSample
+from anvil.services.dataset_import import DatasetImportService
+from anvil.services.parsed_sample import ParsedSample
 
 
 class TestParsing:

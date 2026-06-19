@@ -32,7 +32,6 @@ async def test_load_docs_raises_error_when_no_demo_corpus(session):
 
 async def test_load_docs_uses_demo_corpus_when_specified(session, monkeypatch):
     svc = TrainingService()
-
     from anvil.db.models.corpus import Corpus
     from anvil.db.repositories.corpora import CorpusRepository
 
@@ -53,7 +52,7 @@ async def test_load_docs_uses_demo_corpus_when_specified(session, monkeypatch):
 async def test_load_docs_uses_demo_dataset_when_specified(session):
     svc = TrainingService()
 
-    from anvil.db.models.training_config import Dataset
+    from anvil.db.models.dataset import Dataset
     from anvil.db.repositories.datasets import DatasetRepository
 
     repo = DatasetRepository(session)

@@ -2,7 +2,8 @@
 
 import pytest
 
-from anvil.db.models.corpus import Corpus, CorpusFile
+from anvil.db.models.corpus import Corpus
+from anvil.db.models.corpus_file import CorpusFile
 
 
 class TestCorpusModel:

@@ -1,13 +1,13 @@
 """Tests for MigrationService."""
 
-from __future__ import annotations
 
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from anvil.db.migration import MigrationError, MigrationService
+from anvil.db.migration import MigrationService
+from anvil.db.migration_error import MigrationError
 
 
 # ------------------------------------------------------------------

@@ -6,14 +6,14 @@ from pathlib import Path
 import pytest
 
 from anvil.core.engine import LlamaModel, train
-from anvil.core.tokenizer import Vocabulary
+from anvil.core.vocabulary import Vocabulary
+from anvil.services.demo_model_provider import DemoModelProvider
 from anvil.services.inference import (
-    DemoModelProvider,
     InferenceService,
-    LoadedModel,
     _project_to_2d,
     _top_k_logits,
 )
+from anvil.services.loaded_model import LoadedModel
 
 
 @pytest.fixture
