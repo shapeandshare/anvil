@@ -1,4 +1,7 @@
 """MigrationService — programmatic Alembic migration wrapper."""
+
+from __future__ import annotations
+
 import asyncio
 import importlib.resources as _resources
 import logging
@@ -7,8 +10,10 @@ from typing import Any
 
 from alembic import command
 from alembic.config import Config as AlembicConfig
+from alembic.script import ScriptDirectory
 
-from anvil.config import get_config
+from ..config import get_config
+from .migration_error import MigrationError
 
 logger = logging.getLogger(__name__)
 
@@ -17,16 +22,9 @@ logger = logging.getLogger(__name__)
 _PACKAGE_RES = _resources.files("anvil")
 _RESOURCE_DIR = _PACKAGE_RES / "_resources"
 ALEMBIC_INI = str(_RESOURCE_DIR / "alembic.ini")
+"""Path to the Alembic configuration file inside the installed package."""
 _MIGRATIONS_DIR = str(_RESOURCE_DIR / "migrations")
-
-
-class MigrationError(RuntimeError):
-    """Raised when a migration operation fails or schema is out of date."""
-
-    def __init__(self, message: str, current_rev: str | None = None, head_rev: str | None = None):
-        self.current_rev = current_rev
-        self.head_rev = head_rev
-        super().__init__(message)
+"""Path to the Alembic migration scripts directory inside the installed package."""
 
 
 class MigrationService:
@@ -41,6 +39,17 @@ class MigrationService:
         db_url: str | None = None,
         alembic_ini_path: str = ALEMBIC_INI,
     ) -> None:
+        """Initialise the migration service.
+
+        Parameters
+        ----------
+        db_url : str, optional
+            SQLAlchemy database URL. Defaults to the value from
+            ``get_config()["state_db_path"]``.
+        alembic_ini_path : str, optional
+            Path to the Alembic configuration file. Defaults to the
+            package-bundled ``alembic.ini``.
+        """
         cfg = get_config()
         self._db_url = db_url or f"sqlite+aiosqlite:///{cfg['state_db_path']}"
         self._alembic_cfg = self._build_config(alembic_ini_path)
@@ -50,23 +59,55 @@ class MigrationService:
     # ------------------------------------------------------------------
 
     def _build_config(self, ini_path: str) -> AlembicConfig:
-        """Load Alembic config and override DB URL + script_location at runtime."""
+        """Load Alembic config and override DB URL and script location.
+
+        Parameters
+        ----------
+        ini_path : str
+            Path to the ``alembic.ini`` configuration file.
+
+        Returns
+        -------
+        AlembicConfig
+            Configured Alembic config object with the runtime database
+            URL and migration script directory set.
+        """
         alembic_cfg = AlembicConfig(ini_path)
         alembic_cfg.set_main_option("sqlalchemy.url", self._db_url)
         alembic_cfg.set_main_option("script_location", _MIGRATIONS_DIR)
         return alembic_cfg
 
     def _ensure_db_dir(self) -> None:
-        """Create parent directories for the SQLite file if they don't exist."""
+        """Create parent directories for the SQLite file if they don't exist.
+
+        Parses the filesystem path from the ``sqlite+aiosqlite:///``
+        URL and ensures all parent directories exist.
+        """
         # Parse the file path from the sqlalchemy URL
         # URL format: sqlite+aiosqlite:///absolute/path/to/db
         url = self._db_url
         if url.startswith("sqlite+aiosqlite:///"):
-            db_path = url[len("sqlite+aiosqlite:///"):]
+            db_path = url[len("sqlite+aiosqlite:///") :]
             Path(db_path).parent.mkdir(parents=True, exist_ok=True)
 
     async def _run_sync(self, fn, *args: Any, **kwargs: Any) -> Any:
-        """Run a synchronous Alembic command in a thread executor."""
+        """Run a synchronous Alembic command in a thread executor.
+
+        Parameters
+        ----------
+        fn : callable
+            A synchronous callable (typically an Alembic ``command``
+            module function).
+        *args : Any
+            Positional arguments forwarded to *fn*.
+        **kwargs : Any
+            Keyword arguments forwarded to *fn*.
+
+        Returns
+        -------
+        Any
+            The return value of *fn*.
+        """
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, fn, *args, **kwargs)
 
@@ -114,7 +155,11 @@ class MigrationService:
             logger.info("Database schema matches HEAD (%s)", head_rev)
             return
 
-        if current_rev and head_rev and self._rev_is_ahead(current_rev, head_rev, script):
+        if (
+            current_rev
+            and head_rev
+            and self._rev_is_ahead(current_rev, head_rev, script)
+        ):
             raise MigrationError(
                 f"Database schema (revision {current_rev}) is AHEAD of "
                 f"application code (HEAD = {head_rev}). "
@@ -146,6 +191,7 @@ class MigrationService:
             engine = create_engine(sync_url)
             try:
                 from sqlalchemy import text
+
                 with engine.connect() as conn:
                     row = conn.execute(
                         text("SELECT version_num FROM alembic_version")
@@ -163,15 +209,18 @@ class MigrationService:
 
         def _get_history() -> list[dict[str, str]]:
             from alembic.script import ScriptDirectory
+
             script = ScriptDirectory.from_config(self._alembic_cfg)
             result: list[dict[str, str]] = []
             for rev in script.walk_revisions("base", "heads"):
                 # Each rev is a Revision object with revision, down_revision, doc
-                result.append({
-                    "revision": rev.revision,
-                    "down_revision": rev.down_revision or "<base>",
-                    "message": rev.doc or "",
-                })
+                result.append(
+                    {
+                        "revision": rev.revision,
+                        "down_revision": rev.down_revision or "<base>",
+                        "message": rev.doc or "",
+                    }
+                )
             return result
 
         return await self._run_sync(_get_history)
@@ -185,13 +234,22 @@ class MigrationService:
             await self._run_sync(command.downgrade, self._alembic_cfg, revision)
         except Exception as exc:
             logger.exception("Migration downgrade failed")
-            raise MigrationError(
-                f"Downgrade to {revision} failed: {exc}"
-            ) from exc
+            raise MigrationError(f"Downgrade to {revision} failed: {exc}") from exc
         return await self.current()
 
     async def stamp(self, revision: str) -> None:
-        """Stamp the database at *revision* without running migrations."""
+        """Stamp the database at *revision* without running migrations.
+
+        Parameters
+        ----------
+        revision : str
+            Revision hash (or ``"base"``) to stamp the database at.
+
+        Raises
+        ------
+        MigrationError
+            If the Alembic stamp operation fails.
+        """
         try:
             await self._run_sync(command.stamp, self._alembic_cfg, revision)
         except Exception as exc:
@@ -206,6 +264,7 @@ class MigrationService:
 
         def _create() -> str:
             from alembic.script import ScriptDirectory
+
             script = ScriptDirectory.from_config(self._alembic_cfg)
             command.revision(self._alembic_cfg, autogenerate=True, message=message)
             # The newly created file is at the HEAD
@@ -217,12 +276,20 @@ class MigrationService:
         return await self._run_sync(_create)
 
     async def ensure_migrated(self) -> None:
-        """Run upgrade or strict-verify based on ``ANVIL_DB_AUTO_MIGRATE`` config."""
+        """Run upgrade or strict-verify based on ``ANVIL_DB_AUTO_MIGRATE`` config.
+
+        When ``db_auto_migrate`` is ``True`` (the default) this calls
+        :meth:`upgrade` to apply pending migrations. Otherwise it
+        calls :meth:`verify_schema` and raises ``MigrationError`` if
+        the schema is not at HEAD.
+        """
         cfg = get_config()
         if cfg["db_auto_migrate"]:
             before, after = await self.upgrade()
             if before != after:
-                logger.info("Auto-migrated DB: %s → %s", before or "<base>", after or "<base>")
+                logger.info(
+                    "Auto-migrated DB: %s → %s", before or "<base>", after or "<base>"
+                )
             else:
                 logger.info("Database already at HEAD: %s — no action needed", after)
         else:
@@ -233,7 +300,7 @@ class MigrationService:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _rev_is_ahead(current: str, head: str, script: Any) -> bool:
+    def _rev_is_ahead(current: str, head: str, script: ScriptDirectory) -> bool:
         """Check if *current* is an ancestor of *head* (i.e., ahead of code)."""
         try:
             rev_obj = script.get_revision(current)

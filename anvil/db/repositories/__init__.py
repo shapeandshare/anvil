@@ -1,17 +1,6 @@
-from anvil.db.repositories.corpora import CorpusRepository
-from anvil.db.repositories.curation import (
-    CurationOperationRepository,
-    ImportSourceRepository,
-    SampleRepository,
-)
-from anvil.db.repositories.datasets import DatasetRepository
-from anvil.db.repositories.training_configs import TrainingConfigRepository
+"""Repository pattern data-access classes.
 
-__all__ = [
-    "CorpusRepository",
-    "CurationOperationRepository",
-    "DatasetRepository",
-    "ImportSourceRepository",
-    "SampleRepository",
-    "TrainingConfigRepository",
-]
+Each module defines a single repository class that encapsulates all
+database queries for its corresponding entity. No SQL or ORM primitives
+leak into the service layer.
+"""

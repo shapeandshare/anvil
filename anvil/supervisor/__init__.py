@@ -1,6 +1,7 @@
-"""Supervisor package — process manager for background services."""
+"""Background process manager.
 
-from anvil.supervisor.services import MLflowService
-from anvil.supervisor.supervisor import ProcessSupervisor, kill_pid_file, read_pid, write_pid
-
-__all__ = ["MLflowService", "ProcessSupervisor", "kill_pid_file", "read_pid", "write_pid"]
+``anvil.supervisor`` manages the lifecycle of background services
+(MLflow tracking server, web server process) — starting, stopping,
+health-checking, and streaming log output for operations dashboard
+consumption.
+"""

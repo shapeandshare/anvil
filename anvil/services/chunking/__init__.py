@@ -1,11 +1,6 @@
-from anvil.services.chunking.base import Chunker
-from anvil.services.chunking.file_chunker import FileAsDocChunker
-from anvil.services.chunking.line_chunker import LineAsDocChunker
-from anvil.services.chunking.window_chunker import FixedSizeWindowChunker
+"""Text chunking strategies for corpus ingestion.
 
-__all__ = [
-    "Chunker",
-    "FileAsDocChunker",
-    "FixedSizeWindowChunker",
-    "LineAsDocChunker",
-]
+Provides different chunking algorithms (fixed-line, sliding-window,
+file-based) used during corpus processing to split source text into
+manageable samples for training.
+"""

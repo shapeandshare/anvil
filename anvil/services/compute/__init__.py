@@ -1,3 +1,6 @@
-from anvil.services.compute.result import ComputeResult, ComputeStatus
-from anvil.services.compute.registry import register, get_backend, available_backends
-from anvil.services.compute.resolve import resolve_backend
+"""Compute backend abstraction layer.
+
+Defines a protocol for remote compute backends (Modal, local torch,
+local stdlib) and provides resolution logic for selecting and
+instantiating the appropriate backend at runtime.
+"""

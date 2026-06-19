@@ -1,3 +1,6 @@
-"""Versioned API v1."""
+"""API v1 route definitions.
 
-__all__: list[str] = []
+Each module defines a router for a specific domain (training,
+datasets, experiments, inference, evaluation, corpora, compute).
+Routes are registered on the ``v1_router`` APIRouter in ``router.py``.
+"""
