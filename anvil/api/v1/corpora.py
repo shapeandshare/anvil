@@ -82,6 +82,15 @@ async def create_corpus(
             )
             await tracking_svc.finish_run(mlflow_run_id)
 
+        # Phase 1B: enrich corpus tracking with metadata tags
+        if mlflow_run_id:
+            await tracking_svc.set_tag(mlflow_run_id, "anvil.entity_type", "corpus")
+            await tracking_svc.set_tag(mlflow_run_id, "anvil.entity_id", str(corpus.id))
+            if corpus.file_count:
+                await tracking_svc.set_tag(mlflow_run_id, "anvil.corpus.file_count", str(corpus.file_count))
+            if corpus.language_map:
+                await tracking_svc.set_tag(mlflow_run_id, "anvil.corpus.language_map", corpus.language_map)
+
     except ValueError as exc:
         await session.rollback()
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -142,6 +151,12 @@ async def fork_corpus(
             )
             await tracking_svc.finish_run(mlflow_run_id)
 
+        # Phase 1B: enrich fork tracking with lineage tags
+        if mlflow_run_id:
+            await tracking_svc.set_tag(mlflow_run_id, "anvil.entity_type", "corpus")
+            await tracking_svc.set_tag(mlflow_run_id, "anvil.entity_id", str(corpus.id))
+            await tracking_svc.set_tag(mlflow_run_id, "anvil.corpus.parent_id", str(corpus.parent_id))
+
     except ValueError as exc:
         await session.rollback()
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -183,6 +198,16 @@ async def delete_corpus(id: int, svc: CorpusService = Depends(get_service)):
     deleted = await svc.delete(id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Corpus not found")
+    # Phase 1B: lifecycle tracking for delete
+    tracking_svc_del = TrackingService()
+    if not tracking_svc_del.is_degraded:
+        try:
+            await tracking_svc_del.log_corpus_lifecycle_event(
+                corpus_id=id,
+                event_type="delete",
+            )
+        except Exception:
+            pass
     return {"data": {"status": "deleted"}, "error": None}
 
 
@@ -214,6 +239,15 @@ async def ingest_corpus(
             mlflow_run_id, corpus_id=corpus.id,
         )
         await tracking_svc.finish_run(mlflow_run_id)
+
+    # Phase 1B: enrich ingest tracking with metadata tags
+    if mlflow_run_id:
+        await tracking_svc.set_tag(mlflow_run_id, "anvil.entity_type", "corpus")
+        await tracking_svc.set_tag(mlflow_run_id, "anvil.entity_id", str(corpus.id))
+        if corpus.file_count:
+            await tracking_svc.set_tag(mlflow_run_id, "anvil.corpus.file_count", str(corpus.file_count))
+        if corpus.document_count:
+            await tracking_svc.set_tag(mlflow_run_id, "anvil.corpus.document_count", str(corpus.document_count))
 
     lang_map = None
     if corpus.language_map:

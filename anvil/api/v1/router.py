@@ -22,7 +22,7 @@ from anvil.api.v1.experiments import router as experiments_router
 from anvil.api.v1.inference import router as inference_router
 from anvil.api.v1.registry import router as registry_router
 from anvil.api.v1.training import router as training_router
-from anvil.core.engine import LlamaModel, softmax
+from anvil.core.engine import softmax
 from anvil.gpu import detect_gpu
 
 router = APIRouter()
@@ -1481,46 +1481,16 @@ async def inference_sample(body: dict):
                 detail="top_p must be a float in the range (0.0, 1.0]",
             )
 
-    from anvil.db.repositories.models import ModelRepository
-    from anvil.db.session import AsyncSessionLocal
-    from anvil.services.models import ModelRegistryService
+    from anvil.services.inference import InferenceService
 
-    # Try loading from local DB first (registered_models.id path)
-    model = None
-    chars = None
-    async with AsyncSessionLocal() as session:
-        repo = ModelRepository(session)
-        svc = ModelRegistryService(repo)
-        v = await svc.get_version(model_id, version)
+    inf_svc = InferenceService()
+    try:
+        loaded = await inf_svc.load_model(model_id, version)
+    except (ValueError, FileNotFoundError) as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
 
-    if v is not None:
-        model_path = Path(v["artifact_path"])
-        if model_path.exists():
-            model = LlamaModel.load(str(model_path))
-            chars = model.chars
-
-    # Fallback: treat model_id as experiment_id and load from saved artifact
-    if model is None:
-        async with AsyncSessionLocal() as session:
-            from anvil.db.repositories.experiments import ExperimentRepository
-
-            exp_repo = ExperimentRepository(session)
-            exp = await exp_repo.get(model_id)
-
-        if exp is None:
-            raise HTTPException(
-                status_code=404, detail="Model version not found in registry"
-            )
-
-        model_path = Path(f"data/models/experiment_{model_id}.json")
-        if not model_path.exists():
-            raise HTTPException(status_code=404, detail="Model artifact not found")
-
-        model = LlamaModel.load(str(model_path))
-        chars = model.chars
-
-    if not chars:
-        raise HTTPException(status_code=400, detail="Model has no character mapping")
+    model = loaded.model
+    chars = loaded.chars
 
     BOS = len(chars)
     prompt_ids = []

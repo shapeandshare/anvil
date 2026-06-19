@@ -372,3 +372,122 @@ class TestLogCorpusInput:
                 run_id, corpus_id=1, session=mock_session
             )
             assert digest == ""
+
+
+class TestLogDatasetLifecycleEvent:
+    """Tests for TrackingService.log_dataset_lifecycle_event()."""
+
+    @pytest.mark.asyncio
+    async def test_creates_run_with_correct_tags(self):
+        """Should create a short-lived MLflow run."""
+        from anvil.services.tracking import TrackingService
+
+        svc = TrackingService(
+            tracking_uri="http://127.0.0.1:5000", client_factory=fake_client_factory
+        )
+        run_id = await svc.log_dataset_lifecycle_event(
+            dataset_id=42,
+            event_type="create",
+            params={"name": "test-ds", "sample_count": 100},
+        )
+        assert run_id, "Expected non-empty run_id"
+        client = svc._client
+        assert client is not None
+
+    @pytest.mark.asyncio
+    async def test_degraded_mode_returns_empty(self):
+        """Should return '' when service is degraded."""
+        from anvil.services.tracking import TrackingService
+
+        svc = TrackingService(
+            tracking_uri="http://127.0.0.1:5000", client_factory=fake_client_factory
+        )
+        svc._degraded = True
+        run_id = await svc.log_dataset_lifecycle_event(
+            dataset_id=42, event_type="create"
+        )
+        assert run_id == ""
+
+    @pytest.mark.asyncio
+    async def test_empty_run_id_on_connection_error(self):
+        """Should return '' and set degraded on connection error."""
+        from anvil.services.tracking import TrackingService
+
+        def broken_factory(uri):
+            raise ConnectionError("Connection refused")
+
+        svc = TrackingService(
+            tracking_uri="http://127.0.0.1:5000", client_factory=broken_factory
+        )
+        run_id = await svc.log_dataset_lifecycle_event(
+            dataset_id=42, event_type="create"
+        )
+        assert run_id == ""
+        assert svc.is_degraded
+
+    @pytest.mark.asyncio
+    async def test_multiple_event_types(self):
+        """Should handle all event types: create, import, curate, update, delete."""
+        from anvil.services.tracking import TrackingService
+
+        svc = TrackingService(
+            tracking_uri="http://127.0.0.1:5000", client_factory=fake_client_factory
+        )
+        for event_type in ("create", "import", "curate", "update", "delete"):
+            run_id = await svc.log_dataset_lifecycle_event(
+                dataset_id=1, event_type=event_type
+            )
+            assert run_id, f"Expected non-empty run_id for event_type={event_type}"
+
+
+class TestLogCorpusLifecycleEvent:
+    """Tests for TrackingService.log_corpus_lifecycle_event()."""
+
+    @pytest.mark.asyncio
+    async def test_creates_run_with_correct_tags(self):
+        """Should create a short-lived MLflow run for corpus events."""
+        from anvil.services.tracking import TrackingService
+
+        svc = TrackingService(
+            tracking_uri="http://127.0.0.1:5000", client_factory=fake_client_factory
+        )
+        run_id = await svc.log_corpus_lifecycle_event(
+            corpus_id=7,
+            event_type="ingest",
+            params={"file_count": 15, "document_count": 200},
+            tags={"anvil.parent_corpus_id": "3"},
+        )
+        assert run_id, "Expected non-empty run_id"
+        client = svc._client
+        assert client is not None
+
+    @pytest.mark.asyncio
+    async def test_degraded_mode_returns_empty(self):
+        """Should return '' when service is degraded."""
+        from anvil.services.tracking import TrackingService
+
+        svc = TrackingService(
+            tracking_uri="http://127.0.0.1:5000", client_factory=fake_client_factory
+        )
+        svc._degraded = True
+        run_id = await svc.log_corpus_lifecycle_event(
+            corpus_id=7, event_type="ingest"
+        )
+        assert run_id == ""
+
+    @pytest.mark.asyncio
+    async def test_empty_run_id_on_connection_error(self):
+        """Should return '' and set degraded on connection error."""
+        from anvil.services.tracking import TrackingService
+
+        def broken_factory(uri):
+            raise ConnectionError("Connection refused")
+
+        svc = TrackingService(
+            tracking_uri="http://127.0.0.1:5000", client_factory=broken_factory
+        )
+        run_id = await svc.log_corpus_lifecycle_event(
+            corpus_id=7, event_type="ingest"
+        )
+        assert run_id == ""
+        assert svc.is_degraded

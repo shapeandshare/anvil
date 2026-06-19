@@ -1,11 +1,11 @@
 """Eval endpoints for v1 API."""
 
 import math
-from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 
-from anvil.core.engine import LlamaModel, softmax
+from anvil.core.engine import softmax
+from anvil.services.inference import InferenceService
 
 router = APIRouter()
 
@@ -22,28 +22,14 @@ async def eval_perplexity(body: dict):
     if not isinstance(text, str) or not text:
         raise HTTPException(status_code=400, detail="text must be a non-empty string")
 
-    from anvil.db.session import AsyncSessionLocal
-    from anvil.db.repositories.models import ModelRepository
-    from anvil.services.models import ModelRegistryService
+    inf_svc = InferenceService()
+    try:
+        loaded = await inf_svc.load_model(model_id, version)
+    except (ValueError, FileNotFoundError) as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
 
-    async with AsyncSessionLocal() as session:
-        repo = ModelRepository(session)
-        svc = ModelRegistryService(repo)
-        v = await svc.get_version(model_id, version)
-
-    if v is None:
-        raise HTTPException(
-            status_code=404, detail="Model version not found in registry"
-        )
-
-    model_path = Path(v["artifact_path"])
-    if not model_path.exists():
-        raise HTTPException(status_code=404, detail="Model artifact not found")
-
-    model = LlamaModel.load(str(model_path))
-    chars = model.chars
-    if not chars:
-        raise HTTPException(status_code=400, detail="Model has no character mapping")
+    model = loaded.model
+    chars = loaded.chars
 
     BOS = len(chars)
     try:

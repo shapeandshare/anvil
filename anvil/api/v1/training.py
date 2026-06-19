@@ -141,23 +141,19 @@ async def start_training(config: dict):
         device=device,
     )
 
-    from anvil.db.repositories.experiments import ExperimentRepository
-    from anvil.db.session import AsyncSessionLocal
+    from datetime import datetime
 
-    experiment_id = None
-    async with AsyncSessionLocal() as session:
-        repo = ExperimentRepository(session)
-        exp = await repo.create_running(
-            config_id=None,
-            run_name=f"run-{run_id}" if not tracking_svc.is_degraded else None,
-            mlflow_run_id=mlflow_run_id or None,
-            dataset_id=dataset_id,
-            corpus_id=corpus_id,
-            engine_backend=engine_backend,
-            device=device,
-        )
-        experiment_id = exp.id
-        await session.commit()
+    # Generate a numeric experiment_id from the current timestamp.
+    # This is used as the anvil.experiment_id tag for MLflow lookup.
+    # Phase 3A will replace this with a proper run_id_seq table.
+    experiment_id = int(datetime.now(UTC).timestamp() * 1000)
+
+    # Store experiment identity as MLflow tags
+    if mlflow_run_id:
+        await tracking_svc.set_tag(mlflow_run_id, "anvil.experiment_id", str(experiment_id))
+        await tracking_svc.set_tag(mlflow_run_id, "anvil.status", "running")
+
+    from anvil.db.session import AsyncSessionLocal
 
     input_digest = None
     input_role = None
@@ -180,15 +176,38 @@ async def start_training(config: dict):
             except Exception:
                 pass
 
-    if input_digest:
+    # Store input metadata as MLflow tags (not in DB)
+    if mlflow_run_id and input_digest:
+        await tracking_svc.set_tag(mlflow_run_id, "anvil.input_digest", input_digest)
+        await tracking_svc.set_tag(mlflow_run_id, "anvil.input_role", input_role or "training")
+
+    # Phase 1C: push dataset/corpus metadata as MLflow tags
+    if mlflow_run_id and dataset_id:
         async with AsyncSessionLocal() as sess:
-            repo = ExperimentRepository(sess)
-            exp_obj = await repo.get(experiment_id)
-            if exp_obj:
-                exp_obj.input_digest = input_digest
-                exp_obj.input_role = input_role
-                await repo.update(exp_obj)
-                await sess.commit()
+            try:
+                from anvil.db.repositories.datasets import DatasetRepository
+                ds_repo = DatasetRepository(sess)
+                ds = await ds_repo.get(dataset_id)
+                if ds:
+                    await tracking_svc.set_tag(mlflow_run_id, "anvil.dataset.vocab_size", str(ds.vocabulary_size or ""))
+                    await tracking_svc.set_tag(mlflow_run_id, "anvil.dataset.sample_count", str(ds.sample_count or 0))
+                    await tracking_svc.set_tag(mlflow_run_id, "anvil.dataset.document_count", str(ds.document_count or 0))
+                    await tracking_svc.set_tag(mlflow_run_id, "anvil.dataset.curation_version", str(ds.curation_version or 0))
+            except Exception:
+                pass
+    elif mlflow_run_id and corpus_id:
+        async with AsyncSessionLocal() as sess:
+            try:
+                from anvil.db.repositories.corpora import CorpusRepository
+                corp_repo = CorpusRepository(sess)
+                corpus = await corp_repo.get(corpus_id)
+                if corpus:
+                    await tracking_svc.set_tag(mlflow_run_id, "anvil.corpus.file_count", str(corpus.file_count or 0))
+                    await tracking_svc.set_tag(mlflow_run_id, "anvil.corpus.document_count", str(corpus.document_count or 0))
+                    if corpus.language_map:
+                        await tracking_svc.set_tag(mlflow_run_id, "anvil.corpus.language_map", corpus.language_map)
+            except Exception:
+                pass
 
     mps_thread = None
     if mlflow_run_id and MPSMetricsCollector.is_available():
@@ -315,27 +334,19 @@ async def start_training(config: dict):
                                 "Failed to log safetensors artifacts to MLflow"
                             )
 
-        from anvil.db.repositories.experiments import ExperimentRepository
         from anvil.db.session import AsyncSessionLocal
 
-        async with AsyncSessionLocal() as session:
-            repo = ExperimentRepository(session)
-            from datetime import datetime
+        # Store final status as MLflow tags (no DB experiment row)
+        if mlflow_run_id:
+            await tracking_svc.set_tag(mlflow_run_id, "anvil.status", "finished")
+            await tracking_svc.set_tag(mlflow_run_id, "anvil.final_loss", str(final_loss))
 
-            await repo.mark_finished(
-                experiment_id=experiment_id,
-                final_loss=final_loss,
-                completed_at=datetime.now(UTC),
-            )
+        if model is not None:
+            experiment_model_path = MODELS_DIR / f"experiment_{experiment_id}.json"
+            model.save(str(experiment_model_path), uchars)
 
-            if model is not None:
-                experiment_model_path = MODELS_DIR / f"experiment_{experiment_id}.json"
-                model.save(str(experiment_model_path), uchars)
-
-            if mps_thread is not None:
-                mps_thread.stop()
-
-            await session.commit()
+        if mps_thread is not None:
+            mps_thread.stop()
 
         # Register model with MLflow after DB commit so experiment
         # is visible even if model registration hangs
@@ -381,20 +392,11 @@ async def start_training(config: dict):
             )
         except Exception as exc:
             await tracking_svc.fail_run(mlflow_run_id, reason=str(exc))
+            if mlflow_run_id:
+                await tracking_svc.set_tag(mlflow_run_id, "anvil.status", "failed")
+                await tracking_svc.set_tag(mlflow_run_id, "anvil.error", str(exc))
             if mps_thread is not None:
                 mps_thread.stop()
-            async with AsyncSessionLocal() as sess:
-                from datetime import datetime
-
-                from anvil.db.repositories.experiments import ExperimentRepository
-
-                repo = ExperimentRepository(sess)
-                await repo.mark_failed(
-                    experiment_id=experiment_id,
-                    error_message=str(exc),
-                    completed_at=datetime.now(UTC),
-                )
-                await sess.commit()
 
     task = asyncio.create_task(_run_training())
     _tasks[run_id] = task

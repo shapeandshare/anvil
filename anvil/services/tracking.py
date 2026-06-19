@@ -422,24 +422,6 @@ class TrackingService:
                     reconciled.append(run.info.run_id)
         except Exception:
             pass
-        try:
-            from datetime import UTC, datetime
-
-            from anvil.db.repositories.experiments import ExperimentRepository
-            from anvil.db.session import AsyncSessionLocal
-
-            async with AsyncSessionLocal() as session:
-                repo = ExperimentRepository(session)
-                orphaned = await repo.find_orphaned()
-                for exp in orphaned:
-                    await repo.mark_failed(
-                        experiment_id=exp.id,
-                        error_message="interrupted/terminated",
-                        completed_at=datetime.now(UTC),
-                    )
-                await session.commit()
-        except Exception:
-            pass
         return reconciled
 
     async def get_safetensors_artifacts(self, run_id: str) -> dict:
@@ -507,7 +489,7 @@ class TrackingService:
         name: str | None = None,
         dataset_id: int | None = None,
         corpus_id: int | None = None,
-        artifact_path: str = "",
+        artifact_path: str = "model.json",
     ) -> dict:
         if self._degraded or not run_id:
             return {}
@@ -548,6 +530,217 @@ class TrackingService:
             "source": f"runs:/{run_id}/{artifact_path}",
         }
 
+    async def log_dataset_lifecycle_event(
+        self,
+        *,
+        dataset_id: int,
+        event_type: str,
+        params: dict[str, Any] | None = None,
+    ) -> str:
+        """Create a short MLflow run recording a dataset lifecycle event.
+
+        Args:
+            dataset_id: Dataset ID
+            event_type: One of "create", "import", "curate", "update", "delete"
+            params: Optional metadata params to log (vocab_size, sample_count, operation_type, etc.)
+
+        Returns: MLflow run_id or "" if degraded
+        """
+        if self._degraded:
+            return ""
+
+        loop = asyncio.get_event_loop()
+        try:
+            await loop.run_in_executor(None, lambda: self._lazy_init())
+        except Exception:
+            self._degraded = True
+            return ""
+
+        run_id = await self.start_run(
+            run_name=f"dataset-{event_type}-{dataset_id}",
+            params=params,
+            engine_backend="dataset",
+            device="n/a",
+        )
+        if not run_id:
+            return ""
+
+        # Set tags for identification
+        await self.set_tag(run_id, "anvil.entity_type", "dataset")
+        await self.set_tag(run_id, "anvil.entity_id", str(dataset_id))
+        await self.set_tag(run_id, "anvil.event", f"dataset-{event_type}")
+
+        await self.finish_run(run_id)
+        return run_id
+
+    async def log_corpus_lifecycle_event(
+        self,
+        *,
+        corpus_id: int,
+        event_type: str,
+        params: dict[str, Any] | None = None,
+        tags: dict[str, str] | None = None,
+    ) -> str:
+        """Create a short MLflow run recording a corpus lifecycle event.
+
+        Args:
+            corpus_id: Corpus ID
+            event_type: One of "create", "fork", "ingest", "delete"
+            params: Optional metadata params (file_count, document_count, language_map, etc.)
+            tags: Optional additional tags (e.g. parent_corpus_id for forks)
+
+        Returns: MLflow run_id or "" if degraded
+        """
+        if self._degraded:
+            return ""
+
+        loop = asyncio.get_event_loop()
+        try:
+            await loop.run_in_executor(None, lambda: self._lazy_init())
+        except Exception:
+            self._degraded = True
+            return ""
+
+        run_id = await self.start_run(
+            run_name=f"corpus-{event_type}-{corpus_id}",
+            params=params,
+            engine_backend="corpus",
+            device="n/a",
+        )
+        if not run_id:
+            return ""
+
+        await self.set_tag(run_id, "anvil.entity_type", "corpus")
+        await self.set_tag(run_id, "anvil.entity_id", str(corpus_id))
+        await self.set_tag(run_id, "anvil.event", f"corpus-{event_type}")
+
+        if tags:
+            for k, v in tags.items():
+                await self.set_tag(run_id, k, v)
+
+        await self.finish_run(run_id)
+        return run_id
+
+    async def list_experiments(
+        self,
+        max_results: int = 100,
+    ) -> list[dict]:
+        """Query all MLflow runs for the 'anvil' experiment.
+
+        Returns list of dicts with keys matching the current GET /v1/experiments response shape.
+        """
+        if self._degraded:
+            return []
+        loop = asyncio.get_event_loop()
+        try:
+            client = await loop.run_in_executor(None, lambda: self._lazy_init())
+            if client is None or not self._experiment_id:
+                return []
+        except Exception:
+            return []
+
+        try:
+            runs = await loop.run_in_executor(
+                None,
+                lambda: client.search_runs(
+                    experiment_ids=[self._experiment_id],
+                    order_by=["attributes.start_time DESC"],
+                    max_results=max_results,
+                ),
+            )
+        except Exception:
+            return []
+
+        result = []
+        for run in runs:
+            tags = dict(run.data.tags)
+            params = dict(run.data.params)
+            metrics = dict(run.data.metrics)
+
+            # Parse anvil.experiment_id tag (may be missing for very old runs)
+            exp_id_str = tags.get("anvil.experiment_id", "")
+            try:
+                exp_id = int(exp_id_str)
+            except (ValueError, TypeError):
+                exp_id = None
+
+            result.append({
+                "id": exp_id,
+                "status": run.info.status or "RUNNING",
+                "run_name": run.data.tags.get("mlflow.runName", "") or "",
+                "final_loss": metrics.get("final_loss"),
+                "mlflow_run_id": run.info.run_id,
+                "dataset_name": tags.get("anvil.dataset.name") or params.get("dataset_id"),
+                "dataset_id": params.get("dataset_id"),
+                "corpus_id": params.get("corpus_id"),
+                "input_digest": tags.get("anvil.input_digest"),
+                "input_role": tags.get("anvil.input_role") or "training",
+                "engine_backend": params.get("engine_backend", ""),
+                "device": params.get("device", ""),
+                "created_at": str(run.info.start_time) if run.info.start_time else "",
+                "config_id": None,
+                "artifact_available": False,  # Caller can set this after checking
+            })
+        return result
+
+    async def get_experiment(
+        self,
+        experiment_id: int,
+    ) -> dict | None:
+        """Find an MLflow run by its anvil.experiment_id tag.
+
+        Returns the same dict shape as list_experiments, plus extra detail fields,
+        or None if not found.
+        """
+        if self._degraded:
+            return None
+        loop = asyncio.get_event_loop()
+        try:
+            client = await loop.run_in_executor(None, lambda: self._lazy_init())
+            if client is None or not self._experiment_id:
+                return None
+        except Exception:
+            return None
+
+        try:
+            runs = await loop.run_in_executor(
+                None,
+                lambda: client.search_runs(
+                    experiment_ids=[self._experiment_id],
+                    filter_string=f"tags.`anvil.experiment_id` = '{experiment_id}'",
+                    max_results=1,
+                ),
+            )
+        except Exception:
+            return None
+
+        if not runs:
+            return None
+
+        run = runs[0]
+        tags = dict(run.data.tags)
+        params = dict(run.data.params)
+        metrics = dict(run.data.metrics)
+
+        return {
+            "id": experiment_id,
+            "status": run.info.status or "RUNNING",
+            "run_name": run.data.tags.get("mlflow.runName", "") or "",
+            "final_loss": metrics.get("final_loss"),
+            "config_id": None,
+            "mlflow_run_id": run.info.run_id,
+            "dataset_name": tags.get("anvil.dataset.name"),
+            "created_at": str(run.info.start_time) if run.info.start_time else "",
+            "completed_at": str(run.info.end_time) if run.info.end_time else None,
+            "input_digest": tags.get("anvil.input_digest"),
+            "input_role": tags.get("anvil.input_role"),
+            "engine_backend": params.get("engine_backend", ""),
+            "device": params.get("device", ""),
+            "params": params,
+            "metrics": metrics,
+            "tags": tags,
+        }
+
     async def list_registered_models(self, search: str | None = None) -> list[dict]:
         """Query MLflow model registry for all registered models, enriched with run metadata.
 
@@ -583,10 +776,6 @@ class TrackingService:
         except Exception:
             return []
 
-        # Import locally to avoid circular imports at module level
-        from anvil.db.repositories.experiments import ExperimentRepository
-        from anvil.db.session import AsyncSessionLocal
-
         result = []
         for rm in registered_models:
             try:
@@ -609,16 +798,8 @@ class TrackingService:
                 except Exception:
                     pass
 
-                # Look up local experiment ID from mlflow_run_id
+                # Local experiment ID lookup removed — all tracking via MLflow now
                 experiment_id = None
-                try:
-                    async with AsyncSessionLocal() as session:
-                        exp_repo = ExperimentRepository(session)
-                        exp = await exp_repo.find_by_mlflow_run_id(latest.run_id)
-                        if exp:
-                            experiment_id = exp.id
-                except Exception:
-                    pass
 
                 # Count total versions
                 all_versions = await loop.run_in_executor(

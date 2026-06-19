@@ -3,6 +3,7 @@
 Follows layer discipline: services consume repositories, routes call services.
 """
 
+import asyncio
 import math
 import threading
 from concurrent.futures import ThreadPoolExecutor
@@ -248,49 +249,69 @@ class InferenceService:
             name = "cached"
             return LoadedModel(gpt_model, chars, model_id, cache_key[1], name)
 
-        # Try loading from local DB first (registered_models.id path)
-        from anvil.db.session import AsyncSessionLocal
-        from anvil.db.repositories.models import ModelRepository
-        from anvil.services.models import ModelRegistryService
-
-        async with AsyncSessionLocal() as session:
-            repo = ModelRepository(session)
-            svc = ModelRegistryService(repo)
-            v = await svc.get_version(model_id, version if version is not None else 1)
-
-        if v is not None:
-            model_path = Path(v["artifact_path"])
-            if model_path.exists():
-                gpt_model = LlamaModel.load(str(model_path))
-                if gpt_model.chars is None:
-                    raise ValueError("Model has no character mapping")
-                name = v.get("hyperparameters", {}).get("name", f"model-{model_id}")
-                self._cache[cache_key] = (gpt_model, gpt_model.chars)
-                return LoadedModel(gpt_model, gpt_model.chars, model_id, cache_key[1], name)
-
-        # Fallback: treat model_id as experiment_id and load from saved artifact
-        async with AsyncSessionLocal() as session:
-            from anvil.db.repositories.experiments import ExperimentRepository
-
-            exp_repo = ExperimentRepository(session)
-            exp = await exp_repo.get(model_id)
-
-        if exp is None:
-            raise ValueError(
-                f"Model not found: model_id={model_id}, version={version}"
-            )
-
+        # Primary path: treat model_id as experiment_id and load from saved artifact
         model_path = Path(f"data/models/experiment_{model_id}.json")
-        if not model_path.exists():
-            raise FileNotFoundError(f"Model artifact not found: {model_path}")
+        if model_path.exists():
+            gpt_model = LlamaModel.load(str(model_path))
+            if gpt_model.chars is None:
+                raise ValueError("Model has no character mapping")
+            name = f"experiment-{model_id}"
+            self._cache[cache_key] = (gpt_model, gpt_model.chars)
+            return LoadedModel(gpt_model, gpt_model.chars, model_id, cache_key[1], name)
 
-        gpt_model = LlamaModel.load(str(model_path))
-        if gpt_model.chars is None:
-            raise ValueError("Model has no character mapping")
+        # Secondary path: try loading from MLflow Model Registry
+        from anvil.services.tracking import TrackingService
 
-        name = exp.run_name or f"experiment-{model_id}"
-        self._cache[cache_key] = (gpt_model, gpt_model.chars)
-        return LoadedModel(gpt_model, gpt_model.chars, model_id, cache_key[1], name)
+        tracking_svc = TrackingService()
+        models = await tracking_svc.list_registered_models()
+        model_name = None
+        if isinstance(model_id, str):
+            model_name = model_id
+        else:
+            candidates = {f"dataset-{model_id}", f"corpus-{model_id}"}
+            for m in models:
+                if m.get("name") in candidates:
+                    model_name = m["name"]
+                    break
+
+        if model_name:
+            from anvil.config import get_mlflow_uri
+            from mlflow.tracking import MlflowClient
+
+            loop = asyncio.get_event_loop()
+            client = MlflowClient(get_mlflow_uri())
+            try:
+                # Find the latest version's run_id
+                latest_versions = await loop.run_in_executor(
+                    None,
+                    lambda: client.get_latest_versions(model_name),
+                )
+                if latest_versions:
+                    run_id = latest_versions[0].run_id
+                    local_dir = await loop.run_in_executor(
+                        None,
+                        lambda: client.download_artifacts(
+                            run_id=run_id,
+                            path="",
+                            dst_path=None,
+                        ),
+                    )
+                    model_file = Path(local_dir) / "model.json"
+                    if model_file.exists():
+                        gpt_model = LlamaModel.load(str(model_file))
+                        if gpt_model.chars is None:
+                            raise ValueError("Model has no character mapping")
+                        name = model_name
+                        self._cache[cache_key] = (gpt_model, gpt_model.chars)
+                        return LoadedModel(
+                            gpt_model, gpt_model.chars, model_id, cache_key[1], name
+                        )
+            except Exception:
+                pass
+
+        raise ValueError(
+            f"Model not found: model_id={model_id}, version={version}"
+        )
 
     def tokenize(self, text: str, loaded: LoadedModel) -> dict[str, Any]:
         ids = loaded.vocab.encode(text)

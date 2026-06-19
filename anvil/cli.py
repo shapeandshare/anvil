@@ -11,7 +11,6 @@ import sys
 import uvicorn
 
 from anvil.config import get_config
-from anvil.services.models import ModelRegistryService
 from anvil.services.training import TrainingService
 from anvil.supervisor.supervisor import kill_pid_file, write_pid
 
@@ -26,9 +25,7 @@ class AnvilWorkbench:
     def training(self) -> TrainingService:
         return self._training
 
-    @property
-    def registry(self) -> ModelRegistryService:
-        raise NotImplementedError("Use get_registry_service() for async access")
+    # registry property removed — using MLflow Model Registry instead
 
 
 def _load_docs(corpus_id: int | None = None) -> list[str]:
@@ -166,24 +163,6 @@ def train():
             device=device,
         )
 
-        from anvil.db.repositories.experiments import ExperimentRepository
-        from anvil.db.session import AsyncSessionLocal
-
-        experiment_id = None
-        async with AsyncSessionLocal() as session:
-            repo = ExperimentRepository(session)
-            exp = await repo.create_running(
-                config_id=None,
-                run_name="cli-run",
-                mlflow_run_id=mlflow_run_id or None,
-                dataset_id=args.dataset,
-                corpus_id=args.corpus,
-                engine_backend=engine_backend,
-                device=device,
-            )
-            experiment_id = exp.id
-            await session.commit()
-
         run_id = svc.reserve_run()
 
         _progress_tasks: set[asyncio.Task] = set()
@@ -213,6 +192,7 @@ def train():
                 registry_name = None
                 if args.dataset is not None:
                     from anvil.db.repositories.datasets import DatasetRepository
+                    from anvil.db.session import AsyncSessionLocal
 
                     async with AsyncSessionLocal() as sess:
                         ds_repo = DatasetRepository(sess)
@@ -221,6 +201,7 @@ def train():
                             registry_name = ds.name
                 elif args.corpus is not None:
                     from anvil.db.repositories.corpora import CorpusRepository
+                    from anvil.db.session import AsyncSessionLocal
 
                     async with AsyncSessionLocal() as sess:
                         corp_repo = CorpusRepository(sess)
@@ -288,18 +269,6 @@ def train():
                                     "Failed to log safetensors artifacts to MLflow"
                                 )
 
-            async with AsyncSessionLocal() as session:
-                from datetime import UTC, datetime
-
-                repo = ExperimentRepository(session)
-                await repo.mark_finished(
-                    experiment_id,
-                    final_loss=final_loss,
-                    generated_samples=None,
-                    completed_at=datetime.now(UTC),
-                )
-                await session.commit()
-
         try:
             await svc.start_training(
                 config,
@@ -309,17 +278,6 @@ def train():
             )
         except Exception as e:
             await tracking_svc.fail_run(mlflow_run_id, reason=str(e))
-            if experiment_id:
-                async with AsyncSessionLocal() as session:
-                    from datetime import UTC, datetime
-
-                    repo = ExperimentRepository(session)
-                    await repo.mark_failed(
-                        experiment_id,
-                        error_message=str(e),
-                        completed_at=datetime.now(UTC),
-                    )
-                    await session.commit()
             raise
 
         queue = svc.get_queue(run_id)
@@ -575,23 +533,7 @@ def _wait_and_sigkill(pids: list[int], port: int) -> None:
             pass
 
 
-def migrate_registry():
-    """Migrate local model registry entries to MLflow model registry."""
 
-    async def _run():
-        from anvil.db.repositories.models import ModelRepository
-        from anvil.db.session import AsyncSessionLocal
-        from anvil.services.models import ModelRegistryService
-        from anvil.services.tracking import TrackingService
-
-        tracking_svc = TrackingService()
-        async with AsyncSessionLocal() as session:
-            repo = ModelRepository(session)
-            svc = ModelRegistryService(repo)
-            result = await svc.migrate_local_registry_to_mlflow(tracking_svc)
-            print(f"Migration complete: {result}")
-
-    asyncio.run(_run())
 
 
 def bootstrap_datasets_main():
