@@ -37,6 +37,22 @@ Every concept here scales up directly to real models. Train in seconds, then ope
 <br>
 
 <p align="center">
+  <img src="docs/assets/showcase.svg" alt="anvil training dashboard: live loss curve, step/loss/device metrics, and sample generated output" width="100%">
+</p>
+
+<br>
+
+<p align="center">
+  <img src="docs/assets/stats.svg" alt="By the numbers: 0 core deps, 8 UI pages, 100% typed, 3 Llama primitives, MIT licensed" width="100%">
+</p>
+
+<br>
+
+<p align="center"><img src="docs/assets/divider.svg" alt="" width="100%"></p>
+
+### How it works
+
+<p align="center">
   <img src="docs/assets/workflow.svg" alt="anvil workflow: upload data → train → track → export → play" width="100%">
 </p>
 
@@ -184,6 +200,12 @@ anvil/                         # Python package (implicit namespace)
 
 ## 🎛️ Hyperparameter Guide
 
+<p align="center">
+  <img src="docs/assets/hyperparams.svg" alt="Model anatomy (n_embd, n_head, n_layer) and default hyperparameter values" width="100%">
+</p>
+
+<br>
+
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | `n_embd` | `16` | Embedding dimension — wider = more capacity |
@@ -212,6 +234,12 @@ anvil/                         # Python package (implicit namespace)
 <br>
 
 ## 🗺️ Web UI Routes
+
+<p align="center">
+  <img src="docs/assets/routes.svg" alt="Web UI sitemap: Dashboard, Datasets, Training, Experiments, Models, Playground, Learn, Operations" width="100%">
+</p>
+
+<br>
 
 | Route | Page |
 |-------|------|
