@@ -101,6 +101,7 @@ def warmup_demo_via_system_pipeline() -> None:
 
         from anvil.services.tracking import TrackingService
         from anvil.services.compute import get_backend, resolve_backend
+        from anvil.services.training import TrainingService
 
         async def _run() -> None:
             tracking_svc = TrackingService()
@@ -114,6 +115,14 @@ def warmup_demo_via_system_pipeline() -> None:
                 engine_backend=resolved["engine"],
                 device=resolved["device"],
             )
+
+            # Allocate a numeric experiment ID for consistency with user training runs
+            training_svc = TrainingService()
+            experiment_id = await training_svc.allocate_experiment_id()
+            if mlflow_run_id:
+                await tracking_svc.set_tag(
+                    mlflow_run_id, "anvil.experiment_id", str(experiment_id)
+                )
 
             result = await backend.run(
                 docs,

@@ -74,6 +74,12 @@
   /* ── State ── */
   var modelsData = [];
 
+  /* ── Model Key Helpers ── */
+  function modelKey(m) { return m.id != null ? String(m.id) : m.name; }
+  function findModelByKey(key) {
+    return modelsData.find(function(m) { return modelKey(m) === key; });
+  }
+
   /* ── Model Select ── */
   var modelSelect = document.getElementById('model-select');
   var versionLabel = document.getElementById('version-label');
@@ -97,7 +103,7 @@
       modelSelect.innerHTML = '<option value="">— select a model —</option>'
         + data.models.map(function(m) {
             var loss = m.final_loss != null ? m.final_loss.toFixed(4) : '?';
-            return '<option value="' + m.id + '">' + m.name + ' — loss: ' + loss + '</option>';
+            return '<option value="' + modelKey(m) + '">' + m.name + ' — loss: ' + loss + '</option>';
           }).join('');
       updateVersionSelect();
       updateModelInfo();
@@ -108,9 +114,9 @@
   }
 
   function updateVersionSelect() {
-    var id = parseInt(modelSelect.value);
-    if (!id) { versionLabel.style.display = 'none'; updateModelInfoCard(); return; }
-    var model = modelsData.find(function(m) { return m.id === id; });
+    var key = modelSelect.value;
+    if (!key) { versionLabel.style.display = 'none'; updateModelInfoCard(); return; }
+    var model = findModelByKey(key);
     if (model && model.total_versions > 1) {
       versionLabel.style.display = '';
       versionSelect.innerHTML = '';
@@ -125,9 +131,9 @@
   }
 
   function updateModelInfo() {
-    var id = parseInt(modelSelect.value);
-    if (!id) { modelInfoEl.style.display = 'none'; return; }
-    var model = modelsData.find(function(m) { return m.id === id; });
+    var key = modelSelect.value;
+    if (!key) { modelInfoEl.style.display = 'none'; return; }
+    var model = findModelByKey(key);
     if (!model) { modelInfoEl.style.display = 'none'; return; }
     modelInfoEl.style.display = 'block';
     modelInfoEl.innerHTML = 'loss: <span class="accent-cyan">' + (model.final_loss != null ? model.final_loss.toFixed(4) : '?')
@@ -138,10 +144,10 @@
   window.updateModelInfoCard = function() {
     var card = document.getElementById('model-info-card');
     var body = document.getElementById('model-info-card-body');
-    var id = parseInt(modelSelect.value);
-    if (!id) { card.style.display = 'none'; return; }
+    var key = modelSelect.value;
+    if (!key) { card.style.display = 'none'; return; }
 
-    var model = modelsData.find(function(m) { return m.id === id; });
+    var model = findModelByKey(key);
     if (!model) { card.style.display = 'none'; return; }
 
     card.style.display = '';
@@ -245,8 +251,8 @@
 
   /* ── Generate ── */
   generateBtn.addEventListener('click', async function() {
-    var modelId = parseInt(modelSelect.value);
-    if (!modelId) {
+    var modelKey = modelSelect.value;
+    if (!modelKey) {
       statusEl.textContent = 'Select a model first';
       return;
     }
@@ -265,7 +271,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model_id: modelId,
+          model_id: modelKey,
           version: version,
           temperature: parseFloat(temperatureInput.value),
           num_samples: parseInt(numSamplesInput.value),
