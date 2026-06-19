@@ -35,6 +35,20 @@ class DatasetService:
             raise ValueError(
                 f"Cannot delete dataset: {len(configs)} training config(s) reference it: {names}"
             )
+
+        # Non-blocking MLflow lifecycle hook
+        try:
+            from anvil.services.tracking import TrackingService
+
+            tracking_svc = TrackingService()
+            if not tracking_svc.is_degraded:
+                await tracking_svc.log_dataset_lifecycle_event(
+                    dataset_id=id,
+                    event_type="delete",
+                )
+        except Exception:
+            pass
+
         await self._repo.delete(id)
 
     async def search_datasets(self, query: str):
