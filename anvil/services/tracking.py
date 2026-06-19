@@ -1,4 +1,9 @@
-from __future__ import annotations
+"""MLflow experiment tracking service — run lifecycle, metrics, artifacts, registry.
+
+Provides the ``TrackingService`` class for managing MLflow experiment runs,
+logging metrics and parameters, managing datasets and model registry,
+and recording dataset/corpus lifecycle events.
+"""
 
 import asyncio
 from collections.abc import Callable
@@ -6,23 +11,25 @@ from datetime import datetime
 from typing import Any
 
 import mlflow.entities
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from anvil.config import get_config
-from anvil.services.mlflow_capabilities import (
-    TrackingCapabilities,
-    detect_capabilities,
-)
-
-
-class CapabilityUnavailable(Exception):
-    pass
-
+from ..config import get_config
+from .capability_unavailable import CapabilityUnavailable
+from .mlflow_capabilities import TrackingCapabilities, detect_capabilities
 
 _system_metrics_enabled = False
 _MlflowClientLike = Any
 
 
 class TrackingService:
+    """Manages MLflow experiment tracking: runs, metrics, artifacts, and registry.
+
+    Wraps ``mlflow.tracking.MlflowClient`` with async-friendly methods
+    and a ``_degraded`` mode that silently no-ops when MLflow is
+    unavailable. Supports dataset/corpus lifecycle events, model
+    registration, eval dataset management, and system metrics logging.
+    """
+
     def __init__(
         self,
         *,
@@ -30,6 +37,19 @@ class TrackingService:
         experiment_name: str = "anvil",
         client_factory: Callable[[str], _MlflowClientLike] | None = None,
     ):
+        """Initialise the tracking service.
+
+        Parameters
+        ----------
+        tracking_uri : str, optional
+            MLflow tracking server URI. Defaults to the configured
+            ``mlflow_uri`` from app config.
+        experiment_name : str
+            MLflow experiment name. Defaults to ``"anvil"``.
+        client_factory : callable, optional
+            Factory for creating ``MlflowClient`` instances. Defaults
+            to ``mlflow.tracking.MlflowClient``.
+        """
         cfg = get_config()
         self._tracking_uri = tracking_uri or cfg["mlflow_uri"]
         self._experiment_name = experiment_name
@@ -48,6 +68,15 @@ class TrackingService:
         self._experiment_id: str | None = None
 
     def _lazy_init(self) -> _MlflowClientLike:
+        """Lazily initialise the MLflow client and experiment.
+
+        Creates or retrieves the configured experiment on first call.
+
+        Returns
+        -------
+        _MlflowClientLike
+            The initialised MLflow client.
+        """
         if self._client is not None:
             return self._client
         client = self._client_factory(self._tracking_uri)
@@ -61,10 +90,22 @@ class TrackingService:
 
     @property
     def is_degraded(self) -> bool:
+        """Whether the service is in degraded mode (MLflow unavailable).
+
+        Returns
+        -------
+        bool
+            ``True`` if MLflow operations are being silently skipped.
+        """
         return self._degraded
 
     @staticmethod
     def enable_system_metrics() -> None:
+        """Enable MLflow system metrics logging (GPU utilisation, memory).
+
+        Calls ``mlflow.enable_system_metrics_logging()`` once. Safe
+        to call multiple times.
+        """
         global _system_metrics_enabled
         if _system_metrics_enabled:
             return
@@ -77,6 +118,14 @@ class TrackingService:
             pass
 
     async def capabilities(self) -> TrackingCapabilities:
+        """Detect MLflow server capabilities for this tracking URI.
+
+        Returns
+        -------
+        TrackingCapabilities
+            Detected capabilities (genai dataset support, server
+            backend flag, MLflow version).
+        """
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(
             None, lambda: detect_capabilities(self._tracking_uri)
@@ -90,6 +139,26 @@ class TrackingService:
         engine_backend: str,
         device: str,
     ) -> str:
+        """Create a new MLflow run and log parameters.
+
+        Handles connection errors gracefully by entering degraded mode.
+
+        Parameters
+        ----------
+        run_name : str, optional
+            Human-readable run name. Auto-generated if ``None``.
+        params : dict[str, Any], optional
+            Hyperparameters and config values to log.
+        engine_backend : str
+            Compute backend identifier (e.g. ``"stdlib"``, ``"torch"``).
+        device : str
+            Device identifier (e.g. ``"cpu"``, ``"cuda:0"``, ``"mps"``).
+
+        Returns
+        -------
+        str
+            The MLflow run ID, or empty string if degraded.
+        """
         if self._degraded:
             return ""
 
@@ -138,6 +207,19 @@ class TrackingService:
     async def log_metric(
         self, run_id: str, key: str, value: float, step: int | None = None
     ) -> None:
+        """Log a metric to an MLflow run.
+
+        Parameters
+        ----------
+        run_id : str
+            The MLflow run ID.
+        key : str
+            Metric name.
+        value : float
+            Metric value.
+        step : int, optional
+            Metric step (batch/epoch number). Defaults to ``None``.
+        """
         if self._degraded or not run_id:
             return
         loop = asyncio.get_event_loop()
@@ -151,11 +233,29 @@ class TrackingService:
             pass
 
     async def log_final_metric(self, run_id: str, key: str, value: float) -> None:
+        """Log a final metric (no step) to an MLflow run.
+
+        Parameters
+        ----------
+        run_id : str
+            The MLflow run ID.
+        key : str
+            Metric name.
+        value : float
+            Metric value.
+        """
         if self._degraded or not run_id:
             return
         await self.log_metric(run_id, key, value)
 
     async def finish_run(self, run_id: str) -> None:
+        """Mark an MLflow run as finished.
+
+        Parameters
+        ----------
+        run_id : str
+            The MLflow run ID.
+        """
         if self._degraded or not run_id:
             return
         loop = asyncio.get_event_loop()
@@ -169,6 +269,15 @@ class TrackingService:
             pass
 
     async def fail_run(self, run_id: str, *, reason: str | None = None) -> None:
+        """Mark an MLflow run as failed.
+
+        Parameters
+        ----------
+        run_id : str
+            The MLflow run ID.
+        reason : str, optional
+            Optional failure reason. Defaults to ``None``.
+        """
         if self._degraded or not run_id:
             return
         loop = asyncio.get_event_loop()
@@ -182,6 +291,17 @@ class TrackingService:
             pass
 
     async def set_tag(self, run_id: str, key: str, value: str) -> None:
+        """Set a tag on an MLflow run.
+
+        Parameters
+        ----------
+        run_id : str
+            The MLflow run ID.
+        key : str
+            Tag key.
+        value : str
+            Tag value.
+        """
         if self._degraded or not run_id:
             return
         loop = asyncio.get_event_loop()
@@ -207,6 +327,29 @@ class TrackingService:
         samples: str | None = None,
         vocab: Any = None,
     ) -> None:
+        """Log file artifacts to an MLflow run.
+
+        Parameters
+        ----------
+        run_id : str
+            The MLflow run ID.
+        model_path : str, optional
+            Path to the model JSON file.
+        safetensors_path : str, optional
+            Path to the safetensors file.
+        config_path : str, optional
+            Path to the config JSON file.
+        tokenizer_path : str, optional
+            Path to the tokenizer JSON file.
+        mlmodel_path : str, optional
+            Path to the MLmodel YAML file.
+        conda_path : str, optional
+            Path to the conda YAML file.
+        samples : str, optional
+            Path to a samples file.
+        vocab : Any, optional
+            Path to a vocabulary file (legacy parameter).
+        """
         if self._degraded or not run_id:
             return
         loop = asyncio.get_event_loop()
@@ -251,11 +394,29 @@ class TrackingService:
         *,
         dataset_id: int,
         role: str = "training",
-        session: Any = None,
+        session: AsyncSession | None = None,
     ) -> str:
+        """Log a dataset as an MLflow dataset input for a run.
+
+        Parameters
+        ----------
+        run_id : str
+            The MLflow run ID.
+        dataset_id : int
+            The dataset ID.
+        role : str
+            Input role (e.g. ``"training"``). Defaults to ``"training"``.
+        session : AsyncSession, optional
+            Reusable DB session. Creates a new one if not provided.
+
+        Returns
+        -------
+        str
+            Content digest of the dataset, or empty string on failure.
+        """
         if self._degraded or not run_id:
             return ""
-        from anvil.services.mlflow_inputs import MlflowInputResolver
+        from .mlflow_inputs import MlflowInputResolver
 
         if session is not None:
             try:
@@ -275,7 +436,7 @@ class TrackingService:
             except Exception:
                 return ""
         else:
-            from anvil.db.session import AsyncSessionLocal
+            from ..db.session import AsyncSessionLocal
 
             async with AsyncSessionLocal() as sess:
                 try:
@@ -300,11 +461,27 @@ class TrackingService:
         run_id: str,
         *,
         corpus_id: int,
-        session: Any = None,
+        session: AsyncSession | None = None,
     ) -> str:
+        """Log a corpus as an MLflow dataset input for a run.
+
+        Parameters
+        ----------
+        run_id : str
+            The MLflow run ID.
+        corpus_id : int
+            The corpus ID.
+        session : AsyncSession, optional
+            Reusable DB session. Creates a new one if not provided.
+
+        Returns
+        -------
+        str
+            Content digest of the corpus, or empty string on failure.
+        """
         if self._degraded or not run_id:
             return ""
-        from anvil.services.mlflow_inputs import MlflowInputResolver
+        from .mlflow_inputs import MlflowInputResolver
 
         if session is not None:
             try:
@@ -328,7 +505,7 @@ class TrackingService:
             except Exception:
                 return ""
         else:
-            from anvil.db.session import AsyncSessionLocal
+            from ..db.session import AsyncSessionLocal
 
             async with AsyncSessionLocal() as sess:
                 try:
@@ -359,6 +536,27 @@ class TrackingService:
         name: str,
         tags: dict[str, str] | None = None,
     ) -> Any:
+        """Create a managed MLflow evaluation dataset.
+
+        Requires MLflow 3.x with a SQL-backed server.
+
+        Parameters
+        ----------
+        name : str
+            Dataset name.
+        tags : dict[str, str], optional
+            Optional tags for the dataset.
+
+        Returns
+        -------
+        Any
+            The created MLflow dataset object.
+
+        Raises
+        ------
+        CapabilityUnavailable
+            If genai datasets are not supported by the server.
+        """
         caps = await self.capabilities()
         if not caps.genai_datasets:
             raise CapabilityUnavailable(
@@ -372,6 +570,25 @@ class TrackingService:
         )
 
     async def append_eval_records(self, *, name: str, records: list[dict]) -> int:
+        """Append evaluation records to a managed MLflow dataset.
+
+        Parameters
+        ----------
+        name : str
+            Dataset name.
+        records : list[dict]
+            Evaluation records to append.
+
+        Returns
+        -------
+        int
+            Number of records appended.
+
+        Raises
+        ------
+        CapabilityUnavailable
+            If genai datasets are not supported.
+        """
         caps = await self.capabilities()
         if not caps.genai_datasets:
             raise CapabilityUnavailable(
@@ -385,6 +602,23 @@ class TrackingService:
         )
 
     async def get_eval_dataset(self, *, name: str) -> Any | None:
+        """Retrieve a managed MLflow evaluation dataset by name.
+
+        Parameters
+        ----------
+        name : str
+            Dataset name.
+
+        Returns
+        -------
+        Any or None
+            The MLflow dataset object, or ``None`` if not found.
+
+        Raises
+        ------
+        CapabilityUnavailable
+            If genai datasets are not supported.
+        """
         caps = await self.capabilities()
         if not caps.genai_datasets:
             raise CapabilityUnavailable(
@@ -398,6 +632,16 @@ class TrackingService:
         )
 
     async def reconcile_orphans(self) -> list[str]:
+        """Reconcile orphaned RUNNING MLflow runs by marking them KILLED.
+
+        Finds all runs in the ``"RUNNING"`` status for this experiment
+        and sets them to ``"KILLED"``. Useful for server restart cleanup.
+
+        Returns
+        -------
+        list[str]
+            List of reconciled MLflow run IDs.
+        """
         if self._client is None:
             self._lazy_init()
         loop = asyncio.get_event_loop()
@@ -439,36 +683,52 @@ class TrackingService:
             await loop.run_in_executor(None, lambda: self._lazy_init())
             client = self._client
             if client is None:
-                return {"available": False, "files": [], "error": "client not initialized"}
+                return {
+                    "available": False,
+                    "files": [],
+                    "error": "client not initialized",
+                }
             artifacts = await loop.run_in_executor(
                 None, lambda: client.list_artifacts(run_id)
             )
             safetensors_files = []
             for a in artifacts:
                 if a.path.endswith(".safetensors"):
-                    safetensors_files.append({
-                        "path": a.path,
-                        "file_size": a.file_size if hasattr(a, "file_size") else None,
-                        "is_safetensors": True,
-                        "is_config": False,
-                        "is_tokenizer": False,
-                    })
+                    safetensors_files.append(
+                        {
+                            "path": a.path,
+                            "file_size": (
+                                a.file_size if hasattr(a, "file_size") else None
+                            ),
+                            "is_safetensors": True,
+                            "is_config": False,
+                            "is_tokenizer": False,
+                        }
+                    )
                 elif a.path.endswith("config.json"):
-                    safetensors_files.append({
-                        "path": a.path,
-                        "file_size": a.file_size if hasattr(a, "file_size") else None,
-                        "is_safetensors": False,
-                        "is_config": True,
-                        "is_tokenizer": False,
-                    })
+                    safetensors_files.append(
+                        {
+                            "path": a.path,
+                            "file_size": (
+                                a.file_size if hasattr(a, "file_size") else None
+                            ),
+                            "is_safetensors": False,
+                            "is_config": True,
+                            "is_tokenizer": False,
+                        }
+                    )
                 elif a.path.endswith("tokenizer.json"):
-                    safetensors_files.append({
-                        "path": a.path,
-                        "file_size": a.file_size if hasattr(a, "file_size") else None,
-                        "is_safetensors": False,
-                        "is_config": False,
-                        "is_tokenizer": True,
-                    })
+                    safetensors_files.append(
+                        {
+                            "path": a.path,
+                            "file_size": (
+                                a.file_size if hasattr(a, "file_size") else None
+                            ),
+                            "is_safetensors": False,
+                            "is_config": False,
+                            "is_tokenizer": True,
+                        }
+                    )
             return {
                 "available": any(f["is_safetensors"] for f in safetensors_files),
                 "files": safetensors_files,
@@ -491,6 +751,30 @@ class TrackingService:
         corpus_id: int | None = None,
         artifact_path: str = "model.json",
     ) -> dict:
+        """Register the model source in the MLflow Model Registry.
+
+        Parameters
+        ----------
+        run_id : str
+            MLflow run ID that produced the model.
+        name : str, optional
+            Explicit model name. Defaults to ``None``.
+        dataset_id : int, optional
+            Dataset ID for auto-generated model name.
+            Defaults to ``None``.
+        corpus_id : int, optional
+            Corpus ID for auto-generated model name.
+            Defaults to ``None``.
+        artifact_path : str
+            Path to the model artifact within the run.
+            Defaults to ``"model.json"``.
+
+        Returns
+        -------
+        dict
+            Result dict from the MLflow registry operation, or empty
+            dict if in degraded mode.
+        """
         if self._degraded or not run_id:
             return {}
         if name:
@@ -673,23 +957,27 @@ class TrackingService:
 
             # Normalize MLflow status to lowercase for frontend consistency
             raw_status = (run.info.status or "RUNNING").lower()
-            result.append({
-                "id": exp_id,
-                "status": raw_status,
-                "run_name": run.data.tags.get("mlflow.runName", "") or "",
-                "final_loss": metrics.get("final_loss"),
-                "mlflow_run_id": run.info.run_id,
-                "dataset_name": tags.get("anvil.dataset.name"),
-                "dataset_id": params.get("dataset_id"),
-                "corpus_id": params.get("corpus_id"),
-                "input_digest": tags.get("anvil.input_digest"),
-                "input_role": tags.get("anvil.input_role") or "training",
-                "engine_backend": params.get("engine_backend", ""),
-                "device": params.get("device", ""),
-                "created_at": str(run.info.start_time) if run.info.start_time else "",
-                "config_id": None,
-                "artifact_available": False,  # Caller can set this after checking
-            })
+            result.append(
+                {
+                    "id": exp_id,
+                    "status": raw_status,
+                    "run_name": run.data.tags.get("mlflow.runName", "") or "",
+                    "final_loss": metrics.get("final_loss"),
+                    "mlflow_run_id": run.info.run_id,
+                    "dataset_name": tags.get("anvil.dataset.name"),
+                    "dataset_id": params.get("dataset_id"),
+                    "corpus_id": params.get("corpus_id"),
+                    "input_digest": tags.get("anvil.input_digest"),
+                    "input_role": tags.get("anvil.input_role") or "training",
+                    "engine_backend": params.get("engine_backend", ""),
+                    "device": params.get("device", ""),
+                    "created_at": (
+                        str(run.info.start_time) if run.info.start_time else ""
+                    ),
+                    "config_id": None,
+                    "artifact_available": False,  # Caller can set this after checking
+                }
+            )
         return result
 
     async def get_experiment(
@@ -814,28 +1102,31 @@ class TrackingService:
                 # Count total versions
                 all_versions = await loop.run_in_executor(
                     None,
-                    lambda name=rm.name: client.search_model_versions(f"name='{rm.name}'"),
+                    lambda name=rm.name: client.search_model_versions(f"name='{name}'"),
                 )
                 total_versions = len(list(all_versions)) if all_versions else 0
 
-                result.append({
-                    "id": experiment_id,
-                    "name": rm.name,
-                    "description": (
-                        rm.description if hasattr(rm, "description") else None
-                    ),
-                    "version": latest.version,
-                    "latest_version": latest.version,
-                    "run_id": latest.run_id,
-                    "final_loss": final_loss,
-                    "latest_loss": final_loss,
-                    "created_at": (
-                        str(latest.creation_timestamp)
-                        if hasattr(latest, "creation_timestamp") and latest.creation_timestamp
-                        else None
-                    ),
-                    "total_versions": total_versions,
-                })
+                result.append(
+                    {
+                        "id": experiment_id,
+                        "name": rm.name,
+                        "description": (
+                            rm.description if hasattr(rm, "description") else None
+                        ),
+                        "version": latest.version,
+                        "latest_version": latest.version,
+                        "run_id": latest.run_id,
+                        "final_loss": final_loss,
+                        "latest_loss": final_loss,
+                        "created_at": (
+                            str(latest.creation_timestamp)
+                            if hasattr(latest, "creation_timestamp")
+                            and latest.creation_timestamp
+                            else None
+                        ),
+                        "total_versions": total_versions,
+                    }
+                )
             except Exception:
                 continue
 
@@ -843,12 +1134,45 @@ class TrackingService:
 
 
 def _create_dataset_sync(name: str, tags: dict | None) -> Any:
+    """Synchronously create an MLflow managed evaluation dataset.
+
+    Parameters
+    ----------
+    name : str
+        Dataset name.
+    tags : dict or None
+        Optional tags.
+
+    Returns
+    -------
+    Any
+        The created MLflow dataset object.
+    """
     from mlflow.genai.datasets import create_dataset
 
     return create_dataset(name=name, tags=tags or {})
 
 
 def _append_records_sync(name: str, records: list[dict]) -> int:
+    """Synchronously append evaluation records to an MLflow dataset.
+
+    Parameters
+    ----------
+    name : str
+        Dataset name.
+    records : list[dict]
+        Records to append.
+
+    Returns
+    -------
+    int
+        Number of records appended.
+
+    Raises
+    ------
+    ValueError
+        If the dataset is not found.
+    """
     from mlflow.genai.datasets import get_dataset
 
     ds = get_dataset(name=name)
@@ -859,6 +1183,18 @@ def _append_records_sync(name: str, records: list[dict]) -> int:
 
 
 def _get_dataset_sync(name: str) -> Any | None:
+    """Synchronously retrieve an MLflow managed evaluation dataset by name.
+
+    Parameters
+    ----------
+    name : str
+        Dataset name.
+
+    Returns
+    -------
+    Any or None
+        The MLflow dataset object, or ``None`` if not found.
+    """
     from mlflow.genai.datasets import get_dataset
 
     try:

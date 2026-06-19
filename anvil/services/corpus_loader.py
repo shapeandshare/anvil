@@ -1,21 +1,24 @@
-"""Directory walker and document chunker for training corpora."""
+"""Directory walker and document chunker for training corpora.
 
-from __future__ import annotations
+Provides the ``CorpusLoader`` class which walks a directory tree,
+filters files by include/exclude patterns, and chunks text content
+using pluggable chunking strategies (line, file, or fixed-size window).
+"""
 
-import os
 from pathlib import Path
 
 from pathspec import PathSpec
 from pathspec.patterns.gitwildmatch import GitWildMatchPattern
 
-from anvil.services.chunking import (
-    Chunker,
-    FileAsDocChunker,
-    FixedSizeWindowChunker,
-    LineAsDocChunker,
-)
+from .chunking.base import Chunker
+from .chunking.file_chunker import FileAsDocChunker
+from .chunking.line_chunker import LineAsDocChunker
+from .chunking.window_chunker import FixedSizeWindowChunker
+from .corpus_load_result import CorpusLoadResult
+from .corpus_scan_result import CorpusScanResult
 
-DEFAULT_EXCLUDE_PATTERNS = [
+# Default glob patterns for files to always exclude from ingestion.
+DEFAULT_EXCLUDE_PATTERNS: list[str] = [
     ".git/",
     "__pycache__/",
     "node_modules/",
@@ -42,6 +45,7 @@ DEFAULT_EXCLUDE_PATTERNS = [
     ".DS_Store",
 ]
 
+# Default glob patterns for files to include during ingestion.
 DEFAULT_INCLUDE_PATTERNS = [
     "*.py",
     "*.js",
@@ -64,6 +68,7 @@ DEFAULT_INCLUDE_PATTERNS = [
     "*.hpp",
 ]
 
+# Mapping from file extension to human-readable language label.
 _LANGUAGE_MAP = {
     ".py": "Python",
     ".js": "JavaScript",
@@ -88,6 +93,19 @@ _LANGUAGE_MAP = {
 
 
 def detect_language(file_path: str) -> str | None:
+    """Detect the programming language of a file from its extension.
+
+    Parameters
+    ----------
+    file_path : str
+        Path to the file (extension is extracted for lookup).
+
+    Returns
+    -------
+    str or None
+        The language label (e.g. ``"Python"``) or ``None`` if the
+        extension is not recognised.
+    """
     ext = Path(file_path).suffix.lower()
     return _LANGUAGE_MAP.get(ext)
 
@@ -96,6 +114,26 @@ def _build_spec(
     include_patterns: list[str] | None,
     exclude_patterns: list[str] | None,
 ) -> PathSpec:
+    """Build a ``PathSpec`` from include/exclude glob patterns.
+
+    Merges caller-provided patterns with sensible defaults. Exclude
+    patterns are negated so that any file matching an exclude pattern
+    will be filtered out.
+
+    Parameters
+    ----------
+    include_patterns : list[str] or None
+        Override patterns for files to include. ``None`` uses
+        ``DEFAULT_INCLUDE_PATTERNS``.
+    exclude_patterns : list[str] or None
+        Additional patterns for files to exclude. ``None`` uses
+        ``DEFAULT_EXCLUDE_PATTERNS`` only.
+
+    Returns
+    -------
+    PathSpec
+        Compiled specification ready for ``match_file`` calls.
+    """
     patterns = list(DEFAULT_INCLUDE_PATTERNS)
     if include_patterns:
         patterns = include_patterns
@@ -106,41 +144,48 @@ def _build_spec(
     return PathSpec.from_lines(GitWildMatchPattern, patterns + negated)
 
 
-class CorpusLoadResult:
-    def __init__(
-        self,
-        files: list[dict],
-        total_docs: int,
-        language_map: dict[str, int],
-        errors: list[str],
-    ):
-        self.files = files
-        self.total_docs = total_docs
-        self.language_map = language_map
-        self.errors = errors
-
-
-class CorpusScanResult:
-    def __init__(
-        self,
-        file_count: int,
-        total_bytes: int,
-        sizes: list[int],
-        language_map: dict[str, int],
-        language_sizes: dict[str, list[int]] | None = None,
-    ):
-        self.file_count = file_count
-        self.total_bytes = total_bytes
-        self.sizes = sizes
-        self.language_map = language_map
-        self.language_sizes = language_sizes or {}
-
-
 class CorpusLoader:
+    """Walks a directory tree, filters files, and chunks text for training.
+
+    Uses ``pathspec`` for gitignore-style pattern matching and supports
+    three chunking strategies: line-based, file-as-document, and
+    fixed-size sliding window.
+    """
+
     def __init__(self, block_size: int = 16):
+        """Initialise the loader with a default block size.
+
+        Parameters
+        ----------
+        block_size : int
+            Default block size for windowed chunking. Defaults to ``16``.
+        """
         self._block_size = block_size
 
-    def _make_chunker(self, strategy: str, overlap: float, block_size: int | None = None) -> Chunker:
+    def _make_chunker(
+        self, strategy: str, overlap: float, block_size: int | None = None
+    ) -> Chunker:
+        """Factory method returning a chunker for the given strategy.
+
+        Parameters
+        ----------
+        strategy : str
+            One of ``"line"``, ``"file"``, or ``"windowed"``.
+        overlap : float
+            Overlap fraction for windowed chunking.
+        block_size : int, optional
+            Block size override. Falls back to ``self._block_size``.
+
+        Returns
+        -------
+        Chunker
+            An instance of the requested chunker.
+
+        Raises
+        ------
+        ValueError
+            If ``strategy`` is not recognised (fallback to windowed).
+        """
         if strategy == "line":
             return LineAsDocChunker()
         if strategy == "file":
@@ -159,6 +204,42 @@ class CorpusLoader:
         max_files: int = 10000,
         block_size: int | None = None,
     ) -> CorpusLoadResult:
+        """Walk a directory, ingest files, and return chunked document metadata.
+
+        Recursively walks ``root_path``, filters files using the include/
+        exclude patterns, reads text content, and chunks it using the
+        selected strategy.
+
+        Parameters
+        ----------
+        root_path : str
+            Absolute path to the root directory to ingest.
+        include_patterns : list[str], optional
+            Override glob patterns for inclusion. ``None`` uses defaults.
+        exclude_patterns : list[str], optional
+            Additional glob patterns for exclusion.
+        chunking_strategy : str
+            Chunking strategy: ``"line"``, ``"file"``, or ``"windowed"``.
+            Defaults to ``"windowed"``.
+        chunk_overlap : float
+            Overlap fraction for windowed chunking. Defaults to ``0.5``.
+        max_files : int
+            Maximum number of files to process. Defaults to ``10000``.
+        block_size : int, optional
+            Block size override for windowed chunking. Falls back to
+            ``self._block_size`` if not provided.
+
+        Returns
+        -------
+        CorpusLoadResult
+            Metadata about ingested files, total chunk count, language
+            distribution, and any errors encountered.
+
+        Raises
+        ------
+        NotADirectoryError
+            If ``root_path`` does not exist or is not a directory.
+        """
         root = Path(root_path).resolve()
         if not root.is_dir():
             raise NotADirectoryError(f"Not a directory: {root_path}")
@@ -182,9 +263,7 @@ class CorpusLoader:
                 continue
 
             if file_count >= max_files:
-                errors.append(
-                    f"Reached max file limit ({max_files}), stopping walk"
-                )
+                errors.append(f"Reached max file limit ({max_files}), stopping walk")
                 break
 
             stat = abs_path.stat()
@@ -229,7 +308,34 @@ class CorpusLoader:
         exclude_patterns: list[str] | None = None,
         max_files: int = 100000,
     ) -> CorpusScanResult:
-        """Walk directory and return file stats without reading contents."""
+        """Walk a directory and return file statistics without reading contents.
+
+        Recursively walks ``root_path``, filters files using the
+        include/exclude patterns, and collects file sizes and language
+        distribution metadata. Does not read file contents.
+
+        Parameters
+        ----------
+        root_path : str
+            Absolute path to the root directory to scan.
+        include_patterns : list[str], optional
+            Override glob patterns for inclusion. ``None`` uses defaults.
+        exclude_patterns : list[str], optional
+            Additional glob patterns for exclusion.
+        max_files : int
+            Maximum number of files to process. Defaults to ``100000``.
+
+        Returns
+        -------
+        CorpusScanResult
+            File count, total bytes, individual sizes, and language
+            distribution.
+
+        Raises
+        ------
+        NotADirectoryError
+            If ``root_path`` does not exist or is not a directory.
+        """
         root = Path(root_path).resolve()
         if not root.is_dir():
             raise NotADirectoryError(f"Not a directory: {root_path}")

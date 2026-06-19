@@ -5,17 +5,12 @@ Ranks missing reciprocal links by a weighted ensemble of structural
 Supports dry-run (ranked table) and --fix mode (auto-insert reciprocals).
 """
 
-from __future__ import annotations
-
 import json
 import subprocess
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-if TYPE_CHECKING:
-    from . import NoteMetadata
-
-from . import ScoredPair, LinkPredictionResult
+from .types import LinkPredictionResult, NoteMetadata, ScoredPair
 
 # ---------------------------------------------------------------------------
 # Configuration

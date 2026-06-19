@@ -1,20 +1,19 @@
 """Safetensors export service — converts trained models to HF-compatible artifacts."""
 
-from __future__ import annotations
-
 import json
-import os
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 from safetensors.numpy import save_file
 
-from anvil.core.engine import LlamaModel
-
+from ..core.engine import LlamaModel
 
 # ── Name mapping: anvil internal keys → HF LlamaForCausalLM keys ──
 
+# Maps anvil internal parameter names to HuggingFace ``LlamaForCausalLM``
+# tensor names. Layer-specific keys (attention, MLP, RMSNorm) are
+# generated dynamically in ``export_state_dict()``.
 ANVIL_TO_HF: dict[str, str] = {
     "wte": "model.embed_tokens.weight",
     "lm_head": "lm_head.weight",
@@ -35,9 +34,21 @@ ANVIL_TO_HF: dict[str, str] = {
 def export_state_dict(model: LlamaModel) -> dict[str, list]:
     """Map anvil internal state dict to HF-compatible tensor names.
 
-    Returns dict mapping HF-convention tensor names to raw value lists.
-    2D matrices are list[list[float]], 1D norm scales are list[float].
-    No biases included (Llama has bias-free linear layers).
+    Converts anvil's internal parameter naming convention (e.g.
+    ``layer0.attn_wq``) to HuggingFace ``LlamaForCausalLM`` convention
+    (e.g. ``model.layers.0.self_attn.q_proj.weight``). 2D matrices yield
+    ``list[list[float]]``, 1D norm scales yield ``list[float]``.
+
+    Parameters
+    ----------
+    model : LlamaModel
+        The trained model whose state dict to convert.
+
+    Returns
+    -------
+    dict[str, list]
+        Mapping from HF-convention tensor names to raw value lists.
+        No biases are included (Llama has bias-free linear layers).
     """
     hf_sd: dict[str, list] = {}
     for internal_key, mat in model.state_dict.items():
@@ -52,10 +63,21 @@ def export_state_dict(model: LlamaModel) -> dict[str, list]:
             layer_idx = parts[0].replace("layer", "")
             sub_key = parts[1]
             if sub_key.startswith("attn_"):
-                proj_map = {"attn_wq": "q_proj", "attn_wk": "k_proj", "attn_wv": "v_proj", "attn_wo": "o_proj"}
-                hf_key = f"model.layers.{layer_idx}.self_attn.{proj_map[sub_key]}.weight"
+                proj_map = {
+                    "attn_wq": "q_proj",
+                    "attn_wk": "k_proj",
+                    "attn_wv": "v_proj",
+                    "attn_wo": "o_proj",
+                }
+                hf_key = (
+                    f"model.layers.{layer_idx}.self_attn.{proj_map[sub_key]}.weight"
+                )
             elif sub_key.startswith("mlp_"):
-                proj_map = {"mlp_gate": "gate_proj", "mlp_up": "up_proj", "mlp_down": "down_proj"}
+                proj_map = {
+                    "mlp_gate": "gate_proj",
+                    "mlp_up": "up_proj",
+                    "mlp_down": "down_proj",
+                }
                 hf_key = f"model.layers.{layer_idx}.mlp.{proj_map[sub_key]}.weight"
             elif sub_key == "rms_1":
                 hf_key = f"model.layers.{layer_idx}.input_layernorm.weight"
@@ -78,7 +100,20 @@ def export_state_dict(model: LlamaModel) -> dict[str, list]:
 
 
 def generate_config(model: LlamaModel) -> dict[str, Any]:
-    """Generate LlamaConfig-compatible JSON dict from LlamaModel hyperparameters."""
+    """Generate a ``LlamaConfig``-compatible JSON dict from model hyperparameters.
+
+    Parameters
+    ----------
+    model : LlamaModel
+        The trained model whose hyperparameters to serialise.
+
+    Returns
+    -------
+    dict[str, Any]
+        Configuration dict with keys matching HuggingFace's
+        ``LlamaConfig`` (``hidden_size``, ``intermediate_size``,
+        ``num_hidden_layers``, etc.).
+    """
     return {
         "model_type": "llama",
         "vocab_size": model.vocab_size,
@@ -105,7 +140,19 @@ def generate_config(model: LlamaModel) -> dict[str, Any]:
 
 
 def generate_tokenizer(chars: list[str]) -> dict[str, Any]:
-    """Generate tokenizer metadata in anvil's character-level format."""
+    """Generate tokenizer metadata in anvil's character-level format.
+
+    Parameters
+    ----------
+    chars : list[str]
+        Sorted list of unique characters in the vocabulary.
+
+    Returns
+    -------
+    dict[str, Any]
+        Tokenizer metadata with ``"type"``, ``"vocab"``,
+        ``"bos_token"``, ``"bos_token_id"``, and ``"chars"`` keys.
+    """
     return {
         "type": "CharacterLevelTokenizer",
         "vocab": {ch: i for i, ch in enumerate(sorted(chars))},
@@ -120,6 +167,11 @@ def _generate_mlmodel_yaml() -> str:
 
     The ``loader_module`` points to ``anvil._pyfunc_model`` so the
     ``anvil`` package must be importable at inference time.
+
+    Returns
+    -------
+    str
+        YAML string describing the MLflow pyfunc model flavour.
     """
     return """artifact_path: ""
 flavors:
@@ -133,7 +185,14 @@ flavors:
 
 
 def _generate_conda_yaml() -> str:
-    """Generate a minimal ``conda.yaml`` for MLflow environment reproduction."""
+    """Generate a minimal ``conda.yaml`` for MLflow environment reproduction.
+
+    Returns
+    -------
+    str
+        YAML string specifying the conda environment with Python
+        and pip dependencies.
+    """
     return """channels:
   - conda-forge
 dependencies:
@@ -149,16 +208,12 @@ dependencies:
 """
 
 
-class SafetensorsExportError(Exception):
-    """Raised when safetensors export fails."""
-
-    pass
-
-
 class SafetensorsExportService:
     """Converts a trained Llama model to safetensors checkpoint artifacts."""
 
-    def export(self, model: LlamaModel, output_dir: str | Path, chars: list[str]) -> dict[str, str | None]:
+    def export(
+        self, model: LlamaModel, output_dir: str | Path, chars: list[str]
+    ) -> dict[str, str | None]:
         """Run full export: safetensors + config + tokenizer + MLflow MLmodel.
 
         Returns dict with keys: safetensors_path, config_path, tokenizer_path,
@@ -181,8 +236,11 @@ class SafetensorsExportService:
                 np_tensors[name] = arr
 
             safetensors_path = output_dir / "model.safetensors"
-            save_file(np_tensors, str(safetensors_path),
-                      metadata={"format": "anvil", "architecture": "llama"})
+            save_file(
+                np_tensors,
+                str(safetensors_path),
+                metadata={"format": "anvil", "architecture": "llama"},
+            )
 
             # 3. Write config.json
             config = generate_config(model)
@@ -217,17 +275,57 @@ class SafetensorsExportService:
 
         except ImportError as e:
             msg = f"safetensors export requires 'safetensors' and 'numpy' packages. Install with: pip install safetensors numpy. Original error: {e}"
-            return {"safetensors_path": None, "config_path": None, "tokenizer_path": None, "mlmodel_path": None, "conda_path": None, "error": msg}
+            return {
+                "safetensors_path": None,
+                "config_path": None,
+                "tokenizer_path": None,
+                "mlmodel_path": None,
+                "conda_path": None,
+                "error": msg,
+            }
 
         except Exception as e:
-            return {"safetensors_path": None, "config_path": None, "tokenizer_path": None, "mlmodel_path": None, "conda_path": None, "error": str(e)}
+            return {
+                "safetensors_path": None,
+                "config_path": None,
+                "tokenizer_path": None,
+                "mlmodel_path": None,
+                "conda_path": None,
+                "error": str(e),
+            }
 
-    def retry_export(self, model_path: str, output_dir: str | Path) -> dict[str, str | None]:
-        """Retry safetensors export from an existing model.json file."""
+    def retry_export(
+        self, model_path: str, output_dir: str | Path
+    ) -> dict[str, str | None]:
+        """Retry safetensors export from an existing model.json file.
+
+        Useful for re-exporting a previously trained model without
+        re-running training.
+
+        Parameters
+        ----------
+        model_path : str
+            Path to the saved ``model.json`` file.
+        output_dir : str or Path
+            Directory to write the exported artifacts to.
+
+        Returns
+        -------
+        dict[str, str | None]
+            Result dict with paths to exported artifacts and an
+            ``"error"`` key (``None`` on success).
+        """
         output_dir = Path(output_dir)
         try:
             model = LlamaModel.load(model_path)
             chars = model.chars or []
             return self.export(model, output_dir, chars)
         except Exception as e:
-            return {"safetensors_path": None, "config_path": None, "tokenizer_path": None, "mlmodel_path": None, "conda_path": None, "error": str(e)}
+            return {
+                "safetensors_path": None,
+                "config_path": None,
+                "tokenizer_path": None,
+                "mlmodel_path": None,
+                "conda_path": None,
+                "error": str(e),
+            }

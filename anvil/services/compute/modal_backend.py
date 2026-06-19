@@ -7,19 +7,19 @@ Wraps a remote Modal function via submit-then-poll pattern (D3).
   and returns a ``ComputeResult``.
 
 MLflow logging happens **inside** the remote job (Q-B corrected), so the
-backend only returns artifact URIs — no local export is needed.
+backend only returns artifact URIs -- no local export is needed.
 """
 
-from __future__ import annotations
-
 import asyncio
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
-from anvil.services.compute.protocol import ComputeBackendProtocol, ProgressCallback, StopCheck
-from anvil.services.compute.registry import register
-from anvil.services.compute.result import ComputeResult, ComputeStatus
+from .protocol import ProgressCallback, StopCheck
+from .registry import register
+from .result import ComputeResult, ComputeStatus
 
-# Module-level flag so is_available() does not retry the import on every call.
+#: Module-level flag so ``is_available()`` does not retry the import on
+#: every call.  Set once at module load time.
 _MODAL_AVAILABLE: bool = False
 try:
     import modal  # noqa: F401
@@ -41,13 +41,33 @@ class ModalBackend:
     for logging its own metrics and artifacts to MLflow.
     """
 
+    #: Backend identifier used by the registry and resolution layer.
     name = "modal"
 
     def __init__(self, function_factory: Callable[[], Any] | None = None):
+        """Initialise the Modal backend with an optional function factory.
+
+        Parameters
+        ----------
+        function_factory : Callable[[], Any] | None, optional
+            Factory callable that returns a Modal remote function.
+            Used for testing with injected fakes.  ``None`` means the
+            backend will construct the real Modal function at runtime.
+        """
         self._function_factory = function_factory
 
     @staticmethod
     def is_available() -> bool:
+        """Check whether the Modal cloud backend is available.
+
+        Returns the module-level ``_MODAL_AVAILABLE`` flag, which is
+        set once at import time to avoid repeated import attempts.
+
+        Returns
+        -------
+        bool
+            ``True`` if the ``modal`` package is installed.
+        """
         return _MODAL_AVAILABLE
 
     async def run(
@@ -58,20 +78,45 @@ class ModalBackend:
         progress_callback: ProgressCallback,
         stop_check: StopCheck,
     ) -> ComputeResult:
+        """Submit and monitor a training job on Modal's cloud.
+
+        Resolves the remote function (either from an injected factory or
+        by building it from the ``modal`` package), spawns the job, and
+        polls until completion, failure, or user cancellation.
+
+        Parameters
+        ----------
+        docs : list[str]
+            Training documents (raw text strings).
+        config : dict[str, Any]
+            Hyperparameter dictionary forwarded to the remote training
+            function.
+        progress_callback : ProgressCallback
+            Callable invoked with ``(-1, 0.0)`` on submission and
+            ``(0, 0.0)`` during polling to indicate the job is still
+            running.
+        stop_check : StopCheck
+            Callable returning ``True`` if the user has requested
+            cancellation.  Triggers a remote ``call.cancel()``.
+
+        Returns
+        -------
+        ComputeResult
+            Completed result with artifact URIs, or failed result with
+            an error message.
+        """
         loop = asyncio.get_event_loop()
 
         # --- resolve the remote function (injected fake or real Modal) ---
         if self._function_factory is not None:
             remote_fn = self._function_factory()
         else:
-            import modal  # lazy import — only needed without injected factory
+            import modal  # lazy import -- only needed without injected factory
 
             remote_fn = self._build_remote_function(modal)
 
         # --- submit ---
-        call = await loop.run_in_executor(
-            None, lambda: remote_fn.spawn(docs, config)
-        )
+        call = await loop.run_in_executor(None, lambda: remote_fn.spawn(docs, config))
         job_id: str = call.object_id
 
         if progress_callback is not None:
@@ -91,18 +136,14 @@ class ModalBackend:
                     engine="torch",
                 )
 
-            status: str = await loop.run_in_executor(
-                None, lambda: call.get_status()
-            )
+            status: str = await loop.run_in_executor(None, lambda: call.get_status())
 
             # Notify the caller of the current status
             if progress_callback is not None:
                 progress_callback(0, 0.0)
 
             if status == "success":
-                result_data: dict = await loop.run_in_executor(
-                    None, lambda: call.get()
-                )
+                result_data: dict = await loop.run_in_executor(None, lambda: call.get())
                 return ComputeResult(
                     status=ComputeStatus.COMPLETED,
                     exported_remotely=True,
@@ -138,28 +179,50 @@ class ModalBackend:
         This is a separate method so it can be unit-tested or replaced
         by an injected factory.  It uses ``modal.App`` and the
         ``@app.function()`` decorator to define the remote workload.
-        """
-        from anvil.config import get_mlflow_uri
 
+        Parameters
+        ----------
+        modal_module : Any
+            The imported ``modal`` package (or a test double conforming
+            to the same interface).
+
+        Returns
+        -------
+        Any
+            A Modal-decorated function that accepts ``(docs, config)``
+            and returns a dictionary with ``artifact_uris`` and
+            ``mlflow_run_id``.
+        """
         app = modal_module.App("anvil-training")
 
         @app.function(
             secrets=[modal_module.Secret.from_name("mlflow-secret")],
             timeout=3600,
         )
-        def _train_remote(
-            docs: list[str], config: dict[str, Any]
-        ) -> dict[str, Any]:
+        def _train_remote(docs: list[str], config: dict[str, Any]) -> dict[str, Any]:
             """Train on Modal's cloud GPUs.
 
             MLflow tracking URI is injected via ``modal.Secret``.
             The job logs its own metrics and artifacts to MLflow.
+
+            Parameters
+            ----------
+            docs : list[str]
+                Training documents (raw text strings).
+            config : dict[str, Any]
+                Hyperparameter dictionary forwarded from the caller.
+
+            Returns
+            -------
+            dict[str, Any]
+                Dictionary with ``artifact_uris`` and ``mlflow_run_id``
+                keys for downstream metadata registration.
             """
             import os
 
             import mlflow
 
-            from anvil.core.torch_engine import train_torch
+            from ...core.torch_engine import train_torch
 
             mlflow_tracking_uri = os.environ.get(
                 "MLFLOW_TRACKING_URI",
@@ -207,12 +270,12 @@ class ModalBackend:
                     mlflow.log_artifact(samples_path)
 
                 # Log model artifacts from the exported weights
-                from anvil.services.export import SafetensorsExportService
+                from ..export import SafetensorsExportService
 
                 export_svc = SafetensorsExportService()
                 with tempfile.TemporaryDirectory() as tmpdir:
                     # Build a CPU LlamaModel from the exported weights
-                    from anvil.core.engine import LlamaModel
+                    from ...core.engine import LlamaModel
 
                     model = LlamaModel(
                         vocab_size=len(uchars) + 1,
@@ -221,7 +284,7 @@ class ModalBackend:
                         n_layer=config.get("n_layer", 1),
                         block_size=config.get("block_size", 16),
                     )
-                    from anvil.services.compute.local import _load_weights_into_model
+                    from .local import _load_weights_into_model
 
                     _load_weights_into_model(model, _weights)
 
@@ -246,7 +309,15 @@ class ModalBackend:
 
 # ── auto-register ──────────────────────────────────────────────────────
 
+
 def _modal_factory() -> ModalBackend:
+    """Factory callable for the Modal cloud backend.
+
+    Returns
+    -------
+    ModalBackend
+        A new instance of the Modal compute backend.
+    """
     return ModalBackend()
 
 

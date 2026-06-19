@@ -9,7 +9,7 @@ def matrix(nout, nin, std=0.08):
 
 
 def linear(x, w):
-    return [sum(wi * xi for wi, xi in zip(wo, x)) for wo in w]
+    return [sum(wi * xi for wi, xi in zip(wo, x, strict=True)) for wo in w]
 
 
 def softmax(logits):
@@ -83,9 +83,7 @@ class LlamaModel:
         self.intermediate_size = int(8 * n_embd / 3)
 
         if self.head_dim % 2 != 0:
-            raise ValueError(
-                f"head_dim={self.head_dim} must be even for RoPE"
-            )
+            raise ValueError(f"head_dim={self.head_dim} must be even for RoPE")
 
         self.state_dict: dict[str, list] = {
             "wte": matrix(vocab_size, n_embd),
@@ -99,21 +97,13 @@ class LlamaModel:
             self.state_dict[f"layer{i}.mlp_gate"] = matrix(
                 self.intermediate_size, n_embd
             )
-            self.state_dict[f"layer{i}.mlp_up"] = matrix(
-                self.intermediate_size, n_embd
-            )
+            self.state_dict[f"layer{i}.mlp_up"] = matrix(self.intermediate_size, n_embd)
             self.state_dict[f"layer{i}.mlp_down"] = matrix(
                 n_embd, self.intermediate_size
             )
-            self.state_dict[f"layer{i}.rms_1"] = [
-                Value(1.0) for _ in range(n_embd)
-            ]
-            self.state_dict[f"layer{i}.rms_2"] = [
-                Value(1.0) for _ in range(n_embd)
-            ]
-        self.state_dict["rms_final"] = [
-            Value(1.0) for _ in range(n_embd)
-        ]
+            self.state_dict[f"layer{i}.rms_1"] = [Value(1.0) for _ in range(n_embd)]
+            self.state_dict[f"layer{i}.rms_2"] = [Value(1.0) for _ in range(n_embd)]
+        self.state_dict["rms_final"] = [Value(1.0) for _ in range(n_embd)]
 
         self.chars = None  # type: list[str] | None
         self.params: list[Value] = []
@@ -139,7 +129,8 @@ class LlamaModel:
                 for r, xi in zip(
                     self.state_dict[f"layer{li}.rms_1"],
                     rmsnorm(x),
-                    )
+                    strict=True,
+                )
             ]
             q = linear(r, self.state_dict[f"layer{li}.attn_wq"])
             k = linear(r, self.state_dict[f"layer{li}.attn_wk"])
@@ -151,8 +142,12 @@ class LlamaModel:
                 hs = h * self.head_dim
                 q_h = q[hs : hs + self.head_dim]
                 k_h = k[hs : hs + self.head_dim]
-                q_rotated.extend(apply_rope(q_h, pos_id, self._cos_table, self._sin_table))
-                k_rotated.extend(apply_rope(k_h, pos_id, self._cos_table, self._sin_table))
+                q_rotated.extend(
+                    apply_rope(q_h, pos_id, self._cos_table, self._sin_table)
+                )
+                k_rotated.extend(
+                    apply_rope(k_h, pos_id, self._cos_table, self._sin_table)
+                )
             q = q_rotated
             k = k_rotated
             keys[li].append(k)
@@ -161,12 +156,8 @@ class LlamaModel:
             for h in range(self.n_head):
                 hs = h * self.head_dim
                 q_h = q[hs : hs + self.head_dim]
-                k_h = [
-                    ki[hs : hs + self.head_dim] for ki in keys[li]
-                ]
-                v_h = [
-                    vi[hs : hs + self.head_dim] for vi in values[li]
-                ]
+                k_h = [ki[hs : hs + self.head_dim] for ki in keys[li]]
+                v_h = [vi[hs : hs + self.head_dim] for vi in values[li]]
                 attn_logits = [
                     sum(q_h[j] * k_h[t][j] for j in range(self.head_dim))
                     / self.head_dim**0.5
@@ -174,15 +165,12 @@ class LlamaModel:
                 ]
                 attn_weights = softmax(attn_logits)
                 head_out = [
-                    sum(
-                        attn_weights[t] * v_h[t][j]
-                        for t in range(len(v_h))
-                    )
+                    sum(attn_weights[t] * v_h[t][j] for t in range(len(v_h)))
                     for j in range(self.head_dim)
                 ]
                 x_attn.extend(head_out)
             x = linear(x_attn, self.state_dict[f"layer{li}.attn_wo"])
-            x = [a + b for a, b in zip(x, x_residual)]
+            x = [a + b for a, b in zip(x, x_residual, strict=True)]
 
             x_residual = x
             r2 = [
@@ -190,20 +178,22 @@ class LlamaModel:
                 for r, xi in zip(
                     self.state_dict[f"layer{li}.rms_2"],
                     rmsnorm(x),
+                    strict=True,
                 )
             ]
             gate = linear(r2, self.state_dict[f"layer{li}.mlp_gate"])
             gate = [gi.silu() for gi in gate]
             up = linear(r2, self.state_dict[f"layer{li}.mlp_up"])
-            combined = [g * u for g, u in zip(gate, up)]
+            combined = [g * u for g, u in zip(gate, up, strict=True)]
             x = linear(combined, self.state_dict[f"layer{li}.mlp_down"])
-            x = [a + b for a, b in zip(x, x_residual)]
+            x = [a + b for a, b in zip(x, x_residual, strict=True)]
 
         n = [
             r * xi
             for r, xi in zip(
                 self.state_dict["rms_final"],
                 rmsnorm(x),
+                strict=True,
             )
         ]
         logits = linear(n, self.state_dict["lm_head"])
@@ -220,9 +210,7 @@ class LlamaModel:
         serialized: dict[str, list] = {}
         for k, mat in self.state_dict.items():
             if isinstance(mat[0], list):
-                serialized[k] = [
-                    [p.data for p in row] for row in mat
-                ]
+                serialized[k] = [[p.data for p in row] for row in mat]
             else:
                 serialized[k] = [p.data for p in mat]
 
@@ -298,6 +286,7 @@ class LlamaModel:
                     for r, xi in zip(
                         self.state_dict[f"layer{li}.rms_1"],
                         rmsnorm(x),
+                        strict=True,
                     )
                 ]
                 q = linear(r, self.state_dict[f"layer{li}.attn_wq"])
@@ -309,8 +298,12 @@ class LlamaModel:
                     hs = h * self.head_dim
                     q_h = q[hs : hs + self.head_dim]
                     k_h = k[hs : hs + self.head_dim]
-                    q_rotated.extend(apply_rope(q_h, pos_id, self._cos_table, self._sin_table))
-                    k_rotated.extend(apply_rope(k_h, pos_id, self._cos_table, self._sin_table))
+                    q_rotated.extend(
+                        apply_rope(q_h, pos_id, self._cos_table, self._sin_table)
+                    )
+                    k_rotated.extend(
+                        apply_rope(k_h, pos_id, self._cos_table, self._sin_table)
+                    )
                 q = q_rotated
                 k = k_rotated
                 keys[li].append(k)
@@ -319,17 +312,10 @@ class LlamaModel:
                 for h in range(self.n_head):
                     hs = h * self.head_dim
                     q_h = q[hs : hs + self.head_dim]
-                    k_h = [
-                        ki[hs : hs + self.head_dim] for ki in keys[li]
-                    ]
-                    v_h = [
-                        vi[hs : hs + self.head_dim] for vi in values[li]
-                    ]
+                    k_h = [ki[hs : hs + self.head_dim] for ki in keys[li]]
+                    v_h = [vi[hs : hs + self.head_dim] for vi in values[li]]
                     attn_logits = [
-                        sum(
-                            q_h[j] * k_h[t][j]
-                            for j in range(self.head_dim)
-                        )
+                        sum(q_h[j] * k_h[t][j] for j in range(self.head_dim))
                         / self.head_dim**0.5
                         for t in range(len(k_h))
                     ]
@@ -338,15 +324,12 @@ class LlamaModel:
                         w.data for w in attn_weights
                     ]
                     head_out = [
-                        sum(
-                            attn_weights[t] * v_h[t][j]
-                            for t in range(len(v_h))
-                        )
+                        sum(attn_weights[t] * v_h[t][j] for t in range(len(v_h)))
                         for j in range(self.head_dim)
                     ]
                     x_attn.extend(head_out)
                 x = linear(x_attn, self.state_dict[f"layer{li}.attn_wo"])
-                x = [a + b for a, b in zip(x, x_residual)]
+                x = [a + b for a, b in zip(x, x_residual, strict=True)]
 
                 x_residual = x
                 r2 = [
@@ -354,24 +337,22 @@ class LlamaModel:
                     for r, xi in zip(
                         self.state_dict[f"layer{li}.rms_2"],
                         rmsnorm(x),
+                        strict=True,
                     )
                 ]
                 gate = linear(r2, self.state_dict[f"layer{li}.mlp_gate"])
                 gate = [gi.silu() for gi in gate]
                 up = linear(r2, self.state_dict[f"layer{li}.mlp_up"])
-                combined = [
-                    g * u for g, u in zip(gate, up)
-                ]
-                x = linear(
-                    combined, self.state_dict[f"layer{li}.mlp_down"]
-                )
-                x = [a + b for a, b in zip(x, x_residual)]
+                combined = [g * u for g, u in zip(gate, up, strict=True)]
+                x = linear(combined, self.state_dict[f"layer{li}.mlp_down"])
+                x = [a + b for a, b in zip(x, x_residual, strict=True)]
 
             n = [
                 r * xi
                 for r, xi in zip(
                     self.state_dict["rms_final"],
                     rmsnorm(x),
+                    strict=True,
                 )
             ]
             final_logits = linear(n, self.state_dict["lm_head"])

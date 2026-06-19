@@ -5,13 +5,9 @@ Inter-cluster bridge density — potential silos between communities.
 Broken cycles — isolated cycles with no external connections.
 """
 
-from __future__ import annotations
+import networkx as nx
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    import networkx as nx
-    from . import StructuralMetrics, TopologicalMetrics, NoteMetadata
+from .types import NoteMetadata, StructuralMetrics, TopologicalMetrics
 
 # Maximum out-degree for a note to be considered a specific-enough
 # intermediate concept (rather than a broad hub like a MOC or thread).
@@ -35,9 +31,6 @@ def compute_structural(
     Returns:
         StructuralMetrics with chain_gaps, potential_silos, broken_cycles.
     """
-    import networkx as nx
-    from . import StructuralMetrics
-
     metrics = StructuralMetrics()
 
     # Chain gaps
@@ -52,7 +45,7 @@ def compute_structural(
     return metrics
 
 
-def _is_hub(meta: NoteMetadata | None, out_degree: int, G: "nx.DiGraph") -> bool:
+def _is_hub(meta: NoteMetadata | None, out_degree: int, G: nx.DiGraph) -> bool:
     """Check if a note is a hub too broad to be a meaningful intermediate.
 
     Args:
@@ -87,8 +80,6 @@ def _find_chain_gaps(
     Returns:
         List of (source, target, intermediate) tuples where a chain gap exists.
     """
-    import networkx as nx
-
     pred_cache = {node: set(G.predecessors(node)) for node in G.nodes()}
 
     chain_gaps: list[tuple[str, str, str]] = []
@@ -195,7 +186,7 @@ def _find_potential_silos(
     return potential_silos
 
 
-def _find_broken_cycles(G: "nx.DiGraph") -> list[list[str]]:
+def _find_broken_cycles(G: nx.DiGraph) -> list[list[str]]:
     """Find isolated cycles (<=6 nodes) with no external edges.
 
     Args:
@@ -204,8 +195,6 @@ def _find_broken_cycles(G: "nx.DiGraph") -> list[list[str]]:
     Returns:
         List of cycles, where each cycle is a list of note stems.
     """
-    import networkx as nx
-
     broken_cycles: list[list[str]] = []
 
     try:

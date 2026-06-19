@@ -78,5 +78,5 @@ class Value:
                         stack.append((child, False))
         self.grad = 1
         for v in reversed(topo):
-            for child, local_grad in zip(v._children, v._local_grads):
+            for child, local_grad in zip(v._children, v._local_grads, strict=True):
                 child.grad += local_grad * v.grad

@@ -1,8 +1,15 @@
+"""Eval dataset endpoints for v1 API.
+
+Provides CRUD operations for evaluation datasets used in model evaluation
+workflows. Delegates to the MLflow-backed ``TrackingService`` for storage.
+"""
+
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
-from anvil.services.tracking import CapabilityUnavailable, TrackingService
+from ...services.capability_unavailable import CapabilityUnavailable
+from ...services.tracking import TrackingService
 
 router = APIRouter()
 _tracking_svc = TrackingService()
@@ -10,6 +17,25 @@ _tracking_svc = TrackingService()
 
 @router.post("/eval-datasets")
 async def create_eval_dataset(body: dict) -> dict[str, Any]:
+    """Create a new evaluation dataset.
+
+    Parameters
+    ----------
+    body : dict
+        Request body with keys:
+          - ``name``: str — the dataset name (required)
+          - ``tags``: dict, optional — metadata tags
+
+    Returns
+    -------
+    dict
+        Availability flag, dataset name, and dataset identifier.
+
+    Raises
+    ------
+    HTTPException
+        If ``name`` is missing (400).
+    """
     name = body.get("name")
     if not name:
         raise HTTPException(status_code=400, detail="name required")
@@ -23,6 +49,20 @@ async def create_eval_dataset(body: dict) -> dict[str, Any]:
 
 @router.post("/eval-datasets/{name}/records")
 async def append_eval_records(name: str, body: dict) -> dict[str, Any]:
+    """Append evaluation records to an existing dataset.
+
+    Parameters
+    ----------
+    name : str
+        The name of the evaluation dataset.
+    body : dict
+        Request body with a ``records`` key containing a list of records.
+
+    Returns
+    -------
+    dict
+        Availability flag and count of appended records.
+    """
     records = body.get("records", [])
     try:
         count = await _tracking_svc.append_eval_records(name=name, records=records)
@@ -33,6 +73,23 @@ async def append_eval_records(name: str, body: dict) -> dict[str, Any]:
 
 @router.get("/eval-datasets/{name}")
 async def get_eval_dataset(name: str) -> dict[str, Any]:
+    """Retrieve an evaluation dataset by name.
+
+    Parameters
+    ----------
+    name : str
+        The name of the evaluation dataset.
+
+    Returns
+    -------
+    dict
+        Availability flag and dataset details.
+
+    Raises
+    ------
+    HTTPException
+        If the dataset is not found (404).
+    """
     try:
         dataset = await _tracking_svc.get_eval_dataset(name=name)
         if dataset is None:

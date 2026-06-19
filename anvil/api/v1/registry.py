@@ -1,9 +1,18 @@
+"""Model registry API for registering, listing, and managing trained models.
+
+Provides FastAPI routes for interacting with the MLflow Model Registry:
+registering models from completed experiments, listing registered models,
+retrieving model and version details, and deleting models/versions.
+Model IDs are resolved via convention-based naming (``dataset-<id>`` or
+``corpus-<id>``) or used directly as MLflow model names.
+"""
+
 import asyncio
 
 from fastapi import APIRouter, HTTPException, Query
-
-from anvil.config import get_mlflow_uri
 from mlflow.tracking import MlflowClient
+
+from ...config import get_mlflow_uri
 
 router = APIRouter()
 
@@ -12,11 +21,37 @@ router = APIRouter()
 async def register_model(
     body: dict,
 ):
+    """Register a trained model from a completed MLflow experiment.
+
+    Extracts the experiment run information and registers the model artifact
+    in the MLflow Model Registry under a convention-based name derived from
+    the associated dataset or corpus.
+
+    Parameters
+    ----------
+    body : dict
+        Request body containing ``experiment_id`` (required) identifying the
+        completed experiment. Optional ``dataset_id`` or ``corpus_id`` in the
+        experiment params are used to derive the registry name.
+
+    Returns
+    -------
+    dict
+        Result of the model registration, including registered model name and
+        version information.
+
+    Raises
+    ------
+    HTTPException
+        If ``experiment_id`` is missing (400), the experiment does not exist
+        (400), the experiment status is not ``FINISHED`` (400), or the
+        experiment has no MLflow run ID (400).
+    """
     experiment_id = body.get("experiment_id")
     if not experiment_id:
         raise HTTPException(status_code=400, detail="experiment_id required")
 
-    from anvil.services.tracking import TrackingService
+    from ...services.tracking import TrackingService
 
     tracking_svc = TrackingService()
     exp = await tracking_svc.get_experiment(experiment_id)
@@ -41,8 +76,8 @@ async def register_model(
     corpus_id = params.get("corpus_id")
 
     if dataset_id is not None:
-        from anvil.db.repositories.datasets import DatasetRepository
-        from anvil.db.session import AsyncSessionLocal
+        from ...db.repositories.datasets import DatasetRepository
+        from ...db.session import AsyncSessionLocal
 
         async with AsyncSessionLocal() as sess:
             ds_repo = DatasetRepository(sess)
@@ -50,8 +85,8 @@ async def register_model(
             if ds:
                 registry_name = ds.name
     elif corpus_id is not None:
-        from anvil.db.repositories.corpora import CorpusRepository
-        from anvil.db.session import AsyncSessionLocal
+        from ...db.repositories.corpora import CorpusRepository
+        from ...db.session import AsyncSessionLocal
 
         async with AsyncSessionLocal() as sess:
             corp_repo = CorpusRepository(sess)
@@ -72,7 +107,21 @@ async def register_model(
 async def list_registered_models(
     search: str | None = Query(None),
 ):
-    from anvil.services.tracking import TrackingService
+    """List all registered models in the MLflow Model Registry.
+
+    Parameters
+    ----------
+    search : str | None, optional
+        Optional search query to filter registered models by name. If
+        ``None``, all registered models are returned.
+
+    Returns
+    -------
+    dict
+        Dictionary with a ``models`` key containing a list of registered
+        model summaries.
+    """
+    from ...services.tracking import TrackingService
 
     tracking_svc = TrackingService()
     models = await tracking_svc.list_registered_models(search=search)
@@ -81,7 +130,32 @@ async def list_registered_models(
 
 @router.get("/registry/models/{model_id}")
 async def get_model(model_id: str):
-    from anvil.services.tracking import TrackingService
+    """Retrieve details for a specific registered model and all its versions.
+
+    Resolves ``model_id`` to an MLflow registered model name using
+    convention-based lookup (``dataset-<id>`` or ``corpus-<id>``) for integer
+    IDs, or uses the value directly for string IDs. Fetches full model details
+    including all versions with associated run metadata.
+
+    Parameters
+    ----------
+    model_id : str
+        The model identifier. Can be an integer (resolved to
+        ``dataset-<id>`` or ``corpus-<id>``) or a string used directly
+        as the MLflow registered model name.
+
+    Returns
+    -------
+    dict
+        Model details including ``id``, ``name``, ``description``,
+        ``versions`` (list of version objects), and ``created_at``.
+
+    Raises
+    ------
+    HTTPException
+        If the model cannot be found (404).
+    """
+    from ...services.tracking import TrackingService
 
     tracking_svc = TrackingService()
     loop = asyncio.get_event_loop()
@@ -135,20 +209,20 @@ async def get_model(model_id: str):
         except Exception:
             pass
 
-        versions_list.append({
-            "version": int(v.version),
-            "experiment_id": None,
-            "dataset_name": run_data["params"].get("dataset_id"),
-            "final_loss": run_data["metrics"].get("final_loss"),
-            "hyperparameters": (
-                dict(run_data["params"]) if run_data["params"] else None
-            ),
-            "created_at": (
-                str(v.creation_timestamp)
-                if v.creation_timestamp
-                else None
-            ),
-        })
+        versions_list.append(
+            {
+                "version": int(v.version),
+                "experiment_id": None,
+                "dataset_name": run_data["params"].get("dataset_id"),
+                "final_loss": run_data["metrics"].get("final_loss"),
+                "hyperparameters": (
+                    dict(run_data["params"]) if run_data["params"] else None
+                ),
+                "created_at": (
+                    str(v.creation_timestamp) if v.creation_timestamp else None
+                ),
+            }
+        )
 
     return {
         "id": model_name,
@@ -165,7 +239,31 @@ async def get_model(model_id: str):
 
 @router.get("/registry/models/{model_id}/versions/{version}")
 async def get_version(model_id: str, version: int):
-    from anvil.services.tracking import TrackingService
+    """Retrieve details for a specific version of a registered model.
+
+    Resolves ``model_id`` using convention-based lookup and fetches the
+    specific version's details including run metadata.
+
+    Parameters
+    ----------
+    model_id : str
+        The model identifier.
+    version : int
+        The version number to retrieve.
+
+    Returns
+    -------
+    dict
+        Version details including ``version``, ``dataset_name``,
+        ``final_loss``, ``hyperparameters``, ``artifact_path``, and
+        ``created_at``.
+
+    Raises
+    ------
+    HTTPException
+        If the model or version is not found (404).
+    """
+    from ...services.tracking import TrackingService
 
     tracking_svc = TrackingService()
     loop = asyncio.get_event_loop()
@@ -223,9 +321,7 @@ async def get_version(model_id: str, version: int):
         "experiment_id": None,
         "dataset_name": run_data["params"].get("dataset_id"),
         "final_loss": run_data["metrics"].get("final_loss"),
-        "hyperparameters": (
-            dict(run_data["params"]) if run_data["params"] else None
-        ),
+        "hyperparameters": (dict(run_data["params"]) if run_data["params"] else None),
         "artifact_path": (
             target_version.source if hasattr(target_version, "source") else None
         ),
@@ -239,7 +335,26 @@ async def get_version(model_id: str, version: int):
 
 @router.delete("/registry/models/{model_id}/versions/{version}")
 async def delete_version(model_id: str, version: int):
-    from anvil.services.tracking import TrackingService
+    """Delete a specific version of a registered model.
+
+    Parameters
+    ----------
+    model_id : str
+        The model identifier.
+    version : int
+        The version number to delete.
+
+    Returns
+    -------
+    dict
+        Confirmation message.
+
+    Raises
+    ------
+    HTTPException
+        If the model or version is not found, or deletion fails (404).
+    """
+    from ...services.tracking import TrackingService
 
     tracking_svc = TrackingService()
     loop = asyncio.get_event_loop()
@@ -280,7 +395,24 @@ async def delete_version(model_id: str, version: int):
 
 @router.delete("/registry/models/{model_id}")
 async def delete_model(model_id: str):
-    from anvil.services.tracking import TrackingService
+    """Delete a registered model and all its versions.
+
+    Parameters
+    ----------
+    model_id : str
+        The model identifier.
+
+    Returns
+    -------
+    dict
+        Confirmation message.
+
+    Raises
+    ------
+    HTTPException
+        If the model cannot be found or deletion fails (404).
+    """
+    from ...services.tracking import TrackingService
 
     tracking_svc = TrackingService()
     loop = asyncio.get_event_loop()

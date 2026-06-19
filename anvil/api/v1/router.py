@@ -1,4 +1,10 @@
-"""Versioned API v1 router."""
+"""Versioned API v1 router.
+
+Aggregates all sub-routers (training, experiments, datasets, corpora, registry,
+eval, eval_datasets, inference, compute) under a single ``APIRouter`` instance.
+Also provides service management endpoints, HTML page rendering routes, and
+learning-content data structures (``LEARNING_ARC``, step constants).
+"""
 
 import os
 import random
@@ -11,17 +17,17 @@ import psutil
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
+from anvil import __version__ as anvil_version
 from anvil.api.v1.compute import router as compute_router
 from anvil.api.v1.corpora import router as corpora_router
 from anvil.api.v1.datasets import router as datasets_router
-from anvil import __version__ as anvil_version
-from anvil.config import get_config, get_mlflow_browser_uri
 from anvil.api.v1.eval import router as eval_router
 from anvil.api.v1.eval_datasets import router as eval_datasets_router
 from anvil.api.v1.experiments import router as experiments_router
 from anvil.api.v1.inference import router as inference_router
 from anvil.api.v1.registry import router as registry_router
 from anvil.api.v1.training import router as training_router
+from anvil.config import get_config, get_mlflow_browser_uri
 from anvil.core.engine import softmax
 from anvil.gpu import detect_gpu
 
@@ -37,13 +43,23 @@ router.include_router(inference_router)
 router.include_router(compute_router)
 
 MODELS_DIR = Path("data/models")
+"""Path: Directory where trained model artifacts are stored on disk."""
 
 
 _start_time: float = time.time()
+"""float: Unix timestamp (epoch seconds) when the server process started."""
 
 
 @router.get("/health")
 async def health():
+    """Return system health status including CPU, memory, disk, and GPU.
+
+    Returns
+    -------
+    dict
+        ``status``, ``version``, ``uptime_seconds``, ``system`` metrics and
+        ``gpu`` details.
+    """
     cpu_percent = psutil.cpu_percent(interval=0)
     mem = psutil.virtual_memory()
     disk = psutil.disk_usage("/")
@@ -77,9 +93,24 @@ async def health():
 
 @router.get("/services")
 async def list_services(request: Request):
+    """List available services and their status.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming HTTP request.
+
+    Returns
+    -------
+    dict
+        List of service dicts with ``name``, ``status``, ``port``, and
+        ``mlflow_url`` where applicable.
+    """
     mlflow = getattr(request.app.state, "mlflow", None)
     if mlflow is None:
-        mlflow_status = "external" if get_config()["mlflow_disable_local"] else "stopped"
+        mlflow_status = (
+            "external" if get_config()["mlflow_disable_local"] else "stopped"
+        )
     else:
         mlflow_status = "running" if mlflow.is_running else "stopped"
     return {
@@ -97,6 +128,20 @@ async def list_services(request: Request):
 
 @router.get("/services/logs/{name}")
 async def get_service_logs(name: str, lines: int = 50):
+    """Retrieve the last N lines of a service log file.
+
+    Parameters
+    ----------
+    name : str
+        Service name (e.g. ``"web"``, ``"mlflow"``).
+    lines : int, optional
+        Number of log lines to return. Defaults to ``50``.
+
+    Returns
+    -------
+    dict
+        ``logs`` list of log line strings.
+    """
     log_file = Path("logs") / f"{name}.log"
     if not log_file.exists():
         return {"logs": []}
@@ -106,6 +151,18 @@ async def get_service_logs(name: str, lines: int = 50):
 
 @router.post("/services/restart-all")
 async def restart_all_services(request: Request):
+    """Restart all managed services (MLflow).
+
+    Parameters
+    ----------
+    request : Request
+        The incoming HTTP request.
+
+    Returns
+    -------
+    dict
+        Status and per-service restart results.
+    """
     results = {}
     mlflow = getattr(request.app.state, "mlflow", None)
     if mlflow is not None:
@@ -121,6 +178,18 @@ async def restart_all_services(request: Request):
 
 @router.post("/services/logs/{name}/clear")
 async def clear_service_logs(name: str):
+    """Clear a service's log file by truncating it.
+
+    Parameters
+    ----------
+    name : str
+        Service name.
+
+    Returns
+    -------
+    dict
+        ``status`` set to ``"cleared"`` or ``"no_logs"``.
+    """
     log_file = Path("logs") / f"{name}.log"
     if log_file.exists():
         log_file.write_text("")
@@ -130,6 +199,26 @@ async def clear_service_logs(name: str):
 
 @router.post("/services/{name}/start")
 async def start_service(name: str, request: Request):
+    """Start a managed service by name.
+
+    Parameters
+    ----------
+    name : str
+        Service name (``"mlflow"`` supported).
+    request : Request
+        The incoming HTTP request.
+
+    Returns
+    -------
+    dict
+        Status indicating the result of the start operation.
+
+    Raises
+    ------
+    HTTPException
+        If the service is the web server (400), not initialized (500),
+        or unknown (404).
+    """
     if name == "web":
         raise HTTPException(
             status_code=400, detail="web server cannot be managed via API"
@@ -149,6 +238,26 @@ async def start_service(name: str, request: Request):
 
 @router.post("/services/{name}/stop")
 async def stop_service(name: str, request: Request):
+    """Stop a managed service by name.
+
+    Parameters
+    ----------
+    name : str
+        Service name (``"mlflow"`` supported).
+    request : Request
+        The incoming HTTP request.
+
+    Returns
+    -------
+    dict
+        Status indicating the result of the stop operation.
+
+    Raises
+    ------
+    HTTPException
+        If the service is the web server (400), not initialized (500),
+        or unknown (404).
+    """
     if name == "web":
         raise HTTPException(
             status_code=400, detail="web server cannot be managed via API"
@@ -168,6 +277,26 @@ async def stop_service(name: str, request: Request):
 
 @router.post("/services/{name}/restart")
 async def restart_service(name: str, request: Request):
+    """Restart a managed service by name.
+
+    Parameters
+    ----------
+    name : str
+        Service name (``"mlflow"`` supported).
+    request : Request
+        The incoming HTTP request.
+
+    Returns
+    -------
+    dict
+        Status indicating the result of the restart operation.
+
+    Raises
+    ------
+    HTTPException
+        If the service is the web server (400), not initialized (500),
+        or unknown (404).
+    """
     if name == "web":
         raise HTTPException(
             status_code=400, detail="web server cannot be managed via API"
@@ -186,7 +315,22 @@ async def restart_service(name: str, request: Request):
 
 
 def _poll_port(port: int, timeout: float = 2.0) -> list[int]:
-    """Repeatedly check if a port is free; return remaining PIDs after timeout."""
+    """Repeatedly check if a port is free; return remaining PIDs after timeout.
+
+    Parameters
+    ----------
+    port : int
+        The port number to check.
+    timeout : float, optional
+        Maximum time in seconds to wait for the port to become free.
+        Defaults to ``2.0``.
+
+    Returns
+    -------
+    list[int]
+        List of remaining PID(s) still listening on the port, or empty
+        list if the port became free.
+    """
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         result = subprocess.run(
@@ -203,6 +347,29 @@ def _poll_port(port: int, timeout: float = 2.0) -> list[int]:
 
 @router.post("/services/{name}/kill-port")
 async def kill_service_port(name: str, request: Request):
+    """Kill all processes listening on a service's port.
+
+    Uses ``lsof`` to find processes, sends ``SIGTERM``, polls for cleanup,
+    then sends ``SIGKILL`` to any survivors.
+
+    Parameters
+    ----------
+    name : str
+        Service name (``"mlflow"`` supported).
+    request : Request
+        The incoming HTTP request.
+
+    Returns
+    -------
+    dict
+        ``status``, ``port``, and ``killed`` count.
+
+    Raises
+    ------
+    HTTPException
+        If the service has no configured port (404), ``lsof`` not found
+        (500), or port scanning times out (500).
+    """
     SERVICE_PORTS = {"mlflow": get_config()["mlflow_port"]}
     port = SERVICE_PORTS.get(name)
     if port is None:
@@ -244,6 +411,18 @@ async def kill_service_port(name: str, request: Request):
 @router.get("", response_class=HTMLResponse)
 @router.get("/", response_class=HTMLResponse)
 async def root(request: Request):
+    """Render the root training dashboard page.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming HTTP request.
+
+    Returns
+    -------
+    HTMLResponse
+        Rendered ``archetypes/training.html`` template.
+    """
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/training.html",
@@ -252,6 +431,18 @@ async def root(request: Request):
 
 @router.get("/training-page", response_class=HTMLResponse)
 async def training_page(request: Request):
+    """Render the training configuration and control page.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming HTTP request.
+
+    Returns
+    -------
+    HTMLResponse
+        Rendered ``archetypes/training.html`` template.
+    """
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/training.html",
@@ -260,6 +451,18 @@ async def training_page(request: Request):
 
 @router.get("/experiments-page", response_class=HTMLResponse)
 async def experiments_page(request: Request):
+    """Render the experiment history and comparison page.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming HTTP request.
+
+    Returns
+    -------
+    HTMLResponse
+        Rendered ``archetypes/experiment.html`` template.
+    """
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/experiment.html",
@@ -268,6 +471,18 @@ async def experiments_page(request: Request):
 
 @router.get("/learn/graph", response_class=HTMLResponse)
 async def graph_concept_page(request: Request):
+    """Render the interactive forward pass computation graph page.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming HTTP request.
+
+    Returns
+    -------
+    HTMLResponse
+        Rendered ``archetypes/graph.html`` template with arc context.
+    """
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/graph.html",
@@ -277,6 +492,18 @@ async def graph_concept_page(request: Request):
 
 @router.get("/datasets-page", response_class=HTMLResponse)
 async def datasets_page(request: Request):
+    """Render the dataset management page.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming HTTP request.
+
+    Returns
+    -------
+    HTMLResponse
+        Rendered ``datasets.html`` template.
+    """
     return request.app.state.templates.TemplateResponse(
         request,
         "datasets.html",
@@ -285,6 +512,18 @@ async def datasets_page(request: Request):
 
 @router.get("/operations-page", response_class=HTMLResponse)
 async def operations_page(request: Request):
+    """Render the service operations and management page.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming HTTP request.
+
+    Returns
+    -------
+    HTMLResponse
+        Rendered ``operations.html`` template.
+    """
     return request.app.state.templates.TemplateResponse(
         request,
         "operations.html",
@@ -293,6 +532,18 @@ async def operations_page(request: Request):
 
 @router.get("/inference-page", response_class=HTMLResponse)
 async def inference_page(request: Request):
+    """Render the model inference/sampling playground page.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming HTTP request.
+
+    Returns
+    -------
+    HTMLResponse
+        Rendered ``archetypes/playground.html`` template.
+    """
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/playground.html",
@@ -300,41 +551,114 @@ async def inference_page(request: Request):
 
 
 LEARNING_ARC = [
-    {"key": "tokenization", "title": "Tokenization", "path": "/v1/learn/tokenization",
-     "desc": "How the model chops text into character tokens and maps them to IDs."},
-    {"key": "embeddings", "title": "Embeddings", "path": "/v1/learn/embeddings",
-     "desc": "How each token ID becomes a dense vector the model can compute with."},
-    {"key": "parameters", "title": "Parameters", "path": "/v1/learn/parameters",
-     "desc": "Where the model's ~4K parameters live and what each matrix does."},
-    {"key": "autograd", "title": "Autograd", "path": "/v1/learn/autograd",
-     "desc": "How gradients flow backward through the computation graph to train the model."},
-    {"key": "attention", "title": "Attention", "path": "/v1/learn/attention",
-     "desc": "How each token looks at its predecessors to build context-aware representations."},
-    {"key": "loss", "title": "Cross-Entropy Loss", "path": "/v1/learn/loss",
-     "desc": "How prediction error is measured and what the loss number means."},
-    {"key": "sampling", "title": "Sampling", "path": "/v1/learn/sampling",
-     "desc": "How the model picks the next character from its probability distribution."},
-    {"key": "adam", "title": "Adam Optimizer", "path": "/v1/learn/adam",
-     "desc": "How momentum and adaptive learning rates make training converge faster."},
-    {"key": "training-loop", "title": "Training Loop", "path": "/v1/learn/training-loop",
-     "desc": "How the model learns by minimizing prediction error step by step."},
-    {"key": "architecture", "title": "Architecture", "path": "/v1/learn/architecture",
-     "desc": "The full Llama decoder stack — RoPE, RMSNorm, SwiGLU — visualized end to end."},
-    {"key": "graph", "title": "Forward Pass", "path": "/v1/learn/graph",
-     "desc": "Scrub through the Llama forward pass step by step on an interactive computation graph."},
-    {"key": "data-flow", "title": "Data Flow", "path": "/v1/learn/data-flow",
-     "desc": "How a training request travels from browser to engine and back via SSE."},
-    {"key": "export", "title": "Model Export", "path": "/v1/learn/export",
-     "desc": "How trained models are exported to safetensors for HuggingFace compatibility."},
-    {"key": "faq", "title": "FAQ", "path": "/v1/learn/faq",
-     "desc": "Frequently asked questions about how anvil works and what it can do."},
-    {"key": "cloud-compute", "title": "Training in the Cloud", "path": "/v1/learn/cloud-compute",
-     "desc": "Run training on external compute with Modal, Modal GPUs, MLflow artifact sync, and the submitted/poll/complete lifecycle."},
+    {
+        "key": "tokenization",
+        "title": "Tokenization",
+        "path": "/v1/learn/tokenization",
+        "desc": "How the model chops text into character tokens and maps them to IDs.",
+    },
+    {
+        "key": "embeddings",
+        "title": "Embeddings",
+        "path": "/v1/learn/embeddings",
+        "desc": "How each token ID becomes a dense vector the model can compute with.",
+    },
+    {
+        "key": "parameters",
+        "title": "Parameters",
+        "path": "/v1/learn/parameters",
+        "desc": "Where the model's ~4K parameters live and what each matrix does.",
+    },
+    {
+        "key": "autograd",
+        "title": "Autograd",
+        "path": "/v1/learn/autograd",
+        "desc": "How gradients flow backward through the computation graph to train the model.",
+    },
+    {
+        "key": "attention",
+        "title": "Attention",
+        "path": "/v1/learn/attention",
+        "desc": "How each token looks at its predecessors to build context-aware representations.",
+    },
+    {
+        "key": "loss",
+        "title": "Cross-Entropy Loss",
+        "path": "/v1/learn/loss",
+        "desc": "How prediction error is measured and what the loss number means.",
+    },
+    {
+        "key": "sampling",
+        "title": "Sampling",
+        "path": "/v1/learn/sampling",
+        "desc": "How the model picks the next character from its probability distribution.",
+    },
+    {
+        "key": "adam",
+        "title": "Adam Optimizer",
+        "path": "/v1/learn/adam",
+        "desc": "How momentum and adaptive learning rates make training converge faster.",
+    },
+    {
+        "key": "training-loop",
+        "title": "Training Loop",
+        "path": "/v1/learn/training-loop",
+        "desc": "How the model learns by minimizing prediction error step by step.",
+    },
+    {
+        "key": "architecture",
+        "title": "Architecture",
+        "path": "/v1/learn/architecture",
+        "desc": "The full Llama decoder stack — RoPE, RMSNorm, SwiGLU — visualized end to end.",
+    },
+    {
+        "key": "graph",
+        "title": "Forward Pass",
+        "path": "/v1/learn/graph",
+        "desc": "Scrub through the Llama forward pass step by step on an interactive computation graph.",
+    },
+    {
+        "key": "data-flow",
+        "title": "Data Flow",
+        "path": "/v1/learn/data-flow",
+        "desc": "How a training request travels from browser to engine and back via SSE.",
+    },
+    {
+        "key": "export",
+        "title": "Model Export",
+        "path": "/v1/learn/export",
+        "desc": "How trained models are exported to safetensors for HuggingFace compatibility.",
+    },
+    {
+        "key": "faq",
+        "title": "FAQ",
+        "path": "/v1/learn/faq",
+        "desc": "Frequently asked questions about how anvil works and what it can do.",
+    },
+    {
+        "key": "cloud-compute",
+        "title": "Training in the Cloud",
+        "path": "/v1/learn/cloud-compute",
+        "desc": "Run training on external compute with Modal, Modal GPUs, MLflow artifact sync, and the submitted/poll/complete lifecycle.",
+    },
 ]
 
 
 def _arc_context(current_key: str) -> dict:
-    """Build prev/next navigation context from LEARNING_ARC."""
+    """Build prev/next navigation context from ``LEARNING_ARC``.
+
+    Parameters
+    ----------
+    current_key : str
+        The key of the current learning module (e.g. ``"tokenization"``).
+
+    Returns
+    -------
+    dict
+        ``arc`` (full list), ``current_key``, ``current_index``,
+        ``prev`` (previous module dict or None), and ``next`` (next
+        module dict or None).
+    """
     idx = next(
         (i for i, item in enumerate(LEARNING_ARC) if item["key"] == current_key), -1
     )
@@ -646,7 +970,7 @@ TRAINING_LOOP_STEPS = [
             "measures how wrong it was (loss), and nudges every parameter to reduce that error. "
             "The widget below shows the loss curve from your training runs. "
             "If you haven't trained a model yet, head to the "
-            "<a href=\"/v1/training-page\" class=\"action-link\">Training Dashboard</a> "
+            '<a href="/v1/training-page" class="action-link">Training Dashboard</a> '
             "first — then come back here to inspect the results."
         ),
         "widget": "trainingLoop",
@@ -694,7 +1018,7 @@ TRAINING_LOOP_STEPS = [
             "it predicts the next char, samples it (using the sampling lesson's techniques), "
             "feeds it back as input, and repeats. Better loss = more coherent output. "
             "No experiments yet? "
-            "<a href=\"/v1/training-page\" class=\"action-link\">Go train a model</a> "
+            '<a href="/v1/training-page" class="action-link">Go train a model</a> '
             "to populate the loss curve above — then use the selector to switch between runs."
         ),
         "widget": "trainingLoop",
@@ -1112,7 +1436,7 @@ ARCHITECTURE_STEPS = [
             "Second sublayer: RMSNorm (scaled by rms_2) → SwiGLU MLP → add residual. "
             "SwiGLU computes gate = SiLU(x·Wgate), up = x·Wup, then (gate ⊙ up)·Wdown. "
             "The intermediate size is int(8·n_embd/3), preserving parameter parity "
-            "with the classic 4× ReLU MLP it replaces. SiLU (Swish) is x·sigmoid(x)."
+            "with the classic 4x ReLU MLP it replaces. SiLU (Swish) is x·sigmoid(x)."
         ),
         "widget": "architecture",
     },
@@ -1222,7 +1546,7 @@ CLOUD_COMPUTE_STEPS = [
         "key": "submitted-event",
         "title": "The 'submitted' SSE Event",
         "body": (
-            "When training is dispatched to Modal, the server sends a new \"submitted\" "
+            'When training is dispatched to Modal, the server sends a new "submitted" '
             "SSE event to the browser with the remote_job_id. This tells the dashboard "
             "the job was accepted by Modal and is waiting in the queue. "
             "The connection state changes to 'submitted' and shows the remote job ID."
@@ -1233,7 +1557,7 @@ CLOUD_COMPUTE_STEPS = [
         "title": "The 'status' SSE Event",
         "body": (
             "As Modal runs the job, the server polls for state transitions and emits "
-            "\"status\" SSE events. These carry the current lifecycle phase: "
+            '"status" SSE events. These carry the current lifecycle phase: '
             "RUNNING (training started), with step/loss metrics when available, "
             "and COMPLETED (training finished). The dashboard updates the loss chart "
             "and metrics in real time, exactly like local training."
@@ -1256,8 +1580,8 @@ CLOUD_COMPUTE_STEPS = [
         "body": (
             "If you select Modal but the modal package is missing or unauthenticated, "
             "the server returns a 422 error with a clear message: "
-            "\"Modal selected but not available. Install via: pip install anvil[compute] "
-            "and authenticate via: modal token new\". This follows the D4 rule: "
+            '"Modal selected but not available. Install via: pip install anvil[compute] '
+            'and authenticate via: modal token new". This follows the D4 rule: '
             "implicit backends (auto, local-cpu/gpu) silently fall back; "
             "explicit selection of an unavailable backend raises an error."
         ),
@@ -1278,6 +1602,7 @@ CLOUD_COMPUTE_STEPS = [
 
 @router.get("/learn", response_class=HTMLResponse)
 async def learn_index(request: Request):
+    """Render the learning hub index page."""
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/learn-index.html",
@@ -1287,6 +1612,7 @@ async def learn_index(request: Request):
 
 @router.get("/learn/attention", response_class=HTMLResponse)
 async def attention_concept_page(request: Request):
+    """Render the attention mechanism walkthrough page with interactive steps."""
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/concept.html",
@@ -1296,6 +1622,7 @@ async def attention_concept_page(request: Request):
 
 @router.get("/learn/tokenization", response_class=HTMLResponse)
 async def tokenization_concept_page(request: Request):
+    """Render the tokenization walkthrough page with interactive steps."""
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/concept.html",
@@ -1305,6 +1632,7 @@ async def tokenization_concept_page(request: Request):
 
 @router.get("/learn/embeddings", response_class=HTMLResponse)
 async def embeddings_concept_page(request: Request):
+    """Render the embeddings walkthrough page with interactive steps."""
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/concept.html",
@@ -1314,6 +1642,7 @@ async def embeddings_concept_page(request: Request):
 
 @router.get("/learn/sampling", response_class=HTMLResponse)
 async def sampling_concept_page(request: Request):
+    """Render the sampling walkthrough page with interactive steps."""
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/concept.html",
@@ -1323,6 +1652,7 @@ async def sampling_concept_page(request: Request):
 
 @router.get("/learn/training-loop", response_class=HTMLResponse)
 async def training_loop_concept_page(request: Request):
+    """Render the training loop walkthrough page with interactive steps."""
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/concept.html",
@@ -1332,6 +1662,7 @@ async def training_loop_concept_page(request: Request):
 
 @router.get("/learn/autograd", response_class=HTMLResponse)
 async def autograd_concept_page(request: Request):
+    """Render the autograd walkthrough page with interactive steps."""
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/concept.html",
@@ -1341,6 +1672,7 @@ async def autograd_concept_page(request: Request):
 
 @router.get("/learn/loss", response_class=HTMLResponse)
 async def loss_concept_page(request: Request):
+    """Render the loss functions walkthrough page with interactive steps."""
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/concept.html",
@@ -1350,6 +1682,7 @@ async def loss_concept_page(request: Request):
 
 @router.get("/learn/parameters", response_class=HTMLResponse)
 async def params_concept_page(request: Request):
+    """Render the model parameters walkthrough page with interactive steps."""
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/concept.html",
@@ -1359,6 +1692,7 @@ async def params_concept_page(request: Request):
 
 @router.get("/learn/adam", response_class=HTMLResponse)
 async def adam_concept_page(request: Request):
+    """Render the Adam optimizer walkthrough page with interactive steps."""
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/concept.html",
@@ -1368,6 +1702,7 @@ async def adam_concept_page(request: Request):
 
 @router.get("/learn/architecture", response_class=HTMLResponse)
 async def architecture_concept_page(request: Request):
+    """Render the transformer architecture walkthrough page."""
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/architecture.html",
@@ -1377,6 +1712,7 @@ async def architecture_concept_page(request: Request):
 
 @router.get("/learn/data-flow", response_class=HTMLResponse)
 async def data_flow_concept_page(request: Request):
+    """Render the data flow walkthrough page with interactive steps."""
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/concept.html",
@@ -1386,6 +1722,7 @@ async def data_flow_concept_page(request: Request):
 
 @router.get("/learn/export", response_class=HTMLResponse)
 async def export_concept_page(request: Request):
+    """Render the model export walkthrough page with interactive steps."""
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/concept.html",
@@ -1395,6 +1732,7 @@ async def export_concept_page(request: Request):
 
 @router.get("/learn/faq", response_class=HTMLResponse)
 async def faq_page(request: Request):
+    """Render the FAQ walkthrough page."""
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/faq.html",
@@ -1404,6 +1742,7 @@ async def faq_page(request: Request):
 
 @router.get("/learn/cloud-compute", response_class=HTMLResponse)
 async def cloud_compute_concept_page(request: Request):
+    """Render the cloud compute walkthrough page with interactive steps."""
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/concept.html",
@@ -1413,6 +1752,7 @@ async def cloud_compute_concept_page(request: Request):
 
 @router.get("/models-page", response_class=HTMLResponse)
 async def models_page(request: Request):
+    """Render the model registry page."""
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/models.html",
@@ -1421,6 +1761,20 @@ async def models_page(request: Request):
 
 @router.get("/model-detail/{model_id}", response_class=HTMLResponse)
 async def model_detail_page(request: Request, model_id: str):
+    """Render the model detail page for a given model ID.
+
+    Parameters
+    ----------
+    request : Request
+        FastAPI request object.
+    model_id : str
+        The model ID to display (parsed as integer).
+
+    Returns
+    -------
+    TemplateResponse
+        Model detail page or a 404 response for invalid IDs.
+    """
     try:
         parsed = int(model_id)
         if parsed <= 0:
@@ -1441,6 +1795,14 @@ async def model_detail_page(request: Request, model_id: str):
 
 @router.get("/inference/models")
 async def list_inference_models():
+    """List all registered models available for inference.
+
+    Returns
+    -------
+    dict
+        Dict with ``models`` (list of model dicts) and optionally a
+        ``message`` if no models are registered.
+    """
     from anvil.services.tracking import TrackingService
 
     tracking_svc = TrackingService()
@@ -1455,6 +1817,25 @@ async def list_inference_models():
 
 @router.post("/inference/sample")
 async def inference_sample(body: dict):
+    """Generate text samples from a registered model.
+
+    Parameters
+    ----------
+    body : dict
+        Request body with ``model_id``, ``version``, ``prompt``,
+        ``temperature``, ``num_samples``, ``top_k``, and ``top_p``.
+
+    Returns
+    -------
+    dict
+        Generated text samples from the model.
+
+    Raises
+    ------
+    HTTPException
+        If ``model_id`` or ``version`` are missing, or parameters are
+        invalid.
+    """
     from anvil.core.autograd import Value
 
     model_id = body.get("model_id")

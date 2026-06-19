@@ -1,3 +1,10 @@
+"""Training control endpoints for v1 API.
+
+Provides routes for starting, stopping, and streaming training runs, as well
+as managing training configs and the forward pass computation graph. Training
+runs execute asynchronously in the background with real-time SSE streaming.
+"""
+
 import asyncio
 import json
 import logging
@@ -8,13 +15,14 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from starlette.responses import StreamingResponse
 
-from anvil.gpu import detect_gpu
-from anvil.services.compute.errors import ComputeBackendUnavailable
-from anvil.services.compute.resolve import resolve_backend
-from anvil.services.memory_estimator import estimate_training_memory
-from anvil.services.metrics_collectors import MPSMetricsCollector, MPSSamplerThread
-from anvil.services.tracking import TrackingService
-from anvil.services.training import TrainingService
+from ...gpu import detect_gpu
+from ...services.compute.compute_backend_unavailable import ComputeBackendUnavailable
+from ...services.compute.resolve import resolve_backend
+from ...services.memory_estimator import estimate_training_memory
+from ...services.mps_metrics_collector import MPSMetricsCollector
+from ...services.mps_sampler_thread import MPSSamplerThread
+from ...services.tracking import TrackingService
+from ...services.training import TrainingService
 
 logger = logging.getLogger(__name__)
 
@@ -22,12 +30,52 @@ router = APIRouter()
 svc = TrainingService()
 tracking_svc = TrackingService()
 _tasks: dict[int, asyncio.Task] = {}
+"""dict[int, asyncio.Task]: In-memory registry of active training tasks keyed by
+run ID."""
 MODELS_DIR = Path("data/models")
+"""Path: Directory where trained model artifacts are saved."""
 MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 @router.post("/training/start")
 async def start_training(config: dict):
+    """Start a new training run asynchronously.
+
+    Validates hyperparameters (``n_embd``, ``n_head``, ``block_size``),
+    resolves the compute backend, estimates GPU memory for torch backend,
+    creates an MLflow run, and launches the training as an ``asyncio.Task``.
+
+    Parameters
+    ----------
+    config : dict
+        Training configuration with keys:
+          - ``n_embd``: int, optional (default ``16``)
+          - ``n_head``: int, optional (default ``4``)
+          - ``n_layer``: int, optional (default ``1``)
+          - ``block_size``: int, optional (default ``16``)
+          - ``num_steps``: int, optional (default ``1000``)
+          - ``learning_rate``: float, optional (default ``0.01``)
+          - ``beta1``: float, optional (default ``0.85``)
+          - ``beta2``: float, optional (default ``0.99``)
+          - ``temperature``: float, optional (default ``0.5``)
+          - ``use_gpu``: bool, optional (default ``False``)
+          - ``compute_backend``: str, optional (default ``"auto"``)
+          - ``dataset_id``: int, optional
+          - ``corpus_id``: int, optional
+
+    Returns
+    -------
+    dict
+        ``run_id``, ``mlflow_run_id``, ``experiment_id``, ``status``, and
+        ``tracking`` status.
+
+    Raises
+    ------
+    HTTPException
+        If ``n_head > n_embd`` (422), ``n_embd`` not divisible by ``n_head``
+        (422), ``head_dim`` is odd (422), compute backend unavailable (422),
+        or model would OOM GPU (422).
+    """
     n_embd = config.get("n_embd", 16)
     n_head = config.get("n_head", 4)
     block_size = config.get("block_size", 16)
@@ -35,21 +83,21 @@ async def start_training(config: dict):
     if n_head > n_embd:
         raise HTTPException(
             status_code=422,
-            detail=f"n_head ({n_head}) exceeds n_embd ({n_embd}) — head_dim would be 0. n_head must be <= n_embd."
+            detail=f"n_head ({n_head}) exceeds n_embd ({n_embd}) — head_dim would be 0. n_head must be <= n_embd.",
         )
     if n_embd % n_head != 0:
         raise HTTPException(
             status_code=422,
             detail=f"n_embd ({n_embd}) is not divisible by n_head ({n_head}). "
-                   f"The embedding dimension must be evenly divisible by the number of attention heads. "
-                   f"Try n_head={max(h for h in range(1, n_head + 1) if n_embd % h == 0)}."
+            f"The embedding dimension must be evenly divisible by the number of attention heads. "
+            f"Try n_head={max(h for h in range(1, n_head + 1) if n_embd % h == 0)}.",
         )
     head_dim = n_embd // n_head
     if head_dim % 2 != 0:
         raise HTTPException(
             status_code=422,
             detail=f"head_dim={head_dim} is odd — RoPE (Rotary Position Embedding) requires an even head dimension. "
-                   f"Try adjusting n_embd or n_head so that n_embd / n_head is even."
+            f"Try adjusting n_embd or n_head so that n_embd / n_head is even.",
         )
 
     use_gpu = config.get("use_gpu", False)
@@ -146,10 +194,12 @@ async def start_training(config: dict):
 
     # Store experiment identity as MLflow tags
     if mlflow_run_id:
-        await tracking_svc.set_tag(mlflow_run_id, "anvil.experiment_id", str(experiment_id))
+        await tracking_svc.set_tag(
+            mlflow_run_id, "anvil.experiment_id", str(experiment_id)
+        )
         await tracking_svc.set_tag(mlflow_run_id, "anvil.status", "running")
 
-    from anvil.db.session import AsyncSessionLocal
+    from ...db.session import AsyncSessionLocal
 
     input_digest = None
     input_role = None
@@ -175,35 +225,71 @@ async def start_training(config: dict):
     # Store input metadata as MLflow tags (not in DB)
     if mlflow_run_id and input_digest:
         await tracking_svc.set_tag(mlflow_run_id, "anvil.input_digest", input_digest)
-        await tracking_svc.set_tag(mlflow_run_id, "anvil.input_role", input_role or "training")
+        await tracking_svc.set_tag(
+            mlflow_run_id, "anvil.input_role", input_role or "training"
+        )
 
     # Phase 1C: push dataset/corpus metadata as MLflow tags
     if mlflow_run_id and dataset_id:
         async with AsyncSessionLocal() as sess:
             try:
-                from anvil.db.repositories.datasets import DatasetRepository
+                from ...db.repositories.datasets import DatasetRepository
+
                 ds_repo = DatasetRepository(sess)
                 ds = await ds_repo.get(dataset_id)
                 if ds:
-                    await tracking_svc.set_tag(mlflow_run_id, "anvil.dataset.name", ds.name)
-                    await tracking_svc.set_tag(mlflow_run_id, "anvil.dataset.vocab_size", str(ds.vocabulary_size or ""))
-                    await tracking_svc.set_tag(mlflow_run_id, "anvil.dataset.sample_count", str(ds.sample_count or 0))
-                    await tracking_svc.set_tag(mlflow_run_id, "anvil.dataset.document_count", str(ds.document_count or 0))
-                    await tracking_svc.set_tag(mlflow_run_id, "anvil.dataset.curation_version", str(ds.curation_version or 0))
+                    await tracking_svc.set_tag(
+                        mlflow_run_id, "anvil.dataset.name", ds.name
+                    )
+                    await tracking_svc.set_tag(
+                        mlflow_run_id,
+                        "anvil.dataset.vocab_size",
+                        str(ds.vocabulary_size or ""),
+                    )
+                    await tracking_svc.set_tag(
+                        mlflow_run_id,
+                        "anvil.dataset.sample_count",
+                        str(ds.sample_count or 0),
+                    )
+                    await tracking_svc.set_tag(
+                        mlflow_run_id,
+                        "anvil.dataset.document_count",
+                        str(ds.document_count or 0),
+                    )
+                    await tracking_svc.set_tag(
+                        mlflow_run_id,
+                        "anvil.dataset.curation_version",
+                        str(ds.curation_version or 0),
+                    )
             except Exception:
                 pass
     elif mlflow_run_id and corpus_id:
         async with AsyncSessionLocal() as sess:
             try:
-                from anvil.db.repositories.corpora import CorpusRepository
+                from ...db.repositories.corpora import CorpusRepository
+
                 corp_repo = CorpusRepository(sess)
                 corpus = await corp_repo.get(corpus_id)
                 if corpus:
-                    await tracking_svc.set_tag(mlflow_run_id, "anvil.dataset.name", corpus.name)
-                    await tracking_svc.set_tag(mlflow_run_id, "anvil.corpus.file_count", str(corpus.file_count or 0))
-                    await tracking_svc.set_tag(mlflow_run_id, "anvil.corpus.document_count", str(corpus.document_count or 0))
+                    await tracking_svc.set_tag(
+                        mlflow_run_id, "anvil.dataset.name", corpus.name
+                    )
+                    await tracking_svc.set_tag(
+                        mlflow_run_id,
+                        "anvil.corpus.file_count",
+                        str(corpus.file_count or 0),
+                    )
+                    await tracking_svc.set_tag(
+                        mlflow_run_id,
+                        "anvil.corpus.document_count",
+                        str(corpus.document_count or 0),
+                    )
                     if corpus.language_map:
-                        await tracking_svc.set_tag(mlflow_run_id, "anvil.corpus.language_map", corpus.language_map)
+                        await tracking_svc.set_tag(
+                            mlflow_run_id,
+                            "anvil.corpus.language_map",
+                            corpus.language_map,
+                        )
             except Exception:
                 pass
 
@@ -215,16 +301,34 @@ async def start_training(config: dict):
     event_loop = asyncio.get_event_loop()
 
     def mlflow_progress_callback(step: int, loss: float) -> None:
+        """Callback invoked by the training engine each step to log metrics to MLflow.
+
+        Parameters
+        ----------
+        step : int
+            Current training step number.
+        loss : float
+            Loss value at this step.
+        """
         asyncio.run_coroutine_threadsafe(
             tracking_svc.log_metric(mlflow_run_id, "loss", loss, step=step),
             event_loop,
         )
 
     async def on_complete(result, config: dict):
-        model = result.model
+        """Handle training completion: persist artifacts, export safetensors, register model.
+
+        Parameters
+        ----------
+        result : TrainingResult
+            Result object with ``model``, ``final_loss``, ``samples``, ``uchars``.
+        config : dict
+            Training configuration used for this run.
+        """
         final_loss = result.final_loss or 0.0
         samples = result.samples
         uchars = result.uchars
+        model = result.model
 
         await tracking_svc.finish_run(mlflow_run_id)
         await tracking_svc.log_final_metric(mlflow_run_id, "final_loss", final_loss)
@@ -245,7 +349,9 @@ async def start_training(config: dict):
                             loop = asyncio.get_event_loop()
                             await loop.run_in_executor(
                                 None,
-                                lambda: client.log_artifact(mlflow_run_id, samples_path),
+                                lambda: client.log_artifact(
+                                    mlflow_run_id, samples_path
+                                ),
                             )
                     except Exception:
                         pass
@@ -258,13 +364,14 @@ async def start_training(config: dict):
                         if client:
                             loop = asyncio.get_event_loop()
                             await loop.run_in_executor(
-                                None, lambda: client.log_artifact(mlflow_run_id, model_path)
+                                None,
+                                lambda: client.log_artifact(mlflow_run_id, model_path),
                             )
                     except Exception:
                         pass
 
                 # Auto-export safetensors after every successful local training
-                from anvil.services.export import SafetensorsExportService
+                from ...services.export import SafetensorsExportService
 
                 export_svc = SafetensorsExportService()
                 export_result = await asyncio.get_event_loop().run_in_executor(
@@ -279,10 +386,12 @@ async def start_training(config: dict):
                     # Emit error event for SSE stream
                     queue = svc.get_queue(run_id)
                     if queue:
-                        await queue.put({
-                            "event": "export_error",
-                            "data": json.dumps({"error": export_result["error"]}),
-                        })
+                        await queue.put(
+                            {
+                                "event": "export_error",
+                                "data": json.dumps({"error": export_result["error"]}),
+                            }
+                        )
                 else:
                     if mlflow_run_id and export_result["safetensors_path"]:
                         try:
@@ -332,12 +441,14 @@ async def start_training(config: dict):
                                 "Failed to log safetensors artifacts to MLflow"
                             )
 
-        from anvil.db.session import AsyncSessionLocal
+        from ...db.session import AsyncSessionLocal
 
         # Store final status as MLflow tags (no DB experiment row)
         if mlflow_run_id:
             await tracking_svc.set_tag(mlflow_run_id, "anvil.status", "finished")
-            await tracking_svc.set_tag(mlflow_run_id, "anvil.final_loss", str(final_loss))
+            await tracking_svc.set_tag(
+                mlflow_run_id, "anvil.final_loss", str(final_loss)
+            )
 
         if model is not None:
             experiment_model_path = MODELS_DIR / f"experiment_{experiment_id}.json"
@@ -351,7 +462,7 @@ async def start_training(config: dict):
         if mlflow_run_id:
             registry_name = None
             if dataset_id is not None:
-                from anvil.db.repositories.datasets import DatasetRepository
+                from ...db.repositories.datasets import DatasetRepository
 
                 async with AsyncSessionLocal() as sess:
                     ds_repo = DatasetRepository(sess)
@@ -359,7 +470,7 @@ async def start_training(config: dict):
                     if ds:
                         registry_name = ds.name
             elif corpus_id is not None:
-                from anvil.db.repositories.corpora import CorpusRepository
+                from ...db.repositories.corpora import CorpusRepository
 
                 async with AsyncSessionLocal() as sess:
                     corp_repo = CorpusRepository(sess)
@@ -381,6 +492,7 @@ async def start_training(config: dict):
                 )
 
     async def _run_training():
+        """Coroutine wrapper that runs training and handles exceptions."""
         try:
             await svc.start_training(
                 config,
@@ -400,6 +512,13 @@ async def start_training(config: dict):
     _tasks[run_id] = task
 
     def _cleanup(t: asyncio.Task) -> None:
+        """Remove the task from ``_tasks`` dict on completion.
+
+        Parameters
+        ----------
+        t : asyncio.Task
+            The completed or cancelled task.
+        """
         _tasks.pop(run_id, None)
 
     task.add_done_callback(_cleanup)
@@ -425,19 +544,57 @@ async def start_training(config: dict):
 
 @router.get("/training/{run_id}/status")
 async def training_run_status(run_id: int):
-    """Check whether a training run is still active on the server."""
+    """Check whether a training run is still active on the server.
+
+    Parameters
+    ----------
+    run_id : int
+        The training run ID.
+
+    Returns
+    -------
+    dict
+        ``run_id`` and ``status`` (``"active"`` if found).
+
+    Raises
+    ------
+    HTTPException
+        If the run is not found or already completed (404).
+    """
     queue = svc.get_queue(run_id)
     if queue is None:
-        raise HTTPException(status_code=404, detail="Run not found or already completed")
+        raise HTTPException(
+            status_code=404, detail="Run not found or already completed"
+        )
     return {"run_id": run_id, "status": "active"}
 
 
 @router.get("/training/stream/{run_id}")
 async def stream_training(run_id: int):
+    """SSE event stream for a training run.
+
+    Returns a ``StreamingResponse`` that emits Server-Sent Events as the
+    training progresses. Events include ``metrics``, ``complete``, ``error``,
+    ``export_error``, and periodic ``heartbeat`` keep-alive messages.
+
+    Parameters
+    ----------
+    run_id : int
+        The training run ID.
+
+    Returns
+    -------
+    StreamingResponse
+        SSE stream with ``text/event-stream`` content type.
+    """
     queue = svc.get_queue(run_id)
     if queue is None:
+
         async def _run_gone():
-            yield "event: error\ndata: " + json.dumps({"message": "Training run has already completed or was never started"}) + "\n\n"
+            yield "event: error\ndata: " + json.dumps(
+                {"message": "Training run has already completed or was never started"}
+            ) + "\n\n"
+
         return StreamingResponse(
             _run_gone(),
             media_type="text/event-stream",
@@ -448,6 +605,7 @@ async def stream_training(run_id: int):
         )
 
     async def event_stream():
+        """Generator that yields SSE-formatted events from the training queue."""
         while True:
             try:
                 msg = await asyncio.wait_for(queue.get(), timeout=30)
@@ -469,10 +627,18 @@ async def stream_training(run_id: int):
 
 @router.get("/training/configs")
 async def list_configs():
+    """List all saved training configurations.
+
+    Returns
+    -------
+    dict
+        List of config dicts with ``id``, ``name``, hyperparameter values,
+        and ``created_at``, ordered by most recent first.
+    """
     from sqlalchemy import select
 
-    from anvil.db.models.training_config import TrainingConfig
-    from anvil.db.session import AsyncSessionLocal
+    from ...db.models.training_config import TrainingConfig
+    from ...db.session import AsyncSessionLocal
 
     async with AsyncSessionLocal() as session:
         result = await session.execute(
@@ -501,19 +667,51 @@ async def list_configs():
 
 @router.post("/training/{run_id}/stop")
 async def stop_training(run_id: int):
+    """Stop an active training run.
+
+    Signals the run to stop and pushes an error event to the SSE queue
+    so the client receives a notification.
+
+    Parameters
+    ----------
+    run_id : int
+        The training run ID to stop.
+
+    Returns
+    -------
+    dict
+        ``status`` set to ``"stopped"``.
+    """
     svc.stop_run(run_id)
     queue = svc.get_queue(run_id)
     if queue is not None:
-        await queue.put({
-            "event": "error",
-            "data": json.dumps({"message": "Training stopped by user"}),
-        })
+        await queue.put(
+            {
+                "event": "error",
+                "data": json.dumps({"message": "Training stopped by user"}),
+            }
+        )
     return {"status": "stopped"}
 
 
 @router.get("/forward-pass/graph")
 async def forward_pass_graph():
-    from anvil.services.inference import InferenceService
+    """Get the forward pass computation graph for the demo model.
+
+    Loads the demo model and returns its computation graph structure
+    for visualization in the learning widgets.
+
+    Returns
+    -------
+    dict
+        Forward pass graph with node and edge descriptions.
+
+    Raises
+    ------
+    HTTPException
+        If the demo model is not found (404).
+    """
+    from ...services.inference import InferenceService
 
     svc = InferenceService()
     try:

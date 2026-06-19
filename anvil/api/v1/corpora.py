@@ -1,4 +1,10 @@
-from __future__ import annotations
+"""Corpus management endpoints for v1 API.
+
+Provides CRUD and ingestion routes for managing text corpora. A corpus
+represents a directory of text files that can be scanned, analyzed, and
+ingested as training documents. Supports gitignore-style pattern filtering,
+language detection, and chunking strategy configuration.
+"""
 
 import json
 import os
@@ -7,11 +13,11 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from anvil.api.deps import get_db_session
-from anvil.db.repositories.corpora import CorpusRepository
-from anvil.services.corpora import CorpusService
-from anvil.services.corpus_loader import CorpusLoader
-from anvil.services.tracking import TrackingService
+from ...api.deps import get_db_session
+from ...db.repositories.corpora import CorpusRepository
+from ...services.corpora import CorpusService
+from ...services.corpus_loader import CorpusLoader
+from ...services.tracking import TrackingService
 
 WORKSPACE_ROOTS = [
     os.path.expanduser("~/Workbench/Repositories"),
@@ -24,12 +30,26 @@ WORKSPACE_ROOTS = [
     os.path.expanduser("~/Documents"),
     os.path.expanduser("~"),
 ]
+"""list[str]: Directories searched when resolving a partial folder name to
+an absolute path via the ``/corpora/resolve-path`` endpoint."""
 
 router = APIRouter()
 tracking_svc = TrackingService()
 
 
 async def get_service(session: AsyncSession = Depends(get_db_session)):
+    """FastAPI dependency providing a configured ``CorpusService``.
+
+    Parameters
+    ----------
+    session : AsyncSession
+        An async SQLAlchemy session, injected by FastAPI.
+
+    Returns
+    -------
+    CorpusService
+        A service instance wired to a ``CorpusRepository`` and ``CorpusLoader``.
+    """
     repo = CorpusRepository(session)
     loader = CorpusLoader()
     return CorpusService(repo, loader)
@@ -41,6 +61,39 @@ async def create_corpus(
     svc: CorpusService = Depends(get_service),
     session: AsyncSession = Depends(get_db_session),
 ):
+    """Create a new corpus from a directory path.
+
+    Accepts corpus configuration (name, root path, include/exclude patterns,
+    chunking strategy) and creates a corpus record. Also tracks the creation
+    event in MLflow with corpus metadata tags.
+
+    Parameters
+    ----------
+    body : dict
+        Request body with keys:
+          - ``name``: str — corpus name (required)
+          - ``root_path``: str — filesystem path to scan (required)
+          - ``include_patterns``: list[str], optional — gitignore-style includes
+          - ``exclude_patterns``: list[str], optional — gitignore-style excludes
+          - ``description``: str, optional
+          - ``chunking_strategy``: str, optional (default ``"windowed"``)
+          - ``chunk_overlap``: float, optional (default ``0.5``)
+          - ``block_size``: int, optional (default ``16``)
+    svc : CorpusService
+        Injected corpus service.
+    session : AsyncSession
+        Injected database session.
+
+    Returns
+    -------
+    dict
+        Corpus data and ``"error": None``.
+
+    Raises
+    ------
+    HTTPException
+        If validation fails (422).
+    """
     try:
         name = body["name"].strip()
         root_path = body["root_path"].strip()
@@ -78,7 +131,8 @@ async def create_corpus(
         )
         if mlflow_run_id:
             await tracking_svc.log_corpus_input(
-                mlflow_run_id, corpus_id=corpus.id,
+                mlflow_run_id,
+                corpus_id=corpus.id,
             )
             await tracking_svc.finish_run(mlflow_run_id)
 
@@ -87,9 +141,13 @@ async def create_corpus(
             await tracking_svc.set_tag(mlflow_run_id, "anvil.entity_type", "corpus")
             await tracking_svc.set_tag(mlflow_run_id, "anvil.entity_id", str(corpus.id))
             if corpus.file_count:
-                await tracking_svc.set_tag(mlflow_run_id, "anvil.corpus.file_count", str(corpus.file_count))
+                await tracking_svc.set_tag(
+                    mlflow_run_id, "anvil.corpus.file_count", str(corpus.file_count)
+                )
             if corpus.language_map:
-                await tracking_svc.set_tag(mlflow_run_id, "anvil.corpus.language_map", corpus.language_map)
+                await tracking_svc.set_tag(
+                    mlflow_run_id, "anvil.corpus.language_map", corpus.language_map
+                )
 
     except ValueError as exc:
         await session.rollback()
@@ -110,6 +168,34 @@ async def fork_corpus(
     from the request body. The new corpus tracks its lineage via
     ``parent_id``. Does NOT ingest — call ``POST /corpora/{id}/ingest``
     separately.
+
+    Parameters
+    ----------
+    id : int
+        The source corpus ID.
+    body : dict
+        Request body with keys:
+          - ``name``: str — new corpus name (required)
+          - ``include_patterns``: list[str], optional
+          - ``exclude_patterns``: list[str], optional
+          - ``description``: str, optional
+          - ``chunking_strategy``: str, optional
+          - ``chunk_overlap``: float, optional
+          - ``block_size``: int, optional
+    svc : CorpusService
+        Injected corpus service.
+    session : AsyncSession
+        Injected database session.
+
+    Returns
+    -------
+    dict
+        Forked corpus data and ``"error": None``.
+
+    Raises
+    ------
+    HTTPException
+        If validation fails (422).
     """
     try:
         name = body["name"].strip()
@@ -147,7 +233,8 @@ async def fork_corpus(
         )
         if mlflow_run_id:
             await tracking_svc.log_corpus_input(
-                mlflow_run_id, corpus_id=corpus.id,
+                mlflow_run_id,
+                corpus_id=corpus.id,
             )
             await tracking_svc.finish_run(mlflow_run_id)
 
@@ -155,7 +242,9 @@ async def fork_corpus(
         if mlflow_run_id:
             await tracking_svc.set_tag(mlflow_run_id, "anvil.entity_type", "corpus")
             await tracking_svc.set_tag(mlflow_run_id, "anvil.entity_id", str(corpus.id))
-            await tracking_svc.set_tag(mlflow_run_id, "anvil.corpus.parent_id", str(corpus.parent_id))
+            await tracking_svc.set_tag(
+                mlflow_run_id, "anvil.corpus.parent_id", str(corpus.parent_id)
+            )
 
     except ValueError as exc:
         await session.rollback()
@@ -165,6 +254,18 @@ async def fork_corpus(
 
 @router.get("/corpora")
 async def list_corpora(svc: CorpusService = Depends(get_service)):
+    """List all corpora.
+
+    Parameters
+    ----------
+    svc : CorpusService
+        Injected corpus service.
+
+    Returns
+    -------
+    dict
+        List of corpus dicts and ``"error": None``.
+    """
     corpora = await svc.list()
     return {
         "data": [_corpus_to_dict(c) for c in corpora],
@@ -174,6 +275,26 @@ async def list_corpora(svc: CorpusService = Depends(get_service)):
 
 @router.get("/corpora/{id}")
 async def get_corpus(id: int, svc: CorpusService = Depends(get_service)):
+    """Get a single corpus by ID.
+
+    Parameters
+    ----------
+    id : int
+        The corpus ID.
+    svc : CorpusService
+        Injected corpus service.
+
+    Returns
+    -------
+    dict
+        Corpus data with parsed ``language_map`` and ``errors``, and
+        ``"error": None``.
+
+    Raises
+    ------
+    HTTPException
+        If the corpus is not found (404).
+    """
     corpus = await svc.get(id)
     if corpus is None:
         raise HTTPException(status_code=404, detail="Corpus not found")
@@ -195,6 +316,27 @@ async def get_corpus(id: int, svc: CorpusService = Depends(get_service)):
 
 @router.delete("/corpora/{id}")
 async def delete_corpus(id: int, svc: CorpusService = Depends(get_service)):
+    """Delete a corpus by ID.
+
+    Also logs a lifecycle event via ``TrackingService``.
+
+    Parameters
+    ----------
+    id : int
+        The corpus ID.
+    svc : CorpusService
+        Injected corpus service.
+
+    Returns
+    -------
+    dict
+        Deletion status and ``"error": None``.
+
+    Raises
+    ------
+    HTTPException
+        If the corpus is not found (404).
+    """
     deleted = await svc.delete(id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Corpus not found")
@@ -217,6 +359,31 @@ async def ingest_corpus(
     max_files: int = 10000,
     svc: CorpusService = Depends(get_service),
 ):
+    """Ingest files from a corpus directory into documents.
+
+    Scans the corpus root path, reads matching files, and creates chunked
+    document records. Tracks the ingest event in MLflow.
+
+    Parameters
+    ----------
+    id : int
+        The corpus ID.
+    max_files : int, optional
+        Maximum number of files to ingest (default ``10000``).
+    svc : CorpusService
+        Injected corpus service.
+
+    Returns
+    -------
+    dict
+        Ingestion results including ``corpus_id``, ``file_count``,
+        ``document_count``, ``language_map``, and ``errors``.
+
+    Raises
+    ------
+    HTTPException
+        If the corpus is not found or the path is invalid (422).
+    """
     try:
         corpus, errors = await svc.ingest(id, max_files)
     except (ValueError, NotADirectoryError) as exc:
@@ -236,7 +403,8 @@ async def ingest_corpus(
     )
     if mlflow_run_id:
         await tracking_svc.log_corpus_input(
-            mlflow_run_id, corpus_id=corpus.id,
+            mlflow_run_id,
+            corpus_id=corpus.id,
         )
         await tracking_svc.finish_run(mlflow_run_id)
 
@@ -245,9 +413,13 @@ async def ingest_corpus(
         await tracking_svc.set_tag(mlflow_run_id, "anvil.entity_type", "corpus")
         await tracking_svc.set_tag(mlflow_run_id, "anvil.entity_id", str(corpus.id))
         if corpus.file_count:
-            await tracking_svc.set_tag(mlflow_run_id, "anvil.corpus.file_count", str(corpus.file_count))
+            await tracking_svc.set_tag(
+                mlflow_run_id, "anvil.corpus.file_count", str(corpus.file_count)
+            )
         if corpus.document_count:
-            await tracking_svc.set_tag(mlflow_run_id, "anvil.corpus.document_count", str(corpus.document_count))
+            await tracking_svc.set_tag(
+                mlflow_run_id, "anvil.corpus.document_count", str(corpus.document_count)
+            )
 
     lang_map = None
     if corpus.language_map:
@@ -273,6 +445,22 @@ async def list_corpus_files(
     language: str | None = None,
     svc: CorpusService = Depends(get_service),
 ):
+    """List files belonging to a corpus, optionally filtered by language.
+
+    Parameters
+    ----------
+    id : int
+        The corpus ID.
+    language : str | None, optional
+        Filter by language (e.g. ``"Python"``, ``"Markdown"``).
+    svc : CorpusService
+        Injected corpus service.
+
+    Returns
+    -------
+    dict
+        List of file metadata dicts and ``"error": None``.
+    """
     files = await svc.get_files(id, language)
     return {
         "data": [
@@ -298,6 +486,27 @@ async def get_corpus_file(
     file_id: int,
     svc: CorpusService = Depends(get_service),
 ):
+    """Get a single file from a corpus by file ID.
+
+    Parameters
+    ----------
+    id : int
+        The corpus ID.
+    file_id : int
+        The file ID.
+    svc : CorpusService
+        Injected corpus service.
+
+    Returns
+    -------
+    dict
+        File metadata and ``"error": None``.
+
+    Raises
+    ------
+    HTTPException
+        If the file is not found (404).
+    """
     f = await svc.get_file(file_id)
     if f is None or f.corpus_id != id:
         raise HTTPException(status_code=404, detail="File not found")
@@ -319,13 +528,36 @@ async def get_corpus_file(
 
 @router.post("/corpora/resolve-path")
 async def resolve_path(body: dict):
+    """Resolve a folder name to an absolute path by searching workspace roots.
+
+    Iterates over ``WORKSPACE_ROOTS`` and returns the first match where
+    ``root / folder_name`` is an existing directory.
+
+    Parameters
+    ----------
+    body : dict
+        Request body with ``folder_name``: str — the folder to locate.
+
+    Returns
+    -------
+    dict
+        ``path``: str or None, ``root``: str or None, and ``"error": None``.
+
+    Raises
+    ------
+    HTTPException
+        If ``folder_name`` is empty (422).
+    """
     folder_name = body.get("folder_name", "").strip()
     if not folder_name:
         raise HTTPException(status_code=422, detail="folder_name required")
     for root in WORKSPACE_ROOTS:
         candidate = Path(root) / folder_name
         if candidate.is_dir():
-            return {"data": {"path": str(candidate.resolve()), "root": root}, "error": None}
+            return {
+                "data": {"path": str(candidate.resolve()), "root": root},
+                "error": None,
+            }
     return {
         "data": {"path": None, "root": None},
         "error": None,
@@ -334,6 +566,30 @@ async def resolve_path(body: dict):
 
 @router.post("/corpora/analyze-path")
 async def analyze_path(body: dict):
+    """Analyze a directory path and return file statistics and recommendations.
+
+    Scans the given path using ``CorpusLoader`` and returns file counts,
+    size statistics, language breakdown, and chunking strategy recommendations.
+
+    Parameters
+    ----------
+    body : dict
+        Request body with keys:
+          - ``path``: str — directory path to analyze (required)
+          - ``include_patterns``: list[str], optional
+          - ``exclude_patterns``: list[str], optional
+
+    Returns
+    -------
+    dict
+        Analysis results including ``file_count``, ``total_bytes``,
+        ``language_breakdown``, ``recommendations``, and ``"error": None``.
+
+    Raises
+    ------
+    HTTPException
+        If the path is not a directory (422).
+    """
     root_path = body["path"].strip()
     inc = body.get("include_patterns")
     exc = body.get("exclude_patterns")
@@ -369,6 +625,20 @@ async def analyze_path(body: dict):
 
 
 def _build_language_stats(scan) -> dict:
+    """Build per-language statistics from a scan result.
+
+    Parameters
+    ----------
+    scan : ScanResult
+        The result from a ``CorpusLoader`` scan containing per-language
+        file size lists.
+
+    Returns
+    -------
+    dict
+        Mapping of language names to dicts with ``files``, ``avg_bytes``,
+        and ``median_bytes``.
+    """
     stats = {}
     for lang, sizes in scan.language_sizes.items():
         sorted_sizes = sorted(sizes)
@@ -383,15 +653,41 @@ def _build_language_stats(scan) -> dict:
 
 
 def _build_recommendations(scan) -> list[dict]:
+    """Build chunking strategy recommendations from a scan result.
+
+    Analyzes file type distribution (code vs. docs vs. data), average file
+    sizes, and language composition to suggest optimal chunking strategies
+    (file-per-doc, windowed, line-by-line) with block sizes and overlap.
+
+    Parameters
+    ----------
+    scan : ScanResult
+        The result from a ``CorpusLoader`` scan.
+
+    Returns
+    -------
+    list[dict]
+        Ordered list of recommendation dicts, each with ``strategy``,
+        ``block_size``, ``overlap``, ``label``, ``estimated_docs``,
+        and ``detail``.
+    """
     file_count = scan.file_count
     total_bytes = scan.total_bytes
-    sizes = sorted(scan.sizes)
     avg_bytes = total_bytes / file_count if file_count else 0
-    median_bytes = sizes[file_count // 2] if file_count else 0
-    top_langs = sorted(scan.language_map.items(), key=lambda x: -x[1])
     lang_sizes = scan.language_sizes or {}
 
-    CODE_LANGS = {"Python", "JavaScript", "TypeScript", "Go", "Rust", "Java", "C", "C++", "Ruby", "Shell"}
+    CODE_LANGS = {
+        "Python",
+        "JavaScript",
+        "TypeScript",
+        "Go",
+        "Rust",
+        "Java",
+        "C",
+        "C++",
+        "Ruby",
+        "Shell",
+    }
     DOC_LANGS = {"Markdown", "Text"}
     DATA_LANGS = {"JSON", "YAML"}
 
@@ -424,79 +720,101 @@ def _build_recommendations(scan) -> list[dict]:
     is_mixed = sum(1 for c in [code_count > 100, doc_count > 100, data_count > 100]) > 1
 
     if is_mixed:
-        recs.append({
-            "strategy": None,
-            "block_size": None,
-            "overlap": None,
-            "label": "Mixed repo — create separate corpora per type for best results",
-            "estimated_docs": None,
-            "detail": "{} code files (avg {}KB), {} doc files (avg {}KB), {} data files. Use include filters (e.g. `*.py`) to create focused corpora with optimal strategies per type.".format(
-                code_count, round(code_avg / 1024, 1) if code_avg else 0,
-                doc_count, round(doc_avg / 1024, 1) if doc_avg else 0,
-                data_count,
-            ),
-        })
+        recs.append(
+            {
+                "strategy": None,
+                "block_size": None,
+                "overlap": None,
+                "label": "Mixed repo — create separate corpora per type for best results",
+                "estimated_docs": None,
+                "detail": f"{code_count} code files (avg {round(code_avg / 1024, 1) if code_avg else 0}KB), {doc_count} doc files (avg {round(doc_avg / 1024, 1) if doc_avg else 0}KB), {data_count} data files. Use include filters (e.g. `*.py`) to create focused corpora with optimal strategies per type.",
+            }
+        )
 
     if is_code_heavy and code_avg < 10240:
-        recs.append({
+        recs.append(
+            {
+                "strategy": "file",
+                "block_size": None,
+                "overlap": None,
+                "label": f"Code files as one doc each ({code_count} files, avg {round(code_avg / 1024, 1)}KB)",
+                "estimated_docs": file_count,
+                "detail": "Source files are natural atomic training units. Each file becomes one doc, preserving function and class boundaries.",
+            }
+        )
+    elif is_doc_heavy or (is_code_heavy and code_avg >= 10240):
+        recs.append(
+            {
+                "strategy": "windowed",
+                "block_size": 1024,
+                "overlap": 0.25,
+                "label": f"Large files split into 1KB windows (avg {round(doc_avg / 1024, 1) if is_doc_heavy else round(code_avg / 1024, 1)}KB)",
+                "estimated_docs": int(
+                    file_count * max(1, (avg_bytes - 1024) / 768 + 1)
+                ),
+                "detail": "Files are large — split into 1024-char windows with 25% overlap for meaningful context chunks.",
+            }
+        )
+
+    recs.append(
+        {
             "strategy": "file",
             "block_size": None,
             "overlap": None,
-            "label": "Code files as one doc each ({} files, avg {}KB)".format(
-                code_count, round(code_avg / 1024, 1)
-            ),
+            "label": f"Each file as one doc ({file_count} files)",
             "estimated_docs": file_count,
-            "detail": "Source files are natural atomic training units. Each file becomes one doc, preserving function and class boundaries.",
-        })
-    elif is_doc_heavy or (is_code_heavy and code_avg >= 10240):
-        recs.append({
-            "strategy": "windowed",
-            "block_size": 1024,
-            "overlap": 0.25,
-            "label": "Large files split into 1KB windows (avg {}KB)".format(
-                round(doc_avg / 1024, 1) if is_doc_heavy else round(code_avg / 1024, 1)
-            ),
-            "estimated_docs": int(file_count * max(1, (avg_bytes - 1024) / 768 + 1)),
-            "detail": "Files are large — split into 1024-char windows with 25% overlap for meaningful context chunks.",
-        })
-
-    recs.append({
-        "strategy": "file",
-        "block_size": None,
-        "overlap": None,
-        "label": "Each file as one doc ({} files)".format(file_count),
-        "estimated_docs": file_count,
-        "detail": "Simplest approach. Best when files are coherent units (code, articles).",
-    })
+            "detail": "Simplest approach. Best when files are coherent units (code, articles).",
+        }
+    )
 
     for bs in (64, 256, 1024):
         overlap = 0.25
         stride = int(bs * (1 - overlap))
         docs_per_file = max(1, (avg_bytes - bs) // stride + 1) if avg_bytes > bs else 1
         estimated_docs = file_count * docs_per_file
-        recs.append({
-            "strategy": "windowed",
-            "block_size": bs,
-            "overlap": overlap,
-            "label": "{} char windows".format(bs),
-            "estimated_docs": estimated_docs,
-            "detail": "Sliding window, {} char stride. Good balance of granularity and doc count.".format(stride),
-        })
+        recs.append(
+            {
+                "strategy": "windowed",
+                "block_size": bs,
+                "overlap": overlap,
+                "label": f"{bs} char windows",
+                "estimated_docs": estimated_docs,
+                "detail": f"Sliding window, {stride} char stride. Good balance of granularity and doc count.",
+            }
+        )
 
     if is_data_oriented or data_count > 0:
-        recs.append({
-            "strategy": "line",
-            "block_size": None,
-            "overlap": None,
-            "label": "Line-by-line ({} data files)".format(data_count),
-            "estimated_docs": None,
-            "detail": "Each non-empty line is a doc. Best for JSONL, logs, CSV where each line is independent.",
-        })
+        recs.append(
+            {
+                "strategy": "line",
+                "block_size": None,
+                "overlap": None,
+                "label": f"Line-by-line ({data_count} data files)",
+                "estimated_docs": None,
+                "detail": "Each non-empty line is a doc. Best for JSONL, logs, CSV where each line is independent.",
+            }
+        )
 
     return recs
 
 
 def _corpus_to_dict(corpus) -> dict:
+    """Serialize a corpus ORM object to a plain dict.
+
+    Parameters
+    ----------
+    corpus : Corpus
+        The corpus ORM instance.
+
+    Returns
+    -------
+    dict
+        Serialized corpus with ``id``, ``name``, ``description``,
+        ``root_path``, ``chunking_strategy``, ``chunk_overlap``,
+        ``block_size``, ``parent_id``, ``file_count``,
+        ``document_count``, and ``created_at``. Includes
+        ``error_count`` if errors are present.
+    """
     d = {
         "id": corpus.id,
         "name": corpus.name,

@@ -3,12 +3,7 @@
 Weighted health scoring based on connectivity, topological, and hygiene metrics.
 """
 
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from . import HealthScore, GraphHealthReport
+from .types import GraphHealthReport, HealthScore
 
 
 def compute_health_score(report: GraphHealthReport) -> HealthScore:
@@ -24,8 +19,6 @@ def compute_health_score(report: GraphHealthReport) -> HealthScore:
     Returns:
         HealthScore with overall score and individual component scores.
     """
-    from . import HealthScore
-
     score = HealthScore()
 
     # Component weights from FR-023

@@ -1,12 +1,9 @@
 """GPU detection and device selection for anvil."""
 
-from __future__ import annotations
-
-from dataclasses import dataclass, field
+from pydantic import BaseModel, Field
 
 
-@dataclass
-class GpuInfo:
+class GpuInfo(BaseModel):
     """Detected GPU capabilities of the host system."""
 
     available: bool = False
@@ -17,13 +14,13 @@ class GpuInfo:
     compute_capability: str | None = None
     torch_version: str | None = None
     cuda_version: str | None = None
-    errors: list[str] = field(default_factory=list)
+    errors: list[str] = Field(default_factory=list)
 
 
 def detect_gpu() -> GpuInfo:
     """Detect available GPU backends (CUDA / MPS) using torch if installed.
 
-    Returns a GpuInfo dataclass — always safe to call, never raises.
+    Returns a GpuInfo instance — always safe to call, never raises.
     """
     info = GpuInfo()
 
@@ -46,8 +43,8 @@ def detect_gpu() -> GpuInfo:
             info.available = True
             info.backend = "cuda"
             info.device_name = torch.cuda.get_device_name(0)
-            info.memory_total_gb = (
-                torch.cuda.get_device_properties(0).total_mem / (1024**3)
+            info.memory_total_gb = torch.cuda.get_device_properties(0).total_mem / (
+                1024**3
             )
             try:
                 free, _ = torch.cuda.mem_get_info(0)
@@ -78,7 +75,9 @@ def _get_mps_device_name() -> str:
         try:
             result = subprocess.run(
                 ["sysctl", "-n", "machdep.cpu.brand_string"],
-                capture_output=True, text=True, timeout=2,
+                capture_output=True,
+                text=True,
+                timeout=2,
             )
             return result.stdout.strip() or "Apple Silicon"
         except Exception:
@@ -89,18 +88,31 @@ def _get_mps_device_name() -> str:
 def _get_mps_memory() -> float | None:
     """Return total system memory in GB as a proxy for MPS-usable memory."""
     import psutil
+
     return psutil.virtual_memory().total / (1024**3)
 
 
 def resolve_device(use_gpu: bool = False, preferred: str | None = None) -> str:
-    """Resolve the best available device string.
+    """Resolve the best available device string for PyTorch.
 
-    Args:
-        use_gpu: Whether to prefer a GPU backend when available.
-        preferred: Explicit device override (e.g. "cuda:0", "mps", "cpu").
+    If *preferred* is provided it is returned immediately. Otherwise
+    the function detects the available GPU backend and returns
+    ``"cuda:0"``, ``"mps"``, or falls back to ``"cpu"``.
 
-    Returns:
-        A torch-compatible device string: ``"cuda:0"``, ``"mps"``, or ``"cpu"``.
+    Parameters
+    ----------
+    use_gpu : bool
+        Whether to prefer a GPU backend when available. Defaults to
+        ``False``.
+    preferred : str, optional
+        Explicit device override such as ``"cuda:0"``, ``"mps"``, or
+        ``"cpu"``. Defaults to ``None``.
+
+    Returns
+    -------
+    str
+        A torch-compatible device string: ``"cuda:0"``, ``"mps"``, or
+        ``"cpu"``.
     """
     if preferred is not None:
         return preferred
