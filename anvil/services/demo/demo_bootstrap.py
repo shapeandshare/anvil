@@ -15,15 +15,16 @@ from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..db.models.corpus import Corpus
-from ..db.models.dataset import Dataset
-from ..db.repositories.corpora import CorpusRepository
-from ..db.repositories.datasets import DatasetRepository
+from ...db.models.corpus import Corpus
+from ...db.models.dataset import Dataset
+from ...db.repositories.corpora import CorpusRepository
+from ...db.repositories.datasets import DatasetRepository
 from .bootstrap_result import BootstrapResult
-from .corpora import CorpusService
-from .corpus_loader import CorpusLoader
-from .dataset_import import DatasetImportService
-from .datasets import DatasetService
+from ..datasets.chunking_strategy import ChunkingStrategy
+from ..datasets.corpora import CorpusService
+from ..datasets.corpus_loader import CorpusLoader
+from ..datasets.dataset_import import DatasetImportService
+from ..datasets.datasets import DatasetService
 
 
 # Resolve the bundled demo data directory from the installed package,
@@ -43,10 +44,10 @@ DEFAULT_CORPUS_NAME = "Demo - medium/alice"
 # Chunking configuration per directory — determines how files are split into
 # training documents during corpus ingestion.
 _CORPUS_CONFIG: dict[str, dict] = {
-    "small/names": {"strategy": "file", "block_size": 16, "overlap": 0.0},
-    "small/hello-world": {"strategy": "file", "block_size": 16, "overlap": 0.0},
-    "medium/alice": {"strategy": "windowed", "block_size": 64, "overlap": 0.25},
-    "large/earnest": {"strategy": "windowed", "block_size": 128, "overlap": 0.25},
+    "small/names": {"strategy": ChunkingStrategy.FILE, "block_size": 16, "overlap": 0.0},
+    "small/hello-world": {"strategy": ChunkingStrategy.FILE, "block_size": 16, "overlap": 0.0},
+    "medium/alice": {"strategy": ChunkingStrategy.WINDOWED, "block_size": 64, "overlap": 0.25},
+    "large/earnest": {"strategy": ChunkingStrategy.WINDOWED, "block_size": 128, "overlap": 0.25},
 }
 
 
@@ -216,7 +217,7 @@ class DemoBootstrapService:
                 name=name,
                 root_path=str(resolved),
                 description=f"Demo corpus: {item.name}",
-                chunking_strategy=cfg.get("strategy", "file"),
+                chunking_strategy=cfg.get("strategy", ChunkingStrategy.FILE),
                 block_size=cfg.get("block_size", 16),
                 chunk_overlap=cfg.get("overlap", 0.0),
             )

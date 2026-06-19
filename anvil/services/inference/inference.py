@@ -11,9 +11,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from ..core.autograd import Value
+    from ...core.autograd import Value
 
-from ..core.engine import LlamaModel
+from ...core.engine import LlamaModel
 from .demo_model_provider import _demo_provider
 from .loaded_model import LoadedModel
 
@@ -170,7 +170,7 @@ class InferenceService:
             return LoadedModel(gpt_model, gpt_model.chars, model_id, cache_key[1], name)
 
         # Secondary path: try loading from MLflow Model Registry
-        from .tracking import TrackingService
+        from ..tracking.tracking import TrackingService
 
         tracking_svc = TrackingService()
         models = await tracking_svc.list_registered_models()
@@ -187,7 +187,7 @@ class InferenceService:
         if model_name:
             from mlflow.tracking import MlflowClient
 
-            from ..config import get_mlflow_uri
+            from ...config import get_mlflow_uri
 
             loop = asyncio.get_event_loop()
             client = MlflowClient(get_mlflow_uri())
@@ -566,7 +566,7 @@ class InferenceService:
         for pos_id in range(n):
             token_id, target_id = ids[pos_id], ids[pos_id + 1]
             logits = loaded.model.forward(token_id, pos_id, keys, values)
-            from ..core.engine import softmax
+            from ...core.engine import softmax
 
             probs = softmax(logits)
             loss_t = -probs[target_id].log()
@@ -673,7 +673,7 @@ class InferenceService:
         forward + backward pass, so every value and gradient is real at a legible
         scale. Same response schema as :meth:`backward_graph`.
         """
-        from ..core.autograd import Value
+        from ...core.autograd import Value
 
         ids = loaded.vocab.encode(text)
         seed_id = next(
@@ -802,7 +802,7 @@ class InferenceService:
         n = min(len(ids) - 1, loaded.model.block_size)
         ids = ids[: n + 1]
 
-        from ..core.engine import softmax
+        from ...core.engine import softmax
 
         keys: list[list] = [[] for _ in range(loaded.model.n_layer)]
         values: list[list] = [[] for _ in range(loaded.model.n_layer)]

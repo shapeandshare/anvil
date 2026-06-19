@@ -6,8 +6,8 @@ together with its character vocabulary and registry metadata.
 
 from typing import Any
 
-from ..core.engine import LlamaModel
-from ..core.vocabulary import Vocabulary
+from ...core.engine import LlamaModel
+from ...core.vocabulary import Vocabulary
 
 
 class LoadedModel:
