@@ -1,13 +1,5 @@
-from anvil.db.models.corpus import Corpus, CorpusFile
-from anvil.db.models.curation import CurationOperation, ImportSource, Sample
-from anvil.db.models.training_config import Dataset, TrainingConfig
+"""SQLAlchemy ORM model definitions.
 
-__all__ = [
-    "Corpus",
-    "CorpusFile",
-    "CurationOperation",
-    "Dataset",
-    "ImportSource",
-    "Sample",
-    "TrainingConfig",
-]
+Each module in this package defines a single ORM model class
+representing a persistent entity in the anvil application database.
+"""

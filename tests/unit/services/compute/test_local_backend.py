@@ -1,18 +1,18 @@
 """Tests for local compute backends (LocalStdlibBackend, LocalTorchBackend)."""
 
-from __future__ import annotations
 
 from dataclasses import dataclass, field
 from unittest.mock import ANY, MagicMock, patch
 
 import pytest
 
-from anvil.services.compute.local import (
+from anvil.services.compute.local_stdlib_backend import (
     LocalStdlibBackend,
-    LocalTorchBackend,
     _load_weights_into_model,
 )
-from anvil.services.compute.result import ComputeResult, ComputeStatus
+from anvil.services.compute.local_torch_backend import LocalTorchBackend
+from anvil.services.compute.compute_status import ComputeStatus
+from anvil.services.compute.result import ComputeResult
 
 
 @pytest.fixture
@@ -139,12 +139,12 @@ class TestLocalStdlibBackend:
 class TestLocalTorchBackend:
     async def test_is_available_without_torch(self, torch_backend):
         """is_available() returns False when torch is not installed."""
-        with patch("anvil.services.compute.local._torch_available", return_value=False):
+        with patch("anvil.services.compute.local_torch_backend._torch_available", return_value=False):
             assert torch_backend.is_available() is False
 
     async def test_is_available_with_torch(self, torch_backend):
         """is_available() returns True when torch is installed."""
-        with patch("anvil.services.compute.local._torch_available", return_value=True):
+        with patch("anvil.services.compute.local_torch_backend._torch_available", return_value=True):
             assert torch_backend.is_available() is True
 
     async def test_name_property(self, torch_backend):
@@ -159,10 +159,10 @@ class TestLocalTorchBackend:
         fake_uchars = list("abcdefghij")
 
         with patch(
-            "anvil.services.compute.local.train_torch",
+            "anvil.services.compute.local_torch_backend.train_torch",
             return_value=(fake_weights, 0.42, ["sample1"], fake_uchars),
         ), patch(
-            "anvil.services.compute.local._torch_available", return_value=True,
+            "anvil.services.compute.local_torch_backend._torch_available", return_value=True,
         ):
             result = await torch_backend.run(
                 tiny_docs, {**tiny_config, "device": "cpu"},
@@ -191,10 +191,10 @@ class TestLocalTorchBackend:
             return ({"wte": [[0.1]]}, 0.5, ["s"], list("a"))
 
         with patch(
-            "anvil.services.compute.local.train_torch",
+            "anvil.services.compute.local_torch_backend.train_torch",
             side_effect=_fake_train_torch,
         ), patch(
-            "anvil.services.compute.local._torch_available", return_value=True,
+            "anvil.services.compute.local_torch_backend._torch_available", return_value=True,
         ):
             await torch_backend.run(
                 tiny_docs, {**tiny_config, "device": "cpu"},
@@ -220,10 +220,10 @@ class TestLocalTorchBackend:
             return ({"wte": [[0.1]]}, 0.5, ["s"], list("a"))
 
         with patch(
-            "anvil.services.compute.local.train_torch",
+            "anvil.services.compute.local_torch_backend.train_torch",
             side_effect=_fake_train_torch,
         ), patch(
-            "anvil.services.compute.local._torch_available", return_value=True,
+            "anvil.services.compute.local_torch_backend._torch_available", return_value=True,
         ):
             result = await torch_backend.run(
                 tiny_docs, {**tiny_config, "device": "cpu"},

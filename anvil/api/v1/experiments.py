@@ -1,3 +1,10 @@
+"""Experiment tracking and management API endpoints.
+
+This module provides FastAPI routes for listing, comparing, retrieving,
+deleting experiments, and managing their MLflow artifacts and metrics.
+All routes are prefixed with ``/v1`` and mounted under the ``router``.
+"""
+
 import asyncio
 import json
 import os
@@ -7,17 +14,25 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import FileResponse
 from mlflow.tracking import MlflowClient
 
-from anvil.config import get_config, get_mlflow_browser_uri
-from anvil.core.engine import LlamaModel
-from anvil.services.memory_estimator import estimate_training_memory
-from anvil.services.tracking import TrackingService
+from ...config import get_config, get_mlflow_browser_uri
+from ...core.engine import LlamaModel
+from ...services.memory_estimator import estimate_training_memory
+from ...services.tracking import TrackingService
 
 router = APIRouter()
 
 GPU_MEMORY_METRIC = "system/gpu_memory_gb"
+"""str: MLflow metric name for peak GPU memory usage in gigabytes."""
+
 GPU_UTIL_METRIC = "system/gpu_util_pct"
+"""str: MLflow metric name for peak GPU utilization percentage."""
 
 _HYPERPARAM_COERCERS: dict[str, type] = {
+    """Type coercers for reconstructing typed hyperparameters from MLflow params.
+
+    Maps hyperparameter names to their target types for deserialization
+    from string-valued MLflow parameter storage.
+    """
     "n_layer": int,
     "n_embd": int,
     "n_head": int,
@@ -34,6 +49,19 @@ def _hyperparams_from_mlflow(params: dict[str, str]) -> dict:
     """Reconstruct typed hyperparameters from string-valued MLflow params.
 
     Used as a fallback when the experiment has no linked TrainingConfig row.
+    Coerces string values to their appropriate types using ``_HYPERPARAM_COERCERS``.
+    Handles the ``use_gpu`` boolean specially via string comparison.
+
+    Parameters
+    ----------
+    params : dict[str, str]
+        Raw string-valued parameters as returned by MLflow.
+
+    Returns
+    -------
+    dict
+        Typed hyperparameters with string keys matching ``_HYPERPARAM_COERCERS``
+        keys. Returns empty dict if no parameters match.
     """
     result: dict = {}
     for key, caster in _HYPERPARAM_COERCERS.items():
@@ -50,6 +78,17 @@ def _hyperparams_from_mlflow(params: dict[str, str]) -> dict:
 
 
 def _get_mlflow_experiment_id() -> str | None:
+    """Retrieve the MLflow experiment ID for the anvil experiment.
+
+    Queries MLflow for an experiment named ``anvil`` and returns its ID
+    if found. Returns ``None`` if the experiment does not exist or if
+    querying fails.
+
+    Returns
+    -------
+    str | None
+        MLflow experiment ID string, or ``None`` if not found or on error.
+    """
     try:
         client = MlflowClient(tracking_uri=get_config()["mlflow_uri"])
         exp = client.get_experiment_by_name("anvil")
@@ -60,15 +99,35 @@ def _get_mlflow_experiment_id() -> str | None:
 
 @router.get("/experiments")
 async def list_experiments(request: Request):
+    """List all experiments with enrichment data.
+
+    Retrieves all experiments from the tracking service and enriches them
+    with dataset/corpus names from the database and artifact availability
+    flags. Also includes MLflow experiment metadata and browser URI.
+
+    GET /v1/experiments
+
+    Parameters
+    ----------
+    request : Request
+        FastAPI request object used to construct absolute MLflow URLs.
+
+    Returns
+    -------
+    dict
+        Dictionary containing ``mlflow_experiment_id`` (str or None),
+        ``mlflow_url`` (str or None), and ``experiments`` (list of dicts)
+        with enriched experiment data.
+    """
     tracking_svc = TrackingService()
     experiments = await tracking_svc.list_experiments()
 
     # Enrich with dataset/corpus names and artifact availability
-    from anvil.db.session import AsyncSessionLocal
+    from ...db.session import AsyncSessionLocal
 
     async with AsyncSessionLocal() as session:
-        from anvil.db.repositories.datasets import DatasetRepository
-        from anvil.db.repositories.corpora import CorpusRepository
+        from ...db.repositories.corpora import CorpusRepository
+        from ...db.repositories.datasets import DatasetRepository
 
         ds_repo = DatasetRepository(session)
         corp_repo = CorpusRepository(session)
@@ -96,9 +155,11 @@ async def list_experiments(request: Request):
                             pass
 
             # Check artifact availability
-            exp["artifact_available"] = Path(
-                f"data/models/experiment_{exp['id']}.json"
-            ).exists() if exp.get("id") else False
+            exp["artifact_available"] = (
+                Path(f"data/models/experiment_{exp['id']}.json").exists()
+                if exp.get("id")
+                else False
+            )
 
     mlflow_exp_id = _get_mlflow_experiment_id()
     return {
@@ -116,6 +177,25 @@ async def list_experiments(request: Request):
 async def compare_experiments(
     id: list[int] = Query(...),
 ):
+    """Compare multiple experiments by ID.
+
+    Retrieves a summary of each specified experiment including status,
+    final loss, and creation timestamp for side-by-side comparison.
+
+    GET /v1/experiments/compare?id=1&id=2&id=3
+
+    Parameters
+    ----------
+    id : list[int]
+        List of experiment IDs to compare. Required; at least one ID
+        must be provided via query parameter.
+
+    Returns
+    -------
+    dict
+        Dictionary containing ``experiments`` list with summary dicts
+        for each found experiment.
+    """
     tracking_svc = TrackingService()
     experiments = []
     for eid in id:
@@ -137,6 +217,34 @@ async def get_experiment(
     id: int,
     request: Request,
 ):
+    """Retrieve a single experiment with full details.
+
+    Fetches comprehensive experiment data including model architecture,
+    hyperparameters, MLflow metrics and parameters, GPU utilization,
+    memory estimates, and artifact availability.
+
+    GET /v1/experiments/{id}
+
+    Parameters
+    ----------
+    id : int
+        Experiment ID to retrieve.
+    request : Request
+        FastAPI request object used to construct absolute MLflow URLs.
+
+    Returns
+    -------
+    dict
+        Full experiment details including ``id``, ``status``, ``run_name``,
+        ``final_loss``, ``hyperparameters``, ``model_architecture``,
+        ``memory_estimate``, ``gpu_memory_peak_gb``, ``gpu_util_peak_pct``,
+        ``mlflow``, ``safetensors_artifacts``, and more.
+
+    Raises
+    ------
+    HTTPException
+        404 if the experiment is not found.
+    """
     tracking_svc = TrackingService()
     exp = await tracking_svc.get_experiment(id)
     if exp is None:
@@ -194,15 +302,11 @@ async def get_experiment(
             }
             # Peak GPU memory / utilization from per-step metric histories
             if GPU_MEMORY_METRIC in run.data.metrics:
-                mem_hist = client.get_metric_history(
-                    mlflow_run_id, GPU_MEMORY_METRIC
-                )
+                mem_hist = client.get_metric_history(mlflow_run_id, GPU_MEMORY_METRIC)
                 if mem_hist:
                     gpu_memory_peak_gb = max(m.value for m in mem_hist)
             if GPU_UTIL_METRIC in run.data.metrics:
-                util_hist = client.get_metric_history(
-                    mlflow_run_id, GPU_UTIL_METRIC
-                )
+                util_hist = client.get_metric_history(mlflow_run_id, GPU_UTIL_METRIC)
                 if util_hist:
                     gpu_util_peak_pct = max(m.value for m in util_hist)
             # T049: Query safetensors artifacts from MLflow
@@ -255,8 +359,8 @@ async def get_experiment(
         ds_id = params.get("dataset_id")
         if ds_id:
             try:
-                from anvil.db.repositories.datasets import DatasetRepository
-                from anvil.db.session import AsyncSessionLocal
+                from ...db.repositories.datasets import DatasetRepository
+                from ...db.session import AsyncSessionLocal
 
                 async with AsyncSessionLocal() as sess:
                     ds_repo = DatasetRepository(sess)
@@ -269,8 +373,8 @@ async def get_experiment(
             corp_id = params.get("corpus_id")
             if corp_id:
                 try:
-                    from anvil.db.repositories.corpora import CorpusRepository
-                    from anvil.db.session import AsyncSessionLocal
+                    from ...db.repositories.corpora import CorpusRepository
+                    from ...db.session import AsyncSessionLocal
 
                     async with AsyncSessionLocal() as sess:
                         corp_repo = CorpusRepository(sess)
@@ -308,6 +412,32 @@ async def get_experiment(
 
 @router.get("/experiments/{id}/mlflow")
 async def get_experiment_mlflow(id: int, request: Request):
+    """Retrieve full MLflow data for an experiment.
+
+    Returns comprehensive MLflow run data including all parameters, metrics,
+    metric histories, artifact paths, and safetensors artifact info.
+
+    GET /v1/experiments/{id}/mlflow
+
+    Parameters
+    ----------
+    id : int
+        Experiment ID to retrieve MLflow data for.
+    request : Request
+        FastAPI request object used to construct absolute MLflow run URLs.
+
+    Returns
+    -------
+    dict
+        Dictionary containing ``mlflow_run_id``, ``params``, ``metrics``,
+        ``metric_histories``, ``artifacts``, ``safetensors_artifacts``,
+        and ``run_url``. Returns empty collections on error.
+
+    Raises
+    ------
+    HTTPException
+        404 if the experiment is not found.
+    """
     tracking_svc = TrackingService()
     exp = await tracking_svc.get_experiment(id)
     if exp is None:
@@ -380,6 +510,28 @@ async def get_experiment_mlflow(id: int, request: Request):
 
 @router.get("/experiments/{id}/metrics")
 async def get_experiment_metrics(id: int):
+    """Retrieve the loss metric history for an experiment.
+
+    Returns step-by-step loss values recorded during training via MLflow.
+
+    GET /v1/experiments/{id}/metrics
+
+    Parameters
+    ----------
+    id : int
+        Experiment ID to retrieve metrics for.
+
+    Returns
+    -------
+    dict
+        Dictionary containing ``metrics`` list with ``step`` and ``loss``
+        values, and ``mlflow_run_id``.
+
+    Raises
+    ------
+    HTTPException
+        404 if the experiment is not found.
+    """
     tracking_svc = TrackingService()
     exp = await tracking_svc.get_experiment(id)
     if exp is None:
@@ -400,6 +552,28 @@ async def get_experiment_metrics(id: int):
 
 @router.delete("/experiments/{id}")
 async def delete_experiment(id: int):
+    """Delete an experiment and its associated MLflow run.
+
+    Removes the experiment from the tracking service and deletes the
+    corresponding MLflow run if one is linked.
+
+    DELETE /v1/experiments/{id}
+
+    Parameters
+    ----------
+    id : int
+        Experiment ID to delete.
+
+    Returns
+    -------
+    dict
+        Dictionary containing ``status: "deleted"``.
+
+    Raises
+    ------
+    HTTPException
+        404 if the experiment is not found.
+    """
     tracking_svc = TrackingService()
     exp = await tracking_svc.get_experiment(id)
     if exp is None:
@@ -426,12 +600,32 @@ async def list_artifacts(
     experiment_id: int,
     run_id: str,
 ):
-    """List all safetensors export artifacts for a given experiment/run.
+    """List all safetensors export artifacts for a given experiment and run.
 
-    Returns the same structure as get_safetensors_artifacts:
-      available: bool
-      files: list of {path, file_size, is_safetensors, is_config, is_tokenizer}
-      error: str or None
+    Returns availability status, file metadata, and classification for each
+    artifact including whether it is a safetensors model, config, or tokenizer.
+
+    GET /v1/experiments/{experiment_id}/runs/{run_id}/artifacts
+
+    Parameters
+    ----------
+    experiment_id : int
+        ID of the experiment to list artifacts for.
+    run_id : str
+        MLflow run ID for the experiment.
+
+    Returns
+    -------
+    dict
+        Dictionary containing ``available`` (bool), ``files`` (list of dicts
+        with ``path``, ``file_size``, ``is_safetensors``, ``is_config``,
+        ``is_tokenizer``), and ``error`` (str or None).
+
+    Raises
+    ------
+    HTTPException
+        404 if the experiment is not found or has no associated MLflow run.
+        400 if the run ID does not match the experiment.
     """
     tracking_svc = TrackingService()
     exp = await tracking_svc.get_experiment(experiment_id)
@@ -452,10 +646,36 @@ async def download_artifact(
     run_id: str,
     path: str = Query(..., description="Artifact file path to download"),
 ):
-    """Download a single artifact file for a given experiment/run.
+    """Download a single artifact file for a given experiment and run.
 
-    The path parameter is the artifact path as returned by the artifacts endpoint
-    (e.g. 'model.safetensors', 'config.json', 'tokenizer.json').
+    Downloads an artifact from MLflow storage to a temporary location and
+    serves it as a file attachment with the original filename preserved.
+
+    GET /v1/experiments/{experiment_id}/runs/{run_id}/download?path=...
+
+    Parameters
+    ----------
+    experiment_id : int
+        ID of the experiment the artifact belongs to.
+    run_id : str
+        MLflow run ID for the experiment.
+    path : str
+        Artifact path to download (e.g., ``model.safetensors``,
+        ``config.json``, ``tokenizer.json``).
+
+    Returns
+    -------
+    FileResponse
+        FastAPI FileResponse with the downloaded file as
+        ``application/octet-stream``.
+
+    Raises
+    ------
+    HTTPException
+        404 if the experiment is not found, has no associated MLflow run,
+        or the requested artifact path is not found.
+        400 if the run ID does not match the experiment.
+        500 if the download fails or the artifact is not a valid file.
     """
     tracking_svc = TrackingService()
     exp = await tracking_svc.get_experiment(experiment_id)
@@ -487,9 +707,7 @@ async def download_artifact(
         loop = asyncio.get_event_loop()
         local_path = await loop.run_in_executor(
             None,
-            lambda: client.download_artifacts(
-                run_id, path, dst_path=None
-            ),
+            lambda: client.download_artifacts(run_id, path, dst_path=None),
         )
         if not os.path.isfile(local_path):
             raise HTTPException(
@@ -512,7 +730,31 @@ async def download_artifact(
 
 @router.post("/experiments/{experiment_id}/retry-export")
 async def retry_export(experiment_id: int):
-    """Retry safetensors export from a finished experiment's model.json."""
+    """Retry safetensors export from a finished experiment's model artifact.
+
+    Exports the model from an existing ``model.json`` artifact to safetensors
+    format, logs the artifacts to MLflow, and returns the exported file paths.
+
+    POST /v1/experiments/{experiment_id}/retry-export
+
+    Parameters
+    ----------
+    experiment_id : int
+        ID of the experiment to retry export for. The experiment must have
+        a completed ``model.json`` artifact.
+
+    Returns
+    -------
+    dict
+        Dictionary containing ``status``, ``safetensors_path``,
+        ``config_path``, and ``tokenizer_path``.
+
+    Raises
+    ------
+    HTTPException
+        404 if the experiment is not found or has no model artifact.
+        500 if the export retry fails.
+    """
     tracking_svc = TrackingService()
     exp = await tracking_svc.get_experiment(experiment_id)
     if exp is None:
@@ -528,7 +770,7 @@ async def retry_export(experiment_id: int):
     output_dir = Path(f"data/models/export_{experiment_id}")
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    from anvil.services.export import SafetensorsExportService as ExportService
+    from ...services.export import SafetensorsExportService as ExportService
 
     loop = asyncio.get_event_loop()
     export_svc = ExportService()

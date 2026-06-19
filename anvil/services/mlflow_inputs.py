@@ -1,4 +1,9 @@
-from __future__ import annotations
+"""MLflow input resolvers — converts anvil datasets/corpora to MLflow dataset objects.
+
+Provides the ``MlflowInputResolver`` class that bridges anvil's dataset
+and corpus records to MLflow's ``MetaDataset`` and
+``LocalArtifactDatasetSource`` for experiment input tracking.
+"""
 
 import asyncio
 import hashlib
@@ -10,16 +15,42 @@ from mlflow.data.meta_dataset import MetaDataset
 from mlflow.data.sources import LocalArtifactDatasetSource  # type: ignore[attr-defined]
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from anvil.db.repositories.corpora import CorpusRepository
-from anvil.db.repositories.datasets import DatasetRepository
+from ..db.repositories.corpora import CorpusRepository
+from ..db.repositories.datasets import DatasetRepository
 
 
 class MlflowInputResolver:
+    """Resolves anvil dataset/corpus records to MLflow dataset inputs.
+
+    Creates ``MetaDataset`` objects with source, digest, and name for
+    MLflow experiment input tracking. Supports both datasets (flat
+    sample lists) and corpora (directory of files).
+    """
+
     def __init__(self, session: AsyncSession):
+        """Initialise the resolver.
+
+        Parameters
+        ----------
+        session : AsyncSession
+            SQLAlchemy async session for database access.
+        """
         self._session = session
 
     @staticmethod
     def content_digest(docs: list[str]) -> str:
+        """Compute a SHA-256 content digest from a list of documents.
+
+        Parameters
+        ----------
+        docs : list[str]
+            Document strings to hash.
+
+        Returns
+        -------
+        str
+            Hex-encoded SHA-256 digest.
+        """
         h = hashlib.sha256()
         for doc in docs:
             h.update(doc.encode())
@@ -28,6 +59,29 @@ class MlflowInputResolver:
     async def resolve_dataset(
         self, dataset_id: int, role: str = "training"
     ) -> tuple[Any, str]:
+        """Resolve a dataset record to an MLflow dataset input.
+
+        Loads sample texts, computes a content digest, and creates
+        an MLflow ``MetaDataset`` with a ``LocalArtifactDatasetSource``.
+
+        Parameters
+        ----------
+        dataset_id : int
+            The dataset ID.
+        role : str
+            Role label for the input (e.g. ``"training"``).
+            Defaults to ``"training"``.
+
+        Returns
+        -------
+        tuple[Any, str]
+            Tuple of (``MetaDataset``, content digest string).
+
+        Raises
+        ------
+        ValueError
+            If the dataset is not found.
+        """
         repo = DatasetRepository(self._session)
         ds = await repo.get(dataset_id)
         if ds is None:
@@ -66,6 +120,28 @@ class MlflowInputResolver:
         return mlflow_ds, digest
 
     async def resolve_corpus(self, corpus_id: int) -> tuple[Any, list[str], str]:
+        """Resolve a corpus record to an MLflow dataset input.
+
+        Loads all file contents from the corpus directory, computes
+        a content digest, and creates an MLflow ``MetaDataset`` with
+        a ``LocalArtifactDatasetSource``.
+
+        Parameters
+        ----------
+        corpus_id : int
+            The corpus ID.
+
+        Returns
+        -------
+        tuple[Any, list[str], str]
+            Tuple of (``MetaDataset``, list of artifact file paths,
+            content digest string).
+
+        Raises
+        ------
+        ValueError
+            If the corpus is not found.
+        """
         repo = CorpusRepository(self._session)
         corpus = await repo.get(corpus_id)
         if corpus is None:

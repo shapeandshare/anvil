@@ -4,14 +4,41 @@ import math
 
 from fastapi import APIRouter, HTTPException
 
-from anvil.core.engine import softmax
-from anvil.services.inference import InferenceService
+from ...core.engine import softmax
+from ...services.inference import InferenceService
 
 router = APIRouter()
 
 
 @router.post("/eval/perplexity")
 async def eval_perplexity(body: dict):
+    """Compute perplexity of a model on a given text string.
+
+    Loads the specified model version, tokenizes the input text, and computes
+    the average cross-entropy loss over the first ``block_size`` tokens.
+    Perplexity is ``exp(avg_loss)``.
+
+    Parameters
+    ----------
+    body : dict
+        Request body with keys:
+          - ``model_id``: int — identifier of the model
+          - ``version``: int — version of the model
+          - ``text``: str — input text to evaluate
+
+    Returns
+    -------
+    dict
+        Perplexity, average loss, number of positions evaluated, vocabulary
+        size, and model configuration.
+
+    Raises
+    ------
+    HTTPException
+        If ``model_id`` or ``version`` is missing (400), ``text`` is empty
+        (400), the model is not found (404), or a character is not in the
+        vocabulary (400).
+    """
     model_id = body.get("model_id")
     version = body.get("version")
     text = body.get("text")

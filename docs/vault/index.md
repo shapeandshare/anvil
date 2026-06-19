@@ -5,7 +5,7 @@ tags:
   - type/reference
   - domain/vault
 created: 2026-06-10
-updated: 2026-06-18
+updated: 2026-06-19
 aliases:
   - anvil-vault
   - vault-index
@@ -27,7 +27,7 @@ Open this vault in [Obsidian](https://obsidian.md) for graph navigation.
 | [[Decisions/ADR-001-architecture-decisions|Decisions]] | Architecture Decision Records |
 | [[Reference/ArchitectureOverview|Reference]] | Glossary, architecture guides, topic references |
 | [[Discoveries/Discoveries|Discoveries]] | Non-obvious constraints found during sessions |
-| [[Sessions/2026-06-18-pip-installable-package|Sessions]] | Agent session logs |
+| [[Sessions/2026-06-19-domain-driven-decomposition|Sessions]] | Agent session logs |
 
 ### Vault Meta
 

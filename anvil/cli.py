@@ -1,4 +1,24 @@
-"""CLI entry points and AnvilWorkbench god class."""
+"""CLI entry points and AnvilWorkbench god class.
+
+Defines the command-line interface for anvil — ``anvil serve``,
+``anvil train``, ``anvil corpus``, ``anvil stop``,
+``anvil bootstrap-datasets``, and ``anvil db``.
+
+Public Functions
+----------------
+serve
+    Start the web server.
+train
+    Run a training session from CLI args.
+corpus_main
+    Manage training corpora (CRUD).
+stop
+    Stop web and MLflow servers.
+bootstrap_datasets_main
+    Import bundled demo data.
+db_main
+    Manage database schema migrations.
+"""
 
 import argparse
 import asyncio
@@ -10,34 +30,78 @@ import sys
 
 import uvicorn
 
-from anvil.config import get_config
-from anvil.services.training import TrainingService
-from anvil.supervisor.supervisor import kill_pid_file, write_pid
+from .config import get_config
+from .services.training import TrainingService
+from .supervisor.supervisor import kill_pid_file, write_pid
 
 logger = logging.getLogger(__name__)
 
 
 class AnvilWorkbench:
+    """God class exposing high-level application services.
+
+    Provides a single entry point for service access from CLI and
+    route handlers. Currently wraps :class:`TrainingService` and
+    previously exposed the model registry (removed in favour of
+    MLflow Model Registry).
+
+    Attributes
+    ----------
+    training : TrainingService
+        The training service instance.
+    """
+
     def __init__(self):
         self._training = TrainingService()
 
     @property
     def training(self) -> TrainingService:
+        """Return the training service instance.
+
+        Returns
+        -------
+        TrainingService
+        """
         return self._training
 
     # registry property removed — using MLflow Model Registry instead
 
 
 def _load_docs(corpus_id: int | None = None) -> list[str]:
+    """Load documents from a corpus or the default demo corpus.
+
+    Parameters
+    ----------
+    corpus_id : int, optional
+        Specific corpus ID to load. If ``None``, loads the bundled
+        demo corpus.
+
+    Returns
+    -------
+    list of str
+        Document text strings.
+
+    Raises
+    ------
+    RuntimeError
+        If *corpus_id* is ``None`` and no demo corpus has been
+        bootstrapped.
+    """
     if corpus_id is not None:
         import asyncio
 
-        from anvil.db.repositories.corpora import CorpusRepository
-        from anvil.db.session import AsyncSessionLocal
-        from anvil.services.corpora import CorpusService
-        from anvil.services.corpus_loader import CorpusLoader
+        from .db.repositories.corpora import CorpusRepository
+        from .db.session import AsyncSessionLocal
+        from .services.corpora import CorpusService
+        from .services.corpus_loader import CorpusLoader
 
-        async def _load():
+        async def _load() -> list[str]:
+            """Load documents for the specified corpus ID.
+
+            Returns
+            -------
+            list of str
+            """
             async with AsyncSessionLocal() as session:
                 repo = CorpusRepository(session)
                 loader = CorpusLoader()
@@ -46,12 +110,21 @@ def _load_docs(corpus_id: int | None = None) -> list[str]:
 
         return asyncio.run(_load())
 
-    from anvil.db.session import AsyncSessionLocal
-    from anvil.services.demo_bootstrap import DemoBootstrapService, DEFAULT_CORPUS_NAME
+    from .db.session import AsyncSessionLocal
+    from .services.demo_bootstrap import DEFAULT_CORPUS_NAME, DemoBootstrapService
 
-    async def _load_default():
-        import asyncio
+    async def _load_default() -> list[str]:
+        """Load documents from the default demo corpus.
 
+        Returns
+        -------
+        list of str
+
+        Raises
+        ------
+        RuntimeError
+            If the default demo corpus has not been bootstrapped.
+        """
         async with AsyncSessionLocal() as session:
             bootstrap = DemoBootstrapService(session)
             corpus = await bootstrap.get_default_corpus()
@@ -60,9 +133,9 @@ def _load_docs(corpus_id: int | None = None) -> list[str]:
                     f"No demo corpus found. Run 'anvil bootstrap-datasets' first "
                     f"to import demo data (expected corpus: {DEFAULT_CORPUS_NAME})"
                 )
-            from anvil.db.repositories.corpora import CorpusRepository
-            from anvil.services.corpus_loader import CorpusLoader
-            from anvil.services.corpora import CorpusService
+            from .db.repositories.corpora import CorpusRepository
+            from .services.corpora import CorpusService
+            from .services.corpus_loader import CorpusLoader
 
             repo = CorpusRepository(session)
             loader = CorpusLoader()
@@ -73,6 +146,12 @@ def _load_docs(corpus_id: int | None = None) -> list[str]:
 
 
 def serve():
+    """Start the anvil web server via uvicorn.
+
+    Reads configuration from ``get_config()``, writes a PID file to
+    the log directory, and starts uvicorn serving the FastAPI app.
+    The PID file is cleaned up on shutdown.
+    """
     logging.basicConfig(
         level=logging.INFO,
         format="%(levelname)s [%(name)s] %(message)s",
@@ -92,6 +171,13 @@ def serve():
 
 
 def train():
+    """Run a training session from CLI arguments.
+
+    Parses command-line arguments for corpus/dataset selection,
+    compute backend, device override, and orchestrates training with
+    live progress reporting via the event queue. On completion,
+    safetensors model artifacts are exported and logged to MLflow.
+    """
     parser = argparse.ArgumentParser(description="Train Llama model")
     parser.add_argument(
         "--corpus",
@@ -135,14 +221,16 @@ def train():
     use_gpu = args.gpu or os.getenv("USE_GPU", "").lower() in ("true", "1", "yes")
     compute_backend = args.backend or ("local-gpu" if use_gpu else "auto")
 
-    from anvil.services.compute import resolve_backend
-    from anvil.services.tracking import TrackingService
-    from anvil.services.training import TrainingService
+    from .services.compute.resolve import resolve_backend
+    from .services.tracking import TrackingService
+    from .services.training import TrainingService
 
     svc = TrainingService()
     tracking_svc = TrackingService()
 
-    resolved = resolve_backend({"compute_backend": compute_backend, "device": args.device or None})
+    resolved = resolve_backend(
+        {"compute_backend": compute_backend, "device": args.device or None}
+    )
     engine_backend: str = resolved["engine"]
     device: str = resolved["device"]
 
@@ -154,8 +242,12 @@ def train():
     }
 
     async def _run():
-        from anvil.services.tracking import TrackingService
+        """Execute the training run with MLflow tracking and progress reporting.
 
+        Starts an MLflow run, schedules training with callbacks for
+        metrics and completion, then drains the event queue printing
+        progress to stdout.
+        """
         TrackingService.enable_system_metrics()
         mlflow_run_id = await tracking_svc.start_run(
             run_name=None,
@@ -173,6 +265,15 @@ def train():
         _progress_tasks: set[asyncio.Task] = set()
 
         def progress_cb(step: int, loss: float) -> None:
+            """Log training metrics to MLflow asynchronously.
+
+            Parameters
+            ----------
+            step : int
+                Current training step.
+            loss : float
+                Current loss value.
+            """
             try:
                 loop = asyncio.get_event_loop()
                 t = loop.create_task(
@@ -186,9 +287,18 @@ def train():
         final_loss_holder: list[float] = []
 
         async def on_complete(result, cfg: dict) -> None:
+            """Handle training completion: finalise MLflow run and export artifacts.
+
+            Parameters
+            ----------
+            result
+                Training result object with ``final_loss``, ``model``,
+                ``samples``, and ``uchars`` attributes.
+            cfg : dict
+                Training configuration dictionary.
+            """
             final_loss = result.final_loss or 0.0
             model = result.model
-            samples = result.samples
             uchars = result.uchars
             final_loss_holder.append(final_loss)
             await tracking_svc.finish_run(mlflow_run_id)
@@ -196,8 +306,8 @@ def train():
             if mlflow_run_id:
                 registry_name = None
                 if args.dataset is not None:
-                    from anvil.db.repositories.datasets import DatasetRepository
-                    from anvil.db.session import AsyncSessionLocal
+                    from .db.repositories.datasets import DatasetRepository
+                    from .db.session import AsyncSessionLocal
 
                     async with AsyncSessionLocal() as sess:
                         ds_repo = DatasetRepository(sess)
@@ -205,8 +315,8 @@ def train():
                         if ds:
                             registry_name = ds.name
                 elif args.corpus is not None:
-                    from anvil.db.repositories.corpora import CorpusRepository
-                    from anvil.db.session import AsyncSessionLocal
+                    from .db.repositories.corpora import CorpusRepository
+                    from .db.session import AsyncSessionLocal
 
                     async with AsyncSessionLocal() as sess:
                         corp_repo = CorpusRepository(sess)
@@ -229,7 +339,7 @@ def train():
             if model is not None:
                 import tempfile
 
-                from anvil.services.export import SafetensorsExportService
+                from .services.export import SafetensorsExportService
 
                 export_svc = SafetensorsExportService()
                 with tempfile.TemporaryDirectory() as tmpdir:
@@ -313,6 +423,14 @@ def train():
 
 
 def corpus_main():
+    """Manage training corpora via the CLI.
+
+    Provides subcommands for creating, ingesting, listing, showing,
+    deleting, and listing files of training corpora.
+
+    Subcommands: ``create``, ``ingest``, ``list``, ``show``,
+    ``delete``, ``files``.
+    """
     parser = argparse.ArgumentParser(description="Manage training corpora")
     sub = parser.add_subparsers(dest="command")
 
@@ -352,12 +470,17 @@ def corpus_main():
 
     import asyncio
 
-    from anvil.db.repositories.corpora import CorpusRepository
-    from anvil.db.session import AsyncSessionLocal
-    from anvil.services.corpora import CorpusService
-    from anvil.services.corpus_loader import CorpusLoader
+    from .db.repositories.corpora import CorpusRepository
+    from .db.session import AsyncSessionLocal
+    from .services.corpora import CorpusService
+    from .services.corpus_loader import CorpusLoader
 
     async def _run():
+        """Execute the corpus management command.
+
+        Dispatches to the appropriate ``CorpusService`` method based
+        on the parsed subcommand and prints results to stdout.
+        """
         async with AsyncSessionLocal() as session:
             repo = CorpusRepository(session)
             loader = CorpusLoader()
@@ -423,7 +546,22 @@ def corpus_main():
 
 
 def _find_pid_by_port(port: int) -> list[int]:
-    """Find process PIDs listening on a port using lsof."""
+    """Find Python-related process PIDs listening on a given port.
+
+    Uses ``lsof`` to discover listening processes on *port*, then
+    filters to only those whose command name contains ``python``,
+    ``mlflow``, or ``uvicorn``.
+
+    Parameters
+    ----------
+    port : int
+        TCP port number to check.
+
+    Returns
+    -------
+    list of int
+        PIDs of matching processes, or an empty list.
+    """
     import subprocess
 
     try:
@@ -469,6 +607,13 @@ def _kill_pids(pids: list[int], sig: int = signal.SIGTERM) -> bool:
 
 
 def stop():
+    """Stop web and MLflow servers.
+
+    Reads PID files from the log directory and sends ``SIGTERM`` to
+    the corresponding processes. Falls back to port-based discovery
+    via ``lsof`` if PID files are missing. Verifies ports are freed
+    and escalates to ``SIGKILL`` if necessary.
+    """
     cfg = get_config()
     pid_dir = cfg["log_dir"]
     web_killed = False
@@ -538,9 +683,6 @@ def _wait_and_sigkill(pids: list[int], port: int) -> None:
             pass
 
 
-
-
-
 def bootstrap_datasets_main():
     """Import bundled demo data (corpora and datasets) from ``data/demo/``."""
     parser = argparse.ArgumentParser(description="Bootstrap demo datasets")
@@ -557,8 +699,14 @@ def bootstrap_datasets_main():
     args = parser.parse_args()
 
     async def _run():
-        from anvil.db.session import AsyncSessionLocal
-        from anvil.services.demo_bootstrap import DemoBootstrapService
+        """Execute the bootstrap process.
+
+        Runs in dry-run or live mode, printing a summary of
+        created/skipped corpora and datasets. On errors in live
+        mode the session is rolled back.
+        """
+        from .db.session import AsyncSessionLocal
+        from .services.demo_bootstrap import DemoBootstrapService
 
         async with AsyncSessionLocal() as session:
             svc = DemoBootstrapService(session)
@@ -569,8 +717,12 @@ def bootstrap_datasets_main():
                 if bootstrap.errors:
                     for err in bootstrap.errors:
                         print(f"  ⚠ {err}")
-                print(f"\nWould create: {bootstrap.corpora_created} corpora, {bootstrap.datasets_created} datasets")
-                print(f"Would skip:   {bootstrap.corpora_skipped} corpora, {bootstrap.datasets_skipped} datasets")
+                print(
+                    f"\nWould create: {bootstrap.corpora_created} corpora, {bootstrap.datasets_created} datasets"
+                )
+                print(
+                    f"Would skip:   {bootstrap.corpora_skipped} corpora, {bootstrap.datasets_skipped} datasets"
+                )
                 return
 
             print("Bootstrapping demo data from data/demo/...")
@@ -610,12 +762,16 @@ def db_main(argv: list[str] | None = None) -> None:
 
     downgrade_p = sub.add_parser("downgrade", help="Roll back one or more migrations")
     downgrade_p.add_argument(
-        "revision", nargs="?", default="-1",
+        "revision",
+        nargs="?",
+        default="-1",
         help="Revision to downgrade to (default: -1 = one step back)",
     )
 
     revision_p = sub.add_parser("revision", help="Auto-generate a new migration")
-    revision_p.add_argument("-m", "--message", required=True, help="Migration description")
+    revision_p.add_argument(
+        "-m", "--message", required=True, help="Migration description"
+    )
 
     stamp_p = sub.add_parser("stamp", help="Stamp the database at a revision")
     stamp_p.add_argument("revision", help="Revision hash to stamp")
@@ -624,9 +780,16 @@ def db_main(argv: list[str] | None = None) -> None:
 
     import asyncio
 
-    from anvil.db.migration import MigrationError, MigrationService
+    from .db.migration import MigrationService
+    from .db.migration_error import MigrationError
 
     async def _run() -> None:
+        """Execute the database migration command.
+
+        Dispatches to the appropriate ``MigrationService`` method
+        based on the parsed subcommand (``upgrade``, ``downgrade``,
+        ``current``, ``history``, ``revision``, or ``stamp``).
+        """
         svc = MigrationService()
         try:
             if args.command == "upgrade":

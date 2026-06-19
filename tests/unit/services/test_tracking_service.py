@@ -5,6 +5,8 @@ from datetime import datetime
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from mlflow.entities import Run
+
 import pytest
 
 from anvil.config import get_config
@@ -12,7 +14,7 @@ from anvil.config import get_config
 
 @dataclass
 class FakeRun:
-    info: Any = None
+    info: Run | None = None
 
 
 @dataclass
@@ -70,7 +72,7 @@ class FakeMlflowClient:
     def set_terminated(self, run_id: str, status: str = "FINISHED"):
         self.set_terminated_calls.append({"run_id": run_id, "status": status})
 
-    def log_input(self, run_id: str, dataset: Any, context: str | None = None):
+    def log_input(self, run_id: str, dataset: object, context: str | None = None):
         if not hasattr(self, "logged_inputs"):
             self.logged_inputs: list[dict] = []
         self.logged_inputs.append(

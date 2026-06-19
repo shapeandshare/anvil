@@ -19,6 +19,7 @@ Exit codes:
     0 — clean or warnings only
     1 — any ERROR found
 """
+
 from __future__ import annotations
 
 import argparse
@@ -43,10 +44,11 @@ except ImportError:
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 # Graph health analysis (optional — requires networkx).
+GraphHealthRunner: type | None = None
 try:
-    from graph_health import GraphHealthRunner  # type: ignore[import-untyped]
-except ImportError:
-    GraphHealthRunner = None  # type: ignore[assignment]
+    from graph_health import GraphHealthRunner
+except Exception:
+    pass
 
 # ---------------------------------------------------------------------------
 # Controlled Vocabulary (mirrors docs/vault/_meta/tags.md)
@@ -122,7 +124,7 @@ def nfc(s: str) -> str:
     return unicodedata.normalize("NFC", s)
 
 
-def _nfc_strings(obj: Any) -> Any:
+def _nfc_strings(obj: object) -> Any:
     """Recursively NFC-normalize all strings in a dict/list/str."""
     if isinstance(obj, str):
         return nfc(obj)
@@ -197,7 +199,7 @@ def write_json(path: Path, obj: dict) -> None:
     path.write_text(content, encoding="utf-8")
 
 
-def _parse_date_value(val: Any) -> date | None:
+def _parse_date_value(val: object) -> date | None:
     """Parse a date from frontmatter (ISO string or date object).
 
     Handles multiple formats: '2026-06-14', '2026-06-14T00:00:00.000Z',

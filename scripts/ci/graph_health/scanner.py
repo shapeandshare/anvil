@@ -4,13 +4,9 @@ FR-001-FR-008: inbound/outbound counts, orphan/dead-end detection,
 link density, bidirectional completeness, largest component.
 """
 
-from __future__ import annotations
+import networkx as nx
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    import networkx as nx
-    from . import ConnectivityMetrics, NoteMetadata
+from .types import ConnectivityMetrics, NoteMetadata
 
 
 def compute_connectivity(
@@ -26,9 +22,6 @@ def compute_connectivity(
     Returns:
         ConnectivityMetrics dataclass with all connectivity calculations.
     """
-    import networkx as nx
-    from . import ConnectivityMetrics
-
     metrics = ConnectivityMetrics()
 
     # --- Orphan detection ---

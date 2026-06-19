@@ -4,8 +4,6 @@ Enables creating new corpus variants (forks) from an existing corpus,
 with the ability to override chunking parameters while preserving lineage.
 """
 
-from __future__ import annotations
-
 import sqlalchemy as sa
 from alembic import op
 

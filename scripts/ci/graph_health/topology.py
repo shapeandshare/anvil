@@ -4,13 +4,9 @@ PageRank authority, betweenness centrality bridges,
 Louvain community detection, information sink detection.
 """
 
-from __future__ import annotations
+import networkx as nx
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    import networkx as nx
-    from . import TopologicalMetrics, NoteMetadata
+from .types import NoteMetadata, TopologicalMetrics
 
 
 def compute_topological(
@@ -26,9 +22,6 @@ def compute_topological(
     Returns:
         TopologicalMetrics with all topology calculations.
     """
-    import networkx as nx
-    from . import TopologicalMetrics
-
     metrics = TopologicalMetrics()
 
     # --- PageRank authority ---

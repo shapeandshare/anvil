@@ -1,52 +1,55 @@
+"""Dataset import service — parses and imports text into datasets.
+
+Provides the ``DatasetImportService`` class for parsing text in various
+formats (TXT, CSV, JSONL, JSON, paste, corpus) and committing the
+parsed samples to a dataset with file storage.
+"""
+
 import csv
-import hashlib
 import io
 import json
-import uuid
 from collections.abc import AsyncIterator
-from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from anvil.db.models.curation import CurationOperation, ImportSource, Sample
-from anvil.db.repositories.curation import (
-    CurationOperationRepository,
-    ImportSourceRepository,
-    SampleRepository,
-)
-from anvil.db.repositories.datasets import DatasetRepository
-from anvil.storage.local import LocalFileStore
-
-
-class ImportResult:
-    def __init__(
-        self,
-        import_source_id: int,
-        rows_imported: int,
-        errors: list[dict],
-        preview: list[dict],
-    ):
-        self.import_source_id = import_source_id
-        self.rows_imported = rows_imported
-        self.errors = errors
-        self.preview = preview
-
-
-class ParsedSample:
-    def __init__(self, text: str, index: int):
-        self.text = text
-        self.index = index
-        self.content_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
-        self.length = len(text)
+from ..db.models.curation_operation import CurationOperation
+from ..db.models.import_source import ImportSource
+from ..db.models.sample import Sample
+from ..db.repositories.curation import SampleRepository
+from ..db.repositories.curation_operation_repository import CurationOperationRepository
+from ..db.repositories.datasets import DatasetRepository
+from ..db.repositories.import_source_repository import ImportSourceRepository
+from ..storage.local import LocalFileStore
+from .import_result import ImportResult
+from .parsed_sample import ParsedSample
 
 
 class DatasetImportService:
+    """Parses text in various formats and imports samples into a dataset.
+
+    Supports TXT (one sample per line), CSV, JSONL, JSON, paste
+    (same as TXT), and corpus formats. Commits parsed samples to the
+    database and stores their content in the file store.
+    """
+
     def __init__(
         self,
         session: AsyncSession,
         dataset_id: int,
         store: LocalFileStore | None = None,
     ):
+        """Initialise the import service.
+
+        Parameters
+        ----------
+        session : AsyncSession
+            SQLAlchemy async session for database access.
+        dataset_id : int
+            ID of the dataset to import into.
+        store : LocalFileStore, optional
+            File store for persisting sample content. Defaults to a
+            new ``LocalFileStore`` at ``"data/datasets"``.
+        """
         self._session = session
         self._dataset_id = dataset_id
         self._store = store or LocalFileStore("data/datasets")
@@ -58,6 +61,29 @@ class DatasetImportService:
     async def preview_import(
         self, text: str | None = None, fmt: str = "txt", max_rows: int = 20
     ) -> tuple[list[dict], list[dict]]:
+        """Parse text and return a preview without committing.
+
+        Useful for showing the user what will be imported before the
+        actual commit.
+
+        Parameters
+        ----------
+        text : str, optional
+            The raw text to parse. ``None`` or empty string returns
+            empty preview and errors.
+        fmt : str
+            Input format: ``"txt"``, ``"csv"``, ``"jsonl"``,
+            ``"json"``, ``"paste"``, or ``"corpus"``. Defaults to
+            ``"txt"``.
+        max_rows : int
+            Maximum preview rows to return. Defaults to ``20``.
+
+        Returns
+        -------
+        tuple[list[dict], list[dict]]
+            Preview dicts (with keys ``"index"``, ``"text_preview"``,
+            ``"length"``) and error dicts.
+        """
         samples, errors = self._parse(text or "", fmt)
         preview = [
             {"index": s.index, "text_preview": s.text[:200], "length": s.length}
@@ -65,9 +91,32 @@ class DatasetImportService:
         ]
         return preview, errors
 
-    async def commit_import(
-        self, text: str, fmt: str = "txt"
-    ) -> ImportResult:
+    async def commit_import(self, text: str, fmt: str = "txt") -> ImportResult:
+        """Parse and commit text samples into the dataset.
+
+        Parses the input text, creates sample records in the database,
+        writes sample content to the file store, and updates dataset
+        metadata. Runs within a transaction that is rolled back on
+        failure.
+
+        Parameters
+        ----------
+        text : str
+            The raw text to parse and import.
+        fmt : str
+            Input format. Defaults to ``"txt"``.
+
+        Returns
+        -------
+        ImportResult
+            Outcome including import source ID, rows imported, errors,
+            and preview.
+
+        Raises
+        ------
+        ValueError
+            If the dataset is not found.
+        """
         samples, errors = self._parse(text, fmt)
         if not samples:
             return ImportResult(
@@ -111,7 +160,7 @@ class DatasetImportService:
 
             sample_records = await self._sample_repo.add_bulk(sample_records)
 
-            for s, rec in zip(samples, sample_records):
+            for s, _rec in zip(samples, sample_records, strict=True):
                 rel_path = f"{self._dataset_id}/{import_source.id}/{s.index}.txt"
                 await self._store.put(
                     rel_path,
@@ -163,6 +212,32 @@ class DatasetImportService:
         source_label: str = "import",
         source_format: str = "docs",
     ) -> ImportResult:
+        """Import a list of pre-parsed document strings.
+
+        Creates sample records, writes content to the file store,
+        and updates dataset metadata in a transaction.
+
+        Parameters
+        ----------
+        docs : list[str]
+            Pre-parsed document strings to import.
+        source_label : str
+            Label for the import source. Defaults to ``"import"``.
+        source_format : str
+            Format identifier for the import source. Defaults to
+            ``"docs"``.
+
+        Returns
+        -------
+        ImportResult
+            Outcome including import source ID, rows imported, errors,
+            and preview.
+
+        Raises
+        ------
+        ValueError
+            If the dataset is not found.
+        """
         if not docs:
             return ImportResult(
                 import_source_id=0,
@@ -178,10 +253,7 @@ class DatasetImportService:
         dataset.status = "importing"
         await self._dataset_repo.update(dataset)
 
-        samples = [
-            ParsedSample(text, idx)
-            for idx, text in enumerate(docs)
-        ]
+        samples = [ParsedSample(text, idx) for idx, text in enumerate(docs)]
 
         try:
             import_source = ImportSource(
@@ -210,7 +282,7 @@ class DatasetImportService:
 
             sample_records = await self._sample_repo.add_bulk(sample_records)
 
-            for s, rec in zip(samples, sample_records):
+            for s, _rec in zip(samples, sample_records, strict=True):
                 rel_path = f"{self._dataset_id}/{import_source.id}/{s.index}.txt"
                 await self._store.put(
                     rel_path,
@@ -223,11 +295,13 @@ class DatasetImportService:
             op = CurationOperation(
                 dataset_id=self._dataset_id,
                 operation_type="import",
-                parameters=json.dumps({
-                    "format": source_format,
-                    "source": source_label,
-                    "row_count": len(samples),
-                }),
+                parameters=json.dumps(
+                    {
+                        "format": source_format,
+                        "source": source_label,
+                        "row_count": len(samples),
+                    }
+                ),
                 sample_count_before=before_count,
                 sample_count_after=after_count,
             )
@@ -263,9 +337,21 @@ class DatasetImportService:
     async def commit_corpus_import(self, docs: list[str]) -> ImportResult:
         """Import pre-chunked corpus documents, preserving each document as-is.
 
-        Unlike the legacy join-then-split approach (which fragmented multi-line
-        chunks), this delegates to :meth:`commit_docs_import` for byte-for-byte
-        preservation of each document.
+        Unlike the legacy join-then-split approach (which fragmented
+        multi-line chunks), this delegates to
+        :meth:`commit_docs_import` for byte-for-byte preservation of
+        each document.
+
+        Parameters
+        ----------
+        docs : list[str]
+            Pre-chunked document strings to import.
+
+        Returns
+        -------
+        ImportResult
+            Outcome including import source ID, rows imported, errors,
+            and preview.
         """
         return await self.commit_docs_import(
             docs=docs,
@@ -274,6 +360,24 @@ class DatasetImportService:
         )
 
     def _parse(self, text: str, fmt: str) -> tuple[list[ParsedSample], list[dict]]:
+        """Parse raw text into samples according to the format.
+
+        Supports TXT, CSV, JSONL, JSON, paste, and corpus formats.
+        Returns parsed samples and any errors encountered.
+
+        Parameters
+        ----------
+        text : str
+            The raw text to parse.
+        fmt : str
+            Input format identifier.
+
+        Returns
+        -------
+        tuple[list[ParsedSample], list[dict]]
+            Parsed samples and error dicts (each with ``"row"`` and
+            ``"error"`` keys).
+        """
         errors: list[dict] = []
         samples: list[ParsedSample] = []
         index = 0
@@ -335,4 +439,16 @@ class DatasetImportService:
         return samples, errors
 
     async def _text_stream(self, text: str) -> AsyncIterator[bytes]:
+        """Async generator yielding UTF-8 encoded text as byte chunks.
+
+        Parameters
+        ----------
+        text : str
+            The text to encode.
+
+        Yields
+        ------
+        bytes
+            UTF-8 encoded text content.
+        """
         yield text.encode("utf-8")

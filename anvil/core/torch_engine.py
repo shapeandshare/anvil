@@ -6,32 +6,57 @@ and autograd so training can run on CUDA or MPS devices.
 It is an optional backend — torch must be installed (``pip install torch``).
 """
 
-from __future__ import annotations
-
 import random
-from typing import Any
+from collections.abc import Callable
+from types import ModuleType
 
-_TORCH_AVAILABLE: bool = False
+_TORCH_AVAILABLE: bool = False  # Whether torch was successfully imported
+_torch_mod: ModuleType | None = None  # Imported torch module (or None)
+_F_mod: ModuleType | None = None  # Imported torch.nn.functional module (or None)
+
 try:
-    import torch
-    import torch.nn.functional as F
+    import torch as _torch_mod
+    import torch.nn.functional as _F_mod
 
     _TORCH_AVAILABLE = True
 except ImportError:
-    torch = None  # type: ignore[assignment]
-    F = None  # type: ignore[assignment]
+    pass
+
+# Public aliases — guarded by assert torch is not None / assert F is not None
+torch: ModuleType | None = (
+    _torch_mod  # Public torch module reference (check torch_available() first)
+)
+F: ModuleType | None = (
+    _F_mod  # Public torch.nn.functional reference (check torch_available() first)
+)
 
 
 def torch_available() -> bool:
+    """Check whether PyTorch is installed and importable.
+
+    Returns
+    -------
+    bool
+        ``True`` if ``torch`` was successfully imported, ``False``
+        otherwise.
+    """
     return _TORCH_AVAILABLE
 
 
 class TorchLlamaModel:
     """Llama architecture built with torch.nn parameters.
 
-    Mirrors the architecture of ``anvil.core.engine.LlamaModel`` but uses
-    torch tensors and autograd for GPU-accelerated training.
+    Mirrors the architecture of ``anvil.core.engine.LlamaModel`` but
+    uses PyTorch tensors and autograd for GPU-accelerated training.
+    Supports CPU, CUDA, and MPS devices.
+
     Only usable when torch is installed (check ``torch_available()``).
+
+    Architecture components:
+    - RoPE with precomputed cos/sin tables (half-split convention)
+    - SwiGLU activation in MLP layers
+    - RMSNorm with learned scale parameters via ``nn.Parameter``
+    - Causal multi-head attention with key/value caching
     """
 
     def __init__(
@@ -42,8 +67,36 @@ class TorchLlamaModel:
         n_layer: int = 1,
         block_size: int = 16,
     ):
+        """Initialize the TorchLlamaModel with the given architecture.
+
+        Constructs all parameter tensors (token embeddings, attention
+        projections, SwiGLU MLP weights, RMSNorm scales) and
+        precomputes the RoPE cos/sin tables for the given block size.
+
+        Parameters
+        ----------
+        vocab_size : int
+            Size of the vocabulary.
+        n_embd : int, optional
+            Embedding dimension. Defaults to ``16``.
+        n_head : int, optional
+            Number of attention heads. Defaults to ``4``.
+        n_layer : int, optional
+            Number of transformer layers. Defaults to ``1``.
+        block_size : int, optional
+            Maximum sequence length. Defaults to ``16``.
+
+        Raises
+        ------
+        RuntimeError
+            If PyTorch is not installed.
+        ValueError
+            If ``head_dim = n_embd // n_head`` is odd.
+        """
         if not _TORCH_AVAILABLE:
             raise RuntimeError("torch is not installed")
+        assert torch is not None
+        assert F is not None
         self.vocab_size = vocab_size
         self.n_embd = n_embd
         self.n_head = n_head
@@ -52,9 +105,7 @@ class TorchLlamaModel:
         self.head_dim = n_embd // n_head
 
         if self.head_dim % 2 != 0:
-            raise ValueError(
-                f"head_dim={self.head_dim} must be even for RoPE"
-            )
+            raise ValueError(f"head_dim={self.head_dim} must be even for RoPE")
 
         self.intermediate_size = int(8 * n_embd / 3)
 
@@ -82,32 +133,18 @@ class TorchLlamaModel:
         self.mlp_down = torch.nn.ParameterList()
 
         for _ in range(n_layer):
-            self.attn_wq.append(
-                torch.nn.Parameter(torch.randn(n_embd, n_embd) * 0.08)
-            )
-            self.attn_wk.append(
-                torch.nn.Parameter(torch.randn(n_embd, n_embd) * 0.08)
-            )
-            self.attn_wv.append(
-                torch.nn.Parameter(torch.randn(n_embd, n_embd) * 0.08)
-            )
-            self.attn_wo.append(
-                torch.nn.Parameter(torch.randn(n_embd, n_embd) * 0.08)
-            )
+            self.attn_wq.append(torch.nn.Parameter(torch.randn(n_embd, n_embd) * 0.08))
+            self.attn_wk.append(torch.nn.Parameter(torch.randn(n_embd, n_embd) * 0.08))
+            self.attn_wv.append(torch.nn.Parameter(torch.randn(n_embd, n_embd) * 0.08))
+            self.attn_wo.append(torch.nn.Parameter(torch.randn(n_embd, n_embd) * 0.08))
             self.mlp_gate.append(
-                torch.nn.Parameter(
-                    torch.randn(self.intermediate_size, n_embd) * 0.08
-                )
+                torch.nn.Parameter(torch.randn(self.intermediate_size, n_embd) * 0.08)
             )
             self.mlp_up.append(
-                torch.nn.Parameter(
-                    torch.randn(self.intermediate_size, n_embd) * 0.08
-                )
+                torch.nn.Parameter(torch.randn(self.intermediate_size, n_embd) * 0.08)
             )
             self.mlp_down.append(
-                torch.nn.Parameter(
-                    torch.randn(n_embd, self.intermediate_size) * 0.08
-                )
+                torch.nn.Parameter(torch.randn(n_embd, self.intermediate_size) * 0.08)
             )
 
         # RoPE precomputation (half-split style)
@@ -122,11 +159,29 @@ class TorchLlamaModel:
 
     @property
     def num_params(self) -> int:
+        """Return the total number of trainable parameters.
+
+        Returns
+        -------
+        int
+            The sum of ``numel()`` across all parameters.
+        """
         return sum(p.numel() for p in self.parameters())
 
     def parameters(self):
+        """Yield all trainable parameters in the model.
+
+        Iterates over all ``nn.Parameter`` and ``nn.ParameterList``
+        attributes of the model.
+
+        Yields
+        ------
+        torch.nn.Parameter
+            Each trainable parameter in the model.
+        """
         if not _TORCH_AVAILABLE:
             return []
+        assert torch is not None
         for v in vars(self).values():
             if isinstance(v, torch.nn.Parameter):
                 yield v
@@ -134,6 +189,31 @@ class TorchLlamaModel:
                 yield from v
 
     def forward(self, token_id: int, pos_id: int, keys: list[list], values: list[list]):
+        """Run a single forward step through the transformer.
+
+        Processes one token at the given position using PyTorch
+        operations. This mirrors the architecture of
+        ``anvil.core.engine.LlamaModel.forward`` but operates on
+        PyTorch tensors with GPU support.
+
+        Parameters
+        ----------
+        token_id : int
+            The token index to embed.
+        pos_id : int
+            The position index for RoPE table lookup.
+        keys : list of list
+            Per-layer key cache (modified in-place).
+        values : list of list
+            Per-layer value cache (modified in-place).
+
+        Returns
+        -------
+        torch.Tensor
+            Logits over the vocabulary of shape ``(vocab_size,)``.
+        """
+        assert torch is not None
+        assert F is not None
         # Token embedding only — NO wpe, NO embedding-level norm
         x = self.wte[token_id]
 
@@ -217,14 +297,28 @@ class TorchLlamaModel:
             x = x + x_residual
 
         # Final RMSNorm with learned scale before lm_head
-        x = (
-            F.rms_norm(x, normalized_shape=(self.n_embd,), eps=1e-5)
-            * self.rms_final
-        )
+        x = F.rms_norm(x, normalized_shape=(self.n_embd,), eps=1e-5) * self.rms_final
         logits = F.linear(x, self.lm_head)
         return logits
 
     def to(self, device):
+        """Move all model parameters and buffers to a device.
+
+        Transfers ``nn.Parameter``, ``nn.ParameterList``, and RoPE
+        buffer tensors (``cos_table``, ``sin_table``) to the given
+        device.
+
+        Parameters
+        ----------
+        device : torch.device or str
+            Target device (e.g., ``"cpu"``, ``"cuda:0"``, ``"mps"``).
+
+        Returns
+        -------
+        TorchLlamaModel
+            ``self`` for method chaining.
+        """
+        assert torch is not None
         for v in vars(self).values():
             if isinstance(v, torch.nn.Parameter):
                 v.data = v.data.to(device)
@@ -237,14 +331,29 @@ class TorchLlamaModel:
         return self
 
     def eval(self):
+        """Set the model to evaluation mode.
+
+        This is a no-op for the current implementation since dropout
+        and batch norm are not used. Included for API compatibility
+        with PyTorch conventions.
+        """
         pass
 
     def export_weights(self) -> dict[str, list]:
         """Export all weights as plain Python lists.
 
-        Returns a dict with 2D matrices (wte, lm_head, attention, SwiGLU layers)
-        and 1D vectors (RMSNorm scales).
+        Detaches each parameter tensor, moves it to CPU, converts to
+        a nested Python list, and returns a dictionary keyed by weight
+        name (``wte``, ``lm_head``, ``layer{i}.attn_wq``, etc.).
+
+        Returns
+        -------
+        dict of str to list
+            A dictionary mapping weight names to their values as
+            Python lists (2D matrices for weights, 1D vectors for
+            RMSNorm scales).
         """
+        assert torch is not None
         sd: dict[str, list] = {}
         sd["wte"] = self.wte.detach().cpu().tolist()
         sd["lm_head"] = self.lm_head.detach().cpu().tolist()
@@ -276,12 +385,66 @@ def train_torch(
     beta1: float = 0.85,
     beta2: float = 0.99,
     temperature: float = 0.5,
-    progress_callback: Any = None,
-    stop_check: Any = None,
+    progress_callback: Callable[[int, float], None] | None = None,
+    stop_check: Callable[[], bool] | None = None,
 ) -> tuple[dict[str, list[list[float]]], float, list[str], list[str]]:
+    """Train a ``TorchLlamaModel`` on a list of documents using PyTorch.
+
+    This is the GPU-accelerated training loop. It builds a character-
+    level vocabulary, creates a ``TorchLlamaModel``, and runs Adam
+    optimization with linear learning rate decay on the specified
+    device (CPU, CUDA, or MPS). After training, generates 20 sample
+    strings and exports the model weights.
+
+    Parameters
+    ----------
+    docs : list of str
+        Training documents.
+    device : str, optional
+        Device string (``"cpu"``, ``"cuda:0"``, ``"mps"``).
+        Defaults to ``"cpu"``.
+    num_steps : int, optional
+        Number of training steps. Defaults to ``1000``.
+    block_size : int, optional
+        Context window size. Defaults to ``16``.
+    n_embd : int, optional
+        Embedding dimension. Defaults to ``16``.
+    n_head : int, optional
+        Number of attention heads. Defaults to ``4``.
+    n_layer : int, optional
+        Number of transformer layers. Defaults to ``1``.
+    learning_rate : float, optional
+        Peak learning rate. Defaults to ``0.01``.
+    beta1 : float, optional
+        Adam beta1. Defaults to ``0.85``.
+    beta2 : float, optional
+        Adam beta2. Defaults to ``0.99``.
+    temperature : float, optional
+        Sampling temperature. Defaults to ``0.5``.
+    progress_callback : callable, optional
+        Called after each step as ``progress_callback(step, loss)``.
+    stop_check : callable, optional
+        Called before each step. Returns ``True`` to halt early.
+
+    Returns
+    -------
+    tuple
+        A 4-tuple ``(exported_weights, final_loss, samples, uchars)``
+        where ``exported_weights`` is the model state dict as plain
+        Python lists, ``final_loss`` is the loss at the last step,
+        ``samples`` are 20 generated strings, and ``uchars`` is the
+        sorted character vocabulary.
+
+    Raises
+    ------
+    RuntimeError
+        If PyTorch is not installed.
+    """
     if not _TORCH_AVAILABLE:
         msg = "torch is not installed — cannot run GPU training"
         raise RuntimeError(msg)
+    assert torch is not None
+    assert F is not None
 
     torch.manual_seed(42)
     device_obj = torch.device(device)

@@ -1,7 +1,7 @@
-"""Database layer — repositories, models, and session management."""
+"""Async SQLAlchemy database layer.
 
-from anvil.db import models
-from anvil.db.base import Base
-from anvil.db.session import get_db
-
-__all__ = ["Base", "get_db", "models"]
+``anvil.db`` provides the database abstraction for the anvil
+application — declarative ORM models, asynchronous session management,
+repository classes for data access, and Alembic-backed schema
+migration support.
+"""

@@ -6,7 +6,6 @@ DB init + demo bootstrap, and CLI tool execution.
 
 Run via: `make test-system`
 """
-from __future__ import annotations
 
 import re
 

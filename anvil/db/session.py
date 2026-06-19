@@ -1,10 +1,28 @@
-"""Async SQLAlchemy session management."""
+"""Async SQLAlchemy session management.
+
+Provides the async engine, session factory, and a FastAPI-compatible
+``get_db`` dependency for request-scoped database access.
+
+Module-level Constants
+----------------------
+DB_PATH : str
+    Resolved filesystem path to the SQLite database file.
+SQLALCHEMY_DATABASE_URL : str
+    Full ``sqlite+aiosqlite:///`` connection URL constructed from
+    ``DB_PATH``.
+async_engine : AsyncEngine
+    The singleton async SQLAlchemy engine with WAL-mode-friendly
+    configuration.
+AsyncSessionLocal : async_sessionmaker[AsyncSession]
+    Factory that produces ``AsyncSession`` instances bound to
+    ``async_engine``.
+"""
 
 from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from anvil.config import get_config
+from ..config import get_config
 
 cfg = get_config()
 DB_PATH = cfg["state_db_path"]
@@ -21,7 +39,16 @@ async_engine = create_async_engine(
 
 
 async def init_engine() -> None:
-    """Configure WAL mode and foreign keys on startup."""
+    """Configure WAL journal mode and enable foreign keys on startup.
+
+    Must be called once during application startup (e.g. in a FastAPI
+    lifespan handler) before any database operations are performed.
+
+    Raises
+    ------
+    sqlalchemy.exc.OperationalError
+        If the database file cannot be opened or the pragmas fail.
+    """
     async with async_engine.connect() as conn:
         await conn.exec_driver_sql("PRAGMA journal_mode=WAL")
         await conn.exec_driver_sql("PRAGMA foreign_keys=ON")
@@ -38,7 +65,23 @@ AsyncSessionLocal = async_sessionmaker(
 
 
 async def get_db() -> AsyncGenerator[AsyncSession]:
-    """FastAPI dependency that yields a request-scoped session."""
+    """FastAPI dependency that yields a request-scoped database session.
+
+    Yields an ``AsyncSession`` that is automatically committed on
+    success or rolled back on exception. The session is always closed
+    in the ``finally`` block.
+
+    Yields
+    ------
+    AsyncSession
+        A request-scoped session bound to ``AsyncSessionLocal``.
+
+    Raises
+    ------
+    Exception
+        Re-raises any exception caught during the request after
+        rolling back the session.
+    """
     async with AsyncSessionLocal() as session:
         try:
             yield session

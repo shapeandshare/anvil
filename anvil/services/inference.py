@@ -3,384 +3,40 @@
 Follows layer discipline: services consume repositories, routes call services.
 """
 
+from __future__ import annotations
+
 import asyncio
 import math
-import threading
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from anvil.core.engine import LlamaModel
-from anvil.core.tokenizer import Vocabulary
+if TYPE_CHECKING:
+    from ..core.autograd import Value
 
-
-DEMO_MODEL_PATH = Path("data/models/demo/model.json")
-
-# Minimal embedded fallback — used when the demo dataset has not been
-# bootstrapped into the DB yet (e.g. first app startup before setup).
-# Includes both uppercase and lowercase so the demo model's vocabulary
-# supports any alphanumeric input in the tokenization widget.
-_FALLBACK_CORPUS = [
-    "the quick brown fox jumps over the lazy dog",
-    "The Quick Brown Fox Jumps Over The Lazy Dog",
-    "what's this? it's a demo!",
-    "HI there, let's GO!",
-    "hello HELLO",
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz",
-]
-_DEMO_TRAIN_LOCK = threading.Lock()
-
-
-def _train_demo_model(docs: list[str] | None = None) -> LlamaModel:
-    from anvil.core.engine import train
-
-    model, _loss, _samples, uchars = train(
-        docs or _FALLBACK_CORPUS,
-        num_steps=400,
-        n_embd=16,
-        n_head=4,
-        n_layer=1,
-        block_size=16,
-    )
-    DEMO_MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
-    model.save(str(DEMO_MODEL_PATH), uchars)
-    model.chars = uchars
-    return model
-
-
-def warmup_demo_via_system_pipeline() -> None:
-    """Train the demo model through the real system pipeline.
-
-    Goes through: compute backend resolution -> engine training ->
-    MLflow experiment/run creation -> metric logging -> model registration.
-
-    Runs in a background thread during server startup. Falls back to the
-    inline training path if MLflow or the compute backend is unavailable.
-    """
-    import asyncio
-    import logging
-
-    logger = logging.getLogger(__name__)
-
-    try:
-        # Try to load docs from the bootstrapped demo corpus first
-        docs: list[str] | None = None
-        try:
-            from anvil.db.session import AsyncSessionLocal
-            from anvil.services.corpus_loader import CorpusLoader
-            from anvil.services.corpora import CorpusService
-            from anvil.services.demo_bootstrap import DemoBootstrapService
-            from anvil.db.repositories.corpora import CorpusRepository
-
-            async def _get_docs() -> list[str] | None:
-                async with AsyncSessionLocal() as session:
-                    bootstrap = DemoBootstrapService(session)
-                    corpus = await bootstrap.get_default_corpus()
-                    if corpus is None:
-                        return None
-                    repo = CorpusRepository(session)
-                    loader = CorpusLoader()
-                    svc = CorpusService(repo, loader)
-                    return await svc.load_docs(corpus.id)
-
-            docs = asyncio.run(_get_docs())
-        except Exception:
-            pass
-
-        docs = docs or _FALLBACK_CORPUS
-
-        config: dict[str, object] = {
-            "n_embd": 16,
-            "n_head": 4,
-            "n_layer": 1,
-            "block_size": 16,
-            "num_steps": 400,
-            "learning_rate": 0.01,
-            "temperature": 0.5,
-        }
-
-        from anvil.services.tracking import TrackingService
-        from anvil.services.compute import get_backend, resolve_backend
-        from anvil.services.training import TrainingService
-
-        async def _run() -> None:
-            tracking_svc = TrackingService()
-            resolved = resolve_backend({"compute_backend": "local-cpu"})
-            backend_name = f"local-{resolved['engine']}"
-            backend = get_backend(backend_name)
-
-            mlflow_run_id = await tracking_svc.start_run(
-                run_name="demo-warmup",
-                params=config,
-                engine_backend=resolved["engine"],
-                device=resolved["device"],
-            )
-
-            # Allocate a numeric experiment ID for consistency with user training runs
-            training_svc = TrainingService()
-            experiment_id = await training_svc.allocate_experiment_id()
-            if mlflow_run_id:
-                await tracking_svc.set_tag(
-                    mlflow_run_id, "anvil.experiment_id", str(experiment_id)
-                )
-
-            result = await backend.run(
-                docs,
-                config,
-                progress_callback=lambda step, loss: None,
-                stop_check=lambda: False,
-            )
-
-            if result.status.value != "completed" or result.model is None:
-                logger.warning(
-                    "Demo model warm-up via system pipeline failed: %s",
-                    result.error_message,
-                )
-                return
-
-            assert result.model is not None
-
-            model = result.model
-            uchars = result.uchars
-
-            if mlflow_run_id:
-                await tracking_svc.finish_run(mlflow_run_id)
-                await tracking_svc.log_final_metric(
-                    mlflow_run_id, "final_loss", result.final_loss or 0.0
-                )
-                await tracking_svc.set_tag(
-                    mlflow_run_id, "architectures", "LlamaForCausalLM"
-                )
-                await tracking_svc.set_tag(
-                    mlflow_run_id, "anvil.status", "finished"
-                )
-                await tracking_svc.register_source_model(
-                    run_id=mlflow_run_id, name="demo"
-                )
-
-            # ── Replicate dataset/corpus metadata tags that user training sets ──
-            try:
-                from anvil.db.session import AsyncSessionLocal
-                from anvil.services.demo_bootstrap import DemoBootstrapService
-
-                async with AsyncSessionLocal() as sess:
-                    bootstrap = DemoBootstrapService(sess)
-                    corpus = await bootstrap.get_default_corpus()
-                    if corpus and mlflow_run_id:
-                        await tracking_svc.set_tag(
-                            mlflow_run_id, "anvil.dataset.name", corpus.name
-                        )
-                        await tracking_svc.set_tag(
-                            mlflow_run_id,
-                            "anvil.corpus.file_count",
-                            str(corpus.file_count or 0),
-                        )
-                        await tracking_svc.set_tag(
-                            mlflow_run_id,
-                            "anvil.corpus.document_count",
-                            str(corpus.document_count or 0),
-                        )
-            except Exception:
-                pass
-
-            # ── Save to experiment-specific path for GET /experiments/{id} ──
-            MODELS_DIR = Path("data/models")
-            MODELS_DIR.mkdir(parents=True, exist_ok=True)
-            experiment_model_path = MODELS_DIR / f"experiment_{experiment_id}.json"
-            model.save(str(experiment_model_path), uchars)
-
-            # ── Run safetensors export & log artifacts to MLflow ──
-            import tempfile
-
-            from anvil.services.export import SafetensorsExportService
-
-            with tempfile.TemporaryDirectory() as tmpdir:
-                export_svc = SafetensorsExportService()
-                export_result = await asyncio.get_event_loop().run_in_executor(
-                    None, lambda: export_svc.export(model, tmpdir, uchars)
-                )
-
-                if export_result["error"]:
-                    logger.warning(
-                        "Demo safetensors export failed: %s",
-                        export_result["error"],
-                    )
-                elif mlflow_run_id and export_result.get("safetensors_path"):
-                    try:
-                        client = tracking_svc._client
-                        if client:
-                            loop = asyncio.get_event_loop()
-                            await loop.run_in_executor(
-                                None,
-                                lambda: client.log_artifact(
-                                    mlflow_run_id,
-                                    export_result["safetensors_path"],
-                                ),
-                            )
-                            if export_result.get("config_path"):
-                                await loop.run_in_executor(
-                                    None,
-                                    lambda: client.log_artifact(
-                                        mlflow_run_id,
-                                        export_result["config_path"],
-                                    ),
-                                )
-                            if export_result.get("tokenizer_path"):
-                                await loop.run_in_executor(
-                                    None,
-                                    lambda: client.log_artifact(
-                                        mlflow_run_id,
-                                        export_result["tokenizer_path"],
-                                    ),
-                                )
-                    except Exception:
-                        logger.exception(
-                            "Failed to log demo safetensors artifacts to MLflow"
-                        )
-
-            # Save to demo path so it's immediately loadable by _demo_provider
-            DEMO_MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
-            model.save(str(DEMO_MODEL_PATH), uchars)
-            model.chars = uchars
-
-            # Update _demo_provider cache so inference routes don't re-load
-            _demo_provider._model = model
-            _demo_provider._chars = uchars
-
-            logger.info("Demo model warm-up complete (via system pipeline)")
-            print("Demo model warm-up complete.", flush=True)
-
-        asyncio.run(_run())
-
-    except Exception:
-        logger.warning("Demo model warm-up failed, falling back to inline training", exc_info=True)
-        # Fall back to the old inline path so the server still works
-        try:
-            model = _train_demo_model()
-            _demo_provider._model = model
-            _demo_provider._chars = model.chars
-        except Exception:
-            pass
-
-
-class DemoModelProvider:
-    """Provisions a tiny demo model on first request.
-
-    The demo model is a real trained model — all data returned is genuine.
-    """
-
-    def __init__(self) -> None:
-        self._model: LlamaModel | None = None
-        self._chars: list[str] | None = None
-
-    def get_model(self) -> tuple[LlamaModel, list[str]]:
-        if self._model is not None:
-            chars_list = self._chars if self._chars is not None else []
-            return self._model, chars_list
-
-        with _DEMO_TRAIN_LOCK:
-            if self._model is not None:
-                chars_list = self._chars if self._chars is not None else []
-                return self._model, chars_list
-
-            if DEMO_MODEL_PATH.exists():
-                try:
-                    model = LlamaModel.load(str(DEMO_MODEL_PATH))
-                except ValueError:
-                    # Old GPT-2 format detected — retrain with Llama architecture
-                    model = _train_demo_model()
-                    self._model = model
-                    self._chars = model.chars
-                    chars_list = self._chars if self._chars is not None else []
-                    return model, chars_list
-                if model.chars is not None:
-                    self._model = model
-                    self._chars = model.chars
-                    return model, model.chars
-
-            docs = self._load_demo_docs()
-            model = _train_demo_model(docs)
-            self._model = model
-            self._chars = model.chars
-            chars_list = self._chars if self._chars is not None else []
-            return model, chars_list
-
-    @staticmethod
-    def _load_demo_docs() -> list[str] | None:
-        """Try to load docs from the bootstrapped demo corpus; return None on failure."""
-        try:
-            import asyncio
-
-            from anvil.db.session import AsyncSessionLocal
-            from anvil.services.corpus_loader import CorpusLoader
-            from anvil.services.corpora import CorpusService
-            from anvil.services.demo_bootstrap import DemoBootstrapService
-            from anvil.db.repositories.corpora import CorpusRepository
-
-            async def _load() -> list[str] | None:
-                async with AsyncSessionLocal() as session:
-                    bootstrap = DemoBootstrapService(session)
-                    corpus = await bootstrap.get_default_corpus()
-                    if corpus is None:
-                        return None
-                    repo = CorpusRepository(session)
-                    loader = CorpusLoader()
-                    svc = CorpusService(repo, loader)
-                    return await svc.load_docs(corpus.id)
-
-            try:
-                loop = asyncio.get_running_loop()
-            except RuntimeError:
-                loop = None
-
-            if loop is None:
-                return asyncio.run(_load())
-            else:
-                # Running event loop detected (e.g. FastAPI startup).
-                # Run async DB access in a separate thread with its own loop.
-                with ThreadPoolExecutor(max_workers=1) as pool:
-                    future = pool.submit(asyncio.run, _load())
-                    return future.result()
-        except Exception:
-            return None
-
-    def info(self) -> dict[str, Any]:
-        return {"id": None, "version": None, "name": "demo", "is_demo": True}
-
-
-_demo_provider = DemoModelProvider()
-
-
-class LoadedModel:
-    """Container for a loaded LlamaModel with its vocabulary and metadata."""
-
-    def __init__(
-        self,
-        model: LlamaModel,
-        chars: list[str],
-        model_id: int | None,
-        version: int | None,
-        name: str,
-        is_demo: bool = False,
-    ):
-        self.model = model
-        self.chars = chars
-        self.vocab = Vocabulary.from_chars(chars)
-        self.model_id = model_id
-        self.version = version
-        self.name = name
-        self.is_demo = is_demo
-
-    def info(self) -> dict[str, Any]:
-        return {
-            "id": self.model_id,
-            "version": self.version,
-            "name": self.name,
-            "is_demo": self.is_demo,
-        }
+from ..core.engine import LlamaModel
+from .demo_model_provider import _demo_provider
+from .loaded_model import LoadedModel
 
 
 def _top_k_logits(logits: list[float], k: int | None) -> list[float]:
+    """Apply top-k filtering to logit values.
+
+    Sets logits below the k-th highest value to a large negative
+    number (``-1e10``), effectively zeroing their softmax probability.
+
+    Parameters
+    ----------
+    logits : list[float]
+        Raw logit values from the model output layer.
+    k : int or None
+        Number of highest logits to keep. ``None`` or ``<=0``
+        disables filtering.
+
+    Returns
+    -------
+    list[float]
+        Filtered logits where low-ranking values are suppressed.
+    """
     if k is None or k <= 0:
         return logits
     sorted_vals = sorted(logits, reverse=True)
@@ -389,9 +45,21 @@ def _top_k_logits(logits: list[float], k: int | None) -> list[float]:
 
 
 def _project_to_2d(vectors: list[list[float]]) -> list[dict[str, float]]:
-    """Project high-dim vectors to 2D using top-2 PCA via power iteration.
+    """Project high-dimensional vectors to 2D using power-iteration PCA.
 
-    Zero-dependency pure-python implementation.
+    Implements a zero-dependency PCA via power iteration: computes
+    the top principal component, projects it out, then computes the
+    second component from the residual.
+
+    Parameters
+    ----------
+    vectors : list[list[float]]
+        Input vectors, each of equal dimension.
+
+    Returns
+    -------
+    list[dict[str, float]]
+        Projected coordinates as ``{"x": ..., "y": ...}`` dicts.
     """
     if not vectors:
         return []
@@ -443,9 +111,13 @@ class InferenceService:
     """Business logic for inference endpoints.
 
     Methods are async when they touch DB; sync for pure computation.
+    Supports tokenization, embedding extraction, attention visualisation,
+    sampling distribution computation, forward/backward computation
+    graph traversal, and model parameter introspection.
     """
 
     def __init__(self) -> None:
+        """Initialise the inference service with an empty model cache."""
         self._cache: dict[tuple[int, int], tuple[LlamaModel, list[str]]] = {}
         self._demo_provider = _demo_provider
 
@@ -454,6 +126,29 @@ class InferenceService:
         model_id: int | None = None,
         version: int | None = None,
     ) -> LoadedModel:
+        """Load a model by ID and optional version.
+
+        Resolution order: demo model (when ``model_id`` is ``None``),
+        in-memory cache, experiment artifact file (``experiment_{id}.json``),
+        then MLflow Model Registry.
+
+        Parameters
+        ----------
+        model_id : int, optional
+            The model/experiment ID. ``None`` loads the demo model.
+        version : int, optional
+            Model version in the registry. Defaults to ``1``.
+
+        Returns
+        -------
+        LoadedModel
+            Container with the loaded model, vocabulary, and metadata.
+
+        Raises
+        ------
+        ValueError
+            If no model is found for the given ID and version.
+        """
         if model_id is None:
             gpt_model, chars = self._demo_provider.get_model()
             return LoadedModel(gpt_model, chars, None, None, "demo", is_demo=True)
@@ -475,7 +170,7 @@ class InferenceService:
             return LoadedModel(gpt_model, gpt_model.chars, model_id, cache_key[1], name)
 
         # Secondary path: try loading from MLflow Model Registry
-        from anvil.services.tracking import TrackingService
+        from .tracking import TrackingService
 
         tracking_svc = TrackingService()
         models = await tracking_svc.list_registered_models()
@@ -490,8 +185,9 @@ class InferenceService:
                     break
 
         if model_name:
-            from anvil.config import get_mlflow_uri
             from mlflow.tracking import MlflowClient
+
+            from ..config import get_mlflow_uri
 
             loop = asyncio.get_event_loop()
             client = MlflowClient(get_mlflow_uri())
@@ -524,11 +220,24 @@ class InferenceService:
             except Exception:
                 pass
 
-        raise ValueError(
-            f"Model not found: model_id={model_id}, version={version}"
-        )
+        raise ValueError(f"Model not found: model_id={model_id}, version={version}")
 
     def tokenize(self, text: str, loaded: LoadedModel) -> dict[str, Any]:
+        """Tokenise text and return token metadata.
+
+        Parameters
+        ----------
+        text : str
+            Input text to tokenise.
+        loaded : LoadedModel
+            The loaded model and vocabulary.
+
+        Returns
+        -------
+        dict[str, Any]
+            Dict with ``"model"``, ``"tokens"`` (list of char/ID
+            pairs), ``"vocab_size"``, and ``"bos_id"``.
+        """
         ids = loaded.vocab.encode(text)
         return {
             "model": loaded.info(),
@@ -544,6 +253,23 @@ class InferenceService:
         }
 
     def embeddings(self, text: str, loaded: LoadedModel) -> dict[str, Any]:
+        """Compute embedding vectors for each token in the input text.
+
+        Projects embeddings to 2D for visualisation via PCA.
+
+        Parameters
+        ----------
+        text : str
+            Input text.
+        loaded : LoadedModel
+            The loaded model and vocabulary.
+
+        Returns
+        -------
+        dict[str, Any]
+            Dict with ``"model"``, ``"tokens"``, ``"vectors"``,
+            ``"n_embd"``, and ``"projection"`` (2D coordinates).
+        """
         ids = loaded.vocab.encode(text)
         vectors = []
         labels = []
@@ -567,6 +293,25 @@ class InferenceService:
         }
 
     def attention(self, text: str, loaded: LoadedModel) -> dict[str, Any]:
+        """Compute attention weights for input text.
+
+        Runs a forward-introspect pass to extract per-layer, per-head
+        attention weight matrices.
+
+        Parameters
+        ----------
+        text : str
+            Input text.
+        loaded : LoadedModel
+            The loaded model and vocabulary.
+
+        Returns
+        -------
+        dict[str, Any]
+            Dict with ``"model"``, ``"tokens"``, ``"n_layer"``,
+            ``"n_head"``, ``"weights"``, and ``"rope"`` (cos/sin
+            tables and head dimension).
+        """
         ids = loaded.vocab.encode(text)
         max_len = min(loaded.model.block_size, 256)
         ids = ids[:max_len]
@@ -599,10 +344,34 @@ class InferenceService:
         top_k: int | None,
         loaded: LoadedModel,
     ) -> dict[str, Any]:
+        """Compute the full next-token sampling distribution.
+
+        Runs a forward pass on the prompt, applies temperature scaling
+        and top-k filtering, and returns per-token probabilities.
+
+        Parameters
+        ----------
+        prompt : str
+            Input prompt text.
+        temperature : float
+            Sampling temperature (higher = more random).
+        top_k : int or None
+            Top-k filter count. ``None`` or ``<=0`` disables filtering.
+        loaded : LoadedModel
+            The loaded model and vocabulary.
+
+        Returns
+        -------
+        dict[str, Any]
+            Dict with ``"model"``, ``"tokens"`` (per-token details
+            including raw logits, scaled logits, probabilities),
+            ``"temperature"``, ``"prompt"``, ``"vocab_size"``,
+            ``"top_k"``, and ``"top_k_effective"``.
+        """
         ids = loaded.vocab.encode(prompt)
         n_layers = loaded.model.n_layer
-        keys: list[list[Any]] = [[] for _ in range(n_layers)]
-        values: list[list[Any]] = [[] for _ in range(n_layers)]
+        keys: list[list] = [[] for _ in range(n_layers)]
+        values: list[list] = [[] for _ in range(n_layers)]
         for pos_id, tid in enumerate(ids):
             loaded.model.forward(tid, pos_id, keys, values)
 
@@ -623,7 +392,9 @@ class InferenceService:
             sorted_vals = sorted(scaled, reverse=True)
             threshold = sorted_vals[min(resolved_top_k - 1, vocab_size - 1)]
             in_top_k = [s >= threshold for s in scaled]
-            truncated = [s if ok else -1e10 for s, ok in zip(scaled, in_top_k, strict=True)]
+            truncated = [
+                s if ok else -1e10 for s, ok in zip(scaled, in_top_k, strict=True)
+            ]
 
         top_k_effective = sum(in_top_k)
 
@@ -668,9 +439,27 @@ class InferenceService:
     def forward_graph(
         self, loaded: LoadedModel, max_nodes: int = 400
     ) -> dict[str, Any]:
+        """Compute the forward computation graph (nodes and edges) for the model.
+
+        Runs a single forward pass on the BOS token and traverses the
+        ``Value`` graph to extract node operations and their connections.
+
+        Parameters
+        ----------
+        loaded : LoadedModel
+            The loaded model and vocabulary.
+        max_nodes : int
+            Maximum number of graph nodes to collect. Defaults to ``400``.
+
+        Returns
+        -------
+        dict[str, Any]
+            Dict with ``"model"``, ``"nodes"`` (operation type, value,
+            depth), and ``"edges"`` (parent-child relationships).
+        """
         n_layers = loaded.model.n_layer
-        keys: list[list[Any]] = [[] for _ in range(n_layers)]
-        values: list[list[Any]] = [[] for _ in range(n_layers)]
+        keys: list[list] = [[] for _ in range(n_layers)]
+        values: list[list] = [[] for _ in range(n_layers)]
         tid = loaded.vocab.bos_id
         logits = loaded.model.forward(tid, 0, keys, values)
 
@@ -679,7 +468,7 @@ class InferenceService:
         visited: set[int] = set()
         node_counter: list[int] = [0]
 
-        def assign_op(val: Any) -> str:
+        def assign_op(val: Value) -> str:
             """Infer operation type from Value structure."""
             n_children = len(val._children)
             if n_children == 0:
@@ -699,7 +488,7 @@ class InferenceService:
                 return "mul"
             return "combine"
 
-        def traverse(v: Any, depth: int = 0) -> str | None:
+        def traverse(v: Value, depth: int = 0) -> str | None:
             if len(nodes) >= max_nodes:
                 return None
             v_id = id(v)
@@ -744,20 +533,40 @@ class InferenceService:
     def backward_graph(
         self, text: str, loaded: LoadedModel, max_nodes: int = 400
     ) -> dict[str, Any]:
-        """Run forward + backward pass on input text, return computation graph with gradients."""
+        """Run forward + backward pass on input text, return computation graph with gradients.
 
+        Runs a forward pass over the input sequence, computes
+        cross-entropy loss, runs backpropagation, and traverses the
+        ``Value`` graph to extract nodes with gradients.
+
+        Parameters
+        ----------
+        text : str
+            Input text for the forward/backward pass.
+        loaded : LoadedModel
+            The loaded model and vocabulary.
+        max_nodes : int
+            Maximum number of graph nodes to collect. Defaults to ``400``.
+
+        Returns
+        -------
+        dict[str, Any]
+            Dict with ``"model"``, ``"nodes"`` (value, gradient,
+            local grads, depth), ``"edges"``, and ``"metadata"``
+            (total nodes/edges, max depth, input tokens, loss value).
+        """
         ids = loaded.vocab.encode(text)
         n = min(len(ids) - 1, loaded.model.block_size)
         ids = ids[: n + 1]
 
         # Forward pass over the sequence
-        keys: list[list[Any]] = [[] for _ in range(loaded.model.n_layer)]
-        values: list[list[Any]] = [[] for _ in range(loaded.model.n_layer)]
-        losses: list[Any] = []
+        keys: list[list] = [[] for _ in range(loaded.model.n_layer)]
+        values: list[list] = [[] for _ in range(loaded.model.n_layer)]
+        losses: list[Value] = []
         for pos_id in range(n):
             token_id, target_id = ids[pos_id], ids[pos_id + 1]
             logits = loaded.model.forward(token_id, pos_id, keys, values)
-            from anvil.core.engine import softmax
+            from ..core.engine import softmax
 
             probs = softmax(logits)
             loss_t = -probs[target_id].log()
@@ -773,7 +582,7 @@ class InferenceService:
         edges: list[dict[str, Any]] = []
         visited: set[int] = set()
 
-        def assign_op(val: Any) -> str:
+        def assign_op(val: Value) -> str:
             n_children = len(val._children)
             if n_children == 0:
                 return "input"
@@ -792,7 +601,7 @@ class InferenceService:
                 return "mul"
             return "combine"
 
-        def traverse(v: Any, depth: int = 0) -> str | None:
+        def traverse(v: Value, depth: int = 0) -> str | None:
             if len(nodes) >= max_nodes:
                 return None
             v_id = id(v)
@@ -864,7 +673,7 @@ class InferenceService:
         forward + backward pass, so every value and gradient is real at a legible
         scale. Same response schema as :meth:`backward_graph`.
         """
-        from anvil.core.autograd import Value
+        from ..core.autograd import Value
 
         ids = loaded.vocab.encode(text)
         seed_id = next(
@@ -967,17 +776,36 @@ class InferenceService:
         }
 
     def loss_breakdown(self, text: str, loaded: LoadedModel) -> dict[str, Any]:
-        """Compute per-token cross-entropy loss for input text."""
+        """Compute per-token cross-entropy loss for input text.
+
+        Runs a forward pass for each position in the sequence and
+        computes the negative log-likelihood loss for each predicted
+        token. Also reports the random-guess baseline for comparison.
+
+        Parameters
+        ----------
+        text : str
+            Input text.
+        loaded : LoadedModel
+            The loaded model and vocabulary.
+
+        Returns
+        -------
+        dict[str, Any]
+            Dict with ``"model"``, ``"tokens"`` (with character labels),
+            ``"losses"`` (per-token loss values), ``"average_loss"``,
+            ``"random_baseline"``, and ``"vocab_size"``.
+        """
         import math
 
         ids = loaded.vocab.encode(text)
         n = min(len(ids) - 1, loaded.model.block_size)
         ids = ids[: n + 1]
 
-        from anvil.core.engine import softmax
+        from ..core.engine import softmax
 
-        keys: list[list[Any]] = [[] for _ in range(loaded.model.n_layer)]
-        values: list[list[Any]] = [[] for _ in range(loaded.model.n_layer)]
+        keys: list[list] = [[] for _ in range(loaded.model.n_layer)]
+        values: list[list] = [[] for _ in range(loaded.model.n_layer)]
         losses: list[float] = []
         for pos_id in range(n):
             token_id, target_id = ids[pos_id], ids[pos_id + 1]
@@ -1004,7 +832,25 @@ class InferenceService:
         }
 
     def model_params(self, loaded: LoadedModel) -> dict[str, Any]:
-        """Return named parameter breakdown with shapes and counts."""
+        """Return named parameter breakdown with shapes and counts.
+
+        Iterates over all parameters in the model state dict,
+        categorises them (embedding, attention, MLP, RMSNorm, etc.),
+        and computes per-group and total parameter counts.
+
+        Parameters
+        ----------
+        loaded : LoadedModel
+            The loaded model and vocabulary.
+
+        Returns
+        -------
+        dict[str, Any]
+            Dict with ``"model"``, ``"total_params"``, model
+            hyperparameters (``n_embd``, ``n_layer``, etc.), and
+            ``"groups"`` (each with name, category, shape, count,
+            and percentage).
+        """
         groups: list[dict[str, Any]] = []
         total_params = 0
 

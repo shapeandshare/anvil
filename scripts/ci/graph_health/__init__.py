@@ -4,25 +4,12 @@ Extends vault_audit.py with connectivity metrics, topological health,
 semantic hygiene, temporal decay, and structural gap analysis.
 """
 
-from __future__ import annotations
-
 import json
 import unicodedata
 from dataclasses import dataclass, field, asdict
 from datetime import date, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
-
-if TYPE_CHECKING:
-    import networkx as nx
-    from . import hygiene
-    from . import prediction as pred_mod
-    from . import scanner
-    from . import scoring
-    from . import structural
-    from . import temporal
-    from . import topology
-
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Shared data types

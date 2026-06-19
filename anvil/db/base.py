@@ -1,21 +1,12 @@
 """SQLAlchemy declarative base with common mixins."""
 
-from datetime import datetime
-
-from sqlalchemy import DateTime, func
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase
 
 
 class Base(DeclarativeBase):
-    pass
+    """Declarative base class for all anvil ORM models.
 
-
-class TimestampMixin:
-    """Mixin adding created_at and updated_at timestamp columns."""
-
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime, server_default=func.now(), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
-    )
+    All table-mapped models inherit from this class rather than
+    ``DeclarativeBase`` directly, providing a single registry for
+    metadata, table creation, and Alembic autogeneration.
+    """

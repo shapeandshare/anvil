@@ -5,7 +5,7 @@ Returns available compute backends for training (local CPU, local GPU, Modal, et
 
 from fastapi import APIRouter
 
-from anvil.services.compute.registry import available_backends
+from ...services.compute.registry import available_backends
 
 router = APIRouter()
 
@@ -14,10 +14,14 @@ router = APIRouter()
 async def list_compute_backends():
     """List all registered compute backends with availability status.
 
-    Returns a JSON array of dicts, each with:
-      - value: backend identifier (e.g. "auto", "local-cpu", "local-gpu", "modal")
-      - label: human-readable name
-      - available: bool
-      - reason: str | None — explanation if unavailable
+    Returns
+    -------
+    list
+        A JSON array of dicts, each with:
+          - ``value``: backend identifier (e.g. ``"auto"``, ``"local-cpu"``,
+            ``"local-gpu"``, ``"modal"``)
+          - ``label``: human-readable name
+          - ``available``: bool
+          - ``reason``: str | None — explanation if unavailable
     """
     return available_backends()

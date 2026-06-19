@@ -4,13 +4,13 @@ Tests use a real SQLite file in a temporary directory and actual Alembic
 migrations to verify auto-migration behavior on startup.
 """
 
-from __future__ import annotations
 
 from pathlib import Path
 
 import pytest
 
-from anvil.db.migration import MigrationError, MigrationService
+from anvil.db.migration import MigrationService
+from anvil.db.migration_error import MigrationError
 
 
 @pytest.fixture

@@ -1,6 +1,7 @@
-"""Storage abstraction layer — pluggable async file storage."""
+"""File storage abstraction.
 
-from anvil.storage.interface import FileInfo, FileStore
-from anvil.storage.local import LocalFileStore
-
-__all__ = ["FileInfo", "FileStore", "LocalFileStore"]
+``anvil.storage`` defines an abstract ``FileStore`` interface and
+provides a ``LocalFileStore`` implementation backed by the local
+filesystem. Designed to be extensible to S3-compatible or other
+remote backends.
+"""

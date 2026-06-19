@@ -1,4 +1,16 @@
-"""Application configuration from environment variables."""
+"""Application configuration from environment variables.
+
+Reads configuration values from the environment and ``.env`` file.
+Exposes ``get_config()`` as the primary API — a cached callable that
+returns a flat dictionary of resolved settings.
+
+Module-level Constants
+----------------------
+_resolved_mlflow_uri : str or None
+    Optional runtime override for the MLflow tracking URI. Set via
+    :func:`set_resolved_mlflow_uri` when the supervisor resolves a
+    dynamic URI that differs from the static config default.
+"""
 
 import os
 from functools import lru_cache
@@ -16,7 +28,16 @@ _resolved_mlflow_uri: str | None = None
 
 
 def set_resolved_mlflow_uri(uri: str) -> None:
-    """Override the MLflow tracking URI used for internal client connections."""
+    """Override the MLflow tracking URI for internal client connections.
+
+    Called by the supervisor after the MLflow server is started to
+    ensure the internal Python client connects to the correct URI.
+
+    Parameters
+    ----------
+    uri : str
+        The full MLflow tracking URI (e.g. ``http://127.0.0.1:5001``).
+    """
     global _resolved_mlflow_uri
     _resolved_mlflow_uri = uri
 
@@ -25,7 +46,12 @@ def get_mlflow_uri() -> str:
     """Return the MLflow tracking URI for internal Python client use.
 
     Returns the supervisor-resolved URI if set, otherwise falls back
-    to the static config value.
+    to the static config value from ``get_config()["mlflow_uri"]``.
+
+    Returns
+    -------
+    str
+        The MLflow tracking server URI.
     """
     if _resolved_mlflow_uri is not None:
         return _resolved_mlflow_uri
@@ -35,10 +61,22 @@ def get_mlflow_uri() -> str:
 def get_mlflow_browser_uri(request: Request) -> str:
     """Return the MLflow base URL for browser-facing links.
 
-    Derives the hostname from the incoming HTTP request's Host header
-    so links always resolve relative to how the user reached the web UI.
-    For example, if the user accesses the app at http://192.168.1.10:8080,
-    MLflow links will point to http://192.168.1.10:5001.
+    Derives the hostname from the incoming HTTP request's ``Host``
+    header so links always resolve relative to how the user reached
+    the web UI. For example, if the user accesses the app at
+    ``http://192.168.1.10:8080``, MLflow links will point to
+    ``http://192.168.1.10:5001``.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming Starlette / FastAPI request object.
+
+    Returns
+    -------
+    str
+        A fully qualified MLflow base URL for use in browser-facing
+        ``<a>`` tags and redirects.
     """
     host = request.headers.get("host", "127.0.0.1")
     # Strip port from host header (e.g. "192.168.1.10:8080" -> "192.168.1.10")
@@ -48,7 +86,22 @@ def get_mlflow_browser_uri(request: Request) -> str:
 
 
 def _parse_port_from_uri(uri: str) -> int:
-    """Extract the port number from an MLflow URI like http://127.0.0.1:5001."""
+    """Extract the port number from an MLflow URI.
+
+    Handles URIs such as ``http://127.0.0.1:5001`` and returns the
+    port component, defaulting to ``5001`` on failure.
+
+    Parameters
+    ----------
+    uri : str
+        A fully qualified URI string.
+
+    Returns
+    -------
+    int
+        The port number extracted from the URI, or ``5001`` as a
+        fallback.
+    """
     try:
         from urllib.parse import urlparse
 
@@ -60,18 +113,55 @@ def _parse_port_from_uri(uri: str) -> int:
 
 @lru_cache
 def get_config():
-    default_mlflow_uri = os.getenv(
-        "ANVIL_MLFLOW_URI", "http://127.0.0.1:5001"
+    """Return a cached dictionary of resolved application settings.
+
+    Reads environmnent variables (with ``.env`` support via
+    ``python-dotenv``) and returns a flat dictionary. The result is
+    cached via ``@lru_cache`` so repeated calls are cheap.
+
+    Keys returned
+    -------------
+    port : int
+        Web server port (default: ``8080``).
+    db_path : str
+        Resolved path to the state database (alias for ``state_db_path``).
+    state_db_path : str
+        Resolved path to ``anvil-state.db``.
+    log_dir : str
+        Directory for log files (default: ``logs``).
+    mlflow_uri : str
+        MLflow tracking server URI.
+    mlflow_port : int
+        Port parsed from ``mlflow_uri``.
+    mlflow_backend_store_uri : str
+        SQLite URI for MLflow's backend store.
+    mlflow_disable_local : bool
+        If ``True``, do not start a local MLflow server.
+    db_auto_migrate : bool
+        If ``True``, auto-migrate DB schema on startup.
+    storage_backend : str
+        Storage backend name (default: ``local``).
+    device : str
+        Device override string (may be empty for auto-detection).
+
+    Returns
+    -------
+    dict
+        Flat dictionary of resolved configuration values.
+    """
+    default_mlflow_uri = os.getenv("ANVIL_MLFLOW_URI", "http://127.0.0.1:5001")
+    mlflow_disable_local = os.getenv("ANVIL_MLFLOW_DISABLE_LOCAL", "").lower() in (
+        "true",
+        "1",
+        "yes",
     )
-    mlflow_disable_local = os.getenv(
-        "ANVIL_MLFLOW_DISABLE_LOCAL", ""
-    ).lower() in ("true", "1", "yes")
 
     # Deprecation path: ANVIL_DB_PATH → ANVIL_STATE_DB_PATH
     state_db_path = os.getenv("ANVIL_STATE_DB_PATH")
     legacy_db_path = os.getenv("ANVIL_DB_PATH")
     if state_db_path is None and legacy_db_path is not None:
         import logging
+
         logging.getLogger(__name__).warning(
             "ANVIL_DB_PATH is deprecated. Use ANVIL_STATE_DB_PATH instead."
         )

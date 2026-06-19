@@ -1,15 +1,15 @@
 """Tests for ModalBackend with injected FakeModalRunner factory."""
 
-from __future__ import annotations
 
 from dataclasses import dataclass, field
 from unittest.mock import ANY, patch
 
 import pytest
 
-from anvil.services.compute.errors import ComputeBackendUnavailable
+from anvil.services.compute.compute_backend_unavailable import ComputeBackendUnavailable
 from anvil.services.compute.modal_backend import ModalBackend
-from anvil.services.compute.result import ComputeResult, ComputeStatus
+from anvil.services.compute.compute_status import ComputeStatus
+from anvil.services.compute.result import ComputeResult
 
 
 @dataclass

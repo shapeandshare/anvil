@@ -1,3 +1,11 @@
+"""MLflow service lifecycle management.
+
+Provides the :class:`MLflowService` class for starting, stopping, and
+monitoring an MLflow tracking server as a managed subprocess. Includes
+zombie-port cleanup logic to gracefully handle orphaned processes on
+restart.
+"""
+
 import os
 import signal
 import subprocess
@@ -5,10 +13,25 @@ import sys
 import time
 from pathlib import Path
 
-from anvil.config import get_config
+from ..config import get_config
 
 
 class MLflowService:
+    """Manages the lifecycle of an MLflow tracking server subprocess.
+
+    Wraps the ``mlflow server`` command in a :class:`subprocess.Popen`
+    managed instance. On start, any zombie process occupying the target
+    port is killed before launching. PID tracking via a ``mlflow.pid``
+    file under the configured log directory enables external monitoring.
+
+    Parameters
+    ----------
+    cfg : dict
+        Application configuration dictionary (retrieved via
+        :func:`~anvil.config.get_config`). Uses keys ``log_dir``,
+        ``mlflow_port``, ``mlflow_uri``, and ``mlflow_backend_store_uri``.
+    """
+
     def __init__(self):
         cfg = get_config()
         self.mlruns_dir = Path("mlruns")
@@ -22,10 +45,17 @@ class MLflowService:
         self._backend_store_uri = cfg["mlflow_backend_store_uri"]
 
     def _free_port(self) -> None:
-        """Kill any Python/MLflow zombie occupying our target port before starting.
+        """Kill any zombie process occupying the configured MLflow port.
 
-        Only targets processes with 'python' or 'mlflow' in their command name
-        to avoid killing system processes (e.g., macOS ControlCenter on 5000).
+        Scans processes listening on ``self.port`` and sends ``SIGTERM``
+        (followed by ``SIGKILL`` after a 1-second grace period) to any
+        matching Python, MLflow, or uvicorn processes. Only targets
+        processes whose command name contains ``python``, ``mlflow``, or
+        ``uvicorn`` to avoid killing unrelated system services.
+
+        Uses ``lsof`` and ``ps`` (macOS / Linux) and silently exits on
+        ``FileNotFoundError`` when these utilities are unavailable (e.g.
+        minimal containers).
         """
         try:
             result = subprocess.run(
@@ -78,6 +108,16 @@ class MLflowService:
             pass
 
     def start(self) -> None:
+        """Start the MLflow tracking server as a subprocess.
+
+        If the server is already running (based on process poll status),
+        this is a no-op. Before launching, the target port is freed via
+        :meth:`_free_port`. The server process is started with ``preexec_fn
+        = os.setsid`` so that the entire process group can be signalled
+        during shutdown.
+
+        The process PID is recorded to ``{log_dir}/mlflow.pid``.
+        """
         if self.process is not None and self.process.poll() is None:
             return
         self._free_port()
@@ -104,6 +144,13 @@ class MLflowService:
         (self.log_dir / "mlflow.pid").write_text(str(self.process.pid))
 
     def stop(self) -> None:
+        """Stop the MLflow tracking server subprocess.
+
+        Sends ``SIGTERM`` to the entire process group and waits up to
+        10 seconds for graceful shutdown. If the process does not exit
+        in time, ``SIGKILL`` is sent. The process reference is cleared
+        and the PID file is removed.
+        """
         pid_file = self.log_dir / "mlflow.pid"
         if self.process is None or self.process.poll() is not None:
             pid_file.unlink(missing_ok=True)
@@ -122,8 +169,23 @@ class MLflowService:
 
     @property
     def is_running(self) -> bool:
+        """Check whether the MLflow server subprocess is currently running.
+
+        Returns
+        -------
+        bool
+            ``True`` if the process has been started and has not exited.
+        """
         return self.process is not None and self.process.poll() is None
 
     @property
     def tracking_uri(self) -> str:
+        """Return the MLflow tracking server URI.
+
+        Returns
+        -------
+        str
+            The URI clients should use to reach the MLflow tracking
+            server (e.g. ``http://127.0.0.1:5001``).
+        """
         return self._tracking_uri

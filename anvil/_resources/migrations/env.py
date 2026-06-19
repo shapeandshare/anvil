@@ -8,7 +8,7 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-from anvil.db.base import Base
+from ...db.base import Base
 
 config = context.config
 if config.config_file_name is not None:
@@ -18,7 +18,11 @@ target_metadata = Base.metadata
 
 
 def run_migrations_offline():
-    context.configure(url=config.get_main_option("sqlalchemy.url"), target_metadata=target_metadata, literal_binds=True)
+    context.configure(
+        url=config.get_main_option("sqlalchemy.url"),
+        target_metadata=target_metadata,
+        literal_binds=True,
+    )
     with context.begin_transaction():
         context.run_migrations()
 

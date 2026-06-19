@@ -8,9 +8,7 @@ Tests the phase transitions:
 5. Call on_complete(result, config)
 """
 
-from __future__ import annotations
 
-from __future__ import annotations
 
 import asyncio
 import json
@@ -19,7 +17,8 @@ from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import pytest
 
-from anvil.services.compute.result import ComputeResult, ComputeStatus
+from anvil.services.compute.compute_status import ComputeStatus
+from anvil.services.compute.result import ComputeResult
 from anvil.services.training import TrainingService
 
 
@@ -342,7 +341,7 @@ class TestBackendSelection:
     """Test that the correct backend is selected based on config."""
 
     async def test_local_cpu_selects_local_stdlib_backend(self, svc):
-        """config with compute_backend='local-cpu' selects stdlib backend."""
+        """Config with compute_backend='local-cpu' selects stdlib backend."""
         backend = FakeBackend()
 
         with patch(
@@ -366,7 +365,7 @@ class TestBackendSelection:
         assert name[0] == "local-stdlib"
 
     async def test_modal_selects_modal_backend(self, svc):
-        """config with compute_backend='modal' selects modal backend."""
+        """Config with compute_backend='modal' selects modal backend."""
         backend = FakeBackend()
 
         with patch(

@@ -4,8 +4,6 @@ This module is the ``loader_module`` target in the ``MLmodel`` file.
 It must be importable at inference time (the ``anvil`` package must be installed).
 """
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 
@@ -23,9 +21,22 @@ class AnvilPyfuncModel(mlflow.pyfunc.PythonModel):
     """
 
     def load_context(self, context):
+        """Load model artifacts from an MLflow model directory.
+
+        Reads the HuggingFace ``config.json`` from the artifact URI,
+        instantiates a ``LlamaForCausalLM``, loads safetensors weights,
+        and initialises the character-level tokenizer metadata.
+
+        Parameters
+        ----------
+        context : mlflow.pyfunc.PythonModelContext
+            MLflow model context providing ``artifact_uri`` pointing to
+            the directory containing ``config.json``,
+            ``model.safetensors``, and ``tokenizer.json``.
+        """
         import torch
         from safetensors.torch import load_file
-        from transformers import LlamaForCausalLM, LlamaConfig
+        from transformers import LlamaConfig, LlamaForCausalLM
 
         model_dir = Path(context.artifact_uri)
 
@@ -82,11 +93,28 @@ class AnvilPyfuncModel(mlflow.pyfunc.PythonModel):
         return pd.DataFrame({"generated": results})
 
     def _generate(self, prompt: str, max_new_tokens: int = 50) -> str:
-        """Generate a continuation for a single prompt string."""
+        """Generate a continuation for a single prompt string.
+
+        Encodes the prompt using the character-level vocabulary, runs
+        autoregressive decoding with argmax sampling, and decodes only
+        the newly generated tokens (prompt is stripped from output).
+
+        Parameters
+        ----------
+        prompt : str
+            Input text string to generate a continuation for.
+        max_new_tokens : int, optional
+            Maximum number of tokens to generate. Defaults to ``50``.
+
+        Returns
+        -------
+        str
+            The generated continuation text (prompt excluded).
+        """
         # Encode via character-level vocab
         input_ids = [self.vocab.get(c, 0) for c in prompt]
         if self.bos_token_id is not None:
-            input_ids = [self.bos_token_id] + input_ids
+            input_ids = [self.bos_token_id, *input_ids]
 
         input_tensor = self._torch.tensor([input_ids]).to(self.device)
         generated_ids = input_ids[:]

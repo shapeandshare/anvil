@@ -4,7 +4,6 @@ These tests describe the DESIRED behavior after the packaging refactor:
 alembic.ini and migrations/ are resolved via importlib.resources, not CWD.
 They should fail until T010 is implemented.
 """
-from __future__ import annotations
 
 from pathlib import Path
 

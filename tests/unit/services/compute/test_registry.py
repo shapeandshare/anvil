@@ -1,10 +1,9 @@
 """Tests for compute backend registry."""
 
-from __future__ import annotations
 
 import pytest
 
-from anvil.services.compute.errors import ComputeBackendUnavailable
+from anvil.services.compute.compute_backend_unavailable import ComputeBackendUnavailable
 
 
 class _FakeBackend:
@@ -16,12 +15,13 @@ class _FakeBackend:
         return self._available
 
     async def run(self, docs, config, *, progress_callback, stop_check):
-        from anvil.services.compute.result import ComputeResult, ComputeStatus
+        from anvil.services.compute.compute_status import ComputeStatus
+        from anvil.services.compute.result import ComputeResult
         return ComputeResult(status=ComputeStatus.COMPLETED)
 
 
 def test_register_and_get():
-    from anvil.services.compute import register, get_backend
+    from anvil.services.compute.registry import register, get_backend
 
     register("test-fake", lambda: _FakeBackend("test-fake"))
     backend = get_backend("test-fake")
@@ -30,14 +30,14 @@ def test_register_and_get():
 
 
 def test_get_unknown_raises():
-    from anvil.services.compute import get_backend
+    from anvil.services.compute.registry import get_backend
 
     with pytest.raises(ComputeBackendUnavailable):
         get_backend("nonexistent")
 
 
 def test_available_backends():
-    from anvil.services.compute import register, available_backends
+    from anvil.services.compute.registry import register, available_backends
 
     register("test-available", lambda: _FakeBackend("test-available", available=True))
     register("test-unavailable", lambda: _FakeBackend("test-unavailable", available=False))
@@ -49,7 +49,7 @@ def test_available_backends():
 
 
 def test_available_backends_handles_factory_failure():
-    from anvil.services.compute import register, available_backends
+    from anvil.services.compute.registry import register, available_backends
 
     def _failing():
         raise RuntimeError("fail")
@@ -62,7 +62,7 @@ def test_available_backends_handles_factory_failure():
 
 
 def test_get_passes_deps():
-    from anvil.services.compute import register, get_backend
+    from anvil.services.compute.registry import register, get_backend
 
     class _DepFake:
         name = "dep-fake"
@@ -70,7 +70,8 @@ def test_get_passes_deps():
             self.kwargs = kwargs
         def is_available(self): return True
         async def run(self, docs, config, *, progress_callback, stop_check):
-            from anvil.services.compute.result import ComputeResult, ComputeStatus
+            from anvil.services.compute.compute_status import ComputeStatus
+            from anvil.services.compute.result import ComputeResult
             return ComputeResult(status=ComputeStatus.COMPLETED)
 
     register("dep-fake", lambda **kw: _DepFake(**kw))

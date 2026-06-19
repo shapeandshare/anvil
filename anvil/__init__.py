@@ -1,9 +1,19 @@
-"""anvil — LLM training workbench."""
+"""anvil — LLM training workbench.
+
+Public API
+---------
+The ``__version__`` constant is the only public symbol exported by the
+package root. All submodules (``anvil.core``, ``anvil.db``,
+``anvil.services``, ``anvil.api``, ``anvil.supervisor``) are accessed
+via direct import.
+"""
 
 import tomllib
 from pathlib import Path
 
+# Absolute path to the repository root (parent of the ``anvil/`` package).
 _ROOT = Path(__file__).resolve().parent.parent
+# Path to the ``pyproject.toml`` file used as the canonical version source.
 _PYPROJECT_TOML = _ROOT / "pyproject.toml"
 
 if _PYPROJECT_TOML.exists():

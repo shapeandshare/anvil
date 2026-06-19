@@ -37,6 +37,7 @@ include = ["anvil*"]
 
 [tool.setuptools.package-data]
 anvil = [
+    "py.typed",
     "_resources/alembic.ini",
     "_resources/migrations/*.py",
     "_resources/migrations/*.mako",
@@ -83,14 +84,18 @@ line-length = 88
 indent-width = 4
 
 [tool.ruff.lint]
-select = ["E4", "E7", "E9", "F", "B", "C4", "UP", "ASYNC", "RUF"]
-ignore = ["E501", "B008"]
+select = ["E4", "E7", "E9", "F", "B", "C4", "UP", "ASYNC", "RUF", "D"]
+ignore = ["E501", "B008", "D205", "D401"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
 
 [tool.ruff.lint.per-file-ignores]
-"__init__.py" = ["E402", "F401"]
-"tests/**/*.py" = ["E402", "F401", "B011", "F841", "RUF006"]
-"anvil/_resources/migrations/**" = ["E402", "F401"]
-"examples/**" = ["E402", "E741"]
+"__init__.py" = ["E402", "F401", "D100", "D104"]
+"tests/**/*.py" = ["E402", "F401", "B011", "F841", "RUF006", "D100", "D101", "D102", "D103", "D104", "D107"]
+"anvil/_resources/migrations/**" = ["E402", "F401", "D"]
+"examples/**" = ["E402", "E741", "D"]
+"scripts/**" = ["D"]
 "anvil/api/v1/corpora.py" = ["E741"]
 "anvil/api/v1/datasets.py" = ["B904"]
 "anvil/api/v1/eval.py" = ["ASYNC240"]
@@ -129,6 +134,13 @@ strict = true
 ignore_missing_imports = true
 disallow_untyped_defs = true
 disallow_any_unimported = false
+enable_error_code = [
+    "ignore-without-code",
+    "possibly-undefined",
+    "redundant-cast",
+    "redundant-expr",
+]
+warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
 module = "anvil.services.tracking"
@@ -138,17 +150,7 @@ ignore_errors = true
 module = "anvil.services.mlflow_inputs"
 ignore_errors = true
 
-[[tool.mypy.overrides]]
-module = "anvil.services.mlflow_capabilities"
-ignore_errors = true
 
-[[tool.mypy.overrides]]
-module = "anvil.services.metrics_collectors"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "anvil.api.v1.eval_datasets"
-ignore_errors = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

@@ -15,33 +15,76 @@ Behaviour:
   - Generates a summary report. Exits 0 on success, non-zero on error.
 """
 
-from __future__ import annotations
 
 import argparse
 import asyncio
 import sys
-from dataclasses import dataclass, field
 from typing import Any
 
 import mlflow.entities
 from mlflow.tracking import MlflowClient
-from sqlalchemy import select
+from pydantic import BaseModel, Field
+from sqlalchemy import Column, Float, ForeignKey, Integer, String, select
+from sqlalchemy.orm import Mapped, mapped_column
 
-from anvil.config import get_config
-from anvil.db.base import Base  # noqa: F401 — ensure metadata loaded
-from anvil.db.models.corpus import Corpus  # noqa: F401 — ensure model registered
-from anvil.db.models.registry import ModelVersion, RegisteredModel
-from anvil.db.models.training_config import Dataset, Experiment, TrainingConfig
-from anvil.db.session import AsyncSessionLocal
-from anvil.services.mlflow_inputs import MlflowInputResolver
+from ....config import get_config
+from ....db.base import Base
+from ....db.models.corpus import Corpus
+from ....db.models.dataset import Dataset
+from ....db.models.registry import ModelVersion, RegisteredModel
+from ....db.models.training_config import TrainingConfig
+from ....db.session import AsyncSessionLocal
+from ....services.mlflow_inputs import MlflowInputResolver
+
+# ---------------------------------------------------------------------------
+# Local model: Experiment (table dropped in migration 013 but referenced
+# by this one-shot migration script for querying legacy data)
+# ---------------------------------------------------------------------------
+
+
+class Experiment(Base):
+    """Local ORM model mapping to the legacy ``experiments`` table.
+
+    The ``experiments`` table was dropped in Alembic migration 013 (see
+    ``013_drop_experiment_registry_tables_add_run_id_seq.py``) when the
+    project migrated fully to MLflow-based experiment tracking. This
+    model exists only so this one-shot migration script can read the
+    table if it still exists on a pre-migration database.
+
+    Parameters
+    ----------
+    **kwargs
+        Keyword arguments for column values.
+    """
+
+    __tablename__ = "experiments"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    mlflow_run_id: Mapped[str | None] = mapped_column(
+        String(255), nullable=True, unique=True
+    )
+    run_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, server_default="pending"
+    )
+    config_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("training_configs.id"), nullable=True
+    )
+    dataset_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("datasets.id"), nullable=True
+    )
+    corpus_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    engine_backend: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    device: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    final_loss: Mapped[float | None] = mapped_column(Float, nullable=True)
+
 
 # ---------------------------------------------------------------------------
 # Report
 # ---------------------------------------------------------------------------
 
 
-@dataclass
-class MigrationReport:
+class MigrationReport(BaseModel):
     """Accumulates counts and errors across the migration."""
 
     experiments_migrated: int = 0
@@ -53,8 +96,8 @@ class MigrationReport:
     models_failed: int = 0
     datasets_logged: int = 0
     corpora_logged: int = 0
-    errors: list[str] = field(default_factory=list)
-    warnings: list[str] = field(default_factory=list)
+    errors: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -67,7 +110,9 @@ def _sanitize_model_name(name: str) -> str:
     return name.replace("/", "-").replace(":", "-")
 
 
-def _build_params_from_config(config: TrainingConfig | None) -> list[mlflow.entities.Param]:
+def _build_params_from_config(
+    config: TrainingConfig | None,
+) -> list[mlflow.entities.Param]:
     """Build mlflow Param list from a TrainingConfig."""
     params: list[mlflow.entities.Param] = []
     if config is None:
@@ -116,9 +161,7 @@ async def _migrate_experiments(
         )
 
     async with AsyncSessionLocal() as session:
-        result = await session.execute(
-            select(Experiment).order_by(Experiment.id)
-        )
+        result = await session.execute(select(Experiment).order_by(Experiment.id))
         experiments: list[Experiment] = list(result.scalars().all())
 
     for exp in experiments:
@@ -148,7 +191,7 @@ async def _migrate_experiments(
             # 1. Create the MLflow run
             mlflow_run = await loop.run_in_executor(
                 None,
-                lambda: client.create_run(
+                lambda exp=exp: client.create_run(
                     mlflow_experiment_id,
                     run_name=exp.run_name or f"experiment-{exp.id}",
                 ),
@@ -166,14 +209,16 @@ async def _migrate_experiments(
             if mlflow_params:
                 await loop.run_in_executor(
                     None,
-                    lambda: client.log_batch(run_id=run_id, params=mlflow_params),
+                    lambda run_id=run_id, mlflow_params=mlflow_params: client.log_batch(
+                        run_id=run_id, params=mlflow_params
+                    ),
                 )
 
             # 3. Log metrics
             if exp.final_loss is not None:
                 await loop.run_in_executor(
                     None,
-                    lambda: client.log_metric(
+                    lambda run_id=run_id, exp=exp: client.log_metric(
                         run_id, "final_loss", exp.final_loss
                     ),
                 )
@@ -181,13 +226,13 @@ async def _migrate_experiments(
             # 4. Set tags
             await loop.run_in_executor(
                 None,
-                lambda: client.set_tag(
+                lambda run_id=run_id, exp=exp: client.set_tag(
                     run_id, "anvil.experiment_id", str(exp.id)
                 ),
             )
             await loop.run_in_executor(
                 None,
-                lambda: client.set_tag(run_id, "anvil.migrated", "true"),
+                lambda run_id=run_id: client.set_tag(run_id, "anvil.migrated", "true"),
             )
 
             # 5. Set terminated status if not still running
@@ -200,7 +245,9 @@ async def _migrate_experiments(
             if mlflow_status != "RUNNING":
                 await loop.run_in_executor(
                     None,
-                    lambda: client.set_terminated(run_id, status=mlflow_status),
+                    lambda run_id=run_id, mlflow_status=mlflow_status: client.set_terminated(
+                        run_id, status=mlflow_status
+                    ),
                 )
 
             # 6. Update local Experiment with mlflow_run_id
@@ -215,12 +262,12 @@ async def _migrate_experiments(
                 try:
                     async with AsyncSessionLocal() as session:
                         resolver = MlflowInputResolver(session)
-                        mlflow_ds, digest = await resolver.resolve_dataset(
+                        mlflow_ds, _digest = await resolver.resolve_dataset(
                             exp.dataset_id
                         )
                         await loop.run_in_executor(
                             None,
-                            lambda: client.log_input(
+                            lambda run_id=run_id, mlflow_ds=mlflow_ds: client.log_input(
                                 run_id, mlflow_ds, context="training"
                             ),
                         )
@@ -236,19 +283,19 @@ async def _migrate_experiments(
                 try:
                     async with AsyncSessionLocal() as session:
                         resolver = MlflowInputResolver(session)
-                        meta_ds, artifact_paths, digest = (
+                        meta_ds, artifact_paths, _digest = (
                             await resolver.resolve_corpus(exp.corpus_id)
                         )
                         await loop.run_in_executor(
                             None,
-                            lambda: client.log_input(
+                            lambda run_id=run_id, meta_ds=meta_ds: client.log_input(
                                 run_id, meta_ds, context="corpus"
                             ),
                         )
                         for artifact_path in artifact_paths:
                             await loop.run_in_executor(
                                 None,
-                                lambda p=artifact_path: client.log_artifact(
+                                lambda p=artifact_path, run_id=run_id: client.log_artifact(
                                     run_id, p
                                 ),
                             )
@@ -283,9 +330,7 @@ async def _migrate_registered_models(
         models_result = await session.execute(
             select(RegisteredModel).order_by(RegisteredModel.id)
         )
-        registered_models: list[RegisteredModel] = list(
-            models_result.scalars().all()
-        )
+        registered_models: list[RegisteredModel] = list(models_result.scalars().all())
 
         versions_result = await session.execute(
             select(ModelVersion).order_by(ModelVersion.id)
@@ -311,9 +356,11 @@ async def _migrate_registered_models(
         # Check if model already exists in MLflow registry
         model_exists = False
         try:
-            existing = await loop.run_in_executor(
+            await loop.run_in_executor(
                 None,
-                lambda: client.get_registered_model(registry_name),
+                lambda registry_name=registry_name: client.get_registered_model(
+                    registry_name
+                ),
             )
             model_exists = True
         except Exception:
@@ -347,7 +394,7 @@ async def _migrate_registered_models(
                 try:
                     existing_versions = await loop.run_in_executor(
                         None,
-                        lambda: client.search_model_versions(
+                        lambda registry_name=registry_name: client.search_model_versions(
                             f"name='{registry_name}'"
                         ),
                     )
@@ -371,7 +418,7 @@ async def _migrate_registered_models(
                     try:
                         await loop.run_in_executor(
                             None,
-                            lambda: client.create_registered_model(
+                            lambda registry_name=registry_name: client.create_registered_model(
                                 registry_name
                             ),
                         )
@@ -383,7 +430,7 @@ async def _migrate_registered_models(
 
                 await loop.run_in_executor(
                     None,
-                    lambda: client.create_model_version(
+                    lambda registry_name=registry_name, source=source, run_id=run_id: client.create_model_version(
                         name=registry_name,
                         source=source,
                         run_id=run_id,
@@ -409,13 +456,17 @@ def _print_report(report: MigrationReport, dry_run: bool) -> None:
 
     print(f"\n{prefix}Migration Report")
     print("=" * 50)
-    print(f"  Experiments:          {report.experiments_migrated} migrated, "
-          f"{report.experiments_skipped} skipped, "
-          f"{report.experiments_failed} failed")
-    print(f"  Registered models:    {report.models_migrated} migrated, "
-          f"{report.models_skipped_already} skipped (already exist), "
-          f"{report.models_skipped_no_exp} skipped (no experiment), "
-          f"{report.models_failed} failed")
+    print(
+        f"  Experiments:          {report.experiments_migrated} migrated, "
+        f"{report.experiments_skipped} skipped, "
+        f"{report.experiments_failed} failed"
+    )
+    print(
+        f"  Registered models:    {report.models_migrated} migrated, "
+        f"{report.models_skipped_already} skipped (already exist), "
+        f"{report.models_skipped_no_exp} skipped (no experiment), "
+        f"{report.models_failed} failed"
+    )
     print(f"  Dataset inputs logged: {report.datasets_logged}")
     print(f"  Corpus inputs logged:  {report.corpora_logged}")
 

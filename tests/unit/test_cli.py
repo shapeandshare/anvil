@@ -1,6 +1,5 @@
 """Unit tests for CLI functions, including db_main subcommands."""
 
-from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -72,7 +71,7 @@ class TestDbMain:
 
     @patch("anvil.db.migration.MigrationService")
     def test_migration_error_exits_with_code_1(self, mock_cls: MagicMock):
-        from anvil.db.migration import MigrationError
+        from anvil.db.migration_error import MigrationError
         instance = MagicMock()
         instance.upgrade = AsyncMock(side_effect=MigrationError("fail"))
         mock_cls.return_value = instance

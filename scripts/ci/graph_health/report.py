@@ -1,22 +1,18 @@
 """Markdown report renderer for vault graph health analysis."""
 
-from __future__ import annotations
-
 from datetime import datetime
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from . import (
-        GraphHealthReport,
-        NoteMetadata,
-        HealthScore,
-        ConnectivityMetrics,
-        TopologicalMetrics,
-        TemporalMetrics,
-        HygieneMetrics,
-        StructuralMetrics,
-        LinkPredictionResult,
-    )
+from .types import (
+    ConnectivityMetrics,
+    GraphHealthReport,
+    HealthScore,
+    HygieneMetrics,
+    LinkPredictionResult,
+    NoteMetadata,
+    StructuralMetrics,
+    TemporalMetrics,
+    TopologicalMetrics,
+)
 
 
 def render_markdown(

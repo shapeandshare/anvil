@@ -1,13 +1,8 @@
-"""Services package — business logic layer."""
+"""Business logic and orchestration layer.
 
-from anvil.services.corpora import CorpusService
-from anvil.services.datasets import DatasetService
-from anvil.services.inference import InferenceService
-from anvil.services.training import TrainingService
-
-__all__ = [
-    "CorpusService",
-    "DatasetService",
-    "InferenceService",
-    "TrainingService",
-]
+``anvil.services`` contains all application business logic — training
+coordination, MLflow experiment tracking, dataset import and curation,
+model export, corpus management, inference, and compute backend
+abstraction. Services consume repositories and expose their
+functionality through the ``AnvilWorkbench`` god class.
+"""

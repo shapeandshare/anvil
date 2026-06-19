@@ -4,14 +4,11 @@ Stale notes (updated_date -> created_date -> last_modified fallback).
 Temporal coherence of directed edges (created_date deltas).
 """
 
-from __future__ import annotations
+from datetime import date
 
-from datetime import date, datetime
-from typing import TYPE_CHECKING
+import networkx as nx
 
-if TYPE_CHECKING:
-    import networkx as nx
-    from . import NoteMetadata, TemporalMetrics
+from .types import NoteMetadata, TemporalMetrics
 
 
 def compute_temporal(
@@ -27,8 +24,6 @@ def compute_temporal(
         TemporalMetrics with stale notes, dead weight, temporal deltas,
         and coherence stats.
     """
-    from . import TemporalMetrics
-
     metrics = TemporalMetrics()
     today = date.today()
 

@@ -1,7 +1,6 @@
 """train2: RMSNorm with learned weights — normalization and backprop through it.
 Uses Adam optimizer. Introduces rmsnorm() and a learned scale parameter rms_1."""
 
-import math
 import random
 
 random.seed(42)

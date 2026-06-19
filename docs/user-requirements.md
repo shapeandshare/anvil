@@ -48,11 +48,11 @@
 
 ## Code Style
 
-- Implicit namespace packages (PEP 420) for ALL Python code — no `__init__.py` except for public API surface exports
+- Implicit namespace packages (PEP 420) — authoritative namespace levels get bare `__init__.py` (docstring-only, no re-exports); data-only directories have no `__init__.py`
 - Core logic implemented as classes (not loose functions); constants grouped together in dedicated modules
 - No inline imports — all imports at the top of the file
 - Internal imports use relative paths (`from .module import X`); third-party imports use absolute paths
-- `__init__.py` files exist ONLY to declare a package's public API surface (`__all__`, explicit re-exports) — never for internal wiring or side-effect imports
+- `__init__.py` files at authoritative namespace levels are bare (docstring-only) — no re-exports, no imports, no internal wiring. They assert ownership of that namespace level, not declare a public API surface
 - Strict explicit typing on all function signatures (parameters and return types) and all class attributes
 - PyPy compatibility preferred for the stdlib-only core; optional dependency layers gracefully report incompatibility rather than crashing
 

@@ -24,9 +24,15 @@ Tests MUST be written before implementation for every feature (Red-Green-Refacto
 
 The web server, database layer, and service layer MUST use async Python throughout. FastAPI async handlers, async SQLAlchemy, async FileStore I/O. The core training engine is the only exception (synchronous math).
 
-### Article VI — Implicit Namespace
+### Article VI — `__init__.py` Ownership Policy
 
-All Python packages MUST use implicit namespace packages (PEP 420). `__init__.py` files SHALL exist ONLY in directories that export a public API surface. They MUST NOT be used for internal wiring, side-effect imports, or namespace initialization. Internal code MUST NEVER import from `__init__.py` — doing so creates brittle wiring that violates the implicit namespace contract.
+This is an implicit namespace package codebase. The `anvil/` package root has `anvil/__init__.py` to expose the public API (e.g., `__version__`). For every sub-directory that is a fully-owned Python package level (a directory containing `.py` modules that forms a complete, authoritative part of the `anvil.*` namespace), a **bare `__init__.py`** MUST exist to assert ownership and designate it as a regular package. This means:
+
+- Authoritative levels (fully owned by the `anvil` project) get a bare `__init__.py` — a docstring-only file describing the package's purpose. No re-exports, no imports.
+- Data-only directories (`static/`, `templates/`, `data/`, `_resources/`, and similar non-Python-package directories) MUST NOT have `__init__.py`.
+- All internal imports MUST continue to use direct module paths: `from .module import X`, not `from . import X` where `X` is a re-export.
+- No `__init__.py` may re-export symbols for internal consumption.
+- This is enforced at merge review — adding or removing `__init__.py` at a package level requires justification that the level is (or is not) a fully-owned authoritative namespace level.
 
 ### Article VII — Layered Architecture
 
@@ -45,6 +51,33 @@ All optional capabilities (GPU acceleration, external services, advanced feature
 - **Runtime layer**: CPU is the implicit default device. If GPU is opted in but unavailable (torch missing, no accelerator detected), training SHALL fall back to CPU without raising.
 - **Explicit override**: `make setup-gpu` / `make install-gpu` force GPU extras regardless of auto-detection.
 
+### Article X — Domain-Driven Package Decomposition
+
+Package boundaries SHALL follow domain (bounded context) boundaries. Sub-packaging is governed by cohesion and coupling, not file count alone. This article pairs with the one-class-per-file rule (below) and the `__init__.py` Ownership Policy (Article VI).
+
+- **§10.1 — Domain threshold**: When a package directory contains 12 or more peer `.py` modules, the maintainer MUST evaluate whether the directory mixes multiple domains. If it does, the maintainer SHALL split it into domain-aligned sub-packages.
+
+- **§10.2 — Tight coupling rule**: Result types, exception/error classes, and value objects that are tightly coupled to exactly one service module SHALL co-locate in that service's domain sub-package. They MUST NOT live at the parent package level. This prevents the proliferation of single-class files at the parent level (a direct consequence of pairing one-class-per-file with DDD).
+
+- **§10.3 — Cross-domain shared types**: Types referenced by two or more domains SHALL live in a `_shared/` sub-package within their parent domain. The underscore prefix signals "not a domain, internal infrastructure." At the top-level package boundary (`anvil/` level), shared types MAY live in a `_shared/` directory at the `anvil/` root if they span top-level packages (e.g., a type shared between `services/` and `api/`).
+
+- **§10.4 — Domain naming convention**: Domain sub-packages use plural nouns: `models/`, `repositories/`, `datasets/`, `compute/`, `training/`, `chunking/`. Internal/infrastructure sub-packages use underscore-prefixed names: `_shared/`, `_types/`, `_errors/`. This visually distinguishes domain boundaries from infrastructure grouping.
+
+- **§10.5 — Nesting limit**: Maximum two levels of sub-packaging from any parent package root. A module at `anvil/services/training/backend.py` is acceptable. A module at `anvil/services/training/backend/torch/runner.py` is not — use a longer module name (`torch_backend.py`) rather than deeper nesting.
+
+- **§10.6 — Pairing with Article VI (`__init__.py` Ownership Policy)**: Every domain sub-package is an "authoritative level" under Article VI and MUST have a bare, docstring-only `__init__.py`. The docstring SHALL describe the domain's purpose. Internal sub-packages (`_shared/`, `_types/`, `_errors/`) are also authoritative levels — they get a bare `__init__.py` with a docstring describing the shared/infrastructure purpose.
+
+- **§10.7 — Pairing with one-class-per-file**: DDD determines WHICH sub-package a file belongs to. Each class file is placed in the domain sub-package whose bounded context it serves. A one-result-type file that serves exactly one service module goes into that service's domain sub-package, not into the parent package. This prevents the parent level from accumulating orphan result/error types.
+
+- **§10.8 — Import discipline in a DDD structure**:
+  Modules within a domain sub-package use `from .sibling_module import X`.
+  Modules in sibling domain sub-packages use `from ..sibling_domain.module import X`.
+  Parent-level modules that reference sub-packages use `from .sub_package.module import X`.
+  No `__init__.py` re-exports between domains — the relative import rules in Article VI continue unchanged.
+  Cross-domain types in `_shared/` are imported as `from .._shared.module import X` (or `from ._shared.module import X` when inside the same parent).
+
+- **§10.9 — Refactoring discipline**: Introducing a domain sub-package is a structural change that SHALL be its own commit/PR. It SHALL NOT be combined with behavioral changes. Imports in consuming modules MUST be updated in the same commit. The diff MUST show only moves and import rewrites — zero behavioral delta.
+
 ## Additional Constraints
 
 - Schema changes via reversible Alembic migrations (`make db-revision`); data backfills accompany any vocabulary change.
@@ -52,6 +85,8 @@ All optional capabilities (GPU acceleration, external services, advanced feature
 - `TYPE_CHECKING` from `typing` is forbidden — circular imports are an architecture problem. Extract shared types into a dedicated module or reorganize layer boundaries.
 - Lean dependencies; new deps justified in an ADR/plan; optional/heavy deps (e.g. GPU) go in `[project.optional-dependencies]`.
 - Significant decisions recorded as ADRs in `docs/vault/Decisions/`; vault enriched per session.
+- Pydantic `BaseModel` MUST be used for all structured data/value-object classes over `dataclasses.dataclass`. Existing `@dataclass` usages are grandfathered until touched for other reasons, but all NEW code MUST use `BaseModel`.
+- **One class per file** — Every Python source file MUST contain exactly one class definition. Utility constants, functions, enums, and module-level helpers are permitted in the same file as the primary class only when they are inseparable from that class's interface. Exception and error classes that are tightly coupled may share a file with their primary class. Enforcement is at merge review — any reintroduced multi-class file without explicit exception approval is reject-worthy.
 
 ## Development Workflow & Quality Gates
 
@@ -63,4 +98,4 @@ All optional capabilities (GPU acceleration, external services, advanced feature
 
 This constitution supersedes all other practices in this repository. Amendments require documentation in an Architecture Decision Record (ADR), approval, and version bump. All PRs and agent sessions must verify compliance with these articles.
 
-**Version**: 1.2.0 | **Ratified**: 2026-06-10 | **Last Amended**: 2026-06-13
+**Version**: 1.6.0 | **Ratified**: 2026-06-10 | **Last Amended**: 2026-06-19

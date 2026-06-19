@@ -3,7 +3,8 @@
 import tempfile
 
 from anvil.core.engine import LlamaModel, train
-from anvil.core.tokenizer import Tokenizer, Vocabulary
+from anvil.core.tokenizer import Tokenizer
+from anvil.core.vocabulary import Vocabulary
 
 
 def test_vocabulary_from_chars():

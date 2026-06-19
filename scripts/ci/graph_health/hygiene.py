@@ -4,17 +4,13 @@ Tag conformity vs controlled vocabulary, near-duplicate tags,
 frontmatter completeness, phantom links, over-linking.
 """
 
-from __future__ import annotations
-
 import re
-import unicodedata
 from collections import defaultdict
 from datetime import date, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-if TYPE_CHECKING:
-    from . import NoteMetadata, HygieneMetrics
+from .types import HygieneMetrics, NoteMetadata
 
 # Controlled vocabulary constants (copied from vault_audit.py conventions)
 TYPE_VOCAB: set[str] = {
@@ -67,8 +63,6 @@ def compute_hygiene(
     Returns:
         HygieneMetrics dataclass with all hygiene checks.
     """
-    from . import HygieneMetrics
-
     controlled_tags = _load_controlled_tags(vault_root)
 
     non_conformant_tags: list[tuple[str, str]] = []
