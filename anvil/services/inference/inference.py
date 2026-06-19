@@ -8,11 +8,9 @@ from __future__ import annotations
 import asyncio
 import math
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-if TYPE_CHECKING:
-    from ...core.autograd import Value
-
+from ...core.autograd import Value
 from ...core.engine import LlamaModel
 from .demo_model_provider import _demo_provider
 from .loaded_model import LoadedModel
@@ -673,8 +671,6 @@ class InferenceService:
         forward + backward pass, so every value and gradient is real at a legible
         scale. Same response schema as :meth:`backward_graph`.
         """
-        from ...core.autograd import Value
-
         ids = loaded.vocab.encode(text)
         seed_id = next(
             (t for t in ids if t != loaded.vocab.bos_id),
