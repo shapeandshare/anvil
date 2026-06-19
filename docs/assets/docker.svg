@@ -1,0 +1,132 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 760" width="100%" height="100%">
+  <defs>
+    <!-- Forge gradient for accents, port pills, and runtime card border -->
+    <linearGradient id="forgeGradient" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ff9500"/>
+      <stop offset="100%" stop-color="#ffcc00"/>
+    </linearGradient>
+
+    <!-- Arrowhead marker. Drawn pointing +x (right); orient="auto" rotates it to match each line's direction. -->
+    <marker id="arrowhead" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="7" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0 0 L10 4 L0 8 Z" fill="#ff9500"/>
+    </marker>
+  </defs>
+
+  <!-- Solid dark background panel (legible on both GitHub light and dark themes) -->
+  <rect x="0" y="0" width="1280" height="760" rx="24" fill="#0c0c0d"/>
+
+  <!-- ================================================================== -->
+  <!-- ZONE 1 — MULTI-STAGE BUILD                                         -->
+  <!-- ================================================================== -->
+
+  <!-- Zone header -->
+  <text x="640" y="50" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="700" fill="#ebebf5" opacity="0.5" letter-spacing="3">MULTI-STAGE BUILD</text>
+
+  <!-- Stage ①: Builder card -->
+  <rect x="220" y="76" width="300" height="94" rx="12" fill="#1c1c1e" stroke="#38383a" stroke-width="1"/>
+  <text x="250" y="108" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="20" font-weight="700" fill="#ffffff">① Builder</text>
+  <text x="250" y="136" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" fill="#ebebf5" opacity="0.78">python:3.11-slim + uv</text>
+  <text x="250" y="156" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" fill="#ebebf5" opacity="0.78">uv build --wheel</text>
+
+  <!-- Arrow: Builder → Runtime (right). Label sits above the short connector, centered between the cards. -->
+  <line x1="520" y1="123" x2="579" y2="123" stroke="#ff9500" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <text x="549" y="64" text-anchor="middle" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11" font-weight="600" fill="#ff9500" opacity="0.9">anvil-*.whl</text>
+
+  <!-- Stage ②: Runtime image card (forge-orange accent border) -->
+  <rect x="590" y="76" width="300" height="94" rx="12" fill="#1c1c1e" stroke="url(#forgeGradient)" stroke-width="1.5"/>
+  <text x="620" y="108" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="20" font-weight="700" fill="#ffffff">② Runtime image</text>
+  <text x="620" y="136" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" fill="#ebebf5" opacity="0.78">python:3.11-slim</text>
+  <text x="620" y="156" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" fill="#ebebf5" opacity="0.78">pip install *.whl</text>
+  <text x="754" y="156" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="11" fill="#ebebf5" opacity="0.5">(no source tree)</text>
+
+  <!-- Arrow: Runtime → Container (down) -->
+  <line x1="740" y1="170" x2="740" y2="403" stroke="#ff9500" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <text x="755" y="222" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11" font-weight="600" fill="#ff9500" opacity="0.9">docker run</text>
+
+  <!-- Divider between zones -->
+  <line x1="80" y1="280" x2="1200" y2="280" stroke="#38383a" stroke-width="1"/>
+
+  <!-- ================================================================== -->
+  <!-- ZONE 2 — CONTAINER RUNTIME                                         -->
+  <!-- ================================================================== -->
+
+  <!-- Zone header -->
+  <text x="640" y="310" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="700" fill="#ebebf5" opacity="0.5" letter-spacing="3">CONTAINER RUNTIME</text>
+
+  <!-- Host strip -->
+  <rect x="100" y="328" width="920" height="46" rx="10" fill="#1c1c1e" stroke="#38383a" stroke-width="1"/>
+  <text x="125" y="356" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" font-weight="600" fill="#ebebf5" opacity="0.7">Host</text>
+
+  <!-- Endpoint pill: localhost:8080 -->
+  <rect x="360" y="338" width="148" height="26" rx="13" fill="url(#forgeGradient)"/>
+  <text x="434" y="355" text-anchor="middle" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11" font-weight="700" fill="#0c0c0d">localhost:8080</text>
+
+  <!-- Endpoint pill: localhost:5001 -->
+  <rect x="540" y="338" width="148" height="26" rx="13" fill="url(#forgeGradient)"/>
+  <text x="614" y="355" text-anchor="middle" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11" font-weight="700" fill="#0c0c0d">localhost:5001</text>
+
+  <!-- Arrow: Host 8080 → Container 8080 (down) -->
+  <line x1="434" y1="367" x2="434" y2="391" stroke="#ff9500" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <text x="450" y="388" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11" font-weight="600" fill="#ff9500" opacity="0.9">8080:8080</text>
+
+  <!-- Arrow: Host 5001 → Container 5001 (down) -->
+  <line x1="690" y1="367" x2="690" y2="391" stroke="#ff9500" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <text x="706" y="392" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11" font-weight="600" fill="#ff9500" opacity="0.9">5001:5001</text>
+
+  <!-- Large container box (forge-orange dashed border) -->
+  <rect x="80" y="414" width="820" height="290" rx="16" fill="#161618" stroke="#ff9500" stroke-width="2" stroke-dasharray="8 4"/>
+
+  <!-- Top edge port pills (straddling container border) -->
+  <rect x="406" y="402" width="56" height="24" rx="12" fill="url(#forgeGradient)"/>
+  <text x="434" y="418" text-anchor="middle" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="12" font-weight="700" fill="#0c0c0d">:8080</text>
+
+  <rect x="662" y="402" width="56" height="24" rx="12" fill="url(#forgeGradient)"/>
+  <text x="690" y="418" text-anchor="middle" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="12" font-weight="700" fill="#0c0c0d">:5001</text>
+
+  <!-- Container title -->
+  <text x="110" y="462" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="22" font-weight="700" fill="#ffffff">anvil:local</text>
+
+  <!-- Badge row -->
+  <rect x="110" y="474" width="170" height="22" rx="11" fill="#2c2c2e"/>
+  <text x="120" y="489" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11" fill="#ebebf5" opacity="0.78">USER anvil (uid 1000)</text>
+
+  <rect x="290" y="474" width="176" height="22" rx="11" fill="#2c2c2e"/>
+  <text x="300" y="489" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11" fill="#ebebf5" opacity="0.78">WORKDIR /workspace</text>
+
+  <!-- Process block inside container -->
+  <rect x="110" y="514" width="760" height="88" rx="10" fill="#1c1c1e" stroke="#38383a" stroke-width="1"/>
+  <text x="135" y="548" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="18" font-weight="700" fill="#ffffff">anvil process</text>
+  <text x="135" y="574" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="13" fill="#ebebf5" opacity="0.78">uvicorn + FastAPI · supervises in-process MLflow</text>
+  <text x="135" y="592" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="11" font-style="italic" fill="#ebebf5" opacity="0.55">EXPOSE 8080 5001 · CMD [&quot;anvil&quot;]</text>
+
+  <!-- Healthcheck badge inside container -->
+  <rect x="110" y="626" width="350" height="28" rx="14" fill="#2c2c2e"/>
+  <!-- Green check circle -->
+  <circle cx="130" cy="640" r="7" fill="#34c759"/>
+  <path d="M127 640l2 2 4-4" stroke="#0c0c0d" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="148" y="644" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="12" fill="#ebebf5" opacity="0.78">healthcheck · GET /v1/health · every 10s</text>
+
+  <!-- ================================================================== -->
+  <!-- NAMED VOLUME CYLINDER (right side)                                 -->
+  <!-- ================================================================== -->
+
+  <!-- Volume cylinder body -->
+  <path d="M 990 440 L 990 640 Q 1080 656 1170 640 L 1170 440 Z" fill="#1c1c1e" stroke="#38383a" stroke-width="1"/>
+  <!-- Volume cylinder top ellipse -->
+  <ellipse cx="1080" cy="440" rx="90" ry="14" fill="#1c1c1e" stroke="#38383a" stroke-width="1"/>
+  <!-- Volume cylinder bottom ellipse -->
+  <ellipse cx="1080" cy="640" rx="90" ry="14" fill="#1c1c1e" stroke="#38383a" stroke-width="1"/>
+
+  <!-- Volume label -->
+  <text x="1080" y="490" text-anchor="middle" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="16" font-weight="700" fill="#ffffff">anvil-workspace</text>
+  <text x="1080" y="510" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="12" fill="#ebebf5" opacity="0.7">named volume</text>
+
+  <text x="1080" y="552" text-anchor="middle" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" fill="#ebebf5" opacity="0.78">data/</text>
+  <text x="1080" y="576" text-anchor="middle" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" fill="#ebebf5" opacity="0.78">logs/</text>
+  <text x="1080" y="600" text-anchor="middle" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" fill="#ebebf5" opacity="0.78">mlruns/</text>
+
+  <!-- Connection: Container → Volume (arrow pointing right) -->
+  <line x1="900" y1="560" x2="979" y2="560" stroke="#ff9500" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="941" y="549" text-anchor="middle" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11" font-weight="600" fill="#ff9500" opacity="0.9">mount → /workspace</text>
+
+</svg>

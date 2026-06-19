@@ -308,6 +308,42 @@ When no GPU is detected, anvil runs on CPU.
 
 <p align="center"><img src="docs/assets/divider.svg" alt="" width="100%"></p>
 
+## 🐳 Running in Docker
+
+anvil ships a **multi-stage** image that genuinely exercises `pip install anvil` — the runtime stage installs only the built wheel, with **no source tree** present.
+
+<p align="center">
+  <img src="docs/assets/docker.svg" alt="Docker runtime: multi-stage build (builder → runtime image) and the running anvil container with port mappings, named volume, and healthcheck" width="100%">
+</p>
+
+<br>
+
+```bash
+make compose-up     # build the image from the wheel, start the stack, wait for health
+open http://localhost:8080
+make compose-down   # stop the stack (keeps the workspace volume)
+make compose-reset  # stop + wipe the workspace volume (fresh first run next time)
+```
+
+Or with the raw tooling:
+
+```bash
+docker build --target runtime -t anvil .
+docker run -p 8080:8080 -p 5001:5001 -v anvil-workspace:/workspace anvil
+```
+
+**How the container runs:**
+
+- **Build** — Stage 1 (`builder`) uses `uv build --wheel` to produce `anvil-*.whl`; Stage 2 (`runtime`) `pip install`s that wheel into a clean `python:3.11-slim` image and runs as a **non-root** user (`anvil`, uid 1000).
+- **Process** — `CMD ["anvil"]` launches the same uvicorn + FastAPI server (which supervises the in-process MLflow server) described in [Runtime topology](#runtime-topology).
+- **Ports** — the container exposes **`8080`** (web) and **`5001`** (MLflow); compose maps both to the host.
+- **Persistence** — a named volume **`anvil-workspace`** is mounted at **`/workspace`**, so `data/`, `logs/`, and `mlruns/` survive restarts. `make compose-reset` removes it for a clean slate.
+- **Health** — compose polls `GET /v1/health` every 10s (30s start period, 6 retries); `make compose-up --wait` blocks until the container reports healthy.
+
+<br>
+
+<p align="center"><img src="docs/assets/divider.svg" alt="" width="100%"></p>
+
 ## 📋 Prerequisites
 
 | Requirement | Notes |
