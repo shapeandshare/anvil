@@ -4,6 +4,7 @@ include shared/server.mk
 include shared/testing.mk
 include shared/cli.mk
 include shared/database.mk
+include shared/vault.mk
 
 ## Convenience aliases
 

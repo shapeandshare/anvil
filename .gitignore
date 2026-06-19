@@ -46,3 +46,6 @@ test-results/
 
 # Alembic
 migrations/versions/*.pyc
+
+# Vault audit reports (auto-generated)
+docs/vault/_meta/audit/
