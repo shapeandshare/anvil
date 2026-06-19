@@ -9,7 +9,7 @@ from sqlalchemy import DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 if TYPE_CHECKING:
-    from .corpus import Corpus
+    from .corpus import Corpus  # TYPE_CHECKING-only: breaks CorpusFile<->Corpus ORM bidirectional-FK cycle
 
 from ..base import Base
 from ..timestamp_mixin import TimestampMixin

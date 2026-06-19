@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 48" width="1280" height="48">
+  <defs>
+    <!-- Hairline that fades in from both edges, brightest at center -->
+    <linearGradient id="line-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ff9500" stop-opacity="0"/>
+      <stop offset="35%" stop-color="#ff9500" stop-opacity="0.55"/>
+      <stop offset="50%" stop-color="#ffcc00" stop-opacity="0.9"/>
+      <stop offset="65%" stop-color="#ff9500" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#ff9500" stop-opacity="0"/>
+    </linearGradient>
+    <!-- Center ember glow -->
+    <radialGradient id="ember-grad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffcc00" stop-opacity="0.9"/>
+      <stop offset="60%" stop-color="#ff9500" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#ff9500" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="diamond-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ff9500"/>
+      <stop offset="100%" stop-color="#ffcc00"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Hairline -->
+  <rect x="0" y="23" width="1280" height="2" fill="url(#line-grad)"/>
+
+  <!-- Soft glow behind center mark -->
+  <ellipse cx="640" cy="24" rx="120" ry="22" fill="url(#ember-grad)"/>
+
+  <!-- Center diamond accent -->
+  <rect x="631" y="15" width="18" height="18" rx="3" transform="rotate(45 640 24)" fill="url(#diamond-grad)"/>
+
+  <!-- Flanking embers -->
+  <circle cx="592" cy="24" r="2.5" fill="#ff9500" opacity="0.75"/>
+  <circle cx="688" cy="24" r="2.5" fill="#ff9500" opacity="0.75"/>
+  <circle cx="566" cy="24" r="1.8" fill="#ffcc00" opacity="0.5"/>
+  <circle cx="714" cy="24" r="1.8" fill="#ffcc00" opacity="0.5"/>
+</svg>

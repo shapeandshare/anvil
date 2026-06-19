@@ -12,7 +12,7 @@ from ..base import Base
 from ..timestamp_mixin import TimestampMixin
 
 if TYPE_CHECKING:
-    from .corpus_file import CorpusFile
+    from .corpus_file import CorpusFile  # TYPE_CHECKING-only: breaks Corpus<->CorpusFile ORM bidirectional-FK cycle
 
 
 class Corpus(Base, TimestampMixin):

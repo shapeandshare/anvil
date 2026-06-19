@@ -1,10 +1,10 @@
 """Session-bound AnvilWorkbench — the God Class (Constitution Article VII).
 
-Wraps all DB-backed services in a session-bound ``AnvilWorkbench``.
-Every request obtains a ``workbench`` instance via the ``get_workbench``
-FastAPI dependency and accesses services as ``workbench.datasets``,
-``workbench.corpora``, etc. Services are lazily instantiated on first
-access so that unused services impose zero overhead.
+Wraps all anvil services in a single entry point.  DB-backed services
+are bound to an ``AsyncSession`` for request-scoped transactions;
+stateless services (training, tracking, inference, export) are lazy
+properties.  Obtain a workbench via the ``get_workbench`` FastAPI
+dependency for request-scoped usage.
 """
 
 from __future__ import annotations
@@ -33,24 +33,20 @@ __all__ = ["AnvilWorkbench"]
 
 
 class AnvilWorkbench:
-    """Session-bound God Class exposing all anvil DB-backed services.
-
-    Every :class:`AnvilWorkbench` is bound to a single
-    :class:`AsyncSession` — obtained from the ``get_workbench`` FastAPI
-    dependency — and provides lazy accessors for each domain service.
+    """Session-bound God Class exposing all anvil services.
 
     Parameters
     ----------
     session : AsyncSession
-        An async SQLAlchemy session, scoped to the current request (or CLI
-        command). Services created via the accessors share this session so
-        audit writes, provenance updates, etc. participate in the same
-        transaction (FR-011).
+        Async SQLAlchemy session, scoped to the current request.
+        Services created via lazy accessors share this session so
+        audit writes, provenance updates, etc. participate in the
+        same transaction.
     """
 
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
-        # Lazily-initialised service / repository references.
+        # DB-backed lazy references.
         self._training: TrainingService | None = None
         self._dataset_repo: DatasetRepository | None = None
         self._corpus_repo: CorpusRepository | None = None
@@ -60,22 +56,21 @@ class AnvilWorkbench:
         self._dataset_export: DatasetExportService | None = None
         self._demo: DemoBootstrapService | None = None
         self._store: LocalFileStore | None = None
-        # Governance services (registered by T024).
         self._audit: AuditService | None = None
         self._governance: GovernanceService | None = None
 
-    # ── High-level stateless accessors ──────────────────────────────────
+    # ── Stateless service accessors ─────────────────────────────────────
 
     @property
     def training(self) -> TrainingService:
-        """Return the stateless ``TrainingService`` (no session needed)."""
+        """Return the stateless ``TrainingService``."""
         if self._training is None:
             from .services.training.training import TrainingService
 
             self._training = TrainingService()
         return self._training
 
-    # ── Repository helpers (shared across multiple domain services) ─────
+    # ── Repository helpers ──────────────────────────────────────────────
 
     @property
     def dataset_repo(self) -> DatasetRepository:
@@ -104,7 +99,7 @@ class AnvilWorkbench:
             self._store = LocalFileStore("data/datasets")
         return self._store
 
-    # ── Domain-service accessors ────────────────────────────────────────
+    # ── DB-backed domain service accessors ──────────────────────────────
 
     @property
     def datasets(self) -> DatasetService:
