@@ -24,4 +24,5 @@ Open this vault in [Obsidian](https://obsidian.md) for graph navigation.
 | **Architecture** | [[Reference/ArchitectureOverview|Architecture & Data Flow]] · [[Reference/DualBackend|CPU vs GPU Bridge]] · [[Reference/Hyperparameters|Hyperparameter Guide]] |
 | **Training Pipeline** | [[Reference/TrainingDataFlow|Training Render Loop]] · [[Reference/MlflowIntegration|MLflow Tracking]] · [[Reference/ProgressiveWalkthroughs|train0→train5 Progression]] |
 | **Model Export** | [[Reference/SafetensorsExport|Safetensors & HF Interop]] |
+| **Infrastructure** | [[Decisions/ADR-016-auto-db-migration|ADR-016: Auto DB Schema]] · [[Sessions/2026-06-18-auto-db-schema|Auto DB Schema Session]] |
 | **Reference** | [[Reference/Glossary|Glossary]] · [[Reference/OpenQuestions|Open Questions]] |
