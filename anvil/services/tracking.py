@@ -657,6 +657,13 @@ class TrackingService:
             params = dict(run.data.params)
             metrics = dict(run.data.metrics)
 
+            # Skip lifecycle event runs (dataset-*, corpus-*) which have
+            # engine_backend='dataset' or 'corpus' — they are internal
+            # metadata, not user-facing training experiments.
+            engine_backend = params.get("engine_backend", "")
+            if engine_backend in ("dataset", "corpus"):
+                continue
+
             # Parse anvil.experiment_id tag (may be missing for very old runs)
             exp_id_str = tags.get("anvil.experiment_id", "")
             try:
@@ -664,13 +671,15 @@ class TrackingService:
             except (ValueError, TypeError):
                 exp_id = None
 
+            # Normalize MLflow status to lowercase for frontend consistency
+            raw_status = (run.info.status or "RUNNING").lower()
             result.append({
                 "id": exp_id,
-                "status": run.info.status or "RUNNING",
+                "status": raw_status,
                 "run_name": run.data.tags.get("mlflow.runName", "") or "",
                 "final_loss": metrics.get("final_loss"),
                 "mlflow_run_id": run.info.run_id,
-                "dataset_name": tags.get("anvil.dataset.name") or params.get("dataset_id"),
+                "dataset_name": tags.get("anvil.dataset.name"),
                 "dataset_id": params.get("dataset_id"),
                 "corpus_id": params.get("corpus_id"),
                 "input_digest": tags.get("anvil.input_digest"),
@@ -722,9 +731,10 @@ class TrackingService:
         params = dict(run.data.params)
         metrics = dict(run.data.metrics)
 
+        raw_status = (run.info.status or "RUNNING").lower()
         return {
             "id": experiment_id,
-            "status": run.info.status or "RUNNING",
+            "status": raw_status,
             "run_name": run.data.tags.get("mlflow.runName", "") or "",
             "final_loss": metrics.get("final_loss"),
             "config_id": None,
