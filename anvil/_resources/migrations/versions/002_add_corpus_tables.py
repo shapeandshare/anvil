@@ -5,8 +5,8 @@ down_revision = "001"
 branch_labels = None
 depends_on = None
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 
 def upgrade():
@@ -24,15 +24,9 @@ def upgrade():
             nullable=False,
             server_default="windowed",
         ),
-        sa.Column(
-            "chunk_overlap", sa.Float(), nullable=False, server_default="0.5"
-        ),
-        sa.Column(
-            "file_count", sa.Integer(), nullable=False, server_default="0"
-        ),
-        sa.Column(
-            "document_count", sa.Integer(), nullable=False, server_default="0"
-        ),
+        sa.Column("chunk_overlap", sa.Float(), nullable=False, server_default="0.5"),
+        sa.Column("file_count", sa.Integer(), nullable=False, server_default="0"),
+        sa.Column("document_count", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("language_map", sa.Text(), nullable=True),
         sa.Column(
             "created_at",
@@ -52,7 +46,10 @@ def upgrade():
         "corpus_files",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column(
-            "corpus_id", sa.Integer(), sa.ForeignKey("corpora.id", ondelete="CASCADE"), nullable=False
+            "corpus_id",
+            sa.Integer(),
+            sa.ForeignKey("corpora.id", ondelete="CASCADE"),
+            nullable=False,
         ),
         sa.Column("relative_path", sa.String(1000), nullable=False),
         sa.Column("language", sa.String(50), nullable=True),

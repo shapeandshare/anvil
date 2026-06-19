@@ -1,7 +1,5 @@
 """Rev 009: Add errors column to corpora table for persisting ingest warnings."""
 
-from __future__ import annotations
-
 from collections.abc import Sequence
 
 import sqlalchemy as sa

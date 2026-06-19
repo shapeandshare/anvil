@@ -5,8 +5,6 @@ an experiment runs on, plus the remote job identifier for out-of-process
 execution.
 """
 
-from __future__ import annotations
-
 import sqlalchemy as sa
 from alembic import op
 

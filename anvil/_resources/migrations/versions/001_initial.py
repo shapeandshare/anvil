@@ -5,8 +5,8 @@ down_revision = None
 branch_labels = None
 depends_on = None
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 
 def upgrade():
@@ -20,8 +20,12 @@ def upgrade():
         sa.Column("vocabulary_size", sa.Integer(), nullable=True),
         sa.Column("document_count", sa.Integer(), nullable=True),
         sa.Column("is_default", sa.Boolean(), nullable=False, server_default="0"),
-        sa.Column("created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
@@ -38,9 +42,15 @@ def upgrade():
         sa.Column("beta2", sa.Float(), nullable=False, server_default="0.99"),
         sa.Column("temperature", sa.Float(), nullable=False, server_default="0.5"),
         sa.Column("use_gpu", sa.Boolean(), nullable=False, server_default="0"),
-        sa.Column("dataset_id", sa.Integer(), sa.ForeignKey("datasets.id"), nullable=True),
-        sa.Column("created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "dataset_id", sa.Integer(), sa.ForeignKey("datasets.id"), nullable=True
+        ),
+        sa.Column(
+            "created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
@@ -48,15 +58,26 @@ def upgrade():
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("mlflow_run_id", sa.String(255), nullable=True, unique=True),
         sa.Column("status", sa.String(20), nullable=False, server_default="pending"),
-        sa.Column("config_id", sa.Integer(), sa.ForeignKey("training_configs.id"), nullable=False),
-        sa.Column("dataset_id", sa.Integer(), sa.ForeignKey("datasets.id"), nullable=True),
+        sa.Column(
+            "config_id",
+            sa.Integer(),
+            sa.ForeignKey("training_configs.id"),
+            nullable=False,
+        ),
+        sa.Column(
+            "dataset_id", sa.Integer(), sa.ForeignKey("datasets.id"), nullable=True
+        ),
         sa.Column("final_loss", sa.Float(), nullable=True),
         sa.Column("started_at", sa.DateTime(), nullable=True),
         sa.Column("completed_at", sa.DateTime(), nullable=True),
         sa.Column("generated_samples", sa.Text(), nullable=True),
         sa.Column("error_message", sa.String(), nullable=True),
-        sa.Column("created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
 
