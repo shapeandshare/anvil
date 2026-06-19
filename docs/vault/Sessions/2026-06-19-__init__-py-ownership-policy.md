@@ -68,7 +68,7 @@ developer confusion, and inconsistency. Filed as [[Decisions/ADR-021-init-py-own
 |----------|-------------|
 | [[Sessions/2026-06-19-init-py-enforcement-audit]] | Added **SUPERSEDED** callout + post-hoc note explaining files were recreated |
 | [[Sessions/2026-06-19-init-import-ban-enforcement]] | Added post-hoc note confirming import ban still valid |
-| [[Decisions/010-numpy-docstring-enforcement]] | Updated stale reference to old `__init__.py` prohibition |
+| [[Decisions/ADR-025-numpy-docstring-enforcement]] | Updated stale reference to old `__init__.py` prohibition |
 | `docs/user-requirements.md` | Updated `__init__.py` policy statements |
 
 ### 7. All diagnostics pass
@@ -98,7 +98,7 @@ Modified:
   .specify/memory/constitution.md
   docs/vault/Sessions/2026-06-19-init-py-enforcement-audit.md
   docs/vault/Sessions/2026-06-19-init-import-ban-enforcement.md
-  docs/vault/Decisions/010-numpy-docstring-enforcement.md
+  docs/vault/Decisions/ADR-025-numpy-docstring-enforcement.md
   docs/user-requirements.md
 ```
 

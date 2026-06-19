@@ -159,7 +159,7 @@ Either way, **document the chosen pattern with a concrete "how to add a service"
 ## 🟡 Medium-Priority Findings
 
 ### 7. Colliding / duplicate ADR numbers
-The harness inventory shows multiple ADRs sharing numbers: two **ADR-008** (`automated-semver-release` and `data-page-tabbed-layout`), two **ADR-016** (`auto-db-migration` and `mlflow-primary-lineage`), and a stray `010-numpy-docstring-enforcement.md` outside the `ADR-###` pattern. Duplicate identifiers break the "single decision per number" contract and make wikilinks/citations ambiguous.
+Three ADR numbers collide (verified): **008** (`ADR-008-automated-semver-release` + `ADR-023-data-page-tabbed-layout`), **010** (`ADR-010-disable-local-mlflow-server` + `ADR-025-numpy-docstring-enforcement`), and **016** (`ADR-024-auto-db-migration` + `ADR-016-mlflow-primary-lineage`). These were resolved by renumbering the later duplicates to ADR-023, ADR-025, and ADR-024 respectively. Duplicate identifiers break the "single decision per number" contract and make wikilinks/citations ambiguous.
 **Recommendation**: Renumber to unique sequential IDs; add an ADR-number-uniqueness check to `vault_audit.py`.
 
 ### 8. The vault has no human-facing index of decisions

@@ -73,25 +73,31 @@ anvil/          # Python package (implicit namespace)
 7. **Relative Imports Only** — Never use absolute `anvil.` prefixed imports from within the `anvil/` package itself. Every internal import must use relative paths (`from .module import X`, `from ..parent.module import Y`). This includes lazy imports inside function bodies. Absolute `anvil.X` imports are valid only from code outside the package (`tests/`, `examples/`). This rule is enforced at merge review — violating imports are reject-worthy.
 8. **Domain-Driven Package Decomposition** — Package boundaries follow domain (bounded context) boundaries. When a package reaches 12+ peer `.py` modules, evaluate whether it mixes multiple domains and split accordingly. Result/error/value types tightly coupled to one service co-locate in that service's domain sub-package — they do NOT live at the parent level. See Constitution Article X for full rules.
 9. **Async Throughout** — Web, DB, storage layers are async. Core engine is sync (exception).
-10. **Forward References via PEP 563** — Never use string-literal forward references (`"MyClass"`) in type annotations. Instead, add `from __future__ import annotations` (PEP 563) at the top of the file, which defers all annotation evaluation to strings automatically. When a forward-referenced name is defined in another module (cross-module), pair PEP 563 with `TYPE_CHECKING` imports: guard the import under `if TYPE_CHECKING:` so it's only visible to the type checker. This avoids circular import issues at runtime while keeping annotations clean.
+10. **Forward References via PEP 563** — Never use string-literal forward references (`"MyClass"`) in type annotations. Instead, add `from __future__ import annotations` (PEP 563) at the top of the file, which defers all annotation evaluation to strings automatically. For cross-module type references, default to a normal top-level import (the project's layered architecture should resolve cross-module dependencies without cycles). Use `TYPE_CHECKING`-guarded imports ONLY to break a genuine runtime circular import that cannot be resolved without violating another rule — the most common case is a bidirectional SQLAlchemy ORM relationship. See Constitution Additional Constraints for the full exception discipline, including the four conditions (annotations marker, genuine cycle, annotation-only usage, one-line cycle comment). A script (`scripts/ci/check_guarded_imports.py`) enforces that guarded symbols stay annotation-only.
 
-   Correct:
+   Permitted (genuine unavoidable cycle):
    ```python
    from __future__ import annotations
    from typing import TYPE_CHECKING
 
    if TYPE_CHECKING:
-       from .other_module import OtherClass
+       from .other_module import OtherClass  # TYPE_CHECKING-only: breaks cycle
 
    class MyClass:
        def get(self) -> OtherClass:  # no quotes needed
            ...
    ```
 
-   Incorrect:
+   Incorrect — add a normal top-level import instead (no cycle):
    ```python
+   from __future__ import annotations
+   from typing import TYPE_CHECKING
+
+   if TYPE_CHECKING:
+       from .other_module import OtherClass  # REMOVE — only needed if genuine cycle
+
    class MyClass:
-       def get(self) -> "OtherClass":  # string literal — DO NOT USE
+       def get(self) -> OtherClass:
            ...
    ```
 
@@ -104,6 +110,7 @@ anvil/          # Python package (implicit namespace)
     - Enums may share a file with their primary class per the one-class-per-file exception (see Constitution Article X). Standalone enums get their own file named `<thing>.py` (e.g., `compute_status.py`).
     - Enum values are the single source of truth — never duplicate the string literal elsewhere. Import and use the enum member.
     - When a function or method accepts an enum value, type the parameter with the enum class, not `str`.
+    - At boundaries (DB reads, API input, config files) where callers pass raw strings, the boundary method should accept ``str | MyEnum`` and convert via ``isinstance(x, str): x = MyEnum(x)``. Internal methods stay strictly typed with the enum.
 
     Correct:
     ```python
@@ -123,6 +130,22 @@ anvil/          # Python package (implicit namespace)
     def chunk(corpus: str, strategy: str) -> list[str]:
         if strategy not in ("line", "windowed", "file"):
             ...
+    ```
+
+    Boundary pattern (DB field → service method):
+    ```python
+    # At the boundary: accept either and convert
+    def ingest(
+        chunking_strategy: ChunkingStrategy | str = ChunkingStrategy.WINDOWED,
+    ) -> None:
+        if isinstance(chunking_strategy, str):
+            chunking_strategy = ChunkingStrategy(chunking_strategy)
+        # Now chunking_strategy is strictly ChunkingStrategy
+        _do_chunk(chunking_strategy)
+
+    # Internal: strictly typed
+    def _do_chunk(strategy: ChunkingStrategy) -> None:
+        ...
     ```
 
 ## Vault Enrichment Protocol
@@ -259,6 +282,8 @@ SomeException
 - Python 3.11+ (`requires-python = ">=3.11"`) + setuptools (build backend), `build`/`uv build` (wheel build), FastAPI, SQLAlchemy[asyncio], Alembic, MLflow (in-process), Jinja2 — all existing. No new runtime deps. New dev-only: `build` (or reuse `uv build`), `pytest` + `httpx` (existing) for system tests. (009-pip-installable-package)
 - SQLite via async SQLAlchemy (`data/anvil-state.db`); MLflow SQLite (`mlruns/mlflow.db`); demo/seed files bundled in package, imported into DB on first run. (009-pip-installable-package)
 - `anvil/services/` decomposed into domain sub-packages: `datasets/`, `training/`, `tracking/`, `inference/`, `demo/`, `_shared/`. 29 flat modules → 6 domain directories. (012-ddd-services-restructure)
+- Python 3.11+ (helper scripts, refactors); YAML (GitHub Actions); Markdown (governance/docs); POSIX sh + GNU make (gate orchestration, existing `shared/*.mk`) + Existing dev tooling only — `ruff`, `black`, `isort`, `pylint`, `mypy` (strict), `pytest` + `pytest-cov`, `commitizen`, `uv`; GitHub Actions (`actions/checkout@v4`, `astral-sh/setup-uv` or `actions/setup-python@v5`); existing `scripts/ci/vault_audit.py` + `graph_health/`. **No new runtime or dev dependency is required.** (013-dx-harness-hardening)
+- N/A — no new persistence. (Coverage baseline stored as a config value in `pyproject.toml`; gate config stored in workflow YAML.) (013-dx-harness-hardening)
 
 ## Recent Changes
 - 002-directory-corpus-ingestion: Added Python 3.11+ + Existing project deps (FastAPI, SQLAlchemy, aiofiles) + `pathspec` (lightweight gitignore pattern matching, pure Python, no binary deps)

@@ -69,5 +69,5 @@ Replaced the `Base.metadata.create_all` approach in the FastAPI lifespan with a 
 
 ## Vault Enrichment
 
-- [[Decisions/ADR-016-auto-db-migration|ADR-016: Auto Database Schema Migration]]
+- [[Decisions/ADR-024-auto-db-migration|ADR-024: Auto Database Schema Migration]]
 - This session log

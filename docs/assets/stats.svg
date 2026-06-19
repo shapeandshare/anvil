@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 200" width="1280" height="200">
+  <defs>
+    <linearGradient id="forge-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ff9500"/>
+      <stop offset="100%" stop-color="#ffcc00"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Dark rounded panel -->
+  <rect x="0" y="0" width="1280" height="200" rx="24" fill="#0c0c0d"/>
+
+  <!-- Column 1: "0" — pip deps in core engine -->
+  <text x="128" y="105" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="64" font-weight="800" fill="url(#forge-grad)" text-anchor="middle">0</text>
+  <text x="128" y="140" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="16" fill="#ebebf5" fill-opacity="0.8" text-anchor="middle">pip deps in core engine</text>
+
+  <!-- Column 2: "8" — web UI pages -->
+  <text x="384" y="105" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="64" font-weight="800" fill="url(#forge-grad)" text-anchor="middle">8</text>
+  <text x="384" y="140" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="16" fill="#ebebf5" fill-opacity="0.8" text-anchor="middle">web UI pages</text>
+
+  <!-- Column 3: "100%" — typed · mypy strict -->
+  <text x="640" y="105" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="64" font-weight="800" fill="url(#forge-grad)" text-anchor="middle">100%</text>
+  <text x="640" y="140" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="16" fill="#ebebf5" fill-opacity="0.8" text-anchor="middle">typed · mypy strict</text>
+
+  <!-- Column 4: "3" — Llama primitives (RoPE · SwiGLU · RMSNorm) — split to 2 lines -->
+  <text x="896" y="105" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="64" font-weight="800" fill="url(#forge-grad)" text-anchor="middle">3</text>
+  <text x="896" y="140" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="16" fill="#ebebf5" fill-opacity="0.8" text-anchor="middle">Llama primitives</text>
+  <text x="896" y="160" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="16" fill="#ebebf5" fill-opacity="0.8" text-anchor="middle">(RoPE · SwiGLU · RMSNorm)</text>
+
+  <!-- Column 5: "MIT" — open source license -->
+  <text x="1152" y="105" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="64" font-weight="800" fill="url(#forge-grad)" text-anchor="middle">MIT</text>
+  <text x="1152" y="140" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="16" fill="#ebebf5" fill-opacity="0.8" text-anchor="middle">open source license</text>
+
+  <!-- Vertical dividers between columns -->
+  <line x1="256" y1="55" x2="256" y2="145" stroke="#38383a" stroke-width="1"/>
+  <line x1="512" y1="55" x2="512" y2="145" stroke="#38383a" stroke-width="1"/>
+  <line x1="768" y1="55" x2="768" y2="145" stroke="#38383a" stroke-width="1"/>
+  <line x1="1024" y1="55" x2="1024" y2="145" stroke="#38383a" stroke-width="1"/>
+</svg>

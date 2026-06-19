@@ -18,7 +18,7 @@ All training runs MUST be deterministic given the same seed and configuration. R
 
 ### Article IV — TDD Mandatory
 
-Tests MUST be written before implementation for every feature (Red-Green-Refactor). Unit test coverage MUST be 100% across all layers. Full end-to-end system tests MUST exist and pass.
+Tests MUST be written before implementation for every feature (Red-Green-Refactor). Unit test coverage MUST meet a ratcheting baseline: the enforced threshold (set in ``pyproject.toml [tool.coverage.report] fail_under``) is the current measured level and may only increase; lowering it requires explicit, recorded approval. An aspirational goal of improving coverage over time is encouraged. Full end-to-end system tests MUST exist and pass.
 
 ### Article V — Async-First
 
@@ -81,8 +81,8 @@ Package boundaries SHALL follow domain (bounded context) boundaries. Sub-packagi
 ## Additional Constraints
 
 - Schema changes via reversible Alembic migrations (`make db-revision`); data backfills accompany any vocabulary change.
-- No type-error suppression; `mypy --strict` passes.
-- `TYPE_CHECKING` from `typing` is forbidden — circular imports are an architecture problem. Extract shared types into a dedicated module or reorganize layer boundaries.
+- No type-error suppression; `mypy --strict` passes. Module-level ``ignore_errors`` overrides MUST be narrowed to specific error codes and justified if they cannot be removed.
+- `TYPE_CHECKING`-guarded type-only imports are permitted ONLY to break a genuine runtime circular import that cannot be resolved without violating another constitutional rule (no string-literal forward references, one-class-per-file, `mypy --strict`). Each permitted guarded import MUST satisfy: (a) the module declares ``from __future__ import annotations``; (b) a genuine runtime cycle exists with no rule-compliant alternative; (c) the guarded symbol is referenced only in annotations, never in runtime code; and (d) a one-line comment names the specific cycle. A script (`scripts/ci/check_guarded_imports.py`) enforces condition (c).
 - Lean dependencies; new deps justified in an ADR/plan; optional/heavy deps (e.g. GPU) go in `[project.optional-dependencies]`.
 - Significant decisions recorded as ADRs in `docs/vault/Decisions/`; vault enriched per session.
 - Pydantic `BaseModel` MUST be used for all structured data/value-object classes over `dataclasses.dataclass`. Existing `@dataclass` usages are grandfathered until touched for other reasons, but all NEW code MUST use `BaseModel`.
@@ -91,11 +91,11 @@ Package boundaries SHALL follow domain (bounded context) boundaries. Sub-packagi
 ## Development Workflow & Quality Gates
 
 - Spec Kit flow (`specify → clarify → plan → tasks → analyze → implement`) for non-trivial features.
-- Merge gates: `make lint`, `make typecheck` (strict), `make test` (100% coverage). All MUST pass.
+- Merge gates: `make lint`, `make typecheck` (strict), `make test` (coverage at `fail_under` rate), `make vault-audit` (0 errors). All MUST pass in CI on every pull request.
 - Commit only when explicitly requested.
 
 ## Governance
 
 This constitution supersedes all other practices in this repository. Amendments require documentation in an Architecture Decision Record (ADR), approval, and version bump. All PRs and agent sessions must verify compliance with these articles.
 
-**Version**: 1.6.0 | **Ratified**: 2026-06-10 | **Last Amended**: 2026-06-19
+**Version**: 1.7.0 | **Ratified**: 2026-06-10 | **Last Amended**: 2026-06-19

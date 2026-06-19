@@ -43,7 +43,7 @@ Enforced NumPy-style docstrings across the entire anvil codebase (~100 Python so
 - Post-processing: fixed 20 missing docstring violations (router page routes, demo model providers), ignored minor D205/D401 formatting issues.
 
 ### Vault
-- Written: ADR-010 (numpy-docstring-enforcement)
+- Written: ADR-025 (numpy-docstring-enforcement, renumbered from 010-prefix)
 - Written: Discovery note (core-file-docstring-revert)
 - Written: This session log
 
