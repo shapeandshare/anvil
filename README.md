@@ -88,6 +88,8 @@ make test-system   # build → container → system tests → teardown
 
 <br>
 
+<p align="center"><img src="docs/assets/divider.svg" alt="" width="100%"></p>
+
 ## 🎯 Features
 
 <p align="center">
@@ -198,6 +200,8 @@ anvil/                         # Python package (implicit namespace)
 
 <br>
 
+<p align="center"><img src="docs/assets/divider.svg" alt="" width="100%"></p>
+
 ## 🎛️ Hyperparameter Guide
 
 <p align="center">
@@ -217,6 +221,8 @@ anvil/                         # Python package (implicit namespace)
 
 <br>
 
+<p align="center"><img src="docs/assets/divider.svg" alt="" width="100%"></p>
+
 ## ⚙️ Configuration
 
 | Variable | Default | Description |
@@ -232,6 +238,8 @@ anvil/                         # Python package (implicit namespace)
 > Copy `.env.example` to `.env` to customize.
 
 <br>
+
+<p align="center"><img src="docs/assets/divider.svg" alt="" width="100%"></p>
 
 ## 🗺️ Web UI Routes
 
@@ -254,6 +262,8 @@ anvil/                         # Python package (implicit namespace)
 
 <br>
 
+<p align="center"><img src="docs/assets/divider.svg" alt="" width="100%"></p>
+
 ## 💻 Platform Support
 
 anvil is developed and exercised on **macOS** and **Linux**. The dev workflow relies on `make` and `bash`, so a POSIX shell is required.
@@ -275,6 +285,8 @@ When no GPU is detected, anvil runs on CPU.
 
 <br>
 
+<p align="center"><img src="docs/assets/divider.svg" alt="" width="100%"></p>
+
 ## 📋 Prerequisites
 
 | Requirement | Notes |
@@ -287,6 +299,8 @@ When no GPU is detected, anvil runs on CPU.
 | **NVIDIA driver + `nvidia-smi`** *(optional)* | Linux only — required for CUDA GPU acceleration & auto-detection |
 
 <br>
+
+<p align="center"><img src="docs/assets/divider.svg" alt="" width="100%"></p>
 
 ## 🛠️ Commands
 
@@ -307,6 +321,8 @@ When no GPU is detected, anvil runs on CPU.
 
 <br>
 
+<p align="center"><img src="docs/assets/divider.svg" alt="" width="100%"></p>
+
 ## 🩺 Troubleshooting
 
 | Problem | Likely cause | Fix |
@@ -320,6 +336,8 @@ When no GPU is detected, anvil runs on CPU.
 
 <br>
 
+<p align="center"><img src="docs/assets/divider.svg" alt="" width="100%"></p>
+
 ## License
 
 Released under the **MIT License**.
@@ -327,5 +345,5 @@ Released under the **MIT License**.
 <br>
 
 <p align="center">
-  <sub>Built with 🔨 by <a href="https://github.com/shapeandshare">shapeandshare</a> · <em>Forging intelligence.</em></sub>
+  <sub>Built with 🔨 by <a href="https://github.com/joshburt">Josh Burt</a> · <em>Forging intelligence.</em></sub>
 </p>
