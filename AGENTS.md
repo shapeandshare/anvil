@@ -1,6 +1,6 @@
 # anvil — Agent Guidelines
 
-**Last updated**: 2026-06-18
+**Last updated**: 2026-06-19 (010-numpy-docstrings)
 
 ## Project Overview
 
@@ -40,8 +40,18 @@ The design system is implemented via CSS custom properties in `anvil/api/static/
 anvil/          # Python package (implicit namespace)
 ├── core/          # Stdlib-only training engine
 ├── db/            # async SQLAlchemy + repositories
-├── services/      # Business logic
+│   ├── models/        # ORM models (domain sub-package)
+│   └── repositories/  # Repository pattern (domain sub-package)
+├── services/      # Business logic — decomposed into domain sub-packages
+│   ├── compute/       # Compute backend abstraction
+│   ├── chunking/      # Text chunking strategies
+│   ├── training/      # Training orchestration, export, memory estimation
+│   ├── datasets/      # Corpora, datasets, import, curation, export
+│   ├── inference/     # Inference, loaded model, demo provider
+│   ├── tracking/      # MLflow experiment tracking, metrics
+│   └── _shared/       # Cross-domain types (internal, underscore-prefixed)
 ├── api/           # FastAPI + Jinja2 + SSE
+│   └── v1/           # API v1 route definitions (domain sub-package)
 ├── storage/       # FileStore abstraction
 └── supervisor/    # Process manager
 ```
@@ -53,9 +63,36 @@ anvil/          # Python package (implicit namespace)
 3. **Vault Enrichment** — Record discoveries in `docs/vault/` during sessions. Enrich vault at session end.
 4. **ADR for Decisions** — Every significant architecture decision gets an ADR in `docs/vault/Decisions/`.
 5. **Layer Discipline** — Repositories access DB only. Services consume repositories. God class exposes services. Routes call god class. No shortcuts.
-6. **Implicit Namespace** — No `__init__.py` except for public API exports. All internal imports relative. Never `import` from `__init__.py` within the package itself — it violates the implicit namespace contract and creates brittle wiring.
-7. **Async Throughout** — Web, DB, storage layers are async. Core engine is sync (exception).
-8. **No Circular Imports** — Restructure modules architecturally if circular deps appear. `TYPE_CHECKING` from `typing` is forbidden — circular imports are an architecture problem, not a typing problem. Extract shared types into a dedicated module or reorganize the layer boundaries.
+6. **`__init__.py` Ownership Policy** — This is an implicit namespace package codebase. The `anvil/` package root has `anvil/__init__.py` to expose the public API (e.g., `__version__`). For every sub-directory that is a fully-owned Python package level (a directory containing `.py` modules that forms a complete, authoritative part of the `anvil.*` namespace), a **bare `__init__.py`** MUST exist to assert ownership and designate it as a regular package. This means:
+   - Authoritative levels (fully owned by the `anvil` project) get a bare `__init__.py` — a docstring-only file describing the package's purpose. No re-exports, no imports.
+   - Data-only directories (`static/`, `templates/`, `data/`, `_resources/`, and similar non-Python-package directories) MUST NOT have `__init__.py`.
+   - All internal imports MUST continue to use direct module paths: `from .module import X`, not `from . import X` where `X` is a re-export.
+   - No `__init__.py` may re-export symbols for internal consumption.
+   - This is enforced at merge review — adding or removing `__init__.py` at a package level requires justification that the level is (or is not) a fully-owned authoritative namespace level.
+7. **Relative Imports Only** — Never use absolute `anvil.` prefixed imports from within the `anvil/` package itself. Every internal import must use relative paths (`from .module import X`, `from ..parent.module import Y`). This includes lazy imports inside function bodies. Absolute `anvil.X` imports are valid only from code outside the package (`tests/`, `examples/`). This rule is enforced at merge review — violating imports are reject-worthy.
+8. **Domain-Driven Package Decomposition** — Package boundaries follow domain (bounded context) boundaries. When a package reaches 12+ peer `.py` modules, evaluate whether it mixes multiple domains and split accordingly. Result/error/value types tightly coupled to one service co-locate in that service's domain sub-package — they do NOT live at the parent level. See Constitution Article X for full rules.
+9. **Async Throughout** — Web, DB, storage layers are async. Core engine is sync (exception).
+10. **Forward References via PEP 563** — Never use string-literal forward references (`"MyClass"`) in type annotations. Instead, add `from __future__ import annotations` (PEP 563) at the top of the file, which defers all annotation evaluation to strings automatically. When a forward-referenced name is defined in another module (cross-module), pair PEP 563 with `TYPE_CHECKING` imports: guard the import under `if TYPE_CHECKING:` so it's only visible to the type checker. This avoids circular import issues at runtime while keeping annotations clean.
+
+   Correct:
+   ```python
+   from __future__ import annotations
+   from typing import TYPE_CHECKING
+
+   if TYPE_CHECKING:
+       from .other_module import OtherClass
+
+   class MyClass:
+       def get(self) -> OtherClass:  # no quotes needed
+           ...
+   ```
+
+   Incorrect:
+   ```python
+   class MyClass:
+       def get(self) -> "OtherClass":  # string literal — DO NOT USE
+           ...
+   ```
 
 ## Vault Enrichment Protocol
 
@@ -84,9 +121,82 @@ anvil/          # Python package (implicit namespace)
 - Imports at top of file by default. Lazy/conditional imports allowed ONLY for runtime capability detection (e.g. platform-specific GPU support, optional dependency probing) — reviewed case by case
 - One class per file. Classes for all logic (no loose functions)
 - Favor Pydantic `BaseModel` over `dataclasses.dataclass`
-- `mypy --strict` enforced. No type-error suppression (`# type: ignore`, `cast()`, `Any` abuse). Strict explicit typing on all function signatures.
+- `mypy --strict` enforced. Plus `enable_error_code = ["ignore-without-code", "possibly-undefined", "redundant-cast", "redundant-expr"]` and `warn_unused_ignores = true` in `pyproject.toml`. No type-error suppression (`# type: ignore`, `cast()`, `Any` abuse). Strict explicit typing on all function signatures.
+- **Domain-Driven Package Decomposition**: Package boundaries follow domain boundaries. Result/error/value types tightly coupled to one service co-locate in that service's domain sub-package. Cross-domain types go in `_shared/`. Domain sub-packages use plural nouns; internal sub-packages use underscore prefix. Max 2 levels of nesting. See Constitution Article X.
 
-## Active Technologies
+## Packaging Conventions
+
+### `py.typed` Marker (PEP 561)
+
+The top-level `anvil/` package MUST ship a `py.typed` marker file to declare that
+the package distributes inline PEP 484 type annotations. This enables type
+checkers (mypy, pyright, pytype) to use the annotations directly without
+generating or looking for stub files.
+
+Rules:
+- The marker is a **zero-byte file** at `anvil/py.typed`. No content.
+- It MUST be listed in `[tool.setuptools.package-data]` in `pyproject.toml`:
+  ```toml
+  [tool.setuptools.package-data]
+  anvil = [
+      "py.typed",
+      ...
+  ]
+  ```
+- A single `py.typed` at the top-level package root covers all subpackages — no
+  need to place it in sub-packages (`anvil/core/`, `anvil/db/`, etc.).
+- When adding a new distributed package under the `anvil` namespace, ensure
+  `py.typed` is included at that package's root if it lives alongside `anvil`
+  (not under it) in the distribution layout.
+
+## Docstring Convention
+
+Every module, package, class, method, function, and constant MUST have a full NumPy-style docstring. This is enforced by ruff (`[tool.ruff.lint.pydocstyle] convention = "numpy"`).
+
+### Template
+
+```python
+"""Short description on one line.
+
+Extended description with more detail about behavior, edge
+cases, side effects, and usage notes. Leave a blank line
+between the short and long description.
+
+Parameters
+----------
+param_name : type
+    Description of the parameter. Start with capital letter.
+param2 : type, optional
+    Description. Defaults to ``None``.
+
+Returns
+-------
+type
+    Description of the return value. Use ``backticks`` for
+    inline code references.
+
+Raises
+------
+SomeException
+    Description of when/why this is raised.
+"""
+```
+
+### Specifics by entity
+
+| Entity | Required sections |
+|--------|-----------------|
+| **Module** | Short description; longer description of public API if helpful |
+| **Class** | Short description; `Parameters` in `__init__` (not class docstring) |
+| **Method** | Short description; `Parameters`, `Returns` (if not None), `Raises` (if applicable) |
+| **Function** | Short description; `Parameters`, `Returns`, `Raises` (if applicable) |
+| **Constant** | Inline comment or module-level docstring section |
+| **Property** | Short description in docstring (no Parameters needed) |
+
+- One-line docstrings are acceptable ONLY for trivial properties or obvious getters.
+- If a method/function returns `None` and has no side effects worth documenting, omit `Returns`.
+- Use `` ``backticks`` `` for parameter names, types, and code references within prose.
+
 ## Active Technologies
 - Python 3.11+ + Existing project deps (FastAPI, SQLAlchemy, aiofiles) + `pathspec` (lightweight gitignore pattern matching, pure Python, no binary deps) (002-directory-corpus-ingestion)
 - SQLite via async SQLAlchemy for corpus metadata; filesystem via existing `LocalFileStore` or reference to original directory paths (002-directory-corpus-ingestion)
@@ -121,3 +231,5 @@ anvil/          # Python package (implicit namespace)
 - 002-directory-corpus-ingestion: Added Python 3.11+ + Existing project deps (FastAPI, SQLAlchemy, aiofiles) + `pathspec` (lightweight gitignore pattern matching, pure Python, no binary deps)
 - 002-model-registry-tracking: Added FastAPI, SQLAlchemy (async), MLflow, Jinja2, pytest (all existing — no new deps)
 - 005-mlflow-experiment-tracking: MLflow bumped to `>=3.1,<4`; added `nvidia-ml-py>=12,<13` in `gpu` extra; new `tracking.py`, `mlflow_inputs.py`, `mlflow_capabilities.py`, `metrics_collectors.py` services; custom MPS metrics collector (`MPSMetricsCollector`/`MPSSamplerThread`); source-keyed registry consolidation.
+- py-typed-marker: Added `anvil/py.typed` (PEP 561 typed marker) and declared it in `[tool.setuptools.package-data]` so the package advertises inline type annotations.
+- 010-numpy-docstrings: Added NumPy-style docstring convention section to AGENTS.md, enabled ruff `D` (pydocstyle) rules with `convention = "numpy"` in `pyproject.toml`, and added full NumPy-style docstrings across all modules (~100 files). New per-file ignores for `tests/`, `examples/`, `scripts/`, `anvil/_resources/migrations/` for D rules.
