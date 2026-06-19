@@ -150,7 +150,7 @@
             <select class="form-select" id="license-select" style="flex:1;min-width:200px;">
               <option value="">Select a license...</option>
               {% for license in licenses %}
-              <option value="{{ license }}">{{ license }}</option>
+              <option value="{{ license.identifier }}">{{ license.display_name }}</option>
               {% endfor %}
             </select>
           </div>
