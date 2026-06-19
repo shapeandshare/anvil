@@ -12,7 +12,7 @@
 
 <p align="center">
   <strong>Train and experiment with LLMs from scratch.</strong><br>
-  A pip-installable workbench with live training dashboards, MLflow experiment tracking, and an iOS-modern web UI.
+  A pip-installable workbench with live training dashboards, MLflow experiment tracking, and a polished, modern web UI.
 </p>
 
 <p align="center">
@@ -126,7 +126,7 @@ Manage services, monitor CPU/GPU/memory, tail logs, run health checks.
 </td>
 <td width="33%" valign="top">
 
-**📱 iOS-modern UI**<br>
+**📱 Polished modern UI**<br>
 Glass nav bars, spring animations, fluid type, and adaptive dark/light mode.
 
 </td>
