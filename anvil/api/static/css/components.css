@@ -140,6 +140,7 @@ a:hover { text-decoration: underline; }
 .hp-item .hp-value { font-family: var(--font-body); font-size: var(--text-callout); color: var(--accent); }
 .hp-item .hp-value-null { color: var(--text-tertiary); }
 
+.example-label { font-family: var(--font-body); font-size: var(--text-subhead); color: var(--text-tertiary); margin-right: var(--space-1); }
 .example-prompt { display: inline-block; font-family: var(--font-body); font-size: var(--text-subhead); padding: var(--space-1) var(--space-3); margin: var(--space-1) var(--space-1) var(--space-1) 0; background: var(--surface-2); color: var(--text-secondary); cursor: pointer; user-select: none; border-radius: var(--radius-lg); transition: background var(--dur-fast) var(--ease); }
 .example-prompt:hover { background: var(--accent); color: #fff; }
 

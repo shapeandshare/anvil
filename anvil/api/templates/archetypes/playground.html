@@ -33,11 +33,11 @@
         <div id="model-info" class="model-info-text" style="display:none;"></div>
         <div class="example-prompts">
           <span class="example-label">Try:</span>
-          <span class="example-chip" data-prompt="Hello, my name is">Hello, my name is</span>
-          <span class="example-chip" data-prompt="In the beginning">In the beginning</span>
-          <span class="example-chip" data-prompt="The meaning of life is">The meaning of life is</span>
-          <span class="example-chip" data-prompt="Once upon a time">Once upon a time</span>
-          <span class="example-chip" data-prompt="The meaning of">The meaning of</span> <span class="example-chip" data-prompt="The secret to">The secret to</span>
+          <span class="example-prompt" data-prompt="Hello, my name is">Hello, my name is</span>
+          <span class="example-prompt" data-prompt="In the beginning">In the beginning</span>
+          <span class="example-prompt" data-prompt="The meaning of life is">The meaning of life is</span>
+          <span class="example-prompt" data-prompt="Once upon a time">Once upon a time</span>
+          <span class="example-prompt" data-prompt="The meaning of">The meaning of</span> <span class="example-prompt" data-prompt="The secret to">The secret to</span>
         </div>
         <div style="margin-top:var(--space-2);display:flex;gap:var(--space-2);align-items:center;"><span class="fun-label fun-label--cool">0.1-0.3 &mdash; precise</span><span class="fun-label fun-label--warm">0.5-0.7 &mdash; creative</span><span class="fun-label fun-label--hot">1.0+ &mdash; chaos</span></div>
         <div class="inference-actions">
@@ -108,6 +108,21 @@
       updateVersionSelect();
       updateModelInfo();
       updateModelInfoCard();
+
+      /* ── URL param pre-selection ── */
+      var params = core.getUrlParams();
+      var preselectKey = params.get('model_id');
+      if (preselectKey) {
+        for (var i = 0; i < modelSelect.options.length; i++) {
+          if (modelSelect.options[i].value === preselectKey) {
+            modelSelect.value = preselectKey;
+            updateVersionSelect();
+            updateModelInfo();
+            updateModelInfoCard();
+            break;
+          }
+        }
+      }
     }).catch(function() {
       modelSelect.innerHTML = '<option value="">Failed to load models</option>';
     });
@@ -243,7 +258,7 @@
   });
 
   /* ── Example Chips ── */
-  document.querySelectorAll('.example-chip').forEach(function(chip) {
+  document.querySelectorAll('.example-prompt').forEach(function(chip) {
     chip.addEventListener('click', function() {
       seedPrompt.value = this.getAttribute('data-prompt');
     });
