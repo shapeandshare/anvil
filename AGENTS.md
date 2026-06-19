@@ -53,9 +53,9 @@ anvil/          # Python package (implicit namespace)
 3. **Vault Enrichment** — Record discoveries in `docs/vault/` during sessions. Enrich vault at session end.
 4. **ADR for Decisions** — Every significant architecture decision gets an ADR in `docs/vault/Decisions/`.
 5. **Layer Discipline** — Repositories access DB only. Services consume repositories. God class exposes services. Routes call god class. No shortcuts.
-6. **Implicit Namespace** — No `__init__.py` except for public API exports. All internal imports relative.
+6. **Implicit Namespace** — No `__init__.py` except for public API exports. All internal imports relative. Never `import` from `__init__.py` within the package itself — it violates the implicit namespace contract and creates brittle wiring.
 7. **Async Throughout** — Web, DB, storage layers are async. Core engine is sync (exception).
-8. **No Circular Imports** — Restructure modules architecturally if circular deps appear.
+8. **No Circular Imports** — Restructure modules architecturally if circular deps appear. `TYPE_CHECKING` from `typing` is forbidden — circular imports are an architecture problem, not a typing problem. Extract shared types into a dedicated module or reorganize the layer boundaries.
 
 ## Vault Enrichment Protocol
 
@@ -81,9 +81,10 @@ anvil/          # Python package (implicit namespace)
 - Core engine (`anvil/core/`) has ZERO pip dependencies
 - All file paths use relative imports within the package
 - Constants grouped together in dedicated modules
-- Imports at top of file only (no inline imports)
-- Classes for all logic (no loose functions)
-- Strict explicit typing on all function signatures
+- Imports at top of file by default. Lazy/conditional imports allowed ONLY for runtime capability detection (e.g. platform-specific GPU support, optional dependency probing) — reviewed case by case
+- One class per file. Classes for all logic (no loose functions)
+- Favor Pydantic `BaseModel` over `dataclasses.dataclass`
+- `mypy --strict` enforced. No type-error suppression (`# type: ignore`, `cast()`, `Any` abuse). Strict explicit typing on all function signatures.
 
 ## Active Technologies
 ## Active Technologies
