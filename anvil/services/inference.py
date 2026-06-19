@@ -158,6 +158,86 @@ def warmup_demo_via_system_pipeline() -> None:
                     run_id=mlflow_run_id, name="demo"
                 )
 
+            # ── Replicate dataset/corpus metadata tags that user training sets ──
+            try:
+                from anvil.db.session import AsyncSessionLocal
+                from anvil.services.demo_bootstrap import DemoBootstrapService
+
+                async with AsyncSessionLocal() as sess:
+                    bootstrap = DemoBootstrapService(sess)
+                    corpus = await bootstrap.get_default_corpus()
+                    if corpus and mlflow_run_id:
+                        await tracking_svc.set_tag(
+                            mlflow_run_id, "anvil.dataset.name", corpus.name
+                        )
+                        await tracking_svc.set_tag(
+                            mlflow_run_id,
+                            "anvil.corpus.file_count",
+                            str(corpus.file_count or 0),
+                        )
+                        await tracking_svc.set_tag(
+                            mlflow_run_id,
+                            "anvil.corpus.document_count",
+                            str(corpus.document_count or 0),
+                        )
+            except Exception:
+                pass
+
+            # ── Save to experiment-specific path for GET /experiments/{id} ──
+            MODELS_DIR = Path("data/models")
+            MODELS_DIR.mkdir(parents=True, exist_ok=True)
+            experiment_model_path = MODELS_DIR / f"experiment_{experiment_id}.json"
+            model.save(str(experiment_model_path), uchars)
+
+            # ── Run safetensors export & log artifacts to MLflow ──
+            import tempfile
+
+            from anvil.services.export import SafetensorsExportService
+
+            with tempfile.TemporaryDirectory() as tmpdir:
+                export_svc = SafetensorsExportService()
+                export_result = await asyncio.get_event_loop().run_in_executor(
+                    None, lambda: export_svc.export(model, tmpdir, uchars)
+                )
+
+                if export_result["error"]:
+                    logger.warning(
+                        "Demo safetensors export failed: %s",
+                        export_result["error"],
+                    )
+                elif mlflow_run_id and export_result.get("safetensors_path"):
+                    try:
+                        client = tracking_svc._client
+                        if client:
+                            loop = asyncio.get_event_loop()
+                            await loop.run_in_executor(
+                                None,
+                                lambda: client.log_artifact(
+                                    mlflow_run_id,
+                                    export_result["safetensors_path"],
+                                ),
+                            )
+                            if export_result.get("config_path"):
+                                await loop.run_in_executor(
+                                    None,
+                                    lambda: client.log_artifact(
+                                        mlflow_run_id,
+                                        export_result["config_path"],
+                                    ),
+                                )
+                            if export_result.get("tokenizer_path"):
+                                await loop.run_in_executor(
+                                    None,
+                                    lambda: client.log_artifact(
+                                        mlflow_run_id,
+                                        export_result["tokenizer_path"],
+                                    ),
+                                )
+                    except Exception:
+                        logger.exception(
+                            "Failed to log demo safetensors artifacts to MLflow"
+                        )
+
             # Save to demo path so it's immediately loadable by _demo_provider
             DEMO_MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
             model.save(str(DEMO_MODEL_PATH), uchars)
