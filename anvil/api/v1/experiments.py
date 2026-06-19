@@ -63,23 +63,37 @@ async def list_experiments(request: Request):
     tracking_svc = TrackingService()
     experiments = await tracking_svc.list_experiments()
 
-    # Enrich with dataset names and artifact availability
+    # Enrich with dataset/corpus names and artifact availability
     from anvil.db.session import AsyncSessionLocal
 
     async with AsyncSessionLocal() as session:
         from anvil.db.repositories.datasets import DatasetRepository
+        from anvil.db.repositories.corpora import CorpusRepository
 
         ds_repo = DatasetRepository(session)
+        corp_repo = CorpusRepository(session)
 
         for exp in experiments:
-            ds_id = exp.get("dataset_id")
-            if ds_id:
-                try:
-                    ds = await ds_repo.get(int(ds_id))
-                    if ds:
-                        exp["dataset_name"] = ds.name
-                except Exception:
-                    pass
+            # Resolve dataset name from DB if not already set via MLflow tag
+            if not exp.get("dataset_name"):
+                ds_id = exp.get("dataset_id")
+                if ds_id:
+                    try:
+                        ds = await ds_repo.get(int(ds_id))
+                        if ds:
+                            exp["dataset_name"] = ds.name
+                    except Exception:
+                        pass
+                else:
+                    # Fall back to corpus name if no dataset_id
+                    corp_id = exp.get("corpus_id")
+                    if corp_id:
+                        try:
+                            corp = await corp_repo.get(int(corp_id))
+                            if corp:
+                                exp["dataset_name"] = corp.name
+                        except Exception:
+                            pass
 
             # Check artifact availability
             exp["artifact_available"] = Path(
@@ -235,7 +249,7 @@ async def get_experiment(
     # Architecture type from safetensors config or tag
     architecture_type = tags.get("architectures")
 
-    # Dataset name lookup
+    # Dataset/corpus name lookup
     dataset_name = exp.get("dataset_name")
     if not dataset_name:
         ds_id = params.get("dataset_id")
@@ -251,6 +265,20 @@ async def get_experiment(
                         dataset_name = ds.name
             except Exception:
                 pass
+        else:
+            corp_id = params.get("corpus_id")
+            if corp_id:
+                try:
+                    from anvil.db.repositories.corpora import CorpusRepository
+                    from anvil.db.session import AsyncSessionLocal
+
+                    async with AsyncSessionLocal() as sess:
+                        corp_repo = CorpusRepository(sess)
+                        corp = await corp_repo.get(int(corp_id))
+                        if corp:
+                            dataset_name = corp.name
+                except Exception:
+                    pass
 
     return {
         "id": exp["id"],

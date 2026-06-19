@@ -3,7 +3,6 @@ import json
 import logging
 import os
 import tempfile
-from datetime import UTC
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
@@ -141,12 +140,9 @@ async def start_training(config: dict):
         device=device,
     )
 
-    from datetime import datetime
-
-    # Generate a numeric experiment_id from the current timestamp.
+    # Generate a numeric experiment_id from the run_id_seq table.
     # This is used as the anvil.experiment_id tag for MLflow lookup.
-    # Phase 3A will replace this with a proper run_id_seq table.
-    experiment_id = int(datetime.now(UTC).timestamp() * 1000)
+    experiment_id = await svc.allocate_experiment_id()
 
     # Store experiment identity as MLflow tags
     if mlflow_run_id:
@@ -189,6 +185,7 @@ async def start_training(config: dict):
                 ds_repo = DatasetRepository(sess)
                 ds = await ds_repo.get(dataset_id)
                 if ds:
+                    await tracking_svc.set_tag(mlflow_run_id, "anvil.dataset.name", ds.name)
                     await tracking_svc.set_tag(mlflow_run_id, "anvil.dataset.vocab_size", str(ds.vocabulary_size or ""))
                     await tracking_svc.set_tag(mlflow_run_id, "anvil.dataset.sample_count", str(ds.sample_count or 0))
                     await tracking_svc.set_tag(mlflow_run_id, "anvil.dataset.document_count", str(ds.document_count or 0))
@@ -202,6 +199,7 @@ async def start_training(config: dict):
                 corp_repo = CorpusRepository(sess)
                 corpus = await corp_repo.get(corpus_id)
                 if corpus:
+                    await tracking_svc.set_tag(mlflow_run_id, "anvil.dataset.name", corpus.name)
                     await tracking_svc.set_tag(mlflow_run_id, "anvil.corpus.file_count", str(corpus.file_count or 0))
                     await tracking_svc.set_tag(mlflow_run_id, "anvil.corpus.document_count", str(corpus.document_count or 0))
                     if corpus.language_map:
