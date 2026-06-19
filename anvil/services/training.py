@@ -104,6 +104,21 @@ class TrainingService:
         self._stop_events[run_id] = threading.Event()
         return run_id
 
+    async def allocate_experiment_id(self) -> int:
+        """Atomically allocate a new numeric experiment ID from run_id_seq."""
+        from anvil.db.session import AsyncSessionLocal
+        from sqlalchemy import text
+
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                text("UPDATE run_id_seq SET next_id = next_id + 1 RETURNING next_id - 1 AS allocated_id")
+            )
+            row = result.fetchone()
+            await session.commit()
+            if row:
+                return row[0]
+            return int(__import__("time").time() * 1000)  # fallback
+
     def stop_run(self, run_id: int) -> None:
         """Signal a running training to stop. Thread-safe."""
         event = self._stop_events.get(run_id)
