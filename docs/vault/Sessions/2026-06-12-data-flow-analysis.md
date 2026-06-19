@@ -1,7 +1,7 @@
 ---
 title: Data Flow Analysis Session — 2026-06-12
 type: session
-tags: [type/session, domain/core]
+tags: [type/session-log, domain/core]
 created: 2026-06-12
 updated: 2026-06-12
 ---

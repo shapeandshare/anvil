@@ -1,11 +1,15 @@
 ---
 created: '2026-06-14'
 tags:
-  - type/decision
-  - domain/mlflow
-  - domain/export
+- type/decision
+- domain/operations
+- domain/export
 title: ADR-009 — MLflow Pyfunc Model Compliance
 type: decision
+aliases:
+- ADR-009 — MLflow Pyfunc Model Compliance
+source: agent
+updated: '2026-06-18'
 ---
 # ADR-009: MLflow Pyfunc Model Compliance for Safetensors Export
 

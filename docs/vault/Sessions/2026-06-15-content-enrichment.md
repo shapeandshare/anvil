@@ -2,7 +2,7 @@
 title: Content Enrichment Session
 type: session
 tags:
-  - type/session
+  - type/session-log
   - domain/content
 created: 2026-06-15
 updated: 2026-06-15

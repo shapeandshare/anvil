@@ -1,10 +1,12 @@
 ---
 date: '2026-06-14'
-type: session
+title: HTML Entity Rendering Fix in Experiment Page
+type: session-log
 tags:
-  - bugfix
-  - experiment-page
-  - html-entities
+- type/session-log
+- domain/ui
+created: '2026-06-18'
+updated: '2026-06-18'
 ---
 # Session: HTML entity rendering in experiment page
 

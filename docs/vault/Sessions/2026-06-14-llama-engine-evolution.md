@@ -2,9 +2,8 @@
 title: Session — Llama Engine Evolution & Safetensors Export
 type: session
 tags:
-  - type/session
+  - type/session-log
   - domain/core
-  - status/complete
 created: '2026-06-14T00:00:00.000Z'
 updated: '2026-06-14T00:00:00.000Z'
 ---

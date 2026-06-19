@@ -1,9 +1,14 @@
 ---
 title: ADR-001 — Architecture Decisions for Bootstrap LLM Workbench
 type: decision
-tags: [type/decision, domain/governance]
+tags:
+- type/decision
+- domain/governance
 created: 2026-06-10
 updated: 2026-06-10
+aliases:
+- ADR-001 — Architecture Decisions for Bootstrap LLM Workbench
+source: agent
 ---
 
 # ADR-001: Bootstrap Implementation Architecture

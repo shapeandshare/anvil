@@ -1,9 +1,14 @@
 ---
-title: ADR-003 — Pit of Success: Opt-In Optional Capabilities with Silent Fallback
+title: 'ADR-003 — Pit of Success: Opt-In Optional Capabilities with Silent Fallback'
 type: decision
-tags: [type/decision, domain/governance]
+tags:
+- type/decision
+- domain/governance
 created: 2026-06-13
 updated: 2026-06-13
+aliases:
+- 'ADR-003 — Pit of Success: Opt-In Optional Capabilities with Silent Fallback'
+source: agent
 ---
 
 # ADR-003: Pit of Success — Opt-In Optional Capabilities with Silent Fallback

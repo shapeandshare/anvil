@@ -1,9 +1,14 @@
 ---
-title: "ADR-004 — MLflow 3.x bump and canonical HTTP-server tracking URI"
+title: ADR-004 — MLflow 3.x bump and canonical HTTP-server tracking URI
 type: decision
-tags: [type/decision, domain/tracking]
+tags:
+- type/decision
+- domain/tracking
 created: 2026-06-13
 updated: 2026-06-13
+aliases:
+- ADR-004 — MLflow 3.x bump and canonical HTTP-server tracking URI
+source: agent
 ---
 
 # ADR-004: MLflow 3.x bump and canonical HTTP-server tracking URI

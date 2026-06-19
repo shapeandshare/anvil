@@ -2,7 +2,7 @@
 created: '2026-06-15T00:00:00.000Z'
 tags:
   - type/reference
-  - domain/services
+  - domain/operations
 title: MLflow Integration
 type: reference
 updated: '2026-06-18'

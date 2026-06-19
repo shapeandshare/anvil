@@ -1,9 +1,14 @@
 ---
 title: ADR-006 iOS Design Overhaul
 type: decision
-tags: [type/decision, domain/ui]
+tags:
+- type/decision
+- domain/ui
 created: 2026-06-13
 updated: 2026-06-13
+aliases:
+- ADR-006 iOS Design Overhaul
+source: agent
 ---
 
 # ADR-006: iOS Design Overhaul

@@ -2,9 +2,13 @@
 title: Client-Side Navigation Hard Refresh Fix
 type: session-log
 tags:
-  - type/session-log
-  - domain/frontend
+- type/session-log
+- domain/ui
 created: '2026-06-14'
+aliases:
+- Client-Side Navigation Hard Refresh Fix
+source: agent
+updated: '2026-06-18'
 ---
 ## Summary
 Diagnosed and fixed a hard-refresh issue on `/v1/operations-page` (and all hero-page navigation). The client-side navigation interceptor in `core.js` only matched `.tab-item` elements (nav bar links). Hero-page navigation links (`.hero-card`, `.hero-cta`, `.hero-secondary`) were not intercepted, causing full page loads instead of AJAX content swaps.
