@@ -21,8 +21,10 @@ from anvil.services.datasets import DatasetService
 from anvil.db.repositories.corpora import CorpusRepository
 from anvil.services.corpora import CorpusService
 from anvil.services.corpus_loader import CorpusLoader
+from anvil.services.tracking import TrackingService
 
 router = APIRouter()
+tracking_svc = TrackingService()
 
 
 class CreateDatasetBody(BaseModel):
@@ -171,6 +173,23 @@ async def upload_dataset(
     session.add(dataset)
     await session.commit()
     await session.refresh(dataset)
+
+    # Track dataset creation in MLflow
+    try:
+        if not tracking_svc.is_degraded:
+            await tracking_svc.log_dataset_lifecycle_event(
+                dataset_id=dataset.id,
+                event_type="create",
+                params={
+                    "name": dataset.name,
+                    "vocabulary_size": dataset.vocabulary_size,
+                    "sample_count": dataset.sample_count,
+                    "total_size_bytes": dataset.total_size_bytes,
+                },
+            )
+    except Exception:
+        pass
+
     return {"data": _serialize(dataset), "error": None}
 
 
@@ -196,6 +215,16 @@ async def delete_dataset(
         await svc.delete_dataset(id)
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
+
+    try:
+        if not tracking_svc.is_degraded:
+            await tracking_svc.log_dataset_lifecycle_event(
+                dataset_id=id,
+                event_type="delete",
+            )
+    except Exception:
+        pass
+
     return {"data": {"message": "Dataset deleted"}, "error": None}
 
 
@@ -250,6 +279,17 @@ async def clone_dataset(
     )
 
     await session.refresh(new_dataset)
+
+    try:
+        if not tracking_svc.is_degraded:
+            await tracking_svc.log_dataset_lifecycle_event(
+                dataset_id=new_dataset.id,
+                event_type="create",
+                params={"name": new_dataset.name, "cloned_from": id},
+            )
+    except Exception:
+        pass
+
     return {"data": _serialize(new_dataset), "error": None}
 
 
@@ -264,6 +304,17 @@ async def import_dataset(
         result = await svc.commit_import(body.text, body.format)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+    try:
+        if not tracking_svc.is_degraded:
+            await tracking_svc.log_dataset_lifecycle_event(
+                dataset_id=id,
+                event_type="import",
+                params={"format": body.format},
+            )
+    except Exception:
+        pass
+
     return {
         "data": {
             "import_source_id": result.import_source_id,
@@ -397,6 +448,17 @@ async def create_dataset_from_corpus(
     )
 
     await session.refresh(new_dataset)
+
+    try:
+        if not tracking_svc.is_degraded:
+            await tracking_svc.log_dataset_lifecycle_event(
+                dataset_id=new_dataset.id,
+                event_type="create",
+                params={"name": new_dataset.name, "source": "corpus", "corpus_id": body.corpus_id},
+            )
+    except Exception:
+        pass
+
     return {"data": _serialize(new_dataset), "error": None}
 
 
@@ -505,6 +567,17 @@ async def curate_dedup(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     await session.commit()
+
+    try:
+        if not tracking_svc.is_degraded:
+            await tracking_svc.log_dataset_lifecycle_event(
+                dataset_id=id,
+                event_type="curate",
+                params={"operation": "dedup", "removed_count": result.samples_removed},
+            )
+    except Exception:
+        pass
+
     return {
         "data": {
             "operation_id": result.operation_id,
@@ -528,6 +601,17 @@ async def curate_filter(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     await session.commit()
+
+    try:
+        if not tracking_svc.is_degraded:
+            await tracking_svc.log_dataset_lifecycle_event(
+                dataset_id=id,
+                event_type="curate",
+                params={"operation": "filter", "removed_count": result.samples_removed},
+            )
+    except Exception:
+        pass
+
     return {
         "data": {
             "operation_id": result.operation_id,
@@ -551,6 +635,17 @@ async def curate_replace(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     await session.commit()
+
+    try:
+        if not tracking_svc.is_degraded:
+            await tracking_svc.log_dataset_lifecycle_event(
+                dataset_id=id,
+                event_type="curate",
+                params={"operation": "replace"},
+            )
+    except Exception:
+        pass
+
     return {
         "data": {
             "operation_id": result["operation_id"],
