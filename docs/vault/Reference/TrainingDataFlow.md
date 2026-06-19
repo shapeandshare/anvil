@@ -5,7 +5,7 @@ tags:
   - type/reference
   - domain/core
 created: 2026-06-12T00:00:00.000Z
-updated: '2026-06-14'
+updated: '2026-06-18'
 aliases:
   - render-loop
   - data-flow
@@ -148,20 +148,28 @@ Key properties:
 
 After training finishes, `on_complete` fires:
 
-1. **MLflow**: Log final metric, upload samples.txt + model.json artifacts, terminate run
-2. **DB**: INSERT Experiment record (async SQLAlchemy)
-3. **Disk**: Save `data/models/experiment_{id}.json` for registry access
-4. **MLflow Model Registry**: Auto-register model using dataset/corpus name
-5. **SSE**: Send `complete` event with final loss + device
-6. **Browser**: Enable "register model" action in Output section
+1. **MLflow Tracking** (`TrackingService`):
+   - `set_tag()` — `anvil.status=finished`, `anvil.final_loss`, dataset/corpus metadata tags
+   - `log_params()` — capture config hyperparameters as MLflow params
+   - `log_metrics()` — final loss, device, elapsed_sec
+   - `log_model()` — upload model.json + samples.txt as artifacts
+   - On success: `register_source_model()` — create/update MLflow Model Registry version
+   - On error: `fail_run()` + `set_tag("anvil.status", "failed")`
+2. **Disk**: Save `data/models/experiment_{id}.json` for local inference fallback
+3. **SSE**: Send `complete` event with final loss + device
+4. **Browser**: Enable inference on the trained model
+
+> **Note**: The old `ExperimentRepository` path is removed. Experiment state (status, run metadata) is stored entirely as MLflow tags and params — there is no local DB `experiments` table (see [[Decisions/ADR-016-mlflow-primary-lineage|ADR-016]]).
 
 ## Inference Flow
 
 ```
 POST /v1/inference/sample  {model_id, version, temperature, num_samples}
   │
-  ├── DB lookup → get artifact_path from ModelRegistry
-  ├── Load model.json from disk
+  ├── InferenceService.load_model(model_id, version)
+  │     ├── Phase 1: Try local data/models/experiment_{id}.json
+  │     └── Phase 2: Fall back to MLflow artifact download
+  │                   (MlflowClient.download_artifacts)
   ├── Reconstruct LlamaModel with saved hyperparams + state_dict
   │
   └── Autoregressive sampling (same as post-training loop)
