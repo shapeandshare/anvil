@@ -1,22 +1,5 @@
-from anvil.db.models.training_config import Experiment
-from anvil.db.repositories import ExperimentRepository
+"""DEPRECATED: ExperimentService has been removed.
 
-
-class ExperimentService:
-    def __init__(self, repo: ExperimentRepository):
-        self._repo = repo
-
-    async def list_experiments(self):
-        return await self._repo.get_all()
-
-    async def get_experiment(self, id: int):
-        return await self._repo.get(id)
-
-    async def delete_experiment(self, id: int):
-        await self._repo.delete(id)
-
-    async def create_experiment(
-        self, config_id: int, dataset_id: int | None = None
-    ) -> Experiment:
-        exp = Experiment(config_id=config_id, dataset_id=dataset_id, status="running")
-        return await self._repo.add(exp)
+All experiment tracking now goes through mlflow.tracking.MlflowClient
+via TrackingService. This file will be deleted in a future cleanup phase.
+"""
