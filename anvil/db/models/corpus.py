@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from ...services.datasets.chunking_strategy import ChunkingStrategy
 from ..base import Base
 from ..timestamp_mixin import TimestampMixin
 
@@ -37,7 +38,7 @@ class Corpus(Base, TimestampMixin):
     exclude_patterns : str or None
         Gitignore-style patterns for files to exclude (text blob).
     chunking_strategy : str
-        Chunking algorithm name (default ``"windowed"``).
+        Chunking algorithm name (default ``ChunkingStrategy.WINDOWED``).
     chunk_overlap : float
         Fractional overlap between adjacent chunks (default ``0.5``).
     block_size : int
@@ -73,7 +74,7 @@ class Corpus(Base, TimestampMixin):
     include_patterns: Mapped[str | None] = mapped_column(Text, nullable=True)
     exclude_patterns: Mapped[str | None] = mapped_column(Text, nullable=True)
     chunking_strategy: Mapped[str] = mapped_column(
-        String(20), nullable=False, default="windowed"
+        String(20), nullable=False, default=ChunkingStrategy.WINDOWED
     )
     chunk_overlap: Mapped[float] = mapped_column(Float, nullable=False, default=0.5)
     block_size: Mapped[int] = mapped_column(Integer, nullable=False, default=16)

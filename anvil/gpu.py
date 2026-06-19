@@ -2,12 +2,14 @@
 
 from pydantic import BaseModel, Field
 
+from .services._shared.device_type import DeviceType
+
 
 class GpuInfo(BaseModel):
     """Detected GPU capabilities of the host system."""
 
     available: bool = False
-    backend: str | None = None  # "cuda" | "mps"
+    backend: DeviceType | None = None
     device_name: str | None = None
     memory_total_gb: float | None = None
     memory_available_gb: float | None = None
@@ -31,7 +33,7 @@ def detect_gpu() -> GpuInfo:
 
         if torch.backends.mps.is_available():
             info.available = True
-            info.backend = "mps"
+            info.backend = DeviceType.MPS
             info.device_name = _get_mps_device_name()
             try:
                 info.memory_total_gb = _get_mps_memory()
@@ -41,7 +43,7 @@ def detect_gpu() -> GpuInfo:
 
         if torch.cuda.is_available():
             info.available = True
-            info.backend = "cuda"
+            info.backend = DeviceType.CUDA
             info.device_name = torch.cuda.get_device_name(0)
             info.memory_total_gb = torch.cuda.get_device_properties(0).total_mem / (
                 1024**3
