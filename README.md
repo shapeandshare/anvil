@@ -1,88 +1,130 @@
 <p align="center">
-  <svg viewBox="0 0 240 160" width="120" height="80" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <path d="M 192,62 C 202,59 213,51 224,40 C 213,29 203,23 192,21 L 192,5 L 60,5 L 60,17 L 15,17 C 23,38 41,53 60,58 L 60,77 L 94,77 C 88,98 76,115 60,129 L 47,129 L 47,141 L 47,156 L 212,156 L 212,129 L 194,129 C 177,115 165,98 159,77 L 192,77 Z" fill="currentColor" opacity="0.9"/>
-  </svg>
+  <img src="docs/assets/anvil-banner.svg" alt="anvil — Forging intelligence" width="100%">
 </p>
 
-<h1 align="center">anvil</h1>
-
-<p align="center"><strong>Forging intelligence.</strong></p>
-
-<p align="center">Train and experiment with LLMs from scratch — a pip-installable workbench with live training dashboards, MLflow experiment tracking, and an iOS-modern web UI.</p>
+<p align="center">
+  <a href="https://www.python.org/downloads/"><img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-3776ab?style=for-the-badge&logo=python&logoColor=white"></a>&nbsp;
+  <a href="#license"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-ff9500?style=for-the-badge"></a>&nbsp;
+  <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000?style=for-the-badge"></a>&nbsp;
+  <a href="https://mypy-lang.org/"><img alt="Typed: mypy strict" src="https://img.shields.io/badge/typed-mypy%20strict-2a6db2?style=for-the-badge&logo=python&logoColor=white"></a>&nbsp;
+  <a href="https://www.conventionalcommits.org/"><img alt="Conventional Commits" src="https://img.shields.io/badge/commits-conventional-ffcc00?style=for-the-badge"></a>
+</p>
 
 <p align="center">
-  <a href="#quick-start"><kbd>Quick Start</kbd></a>&nbsp;&nbsp;
-  <a href="#features"><kbd>Features</kbd></a>&nbsp;&nbsp;
-  <a href="#architecture"><kbd>Architecture</kbd></a>&nbsp;&nbsp;
-  <a href="#hyperparameter-guide"><kbd>Hyperparameters</kbd></a>&nbsp;&nbsp;
-  <a href="#configuration"><kbd>Config</kbd></a>
+  <strong>Train and experiment with LLMs from scratch.</strong><br>
+  A pip-installable workbench with live training dashboards, MLflow experiment tracking, and an iOS-modern web UI.
+</p>
+
+<p align="center">
+  <a href="#-quick-start"><kbd>&nbsp;Quick Start&nbsp;</kbd></a>&nbsp;
+  <a href="#-features"><kbd>&nbsp;Features&nbsp;</kbd></a>&nbsp;
+  <a href="#-architecture"><kbd>&nbsp;Architecture&nbsp;</kbd></a>&nbsp;
+  <a href="#-hyperparameter-guide"><kbd>&nbsp;Hyperparameters&nbsp;</kbd></a>&nbsp;
+  <a href="#-configuration"><kbd>&nbsp;Config&nbsp;</kbd></a>&nbsp;
+  <a href="#-troubleshooting"><kbd>&nbsp;Troubleshooting&nbsp;</kbd></a>
 </p>
 
 <br>
 
 ---
 
-<br>
+## ✨ What is anvil?
 
-## Prerequisites
+**anvil** is an interactive workbench for understanding how language models actually work — by building one from the ground up. It pairs a **dependency-free training engine** (RoPE, SwiGLU MLP, RMSNorm — the same primitives as production Llama models) with a polished web UI: configure a model, pick your data, and **watch it learn character by character in real time**.
 
-| Requirement | Notes |
-|-------------|-------|
-| **Python** ≥ 3.11 | Must be on `PATH` as `python3` or `python3.11`. [python.org](https://www.python.org/downloads/) |
-| **git** | [Download](https://git-scm.com/downloads) |
-| **GNU make** | macOS: Xcode CLI tools (`xcode-select --install`). Debian: `apt install build-essential` |
-| **bash** | Pre-installed on macOS / Linux |
-| **uv** (fast Python package manager) | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
-| **nvidia-smi** (optional) | Linux only — enables CUDA GPU auto-detection |
-
-> **Windows users**: Install [WSL2](https://learn.microsoft.com/en-us/windows/wsl/install) with Ubuntu, then follow the Linux instructions.
+Every concept here scales up directly to real models. Train in seconds, then open the interactive lessons to see what's happening under the hood.
 
 <br>
 
-## Quick Start
+## 🚀 Quick Start
 
-**From a built package (recommended for end users):**
+> [!IMPORTANT]
+> anvil targets **macOS and Linux**. The toolchain is `make` + `bash`-based, so a POSIX shell is required.
 
-```bash
-# Build the wheel
-make build
-
-# Validate in a container (Docker + compose required)
-make test-system
-# or bring it up interactively:
-make compose-up
-open http://localhost:8080
-```
-
-**From source (for development):**
+**From source** (for development):
 
 ```bash
 git clone https://github.com/shapeandshare/anvil
 cd anvil
-make setup
-make run
+make setup     # create venv, install deps via uv, init DB
+make run       # start web UI + MLflow
 ```
 
-Open `http://<your-ip>:8080` from any device on your LAN.
+Then open **`http://localhost:8080`** — or `http://<your-ip>:8080` from any device on your LAN.
 
-Open `http://<your-ip>:8080` from any device on your LAN.
+**From a built wheel** (for end users):
 
-> **GPU acceleration**: Auto-detected on Apple Silicon (MPS) and NVIDIA Linux (CUDA). Falls back to CPU when unavailable.
-
-<br>
-
-## Features
-
-| | | |
-|---|---|---|
-| 🧠 **Train from scratch** | 📊 **Experiment tracking** | 📁 **Dataset management** |
-| Configure hyperparameters, watch loss in real-time via SSE | MLflow-backed, compare loss curves side-by-side | Upload custom `.txt` datasets, train on anything |
-| 🔧 **Operations dashboard** | ✨ **iOS-modern UI** | 📖 **Progressive walkthroughs** |
-| Manage services (web, MLflow), tail logs, health checks | Glass nav bar, spring animations, dark/light mode | 6 scripts from bigrams to full transformer, interactive widgets |
+```bash
+make build         # build anvil-*.whl into dist/
+make compose-up    # build + run the container stack
+open http://localhost:8080
+# or run the full validation loop:
+make test-system   # build → container → system tests → teardown
+```
 
 <br>
 
-## Architecture
+## 🎯 Features
+
+<table>
+<tr>
+<td width="33%" valign="top">
+
+### 🧠 Train from scratch
+Configure hyperparameters and watch loss curves stream live over SSE — no black boxes.
+
+</td>
+<td width="33%" valign="top">
+
+### 📊 Experiment tracking
+MLflow-backed runs. Compare loss curves side-by-side and register your best models.
+
+</td>
+<td width="33%" valign="top">
+
+### 📁 Dataset management
+Upload custom `.txt` corpora, curate datasets, and train on anything you like.
+
+</td>
+</tr>
+<tr>
+<td width="33%" valign="top">
+
+### 🔧 Operations dashboard
+Manage services, monitor CPU/GPU/memory, tail logs, run health checks.
+
+</td>
+<td width="33%" valign="top">
+
+### 📱 iOS-modern UI
+Glass nav bars, spring animations, fluid type, and adaptive dark/light mode.
+
+</td>
+<td width="33%" valign="top">
+
+### 📖 Interactive lessons
+Progressive walkthroughs from bigrams to a full transformer, with live widgets.
+
+</td>
+</tr>
+</table>
+
+<br>
+
+## 🧬 The Engine
+
+anvil's core (`anvil/core/`) is a **zero-dependency, stdlib-only** training engine that mirrors modern Llama-class architecture:
+
+| Component | What it is | Why it matters |
+|-----------|-----------|----------------|
+| **RoPE** | Rotary Position Encoding | Same half-split/rotate convention as HuggingFace Llama — positions encoded in attention, no learned embeddings |
+| **SwiGLU MLP** | SiLU-gated feed-forward | Gate/up/down projections replace ReLU; `intermediate_size ≈ 8·n_embd/3` for parameter parity |
+| **RMSNorm** | Learned-scale normalization | Lighter than LayerNorm, learnable `rms_1` / `rms_2` / `rms_final` weights |
+| **Safetensors** | HF-convention export | Emits `model.safetensors` + `config.json` + `tokenizer.json`, ready to load elsewhere |
+
+<br>
+
+## 🏛️ Architecture
 
 ```
 anvil/                         # Python package (implicit namespace)
@@ -92,16 +134,15 @@ anvil/                         # Python package (implicit namespace)
 │   ├── autograd.py            #   Custom autograd engine
 │   └── tokenizer.py           #   Byte-level tokenizer
 ├── db/                        # Async SQLAlchemy
-│   ├── base.py                #   Declarative base
-│   ├── session.py             #   Session management
-│   ├── models/                #   ORM models
+│   ├── models/                #   ORM models (domain sub-packages)
 │   └── repositories/          #   Repository pattern (DB access only)
-├── services/                  # Business logic layer
-│   ├── training.py            #   Orchestrates core training
-│   ├── tracking.py            #   MLflow experiment tracking
-│   ├── export.py              #   Safetensors model export
-│   └── ...                    #   Corpora, datasets, inference, etc.
-├── api/                       # FastAPI server + Jinja2 templates
+├── services/                  # Business logic — domain sub-packages
+│   ├── training/              #   Orchestration, export, memory estimation
+│   ├── tracking/              #   MLflow experiment tracking, metrics
+│   ├── datasets/              #   Corpora, datasets, import, curation
+│   ├── inference/             #   Inference, loaded model, demo provider
+│   └── _shared/               #   Cross-domain types (internal)
+├── api/                       # FastAPI server + Jinja2 + SSE
 │   ├── static/                #   CSS tokens, components, archetypes
 │   ├── templates/             #   Jinja2 page templates (hero, etc.)
 │   └── v1/                    #   Route definitions (v1 router)
@@ -109,55 +150,89 @@ anvil/                         # Python package (implicit namespace)
 └── supervisor/                # Process manager for background services
 ```
 
-**Layer discipline**: Repository → Service → God Class (`AnvilWorkbench`) → Routes/CLI. No shortcuts.
+> **Layer discipline:** Repository → Service → God Class (`AnvilWorkbench`) → Routes/CLI. No shortcuts.
 
 <br>
 
-## Hyperparameter Guide
+## 🎛️ Hyperparameter Guide
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `n_embd` | 16 | Embedding dimension (wider = more capacity) |
-| `n_layer` | 1 | Transformer depth (deeper = more patterns) |
-| `n_head` | 4 | Attention heads (must divide `n_embd`) |
-| `num_steps` | 1000 | Training iterations |
-| `learning_rate` | 0.01 | Adam learning rate |
-| `temperature` | 0.5 | Sampling creativity (0=deterministic, 1=chaotic) |
+| `n_embd` | `16` | Embedding dimension — wider = more capacity |
+| `n_layer` | `1` | Transformer depth — deeper = more patterns |
+| `n_head` | `4` | Attention heads (must divide `n_embd`) |
+| `num_steps` | `1000` | Training iterations |
+| `learning_rate` | `0.01` | Adam learning rate |
+| `temperature` | `0.5` | Sampling creativity (`0` = deterministic, `1` = chaotic) |
 
 <br>
 
-## Configuration
+## ⚙️ Configuration
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `ANVIL_PORT` | `8080` | Web server port |
 | `ANVIL_STATE_DB_PATH` | `./data/anvil-state.db` | Database file (`ANVIL_DB_PATH` deprecated) |
-| `ANVIL_DB_AUTO_MIGRATE` | `true` | Auto-migrate DB schema on startup. Set to `false` for strict verification |
+| `ANVIL_DB_AUTO_MIGRATE` | `true` | Auto-migrate schema on startup; set `false` for strict verification |
 | `ANVIL_LOG_DIR` | `./logs/` | Log directory |
 | `ANVIL_MLFLOW_URI` | `http://127.0.0.1:5001` | MLflow tracking server |
 | `ANVIL_STORAGE_BACKEND` | `local` | Storage backend |
 | `ANVIL_DEVICE` | *(auto)* | Device override (`cpu`, `cuda:0`, `mps`) |
 
-Copy `.env.example` to `.env` to customize.
+> Copy `.env.example` to `.env` to customize.
 
 <br>
 
-## Web UI Routes
+## 🗺️ Web UI Routes
 
-| Route | Description |
-|-------|-------------|
+| Route | Page |
+|-------|------|
 | `/` | Training dashboard (hero) |
 | `/v1/datasets-page` | Dataset upload & management |
 | `/v1/training-page` | Training configuration & control |
 | `/v1/experiments-page` | Experiment history & comparison |
 | `/v1/models-page` | Model registry & versioning |
-| `/v1/inference-page` | Model inference / sampling playground |
+| `/v1/inference-page` | Inference / sampling playground |
 | `/v1/learn` | Interactive concept walkthroughs |
 | `/v1/operations-page` | Service management & logs |
 
 <br>
 
-## Commands
+## 💻 Platform Support
+
+anvil is developed and exercised on **macOS** and **Linux**. The dev workflow relies on `make` and `bash`, so a POSIX shell is required.
+
+| Platform | Status | Notes |
+|----------|--------|-------|
+| **macOS** (Apple Silicon) | ✅ Supported | GPU (MPS) works out of the box — it ships in the standard PyTorch wheel |
+| **macOS** (Intel) | ✅ Supported | CPU only |
+| **Linux** (x86_64) | ✅ Supported | CPU by default; NVIDIA GPU supported with a working driver (see below) |
+
+### GPU acceleration
+
+GPU support is **auto-detected** at `make setup` and can be forced with `make setup-gpu`:
+
+- **Apple Silicon (macOS)** — MPS is built into the standard PyTorch wheel; nothing extra to install.
+- **NVIDIA (Linux)** — requires a working NVIDIA **driver** on the host (`nvidia-smi` must be on `PATH`). anvil installs the standard PyPI `torch` wheel, which **bundles the CUDA runtime**, so you do *not* need a separate CUDA Toolkit — but you *do* need a compatible host driver.
+
+When no GPU is detected, anvil runs on CPU.
+
+<br>
+
+## 📋 Prerequisites
+
+| Requirement | Notes |
+|-------------|-------|
+| **Python ≥ 3.11** | Must be on `PATH` as `python3` or `python3.11` — [python.org](https://www.python.org/downloads/) |
+| **git** | [Download](https://git-scm.com/downloads) |
+| **GNU make** | macOS: `xcode-select --install` · Debian/Ubuntu: `apt install build-essential` |
+| **bash** | Pre-installed on macOS / Linux |
+| **uv** | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
+| **NVIDIA driver + `nvidia-smi`** *(optional)* | Linux only — required for CUDA GPU acceleration & auto-detection |
+
+<br>
+
+## 🛠️ Commands
 
 | Command | Purpose |
 |---------|---------|
@@ -166,34 +241,35 @@ Copy `.env.example` to `.env` to customize.
 | `make build` | Build the project wheel (`anvil-*.whl` in `dist/`) |
 | `make run` | Start all background services (web + MLflow) |
 | `make stop` | Stop all background services |
-| `make train` | Run training from CLI |
-| `make test` | Run full unit test suite |
+| `make train` | Run training from the CLI |
+| `make test` | Run the full unit test suite |
 | `make lint` | Run ruff → black --check → isort --check → pylint |
 | `make format` | Auto-format (black + isort) |
 | `make typecheck` | Run mypy/pyright |
-| `make test-system` | Full validation loop: build wheel → container → system tests → teardown |
+| `make test-system` | Full loop: build wheel → container → system tests → teardown |
 | `make compose-up` | Build + start the container stack locally |
 
 <br>
 
-## Troubleshooting
+## 🩺 Troubleshooting
 
 | Problem | Likely cause | Fix |
 |---------|-------------|-----|
-| `make setup`: `Python 3.11+ not found` | Python missing or not on PATH | Install Python ≥ 3.11, ensure `python3` or `python3.11` is on your `PATH` |
+| `make setup`: `Python 3.11+ not found` | Python missing or not on PATH | Install Python ≥ 3.11; ensure `python3`/`python3.11` is on `PATH` |
 | `make setup`: `uv: command not found` | uv not installed | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
 | `make run`: `Address already in use` | Port 8080 (or 5001 for MLflow) is taken | Set `ANVIL_PORT=9090` in `.env` |
-| `Alembic migration fails` | Stale or corrupted database | `rm -f data/anvil-state.db` then restart server (auto-creates fresh DB) |
-| `GPU not detected` | No compatible GPU, or driver missing | Auto-detection logs at setup. Force GPU extras: `make setup-gpu` |
-| Web UI slow on first load | Bootstrapping demo datasets | Normal — only on first `make run` after `make setup` |
-| `make` fails on Windows | Windows lacks native `make` | Install WSL2 with Ubuntu and run from there |
+| `Alembic migration fails` | Stale or corrupted database | `rm -f data/anvil-state.db`, then restart (auto-creates fresh DB) |
+| GPU not detected (Linux) | NVIDIA driver missing, or `nvidia-smi` not on `PATH` | Install the NVIDIA driver; verify `nvidia-smi` runs, then `make setup-gpu` |
+| Web UI slow on first load | Bootstrapping demo datasets | Normal — only on the first `make run` after `make setup` |
 
 <br>
 
 ## License
 
-MIT
+Released under the **MIT License**.
 
----
+<br>
 
-
+<p align="center">
+  <sub>Built with 🔨 by <a href="https://github.com/shapeandshare">shapeandshare</a> · <em>Forging intelligence.</em></sub>
+</p>

@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 400" width="1280" height="400">
+  <defs>
+    <!-- Deep forge background: near-black center bleeding to true-black -->
+    <radialGradient id="bg-grad" cx="50%" cy="35%" r="75%" fx="50%" fy="30%">
+      <stop offset="0%" stop-color="#141414"/>
+      <stop offset="60%" stop-color="#080808"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </radialGradient>
+
+    <!-- Ambient forge glow — soft orange bloom in the upper-center -->
+    <radialGradient id="glow-grad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ff9500" stop-opacity="0.18"/>
+      <stop offset="50%" stop-color="#ff9500" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#ff9500" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Anvil + wordmark gradient: warm orange to bright yellow, 135deg -->
+    <linearGradient id="forge-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ff9500"/>
+      <stop offset="100%" stop-color="#ffcc00"/>
+    </linearGradient>
+
+    <!-- Subtle glow filter for the anvil silhouette -->
+    <filter id="anvil-glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+    </filter>
+
+    <!-- Spark/ember soft-glow filter -->
+    <filter id="spark-glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1280" height="400" rx="24" fill="url(#bg-grad)"/>
+
+  <!-- Ambient glow bloom -->
+  <ellipse cx="640" cy="140" rx="420" ry="195" fill="url(#glow-grad)"/>
+
+  <!-- Floating embers / forge sparks — scattered organically near the anvil zone -->
+  <g filter="url(#spark-glow)">
+    <circle cx="510" cy="95" r="3" fill="#ff9500" opacity="0.75"/>
+    <circle cx="730" cy="75" r="2.5" fill="#ffcc00" opacity="0.85"/>
+    <circle cx="595" cy="55" r="2" fill="#ff9500" opacity="0.55"/>
+    <circle cx="685" cy="135" r="4" fill="#ff9500" opacity="0.65"/>
+    <circle cx="545" cy="165" r="2.5" fill="#ffcc00" opacity="0.40"/>
+    <circle cx="775" cy="155" r="3" fill="#ff9500" opacity="0.50"/>
+    <circle cx="635" cy="200" r="1.8" fill="#ffcc00" opacity="0.35"/>
+    <circle cx="795" cy="50" r="2" fill="#ff9500" opacity="0.60"/>
+  </g>
+
+  <!-- Anvil emblem — English-pattern anvil, centered in the upper region -->
+  <g transform="translate(640, 120) translate(-120, -80) scale(0.9)">
+    <!-- Warm orange glow silhouette behind the anvil -->
+    <path d="M 192,62 C 202,59 213,51 224,40 C 213,29 203,23 192,21 L 192,5 L 60,5 L 60,17 L 15,17 C 23,38 41,53 60,58 L 60,77 L 94,77 C 88,98 76,115 60,129 L 47,129 L 47,141 L 47,156 L 212,156 L 212,129 L 194,129 C 177,115 165,98 159,77 L 192,77 Z"
+          fill="#ff9500" opacity="0.30" filter="url(#anvil-glow)"/>
+    <!-- Sharp anvil face with forge gradient -->
+    <path d="M 192,62 C 202,59 213,51 224,40 C 213,29 203,23 192,21 L 192,5 L 60,5 L 60,17 L 15,17 C 23,38 41,53 60,58 L 60,77 L 94,77 C 88,98 76,115 60,129 L 47,129 L 47,141 L 47,156 L 212,156 L 212,129 L 194,129 C 177,115 165,98 159,77 L 192,77 Z"
+          fill="url(#forge-grad)"/>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="640" y="282" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="96" font-weight="800" fill="url(#forge-grad)" letter-spacing="1.5">anvil</text>
+
+  <!-- Tagline -->
+  <text x="640" y="328" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="30" font-weight="600" fill="#ff9500" letter-spacing="0.5">Forging intelligence.</text>
+
+  <!-- Subtitle -->
+  <text x="640" y="368" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="20" font-weight="400" fill="#ebebf5" opacity="0.85" letter-spacing="0.3">Train &amp; experiment with LLMs from scratch</text>
+</svg>
