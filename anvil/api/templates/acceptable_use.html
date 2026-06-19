@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
+{% block content %}
+
+<div class="section-card" style="--stagger-i: 0">
+  <div class="section-card__header">
+    <span class="section-card__icon">&#9878;</span>
+    <h2 class="section-card__title">Acceptable Use Policy</h2>
+  </div>
+  <div class="section-card__content" style="max-width:720px;">
+
+    <p style="margin-bottom:var(--space-4);">
+      anvil is a tool for training and experimenting with small language models.
+      We believe in open, responsible AI development. This policy defines the
+      boundaries of acceptable use for the software itself, bundled data,
+      user-uploaded content, and all data that enters the system.
+    </p>
+
+    <div class="help-box" style="margin-bottom:var(--space-4);">
+      <div class="help-title">Universal No-Harm Stance</div>
+      Every dataset, corpus, model, and training run processed through anvil
+      must be used in a manner that does not cause harm. This is not optional.
+      By using anvil, you accept this obligation.
+    </div>
+
+    <h3 style="font-family:var(--font-body);font-size:var(--text-headline);font-weight:600;color:var(--text);margin-bottom:var(--space-3);margin-top:var(--space-5);">Prohibited Uses</h3>
+
+    <p style="color:var(--text-secondary);margin-bottom:var(--space-3);">
+      You may not use anvil, its bundled data, or any content processed through
+      it for the following purposes:
+    </p>
+
+    <ul style="color:var(--text-secondary);line-height:1.8;padding-left:var(--space-5);margin-bottom:var(--space-4);">
+      <li>
+        <strong style="color:var(--text);">Harmful or deceptive generation</strong>
+        &mdash; creating content intended to harass, defraud, manipulate, or
+        cause physical or psychological harm to individuals or groups.
+      </li>
+      <li>
+        <strong style="color:var(--text);">Weaponisation or surveillance</strong>
+        &mdash; using models or data for weapons development, military targeting,
+        mass surveillance, or human-rights violations.
+      </li>
+      <li>
+        <strong style="color:var(--text);">Disinformation campaigns</strong>
+        &mdash; generating misleading content at scale intended to deceive
+        the public, influence elections, or undermine democratic processes.
+      </li>
+      <li>
+        <strong style="color:var(--text);">Child safety violations</strong>
+        &mdash; any use involving or enabling child sexual abuse material (CSAM)
+        or the exploitation of minors.
+      </li>
+      <li>
+        <strong style="color:var(--text);">Unauthorised data collection</strong>
+        &mdash; scraping, ingesting, or processing personal data without lawful
+        consent or a legitimate basis under applicable privacy law.
+      </li>
+      <li>
+        <strong style="color:var(--text);">Discrimination or profiling</strong>
+        &mdash; using the system to build tools that discriminate on the basis
+        of race, ethnicity, gender, religion, disability, sexual orientation,
+        or age.
+      </li>
+    </ul>
+
+    <h3 style="font-family:var(--font-body);font-size:var(--text-headline);font-weight:600;color:var(--text);margin-bottom:var(--space-3);margin-top:var(--space-5);">Data Governance Requirements</h3>
+
+    <p style="color:var(--text-secondary);margin-bottom:var(--space-3);">
+      All data that enters the anvil system &mdash; whether uploaded, imported,
+      or generated &mdash; must satisfy the following requirements:
+    </p>
+
+    <div style="display:flex;flex-direction:column;gap:var(--space-3);margin-bottom:var(--space-4);">
+      <div class="param-block" style="border-left-color:var(--accent);">
+        <div class="param-label-row">
+          <span class="param-label">License Declaration</span>
+        </div>
+        <p class="param-desc">
+          Every dataset must have a declared license. If the content is your
+          own original work, select <strong>"Own / private / proprietary content"</strong>
+          from the license selector when uploading. For third-party content,
+          select the applicable open-source license and provide attribution.
+        </p>
+      </div>
+      <div class="param-block" style="border-left-color:var(--accent-green);">
+        <div class="param-label-row">
+          <span class="param-label">No-Harm Affirmation</span>
+        </div>
+        <p class="param-desc">
+          Before any data enters the system, you must affirm that the content
+          is licensed for training use and will not cause harm. This affirmation
+          is recorded alongside the upload metadata.
+        </p>
+      </div>
+      <div class="param-block" style="border-left-color:var(--accent-purple);">
+        <div class="param-label-row">
+          <span class="param-label">Source Attribution</span>
+        </div>
+        <p class="param-desc">
+          Declare the source or origin of your dataset. Whether it is a public
+          corpus, a private collection, or generated content, a clear source
+          declaration ensures traceability and accountability.
+        </p>
+      </div>
+    </div>
+
+    <h3 style="font-family:var(--font-body);font-size:var(--text-headline);font-weight:600;color:var(--text);margin-bottom:var(--space-3);margin-top:var(--space-5);">Bundled &amp; Demo Data</h3>
+
+    <p style="color:var(--text-secondary);margin-bottom:var(--space-3);">
+      Bundled demo datasets shipped with anvil are provided under permissive
+      licenses (CC0, MIT) for evaluation and educational use only. You are
+      responsible for verifying that your use of any bundled data complies
+      with its respective license terms. Bundled data carries the same
+      no-harm obligation as user-uploaded content.
+    </p>
+
+    <h3 style="font-family:var(--font-body);font-size:var(--text-headline);font-weight:600;color:var(--text);margin-bottom:var(--space-3);margin-top:var(--space-5);">System Usage</h3>
+
+    <p style="color:var(--text-secondary);margin-bottom:var(--space-3);">
+      The anvil web interface and API are intended for local or private-network
+      use. If you expose anvil to the internet, you are responsible for:
+    </p>
+
+    <ul style="color:var(--text-secondary);line-height:1.8;padding-left:var(--space-5);margin-bottom:var(--space-4);">
+      <li>Implementing appropriate access controls and authentication.</li>
+      <li>Ensuring that any user of the exposed instance complies with this policy.</li>
+      <li>Logging and monitoring usage to detect policy violations.</li>
+    </ul>
+
+    <h3 style="font-family:var(--font-body);font-size:var(--text-headline);font-weight:600;color:var(--text);margin-bottom:var(--space-3);margin-top:var(--space-5);">Reporting Violations</h3>
+
+    <p style="color:var(--text-secondary);margin-bottom:var(--space-4);">
+      If you become aware of a violation of this policy &mdash; whether through
+      anvil's bundled data, user uploads, or system misuse &mdash; please
+      report it via the project's issue tracker. We take all reports seriously
+      and will investigate promptly.
+    </p>
+
+    <div class="help-box" style="margin-bottom:var(--space-2);">
+      <div class="help-title">Policy Scope</div>
+      This policy applies to all versions and distributions of anvil, including
+      source builds, pip-installed packages, container images, and any derivative
+      works that incorporate anvil's code or bundled data. It may be updated from
+      time to time; continued use after updates constitutes acceptance.
+    </div>
+
+    <div style="margin-top:var(--space-4);padding-top:var(--space-3);border-top:1px solid var(--separator);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:var(--space-2);">
+      <span class="type-footnote" style="color:var(--text-tertiary);">anvil &middot; Acceptable Use Policy &middot; v{{ version }}</span>
+      <a href="/v1/datasets-page" class="btn btn-sm btn-secondary" style="text-decoration:none;">Back to Datasets</a>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

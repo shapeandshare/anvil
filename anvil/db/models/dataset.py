@@ -6,7 +6,7 @@ dataset tracks metadata such as file path, vocabulary size, document
 count, curation state, and sample statistics.
 """
 
-from sqlalchemy import Boolean, Integer, String
+from sqlalchemy import Boolean, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ...services.datasets.dataset_status import DatasetStatus
@@ -63,3 +63,11 @@ class Dataset(Base, TimestampMixin):
     total_size_bytes: Mapped[int] = mapped_column(Integer, default=0)
     curation_version: Mapped[int] = mapped_column(Integer, default=0)
     status: Mapped[str] = mapped_column(String(20), default=DatasetStatus.EMPTY)
+    # Provenance fields (added by 014_add_governance migration).
+    source_description: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    license_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("license_catalog.id", ondelete="RESTRICT"), nullable=True
+    )
+    attribution_text: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    origin: Mapped[str] = mapped_column(String(20), default="user")
+    parent_provenance_ref: Mapped[int | None] = mapped_column(Integer, nullable=True)

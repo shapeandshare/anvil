@@ -140,6 +140,27 @@
         <button type="submit" class="btn btn-primary">upload</button>
       </form>
       <div class="ds-status-line" id="upload-status">Ready.</div>
+
+      {# ── Provenance & Governance (gate fields) ── #}
+      <div class="ds-section" style="margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--border);">
+        <div class="ds-section-label">Provenance &amp; Governance</div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);">
+          <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;">
+            <input type="text" class="form-input" id="declared-source" placeholder="Declared source / origin (e.g. Project Gutenberg)" style="flex:1;min-width:200px;">
+            <select class="form-select" id="license-select" style="flex:1;min-width:200px;">
+              <option value="">Select a license...</option>
+              {% for license in licenses %}
+              <option value="{{ license }}">{{ license }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <label style="display:flex;align-items:center;gap:var(--space-2);font-size:var(--text-subhead);color:var(--text-secondary);cursor:pointer;">
+            <input type="checkbox" id="no-harm-affirmation" style="accent-color:var(--accent);">
+            I affirm this content is licensed for training use and will not cause harm.
+            <a href="/v1/acceptable-use" target="_blank" style="white-space:nowrap;">Acceptable Use Policy</a>
+          </label>
+        </div>
+      </div>
     </div>
 
     <div class="ds-section-divider"></div>
@@ -473,6 +494,7 @@
       + '<thead><tr>'
       + '<th>Name</th><th>Description</th><th style="text-align:right;">Samples</th>'
       + '<th style="text-align:right;">Size</th><th>Status</th>'
+      + '<th>Source</th><th>License</th>'
       + '<th style="text-align:center;">Cur.</th><th style="text-align:right;">Actions</th>'
       + '</tr></thead><tbody>';
 
@@ -483,6 +505,8 @@
       var sizeStr = formatBytes(d.total_size_bytes);
       var badge = statusBadge(d.status);
       var curVer = d.curation_version != null ? d.curation_version : '-';
+      var sourceVal = d.declared_source ? escHtml(d.declared_source) : '<span class="text-muted type-caption-2">&mdash;</span>';
+      var licenseVal = d.license ? escHtml(d.license) : '<span class="text-muted type-caption-2">&mdash;</span>';
 
       html += '<tr data-id="' + d.id + '" class="row-entrance" style="--row-i: ' + i + '">'
         + '<td><span class="edit-target" data-field="name" style="color:var(--text);font-weight:500;">' + nameEsc + '</span></td>'
@@ -490,6 +514,8 @@
         + '<td class="cell-numeric" style="color:var(--info);">' + sampleCount + '</td>'
         + '<td class="cell-numeric text-muted">' + sizeStr + '</td>'
         + '<td>' + badge + '</td>'
+        + '<td class="type-footnote cell-meta cell-wrap" style="max-width:160px;">' + sourceVal + '</td>'
+        + '<td class="type-footnote cell-meta cell-wrap" style="max-width:160px;">' + licenseVal + '</td>'
         + '<td class="text-muted" style="text-align:center;">' + curVer + '</td>'
         + '<td class="cell-numeric">'
         + '<div style="display:flex;gap:var(--space-1);justify-content:flex-end;">'
@@ -1330,6 +1356,8 @@
           chunking_strategy: null,
           file_count: null,
           error_count: null,
+          declared_source: d.declared_source || null,
+          license: d.license || null,
         });
       });
 
@@ -1382,6 +1410,7 @@
         + '<thead><tr>'
         + '<th>Type</th><th>Name</th><th>Description / Path</th>'
         + '<th style="text-align:right;">Size</th><th>Status / Strategy</th>'
+        + '<th>Source</th><th>License</th>'
         + '<th>Created</th><th style="text-align:right;">Actions</th>'
         + '</tr></thead><tbody>';
 
@@ -1395,6 +1424,10 @@
         var statStr = item.type === 'dataset'
           ? statusBadge(item.statusOrStrategy)
           : '<span class="text-muted type-footnote">' + escHtml(item.statusOrStrategy) + '</span>';
+        var provSource = item.type === 'dataset' && item.declared_source
+          ? escHtml(item.declared_source) : '<span class="text-muted type-caption-2">&mdash;</span>';
+        var provLicense = item.type === 'dataset' && item.license
+          ? escHtml(item.license) : '<span class="text-muted type-caption-2">&mdash;</span>';
 
         var actionsHtml = '';
         if (item.type === 'dataset') {
@@ -1430,6 +1463,8 @@
           + (item.description ? descEsc : '-') + '</td>'
           + '<td class="cell-numeric text-muted">' + item.sizeInfo + '</td>'
           + '<td>' + statStr + '</td>'
+          + '<td class="type-footnote cell-meta cell-wrap" style="max-width:140px;">' + provSource + '</td>'
+          + '<td class="type-footnote cell-meta cell-wrap" style="max-width:140px;">' + provLicense + '</td>'
           + '<td class="cell-meta">' + createdStr + '</td>'
           + '<td style="text-align:right;white-space:nowrap;">' + actionsHtml + '</td>'
           + '</tr>';

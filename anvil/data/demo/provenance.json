@@ -1,0 +1,32 @@
+{
+  "small/names": {
+    "source": "Public name lists",
+    "license": "MIT",
+    "attribution": ""
+  },
+  "small/hello-world": {
+    "source": "Hand-crafted Python files",
+    "license": "Generated/Original",
+    "attribution": ""
+  },
+  "presidents.txt": {
+    "source": "US State of the Union addresses (Project Gutenberg #5010)",
+    "license": "Public Domain",
+    "attribution": ""
+  },
+  "medium/alice": {
+    "source": "Alice in Wonderland by Lewis Carroll (Project Gutenberg #11)",
+    "license": "Public Domain",
+    "attribution": ""
+  },
+  "medium/math-facts.txt": {
+    "source": "Hand-crafted mathematical facts",
+    "license": "Generated/Original",
+    "attribution": ""
+  },
+  "large/earnest": {
+    "source": "The Importance of Being Earnest by Oscar Wilde (Project Gutenberg #844)",
+    "license": "Public Domain",
+    "attribution": ""
+  }
+}

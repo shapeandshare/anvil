@@ -1,6 +1,6 @@
 # anvil — Agent Guidelines
 
-**Last updated**: 2026-06-19 (012-ddd-services-restructure)
+**Last updated**: 2026-06-19 (013-responsible-data-governance)
 
 ## Project Overview
 
@@ -282,6 +282,12 @@ SomeException
 - Python 3.11+ (`requires-python = ">=3.11"`) + setuptools (build backend), `build`/`uv build` (wheel build), FastAPI, SQLAlchemy[asyncio], Alembic, MLflow (in-process), Jinja2 — all existing. No new runtime deps. New dev-only: `build` (or reuse `uv build`), `pytest` + `httpx` (existing) for system tests. (009-pip-installable-package)
 - SQLite via async SQLAlchemy (`data/anvil-state.db`); MLflow SQLite (`mlruns/mlflow.db`); demo/seed files bundled in package, imported into DB on first run. (009-pip-installable-package)
 - `anvil/services/` decomposed into domain sub-packages: `datasets/`, `training/`, `tracking/`, `inference/`, `demo/`, `_shared/`. 29 flat modules → 6 domain directories. (012-ddd-services-restructure)
+- Python 3.11+ + stdlib-only hashlib/json for hash-chained audit trail; no new runtime deps. (013-responsible-data-governance)
+- `anvil/workbench.py` — Session-bound AnvilWorkbench God Class exposing all DB-backed services as lazy accessors (datasets, corpora, audit, governance, demo). `get_workbench` FastAPI dependency. (013-responsible-data-governance)
+- `anvil/services/governance/` — New domain sub-package: `AuditService` (sha256 hash-chaining, raises on failure), `GovernanceService` (acceptable-use gate, license catalog, provenance assignment). Broad OSI/CC license seed idempotently seeded at startup. (013-responsible-data-governance)
+- `anvil/db/models/audit_event.py`, `anvil/db/models/license_entry.py` — ORM models for hash-chained audit trail and approved-license catalog. `Dataset`/`Corpus` gain 5 provenance columns (source_description, license_id FK, attribution_text, origin, parent_provenance_ref). (013-responsible-data-governance)
+- Bundled provenance via `anvil/data/demo/provenance.json` — machine-readable manifest with source, license, attribution per demo item. Validated at bootstrap; invalid items are skipped. (013-responsible-data-governance)
+- SQLite via async SQLAlchemy (`data/anvil-state.db`) for app metadata including provenance columns, `audit_events`, and `license_catalog` tables. (013-responsible-data-governance)
 - Python 3.11+ (helper scripts, refactors); YAML (GitHub Actions); Markdown (governance/docs); POSIX sh + GNU make (gate orchestration, existing `shared/*.mk`) + Existing dev tooling only — `ruff`, `black`, `isort`, `pylint`, `mypy` (strict), `pytest` + `pytest-cov`, `commitizen`, `uv`; GitHub Actions (`actions/checkout@v4`, `astral-sh/setup-uv` or `actions/setup-python@v5`); existing `scripts/ci/vault_audit.py` + `graph_health/`. **No new runtime or dev dependency is required.** (013-dx-harness-hardening)
 - N/A — no new persistence. (Coverage baseline stored as a config value in `pyproject.toml`; gate config stored in workflow YAML.) (013-dx-harness-hardening)
 
@@ -293,3 +299,4 @@ SomeException
 - 010-numpy-docstrings: Added NumPy-style docstring convention section to AGENTS.md, enabled ruff `D` (pydocstyle) rules with `convention = "numpy"` in `pyproject.toml`, and added full NumPy-style docstrings across all modules (~100 files). New per-file ignores for `tests/`, `examples/`, `scripts/`, `anvil/_resources/migrations/` for D rules.
 - 011-enum-convention: Added "Prefer Enumerations over Magic Strings" as Agent Behavioral Principle 11 in AGENTS.md, with rules for StrEnum usage, naming conventions, domain placement, and correct/incorrect examples. Added cross-reference in Architecture Rules.
 - 012-ddd-services-restructure: Decomposed `anvil/services/` from 29 flat `.py` modules into 6 domain sub-packages (`datasets/`, `training/`, `tracking/`, `inference/`, `demo/`, `_shared/`). All imports rewritten across 65 files. +449/−317 lines, zero behavioral delta. See Constitution Article X and ADR-022.
+- 013-responsible-data-governance: Added provenance columns to Dataset/Corpus, `license_catalog` and hash-chained `audit_events` tables, `provenance.json` manifest, `AuditService` (sha256 chain), `GovernanceService` (acceptable-use gate), and Article VII God-Class refactor (`AnvilWorkbench` session-bound, `get_workbench` dep). Alembic migration 014. See `specs/010-responsible-data-governance/` and ADR-023.

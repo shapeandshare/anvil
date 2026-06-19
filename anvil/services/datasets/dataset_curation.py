@@ -5,9 +5,12 @@ deduplicating by content hash, filtering by length bounds, applying regex
 substitutions, and computing dataset metrics.
 """
 
+from __future__ import annotations
+
 import json
 import re
 from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,8 +20,13 @@ from ...db.repositories.curation import SampleRepository
 from ...db.repositories.curation_operation_repository import CurationOperationRepository
 from ...db.repositories.datasets import DatasetRepository
 from ...storage.local import LocalFileStore
+from ..governance.audit_action import AuditAction
+from ..governance.audit_outcome import AuditOutcome
 from .curation_result import CurationResult
 from .metrics_result import MetricsResult
+
+if TYPE_CHECKING:
+    from ..governance.audit_service import AuditService
 
 
 class DatasetCurationService:
@@ -54,13 +62,21 @@ class DatasetCurationService:
         self._op_repo = CurationOperationRepository(session)
         self._dataset_repo = DatasetRepository(session)
 
-    async def deduplicate(self) -> CurationResult:
+    async def deduplicate(
+        self, audit: AuditService | None = None
+    ) -> CurationResult:
         """Remove duplicate samples by content hash.
 
         For each content hash with multiple occurrences, keeps the
         earliest sample (by ``index``) and marks the rest as removed.
         Records a ``"dedup"`` curation operation and updates the
         dataset metadata.
+
+        Parameters
+        ----------
+        audit : AuditService, optional
+            The hash-chained audit service. If provided, a ``curate``
+            event is appended to the audit trail.
 
         Returns
         -------
@@ -117,6 +133,16 @@ class DatasetCurationService:
         dataset.curation_version = (dataset.curation_version or 0) + 1
         await self._dataset_repo.update(dataset)
 
+        if audit is not None:
+            await audit.record(
+                action_type=AuditAction.CURATE.value,
+                target_type="dataset",
+                target_id=str(self._dataset_id),
+                actor="system",
+                outcome=AuditOutcome.SUCCESS.value,
+                params={"operation": "dedup", "samples_removed": total_removed},
+            )
+
         return CurationResult(
             operation_id=op.id,
             samples_removed=total_removed,
@@ -125,7 +151,10 @@ class DatasetCurationService:
         )
 
     async def filter_by_length(
-        self, min_length: int | None = None, max_length: int | None = None
+        self,
+        min_length: int | None = None,
+        max_length: int | None = None,
+        audit: AuditService | None = None,
     ) -> CurationResult:
         """Remove samples outside a character-length range.
 
@@ -141,6 +170,9 @@ class DatasetCurationService:
         max_length : int, optional
             Maximum character length. Samples longer than this are
             removed. ``None`` means no upper bound.
+        audit : AuditService, optional
+            The hash-chained audit service. If provided, a ``curate``
+            event is appended to the audit trail.
 
         Returns
         -------
@@ -192,6 +224,19 @@ class DatasetCurationService:
         dataset.curation_version = (dataset.curation_version or 0) + 1
         await self._dataset_repo.update(dataset)
 
+        if audit is not None:
+            await audit.record(
+                action_type=AuditAction.CURATE.value,
+                target_type="dataset",
+                target_id=str(self._dataset_id),
+                actor="system",
+                outcome=AuditOutcome.SUCCESS.value,
+                params={
+                    "operation": "length_filter",
+                    "samples_removed": total_removed,
+                },
+            )
+
         return CurationResult(
             operation_id=op.id,
             samples_removed=total_removed,
@@ -200,7 +245,8 @@ class DatasetCurationService:
         )
 
     async def regex_replace(
-        self, pattern: str, replacement: str, case_sensitive: bool = True
+        self, pattern: str, replacement: str, case_sensitive: bool = True,
+        audit: AuditService | None = None,
     ) -> dict:
         """Apply a regex substitution to all active sample texts.
 
@@ -217,6 +263,9 @@ class DatasetCurationService:
         case_sensitive : bool
             Whether the regex match is case-sensitive. Defaults to
             ``True``.
+        audit : AuditService, optional
+            The hash-chained audit service. If provided, a ``curate``
+            event is appended to the audit trail.
 
         Returns
         -------
@@ -285,6 +334,19 @@ class DatasetCurationService:
         dataset.curation_version = (dataset.curation_version or 0) + 1
         await self._dataset_repo.update(dataset)
 
+        if audit is not None:
+            await audit.record(
+                action_type=AuditAction.CURATE.value,
+                target_type="dataset",
+                target_id=str(self._dataset_id),
+                actor="system",
+                outcome=AuditOutcome.SUCCESS.value,
+                params={
+                    "operation": "regex_replace",
+                    "samples_affected": samples_affected,
+                },
+            )
+
         return {
             "operation_id": op.id,
             "samples_affected": samples_affected,
@@ -292,7 +354,9 @@ class DatasetCurationService:
             "samples_after": samples_after,
         }
 
-    async def delete_sample(self, sample_id: int) -> CurationResult:
+    async def delete_sample(
+        self, sample_id: int, audit: AuditService | None = None
+    ) -> CurationResult:
         """Mark a single sample as removed by its ID.
 
         Records an ``"individual_delete"`` curation operation.
@@ -301,6 +365,9 @@ class DatasetCurationService:
         ----------
         sample_id : int
             ID of the sample to delete.
+        audit : AuditService, optional
+            The hash-chained audit service. If provided, a ``curate``
+            event is appended to the audit trail.
 
         Returns
         -------
@@ -341,6 +408,16 @@ class DatasetCurationService:
         dataset.sample_count = samples_before - 1
         dataset.curation_version = (dataset.curation_version or 0) + 1
         await self._dataset_repo.update(dataset)
+
+        if audit is not None:
+            await audit.record(
+                action_type=AuditAction.CURATE.value,
+                target_type="dataset",
+                target_id=str(self._dataset_id),
+                actor="system",
+                outcome=AuditOutcome.SUCCESS.value,
+                params={"operation": "individual_delete", "sample_id": sample_id},
+            )
 
         return CurationResult(
             operation_id=op.id,

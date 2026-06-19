@@ -1,95 +1,202 @@
-"""God class exposing all high-level application services.
+"""Session-bound AnvilWorkbench — the God Class (Constitution Article VII).
 
-Provides a single entry point for service access from CLI, route
-handlers, and tests. All business logic flows through this surface;
-no consumer directly instantiates a service (FR-018).
-
-Services that need no per-request state are lazy properties.
-Services that need an async :class:`AsyncSession <sqlalchemy.ext.asyncio.AsyncSession>`
-are provided as factory methods or async context managers.
+Wraps all anvil services in a single entry point.  DB-backed services
+are bound to an ``AsyncSession`` for request-scoped transactions;
+stateless services (training, tracking, inference, export) are lazy
+properties.  Obtain a workbench via the ``get_workbench`` FastAPI
+dependency for request-scoped usage.
 """
 
 from __future__ import annotations
 
-from .services.inference.inference import InferenceService
-from .services.tracking.tracking import TrackingService
-from .services.training.export import SafetensorsExportService
-from .services.training.training import TrainingService
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+if TYPE_CHECKING:
+    from .db.repositories.corpora import CorpusRepository
+    from .db.repositories.datasets import DatasetRepository
+    from .services.datasets.corpora import CorpusService
+    from .services.datasets.dataset_curation import DatasetCurationService
+    from .services.datasets.dataset_export import DatasetExportService
+    from .services.datasets.dataset_import import DatasetImportService
+    from .services.datasets.datasets import DatasetService
+    from .services.demo.demo_bootstrap import DemoBootstrapService
+    from .services.governance.audit_service import AuditService
+    from .services.governance.governance_service import GovernanceService
+    from .services.training.training import TrainingService
+    from .storage.local import LocalFileStore
+
+__all__ = ["AnvilWorkbench"]
 
 
 class AnvilWorkbench:
-    """God class exposing high-level application services.
-
-    Provides a single entry point for service access from CLI and
-    route handlers. Wraps all stateless services as lazy properties;
-    session-dependent services are provided via factory methods.
+    """Session-bound God Class exposing all anvil services.
 
     Parameters
     ----------
-    _training : TrainingService
-        Cached training service instance.
-    _tracking : TrackingService or None
-        Cached tracking service instance, created on first access.
-    _inference : InferenceService or None
-        Cached inference service instance, created on first access.
-    _export : SafetensorsExportService or None
-        Cached export service instance, created on first access.
+    session : AsyncSession
+        Async SQLAlchemy session, scoped to the current request.
+        Services created via lazy accessors share this session so
+        audit writes, provenance updates, etc. participate in the
+        same transaction.
     """
 
-    def __init__(self) -> None:
-        self._training = TrainingService()
-        self._tracking: TrackingService | None = None
-        self._inference: InferenceService | None = None
-        self._export: SafetensorsExportService | None = None
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+        # DB-backed lazy references.
+        self._training: TrainingService | None = None
+        self._dataset_repo: DatasetRepository | None = None
+        self._corpus_repo: CorpusRepository | None = None
+        self._datasets: DatasetService | None = None
+        self._corpora: CorpusService | None = None
+        self._dataset_curation: DatasetCurationService | None = None
+        self._dataset_export: DatasetExportService | None = None
+        self._demo: DemoBootstrapService | None = None
+        self._store: LocalFileStore | None = None
+        self._audit: AuditService | None = None
+        self._governance: GovernanceService | None = None
 
-    # -- Stateless services (lazy properties) -------------------------------
+    # ── Stateless service accessors ─────────────────────────────────────
 
     @property
     def training(self) -> TrainingService:
-        """Return the training service instance.
+        """Return the stateless ``TrainingService``."""
+        if self._training is None:
+            from .services.training.training import TrainingService
 
-        Returns
-        -------
-        TrainingService
-        """
+            self._training = TrainingService()
         return self._training
 
-    @property
-    def tracking(self) -> TrackingService:
-        """Return the MLflow experiment tracking service instance.
-
-        Returns
-        -------
-        TrackingService
-        """
-        if self._tracking is None:
-            self._tracking = TrackingService()
-        return self._tracking
+    # ── Repository helpers ──────────────────────────────────────────────
 
     @property
-    def inference(self) -> InferenceService:
-        """Return the inference / demo model service instance.
+    def dataset_repo(self) -> DatasetRepository:
+        """Lazily-initialised ``DatasetRepository`` bound to *session*."""
+        if self._dataset_repo is None:
+            from .db.repositories.datasets import DatasetRepository
 
-        Returns
-        -------
-        InferenceService
-        """
-        if self._inference is None:
-            self._inference = InferenceService()
-        return self._inference
+            self._dataset_repo = DatasetRepository(self._session)
+        return self._dataset_repo
 
     @property
-    def export(self) -> SafetensorsExportService:
-        """Return the safetensors model export service instance.
+    def corpus_repo(self) -> CorpusRepository:
+        """Lazily-initialised ``CorpusRepository`` bound to *session*."""
+        if self._corpus_repo is None:
+            from .db.repositories.corpora import CorpusRepository
 
-        Returns
-        -------
-        SafetensorsExportService
+            self._corpus_repo = CorpusRepository(self._session)
+        return self._corpus_repo
+
+    @property
+    def store(self) -> LocalFileStore:
+        """Lazily-initialised ``LocalFileStore`` at ``data/datasets``."""
+        if self._store is None:
+            from .storage.local import LocalFileStore
+
+            self._store = LocalFileStore("data/datasets")
+        return self._store
+
+    # ── DB-backed domain service accessors ──────────────────────────────
+
+    @property
+    def datasets(self) -> DatasetService:
+        """Return a ``DatasetService`` wired to *session*."""
+        if self._datasets is None:
+            from .services.datasets.datasets import DatasetService
+
+            self._datasets = DatasetService(self.dataset_repo, self.store)
+        return self._datasets
+
+    @property
+    def corpora(self) -> CorpusService:
+        """Return a ``CorpusService`` wired to *session*."""
+        if self._corpora is None:
+            from .services.datasets.corpus_loader import CorpusLoader
+            from .services.datasets.corpora import CorpusService
+
+            self._corpora = CorpusService(self.corpus_repo, CorpusLoader())
+        return self._corpora
+
+    def dataset_import(self, dataset_id: int) -> DatasetImportService:
+        """Return a fresh ``DatasetImportService`` for a specific dataset.
+
+        This is a factory — not a property — because each import is scoped
+        to one dataset and carries mutable state.
         """
-        if self._export is None:
-            self._export = SafetensorsExportService()
-        return self._export
+        from .services.datasets.dataset_import import DatasetImportService
 
+        return DatasetImportService(self._session, dataset_id, self.store)
 
-# Module-level singleton for import convenience.
-workbench = AnvilWorkbench()
+    def dataset_curation(self, dataset_id: int) -> DatasetCurationService:
+        """Return a ``DatasetCurationService`` for a specific dataset."""
+        if self._dataset_curation is None:
+            from .services.datasets.dataset_curation import DatasetCurationService
+
+            self._dataset_curation = DatasetCurationService(
+                self._session, dataset_id, self.store
+            )
+        return self._dataset_curation
+
+    def dataset_export(self, dataset_id: int) -> DatasetExportService:
+        """Return a ``DatasetExportService`` for a specific dataset."""
+        if self._dataset_export is None:
+            from .services.datasets.dataset_export import DatasetExportService
+
+            self._dataset_export = DatasetExportService(
+                self._session, dataset_id, self.store
+            )
+        return self._dataset_export
+
+    @property
+    def demo(self) -> DemoBootstrapService:
+        """Return a ``DemoBootstrapService`` wired to *session*."""
+        if self._demo is None:
+            from .services.demo.demo_bootstrap import DemoBootstrapService
+
+            self._demo = DemoBootstrapService(self._session)
+        return self._demo
+
+    # ── Governance accessors ────────────────────────────────────────────
+
+    @property
+    def audit(self) -> AuditService:
+        """Return the hash-chained ``AuditService`` wired to *session*."""
+        if self._audit is None:
+            from .db.repositories.audit_events import AuditEventRepository
+            from .services.governance.audit_service import AuditService
+
+            self._audit = AuditService(AuditEventRepository(self._session))
+        return self._audit
+
+    @property
+    def governance(self) -> GovernanceService:
+        """Return the ``GovernanceService`` wired to *session*."""
+        if self._governance is None:
+            from .db.repositories.licenses import LicenseRepository
+            from .services.governance.governance_service import GovernanceService
+
+            self._governance = GovernanceService(
+                LicenseRepository(self._session),
+                self.audit,
+            )
+        return self._governance
+
+    # ── Session lifecycle ───────────────────────────────────────────────
+
+    @property
+    def session(self) -> AsyncSession:
+        """Expose the bound session for callers that need it directly."""
+        return self._session
+
+    @asynccontextmanager
+    async def transaction(self) -> AsyncGenerator[AnvilWorkbench, None]:
+        """Context manager that commits on success, rolls back on error."""
+        try:
+            yield self
+            await self._session.commit()
+        except Exception:
+            await self._session.rollback()
+            raise

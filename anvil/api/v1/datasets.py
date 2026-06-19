@@ -5,16 +5,17 @@ datasets. Supports multiple import formats (txt, csv, jsonl), curation
 operations (dedup, filter, regex replace), and export to standard formats.
 """
 
+from __future__ import annotations
+
 import asyncio
 import hashlib
 import json
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile
-from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 from starlette.responses import StreamingResponse
 
-from anvil.api.deps import get_db_session
+from anvil.api.deps import get_workbench
 from anvil.api.v1.schemas import (
     CloneDatasetBody,
     CreateDatasetBody,
@@ -27,47 +28,24 @@ from anvil.api.v1.schemas import (
 )
 from anvil.db.models.curation_operation import CurationOperation as CurationOpModel
 from anvil.db.models.dataset import Dataset
-from anvil.db.repositories.corpora import CorpusRepository
 from anvil.db.repositories.curation import SampleRepository
 from anvil.db.repositories.curation_operation_repository import (
     CurationOperationRepository,
 )
-from anvil.db.repositories.datasets import DatasetRepository
-from anvil.services.datasets.corpora import CorpusService
-from anvil.services.datasets.corpus_loader import CorpusLoader
-from anvil.services.datasets.dataset_curation import DatasetCurationService
-from anvil.services.datasets.dataset_export import DatasetExportService
-from anvil.services.datasets.dataset_import import DatasetImportService
-from anvil.services.datasets.datasets import DatasetService
+from anvil.services.governance.audit_action import AuditAction
+from anvil.services.governance.audit_outcome import AuditOutcome
 from anvil.services.tracking.tracking import TrackingService
-from anvil.storage.local import LocalFileStore
+from anvil.workbench import AnvilWorkbench
 
 router = APIRouter()
 tracking_svc = TrackingService()
-
-
-async def get_service(session: AsyncSession = Depends(get_db_session)):
-    """FastAPI dependency providing a configured ``DatasetService``.
-
-    Parameters
-    ----------
-    session : AsyncSession
-        An async SQLAlchemy session, injected by FastAPI.
-
-    Returns
-    -------
-    DatasetService
-        A service instance wired to a ``DatasetRepository``.
-    """
-    repo = DatasetRepository(session)
-    return DatasetService(repo)
 
 
 @router.get("/datasets/{id}/curate")
 async def curate_dataset_page(
     id: int,
     request: Request,
-    session: AsyncSession = Depends(get_db_session),
+    workbench: AnvilWorkbench = Depends(get_workbench),
 ):
     """Render the dataset curation page.
 
@@ -77,8 +55,8 @@ async def curate_dataset_page(
         The dataset ID.
     request : Request
         The incoming HTTP request.
-    session : AsyncSession
-        Injected database session.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
 
     Returns
     -------
@@ -90,8 +68,7 @@ async def curate_dataset_page(
     HTTPException
         If the dataset is not found (404).
     """
-    repo = DatasetRepository(session)
-    dataset = await repo.get(id)
+    dataset = await workbench.dataset_repo.get(id)
     if dataset is None:
         raise HTTPException(status_code=404, detail="Dataset not found")
     return request.app.state.templates.TemplateResponse(
@@ -135,15 +112,15 @@ def _serialize(d: Dataset) -> dict:
 
 @router.get("/datasets")
 async def list_datasets(
-    svc: DatasetService = Depends(get_service),
+    workbench: AnvilWorkbench = Depends(get_workbench),
     q: str | None = Query(None, description="Search datasets by name"),
 ):
     """List all datasets, optionally filtered by search query.
 
     Parameters
     ----------
-    svc : DatasetService
-        Injected dataset service.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
     q : str | None, optional
         Search query to filter datasets by name.
 
@@ -153,22 +130,22 @@ async def list_datasets(
         List of serialized datasets and ``"error": None``.
     """
     if q:
-        datasets = await svc.search_datasets(q)
+        datasets = await workbench.datasets.search_datasets(q)
     else:
-        datasets = await svc.list_datasets()
+        datasets = await workbench.datasets.list_datasets()
     return {"data": {"datasets": [_serialize(d) for d in datasets]}, "error": None}
 
 
 @router.get("/datasets/{id}")
-async def get_dataset(id: int, svc: DatasetService = Depends(get_service)):
+async def get_dataset(id: int, workbench: AnvilWorkbench = Depends(get_workbench)):
     """Get a single dataset by ID.
 
     Parameters
     ----------
     id : int
         The dataset ID.
-    svc : DatasetService
-        Injected dataset service.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
 
     Returns
     -------
@@ -180,7 +157,7 @@ async def get_dataset(id: int, svc: DatasetService = Depends(get_service)):
     HTTPException
         If the dataset is not found (404).
     """
-    d = await svc.get_dataset(id)
+    d = await workbench.datasets.get_dataset(id)
     if d is None:
         raise HTTPException(status_code=404, detail="Dataset not found")
     return {"data": _serialize(d), "error": None}
@@ -189,7 +166,7 @@ async def get_dataset(id: int, svc: DatasetService = Depends(get_service)):
 @router.post("/datasets")
 async def create_dataset(
     body: CreateDatasetBody,
-    svc: DatasetService = Depends(get_service),
+    workbench: AnvilWorkbench = Depends(get_workbench),
 ):
     """Create a new empty dataset.
 
@@ -197,8 +174,8 @@ async def create_dataset(
     ----------
     body : CreateDatasetBody
         Request body with ``name`` and optional ``description``.
-    svc : DatasetService
-        Injected dataset service.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
 
     Returns
     -------
@@ -212,7 +189,7 @@ async def create_dataset(
     """
     if not body.name.strip():
         raise HTTPException(status_code=422, detail="Dataset name must not be empty")
-    dataset = await svc.create_dataset(body.name.strip(), body.description)
+    dataset = await workbench.datasets.create_dataset(body.name.strip(), body.description)
     return {"data": _serialize(dataset), "error": None}
 
 
@@ -220,7 +197,7 @@ async def create_dataset(
 async def update_dataset(
     id: int,
     body: UpdateDatasetBody,
-    svc: DatasetService = Depends(get_service),
+    workbench: AnvilWorkbench = Depends(get_workbench),
 ):
     """Update an existing dataset's name and/or description.
 
@@ -230,8 +207,8 @@ async def update_dataset(
         The dataset ID.
     body : UpdateDatasetBody
         Request body with optional ``name`` and ``description``.
-    svc : DatasetService
-        Injected dataset service.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
 
     Returns
     -------
@@ -243,7 +220,7 @@ async def update_dataset(
     HTTPException
         If the dataset is not found (404).
     """
-    d = await svc.update_dataset(id, name=body.name, description=body.description)
+    d = await workbench.datasets.update_dataset(id, name=body.name, description=body.description)
     if d is None:
         raise HTTPException(status_code=404, detail="Dataset not found")
     return {"data": _serialize(d), "error": None}
@@ -252,7 +229,7 @@ async def update_dataset(
 @router.post("/datasets/upload")
 async def upload_dataset(
     file: UploadFile,
-    session: AsyncSession = Depends(get_db_session),
+    workbench: AnvilWorkbench = Depends(get_workbench),
 ):
     """Upload a dataset file and create a dataset record.
 
@@ -263,8 +240,8 @@ async def upload_dataset(
     ----------
     file : UploadFile
         The uploaded file.
-    session : AsyncSession
-        Injected database session.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
 
     Returns
     -------
@@ -283,9 +260,22 @@ async def upload_dataset(
         vocabulary_size=vocab,
         document_count=len(lines),
     )
-    session.add(dataset)
-    await session.commit()
-    await session.refresh(dataset)
+    workbench.session.add(dataset)
+    await workbench.session.commit()
+    await workbench.session.refresh(dataset)
+
+    await workbench.audit.record(
+        action_type=AuditAction.UPLOAD.value,
+        target_type="dataset",
+        target_id=str(dataset.id),
+        actor="system",
+        outcome=AuditOutcome.SUCCESS.value,
+        params={
+            "name": dataset.name,
+            "vocabulary_size": dataset.vocabulary_size,
+            "sample_count": dataset.sample_count,
+        },
+    )
 
     # Track dataset creation in MLflow
     try:
@@ -309,7 +299,7 @@ async def upload_dataset(
 @router.delete("/datasets/{id}")
 async def delete_dataset(
     id: int,
-    svc: DatasetService = Depends(get_service),
+    workbench: AnvilWorkbench = Depends(get_workbench),
     force: bool = Query(False, description="Force delete demo dataset"),
 ):
     """Delete a dataset by ID.
@@ -321,8 +311,8 @@ async def delete_dataset(
     ----------
     id : int
         The dataset ID.
-    svc : DatasetService
-        Injected dataset service.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
     force : bool, optional
         Force deletion of demo-protected datasets. Defaults to ``False``.
 
@@ -336,7 +326,7 @@ async def delete_dataset(
     HTTPException
         If the dataset is not found (404) or is demo-protected (409).
     """
-    ds = await svc.get_dataset(id)
+    ds = await workbench.datasets.get_dataset(id)
     if ds is None:
         raise HTTPException(status_code=404, detail="Dataset not found")
     if ds.name.startswith("Demo - ") and not force:
@@ -349,7 +339,7 @@ async def delete_dataset(
             ),
         )
     try:
-        await svc.delete_dataset(id)
+        await workbench.datasets.delete_dataset(id, audit=workbench.audit)
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
 
@@ -369,7 +359,7 @@ async def delete_dataset(
 async def clone_dataset(
     id: int,
     body: CloneDatasetBody,
-    session: AsyncSession = Depends(get_db_session),
+    workbench: AnvilWorkbench = Depends(get_workbench),
 ):
     """Clone an existing dataset into a new dataset.
 
@@ -385,8 +375,8 @@ async def clone_dataset(
         The source dataset ID to clone.
     body : CloneDatasetBody
         Request body with ``name`` for the new dataset and optional ``description``.
-    session : AsyncSession
-        Injected database session.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
 
     Returns
     -------
@@ -399,21 +389,20 @@ async def clone_dataset(
         If the source dataset is not found (404), has no samples (422),
         the new name is empty (422), or the new name already exists (422).
     """
-    ds_repo = DatasetRepository(session)
-    source = await ds_repo.get(id)
+    source = await workbench.dataset_repo.get(id)
     if source is None:
         raise HTTPException(status_code=404, detail="Source dataset not found")
 
     name = body.name.strip()
     if not name:
         raise HTTPException(status_code=422, detail="Dataset name must not be empty")
-    if await ds_repo.get_by_name(name):
+    if await workbench.dataset_repo.get_by_name(name):
         raise HTTPException(
             status_code=422,
             detail=f"Dataset name '{name}' already exists",
         )
 
-    sample_repo = SampleRepository(session)
+    sample_repo = SampleRepository(workbench.session)
     source_samples = await sample_repo.get_active_texts(id)
     if not source_samples:
         raise HTTPException(
@@ -421,29 +410,26 @@ async def clone_dataset(
             detail="Source dataset has no active samples to clone",
         )
 
-    store = LocalFileStore("data/datasets")
-
     docs = []
     for sample in source_samples:
         text_bytes = b""
-        async for chunk in store.get(sample.file_path):
+        async for chunk in workbench.store.get(sample.file_path):
             text_bytes += chunk
         docs.append(text_bytes.decode("utf-8"))
 
-    ds_svc = DatasetService(ds_repo)
-    new_dataset = await ds_svc.create_dataset(
+    new_dataset = await workbench.datasets.create_dataset(
         name=name,
         description=body.description or source.description,
     )
 
-    import_svc = DatasetImportService(session, new_dataset.id, store)
+    import_svc = workbench.dataset_import(new_dataset.id)
     await import_svc.commit_docs_import(
         docs=docs,
         source_label=f"clone:dataset-{id}",
         source_format="clone",
     )
 
-    await session.refresh(new_dataset)
+    await workbench.session.refresh(new_dataset)
 
     try:
         if not tracking_svc.is_degraded:
@@ -462,7 +448,7 @@ async def clone_dataset(
 async def import_dataset(
     id: int,
     body: ImportBody,
-    session: AsyncSession = Depends(get_db_session),
+    workbench: AnvilWorkbench = Depends(get_workbench),
 ):
     """Import raw text into an existing dataset.
 
@@ -478,8 +464,8 @@ async def import_dataset(
     body : ImportBody
         Request body with ``format`` (e.g. ``"txt"``, ``"csv"``, ``"jsonl"``)
         and ``text`` content to import.
-    session : AsyncSession
-        Injected database session.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
 
     Returns
     -------
@@ -492,11 +478,20 @@ async def import_dataset(
     HTTPException
         If the dataset is not found (404) or the import fails (404).
     """
-    svc = DatasetImportService(session, id)
+    import_svc = workbench.dataset_import(id)
     try:
-        result = await svc.commit_import(body.text, body.format)
+        result = await import_svc.commit_import(body.text, body.format)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+    await workbench.audit.record(
+        action_type=AuditAction.IMPORT.value,
+        target_type="dataset",
+        target_id=str(id),
+        actor="system",
+        outcome=AuditOutcome.SUCCESS.value,
+        params={"format": body.format, "rows_imported": result.rows_imported},
+    )
 
     try:
         if not tracking_svc.is_degraded:
@@ -523,7 +518,7 @@ async def import_dataset(
 async def import_dataset_from_corpus(
     id: int,
     body: dict,
-    session: AsyncSession = Depends(get_db_session),
+    workbench: AnvilWorkbench = Depends(get_workbench),
 ):
     """Import documents from a corpus into an existing dataset.
 
@@ -538,8 +533,8 @@ async def import_dataset_from_corpus(
         The target dataset ID.
     body : dict
         Request body with ``corpus_id`` specifying the source corpus.
-    session : AsyncSession
-        Injected database session.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
 
     Returns
     -------
@@ -556,14 +551,11 @@ async def import_dataset_from_corpus(
     corpus_id = body.get("corpus_id")
     if not corpus_id:
         raise HTTPException(status_code=422, detail="corpus_id required")
-    repo = CorpusRepository(session)
-    loader = CorpusLoader()
-    svc = CorpusService(repo, loader)
     try:
-        docs = await svc.load_docs(corpus_id)
+        docs = await workbench.corpora.load_docs(corpus_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
-    import_svc = DatasetImportService(session, id)
+    import_svc = workbench.dataset_import(id)
     result = await import_svc.commit_corpus_import(docs)
     return {
         "data": {
@@ -578,7 +570,7 @@ async def import_dataset_from_corpus(
 @router.post("/datasets/from-corpus")
 async def create_dataset_from_corpus(
     body: CreateFromCorpusBody,
-    session: AsyncSession = Depends(get_db_session),
+    workbench: AnvilWorkbench = Depends(get_workbench),
 ):
     """Create a new dataset by ingesting and chunking content from a corpus.
 
@@ -595,8 +587,8 @@ async def create_dataset_from_corpus(
         ``chunking_strategy`` (``"windowed"``, ``"file"``, or ``"line"``),
         optional ``block_size`` (required for ``"windowed"``), and
         ``chunk_overlap``.
-    session : AsyncSession
-        Injected database session.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
 
     Returns
     -------
@@ -610,16 +602,14 @@ async def create_dataset_from_corpus(
         the name already exists (422), ``block_size`` is missing for
         windowed chunking (422), or the chunking strategy is unsupported (422).
     """
-    corpus_repo = CorpusRepository(session)
-    corpus = await corpus_repo.get(body.corpus_id)
+    corpus = await workbench.corpus_repo.get(body.corpus_id)
     if corpus is None:
         raise HTTPException(status_code=404, detail="Corpus not found")
 
     name = body.name.strip()
     if not name:
         raise HTTPException(status_code=422, detail="Dataset name must not be empty")
-    ds_repo = DatasetRepository(session)
-    if await ds_repo.get_by_name(name):
+    if await workbench.dataset_repo.get_by_name(name):
         raise HTTPException(
             status_code=422,
             detail=f"Dataset name '{name}' already exists",
@@ -638,6 +628,8 @@ async def create_dataset_from_corpus(
 
     inc = json.loads(corpus.include_patterns) if corpus.include_patterns else None
     exc = json.loads(corpus.exclude_patterns) if corpus.exclude_patterns else None
+
+    from anvil.services.datasets.corpus_loader import CorpusLoader
 
     loader = CorpusLoader()
     load_result = loader.ingest(
@@ -679,20 +671,19 @@ async def create_dataset_from_corpus(
             for chunk in chunker.chunk(text):
                 docs.append(chunk)
 
-    ds_svc = DatasetService(ds_repo)
-    new_dataset = await ds_svc.create_dataset(
+    new_dataset = await workbench.datasets.create_dataset(
         name=name,
         description=body.description or f"Re-chunked from corpus '{corpus.name}'",
     )
 
-    import_svc = DatasetImportService(session, new_dataset.id)
+    import_svc = workbench.dataset_import(new_dataset.id)
     await import_svc.commit_docs_import(
         docs=docs,
         source_label=f"corpus:{body.corpus_id}",
         source_format="docs",
     )
 
-    await session.refresh(new_dataset)
+    await workbench.session.refresh(new_dataset)
 
     try:
         if not tracking_svc.is_degraded:
@@ -716,7 +707,7 @@ async def preview_import(
     id: int,
     format: str = Query(...),
     text: str = Query(...),
-    session: AsyncSession = Depends(get_db_session),
+    workbench: AnvilWorkbench = Depends(get_workbench),
 ):
     """Preview how text content will be parsed before actual import.
 
@@ -733,8 +724,8 @@ async def preview_import(
         Import format to preview (e.g. ``"txt"``, ``"csv"``, ``"jsonl"``).
     text : str
         Raw text content to preview.
-    session : AsyncSession
-        Injected database session.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
 
     Returns
     -------
@@ -742,8 +733,8 @@ async def preview_import(
         Preview of parsed results with ``preview`` and ``errors`` lists,
         plus ``"error": None``.
     """
-    svc = DatasetImportService(session, id)
-    preview, errors = await svc.preview_import(text, format)
+    import_svc = workbench.dataset_import(id)
+    preview, errors = await import_svc.preview_import(text, format)
     return {"data": {"preview": preview, "errors": errors}, "error": None}
 
 
@@ -753,7 +744,7 @@ async def list_samples(
     offset: int = Query(0),
     limit: int = Query(50),
     search: str | None = Query(None),
-    session: AsyncSession = Depends(get_db_session),
+    workbench: AnvilWorkbench = Depends(get_workbench),
 ):
     """List samples for a dataset with pagination and search.
 
@@ -773,8 +764,8 @@ async def list_samples(
         Maximum samples to return. Defaults to ``50``.
     search : str | None, optional
         Optional search string to filter samples.
-    session : AsyncSession
-        Injected database session.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
 
     Returns
     -------
@@ -783,13 +774,12 @@ async def list_samples(
         ``length``, ``content_hash``, plus ``total``, ``offset``, ``limit``,
         and ``"error": None``.
     """
-    repo = SampleRepository(session)
+    repo = SampleRepository(workbench.session)
     samples, total = await repo.get_active_by_dataset(id, offset, limit, search)
-    store = LocalFileStore("data/datasets")
     result = []
     for s in samples:
         text_bytes = b""
-        async for chunk in store.get(s.file_path):
+        async for chunk in workbench.store.get(s.file_path):
             text_bytes += chunk
             if len(text_bytes) >= 200:
                 break
@@ -814,7 +804,7 @@ async def update_sample(
     id: int,
     sample_id: int,
     body: UpdateSampleBody,
-    session: AsyncSession = Depends(get_db_session),
+    workbench: AnvilWorkbench = Depends(get_workbench),
 ):
     """Update the text content of a single dataset sample.
 
@@ -831,8 +821,8 @@ async def update_sample(
         The sample ID to update.
     body : UpdateSampleBody
         Request body with new ``text`` content.
-    session : AsyncSession
-        Injected database session.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
 
     Returns
     -------
@@ -845,12 +835,10 @@ async def update_sample(
     HTTPException
         If the sample is not found (404) or does not belong to the dataset.
     """
-    repo = SampleRepository(session)
+    repo = SampleRepository(workbench.session)
     sample = await repo.get(sample_id)
     if sample is None or sample.dataset_id != id:
         raise HTTPException(status_code=404, detail="Sample not found")
-
-    store = LocalFileStore("data/datasets")
 
     async def _text_stream(text: str):
         """Convert string to UTF-8 byte chunks for storage.
@@ -867,11 +855,11 @@ async def update_sample(
         """
         yield text.encode("utf-8")
 
-    await store.put(sample.file_path, _text_stream(body.text))
+    await workbench.store.put(sample.file_path, _text_stream(body.text))
     sample.length = len(body.text)
     sample.content_hash = hashlib.sha256(body.text.encode("utf-8")).hexdigest()
 
-    op_repo = CurationOperationRepository(session)
+    op_repo = CurationOperationRepository(workbench.session)
     op = CurationOpModel(
         dataset_id=id,
         operation_type="individual_edit",
@@ -880,7 +868,7 @@ async def update_sample(
         sample_count_after=0,
     )
     await op_repo.add(op)
-    await session.commit()
+    await workbench.session.commit()
 
     return {"data": {"sample_id": sample.id, "length": sample.length}, "error": None}
 
@@ -889,7 +877,7 @@ async def update_sample(
 async def delete_dataset_sample(
     id: int,
     sample_id: int,
-    session: AsyncSession = Depends(get_db_session),
+    workbench: AnvilWorkbench = Depends(get_workbench),
 ):
     """Delete a single sample from a dataset.
 
@@ -903,8 +891,8 @@ async def delete_dataset_sample(
         The dataset ID.
     sample_id : int
         The sample ID to delete.
-    session : AsyncSession
-        Injected database session.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
 
     Returns
     -------
@@ -916,19 +904,19 @@ async def delete_dataset_sample(
     HTTPException
         If the sample is not found (404).
     """
-    svc = DatasetCurationService(session, id)
+    curation_svc = workbench.dataset_curation(id)
     try:
-        await svc.delete_sample(sample_id)
+        await curation_svc.delete_sample(sample_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
-    await session.commit()
+    await workbench.session.commit()
     return {"data": {"message": "Sample removed"}, "error": None}
 
 
 @router.post("/datasets/{id}/curate/dedup")
 async def curate_dedup(
     id: int,
-    session: AsyncSession = Depends(get_db_session),
+    workbench: AnvilWorkbench = Depends(get_workbench),
 ):
     """Remove duplicate samples from a dataset.
 
@@ -941,8 +929,8 @@ async def curate_dedup(
     ----------
     id : int
         The dataset ID.
-    session : AsyncSession
-        Injected database session.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
 
     Returns
     -------
@@ -955,12 +943,12 @@ async def curate_dedup(
     HTTPException
         If the dataset is not found (404).
     """
-    svc = DatasetCurationService(session, id)
+    curation_svc = workbench.dataset_curation(id)
     try:
-        result = await svc.deduplicate()
+        result = await curation_svc.deduplicate()
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
-    await session.commit()
+    await workbench.session.commit()
 
     try:
         if not tracking_svc.is_degraded:
@@ -987,7 +975,7 @@ async def curate_dedup(
 async def curate_filter(
     id: int,
     body: FilterBody,
-    session: AsyncSession = Depends(get_db_session),
+    workbench: AnvilWorkbench = Depends(get_workbench),
 ):
     """Filter dataset samples by length constraints.
 
@@ -1003,8 +991,8 @@ async def curate_filter(
     body : FilterBody
         Request body with optional ``min_length`` and ``max_length``
         character bounds.
-    session : AsyncSession
-        Injected database session.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
 
     Returns
     -------
@@ -1017,12 +1005,12 @@ async def curate_filter(
     HTTPException
         If the dataset is not found (404).
     """
-    svc = DatasetCurationService(session, id)
+    curation_svc = workbench.dataset_curation(id)
     try:
-        result = await svc.filter_by_length(body.min_length, body.max_length)
+        result = await curation_svc.filter_by_length(body.min_length, body.max_length)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
-    await session.commit()
+    await workbench.session.commit()
 
     try:
         if not tracking_svc.is_degraded:
@@ -1049,7 +1037,7 @@ async def curate_filter(
 async def curate_replace(
     id: int,
     body: ReplaceBody,
-    session: AsyncSession = Depends(get_db_session),
+    workbench: AnvilWorkbench = Depends(get_workbench),
 ):
     """Apply regex replacement across all dataset samples.
 
@@ -1066,8 +1054,8 @@ async def curate_replace(
     body : ReplaceBody
         Request body with ``pattern`` (regex), ``replacement`` string,
         and optional ``case_sensitive`` flag.
-    session : AsyncSession
-        Injected database session.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
 
     Returns
     -------
@@ -1080,14 +1068,14 @@ async def curate_replace(
     HTTPException
         If the dataset is not found (404).
     """
-    svc = DatasetCurationService(session, id)
+    curation_svc = workbench.dataset_curation(id)
     try:
-        result = await svc.regex_replace(
+        result = await curation_svc.regex_replace(
             body.pattern, body.replacement, body.case_sensitive
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
-    await session.commit()
+    await workbench.session.commit()
 
     try:
         if not tracking_svc.is_degraded:
@@ -1113,7 +1101,7 @@ async def curate_replace(
 @router.get("/datasets/{id}/metrics")
 async def get_metrics(
     id: int,
-    session: AsyncSession = Depends(get_db_session),
+    workbench: AnvilWorkbench = Depends(get_workbench),
 ):
     """Get statistical metrics for a dataset.
 
@@ -1127,8 +1115,8 @@ async def get_metrics(
     ----------
     id : int
         The dataset ID.
-    session : AsyncSession
-        Injected database session.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
 
     Returns
     -------
@@ -1137,8 +1125,8 @@ async def get_metrics(
         ``estimated_tokens``, ``vocabulary_size``, ``length_distribution``,
         ``duplicate_count``, and ``"error": None``.
     """
-    svc = DatasetCurationService(session, id)
-    result = await svc.get_metrics()
+    curation_svc = workbench.dataset_curation(id)
+    result = await curation_svc.get_metrics()
     return {
         "data": {
             "sample_count": result.sample_count,
@@ -1156,7 +1144,7 @@ async def get_metrics(
 async def export_dataset(
     id: int,
     format: str = Query(...),
-    session: AsyncSession = Depends(get_db_session),
+    workbench: AnvilWorkbench = Depends(get_workbench),
 ):
     """Export a dataset to a downloadable file stream.
 
@@ -1172,8 +1160,8 @@ async def export_dataset(
         The dataset ID.
     format : str
         Export format: ``"txt"``, ``"csv"``, or ``"jsonl"``.
-    session : AsyncSession
-        Injected database session.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
 
     Returns
     -------
@@ -1189,18 +1177,18 @@ async def export_dataset(
         raise HTTPException(
             status_code=422, detail="Unsupported format. Use txt, csv, or jsonl."
         )
-    svc = DatasetExportService(session, id)
+    export_svc = workbench.dataset_export(id)
     content_type = {
         "txt": "text/plain",
         "csv": "text/csv",
         "jsonl": "application/x-ndjson",
     }[format]
     if format == "txt":
-        generator = svc.export_txt()
+        generator = export_svc.export_txt()
     elif format == "csv":
-        generator = svc.export_csv()
+        generator = export_svc.export_csv()
     else:
-        generator = svc.export_jsonl()
+        generator = export_svc.export_jsonl()
 
     async def bytes_gen():
         """Convert string chunks to UTF-8 byte chunks for streaming.
@@ -1225,7 +1213,7 @@ async def export_dataset(
 @router.get("/datasets/{id}/operations")
 async def list_operations(
     id: int,
-    session: AsyncSession = Depends(get_db_session),
+    workbench: AnvilWorkbench = Depends(get_workbench),
 ):
     """List all curation operations applied to a dataset.
 
@@ -1239,8 +1227,8 @@ async def list_operations(
     ----------
     id : int
         The dataset ID.
-    session : AsyncSession
-        Injected database session.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
 
     Returns
     -------
@@ -1249,7 +1237,7 @@ async def list_operations(
         ``parameters``, ``sample_count_before``, ``sample_count_after``,
         ``created_at``, and ``"error": None``.
     """
-    repo = CurationOperationRepository(session)
+    repo = CurationOperationRepository(workbench.session)
     ops = await repo.get_by_dataset(id)
     return {
         "data": {

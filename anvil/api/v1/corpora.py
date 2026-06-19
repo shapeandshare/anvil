@@ -6,18 +6,17 @@ ingested as training documents. Supports gitignore-style pattern filtering,
 language detection, and chunking strategy configuration.
 """
 
+from __future__ import annotations
+
 import json
 import os
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...api.deps import get_db_session
-from ...db.repositories.corpora import CorpusRepository
-from ...services.datasets.corpora import CorpusService
-from ...services.datasets.corpus_loader import CorpusLoader
+from ...api.deps import get_workbench
 from ...services.tracking.tracking import TrackingService
+from ...workbench import AnvilWorkbench
 
 WORKSPACE_ROOTS = [
     os.path.expanduser("~/Workbench/Repositories"),
@@ -37,29 +36,10 @@ router = APIRouter()
 tracking_svc = TrackingService()
 
 
-async def get_service(session: AsyncSession = Depends(get_db_session)):
-    """FastAPI dependency providing a configured ``CorpusService``.
-
-    Parameters
-    ----------
-    session : AsyncSession
-        An async SQLAlchemy session, injected by FastAPI.
-
-    Returns
-    -------
-    CorpusService
-        A service instance wired to a ``CorpusRepository`` and ``CorpusLoader``.
-    """
-    repo = CorpusRepository(session)
-    loader = CorpusLoader()
-    return CorpusService(repo, loader)
-
-
 @router.post("/corpora")
 async def create_corpus(
     body: dict,
-    svc: CorpusService = Depends(get_service),
-    session: AsyncSession = Depends(get_db_session),
+    workbench: AnvilWorkbench = Depends(get_workbench),
 ):
     """Create a new corpus from a directory path.
 
@@ -79,10 +59,8 @@ async def create_corpus(
           - ``chunking_strategy``: str, optional (default ``"windowed"``)
           - ``chunk_overlap``: float, optional (default ``0.5``)
           - ``block_size``: int, optional (default ``16``)
-    svc : CorpusService
-        Injected corpus service.
-    session : AsyncSession
-        Injected database session.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
 
     Returns
     -------
@@ -103,7 +81,7 @@ async def create_corpus(
             inc = [p.strip() for p in inc]
         if exc:
             exc = [p.strip() for p in exc]
-        corpus = await svc.create(
+        corpus = await workbench.corpora.create(
             name=name,
             root_path=root_path,
             description=body.get("description"),
@@ -115,7 +93,7 @@ async def create_corpus(
         )
 
         # Commit so MLflow tracking (which opens its own DB session) can read the corpus
-        await session.commit()
+        await workbench.session.commit()
 
         mlflow_run_id = await tracking_svc.start_run(
             run_name=f"corpus-create-{corpus.id}",
@@ -150,7 +128,7 @@ async def create_corpus(
                 )
 
     except ValueError as exc:
-        await session.rollback()
+        await workbench.session.rollback()
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return {"data": _corpus_to_dict(corpus), "error": None}
 
@@ -159,8 +137,7 @@ async def create_corpus(
 async def fork_corpus(
     id: int,
     body: dict,
-    svc: CorpusService = Depends(get_service),
-    session: AsyncSession = Depends(get_db_session),
+    workbench: AnvilWorkbench = Depends(get_workbench),
 ):
     """Create a new corpus variant from an existing one.
 
@@ -182,10 +159,8 @@ async def fork_corpus(
           - ``chunking_strategy``: str, optional
           - ``chunk_overlap``: float, optional
           - ``block_size``: int, optional
-    svc : CorpusService
-        Injected corpus service.
-    session : AsyncSession
-        Injected database session.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
 
     Returns
     -------
@@ -205,7 +180,7 @@ async def fork_corpus(
             inc = [p.strip() for p in inc]
         if exc:
             exc = [p.strip() for p in exc]
-        corpus = await svc.fork(
+        corpus = await workbench.corpora.fork(
             source_id=id,
             name=name,
             description=body.get("description"),
@@ -216,7 +191,7 @@ async def fork_corpus(
             block_size=body.get("block_size"),
         )
 
-        await session.commit()
+        await workbench.session.commit()
 
         mlflow_run_id = await tracking_svc.start_run(
             run_name=f"corpus-fork-{corpus.id}",
@@ -247,26 +222,26 @@ async def fork_corpus(
             )
 
     except ValueError as exc:
-        await session.rollback()
+        await workbench.session.rollback()
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return {"data": _corpus_to_dict(corpus), "error": None}
 
 
 @router.get("/corpora")
-async def list_corpora(svc: CorpusService = Depends(get_service)):
+async def list_corpora(workbench: AnvilWorkbench = Depends(get_workbench)):
     """List all corpora.
 
     Parameters
     ----------
-    svc : CorpusService
-        Injected corpus service.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
 
     Returns
     -------
     dict
         List of corpus dicts and ``"error": None``.
     """
-    corpora = await svc.list()
+    corpora = await workbench.corpora.list()
     return {
         "data": [_corpus_to_dict(c) for c in corpora],
         "error": None,
@@ -274,15 +249,15 @@ async def list_corpora(svc: CorpusService = Depends(get_service)):
 
 
 @router.get("/corpora/{id}")
-async def get_corpus(id: int, svc: CorpusService = Depends(get_service)):
+async def get_corpus(id: int, workbench: AnvilWorkbench = Depends(get_workbench)):
     """Get a single corpus by ID.
 
     Parameters
     ----------
     id : int
         The corpus ID.
-    svc : CorpusService
-        Injected corpus service.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
 
     Returns
     -------
@@ -295,7 +270,7 @@ async def get_corpus(id: int, svc: CorpusService = Depends(get_service)):
     HTTPException
         If the corpus is not found (404).
     """
-    corpus = await svc.get(id)
+    corpus = await workbench.corpora.get(id)
     if corpus is None:
         raise HTTPException(status_code=404, detail="Corpus not found")
     lang_map = None
@@ -315,7 +290,7 @@ async def get_corpus(id: int, svc: CorpusService = Depends(get_service)):
 
 
 @router.delete("/corpora/{id}")
-async def delete_corpus(id: int, svc: CorpusService = Depends(get_service)):
+async def delete_corpus(id: int, workbench: AnvilWorkbench = Depends(get_workbench)):
     """Delete a corpus by ID.
 
     Also logs a lifecycle event via ``TrackingService``.
@@ -324,8 +299,8 @@ async def delete_corpus(id: int, svc: CorpusService = Depends(get_service)):
     ----------
     id : int
         The corpus ID.
-    svc : CorpusService
-        Injected corpus service.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
 
     Returns
     -------
@@ -337,7 +312,7 @@ async def delete_corpus(id: int, svc: CorpusService = Depends(get_service)):
     HTTPException
         If the corpus is not found (404).
     """
-    deleted = await svc.delete(id)
+    deleted = await workbench.corpora.delete(id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Corpus not found")
     # Phase 1B: lifecycle tracking for delete
@@ -357,7 +332,7 @@ async def delete_corpus(id: int, svc: CorpusService = Depends(get_service)):
 async def ingest_corpus(
     id: int,
     max_files: int = 10000,
-    svc: CorpusService = Depends(get_service),
+    workbench: AnvilWorkbench = Depends(get_workbench),
 ):
     """Ingest files from a corpus directory into documents.
 
@@ -370,8 +345,8 @@ async def ingest_corpus(
         The corpus ID.
     max_files : int, optional
         Maximum number of files to ingest (default ``10000``).
-    svc : CorpusService
-        Injected corpus service.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
 
     Returns
     -------
@@ -385,7 +360,7 @@ async def ingest_corpus(
         If the corpus is not found or the path is invalid (422).
     """
     try:
-        corpus, errors = await svc.ingest(id, max_files)
+        corpus, errors = await workbench.corpora.ingest(id, max_files)
     except (ValueError, NotADirectoryError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -443,7 +418,7 @@ async def ingest_corpus(
 async def list_corpus_files(
     id: int,
     language: str | None = None,
-    svc: CorpusService = Depends(get_service),
+    workbench: AnvilWorkbench = Depends(get_workbench),
 ):
     """List files belonging to a corpus, optionally filtered by language.
 
@@ -453,15 +428,15 @@ async def list_corpus_files(
         The corpus ID.
     language : str | None, optional
         Filter by language (e.g. ``"Python"``, ``"Markdown"``).
-    svc : CorpusService
-        Injected corpus service.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
 
     Returns
     -------
     dict
         List of file metadata dicts and ``"error": None``.
     """
-    files = await svc.get_files(id, language)
+    files = await workbench.corpora.get_files(id, language)
     return {
         "data": [
             {
@@ -484,7 +459,7 @@ async def list_corpus_files(
 async def get_corpus_file(
     id: int,
     file_id: int,
-    svc: CorpusService = Depends(get_service),
+    workbench: AnvilWorkbench = Depends(get_workbench),
 ):
     """Get a single file from a corpus by file ID.
 
@@ -494,8 +469,8 @@ async def get_corpus_file(
         The corpus ID.
     file_id : int
         The file ID.
-    svc : CorpusService
-        Injected corpus service.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
 
     Returns
     -------
@@ -507,7 +482,7 @@ async def get_corpus_file(
     HTTPException
         If the file is not found (404).
     """
-    f = await svc.get_file(file_id)
+    f = await workbench.corpora.get_file(file_id)
     if f is None or f.corpus_id != id:
         raise HTTPException(status_code=404, detail="File not found")
     return {
@@ -593,6 +568,8 @@ async def analyze_path(body: dict):
     root_path = body["path"].strip()
     inc = body.get("include_patterns")
     exc = body.get("exclude_patterns")
+
+    from ...services.datasets.corpus_loader import CorpusLoader
 
     loader = CorpusLoader()
     try:
