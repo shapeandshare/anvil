@@ -45,6 +45,7 @@ anvil = [
     "_resources/migrations/versions/*.py",
     "data/demo/**/*.txt",
     "data/demo/**/*.md",
+    "data/demo/**/*.json",
     "api/static/**/*",
     "api/templates/**/*",
 ]

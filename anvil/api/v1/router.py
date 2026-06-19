@@ -20,6 +20,7 @@ from fastapi.responses import HTMLResponse
 from anvil import __version__ as anvil_version
 from anvil.api.v1.compute import router as compute_router
 from anvil.api.v1.corpora import router as corpora_router
+from anvil.api.v1.governance import router as governance_router
 from anvil.api.v1.datasets import router as datasets_router
 from anvil.api.v1.eval import router as eval_router
 from anvil.api.v1.eval_datasets import router as eval_datasets_router
@@ -41,6 +42,7 @@ router.include_router(eval_router)
 router.include_router(eval_datasets_router)
 router.include_router(inference_router)
 router.include_router(compute_router)
+router.include_router(governance_router)
 
 MODELS_DIR = Path("data/models")
 """Path: Directory where trained model artifacts are stored on disk."""
@@ -429,6 +431,26 @@ async def root(request: Request):
     )
 
 
+@router.get("/acceptable-use", response_class=HTMLResponse)
+async def acceptable_use_page(request: Request):
+    """Render the acceptable-use policy page.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming HTTP request.
+
+    Returns
+    -------
+    HTMLResponse
+        Rendered ``acceptable_use.html`` template.
+    """
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "acceptable_use.html",
+    )
+
+
 @router.get("/training-page", response_class=HTMLResponse)
 async def training_page(request: Request):
     """Render the training configuration and control page.
@@ -490,6 +512,25 @@ async def graph_concept_page(request: Request):
     )
 
 
+_ACCEPTABLE_LICENSES = [
+    "Own / private / proprietary content",
+    "MIT License",
+    "Apache License 2.0",
+    "GNU General Public License v3.0",
+    "GNU General Public License v2.0",
+    "BSD 2-Clause License",
+    "BSD 3-Clause License",
+    "Creative Commons Attribution 4.0 (CC-BY-4.0)",
+    "Creative Commons Attribution-ShareAlike 4.0 (CC-BY-SA-4.0)",
+    "Creative Commons Zero v1.0 Universal (CC0-1.0)",
+    "The Unlicense",
+    "Mozilla Public License 2.0",
+    "GNU Lesser General Public License v3.0",
+    "Other open-source license",
+]
+"""list[str]: Recognized license identifiers for dataset provenance declarations."""
+
+
 @router.get("/datasets-page", response_class=HTMLResponse)
 async def datasets_page(request: Request):
     """Render the dataset management page.
@@ -502,11 +543,12 @@ async def datasets_page(request: Request):
     Returns
     -------
     HTMLResponse
-        Rendered ``datasets.html`` template.
+        Rendered ``datasets.html`` template with license options.
     """
     return request.app.state.templates.TemplateResponse(
         request,
         "datasets.html",
+        {"licenses": _ACCEPTABLE_LICENSES},
     )
 
 

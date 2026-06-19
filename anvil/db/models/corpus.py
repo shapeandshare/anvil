@@ -85,6 +85,14 @@ class Corpus(Base, TimestampMixin):
     document_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     language_map: Mapped[str | None] = mapped_column(Text, nullable=True)
     errors: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Provenance fields (added by 014_add_governance migration).
+    source_description: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    license_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("license_catalog.id", ondelete="RESTRICT"), nullable=True
+    )
+    attribution_text: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    origin: Mapped[str] = mapped_column(String(20), default="user")
+    parent_provenance_ref: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     files: Mapped[list[CorpusFile]] = relationship(
         "CorpusFile", back_populates="corpus", cascade="all, delete-orphan"

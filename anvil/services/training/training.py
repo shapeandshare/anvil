@@ -125,7 +125,6 @@ class TrainingService:
         if dataset_id is not None:
             from ...db.session import AsyncSessionLocal
             from ...db.repositories.corpora import CorpusRepository
-            from ...db.session import AsyncSessionLocal
             from ..datasets.corpora import CorpusService
             from ..datasets.corpus_loader import CorpusLoader
 

@@ -5,9 +5,18 @@ deleting, and searching datasets, as well as loading their sample
 content from the file store.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from ...db.models.dataset import Dataset
 from ...db.repositories.datasets import DatasetRepository
 from ...storage.local import LocalFileStore
+from ..governance.audit_action import AuditAction
+from ..governance.audit_outcome import AuditOutcome
+
+if TYPE_CHECKING:
+    from ..governance.audit_service import AuditService
 
 
 class DatasetService:
@@ -105,16 +114,19 @@ class DatasetService:
             dataset.description = description
         return await self._repo.update(dataset)
 
-    async def delete_dataset(self, id: int):
+    async def delete_dataset(self, id: int, audit: AuditService | None = None):
         """Delete a dataset by ID.
 
         Checks for referencing training configs before deletion and
-        logs a lifecycle event to MLflow in the background.
+        records a ``delete`` audit event.
 
         Parameters
         ----------
         id : int
             The dataset ID to delete.
+        audit : AuditService, optional
+            The hash-chained audit service. If provided, a ``delete``
+            event is appended to the audit trail.
 
         Raises
         ------
@@ -128,18 +140,14 @@ class DatasetService:
                 f"Cannot delete dataset: {len(configs)} training config(s) reference it: {names}"
             )
 
-        # Non-blocking MLflow lifecycle hook
-        try:
-            from ..tracking.tracking import TrackingService
-
-            tracking_svc = TrackingService()
-            if not tracking_svc.is_degraded:
-                await tracking_svc.log_dataset_lifecycle_event(
-                    dataset_id=id,
-                    event_type="delete",
-                )
-        except Exception:
-            pass
+        if audit is not None:
+            await audit.record(
+                action_type=AuditAction.DELETE.value,
+                target_type="dataset",
+                target_id=str(id),
+                actor="system",
+                outcome=AuditOutcome.SUCCESS.value,
+            )
 
         await self._repo.delete(id)
 

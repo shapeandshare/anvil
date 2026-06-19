@@ -71,6 +71,23 @@ async def lifespan(app: FastAPI):
     except Exception:
         pass
 
+    # Seed the approved-license catalog (idempotent; before demo
+    # bootstrap so license FK refs resolve).
+    try:
+        from ..db.session import AsyncSessionLocal
+        from ..workbench import AnvilWorkbench
+
+        async with AsyncSessionLocal() as session:
+            wb = AnvilWorkbench(session)
+            count = await wb.governance.seed_catalog()
+            if count > 0:
+                logger.info(
+                    "Seeded %d licenses into the approved-license catalog", count
+                )
+            await session.commit()
+    except Exception:
+        pass
+
     # Auto-bootstrap demo data if not yet imported (best-effort)
     try:
         from ..db.session import AsyncSessionLocal
