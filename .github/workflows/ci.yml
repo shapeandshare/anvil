@@ -1,0 +1,141 @@
+# CI workflow: gate enforcement for anvil
+#
+# Runs the project's declared quality gates on every PR and non-main push.
+# Branch protection configuration must require this workflow to pass on main.
+#
+# FR-001/FR-002: validates every change against all declared gates
+# FR-003: blocks merge on failure (via branch protection settings)
+# FR-005: runs same commands as local dev (make targets)
+# FR-006a: version-only bump PRs bypass heavy gates via bump-scope-guard
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches-ignore: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.11"
+  UV_CACHE_DIR: /tmp/.uv-cache
+
+jobs:
+  # ── Classification job: determine whether to run the heavy gate suite ──
+  bump-scope-guard:
+    name: Bump Scope Guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      scope: ${{ steps.classify.outputs.scope }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Classify change scope
+        id: classify
+        run: |
+          python scripts/ci/check_bump_scope.py > scope_output.txt
+          cat scope_output.txt
+          SCOPE=$(grep "^BUMP_SCOPE=" scope_output.txt | cut -d= -f2)
+          echo "scope=${SCOPE}" >> "$GITHUB_OUTPUT"
+      - name: Upload scope artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bump-scope-output
+          path: scope_output.txt
+
+  # ── Lint gate ──
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: bump-scope-guard
+    if: needs.bump-scope-guard.outputs.scope != 'version-only'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Setup environment
+        run: make setup
+      - name: Run lint
+        run: make lint
+
+  # ── Type-check gate ──
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: bump-scope-guard
+    if: needs.bump-scope-guard.outputs.scope != 'version-only'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Setup environment
+        run: make setup
+      - name: Run typecheck
+        run: make typecheck
+
+  # ── Test + coverage gate ──
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: bump-scope-guard
+    if: needs.bump-scope-guard.outputs.scope != 'version-only'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Setup environment
+        run: make setup
+      - name: Run tests with coverage
+        run: make test
+
+  # ── Vault audit gate ──
+  vault-audit:
+    name: Vault Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: bump-scope-guard
+    if: needs.bump-scope-guard.outputs.scope != 'version-only'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Setup environment
+        run: make setup
+      - name: Run vault audit
+        run: make vault-audit
+
+  # ── Gate status summarizer ──
+  gate-status:
+    name: Gate Status
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    needs: [bump-scope-guard, lint, typecheck, test, vault-audit]
+    if: always()
+    steps:
+      - name: Summarize gate results
+        run: |
+          echo "## Gate Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Gate | Status |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|------|--------|" >> "$GITHUB_STEP_SUMMARY"
+          for gate in bump-scope-guard lint typecheck test vault-audit; do
+            STATUS="${{ needs[gate].result }}"
+            echo "| $gate | $STATUS |" >> "$GITHUB_STEP_SUMMARY"
+          done
+          echo "" >> "$GITHUB_STEP_SUMMARY"

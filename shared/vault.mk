@@ -22,3 +22,11 @@ vault-audit-diff: $(VENV_DIR)/activate ## Show auto-fixes the audit would apply 
 .PHONY: vault-audit-fast
 vault-audit-fast: $(VENV_DIR)/activate ## Mechanical audit only (skip networkx graph-health pass)
 	$(PYTHON) scripts/ci/vault_audit.py $(VAULT_DIR) --skip-graph-health
+
+.PHONY: adr-check
+adr-check: $(VENV_DIR)/activate ## Validate ADR uniqueness and naming conventions
+	$(PYTHON) scripts/ci/check_adr_unique.py
+
+.PHONY: guarded-imports-check
+guarded-imports-check: $(VENV_DIR)/activate ## Validate TYPE_CHECKING guarded imports are annotation-only
+	$(PYTHON) scripts/ci/check_guarded_imports.py
