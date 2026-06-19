@@ -101,6 +101,29 @@ async def list_services(request: Request):
     }
 
 
+_ALLOWED_SERVICE_NAMES: frozenset[str] = frozenset({"web", "mlflow"})
+"""Set of allowed service name values for log and management endpoints."""
+
+
+def _validate_service_name(name: str) -> None:
+    """Validate that a service name is allowed and contains no path traversal.
+
+    Parameters
+    ----------
+    name : str
+        Service name to validate.
+
+    Raises
+    ------
+    HTTPException
+        If the name is unknown or contains path traversal characters.
+    """
+    if "/" in name or "\\" in name or ".." in name:
+        raise HTTPException(status_code=400, detail=f"Invalid service name: {name}")
+    if name not in _ALLOWED_SERVICE_NAMES:
+        raise HTTPException(status_code=404, detail=f"Unknown service: {name}")
+
+
 @router.get("/services/logs/{name}")
 async def get_service_logs(name: str, lines: int = 50):
     """Retrieve the last N lines of a service log file.
@@ -117,6 +140,7 @@ async def get_service_logs(name: str, lines: int = 50):
     dict
         ``logs`` list of log line strings.
     """
+    _validate_service_name(name)
     log_file = Path("logs") / f"{name}.log"
     if not log_file.exists():
         return {"logs": []}
@@ -165,6 +189,7 @@ async def clear_service_logs(name: str):
     dict
         ``status`` set to ``"cleared"`` or ``"no_logs"``.
     """
+    _validate_service_name(name)
     log_file = Path("logs") / f"{name}.log"
     if log_file.exists():
         log_file.write_text("")
