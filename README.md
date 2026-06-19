@@ -41,12 +41,29 @@
 
 ## Quick Start
 
+**From a built package (recommended for end users):**
+
+```bash
+# Build the wheel
+make build
+
+# Validate in a container (Docker + compose required)
+make test-system
+# or bring it up interactively:
+make compose-up
+open http://localhost:8080
+```
+
+**From source (for development):**
+
 ```bash
 git clone https://github.com/shapeandshare/anvil
 cd anvil
 make setup
 make run
 ```
+
+Open `http://<your-ip>:8080` from any device on your LAN.
 
 Open `http://<your-ip>:8080` from any device on your LAN.
 
@@ -146,14 +163,16 @@ Copy `.env.example` to `.env` to customize.
 |---------|---------|
 | `make setup` | Create venv, install deps from lock file via uv (DB auto-created on first `make run`) |
 | `make setup-gpu` | Force GPU extras (auto-detected on Apple Silicon / NVIDIA Linux) |
+| `make build` | Build the project wheel (`anvil-*.whl` in `dist/`) |
 | `make run` | Start all background services (web + MLflow) |
 | `make stop` | Stop all background services |
 | `make train` | Run training from CLI |
-| `make test` | Run full test suite |
+| `make test` | Run full unit test suite |
 | `make lint` | Run ruff → black --check → isort --check → pylint |
 | `make format` | Auto-format (black + isort) |
 | `make typecheck` | Run mypy/pyright |
-| `make docker` | Build and run via Docker |
+| `make test-system` | Full validation loop: build wheel → container → system tests → teardown |
+| `make compose-up` | Build + start the container stack locally |
 
 <br>
 

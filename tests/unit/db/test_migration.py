@@ -62,10 +62,11 @@ class TestInit:
         service = MigrationService()
         assert "sqlite+aiosqlite:////var/anvil/anvil-state.db" == service._db_url
 
-    def test_build_config_sets_sqlalchemy_url(self, svc, mock_alembic_cfg):
-        # _build_config is called once during __init__ and again here = 2 total
+    def test_build_config_sets_sqlalchemy_url_and_script_location(self, svc, mock_alembic_cfg):
+        # _build_config is called once during __init__ (2 calls: url + script_location)
+        # and again here (2 more calls) = 4 total
         svc._build_config("/fake/alembic.ini")
-        assert mock_alembic_cfg.set_main_option.call_count == 2
+        assert mock_alembic_cfg.set_main_option.call_count == 4
         mock_alembic_cfg.set_main_option.assert_any_call(
             "sqlalchemy.url",
             "sqlite+aiosqlite:////tmp/test-anvil.db",

@@ -35,6 +35,19 @@ dependencies = [
 [tool.setuptools.packages.find]
 include = ["anvil*"]
 
+[tool.setuptools.package-data]
+anvil = [
+    "_resources/alembic.ini",
+    "_resources/migrations/*.py",
+    "_resources/migrations/*.mako",
+    "_resources/migrations/scripts/*.py",
+    "_resources/migrations/versions/*.py",
+    "data/demo/**/*.txt",
+    "data/demo/**/*.md",
+    "api/static/**/*",
+    "api/templates/**/*",
+]
+
 [project.optional-dependencies]
 gpu = [
     "torch>=2.0",
@@ -61,7 +74,6 @@ anvil = "anvil.cli:serve"
 anvil-train = "anvil.cli:train"
 anvil-corpus = "anvil.cli:corpus_main"
 anvil-stop = "anvil.cli:stop"
-anvil-migrate-registry = "anvil.cli:migrate_registry"
 anvil-bootstrap-datasets = "anvil.cli:bootstrap_datasets_main"
 anvil-db = "anvil.cli:db_main"
 
@@ -77,7 +89,7 @@ ignore = ["E501", "B008"]
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["E402", "F401"]
 "tests/**/*.py" = ["E402", "F401", "B011", "F841", "RUF006"]
-"migrations/**" = ["E402", "F401"]
+"anvil/_resources/migrations/**" = ["E402", "F401"]
 "examples/**" = ["E402", "E741"]
 "anvil/api/v1/corpora.py" = ["E741"]
 "anvil/api/v1/datasets.py" = ["B904"]
@@ -141,11 +153,11 @@ ignore_errors = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-addopts = "-v --cov=anvil --cov-report=term-missing"
+addopts = "-v --cov=anvil --cov-report=term-missing --ignore=tests/system"
 
 [tool.coverage.run]
 source = ["anvil"]
-omit = ["tests/*", "migrations/*"]
+omit = ["tests/*", "anvil/_resources/migrations/*", "tests/system/*"]
 
 [tool.coverage.report]
 fail_under = 100

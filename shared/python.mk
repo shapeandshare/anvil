@@ -32,21 +32,7 @@ lint: $(VENV_DIR)/activate ## Run ruff, black --check, isort --check, pylint
 	$(PYTHON) -m isort --check .
 	$(PYTHON) -m pylint anvil/ --disable=R,C
 
-format: $(VENV_DIR)/activate ## Auto-format code with black + isort
-	$(PYTHON) -m black .
-	$(PYTHON) -m isort .
+build: ## Build a PEP 517 wheel via uv (fall back to python -m build)
+	uv build --wheel --out-dir dist . 2>/dev/null || python3 -m build --wheel --outdir dist .
 
-typecheck: $(VENV_DIR)/activate ## Run mypy type checking
-	$(PYTHON) -m mypy anvil/
-
-clean: ## Remove artifacts, caches, and all runtime data
-	rm -rf $(VENV_DIR)
-	rm -rf build dist *.egg-info
-	rm -rf .pytest_cache .mypy_cache .ruff_cache
-	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
-	rm -rf logs/ mlruns/ mlartifacts/
-	rm -f data/anvil.db data/anvil.db-wal data/anvil.db-shm
-	rm -rf data/datasets/ data/models/
-	@echo "Cleaned up."
-
-.PHONY: install lint format typecheck clean
+.PHONY: install build lint format typecheck clean

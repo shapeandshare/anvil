@@ -27,7 +27,7 @@ Open this vault in [Obsidian](https://obsidian.md) for graph navigation.
 | [[Decisions/ADR-001-architecture-decisions|Decisions]] | Architecture Decision Records |
 | [[Reference/ArchitectureOverview|Reference]] | Glossary, architecture guides, topic references |
 | [[Discoveries/Discoveries|Discoveries]] | Non-obvious constraints found during sessions |
-| [[Sessions/2026-06-10-implementation|Sessions]] | Agent session logs |
+| [[Sessions/2026-06-18-pip-installable-package|Sessions]] | Agent session logs |
 
 ### Vault Meta
 
@@ -41,5 +41,5 @@ Open this vault in [Obsidian](https://obsidian.md) for graph navigation.
 | **Training Pipeline** | [[Reference/TrainingDataFlow|Training Render Loop]] · [[Reference/MlflowIntegration|MLflow Tracking]] · [[Reference/ProgressiveWalkthroughs|train0→train5 Progression]] |
 | **MLflow Lineage** | [[Decisions/ADR-016-mlflow-primary-lineage|ADR-016: MLflow as Primary Lineage Source of Truth]] |
 | **Model Export** | [[Reference/SafetensorsExport|Safetensors & HF Interop]] |
-| **Infrastructure** | [[Decisions/ADR-016-auto-db-migration|ADR-016: Auto DB Schema]] · [[Sessions/2026-06-18-auto-db-schema|Auto DB Schema Session]] |
+| **Infrastructure** | [[Decisions/ADR-016-auto-db-migration|ADR-016: Auto DB Schema]] · [[Decisions/ADR-018-packaging-resource-relocation|ADR-018: Packaging Resources Inside Wheel]] · [[Sessions/2026-06-18-auto-db-schema|Auto DB Schema Session]] · [[Sessions/2026-06-18-pip-installable-package|Pip-Installable Package Session]] |
 | **Reference** | [[Reference/Glossary|Glossary]] · [[Reference/OpenQuestions|Open Questions]] |
