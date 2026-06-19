@@ -2,8 +2,8 @@
 
 import json
 
-from anvil.services.dataset_curation import DatasetCurationService
-from anvil.services.metrics_result import MetricsResult
+from anvil.services.datasets.dataset_curation import DatasetCurationService
+from anvil.services.datasets.metrics_result import MetricsResult
 
 
 class TestMetrics:
@@ -49,7 +49,7 @@ class TestCurationService:
 
     def test_serialization_roundtrip(self):
         """Verify curation result can be serialized to JSON."""
-        from anvil.services.curation_result import CurationResult
+        from anvil.services.datasets.curation_result import CurationResult
         result = CurationResult(
             operation_id=1,
             samples_removed=10,
