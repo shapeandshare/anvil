@@ -10,10 +10,11 @@ from pathlib import Path
 from pathspec import PathSpec
 from pathspec.patterns.gitwildmatch import GitWildMatchPattern
 
-from .chunking.base import Chunker
-from .chunking.file_chunker import FileAsDocChunker
-from .chunking.line_chunker import LineAsDocChunker
-from .chunking.window_chunker import FixedSizeWindowChunker
+from .chunking_strategy import ChunkingStrategy
+from ..chunking.base import Chunker
+from ..chunking.file_chunker import FileAsDocChunker
+from ..chunking.line_chunker import LineAsDocChunker
+from ..chunking.window_chunker import FixedSizeWindowChunker
 from .corpus_load_result import CorpusLoadResult
 from .corpus_scan_result import CorpusScanResult
 
@@ -163,14 +164,17 @@ class CorpusLoader:
         self._block_size = block_size
 
     def _make_chunker(
-        self, strategy: str, overlap: float, block_size: int | None = None
+        self,
+        strategy: ChunkingStrategy | str,
+        overlap: float,
+        block_size: int | None = None,
     ) -> Chunker:
         """Factory method returning a chunker for the given strategy.
 
         Parameters
         ----------
-        strategy : str
-            One of ``"line"``, ``"file"``, or ``"windowed"``.
+        strategy : ChunkingStrategy or str
+            Chunking strategy enum member or string value.
         overlap : float
             Overlap fraction for windowed chunking.
         block_size : int, optional
@@ -186,9 +190,11 @@ class CorpusLoader:
         ValueError
             If ``strategy`` is not recognised (fallback to windowed).
         """
-        if strategy == "line":
+        if isinstance(strategy, str):
+            strategy = ChunkingStrategy(strategy)
+        if strategy == ChunkingStrategy.LINE:
             return LineAsDocChunker()
-        if strategy == "file":
+        if strategy == ChunkingStrategy.FILE:
             return FileAsDocChunker()
         return FixedSizeWindowChunker(
             block_size=block_size or self._block_size, overlap=overlap
@@ -199,7 +205,7 @@ class CorpusLoader:
         root_path: str,
         include_patterns: list[str] | None = None,
         exclude_patterns: list[str] | None = None,
-        chunking_strategy: str = "windowed",
+        chunking_strategy: ChunkingStrategy | str = ChunkingStrategy.WINDOWED,
         chunk_overlap: float = 0.5,
         max_files: int = 10000,
         block_size: int | None = None,
@@ -218,9 +224,9 @@ class CorpusLoader:
             Override glob patterns for inclusion. ``None`` uses defaults.
         exclude_patterns : list[str], optional
             Additional glob patterns for exclusion.
-        chunking_strategy : str
-            Chunking strategy: ``"line"``, ``"file"``, or ``"windowed"``.
-            Defaults to ``"windowed"``.
+        chunking_strategy : ChunkingStrategy or str
+            Chunking strategy enum member or string value. Defaults to
+            ``ChunkingStrategy.WINDOWED``.
         chunk_overlap : float
             Overlap fraction for windowed chunking. Defaults to ``0.5``.
         max_files : int

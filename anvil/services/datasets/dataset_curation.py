@@ -11,12 +11,12 @@ from collections.abc import Sequence
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..db.models.curation_operation import CurationOperation
-from ..db.models.sample import Sample
-from ..db.repositories.curation import SampleRepository
-from ..db.repositories.curation_operation_repository import CurationOperationRepository
-from ..db.repositories.datasets import DatasetRepository
-from ..storage.local import LocalFileStore
+from ...db.models.curation_operation import CurationOperation
+from ...db.models.sample import Sample
+from ...db.repositories.curation import SampleRepository
+from ...db.repositories.curation_operation_repository import CurationOperationRepository
+from ...db.repositories.datasets import DatasetRepository
+from ...storage.local import LocalFileStore
 from .curation_result import CurationResult
 from .metrics_result import MetricsResult
 

@@ -7,9 +7,10 @@ that are chunked into training documents.
 
 import json
 
-from ..db.models.corpus import Corpus
-from ..db.models.corpus_file import CorpusFile
-from ..db.repositories.corpora import CorpusRepository
+from .chunking_strategy import ChunkingStrategy
+from ...db.models.corpus import Corpus
+from ...db.models.corpus_file import CorpusFile
+from ...db.repositories.corpora import CorpusRepository
 from .corpus_loader import CorpusLoader
 
 
@@ -42,7 +43,7 @@ class CorpusService:
         description: str | None = None,
         include_patterns: list[str] | None = None,
         exclude_patterns: list[str] | None = None,
-        chunking_strategy: str = "windowed",
+        chunking_strategy: ChunkingStrategy = ChunkingStrategy.WINDOWED,
         chunk_overlap: float = 0.5,
         block_size: int = 16,
     ) -> Corpus:
@@ -64,9 +65,9 @@ class CorpusService:
             (uses loader defaults).
         exclude_patterns : list[str], optional
             Glob patterns for files to exclude. Defaults to ``None``.
-        chunking_strategy : str
-            Chunking strategy: ``"line"``, ``"windowed"``, or
-            ``"file"``. Defaults to ``"windowed"``.
+        chunking_strategy : ChunkingStrategy
+            Chunking strategy enum member. Defaults to
+            ``ChunkingStrategy.WINDOWED``.
         chunk_overlap : float
             Overlap fraction for windowed chunking, in ``[0.0, 1.0]``.
             Defaults to ``0.5``.
@@ -80,12 +81,18 @@ class CorpusService:
 
         Raises
         ------
+        TypeError
+            If ``chunking_strategy`` is not a ``ChunkingStrategy``
+            instance.
         ValueError
-            If ``chunking_strategy`` is not one of the valid values,
-            or if ``chunk_overlap`` is outside ``[0.0, 1.0]``.
+            If ``chunk_overlap`` is outside ``[0.0, 1.0]``.
         """
-        if chunking_strategy not in ("line", "windowed", "file"):
-            raise ValueError("chunking_strategy must be one of: line, windowed, file")
+        if isinstance(chunking_strategy, str):
+            chunking_strategy = ChunkingStrategy(chunking_strategy)
+        elif not isinstance(chunking_strategy, ChunkingStrategy):
+            raise TypeError(
+                "chunking_strategy must be a ChunkingStrategy enum member or string"
+            )
         if not 0.0 <= chunk_overlap <= 1.0:
             raise ValueError(
                 f"chunk_overlap must be in [0.0, 1.0], got {chunk_overlap}"
@@ -113,7 +120,7 @@ class CorpusService:
         description: str | None = None,
         include_patterns: list[str] | None = None,
         exclude_patterns: list[str] | None = None,
-        chunking_strategy: str | None = None,
+        chunking_strategy: ChunkingStrategy | None = None,
         chunk_overlap: float | None = None,
         block_size: int | None = None,
     ) -> Corpus:
@@ -124,14 +131,52 @@ class CorpusService:
         has ``parent_id`` set to the source corpus for lineage tracking.
 
         Does NOT ingest automatically — call ``ingest()`` separately.
+
+        Parameters
+        ----------
+        source_id : int
+            ID of the source corpus to fork from.
+        name : str
+            Name for the new corpus.
+        description : str, optional
+            Optional description override.
+        include_patterns : list[str], optional
+            Override include patterns.
+        exclude_patterns : list[str], optional
+            Override exclude patterns.
+        chunking_strategy : ChunkingStrategy, optional
+            Override chunking strategy. Defaults to source corpus
+            value.
+        chunk_overlap : float, optional
+            Override chunk overlap. Defaults to source corpus value.
+        block_size : int, optional
+            Override block size. Defaults to source corpus value.
+
+        Returns
+        -------
+        Corpus
+            The newly created fork.
+
+        Raises
+        ------
+        ValueError
+            If ``source_id`` is not found, or if ``chunk_overlap``
+            is outside ``[0.0, 1.0]``.
+        TypeError
+            If ``chunking_strategy`` is not a ``ChunkingStrategy``
+            instance when provided.
         """
         source = await self._repo.get(source_id)
         if source is None:
             raise ValueError(f"Corpus {source_id} not found")
 
         resolved_chunking = chunking_strategy or source.chunking_strategy
-        if resolved_chunking not in ("line", "windowed", "file"):
-            raise ValueError("chunking_strategy must be one of: line, windowed, file")
+        if isinstance(resolved_chunking, str):
+            resolved_chunking = ChunkingStrategy(resolved_chunking)
+        elif not isinstance(resolved_chunking, ChunkingStrategy):
+            raise TypeError(
+                "chunking_strategy must be a ChunkingStrategy enum member or string"
+            )
         resolved_overlap = (
             chunk_overlap if chunk_overlap is not None else source.chunk_overlap
         )
