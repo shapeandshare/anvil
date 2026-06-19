@@ -26,6 +26,30 @@ def _provenance_columns() -> list[sa.Column]:
     ]
 
 
+def _provenance_columns_named(table: str) -> list[sa.Column]:
+    """Return provenance columns with explicit FK constraint name for *table*.
+
+    Alembic batch mode on SQLite requires all constraints to have explicit
+    names.  We suffix the FK name with the table name to keep it unique.
+    """
+    return [
+        sa.Column("source_description", sa.String(1000), nullable=True),
+        sa.Column(
+            "license_id",
+            sa.Integer(),
+            sa.ForeignKey(
+                "license_catalog.id",
+                ondelete="RESTRICT",
+                name=f"fk_{table}_license_id",
+            ),
+            nullable=True,
+        ),
+        sa.Column("attribution_text", sa.String(1000), nullable=True),
+        sa.Column("origin", sa.String(20), nullable=False, server_default="user"),
+        sa.Column("parent_provenance_ref", sa.Integer(), nullable=True),
+    ]
+
+
 def upgrade() -> None:
     # ── 1. License catalog ──────────────────────────────────────────────
     op.create_table(
@@ -68,12 +92,17 @@ def upgrade() -> None:
     op.create_index("ix_audit_events_sequence", "audit_events", ["sequence"])
 
     # ── 3. Provenance columns on datasets ───────────────────────────────
-    for col in _provenance_columns():
-        op.add_column("datasets", col)
+    # Use batch_alter_table because SQLite does not support ALTER TABLE ADD
+    # COLUMN with constraints (ForeignKey). Batch mode uses a copy-and-move
+    # strategy that handles this correctly.
+    with op.batch_alter_table("datasets") as batch_op:
+        for col in _provenance_columns_named("datasets"):
+            batch_op.add_column(col)
 
     # ── 4. Provenance columns on corpora ────────────────────────────────
-    for col in _provenance_columns():
-        op.add_column("corpora", col)
+    with op.batch_alter_table("corpora") as batch_op:
+        for col in _provenance_columns_named("corpora"):
+            batch_op.add_column(col)
 
     # ── 5. Backfill existing rows ───────────────────────────────────────
     # Demo rows: set origin="bundled"
