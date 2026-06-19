@@ -114,7 +114,8 @@ anvil/                         # Python package (implicit namespace)
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `ANVIL_PORT` | `8080` | Web server port |
-| `ANVIL_DB_PATH` | `./data/anvil.db` | Database file |
+| `ANVIL_STATE_DB_PATH` | `./data/anvil-state.db` | Database file (`ANVIL_DB_PATH` deprecated) |
+| `ANVIL_DB_AUTO_MIGRATE` | `true` | Auto-migrate DB schema on startup. Set to `false` for strict verification |
 | `ANVIL_LOG_DIR` | `./logs/` | Log directory |
 | `ANVIL_MLFLOW_URI` | `http://127.0.0.1:5001` | MLflow tracking server |
 | `ANVIL_STORAGE_BACKEND` | `local` | Storage backend |
@@ -143,7 +144,7 @@ Copy `.env.example` to `.env` to customize.
 
 | Command | Purpose |
 |---------|---------|
-| `make setup` | Create venv, install deps from lock file via uv, init DB |
+| `make setup` | Create venv, install deps from lock file via uv (DB auto-created on first `make run`) |
 | `make setup-gpu` | Force GPU extras (auto-detected on Apple Silicon / NVIDIA Linux) |
 | `make run` | Start all background services (web + MLflow) |
 | `make stop` | Stop all background services |
@@ -163,7 +164,7 @@ Copy `.env.example` to `.env` to customize.
 | `make setup`: `Python 3.11+ not found` | Python missing or not on PATH | Install Python ≥ 3.11, ensure `python3` or `python3.11` is on your `PATH` |
 | `make setup`: `uv: command not found` | uv not installed | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
 | `make run`: `Address already in use` | Port 8080 (or 5001 for MLflow) is taken | Set `ANVIL_PORT=9090` in `.env` |
-| `Alembic migration fails` | Stale or corrupted database | `rm -f data/anvil.db` then re-run `make setup` |
+| `Alembic migration fails` | Stale or corrupted database | `rm -f data/anvil-state.db` then restart server (auto-creates fresh DB) |
 | `GPU not detected` | No compatible GPU, or driver missing | Auto-detection logs at setup. Force GPU extras: `make setup-gpu` |
 | Web UI slow on first load | Bootstrapping demo datasets | Normal — only on first `make run` after `make setup` |
 | `make` fails on Windows | Windows lacks native `make` | Install WSL2 with Ubuntu and run from there |
