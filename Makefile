@@ -44,3 +44,11 @@ setup-hooks: ## Enable conventional commit enforcement hook
 	git config core.hooksPath .githooks
 	@echo "Done. Hook will validate commit messages follow Conventional Commits format."
 	@echo "Types: feat, fix, perf, refactor, chore, docs, ci, test, style, build"
+
+clean: ## Wipe all runtime state and build artifacts for a fresh start
+	rm -f data/anvil-state.db mlruns/mlflow.db
+	rm -rf dist/ .coverage htmlcov .pytest_cache
+	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+	find . -type f -name '*.pyc' -delete 2>/dev/null || true
+	find . -type d -name '*.egg-info' -exec rm -rf {} + 2>/dev/null || true
+	@echo "Cleaned. Run 'make run' to rebuild from scratch."
