@@ -1,6 +1,6 @@
 """Tests for mlflow capability detection."""
 
-from anvil.services.mlflow_capabilities import (
+from anvil.services.tracking.mlflow_capabilities import (
     TrackingCapabilities,
     detect_capabilities,
 )

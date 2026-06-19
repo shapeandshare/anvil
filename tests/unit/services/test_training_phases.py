@@ -19,7 +19,7 @@ import pytest
 
 from anvil.services.compute.compute_status import ComputeStatus
 from anvil.services.compute.result import ComputeResult
-from anvil.services.training import TrainingService
+from anvil.services.training.training import TrainingService
 
 
 @dataclass

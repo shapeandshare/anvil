@@ -1,7 +1,7 @@
 """Tests for the training memory estimator and OOM prediction."""
 
 from anvil.gpu import GpuInfo
-from anvil.services.memory_estimator import (
+from anvil.services.training.memory_estimator import (
     MemoryEstimate,
     _compute_param_count,
     _format_count,
@@ -184,7 +184,7 @@ class TestGpuRequestedUnavailable:
         assert any("not available" in w for w in est.warnings)
 
     def test_autodetect_when_gpu_info_none(self, monkeypatch):
-        import anvil.services.memory_estimator as me
+        import anvil.services.training.memory_estimator as me
 
         monkeypatch.setattr(me, "detect_gpu", lambda: GpuInfo(available=False))
         est = estimate_training_memory(vocab_size=50, use_gpu=True, gpu_info=None)

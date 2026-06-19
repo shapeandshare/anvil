@@ -9,7 +9,7 @@ import pytest
 
 class TestContentDigest:
     def test_same_docs_same_digest(self):
-        from anvil.services.mlflow_inputs import MlflowInputResolver
+        from anvil.services.tracking.mlflow_inputs import MlflowInputResolver
 
         d1 = MlflowInputResolver.content_digest(["hello", "world"])
         d2 = MlflowInputResolver.content_digest(["hello", "world"])
@@ -17,14 +17,14 @@ class TestContentDigest:
         assert len(d1) == 64
 
     def test_different_docs_different_digest(self):
-        from anvil.services.mlflow_inputs import MlflowInputResolver
+        from anvil.services.tracking.mlflow_inputs import MlflowInputResolver
 
         d1 = MlflowInputResolver.content_digest(["hello"])
         d2 = MlflowInputResolver.content_digest(["world"])
         assert d1 != d2
 
     def test_empty_docs_stable(self):
-        from anvil.services.mlflow_inputs import MlflowInputResolver
+        from anvil.services.tracking.mlflow_inputs import MlflowInputResolver
 
         d = MlflowInputResolver.content_digest([])
         assert isinstance(d, str)
@@ -34,7 +34,7 @@ class TestContentDigest:
 class TestResolveDataset:
     @pytest.mark.asyncio
     async def test_returns_dataset_with_digest(self, tmp_path: Path):
-        from anvil.services.mlflow_inputs import MlflowInputResolver
+        from anvil.services.tracking.mlflow_inputs import MlflowInputResolver
 
         file = tmp_path / "data.txt"
         file.write_text("hello world")
@@ -57,7 +57,7 @@ class TestResolveDataset:
 
     @pytest.mark.asyncio
     async def test_with_validation_role(self, tmp_path: Path):
-        from anvil.services.mlflow_inputs import MlflowInputResolver
+        from anvil.services.tracking.mlflow_inputs import MlflowInputResolver
 
         file = tmp_path / "val.txt"
         file.write_text("val data")
@@ -78,7 +78,7 @@ class TestResolveDataset:
 
     @pytest.mark.asyncio
     async def test_dataset_not_found_raises(self):
-        from anvil.services.mlflow_inputs import MlflowInputResolver
+        from anvil.services.tracking.mlflow_inputs import MlflowInputResolver
 
         mock_session = AsyncMock()
         with patch("anvil.services.mlflow_inputs.DatasetRepository") as repo_cls:
@@ -93,7 +93,7 @@ class TestResolveDataset:
 class TestResolveCorpus:
     @pytest.mark.asyncio
     async def test_returns_metadataset_and_artifact_paths(self, tmp_path: Path):
-        from anvil.services.mlflow_inputs import MlflowInputResolver
+        from anvil.services.tracking.mlflow_inputs import MlflowInputResolver
 
         root = tmp_path / "corpus_root"
         root.mkdir()
@@ -123,7 +123,7 @@ class TestResolveCorpus:
 
     @pytest.mark.asyncio
     async def test_no_files_returns_empty_artifacts(self, tmp_path: Path):
-        from anvil.services.mlflow_inputs import MlflowInputResolver
+        from anvil.services.tracking.mlflow_inputs import MlflowInputResolver
 
         root = tmp_path / "empty_corpus"
         root.mkdir()
@@ -146,7 +146,7 @@ class TestResolveCorpus:
 
     @pytest.mark.asyncio
     async def test_corpus_not_found_raises(self):
-        from anvil.services.mlflow_inputs import MlflowInputResolver
+        from anvil.services.tracking.mlflow_inputs import MlflowInputResolver
 
         mock_session = AsyncMock()
         with patch("anvil.services.mlflow_inputs.CorpusRepository") as repo_cls:

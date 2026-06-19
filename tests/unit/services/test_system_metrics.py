@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 
-from anvil.services.tracking import TrackingService
+from anvil.services.tracking.tracking import TrackingService
 
 
 @pytest.fixture(autouse=True)

@@ -92,7 +92,7 @@ def fake_client_factory(tracking_uri: str) -> FakeMlflowClient:
 
 @pytest.fixture
 def svc():
-    from anvil.services.tracking import TrackingService
+    from anvil.services.tracking.tracking import TrackingService
 
     return TrackingService(
         tracking_uri="http://127.0.0.1:5000", client_factory=fake_client_factory
@@ -188,7 +188,7 @@ async def test_log_artifacts(svc):
 
 @pytest.mark.asyncio
 async def test_degraded_mode_on_connection_error():
-    from anvil.services.tracking import TrackingService
+    from anvil.services.tracking.tracking import TrackingService
 
     def failing_factory(tracking_uri: str):
         client = FakeMlflowClient(tracking_uri)
@@ -207,7 +207,7 @@ async def test_degraded_mode_on_connection_error():
 
 @pytest.mark.asyncio
 async def test_degraded_noop_on_subsequent_calls(svc):
-    from anvil.services.tracking import TrackingService
+    from anvil.services.tracking.tracking import TrackingService
 
     class DegradedClient(FakeMlflowClient):
         def create_run(self, experiment_id, run_name=None, tags=None):
@@ -236,7 +236,7 @@ async def test_capabilities(svc):
 
 @pytest.mark.asyncio
 async def test_construct_with_default_uri():
-    from anvil.services.tracking import TrackingService
+    from anvil.services.tracking.tracking import TrackingService
 
     svc = TrackingService(client_factory=fake_client_factory)
     cfg = get_config()
@@ -382,7 +382,7 @@ class TestLogDatasetLifecycleEvent:
     @pytest.mark.asyncio
     async def test_creates_run_with_correct_tags(self):
         """Should create a short-lived MLflow run."""
-        from anvil.services.tracking import TrackingService
+        from anvil.services.tracking.tracking import TrackingService
 
         svc = TrackingService(
             tracking_uri="http://127.0.0.1:5000", client_factory=fake_client_factory
@@ -399,7 +399,7 @@ class TestLogDatasetLifecycleEvent:
     @pytest.mark.asyncio
     async def test_degraded_mode_returns_empty(self):
         """Should return '' when service is degraded."""
-        from anvil.services.tracking import TrackingService
+        from anvil.services.tracking.tracking import TrackingService
 
         svc = TrackingService(
             tracking_uri="http://127.0.0.1:5000", client_factory=fake_client_factory
@@ -413,7 +413,7 @@ class TestLogDatasetLifecycleEvent:
     @pytest.mark.asyncio
     async def test_empty_run_id_on_connection_error(self):
         """Should return '' and set degraded on connection error."""
-        from anvil.services.tracking import TrackingService
+        from anvil.services.tracking.tracking import TrackingService
 
         def broken_factory(uri):
             raise ConnectionError("Connection refused")
@@ -430,7 +430,7 @@ class TestLogDatasetLifecycleEvent:
     @pytest.mark.asyncio
     async def test_multiple_event_types(self):
         """Should handle all event types: create, import, curate, update, delete."""
-        from anvil.services.tracking import TrackingService
+        from anvil.services.tracking.tracking import TrackingService
 
         svc = TrackingService(
             tracking_uri="http://127.0.0.1:5000", client_factory=fake_client_factory
@@ -448,7 +448,7 @@ class TestLogCorpusLifecycleEvent:
     @pytest.mark.asyncio
     async def test_creates_run_with_correct_tags(self):
         """Should create a short-lived MLflow run for corpus events."""
-        from anvil.services.tracking import TrackingService
+        from anvil.services.tracking.tracking import TrackingService
 
         svc = TrackingService(
             tracking_uri="http://127.0.0.1:5000", client_factory=fake_client_factory
@@ -466,7 +466,7 @@ class TestLogCorpusLifecycleEvent:
     @pytest.mark.asyncio
     async def test_degraded_mode_returns_empty(self):
         """Should return '' when service is degraded."""
-        from anvil.services.tracking import TrackingService
+        from anvil.services.tracking.tracking import TrackingService
 
         svc = TrackingService(
             tracking_uri="http://127.0.0.1:5000", client_factory=fake_client_factory
@@ -480,7 +480,7 @@ class TestLogCorpusLifecycleEvent:
     @pytest.mark.asyncio
     async def test_empty_run_id_on_connection_error(self):
         """Should return '' and set degraded on connection error."""
-        from anvil.services.tracking import TrackingService
+        from anvil.services.tracking.tracking import TrackingService
 
         def broken_factory(uri):
             raise ConnectionError("Connection refused")

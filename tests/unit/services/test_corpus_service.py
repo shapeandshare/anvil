@@ -5,8 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from anvil.db.models.corpus import Corpus
 from anvil.db.repositories.corpora import CorpusRepository
-from anvil.services.corpora import CorpusService
-from anvil.services.corpus_loader import CorpusLoader
+from anvil.services.datasets.corpora import CorpusService
+from anvil.services.datasets.corpus_loader import CorpusLoader
 from anvil.db.base import Base
 from anvil.db.session import async_engine, AsyncSessionLocal
 
