@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-from datetime import datetime
-
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import Boolean, Float, ForeignKey, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column
 
 from anvil.db.base import Base, TimestampMixin
 
@@ -29,40 +27,6 @@ class TrainingConfig(Base, TimestampMixin):
     corpus_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("corpora.id"), nullable=True
     )
-
-
-class Experiment(Base, TimestampMixin):
-    __tablename__ = "experiments"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    mlflow_run_id: Mapped[str | None] = mapped_column(
-        String(255), nullable=True, unique=True
-    )
-    run_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    status: Mapped[str] = mapped_column(String(20), default="running")
-    config_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("training_configs.id"), nullable=True
-    )
-    dataset_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("datasets.id"), nullable=True
-    )
-    corpus_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("corpora.id"), nullable=True
-    )
-    input_digest: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    input_role: Mapped[str | None] = mapped_column(String(20), nullable=True)
-    engine_backend: Mapped[str | None] = mapped_column(String(16), nullable=True)
-    device: Mapped[str | None] = mapped_column(String(16), nullable=True)
-    final_loss: Mapped[float | None] = mapped_column(Float, nullable=True)
-    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    generated_samples: Mapped[str | None] = mapped_column(String, nullable=True)
-    error_message: Mapped[str | None] = mapped_column(String, nullable=True)
-
-    execution_backend: Mapped[str | None] = mapped_column(String(32), nullable=True)
-    remote_job_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
-
-    dataset: Mapped[Dataset | None] = relationship("Dataset", lazy="joined")
 
 
 class Dataset(Base, TimestampMixin):
