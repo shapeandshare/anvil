@@ -8,7 +8,7 @@ from the registry (not hardcoded values).
 
 from fastapi import APIRouter, HTTPException, Query
 
-from ...services.inference import InferenceService
+from ...services.inference.inference import InferenceService
 
 router = APIRouter()
 _svc = InferenceService()

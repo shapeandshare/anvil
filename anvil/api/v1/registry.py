@@ -51,7 +51,7 @@ async def register_model(
     if not experiment_id:
         raise HTTPException(status_code=400, detail="experiment_id required")
 
-    from ...services.tracking import TrackingService
+    from ...services.tracking.tracking import TrackingService
 
     tracking_svc = TrackingService()
     exp = await tracking_svc.get_experiment(experiment_id)
@@ -121,7 +121,7 @@ async def list_registered_models(
         Dictionary with a ``models`` key containing a list of registered
         model summaries.
     """
-    from ...services.tracking import TrackingService
+    from ...services.tracking.tracking import TrackingService
 
     tracking_svc = TrackingService()
     models = await tracking_svc.list_registered_models(search=search)
@@ -155,7 +155,7 @@ async def get_model(model_id: str):
     HTTPException
         If the model cannot be found (404).
     """
-    from ...services.tracking import TrackingService
+    from ...services.tracking.tracking import TrackingService
 
     tracking_svc = TrackingService()
     loop = asyncio.get_event_loop()
@@ -263,7 +263,7 @@ async def get_version(model_id: str, version: int):
     HTTPException
         If the model or version is not found (404).
     """
-    from ...services.tracking import TrackingService
+    from ...services.tracking.tracking import TrackingService
 
     tracking_svc = TrackingService()
     loop = asyncio.get_event_loop()
@@ -354,7 +354,7 @@ async def delete_version(model_id: str, version: int):
     HTTPException
         If the model or version is not found, or deletion fails (404).
     """
-    from ...services.tracking import TrackingService
+    from ...services.tracking.tracking import TrackingService
 
     tracking_svc = TrackingService()
     loop = asyncio.get_event_loop()
@@ -412,7 +412,7 @@ async def delete_model(model_id: str):
     HTTPException
         If the model cannot be found or deletion fails (404).
     """
-    from ...services.tracking import TrackingService
+    from ...services.tracking.tracking import TrackingService
 
     tracking_svc = TrackingService()
     loop = asyncio.get_event_loop()

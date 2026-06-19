@@ -62,7 +62,7 @@ async def lifespan(app: FastAPI):
         mlflow_svc.start()
         app.state.mlflow = mlflow_svc
 
-    from ..services.tracking import TrackingService
+    from ..services.tracking.tracking import TrackingService
 
     TrackingService.enable_system_metrics()
 
@@ -74,7 +74,7 @@ async def lifespan(app: FastAPI):
     # Auto-bootstrap demo data if not yet imported (best-effort)
     try:
         from ..db.session import AsyncSessionLocal
-        from ..services.demo_bootstrap import DemoBootstrapService
+        from ..services.demo.demo_bootstrap import DemoBootstrapService
 
         async with AsyncSessionLocal() as session:
             svc = DemoBootstrapService(session)
@@ -99,7 +99,7 @@ async def lifespan(app: FastAPI):
     try:
         import threading
 
-        from ..services.demo_model_provider import warmup_demo_via_system_pipeline
+        from ..services.inference.demo_model_provider import warmup_demo_via_system_pipeline
 
         threading.Thread(
             target=warmup_demo_via_system_pipeline,

@@ -5,7 +5,7 @@ import math
 from fastapi import APIRouter, HTTPException
 
 from ...core.engine import softmax
-from ...services.inference import InferenceService
+from ...services.inference.inference import InferenceService
 
 router = APIRouter()
 

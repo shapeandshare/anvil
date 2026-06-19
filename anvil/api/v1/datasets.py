@@ -33,13 +33,13 @@ from anvil.db.repositories.curation_operation_repository import (
     CurationOperationRepository,
 )
 from anvil.db.repositories.datasets import DatasetRepository
-from anvil.services.corpora import CorpusService
-from anvil.services.corpus_loader import CorpusLoader
-from anvil.services.dataset_curation import DatasetCurationService
-from anvil.services.dataset_export import DatasetExportService
-from anvil.services.dataset_import import DatasetImportService
-from anvil.services.datasets import DatasetService
-from anvil.services.tracking import TrackingService
+from anvil.services.datasets.corpora import CorpusService
+from anvil.services.datasets.corpus_loader import CorpusLoader
+from anvil.services.datasets.dataset_curation import DatasetCurationService
+from anvil.services.datasets.dataset_export import DatasetExportService
+from anvil.services.datasets.dataset_import import DatasetImportService
+from anvil.services.datasets.datasets import DatasetService
+from anvil.services.tracking.tracking import TrackingService
 from anvil.storage.local import LocalFileStore
 
 router = APIRouter()

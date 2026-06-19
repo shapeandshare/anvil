@@ -18,8 +18,9 @@ async def list_compute_backends():
     -------
     list
         A JSON array of dicts, each with:
-          - ``value``: backend identifier (e.g. ``"auto"``, ``"local-cpu"``,
-            ``"local-gpu"``, ``"modal"``)
+          - ``value``: backend identifier (e.g. ``ComputeBackend.AUTO``,
+            ``ComputeBackend.LOCAL_CPU``, ``ComputeBackend.LOCAL_GPU``,
+            ``ComputeBackend.MODAL``)
           - ``label``: human-readable name
           - ``available``: bool
           - ``reason``: str | None — explanation if unavailable

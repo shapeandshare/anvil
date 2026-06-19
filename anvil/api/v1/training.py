@@ -18,11 +18,12 @@ from starlette.responses import StreamingResponse
 from ...gpu import detect_gpu
 from ...services.compute.compute_backend_unavailable import ComputeBackendUnavailable
 from ...services.compute.resolve import resolve_backend
-from ...services.memory_estimator import estimate_training_memory
-from ...services.mps_metrics_collector import MPSMetricsCollector
-from ...services.mps_sampler_thread import MPSSamplerThread
-from ...services.tracking import TrackingService
-from ...services.training import TrainingService
+from ...services.compute.training_engine import TrainingEngine
+from ...services.training.memory_estimator import estimate_training_memory
+from ...services.tracking.mps_metrics_collector import MPSMetricsCollector
+from ...services.tracking.mps_sampler_thread import MPSSamplerThread
+from ...services.tracking.tracking import TrackingService
+from ...services.training.training import TrainingService
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +60,7 @@ async def start_training(config: dict):
           - ``beta2``: float, optional (default ``0.99``)
           - ``temperature``: float, optional (default ``0.5``)
           - ``use_gpu``: bool, optional (default ``False``)
-          - ``compute_backend``: str, optional (default ``"auto"``)
+          - ``compute_backend``: str, optional (default ``ComputeBackend.AUTO``)
           - ``dataset_id``: int, optional
           - ``corpus_id``: int, optional
 
@@ -122,7 +123,7 @@ async def start_training(config: dict):
     gpu_info = detect_gpu()
 
     memory_est = None
-    if engine_backend == "torch":
+    if engine_backend == TrainingEngine.TORCH:
         memory_est = estimate_training_memory(
             vocab_size=200,
             n_embd=n_embd,
@@ -371,7 +372,7 @@ async def start_training(config: dict):
                         pass
 
                 # Auto-export safetensors after every successful local training
-                from ...services.export import SafetensorsExportService
+                from ...services.training.export import SafetensorsExportService
 
                 export_svc = SafetensorsExportService()
                 export_result = await asyncio.get_event_loop().run_in_executor(
@@ -711,7 +712,7 @@ async def forward_pass_graph():
     HTTPException
         If the demo model is not found (404).
     """
-    from ...services.inference import InferenceService
+    from ...services.inference.inference import InferenceService
 
     svc = InferenceService()
     try:
