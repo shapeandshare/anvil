@@ -1,0 +1,34 @@
+---
+aliases:
+  - Uvicorn Logging Config Incompatibility
+code-refs:
+  - 'anvil/cli.py:75-80'
+  - 'anvil/api/app.py:68'
+created: '2026-06-18'
+related:
+  - '[[Decisions/ADR-017-demo-model-warmup-pipeline]]'
+session: 2026-06-18-demo-model-warmup-fix
+source: agent
+status: draft
+summary: >-
+  Uvicorn's dictConfig interferes with logging.basicConfig — startup messages
+  require print()+flush instead
+tags:
+  - type/discovery
+  - domain/operations
+  - status/draft
+title: Uvicorn dictConfig Silences logging.basicConfig
+type: discovery
+updated: '2026-06-18'
+---
+Uvicorn's `logging.config.dictConfig()` interferes with `logging.basicConfig()` even when `force=True` and `disable_existing_loggers=False` are set. The root logger handler from `basicConfig` appears to survive in isolation tests but does not reliably produce output when running through `uvicorn.run()`. This makes `logger.info()` calls during FastAPI lifespan startup invisible on the console.
+
+The root cause is that uvicorn calls `logging.config.dictConfig()` internally during `Config.__init__()` using its default `LOGGING_CONFIG` which configures specific loggers (`uvicorn`, `uvicorn.error`, `uvicorn.access`) with their own handlers. While the root logger is not explicitly touched, interactions between `dictConfig()` and `basicConfig()` are not idempotent — the handler attached by `basicConfig(force=True)` is sometimes removed or silenced during uvicorn's configuration cycle.
+
+The workaround is to use `print(flush=True)` for critical startup messages that must be visible on the console, rather than relying on `logger.info()`.
+
+## References
+
+- `anvil/cli.py` — `serve()` function where `basicConfig` is called
+- `anvil/api/app.py` — lifespan where `print(flush=True)` is used for startup messages
+- Uvicorn source: `uvicorn/config.py`, `Config.setup_logging()` calls `logging.config.dictConfig()`

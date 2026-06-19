@@ -1,0 +1,80 @@
+---
+created: '2026-06-18'
+tags:
+  - type/session-log
+  - domain/architecture
+  - domain/operations
+  - domain/inference
+title: Demo Model Warmup Fix
+type: session
+updated: '2026-06-18'
+---
+# Session: Demo Model Warmup Fix
+
+**Date**: 2026-06-18
+
+## Summary
+
+Diagnosed and fixed two issues with the demo model warmup on server startup: (1) synchronous training blocking uvicorn from binding the port, and (2) the demo model bypassing the entire system pipeline (MLflow tracking, compute backend, model registration). Changed the warmup to run in a background thread through the real system pipeline, plus fixed console output visibility.
+
+## What Was Done
+
+### Root Cause Investigation
+
+The server appeared to hang at startup because:
+- `_demo_provider.get_model()` trained the pure-Python Llama engine **synchronously inside the FastAPI lifespan** — uvicorn only binds the port after lifespan yields, so training blocked it for ~44s
+- `logger.info()` calls produced no console output because the root logger had no handlers (uvicorn's `dictConfig` interfered with `logging.basicConfig`)
+
+Traced the hang by instrumenting the lifespan with `print(flush=True)` markers — confirmed all steps completed, the blocker was just the synchronous training.
+
+### Fix: Background Thread + System Pipeline
+
+**`anvil/api/app.py`** — Replaced synchronous `_demo_provider.get_model()` call with a daemon thread executing `warmup_demo_via_system_pipeline()`.
+
+**`anvil/services/inference.py`** — Added `warmup_demo_via_system_pipeline()` that goes through the full system:
+1. Docs from demo corpus (fallback: `_FALLBACK_CORPUS`)
+2. `resolve_backend({"compute_backend": "local-cpu"})` → `local-stdlib` backend
+3. `TrackingService.start_run("demo-warmup")` → MLflow experiment run
+4. `backend.run(docs, config)` → training via compute layer
+5. `finish_run()` + `log_final_metric()` + `set_tag()` + `register_source_model("demo")`
+6. Save to `model.json` + update `_demo_provider` cache
+7. Falls back to inline `_train_demo_model()` if system pipeline unavailable
+
+**`anvil/cli.py`** — Added `logging.basicConfig(force=True)` as a safety net.
+
+### Console Output Fix
+
+Replaced `logger.info()` calls during startup with `print(flush=True)` after discovering that uvicorn's `logging.config.dictConfig()` interferes with standard Python logging configuration in unpredictable ways. The warmup function uses `print(flush=True)` for the completion message and `logger.info()` for log files.
+
+### Verification
+
+- Server boots in ~2s (tested: 4s including migrations)
+- MLflow log confirms: `runs/create` 200, `runs/log-batch` 200, `runs/update` 200, `runs/log-metric` 200, `runs/set-tag` 200, `model-versions/create` 200
+- `curl http://localhost:8080/` returns HTTP 200
+- Console output shows: "Setting up database...", "Warming up demo model in background...", MLflow run URL, "Demo model warm-up complete."
+
+## Key Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| Daemon thread for warmup | Server must bind port before training completes |
+| System pipeline instead of inline training | Seeds MLflow experiment + model registry with demo data |
+| `print(flush=True)` over `logger.info()` | Uvicorn's dictConfig makes logging unreliable during startup |
+| Graceful fallback to inline training | Server must work even if MLflow/compute backend unavailable |
+| `_FALLBACK_CORPUS` when demo corpus not bootstrapped | Demo bootstrap was failing, but warmup must not block on it |
+
+## Files Changed
+
+- `anvil/api/app.py` — lifespan background warmup thread
+- `anvil/cli.py` — `logging.basicConfig()` in `serve()`
+- `anvil/services/inference.py` — added `warmup_demo_via_system_pipeline()`
+
+## Vault Enrichments
+
+- Created [[Decisions/ADR-017-demo-model-warmup-pipeline|ADR-017: Demo Model Warmup via System Pipeline]]
+- Created [[Discoveries/uvicorn-dictconfig-silences-basicconfig|Discovery: Uvicorn dictConfig Silences logging.basicConfig]]
+
+## See Also
+
+- [[Decisions/ADR-017-demo-model-warmup-pipeline|ADR-017]] — Full architecture decision record
+- [[Discoveries/uvicorn-dictconfig-silences-basicconfig]] — Non-obvious Uvicorn logging constraint

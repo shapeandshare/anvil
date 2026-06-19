@@ -1,0 +1,67 @@
+---
+aliases:
+  - Demo Model Warmup Pipeline
+created: '2026-06-18'
+tags:
+  - type/decision
+  - domain/architecture
+  - domain/operations
+  - domain/training
+  - domain/inference
+title: 'ADR-017: Demo Model Warmup via System Pipeline'
+type: decision
+updated: '2026-06-18'
+code-refs:
+  - 'anvil/api/app.py:68-85'
+  - 'anvil/services/inference.py:51-172'
+  - 'anvil/cli.py:76-80'
+---
+## ADR-017: Demo Model Warmup via System Pipeline
+
+### Status
+
+accepted
+
+### Context
+
+On first startup, the server pre-trains a small demo model so interactive educational widgets (tokenization, embeddings, attention, sampling) return real data instantly. Originally this called `engine.train()` directly — a standalone pure-Python call that bypassed the entire system stack:
+
+- No compute backend resolution
+- No MLflow experiment or run
+- No hyperparameter or metric logging
+- No model registration
+- No safetensors export
+
+The demo run was invisible in the experiment history, model registry, and all database-backed views. Additionally, the training ran **synchronously inside the FastAPI lifespan startup**, which blocked uvicorn from binding the port until training completed (~44s on the new Llama engine). Users saw the process hang with no output and killed it before the server ever came online.
+
+### Decision
+
+1. **Background thread**: Move demo model warm-up to a daemon thread started at the end of the lifespan, allowing uvicorn to bind the port immediately.
+
+2. **System pipeline**: Replace the inline `engine.train()` call with the full training pipeline:
+   - `resolve_backend()` + `get_backend("local-{engine}")` for compute backend resolution
+   - `TrackingService.start_run()` to create an MLflow experiment run
+   - Backend `.run()` for actual training
+   - `TrackingService.finish_run()`, `log_final_metric()`, `set_tag()`, and `register_source_model("demo")` for post-training metadata
+
+3. **Console output**: Use `print(flush=True)` for user-facing startup messages instead of `logger.info()`, because uvicorn's `logging.config.dictConfig()` interferes with standard Python logging configuration in ways that are difficult to predict.
+
+4. **Graceful fallback**: If MLflow or the compute backend is unavailable, fall back to the old inline `_train_demo_model()` path so the server always works.
+
+### Consequences
+
+**Easier:**
+- Demo run now appears in MLflow experiment history with hyperparameters and final loss
+- Model registered in MLflow model registry as "demo"
+- All system views (experiment page, model registry, inference) are seeded with demo data
+- Server boots in ~2s instead of ~44s, with clear console output about the background warmup
+- On subsequent restarts, `data/models/demo/model.json` caches the model so warmup is instant
+
+**Harder:**
+- Background thread adds complexity — first inference request blocks on `_DEMO_TRAIN_LOCK` if warmup hasn't completed
+- `print(flush=True)` is a coarser mechanism than structured logging
+- The warmup function must manage its own async event loop via `asyncio.run()` since it runs in a daemon thread with no pre-existing loop
+
+### Compliance
+
+Verified by confirming `make run` produces "Application startup complete" within ~2s, the MLflow server logs show `runs/create` + `runs/log-batch` + `runs/update` + `model-versions/create` all returning 200, and curl returns HTTP 200 on `localhost:8080` within 5s of startup.
