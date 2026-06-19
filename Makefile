@@ -19,9 +19,25 @@ train-gpu: export USE_GPU=true
 train-gpu: $(VENV_DIR)/activate ## Train with GPU acceleration (also defined in cli.mk)
 	$(PYTHON) -c "from anvil.cli import train; train()"
 
-docker: ## Build and run via Docker
-	docker build -t anvil .
-	docker run -p 8080:8080 -p 5001:5001 anvil
+docker: ## [deprecated] Use `make compose-up` instead (multi-stage pip-installed build)
+	@echo "DEPRECATED: Use 'make compose-up' which builds + runs via compose.yaml."
+	@echo "See specs/009-pip-installable-package/quickstart.md for the validation loop."
+
+compose-up: ## Build image from wheel, bring online via compose, wait for health
+	docker compose up -d --build --wait
+
+compose-down: ## Tear down the stack (retains workspace volume)
+	docker compose down
+
+compose-reset: ## Tear down and remove the workspace volume (fresh first-run next)
+	docker compose down -v
+
+test-system: ## Full validation loop: reset → up → test → teardown
+	docker compose down -v; \
+	docker compose up -d --build --wait; \
+	uv run pytest tests/system -v --no-cov; status=$$?; \
+	docker compose down -v; \
+	exit $$status
 
 setup-hooks: ## Enable conventional commit enforcement hook
 	@echo "Configuring git hooks path to .githooks/..."

@@ -1,13 +1,15 @@
 """DemoBootstrapService — orchestrates importing bundled demo data into the database.
 
-This service walks ``data/demo/``, discovers subdirectories (corpora) and ``.txt``
-files (datasets), and imports them into the database via the existing corpus and
-dataset ingestion pipelines. It is designed to be called from a CLI command
-(``anvil bootstrap-datasets``), from ``make setup``, or from app startup.
+This service walks ``data/demo/`` (bundled inside the ``anvil`` package),
+discovers subdirectories (corpora) and ``.txt`` files (datasets), and imports
+them into the database via the existing corpus and dataset ingestion pipelines.
+It is designed to be called from a CLI command (``anvil bootstrap-datasets``),
+from ``make setup``, or from app startup.
 """
 
 from __future__ import annotations
 
+import importlib.resources as _resources
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass, field
@@ -24,7 +26,16 @@ from anvil.services.corpora import CorpusService
 from anvil.services.dataset_import import DatasetImportService
 from anvil.services.datasets import DatasetService
 
-DEMO_DIR = Path("data/demo")
+# Resolve the bundled demo data directory from the installed package,
+# not from the current working directory (which would be empty for pip users).
+# We use a function rather than a module-level constant so it can be
+# lazily resolved and monkeypatch-friendly for tests.
+def _resolve_demo_dir() -> Path:
+    """Return the absolute path to the bundled demo data directory."""
+    ref = _resources.files("anvil").joinpath("data", "demo")
+    return Path(str(ref))
+
+DEMO_DIR = _resolve_demo_dir()
 DEMO_NAME_PREFIX = "Demo - "
 DEFAULT_CORPUS_NAME = "Demo - medium/alice"
 

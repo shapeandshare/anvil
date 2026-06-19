@@ -1,6 +1,6 @@
 """MigrationService — programmatic Alembic migration wrapper."""
-
 import asyncio
+import importlib.resources as _resources
 import logging
 from pathlib import Path
 from typing import Any
@@ -12,7 +12,12 @@ from anvil.config import get_config
 
 logger = logging.getLogger(__name__)
 
-ALEMBIC_INI = str(Path(__file__).resolve().parent.parent.parent / "alembic.ini")
+# Resolve alembic.ini and migrations dir from the installed package
+# (not CWD / not repo-root) via importlib.resources — see ADR-017.
+_PACKAGE_RES = _resources.files("anvil")
+_RESOURCE_DIR = _PACKAGE_RES / "_resources"
+ALEMBIC_INI = str(_RESOURCE_DIR / "alembic.ini")
+_MIGRATIONS_DIR = str(_RESOURCE_DIR / "migrations")
 
 
 class MigrationError(RuntimeError):
@@ -45,9 +50,10 @@ class MigrationService:
     # ------------------------------------------------------------------
 
     def _build_config(self, ini_path: str) -> AlembicConfig:
-        """Load Alembic config and override the database URL at runtime."""
+        """Load Alembic config and override DB URL + script_location at runtime."""
         alembic_cfg = AlembicConfig(ini_path)
         alembic_cfg.set_main_option("sqlalchemy.url", self._db_url)
+        alembic_cfg.set_main_option("script_location", _MIGRATIONS_DIR)
         return alembic_cfg
 
     def _ensure_db_dir(self) -> None:

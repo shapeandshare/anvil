@@ -1,0 +1,27 @@
+# anvil — local orchestration for pip-installed runtime validation
+#
+# Single app service with in-process MLflow (consistent with current behavior).
+# Named volume for persistent state across restarts.
+# Healthcheck via /v1/health endpoint (Python stdlib — no curl needed).
+
+services:
+  anvil:
+    build:
+      context: .
+      target: runtime
+    image: anvil:local
+    ports:
+      - "8080:8080"   # Web workbench
+      - "5001:5001"   # In-process MLflow
+    volumes:
+      - anvil-workspace:/workspace
+    working_dir: /workspace
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/v1/health').status==200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+
+volumes:
+  anvil-workspace:

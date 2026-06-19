@@ -15,8 +15,6 @@ venv/
 
 # Runtime data
 data/*
-!data/demo/
-!data/demo/**
 logs/
 mlruns/
 mlartifacts/
@@ -49,6 +47,9 @@ Thumbs.db
 .gitignore
 .gitattributes
 .gitmodules
+
+# Project docs
+specs/
 
 # Docker
 Dockerfile
