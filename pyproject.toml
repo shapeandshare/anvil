@@ -63,6 +63,7 @@ anvil-corpus = "anvil.cli:corpus_main"
 anvil-stop = "anvil.cli:stop"
 anvil-migrate-registry = "anvil.cli:migrate_registry"
 anvil-bootstrap-datasets = "anvil.cli:bootstrap_datasets_main"
+anvil-db = "anvil.cli:db_main"
 
 [tool.ruff]
 target-version = "py311"

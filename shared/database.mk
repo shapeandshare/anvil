@@ -1,29 +1,29 @@
-# Database management targets (Alembic migrations)
+# Database management targets (delegated to anvil-db CLI)
 
 setup: $(VENV_DIR)/activate ## Create venv, install deps, and run DB migrations
 	mkdir -p data
-	$(PYTHON) -m alembic upgrade heads
+	$(PYTHON) -m anvil.cli db_main upgrade
 	$(PYTHON) -m anvil.cli bootstrap_datasets_main
 	@echo "Setup complete"
 
 db-upgrade: $(VENV_DIR)/activate ## Run all pending Alembic migrations
-	$(PYTHON) -m alembic upgrade head
+	$(PYTHON) -m anvil.cli db_main upgrade
 
 db-downgrade: $(VENV_DIR)/activate ## Rollback last Alembic migration
-	$(PYTHON) -m alembic downgrade -1
+	$(PYTHON) -m anvil.cli db_main downgrade
 
 db-current: $(VENV_DIR)/activate ## Show current Alembic migration revision
-	$(PYTHON) -m alembic current
+	$(PYTHON) -m anvil.cli db_main current
 
 db-history: $(VENV_DIR)/activate ## Show Alembic migration history
-	$(PYTHON) -m alembic history
+	$(PYTHON) -m anvil.cli db_main history
 
 db-revision: $(VENV_DIR)/activate ## Create a new Alembic migration (usage: MESSAGE="description")
 	@if [ -z "$(MESSAGE)" ]; then \
 		echo "Usage: make db-revision MESSAGE=\"your migration description\""; \
 		exit 1; \
 	fi
-	$(PYTHON) -m alembic revision --autogenerate -m "$(MESSAGE)"
+	$(PYTHON) -m anvil.cli db_main revision -m "$(MESSAGE)"
 	@echo "Review the generated migration before committing."
 
 db-stamp: $(VENV_DIR)/activate ## Stamp the DB at a specific revision (usage: REVISION=<hash>)
@@ -31,6 +31,6 @@ db-stamp: $(VENV_DIR)/activate ## Stamp the DB at a specific revision (usage: RE
 		echo "Usage: make db-stamp REVISION=<revision-hash>"; \
 		exit 1; \
 	fi
-	$(PYTHON) -m alembic stamp $(REVISION)
+	$(PYTHON) -m anvil.cli db_main stamp $(REVISION)
 
 .PHONY: setup db-upgrade db-downgrade db-current db-history db-revision db-stamp
