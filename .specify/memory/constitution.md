@@ -26,7 +26,7 @@ The web server, database layer, and service layer MUST use async Python througho
 
 ### Article VI — Implicit Namespace
 
-All Python packages MUST use implicit namespace packages (PEP 420). `__init__.py` files SHALL exist ONLY in directories that export a public API surface. They MUST NOT be used for internal wiring, side-effect imports, or namespace initialization.
+All Python packages MUST use implicit namespace packages (PEP 420). `__init__.py` files SHALL exist ONLY in directories that export a public API surface. They MUST NOT be used for internal wiring, side-effect imports, or namespace initialization. Internal code MUST NEVER import from `__init__.py` — doing so creates brittle wiring that violates the implicit namespace contract.
 
 ### Article VII — Layered Architecture
 
@@ -49,6 +49,7 @@ All optional capabilities (GPU acceleration, external services, advanced feature
 
 - Schema changes via reversible Alembic migrations (`make db-revision`); data backfills accompany any vocabulary change.
 - No type-error suppression; `mypy --strict` passes.
+- `TYPE_CHECKING` from `typing` is forbidden — circular imports are an architecture problem. Extract shared types into a dedicated module or reorganize layer boundaries.
 - Lean dependencies; new deps justified in an ADR/plan; optional/heavy deps (e.g. GPU) go in `[project.optional-dependencies]`.
 - Significant decisions recorded as ADRs in `docs/vault/Decisions/`; vault enriched per session.
 
