@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 280" width="100%" height="100%">
+  <defs>
+    <!-- Forge ring gradient for node borders -->
+    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ff9500"/>
+      <stop offset="100%" stop-color="#ffcc00"/>
+    </linearGradient>
+
+    <!-- Warm forge glow behind node row -->
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffcc00" stop-opacity="0.12"/>
+      <stop offset="40%" stop-color="#ff9500" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#ff9500" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Arrowhead marker -->
+    <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#ff9500"/>
+    </marker>
+  </defs>
+
+  <!-- Dark panel background for GitHub light/dark theme compatibility -->
+  <rect width="1280" height="280" rx="24" fill="#0c0c0d"/>
+
+  <!-- Forge glow band -->
+  <ellipse cx="600" cy="110" rx="520" ry="65" fill="url(#glow)"/>
+
+  <!-- Connecting arrows between nodes -->
+  <line x1="208" y1="110" x2="332" y2="110" stroke="#ff9500" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="428" y1="110" x2="552" y2="110" stroke="#ff9500" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="648" y1="110" x2="772" y2="110" stroke="#ff9500" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="868" y1="110" x2="992" y2="110" stroke="#ff9500" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+  <!-- ===== NODE 1: Data ===== -->
+  <rect x="112" y="62" width="96" height="96" rx="20" fill="#1c1c1e" stroke="url(#ring)" stroke-width="2.5"/>
+  <g transform="translate(148, 98)" fill="#ff9500" stroke="none">
+    <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>
+  </g>
+  <text x="160" y="196" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="18" font-weight="bold" fill="#ffffff">Data</text>
+  <text x="160" y="219" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="14" fill="#ebebf5" opacity="0.75">Upload corpora</text>
+
+  <!-- ===== NODE 2: Train ===== -->
+  <rect x="332" y="62" width="96" height="96" rx="20" fill="#1c1c1e" stroke="url(#ring)" stroke-width="2.5"/>
+  <g transform="translate(368, 98)" fill="#ff9500" stroke="none">
+    <path d="M13 2 L4 14 h7 l-2 8 9-12 h-7 z"/>
+  </g>
+  <text x="380" y="196" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="18" font-weight="bold" fill="#ffffff">Train</text>
+  <text x="380" y="219" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="14" fill="#ebebf5" opacity="0.75">Live loss curves</text>
+
+  <!-- ===== NODE 3: Track ===== -->
+  <rect x="552" y="62" width="96" height="96" rx="20" fill="#1c1c1e" stroke="url(#ring)" stroke-width="2.5"/>
+  <g transform="translate(588, 98)" fill="none" stroke="#ff9500" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 4 v16 h16"/>
+    <path d="M7 15 l4-5 3 3 5-7"/>
+  </g>
+  <text x="600" y="196" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="18" font-weight="bold" fill="#ffffff">Track</text>
+  <text x="600" y="219" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="14" fill="#ebebf5" opacity="0.75">MLflow runs</text>
+
+  <!-- ===== NODE 4: Export ===== -->
+  <rect x="772" y="62" width="96" height="96" rx="20" fill="#1c1c1e" stroke="url(#ring)" stroke-width="2.5"/>
+  <g transform="translate(808, 98)" fill="none" stroke="#ff9500" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 3 v10"/>
+    <path d="M8 9 l4 4 4-4"/>
+    <path d="M4 17 v2 a1 1 0 0 0 1 1 h14 a1 1 0 0 0 1-1 v-2"/>
+  </g>
+  <text x="820" y="196" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="18" font-weight="bold" fill="#ffffff">Export</text>
+  <text x="820" y="219" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="14" fill="#ebebf5" opacity="0.75">Safetensors</text>
+
+  <!-- ===== NODE 5: Play ===== -->
+  <rect x="992" y="62" width="96" height="96" rx="20" fill="#1c1c1e" stroke="url(#ring)" stroke-width="2.5"/>
+  <g transform="translate(1028, 98)" fill="none" stroke="#ff9500" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3" y="4" width="18" height="16" rx="2"/>
+    <path d="M7 9 l3 3 -3 3"/>
+    <path d="M13 15 h4"/>
+  </g>
+  <text x="1040" y="196" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="18" font-weight="bold" fill="#ffffff">Play</text>
+  <text x="1040" y="219" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="14" fill="#ebebf5" opacity="0.75">Generate text</text>
+</svg>

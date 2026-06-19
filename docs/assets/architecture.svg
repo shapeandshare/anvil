@@ -1,0 +1,177 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="100%" height="100%">
+  <defs>
+    <!-- Forge gradient for God Class accent + title -->
+    <linearGradient id="forgeGradient" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ff9500"/>
+      <stop offset="100%" stop-color="#ffcc00"/>
+    </linearGradient>
+
+    <!-- Soft glow behind God Class band -->
+    <filter id="forgeGlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="7"/>
+    </filter>
+
+    <!-- Downward arrowhead marker -->
+    <marker id="arrowhead" viewBox="0 0 10 8" refX="5" refY="8" markerWidth="7" markerHeight="6" orient="auto">
+      <path d="M0 0 L5 8 L10 0 Z" fill="#ff9500"/>
+    </marker>
+
+    <!-- Upward arrowhead marker for discipline bracket -->
+    <marker id="arrowheadUp" viewBox="0 0 10 8" refX="5" refY="0" markerWidth="7" markerHeight="6" orient="auto">
+      <path d="M0 8 L5 0 L10 8 Z" fill="#ff9500"/>
+    </marker>
+  </defs>
+
+  <!-- Solid dark background panel (light-theme legibility) -->
+  <rect x="0" y="0" width="1280" height="640" rx="24" fill="#0c0c0d"/>
+
+  <!-- ===== TITLE ===== -->
+  <text x="640" y="36" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="700" fill="#ebebf5" opacity="0.5" letter-spacing="3">ARCHITECTURE</text>
+
+  <!-- ================================================================== -->
+  <!-- SECTION A: LAYER BANDS                                           -->
+  <!-- ================================================================== -->
+
+  <!-- ===== BAND 1: Routes / CLI ===== -->
+  <rect x="100" y="60" width="960" height="68" rx="14" fill="#1c1c1e" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1"/>
+  <text x="125" y="86" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="24" font-weight="700" fill="#ffffff">Routes / CLI</text>
+  <text x="125" y="108" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="16" fill="#ebebf5" opacity="0.78">FastAPI v1 router · Jinja2 templates · SSE streaming · CLI entrypoints</text>
+
+  <!-- Arrow 1 → 2 -->
+  <line x1="70" y1="130" x2="70" y2="148" stroke="#ff9500" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+
+  <!-- ===== BAND 2: God Class — AnvilWorkbench ===== -->
+  <!-- Glow behind -->
+  <rect x="88" y="156" width="984" height="88" rx="20" fill="url(#forgeGradient)" opacity="0.08" filter="url(#forgeGlow)"/>
+  <!-- Band surface -->
+  <rect x="100" y="156" width="960" height="76" rx="14" fill="#1c1c1e" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1"/>
+  <!-- Forge-orange gradient left accent bar -->
+  <rect x="100" y="156" width="8" height="76" rx="3" fill="url(#forgeGradient)"/>
+  <!-- Title with gradient -->
+  <text x="125" y="188" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="24" font-weight="700" fill="url(#forgeGradient)">
+    <tspan>God Class — </tspan>
+    <tspan font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace">AnvilWorkbench</tspan>
+  </text>
+  <!-- Subtitle -->
+  <text x="125" y="213" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="16" fill="#ebebf5" opacity="0.78">Single public surface exposing all services — strict layer gateway</text>
+
+  <!-- Arrow 2 → 3 -->
+  <line x1="70" y1="234" x2="70" y2="252" stroke="#ff9500" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+
+  <!-- ===== BAND 3: Services ===== -->
+  <rect x="100" y="260" width="960" height="68" rx="14" fill="#1c1c1e" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1"/>
+  <text x="125" y="286" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="24" font-weight="700" fill="#ffffff">Services</text>
+  <text x="125" y="308" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="16" fill="#ebebf5" opacity="0.78">training · tracking · datasets · inference · demo (domain sub-packages)</text>
+
+  <!-- Arrow 3 → 4 -->
+  <line x1="70" y1="330" x2="70" y2="348" stroke="#ff9500" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+
+  <!-- ===== BAND 4: Repositories ===== -->
+  <rect x="100" y="356" width="960" height="68" rx="14" fill="#1c1c1e" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1"/>
+  <text x="125" y="382" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="24" font-weight="700" fill="#ffffff">Repositories</text>
+  <text x="125" y="404" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="16" fill="#ebebf5" opacity="0.78">DB access only — async SQLAlchemy (SQLite) — repository pattern</text>
+
+  <!-- Arrow 4 → 5 -->
+  <line x1="70" y1="426" x2="70" y2="444" stroke="#ff9500" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+
+  <!-- ===== BAND 5: Core Engine + Storage ===== -->
+  <rect x="100" y="452" width="960" height="68" rx="14" fill="#1c1c1e" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1"/>
+  <text x="125" y="478" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="24" font-weight="700" fill="#ffffff">Core Engine + Storage</text>
+  <text x="125" y="500" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="16" fill="#ebebf5" opacity="0.78">Stdlib-only transformer (zero pip deps) · FileStore abstraction (local FS)</text>
+
+  <!-- ===== LEFT SIDE: "calls" indicator ===== -->
+  <text x="70" y="48" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="11" font-weight="600" fill="#ff9500" letter-spacing="1">CALLS</text>
+
+  <!-- ================================================================== -->
+  <!-- RIGHT SIDE: Discipline bracket + caption                          -->
+  <!-- ================================================================== -->
+
+  <!-- Vertical discipline bracket line -->
+  <line x1="1078" y1="80" x2="1078" y2="500" stroke="#ff9500" stroke-width="1.5" stroke-opacity="0.5"/>
+  <!-- Top cap -->
+  <line x1="1078" y1="80" x2="1088" y2="80" stroke="#ff9500" stroke-width="1.5" stroke-opacity="0.5"/>
+  <!-- Bottom cap -->
+  <line x1="1078" y1="500" x2="1088" y2="500" stroke="#ff9500" stroke-width="1.5" stroke-opacity="0.5"/>
+
+  <!-- Discipline caption text -->
+  <text x="1098" y="100" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="600" fill="#ff9500" opacity="0.65">tight</text>
+  <text x="1098" y="118" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="600" fill="#ff9500" opacity="0.65">layer</text>
+  <text x="1098" y="136" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="600" fill="#ff9500" opacity="0.65">discipline</text>
+
+  <!-- Discipline connector ticks at each layer boundary -->
+  <line x1="1078" y1="128" x2="1068" y2="128" stroke="#ff9500" stroke-width="1.5" stroke-opacity="0.3"/>
+  <line x1="1078" y1="232" x2="1068" y2="232" stroke="#ff9500" stroke-width="1.5" stroke-opacity="0.3"/>
+  <line x1="1078" y1="328" x2="1068" y2="328" stroke="#ff9500" stroke-width="1.5" stroke-opacity="0.3"/>
+  <line x1="1078" y1="424" x2="1068" y2="424" stroke="#ff9500" stroke-width="1.5" stroke-opacity="0.3"/>
+
+  <!-- Flow direction arrows and layer labels -->
+  <text x="1098" y="200" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="12" fill="#ebebf5" opacity="0.6">Repository</text>
+  <text x="1098" y="218" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="12" fill="#ff9500" opacity="0.7">&#8593; Service</text>
+  <text x="1098" y="290" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="12" fill="#ff9500" opacity="0.7">&#8593; God Class</text>
+  <text x="1098" y="372" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="12" fill="#ff9500" opacity="0.7">&#8593; Routes / CLI</text>
+
+  <text x="1098" y="486" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="600" fill="#ff9500" opacity="0.8">no shortcuts</text>
+
+  <!-- ================================================================== -->
+  <!-- SECTION B: TECH BADGES                                            -->
+  <!-- ================================================================== -->
+
+  <!-- Subtle divider -->
+  <line x1="100" y1="534" x2="1060" y2="534" stroke="#ffffff" stroke-opacity="0.06" stroke-width="1"/>
+
+  <!-- "Stack" label -->
+  <text x="640" y="528" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="11" font-weight="600" fill="#ebebf5" opacity="0.4" letter-spacing="2">STACK</text>
+
+  <!-- Badge Y position -->
+  <!-- Pill 1: FastAPI (center ~195) -->
+  <rect x="147" y="544" width="96" height="30" rx="15" fill="#2c2c2e"/>
+  <circle cx="159" cy="559" r="3" fill="#ff9500"/>
+  <text x="171" y="563" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="500" fill="#ffffff">FastAPI</text>
+
+  <!-- Pill 2: SQLAlchemy (async) (center ~325) -->
+  <rect x="239" y="544" width="172" height="30" rx="15" fill="#2c2c2e"/>
+  <circle cx="251" cy="559" r="3" fill="#ff9500"/>
+  <text x="263" y="563" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="500" fill="#ffffff">SQLAlchemy (async)</text>
+
+  <!-- Pill 3: MLflow (center ~455) -->
+  <rect x="397" y="544" width="116" height="30" rx="15" fill="#2c2c2e"/>
+  <circle cx="409" cy="559" r="3" fill="#ff9500"/>
+  <text x="421" y="563" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="500" fill="#ffffff">MLflow</text>
+
+  <!-- Pill 4: Jinja2 (center ~585) -->
+  <rect x="533" y="544" width="104" height="30" rx="15" fill="#2c2c2e"/>
+  <circle cx="545" cy="559" r="3" fill="#ff9500"/>
+  <text x="557" y="563" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="500" fill="#ffffff">Jinja2</text>
+
+  <!-- Pill 5: safetensors (center ~715) -->
+  <rect x="658" y="544" width="114" height="30" rx="15" fill="#2c2c2e"/>
+  <circle cx="670" cy="559" r="3" fill="#ff9500"/>
+  <text x="682" y="563" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="500" fill="#ffffff">safetensors</text>
+
+  <!-- Pill 6: uv (center ~830) -->
+  <rect x="794" y="544" width="72" height="30" rx="15" fill="#2c2c2e"/>
+  <circle cx="806" cy="559" r="3" fill="#ff9500"/>
+  <text x="818" y="563" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="500" fill="#ffffff">uv</text>
+
+  <!-- Pill 7: Alembic (center ~940) -->
+  <rect x="894" y="544" width="92" height="30" rx="15" fill="#2c2c2e"/>
+  <circle cx="906" cy="559" r="3" fill="#ff9500"/>
+  <text x="918" y="563" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="500" fill="#ffffff">Alembic</text>
+
+  <!-- Second row badges (wrap): PyTorch + Pydantic -->
+  <!-- Pill 8: PyTorch (center ~370) -->
+  <rect x="302" y="584" width="136" height="30" rx="15" fill="#2c2c2e"/>
+  <circle cx="314" cy="599" r="3" fill="#ff9500"/>
+  <text x="326" y="603" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="500" fill="#ffffff">PyTorch</text>
+
+  <!-- Pill 9: Pydantic (center ~530) -->
+  <rect x="474" y="584" width="112" height="30" rx="15" fill="#2c2c2e"/>
+  <circle cx="486" cy="599" r="3" fill="#ff9500"/>
+  <text x="498" y="603" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="500" fill="#ffffff">Pydantic</text>
+
+  <!-- Pill 10: Ruff / mypy (center ~690) -->
+  <rect x="633" y="584" width="114" height="30" rx="15" fill="#2c2c2e"/>
+  <circle cx="645" cy="599" r="3" fill="#ff9500"/>
+  <text x="657" y="603" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="500" fill="#ffffff">ruff + mypy</text>
+
+</svg>

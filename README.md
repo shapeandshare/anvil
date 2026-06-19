@@ -36,6 +36,14 @@ Every concept here scales up directly to real models. Train in seconds, then ope
 
 <br>
 
+<p align="center">
+  <img src="docs/assets/workflow.svg" alt="anvil workflow: upload data → train → track → export → play" width="100%">
+</p>
+
+<br>
+
+<p align="center"><img src="docs/assets/divider.svg" alt="" width="100%"></p>
+
 ## 🚀 Quick Start
 
 > [!IMPORTANT]
@@ -66,23 +74,27 @@ make test-system   # build → container → system tests → teardown
 
 ## 🎯 Features
 
+<p align="center">
+  <img src="docs/assets/features.svg" alt="Features: Data, Train, Experiments, Models, Learn, Ops" width="100%">
+</p>
+
 <table>
 <tr>
 <td width="33%" valign="top">
 
-### 🧠 Train from scratch
+**🧠 Train from scratch**<br>
 Configure hyperparameters and watch loss curves stream live over SSE — no black boxes.
 
 </td>
 <td width="33%" valign="top">
 
-### 📊 Experiment tracking
+**📊 Experiment tracking**<br>
 MLflow-backed runs. Compare loss curves side-by-side and register your best models.
 
 </td>
 <td width="33%" valign="top">
 
-### 📁 Dataset management
+**📁 Dataset management**<br>
 Upload custom `.txt` corpora, curate datasets, and train on anything you like.
 
 </td>
@@ -90,19 +102,19 @@ Upload custom `.txt` corpora, curate datasets, and train on anything you like.
 <tr>
 <td width="33%" valign="top">
 
-### 🔧 Operations dashboard
+**🔧 Operations dashboard**<br>
 Manage services, monitor CPU/GPU/memory, tail logs, run health checks.
 
 </td>
 <td width="33%" valign="top">
 
-### 📱 iOS-modern UI
+**📱 iOS-modern UI**<br>
 Glass nav bars, spring animations, fluid type, and adaptive dark/light mode.
 
 </td>
 <td width="33%" valign="top">
 
-### 📖 Interactive lessons
+**📖 Interactive lessons**<br>
 Progressive walkthroughs from bigrams to a full transformer, with live widgets.
 
 </td>
@@ -111,9 +123,17 @@ Progressive walkthroughs from bigrams to a full transformer, with live widgets.
 
 <br>
 
+<p align="center"><img src="docs/assets/divider.svg" alt="" width="100%"></p>
+
 ## 🧬 The Engine
 
 anvil's core (`anvil/core/`) is a **zero-dependency, stdlib-only** training engine that mirrors modern Llama-class architecture:
+
+<p align="center">
+  <img src="docs/assets/engine.svg" alt="anvil transformer block: token embedding → RMSNorm → Multi-Head Attention + RoPE → RMSNorm → SwiGLU MLP → RMSNorm → LM head" width="80%">
+</p>
+
+<br>
 
 | Component | What it is | Why it matters |
 |-----------|-----------|----------------|
@@ -124,7 +144,15 @@ anvil's core (`anvil/core/`) is a **zero-dependency, stdlib-only** training engi
 
 <br>
 
+<p align="center"><img src="docs/assets/divider.svg" alt="" width="100%"></p>
+
 ## 🏛️ Architecture
+
+<p align="center">
+  <img src="docs/assets/architecture.svg" alt="Layered architecture: Routes/CLI → AnvilWorkbench god class → Services → Repositories → Core Engine + Storage" width="100%">
+</p>
+
+<br>
 
 ```
 anvil/                         # Python package (implicit namespace)
