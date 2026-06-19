@@ -8,7 +8,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from ..gpu import GpuInfo, detect_gpu
+from ...gpu import GpuInfo, detect_gpu
+from .._shared.device_type import DeviceType
 
 # Bytes per float32 parameter.
 _FP32_BYTES = 4
@@ -89,7 +90,7 @@ class MemoryEstimate(BaseModel):
     available_bytes : int or None
         Detected available device memory, or ``None`` if unknown.
     device_backend : str or None
-        Backend identifier (e.g. ``"cuda"``, ``"mps"``).
+        Backend identifier (e.g. ``DeviceType.CUDA``, ``DeviceType.MPS``).
     device_name : str or None
         Human-readable device name.
     would_oom : bool or None
@@ -296,7 +297,7 @@ def estimate_training_memory(
         device_backend = gpu_info.backend
         device_name = gpu_info.device_name
 
-        if gpu_info.backend == "cuda" and gpu_info.memory_available_gb is not None:
+        if gpu_info.backend == DeviceType.CUDA and gpu_info.memory_available_gb is not None:
             available = int(gpu_info.memory_available_gb * (1024**3))
         elif gpu_info.memory_total_gb is not None:
             # MPS: use total system memory as ceiling

@@ -15,8 +15,8 @@ from mlflow.data.meta_dataset import MetaDataset
 from mlflow.data.sources import LocalArtifactDatasetSource  # type: ignore[attr-defined]
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..db.repositories.corpora import CorpusRepository
-from ..db.repositories.datasets import DatasetRepository
+from ...db.repositories.corpora import CorpusRepository
+from ...db.repositories.datasets import DatasetRepository
 
 
 class MlflowInputResolver:
