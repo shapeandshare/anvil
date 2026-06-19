@@ -242,7 +242,10 @@
         /* 7. Restart did-you-know timer for new page */
         initDidYouKnow();
 
-        /* 8. Scroll to top */
+        /* 8. Re-init tooltips — content was swapped */
+        initTooltips();
+
+        /* 9. Scroll to top */
         window.scrollTo(0, 0);
       })
       .catch(function(err) {
@@ -257,6 +260,7 @@
     initTheme();
     initNav();
     initDidYouKnow();
+    initTooltips();
 
     /* Initialise history state so popstate at root works */
     if (!history.state) {
@@ -326,11 +330,45 @@
     }
   });
 
+  /* ── Smart Tooltip Positioning ────────────────────────── */
+
+  function initTooltips() {
+    document.querySelectorAll('.tooltip-trigger').forEach(function(trigger) {
+      var content = trigger.querySelector('.tooltip-content');
+      if (!content) return;
+
+      trigger.addEventListener('mouseenter', function() {
+        requestAnimationFrame(function() {
+          var rect = content.getBoundingClientRect();
+          var overflowRight = rect.right - window.innerWidth;
+          var overflowLeft = -rect.left;
+          var shift;
+
+          if (overflowRight > 0) {
+            shift = overflowRight + 12;
+            content.style.setProperty('--tooltip-shift', (-shift) + 'px');
+            content.style.setProperty('--tooltip-arrow-x', shift + 'px');
+          } else if (overflowLeft > 0) {
+            shift = overflowLeft + 12;
+            content.style.setProperty('--tooltip-shift', shift + 'px');
+            content.style.setProperty('--tooltip-arrow-x', (-shift) + 'px');
+          }
+        });
+      });
+
+      trigger.addEventListener('mouseleave', function() {
+        content.style.removeProperty('--tooltip-shift');
+        content.style.removeProperty('--tooltip-arrow-x');
+      });
+    });
+  }
+
   window.core = {
     toggleTheme: toggleTheme,
     getUrlParams: getUrlParams,
     setUrlParams: setUrlParams,
     loadContent: loadContent,
     initDidYouKnow: initDidYouKnow,
+    initTooltips: initTooltips,
   };
 })();
