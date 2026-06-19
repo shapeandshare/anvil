@@ -1,12 +1,13 @@
 """Async SQLAlchemy session management."""
 
-import os
 from collections.abc import AsyncGenerator
-from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-DB_PATH = os.getenv("ANVIL_DB_PATH", str(Path("data/anvil.db").resolve()))
+from anvil.config import get_config
+
+cfg = get_config()
+DB_PATH = cfg["state_db_path"]
 SQLALCHEMY_DATABASE_URL = f"sqlite+aiosqlite:///{DB_PATH}"
 
 async_engine = create_async_engine(
