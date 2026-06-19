@@ -170,6 +170,19 @@
       <pre class="loss-display" id="loss-display"></pre>
       <div id="output-actions" class="output-actions"></div>
     </div>
+  <div class="modal-overlay" id="train-confirm-modal" style="display:none;">
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-dialog__header">
+        <div class="modal-dialog__icon">&#9874;</div>
+        <h3 class="modal-dialog__title" id="modal-title">Forge Model</h3>
+        <p class="modal-dialog__message">Review your configuration before forging.</p>
+      </div>
+      <div class="modal-dialog__config" id="modal-config-summary"></div>
+      <div class="modal-dialog__actions">
+        <button type="button" class="modal-dialog__btn modal-dialog__btn--cancel" id="modal-cancel-btn">Cancel</button>
+        <button type="button" class="modal-dialog__btn modal-dialog__btn--confirm" id="modal-confirm-btn">Forge Ahead</button>
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}
@@ -1012,6 +1025,73 @@ var gpuToggle = document.getElementById('compute_backend');
   }
 
   /* ── Training Lifecycle ── */
+
+  /* ── Confirmation Modal ── */
+  var confirmModal = document.getElementById('train-confirm-modal');
+  var confirmBtn = document.getElementById('modal-confirm-btn');
+  var cancelBtn = document.getElementById('modal-cancel-btn');
+  var modalSummary = document.getElementById('modal-config-summary');
+  var _pendingStart = null;
+
+  function closeModal() {
+    confirmModal.style.display = 'none';
+    _pendingStart = null;
+  }
+
+  window.showTrainConfirmModal = function() {
+    var config = {
+      n_embd: parseInt(document.getElementById('n_embd').value),
+      n_layer: parseInt(document.getElementById('n_layer').value),
+      n_head: parseInt(document.getElementById('n_head').value),
+      block_size: parseInt(document.getElementById('block_size').value),
+      num_steps: parseInt(document.getElementById('num_steps').value),
+      learning_rate: parseFloat(document.getElementById('learning_rate').value),
+      temperature: parseFloat(document.getElementById('temperature').value),
+      compute_backend: document.getElementById('compute_backend').value,
+    };
+
+    var cid = corpusSelect.value;
+    var did = datasetSelect.value;
+    var dataLabel = 'default';
+    if (did) {
+      dataLabel = datasetCache[did] ? datasetCache[did].name : 'dataset #' + did;
+    } else if (cid) {
+      dataLabel = corpusCache[cid] ? corpusCache[cid].name : 'corpus #' + cid;
+    }
+
+    modalSummary.innerHTML =
+      '<div class="modal-dialog__config-item"><span class="modal-dialog__config-label">Data</span><span class="modal-dialog__config-value">' + escHtml(dataLabel) + '</span></div>'
+      + '<div class="modal-dialog__config-item"><span class="modal-dialog__config-label">Backend</span><span class="modal-dialog__config-value">' + escHtml(config.compute_backend) + '</span></div>'
+      + '<div class="modal-dialog__config-item"><span class="modal-dialog__config-label">Arch</span><span class="modal-dialog__config-value">' + config.n_layer + 'L\u00d7' + config.n_embd + 'd</span></div>'
+      + '<div class="modal-dialog__config-item"><span class="modal-dialog__config-label">Steps</span><span class="modal-dialog__config-value">' + config.num_steps + '</span></div>'
+      + '<div class="modal-dialog__config-item"><span class="modal-dialog__config-label">Learn Rate</span><span class="modal-dialog__config-value">' + config.learning_rate + '</span></div>'
+      + '<div class="modal-dialog__config-item"><span class="modal-dialog__config-label">Temp</span><span class="modal-dialog__config-value">' + config.temperature + '</span></div>'
+      + '<div class="modal-dialog__config-item"><span class="modal-dialog__config-label">Context</span><span class="modal-dialog__config-value">' + config.block_size + '</span></div>'
+      + '<div class="modal-dialog__config-item"><span class="modal-dialog__config-label">Heads</span><span class="modal-dialog__config-value">' + config.n_head + '</span></div>';
+
+    _pendingStart = config;
+    confirmModal.style.display = 'flex';
+  };
+
+  if (confirmBtn) {
+    confirmBtn.addEventListener('click', function() {
+      closeModal();
+      if (_pendingStart) {
+        startTraining();
+      }
+    });
+  }
+
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', closeModal);
+  }
+
+  if (confirmModal) {
+    confirmModal.addEventListener('click', function(e) {
+      if (e.target === confirmModal) closeModal();
+    });
+  }
+
   window.startTraining = async function startTraining() {
     if (session) { session.destroy(); session = null; }
     initChart();
@@ -1174,7 +1254,7 @@ var gpuToggle = document.getElementById('compute_backend');
 
   autotuneBtn.addEventListener('click', autotuneParameters);
 
-  startBtn.addEventListener('click', startTraining);
+  startBtn.addEventListener('click', window.showTrainConfirmModal);
   stopBtn.addEventListener('click', stopTraining);
 
   /* ── Wizard tab clicks ── */
@@ -1192,7 +1272,7 @@ var gpuToggle = document.getElementById('compute_backend');
       if (tab) {
         switchWizardTab(tab);
       } else if (s === '3' && !startBtn.disabled) {
-        startTraining();
+        window.showTrainConfirmModal();
       }
     });
   });
