@@ -68,7 +68,7 @@ async def db_session():
 
 @pytest.fixture
 def fake_tracking():
-    from anvil.services.tracking import TrackingService
+    from anvil.services.tracking.tracking import TrackingService
 
     svc = TrackingService(
         tracking_uri="http://127.0.0.1:5000",

@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from anvil.services.tracking import TrackingService
+from anvil.services.tracking.tracking import TrackingService
 
 
 @pytest.mark.asyncio
