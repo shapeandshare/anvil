@@ -17,8 +17,8 @@
     </filter>
 
     <!-- Downward arrowhead marker -->
-    <marker id="arrowDown" viewBox="0 0 10 10" refX="5" refY="10" markerWidth="7" markerHeight="7" orient="auto">
-      <path d="M0 0 L5 10 L10 0 Z" fill="#ff9500"/>
+    <marker id="arrowDown" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#ff9500"/>
     </marker>
 
     <!-- Rightward arrowhead marker for residual connections -->

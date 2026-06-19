@@ -103,8 +103,8 @@
   <text x="270" y="590" text-anchor="middle" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11" font-weight="700" fill="#0c0c0d">:5001</text>
   <text x="120" y="618" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="13" fill="#ebebf5" opacity="0.78">subprocess</text>
 
-  <!-- Arrow: MLflow server → mlruns/ store -->
-  <line x1="220" y1="640" x2="220" y2="670" stroke="#ff9500" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <!-- Arrow: MLflow server → mlruns/ store (ends above the cylinder top at y=664 so the head is visible) -->
+  <line x1="220" y1="644" x2="220" y2="657" stroke="#ff9500" stroke-width="2" marker-end="url(#arrowhead)"/>
   <text x="233" y="662" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="10" font-weight="600" fill="#ff9500" opacity="0.8">SQLite</text>
 
   <!-- mlruns/ cylinder (SQLite store for MLflow artifacts) -->
