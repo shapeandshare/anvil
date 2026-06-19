@@ -13,14 +13,16 @@ from collections import deque
 from collections.abc import Awaitable, Callable
 
 # Side-effect imports: each module registers its backends at module level.
-from .compute import local_stdlib_backend  # noqa: F401 — registers local-stdlib
-from .compute import local_torch_backend  # noqa: F401 — registers local-torch
-from .compute import modal_backend  # noqa: F401 — registers modal
-from .compute.registry import get_backend
-from .compute.resolve import resolve_backend
+from ..compute import local_stdlib_backend  # noqa: F401 — registers local-stdlib
+from ..compute import local_torch_backend  # noqa: F401 — registers local-torch
+from ..compute import modal_backend  # noqa: F401 — registers modal
+from ..compute.registry import get_backend
+from ..compute.resolve import resolve_backend
 
 # ── compute backend framework ──────────────────────────────────────────
-from .compute.result import ComputeResult
+from ..compute.compute_backend_result import ComputeBackendResult
+from ..compute.result import ComputeResult
+from ..compute.training_engine import TrainingEngine
 from .stop_requested import StopRequested
 
 
@@ -28,8 +30,9 @@ class TrainingService:
     """Orchestrates training runs: doc loading, backend dispatch, SSE streaming.
 
     Maintains per-run asyncio queues for SSE progress events and
-    threading events for stop signalling. Supports local (stdlib/torch)
-    and remote (Modal) compute backends.
+    threading events for stop signalling. Supports local
+    (:class:`TrainingEngine.STDLIB` / :class:`TrainingEngine.TORCH`)
+    and remote (:class:`ComputeBackendResult.MODAL`) compute backends.
     """
 
     def __init__(self):
@@ -120,23 +123,11 @@ class TrainingService:
             If no data source is available.
         """
         if dataset_id is not None:
-            from ..db.repositories.datasets import DatasetRepository
-            from ..db.session import AsyncSessionLocal
-            from .datasets import DatasetService
-
-            async def _load_dataset():
-                async with AsyncSessionLocal() as session:
-                    repo = DatasetRepository(session)
-                    svc = DatasetService(repo)
-                    return await svc.load_docs(dataset_id)
-
-            return asyncio.run(_load_dataset())
-
-        if corpus_id is not None:
-            from ..db.repositories.corpora import CorpusRepository
-            from ..db.session import AsyncSessionLocal
-            from .corpora import CorpusService
-            from .corpus_loader import CorpusLoader
+            from ...db.session import AsyncSessionLocal
+            from ...db.repositories.corpora import CorpusRepository
+            from ...db.session import AsyncSessionLocal
+            from ..datasets.corpora import CorpusService
+            from ..datasets.corpus_loader import CorpusLoader
 
             async def _load():
                 async with AsyncSessionLocal() as session:
@@ -148,11 +139,11 @@ class TrainingService:
             return asyncio.run(_load())
 
         # Fallback: use default demo corpus when no corpus/dataset specified
-        from ..db.repositories.corpora import CorpusRepository
-        from ..db.session import AsyncSessionLocal
-        from .corpora import CorpusService
-        from .corpus_loader import CorpusLoader
-        from .demo_bootstrap import DEFAULT_CORPUS_NAME, DemoBootstrapService
+        from ...db.repositories.corpora import CorpusRepository
+        from ...db.session import AsyncSessionLocal
+        from ..datasets.corpora import CorpusService
+        from ..datasets.corpus_loader import CorpusLoader
+        from ..demo.demo_bootstrap import DEFAULT_CORPUS_NAME, DemoBootstrapService
 
         async def _load_default():
             async with AsyncSessionLocal() as session:
@@ -196,7 +187,7 @@ class TrainingService:
         """
         from sqlalchemy import text
 
-        from ..db.session import AsyncSessionLocal
+        from ...db.session import AsyncSessionLocal
 
         async with AsyncSessionLocal() as session:
             result = await session.execute(
@@ -269,13 +260,13 @@ class TrainingService:
 
         # ── resolve backend ───────────────────────────────────────────
         resolved = resolve_backend(config)
-        backend_name: str = resolved["backend"]  # "local" | "modal"
-        engine_name: str = resolved["engine"]  # "stdlib" | "torch"
-        device: str = resolved["device"]  # "cpu" | "cuda:0" | "mps"
+        backend_name = resolved["backend"]  # ComputeBackendResult.LOCAL | .MODAL
+        engine_name: TrainingEngine = resolved["engine"]  # TrainingEngine.STDLIB | .TORCH
+        device: str = resolved["device"]  # DeviceType.CPU | .CUDA | .MPS
 
         # Map generic "local" to engine-qualified registry name
         # (registry has "local-stdlib" and "local-torch", not bare "local")
-        if backend_name == "local":
+        if backend_name == ComputeBackendResult.LOCAL:
             backend_name = f"local-{engine_name}"
 
         # Inject device into config so backends can read it
@@ -340,7 +331,7 @@ class TrainingService:
         )
 
         # ── remote: emit submitted event before launching ─────────────
-        if backend_name == "modal":
+        if backend_name == ComputeBackendResult.MODAL:
             asyncio.run_coroutine_threadsafe(
                 queue.put(
                     {

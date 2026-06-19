@@ -13,8 +13,8 @@ from typing import Any
 import mlflow.entities
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..config import get_config
-from .capability_unavailable import CapabilityUnavailable
+from ...config import get_config
+from .._shared.capability_unavailable import CapabilityUnavailable
 from .mlflow_capabilities import TrackingCapabilities, detect_capabilities
 
 _system_metrics_enabled = False
@@ -436,7 +436,7 @@ class TrackingService:
             except Exception:
                 return ""
         else:
-            from ..db.session import AsyncSessionLocal
+            from ...db.session import AsyncSessionLocal
 
             async with AsyncSessionLocal() as sess:
                 try:
@@ -505,7 +505,7 @@ class TrackingService:
             except Exception:
                 return ""
         else:
-            from ..db.session import AsyncSessionLocal
+            from ...db.session import AsyncSessionLocal
 
             async with AsyncSessionLocal() as sess:
                 try:

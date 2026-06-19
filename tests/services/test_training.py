@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from anvil.services.training import TrainingService
+from anvil.services.training.training import TrainingService
 
 pytestmark = pytest.mark.asyncio
 

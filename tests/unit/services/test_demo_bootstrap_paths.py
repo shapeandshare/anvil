@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from anvil.services.demo_bootstrap import DemoBootstrapService
+from anvil.services.demo.demo_bootstrap import DemoBootstrapService
 
 
 def test_demo_bootstrap_demo_dir_resolves_from_package() -> None:
@@ -17,7 +17,7 @@ def test_demo_bootstrap_demo_dir_resolves_from_package() -> None:
     # Re-import the module to test its module-level constant
     import importlib
 
-    mod = importlib.import_module("anvil.services.demo_bootstrap")
+    mod = importlib.import_module("anvil.services.demo.demo_bootstrap")
     importlib.reload(mod)
 
     demo_dir = mod.DEMO_DIR
@@ -34,7 +34,7 @@ def test_demo_dir_contains_expected_subdirs() -> None:
     """The resolved demo directory has the expected corpus subdirectories."""
     import importlib
 
-    mod = importlib.import_module("anvil.services.demo_bootstrap")
+    mod = importlib.import_module("anvil.services.demo.demo_bootstrap")
     importlib.reload(mod)
 
     demo_dir = mod.DEMO_DIR
@@ -78,7 +78,7 @@ def test_demo_bootstrap_not_cwd_relative() -> None:
     # test helps catch it (it would only exist when CWD is the repo root).
     import importlib
 
-    mod = importlib.import_module("anvil.services.demo_bootstrap")
+    mod = importlib.import_module("anvil.services.demo.demo_bootstrap")
     importlib.reload(mod)
 
     demo_dir = mod.DEMO_DIR

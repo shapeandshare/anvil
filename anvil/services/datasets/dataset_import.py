@@ -12,14 +12,15 @@ from collections.abc import AsyncIterator
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..db.models.curation_operation import CurationOperation
-from ..db.models.import_source import ImportSource
-from ..db.models.sample import Sample
-from ..db.repositories.curation import SampleRepository
-from ..db.repositories.curation_operation_repository import CurationOperationRepository
-from ..db.repositories.datasets import DatasetRepository
-from ..db.repositories.import_source_repository import ImportSourceRepository
-from ..storage.local import LocalFileStore
+from ...db.models.curation_operation import CurationOperation
+from ...db.models.import_source import ImportSource
+from ...db.models.sample import Sample
+from ...db.repositories.curation import SampleRepository
+from ...db.repositories.curation_operation_repository import CurationOperationRepository
+from ...db.repositories.datasets import DatasetRepository
+from ...db.repositories.import_source_repository import ImportSourceRepository
+from ...storage.local import LocalFileStore
+from .dataset_status import DatasetStatus
 from .import_result import ImportResult
 from .parsed_sample import ParsedSample
 
@@ -130,7 +131,7 @@ class DatasetImportService:
         if dataset is None:
             raise ValueError(f"Dataset {self._dataset_id} not found")
 
-        dataset.status = "importing"
+        dataset.status = DatasetStatus.IMPORTING
         await self._dataset_repo.update(dataset)
 
         try:
@@ -184,7 +185,7 @@ class DatasetImportService:
                 s.length for s in samples
             )
             dataset.curation_version = (dataset.curation_version or 0) + 1
-            dataset.status = "ready" if after_count > 0 else "empty"
+            dataset.status = DatasetStatus.READY if after_count > 0 else DatasetStatus.EMPTY
             await self._dataset_repo.update(dataset)
 
             preview = [
@@ -202,7 +203,7 @@ class DatasetImportService:
             )
         except Exception:
             await self._session.rollback()
-            dataset.status = "ready" if dataset.sample_count > 0 else "empty"
+            dataset.status = DatasetStatus.READY if dataset.sample_count > 0 else DatasetStatus.EMPTY
             await self._dataset_repo.update(dataset)
             raise
 
@@ -250,7 +251,7 @@ class DatasetImportService:
         if dataset is None:
             raise ValueError(f"Dataset {self._dataset_id} not found")
 
-        dataset.status = "importing"
+        dataset.status = DatasetStatus.IMPORTING
         await self._dataset_repo.update(dataset)
 
         samples = [ParsedSample(text, idx) for idx, text in enumerate(docs)]
@@ -312,7 +313,7 @@ class DatasetImportService:
                 s.length for s in samples
             )
             dataset.curation_version = (dataset.curation_version or 0) + 1
-            dataset.status = "ready" if after_count > 0 else "empty"
+            dataset.status = DatasetStatus.READY if after_count > 0 else DatasetStatus.EMPTY
             await self._dataset_repo.update(dataset)
 
             preview = [
@@ -330,7 +331,7 @@ class DatasetImportService:
             )
         except Exception:
             await self._session.rollback()
-            dataset.status = "ready" if dataset.sample_count > 0 else "empty"
+            dataset.status = DatasetStatus.READY if dataset.sample_count > 0 else DatasetStatus.EMPTY
             await self._dataset_repo.update(dataset)
             raise
 

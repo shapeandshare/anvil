@@ -1803,7 +1803,7 @@ async def list_inference_models():
         Dict with ``models`` (list of model dicts) and optionally a
         ``message`` if no models are registered.
     """
-    from anvil.services.tracking import TrackingService
+    from anvil.services.tracking.tracking import TrackingService
 
     tracking_svc = TrackingService()
     models = await tracking_svc.list_registered_models()
@@ -1862,7 +1862,7 @@ async def inference_sample(body: dict):
                 detail="top_p must be a float in the range (0.0, 1.0]",
             )
 
-    from anvil.services.inference import InferenceService
+    from anvil.services.inference.inference import InferenceService
 
     inf_svc = InferenceService()
     try:

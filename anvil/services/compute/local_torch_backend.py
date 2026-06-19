@@ -15,11 +15,14 @@ from typing import Any
 from ...core.engine import LlamaModel
 from ...core.torch_engine import torch_available as _torch_available
 from ...core.torch_engine import train_torch
+from .compute_backend_result import ComputeBackendResult
 from .compute_status import ComputeStatus
 from .local_stdlib_backend import _load_weights_into_model
 from .protocol import ProgressCallback, StopCheck
 from .registry import register
+from .registry_backend import RegistryBackend
 from .result import ComputeResult
+from .training_engine import TrainingEngine
 
 
 class LocalTorchBackend:
@@ -37,7 +40,7 @@ class LocalTorchBackend:
     """
 
     #: Backend identifier used by the registry and resolution layer.
-    name = "local-torch"
+    name = RegistryBackend.LOCAL_TORCH
 
     @staticmethod
     def is_available() -> bool:
@@ -129,8 +132,8 @@ class LocalTorchBackend:
             return ComputeResult(
                 status=ComputeStatus.FAILED,
                 error_message=str(exc),
-                engine="torch",
-                backend="local",
+                engine=TrainingEngine.TORCH,
+                backend=ComputeBackendResult.LOCAL,
             )
 
         return ComputeResult(
@@ -139,8 +142,8 @@ class LocalTorchBackend:
             final_loss=final_loss,
             samples=samples,
             uchars=uchars,
-            engine="torch",
-            backend="local",
+            engine=TrainingEngine.TORCH,
+            backend=ComputeBackendResult.LOCAL,
         )
 
 
@@ -158,4 +161,4 @@ def _torch_factory() -> LocalTorchBackend:
     return LocalTorchBackend()
 
 
-register("local-torch", _torch_factory)
+register(RegistryBackend.LOCAL_TORCH, _torch_factory)

@@ -12,10 +12,13 @@ import asyncio
 from typing import Any
 
 from ...core.engine import LlamaModel, train
+from .compute_backend_result import ComputeBackendResult
 from .compute_status import ComputeStatus
 from .protocol import ProgressCallback, StopCheck
 from .registry import register
+from .registry_backend import RegistryBackend
 from .result import ComputeResult
+from .training_engine import TrainingEngine
 
 
 def _load_weights_into_model(model: LlamaModel, weights: dict) -> None:
@@ -59,7 +62,7 @@ class LocalStdlibBackend:
     """
 
     #: Backend identifier used by the registry and resolution layer.
-    name = "local-stdlib"
+    name = RegistryBackend.LOCAL_STDLIB
 
     @staticmethod
     def is_available() -> bool:
@@ -138,8 +141,8 @@ class LocalStdlibBackend:
             return ComputeResult(
                 status=ComputeStatus.FAILED,
                 error_message=str(exc),
-                engine="stdlib",
-                backend="local",
+                engine=TrainingEngine.STDLIB,
+                backend=ComputeBackendResult.LOCAL,
             )
 
         return ComputeResult(
@@ -148,8 +151,8 @@ class LocalStdlibBackend:
             final_loss=final_loss,
             samples=samples,
             uchars=uchars,
-            engine="stdlib",
-            backend="local",
+            engine=TrainingEngine.STDLIB,
+            backend=ComputeBackendResult.LOCAL,
         )
 
 
@@ -167,4 +170,4 @@ def _local_factory() -> LocalStdlibBackend:
     return LocalStdlibBackend()
 
 
-register("local-stdlib", _local_factory)
+register(RegistryBackend.LOCAL_STDLIB, _local_factory)

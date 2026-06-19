@@ -9,6 +9,7 @@ count, curation state, and sample statistics.
 from sqlalchemy import Boolean, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
+from ...services.datasets.dataset_status import DatasetStatus
 from ..base import Base
 from ..timestamp_mixin import TimestampMixin
 
@@ -45,7 +46,7 @@ class Dataset(Base, TimestampMixin):
     curation_version : int
         Monotonically increasing curation version number (default ``0``).
     status : str
-        Processing status (default ``"empty"``, 20 chars max).
+        Processing status (default ``DatasetStatus.EMPTY``, 20 chars max).
     """
 
     __tablename__ = "datasets"
@@ -61,4 +62,4 @@ class Dataset(Base, TimestampMixin):
     sample_count: Mapped[int] = mapped_column(Integer, default=0)
     total_size_bytes: Mapped[int] = mapped_column(Integer, default=0)
     curation_version: Mapped[int] = mapped_column(Integer, default=0)
-    status: Mapped[str] = mapped_column(String(20), default="empty")
+    status: Mapped[str] = mapped_column(String(20), default=DatasetStatus.EMPTY)

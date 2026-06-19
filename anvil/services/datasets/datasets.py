@@ -5,9 +5,9 @@ deleting, and searching datasets, as well as loading their sample
 content from the file store.
 """
 
-from ..db.models.dataset import Dataset
-from ..db.repositories.datasets import DatasetRepository
-from ..storage.local import LocalFileStore
+from ...db.models.dataset import Dataset
+from ...db.repositories.datasets import DatasetRepository
+from ...storage.local import LocalFileStore
 
 
 class DatasetService:
@@ -130,7 +130,7 @@ class DatasetService:
 
         # Non-blocking MLflow lifecycle hook
         try:
-            from .tracking import TrackingService
+            from ..tracking.tracking import TrackingService
 
             tracking_svc = TrackingService()
             if not tracking_svc.is_degraded:
@@ -173,7 +173,7 @@ class DatasetService:
         list[str]
             All active sample texts.
         """
-        from ..db.repositories.curation import SampleRepository
+        from ...db.repositories.curation import SampleRepository
 
         samples = await SampleRepository(self._repo._session).get_active_texts(
             dataset_id

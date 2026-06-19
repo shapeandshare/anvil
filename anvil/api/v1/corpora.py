@@ -15,9 +15,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...api.deps import get_db_session
 from ...db.repositories.corpora import CorpusRepository
-from ...services.corpora import CorpusService
-from ...services.corpus_loader import CorpusLoader
-from ...services.tracking import TrackingService
+from ...services.datasets.corpora import CorpusService
+from ...services.datasets.corpus_loader import CorpusLoader
+from ...services.tracking.tracking import TrackingService
 
 WORKSPACE_ROOTS = [
     os.path.expanduser("~/Workbench/Repositories"),

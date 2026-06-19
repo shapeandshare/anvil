@@ -8,7 +8,7 @@ import tempfile
 random.seed(42)
 
 from anvil.core.engine import train
-from anvil.services.export import SafetensorsExportService
+from anvil.services.training.export import SafetensorsExportService
 
 # --- data ---
 docs = [l.strip() for l in open("input.txt") if l.strip()]

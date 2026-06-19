@@ -31,7 +31,9 @@ import sys
 import uvicorn
 
 from .config import get_config
-from .services.training import TrainingService
+from .services.compute.compute_backend import ComputeBackend
+from .services.datasets.chunking_strategy import ChunkingStrategy
+from .services.training.training import TrainingService
 from .supervisor.supervisor import kill_pid_file, write_pid
 
 logger = logging.getLogger(__name__)
@@ -92,8 +94,8 @@ def _load_docs(corpus_id: int | None = None) -> list[str]:
 
         from .db.repositories.corpora import CorpusRepository
         from .db.session import AsyncSessionLocal
-        from .services.corpora import CorpusService
-        from .services.corpus_loader import CorpusLoader
+        from .services.datasets.corpora import CorpusService
+        from .services.datasets.corpus_loader import CorpusLoader
 
         async def _load() -> list[str]:
             """Load documents for the specified corpus ID.
@@ -111,7 +113,7 @@ def _load_docs(corpus_id: int | None = None) -> list[str]:
         return asyncio.run(_load())
 
     from .db.session import AsyncSessionLocal
-    from .services.demo_bootstrap import DEFAULT_CORPUS_NAME, DemoBootstrapService
+    from .services.demo.demo_bootstrap import DEFAULT_CORPUS_NAME, DemoBootstrapService
 
     async def _load_default() -> list[str]:
         """Load documents from the default demo corpus.
@@ -134,8 +136,8 @@ def _load_docs(corpus_id: int | None = None) -> list[str]:
                     f"to import demo data (expected corpus: {DEFAULT_CORPUS_NAME})"
                 )
             from .db.repositories.corpora import CorpusRepository
-            from .services.corpora import CorpusService
-            from .services.corpus_loader import CorpusLoader
+            from .services.datasets.corpora import CorpusService
+            from .services.datasets.corpus_loader import CorpusLoader
 
             repo = CorpusRepository(session)
             loader = CorpusLoader()
@@ -195,7 +197,7 @@ def train():
         "--backend",
         type=str,
         default=None,
-        choices=["auto", "local-cpu", "local-gpu", "modal"],
+        choices=[cb.value for cb in ComputeBackend],
         help=(
             "Compute backend. "
             "auto=best available, local-cpu=CPU only, "
@@ -222,8 +224,8 @@ def train():
     compute_backend = args.backend or ("local-gpu" if use_gpu else "auto")
 
     from .services.compute.resolve import resolve_backend
-    from .services.tracking import TrackingService
-    from .services.training import TrainingService
+    from .services.tracking.tracking import TrackingService
+    from .services.training.training import TrainingService
 
     svc = TrainingService()
     tracking_svc = TrackingService()
@@ -339,7 +341,7 @@ def train():
             if model is not None:
                 import tempfile
 
-                from .services.export import SafetensorsExportService
+                from .services.training.export import SafetensorsExportService
 
                 export_svc = SafetensorsExportService()
                 with tempfile.TemporaryDirectory() as tmpdir:
@@ -446,8 +448,8 @@ def corpus_main():
     )
     create_p.add_argument(
         "--strategy",
-        default="windowed",
-        choices=["line", "windowed", "file"],
+        default=ChunkingStrategy.WINDOWED.value,
+        choices=[cs.value for cs in ChunkingStrategy],
         help="Chunking strategy",
     )
     create_p.add_argument("--overlap", type=float, default=0.5, help="Chunk overlap")
@@ -472,8 +474,8 @@ def corpus_main():
 
     from .db.repositories.corpora import CorpusRepository
     from .db.session import AsyncSessionLocal
-    from .services.corpora import CorpusService
-    from .services.corpus_loader import CorpusLoader
+    from .services.datasets.corpora import CorpusService
+    from .services.datasets.corpus_loader import CorpusLoader
 
     async def _run():
         """Execute the corpus management command.
@@ -706,7 +708,7 @@ def bootstrap_datasets_main():
         mode the session is rolled back.
         """
         from .db.session import AsyncSessionLocal
-        from .services.demo_bootstrap import DemoBootstrapService
+        from .services.demo.demo_bootstrap import DemoBootstrapService
 
         async with AsyncSessionLocal() as session:
             svc = DemoBootstrapService(session)

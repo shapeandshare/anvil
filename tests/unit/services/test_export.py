@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from anvil.core.engine import LlamaModel
-from anvil.services.export import (
+from anvil.services.training.export import (
     SafetensorsExportService,
     export_state_dict,
     generate_config,

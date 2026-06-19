@@ -6,7 +6,7 @@ import pytest
 
 from anvil.db.repositories.corpora import CorpusRepository
 from anvil.db.repositories.datasets import DatasetRepository
-from anvil.services.demo_bootstrap import DEMO_DIR, DemoBootstrapService, DEFAULT_CORPUS_NAME
+from anvil.services.demo.demo_bootstrap import DEMO_DIR, DemoBootstrapService, DEFAULT_CORPUS_NAME
 
 pytestmark = pytest.mark.asyncio
 

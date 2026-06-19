@@ -8,8 +8,8 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
-from ...services.capability_unavailable import CapabilityUnavailable
-from ...services.tracking import TrackingService
+from ...services._shared.capability_unavailable import CapabilityUnavailable
+from ...services.tracking.tracking import TrackingService
 
 router = APIRouter()
 _tracking_svc = TrackingService()

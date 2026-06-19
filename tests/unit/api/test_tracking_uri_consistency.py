@@ -13,7 +13,7 @@ from httpx import ASGITransport, AsyncClient
 from anvil.api.app import app
 from anvil.db.base import Base
 from anvil.db.session import AsyncSessionLocal, async_engine
-from anvil.services.tracking import TrackingService
+from anvil.services.tracking.tracking import TrackingService
 
 API_DIR = Path("anvil/api/v1")
 

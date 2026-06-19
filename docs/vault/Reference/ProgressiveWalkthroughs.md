@@ -192,7 +192,7 @@ Uses the full `LlamaModel` class and `train()` function from `anvil.core.engine`
 **Key code**:
 ```python
 from anvil.core.engine import LlamaModel, train
-from anvil.services.export import SafetensorsExportService
+from anvil.services.training.export import SafetensorsExportService
 
 model, final_loss, samples, uchars = train(docs, num_steps=200,
     n_embd=16, n_head=4, n_layer=2, block_size=16, learning_rate=0.01)

@@ -1,6 +1,6 @@
 # anvil — Agent Guidelines
 
-**Last updated**: 2026-06-19 (010-numpy-docstrings)
+**Last updated**: 2026-06-19 (012-ddd-services-restructure)
 
 ## Project Overview
 
@@ -49,6 +49,7 @@ anvil/          # Python package (implicit namespace)
 │   ├── datasets/      # Corpora, datasets, import, curation, export
 │   ├── inference/     # Inference, loaded model, demo provider
 │   ├── tracking/      # MLflow experiment tracking, metrics
+│   ├── demo/          # Demo data bootstrap on first run
 │   └── _shared/       # Cross-domain types (internal, underscore-prefixed)
 ├── api/           # FastAPI + Jinja2 + SSE
 │   └── v1/           # API v1 route definitions (domain sub-package)
@@ -94,6 +95,36 @@ anvil/          # Python package (implicit namespace)
            ...
    ```
 
+11. **Prefer Enumerations over Magic Strings** — Any parameter, field, or value that represents one of a fixed, known set of possibilities MUST use a Python `enum` rather than magic strings, ad-hoc string constants, `Literal[...]` types, or dict-based choice mappings. Rationale: enums provide type safety, discoverability (IDE autocomplete), single-source-of-truth values, and exhaustiveness checking.
+
+    Rules:
+    - Use `StrEnum` (Python 3.11+ stdlib) for string-valued enumerations. Use `IntEnum` for integer-valued. Use `auto()` when values are irrelevant.
+    - Enum member names use `UPPER_CASE`. Values use `"lower_case"` (snake_case strings).
+    - Define enums in the domain sub-package they belong to (co-located with the service that primarily consumes them). Cross-domain enums go in `anvil/services/_shared/`.
+    - Enums may share a file with their primary class per the one-class-per-file exception (see Constitution Article X). Standalone enums get their own file named `<thing>.py` (e.g., `compute_status.py`).
+    - Enum values are the single source of truth — never duplicate the string literal elsewhere. Import and use the enum member.
+    - When a function or method accepts an enum value, type the parameter with the enum class, not `str`.
+
+    Correct:
+    ```python
+    from enum import StrEnum
+
+    class ChunkingStrategy(StrEnum):
+        LINE = "line"
+        WINDOWED = "windowed"
+        FILE = "file"
+
+    def chunk(corpus: str, strategy: ChunkingStrategy) -> list[str]:
+        ...
+    ```
+
+    Incorrect:
+    ```python
+    def chunk(corpus: str, strategy: str) -> list[str]:
+        if strategy not in ("line", "windowed", "file"):
+            ...
+    ```
+
 ## Vault Enrichment Protocol
 
 ### During a session:
@@ -123,6 +154,7 @@ anvil/          # Python package (implicit namespace)
 - Favor Pydantic `BaseModel` over `dataclasses.dataclass`
 - `mypy --strict` enforced. Plus `enable_error_code = ["ignore-without-code", "possibly-undefined", "redundant-cast", "redundant-expr"]` and `warn_unused_ignores = true` in `pyproject.toml`. No type-error suppression (`# type: ignore`, `cast()`, `Any` abuse). Strict explicit typing on all function signatures.
 - **Domain-Driven Package Decomposition**: Package boundaries follow domain boundaries. Result/error/value types tightly coupled to one service co-locate in that service's domain sub-package. Cross-domain types go in `_shared/`. Domain sub-packages use plural nouns; internal sub-packages use underscore prefix. Max 2 levels of nesting. See Constitution Article X.
+- **Enums over magic strings**: See Principle 11 in Agent Behavioral Principles above.
 
 ## Packaging Conventions
 
@@ -226,6 +258,7 @@ SomeException
 - SQLite via async SQLAlchemy (`data/anvil-state.db`, configurable via `ANVIL_STATE_DB_PATH`) (008-auto-db-schema)
 - Python 3.11+ (`requires-python = ">=3.11"`) + setuptools (build backend), `build`/`uv build` (wheel build), FastAPI, SQLAlchemy[asyncio], Alembic, MLflow (in-process), Jinja2 — all existing. No new runtime deps. New dev-only: `build` (or reuse `uv build`), `pytest` + `httpx` (existing) for system tests. (009-pip-installable-package)
 - SQLite via async SQLAlchemy (`data/anvil-state.db`); MLflow SQLite (`mlruns/mlflow.db`); demo/seed files bundled in package, imported into DB on first run. (009-pip-installable-package)
+- `anvil/services/` decomposed into domain sub-packages: `datasets/`, `training/`, `tracking/`, `inference/`, `demo/`, `_shared/`. 29 flat modules → 6 domain directories. (012-ddd-services-restructure)
 
 ## Recent Changes
 - 002-directory-corpus-ingestion: Added Python 3.11+ + Existing project deps (FastAPI, SQLAlchemy, aiofiles) + `pathspec` (lightweight gitignore pattern matching, pure Python, no binary deps)
@@ -233,3 +266,5 @@ SomeException
 - 005-mlflow-experiment-tracking: MLflow bumped to `>=3.1,<4`; added `nvidia-ml-py>=12,<13` in `gpu` extra; new `tracking.py`, `mlflow_inputs.py`, `mlflow_capabilities.py`, `metrics_collectors.py` services; custom MPS metrics collector (`MPSMetricsCollector`/`MPSSamplerThread`); source-keyed registry consolidation.
 - py-typed-marker: Added `anvil/py.typed` (PEP 561 typed marker) and declared it in `[tool.setuptools.package-data]` so the package advertises inline type annotations.
 - 010-numpy-docstrings: Added NumPy-style docstring convention section to AGENTS.md, enabled ruff `D` (pydocstyle) rules with `convention = "numpy"` in `pyproject.toml`, and added full NumPy-style docstrings across all modules (~100 files). New per-file ignores for `tests/`, `examples/`, `scripts/`, `anvil/_resources/migrations/` for D rules.
+- 011-enum-convention: Added "Prefer Enumerations over Magic Strings" as Agent Behavioral Principle 11 in AGENTS.md, with rules for StrEnum usage, naming conventions, domain placement, and correct/incorrect examples. Added cross-reference in Architecture Rules.
+- 012-ddd-services-restructure: Decomposed `anvil/services/` from 29 flat `.py` modules into 6 domain sub-packages (`datasets/`, `training/`, `tracking/`, `inference/`, `demo/`, `_shared/`). All imports rewritten across 65 files. +449/−317 lines, zero behavioral delta. See Constitution Article X and ADR-022.

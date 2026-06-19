@@ -2,7 +2,7 @@
 
 import json
 
-from anvil.services.dataset_export import DatasetExportService
+from anvil.services.datasets.dataset_export import DatasetExportService
 
 
 class TestExportService:

@@ -7,13 +7,13 @@ import pytest
 
 from anvil.core.engine import LlamaModel, train
 from anvil.core.vocabulary import Vocabulary
-from anvil.services.demo_model_provider import DemoModelProvider
-from anvil.services.inference import (
+from anvil.services.inference.demo_model_provider import DemoModelProvider
+from anvil.services.inference.inference import (
     InferenceService,
     _project_to_2d,
     _top_k_logits,
 )
-from anvil.services.loaded_model import LoadedModel
+from anvil.services.inference.loaded_model import LoadedModel
 
 
 @pytest.fixture

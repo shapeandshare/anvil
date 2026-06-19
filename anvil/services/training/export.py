@@ -7,7 +7,7 @@ from typing import Any
 import numpy as np
 from safetensors.numpy import save_file
 
-from ..core.engine import LlamaModel
+from ...core.engine import LlamaModel
 
 # ── Name mapping: anvil internal keys → HF LlamaForCausalLM keys ──
 
