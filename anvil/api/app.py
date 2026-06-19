@@ -23,9 +23,11 @@ MLFLOW_EXPERIMENT_NAME = "anvil"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    print("Setting up database...", flush=True)
     await init_engine()
     migration_svc = MigrationService()
     await migration_svc.ensure_migrated()
+
     cfg = get_config()
     if cfg["mlflow_disable_local"]:
         app.state.mlflow = None
@@ -43,14 +45,6 @@ async def lifespan(app: FastAPI):
     except Exception:
         pass
 
-    # Pre-train demo model so first inference request doesn't block
-    try:
-        from anvil.services.inference import _demo_provider
-
-        _demo_provider.get_model()
-    except Exception:
-        pass
-
     # Auto-bootstrap demo data if not yet imported (best-effort)
     try:
         from anvil.db.session import AsyncSessionLocal
@@ -60,13 +54,31 @@ async def lifespan(app: FastAPI):
             svc = DemoBootstrapService(session)
             result = await svc.bootstrap_all()
             if result.corpora_created > 0 or result.datasets_created > 0:
-                import logging
-                logger = logging.getLogger(__name__)
                 logger.info(
                     "Bootstrapped %d corpora, %d datasets from data/demo/",
                     result.corpora_created, result.datasets_created,
                 )
             await session.commit()
+    except Exception:
+        pass
+
+    # Warm up the demo model in the background so the server can come online
+    # immediately. Runs through the real system pipeline: compute backend ->
+    # MLflow tracking -> model registration, so the demo seeds data into all
+    # system views (experiment history, model registry). The training itself
+    # is CPU-bound pure Python and takes tens of seconds; running it
+    # synchronously here would block uvicorn from binding the port.
+    print("Warming up demo model in background (may take ~30-60s)...", flush=True)
+    try:
+        import threading
+
+        from anvil.services.inference import warmup_demo_via_system_pipeline
+
+        threading.Thread(
+            target=warmup_demo_via_system_pipeline,
+            name="demo-model-warmup",
+            daemon=True,
+        ).start()
     except Exception:
         pass
 

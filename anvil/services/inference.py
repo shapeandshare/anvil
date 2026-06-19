@@ -48,6 +48,132 @@ def _train_demo_model(docs: list[str] | None = None) -> LlamaModel:
     return model
 
 
+def warmup_demo_via_system_pipeline() -> None:
+    """Train the demo model through the real system pipeline.
+
+    Goes through: compute backend resolution -> engine training ->
+    MLflow experiment/run creation -> metric logging -> model registration.
+
+    Runs in a background thread during server startup. Falls back to the
+    inline training path if MLflow or the compute backend is unavailable.
+    """
+    import asyncio
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    try:
+        # Try to load docs from the bootstrapped demo corpus first
+        docs: list[str] | None = None
+        try:
+            from anvil.db.session import AsyncSessionLocal
+            from anvil.services.corpus_loader import CorpusLoader
+            from anvil.services.corpora import CorpusService
+            from anvil.services.demo_bootstrap import DemoBootstrapService
+            from anvil.db.repositories.corpora import CorpusRepository
+
+            async def _get_docs() -> list[str] | None:
+                async with AsyncSessionLocal() as session:
+                    bootstrap = DemoBootstrapService(session)
+                    corpus = await bootstrap.get_default_corpus()
+                    if corpus is None:
+                        return None
+                    repo = CorpusRepository(session)
+                    loader = CorpusLoader()
+                    svc = CorpusService(repo, loader)
+                    return await svc.load_docs(corpus.id)
+
+            docs = asyncio.run(_get_docs())
+        except Exception:
+            pass
+
+        docs = docs or _FALLBACK_CORPUS
+
+        config: dict[str, object] = {
+            "n_embd": 16,
+            "n_head": 4,
+            "n_layer": 1,
+            "block_size": 16,
+            "num_steps": 400,
+            "learning_rate": 0.01,
+            "temperature": 0.5,
+        }
+
+        from anvil.services.tracking import TrackingService
+        from anvil.services.compute import get_backend, resolve_backend
+
+        async def _run() -> None:
+            tracking_svc = TrackingService()
+            resolved = resolve_backend({"compute_backend": "local-cpu"})
+            backend_name = f"local-{resolved['engine']}"
+            backend = get_backend(backend_name)
+
+            mlflow_run_id = await tracking_svc.start_run(
+                run_name="demo-warmup",
+                params=config,
+                engine_backend=resolved["engine"],
+                device=resolved["device"],
+            )
+
+            result = await backend.run(
+                docs,
+                config,
+                progress_callback=lambda step, loss: None,
+                stop_check=lambda: False,
+            )
+
+            if result.status.value != "completed" or result.model is None:
+                logger.warning(
+                    "Demo model warm-up via system pipeline failed: %s",
+                    result.error_message,
+                )
+                return
+
+            assert result.model is not None
+
+            model = result.model
+            uchars = result.uchars
+
+            if mlflow_run_id:
+                await tracking_svc.finish_run(mlflow_run_id)
+                await tracking_svc.log_final_metric(
+                    mlflow_run_id, "final_loss", result.final_loss or 0.0
+                )
+                await tracking_svc.set_tag(
+                    mlflow_run_id, "architectures", "LlamaForCausalLM"
+                )
+                await tracking_svc.set_tag(
+                    mlflow_run_id, "anvil.status", "finished"
+                )
+                await tracking_svc.register_source_model(
+                    run_id=mlflow_run_id, name="demo"
+                )
+
+            # Save to demo path so it's immediately loadable by _demo_provider
+            DEMO_MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
+            model.save(str(DEMO_MODEL_PATH), uchars)
+            model.chars = uchars
+
+            # Update _demo_provider cache so inference routes don't re-load
+            _demo_provider._model = model
+            _demo_provider._chars = uchars
+
+            logger.info("Demo model warm-up complete (via system pipeline)")
+            print("Demo model warm-up complete.", flush=True)
+
+        asyncio.run(_run())
+
+    except Exception:
+        logger.warning("Demo model warm-up failed, falling back to inline training", exc_info=True)
+        # Fall back to the old inline path so the server still works
+        try:
+            model = _train_demo_model()
+            _demo_provider._model = model
+            _demo_provider._chars = model.chars
+        except Exception:
+            pass
+
+
 class DemoModelProvider:
     """Provisions a tiny demo model on first request.
 
