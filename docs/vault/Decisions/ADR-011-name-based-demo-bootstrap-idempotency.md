@@ -2,11 +2,14 @@
 title: 'ADR-011: Name-Based Idempotency for Demo Data Bootstrap'
 type: decision
 tags:
-  - type/decision
-  - domain/data-management
-  - domain/infrastructure
+- type/decision
+- domain/database
+- domain/infrastructure
 created: '2026-06-14T00:00:00.000Z'
 updated: '2026-06-14T00:00:00.000Z'
+aliases:
+- 'ADR-011: Name-Based Idempotency for Demo Data Bootstrap'
+source: agent
 ---
 # ADR-011: Name-Based Idempotency for Demo Data Bootstrap
 

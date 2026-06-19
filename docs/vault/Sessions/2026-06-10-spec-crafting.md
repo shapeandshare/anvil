@@ -1,7 +1,7 @@
 ---
 title: Spec Crafting Session — 2026-06-10
 type: session
-tags: [type/session, domain/governance]
+tags: [type/session-log, domain/governance]
 created: 2026-06-10
 updated: 2026-06-11
 ---

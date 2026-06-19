@@ -1,7 +1,7 @@
 ---
 created: '2026-06-18'
 tags:
-  - type/session
+  - type/session-log
   - domain/mlops
   - domain/architecture
 title: MLflow Primary Lineage Implementation

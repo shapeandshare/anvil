@@ -1,11 +1,11 @@
 ---
 title: Anvil Emblem Re-path + Favicon Set
-type: session
+type: session-log
 tags:
-  - type/session
-  - domain/ui
-  - domain/assets
+- type/session-log
+- domain/ui
 created: '2026-06-14T00:00:00.000Z'
+updated: '2026-06-18'
 ---
 
 # Session: Anvil Emblem Re-path + Favicon Set

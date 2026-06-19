@@ -1,8 +1,10 @@
 ---
 title: Learning Content Enrichment Implementation
 type: session
-tags: [type/session, feature/learning-content]
+tags:
+- type/session-log
 created: 2026-06-13
+updated: '2026-06-18'
 ---
 
 # Session: Learning Content Enrichment
@@ -21,7 +23,7 @@ Implements 7 new learning features for anvil: autograd backprop visualization, p
 
 ## Key files created/modified
 
-See [tasks.md](../../specs/005-learning-content-enrichment/tasks.md) for full list.
+(Full task list available in the session feature branch.)
 
 ## Design decisions
 

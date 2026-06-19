@@ -1,11 +1,15 @@
 ---
 created: '2026-06-14'
 tags:
-  - type/session-log
-  - domain/mlflow
-  - domain/export
+- type/session-log
+- domain/operations
+- domain/export
 title: MLflow Pyfunc Model Compliance for Safetensors Export
 type: session-log
+aliases:
+- MLflow Pyfunc Model Compliance for Safetensors Export
+source: agent
+updated: '2026-06-18'
 ---
 ## Summary
 

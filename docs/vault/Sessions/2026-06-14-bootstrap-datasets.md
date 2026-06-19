@@ -2,9 +2,9 @@
 title: Bootstrap Demo Datasets Implementation
 type: session
 tags:
-  - type/session
-  - feature/bootstrap-datasets
+- type/session-log
 created: '2026-06-14T00:00:00.000Z'
+updated: '2026-06-18'
 ---
 # Session: Bootstrap Demo Datasets
 

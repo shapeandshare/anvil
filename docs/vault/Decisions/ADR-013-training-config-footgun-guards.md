@@ -1,9 +1,14 @@
 ---
-title: ADR-013 — Training Config Footgun Guards: Multi-Layer Hyperparameter Validation
+title: 'ADR-013 — Training Config Footgun Guards: Multi-Layer Hyperparameter Validation'
 type: decision
-tags: [type/decision, domain/training]
+tags:
+- type/decision
+- domain/training
 created: 2026-06-15
 updated: 2026-06-15
+aliases:
+- 'ADR-013 — Training Config Footgun Guards: Multi-Layer Hyperparameter Validation'
+source: agent
 ---
 
 # ADR-013: Training Config Footgun Guards — Multi-Layer Hyperparameter Validation

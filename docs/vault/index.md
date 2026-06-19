@@ -1,5 +1,14 @@
 ---
 title: anvil Vault
+type: reference
+tags:
+  - type/reference
+  - domain/vault
+created: 2026-06-10
+updated: 2026-06-18
+aliases:
+  - anvil-vault
+  - vault-index
 ---
 
 # anvil Vault
@@ -12,10 +21,17 @@ Open this vault in [Obsidian](https://obsidian.md) for graph navigation.
 
 | Section | Description |
 |---------|-------------|
-| [[Governance]] | Constitution, policies, principles |
-| [[Decisions]] | Architecture Decision Records |
-| [[Reference]] | Glossary, architecture guides, topic references |
-| [[Sessions]] | Agent session logs |
+| [[Governance/Constitution|Governance]] | Constitution, policies, principles |
+| [[Design/Design|Design]] | Conceptual design and rationale |
+| [[Systems/Systems|Systems]] | Implemented subsystems and tooling |
+| [[Decisions/ADR-001-architecture-decisions|Decisions]] | Architecture Decision Records |
+| [[Reference/ArchitectureOverview|Reference]] | Glossary, architecture guides, topic references |
+| [[Discoveries/Discoveries|Discoveries]] | Non-obvious constraints found during sessions |
+| [[Sessions/2026-06-10-implementation|Sessions]] | Agent session logs |
+
+### Vault Meta
+
+- [_meta/tags.md](./_meta/tags.md) — Controlled tag vocabulary for vault notes
 
 ## Quick Links
 

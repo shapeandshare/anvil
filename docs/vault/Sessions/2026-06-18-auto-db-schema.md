@@ -1,8 +1,8 @@
 ---
 title: Auto Database Schema Management Session
-type: session
+type: session-log
 tags:
-  - type/session
+  - type/session-log
   - domain/infrastructure
 created: '2026-06-18T00:00:00.000Z'
 updated: '2026-06-18T00:00:00.000Z'

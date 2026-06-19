@@ -1,12 +1,15 @@
 ---
 created: '2026-06-16'
 tags:
-  - type/decision
-  - domain/infrastructure
-  - domain/mlops
+- type/decision
+- domain/infrastructure
+- domain/mlops
 title: ML Infrastructure Tier Strategy — Compute & Orchestration Trajectory
 type: decision
 updated: '2026-06-16'
+aliases:
+- ML Infrastructure Tier Strategy — Compute & Orchestration Trajectory
+source: agent
 ---
 # ADR-014: ML Infrastructure Tier Strategy — Compute & Orchestration Trajectory
 

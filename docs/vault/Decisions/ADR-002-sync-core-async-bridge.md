@@ -1,9 +1,14 @@
 ---
 title: ADR-002 — Sync Core Engine / Async SSE Bridge
 type: decision
-tags: [type/decision, domain/core]
+tags:
+- type/decision
+- domain/core
 created: 2026-06-12
 updated: 2026-06-12
+aliases:
+- ADR-002 — Sync Core Engine / Async SSE Bridge
+source: agent
 ---
 
 # ADR-002: Sync Core Engine with Async SSE Bridge

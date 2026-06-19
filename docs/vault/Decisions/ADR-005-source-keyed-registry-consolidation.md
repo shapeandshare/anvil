@@ -1,9 +1,14 @@
 ---
-title: "ADR-005 — Source-keyed model registry consolidation"
+title: ADR-005 — Source-keyed model registry consolidation
 type: decision
-tags: [type/decision, domain/registry]
+tags:
+- type/decision
+- domain/registry
 created: 2026-06-13
 updated: 2026-06-13
+aliases:
+- ADR-005 — Source-keyed model registry consolidation
+source: agent
 ---
 
 # ADR-005: Source-keyed model registry consolidation
