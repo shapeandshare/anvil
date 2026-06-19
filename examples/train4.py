@@ -4,7 +4,6 @@ and SwiGLU MLP. Full block:
   → pre-MLP RMSNorm → SwiGLU MLP → residual.
 No learned position embeddings (wpe) — RoPE encodes position."""
 
-import math
 import random
 
 random.seed(42)

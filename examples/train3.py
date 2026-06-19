@@ -2,7 +2,6 @@
 No learned position embeddings — position is encoded via RoPE rotation angles.
 No MLP — this script focuses purely on attention."""
 
-import math
 import random
 
 random.seed(42)

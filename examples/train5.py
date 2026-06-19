@@ -7,8 +7,7 @@ import tempfile
 
 random.seed(42)
 
-from anvil.core.autograd import Value
-from anvil.core.engine import LlamaModel, train, softmax
+from anvil.core.engine import train
 from anvil.services.export import SafetensorsExportService
 
 # --- data ---
