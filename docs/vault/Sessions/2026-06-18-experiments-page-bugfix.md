@@ -18,13 +18,13 @@ source: agent
 
 ## Summary
 
-Fixed the Experiments page displaying `null` for run IDs, empty status badges, and "—" for dataset names. Diagnosed three root causes in the `TrackingService`/API pipeline and backfilled the existing demo-warmup MLflow run.
+Fixed the Experiments page displaying `null` for run IDs, empty status badges, and "—" for dataset names. Diagnosed root causes in the `TrackingService`/API pipeline and backfilled the existing demo-warmup MLflow run. Later (same day) applied the root-cause fix to `inference.py` so the warmup pipeline allocates an `anvil.experiment_id` on every fresh run — no recurrence on fresh MLflow DBs.
 
 ## What Was Done
 
 ### Root Cause Analysis
 
-1. **Missing `anvil.experiment_id` tag** — The demo-warmup MLflow run had no `anvil.experiment_id` tag, causing `list_experiments()` to return `id: None`. Frontend rendered this as `null` in the ID column and `selectRun(null)` failed silently.
+1. **Missing `anvil.experiment_id` tag** — The demo-warmup MLflow run had no `anvil.experiment_id` tag, causing `list_experiments()` to return `id: None`. Frontend rendered this as `null` in the ID column and `selectRun(null)` failed silently. This was initially backfilled as a one-time fix, but the warmup pipeline itself (`inference.py:warmup_demo_via_system_pipeline()`) never allocated an ID. On a fresh MLflow DB, the problem recurred immediately.
 
 2. **Status case mismatch** — MLflow returns `run.info.status` in UPPERCASE (`FINISHED`, `RUNNING`, `FAILED`). The frontend template at `experiment.html:100` checked `exp.status === 'finished'` (lowercase). No run ever matched.
 
@@ -45,6 +45,10 @@ Fixed the Experiments page displaying `null` for run IDs, empty status badges, a
 - Replaced timestamp-based ID with `svc.allocate_experiment_id()` (uses `run_id_seq` table)
 - Set `anvil.dataset.name` tag for both dataset and corpus training runs
 
+**`anvil/services/inference.py`**:
+- Added `TrainingService` import and `allocate_experiment_id()` call in `warmup_demo_via_system_pipeline()`
+- Sets `anvil.experiment_id` tag on the demo-warmup MLflow run — root-cause fix, not a one-time backfill
+
 **`anvil/api/v1/experiments.py`**:
 - Added `CorpusRepository` lookup in `list_experiments()` enrichment (falls back to corpus name when no dataset_id)
 - Added corpus name lookup in `get_experiment()` detail endpoint
@@ -60,6 +64,7 @@ Fixed the Experiments page displaying `null` for run IDs, empty status badges, a
 | `anvil/services/tracking.py` | 13 | 3 |
 | `anvil/api/v1/experiments.py` | 48 | 16 |
 | `anvil/api/v1/training.py` | 10 | 6 |
+| `anvil/services/inference.py` | 5 | 0 |
 
 ### Verification
 
