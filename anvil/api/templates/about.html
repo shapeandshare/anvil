@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
+{% block content %}
+
+<div class="section-card" style="--stagger-i: 0">
+  <div class="section-card__header">
+    <span class="section-card__icon">&#9733;</span>
+    <h2 class="section-card__title">About anvil</h2>
+  </div>
+  <div class="section-card__content" style="max-width:720px;">
+
+    <p style="margin-bottom:var(--space-3);">
+      <strong>anvil</strong> is an interactive workbench for training and
+      experimenting with small language models from scratch. It pairs a
+      zero-dependency training engine — with RoPE, SwiGLU MLP, and RMSNorm,
+      the same primitives as production Llama models — with a polished web UI,
+      MLflow experiment tracking, and interactive learning content.
+    </p>
+
+    <p style="color:var(--text-secondary);margin-bottom:var(--space-4);">
+      Every concept here scales up directly to real models. Configure a model,
+      pick your data, and watch it learn character by character in real time —
+      then dive into the interactive lessons to see what's happening under the
+      hood. Built with 🔨 by Josh Burt.
+    </p>
+
+    <div class="help-box" style="margin-bottom:var(--space-4);">
+      <div class="help-title">Version {{ version }}</div>
+      anvil is released under the MIT License. Source code, issue tracking,
+      and documentation are available on GitHub.
+    </div>
+
+  </div>
+</div>
+
+<div class="section-card" style="--stagger-i: 1">
+  <div class="section-card__header">
+    <span class="section-card__icon">&#9881;</span>
+    <h2 class="section-card__title">Technology Stack</h2>
+  </div>
+  <div class="section-card__content" style="max-width:720px;">
+
+    <div style="display:flex;flex-direction:column;gap:var(--space-3);margin-bottom:var(--space-2);">
+      <div class="param-block" style="border-left-color:var(--accent);">
+        <div class="param-label-row">
+          <span class="param-label">Training Engine</span>
+        </div>
+        <p class="param-desc">
+          Pure-Python, stdlib-only engine (<code>anvil/core/</code>) with a
+          custom autograd graph. Optional PyTorch backend for CUDA/MPS GPU
+          acceleration. Zero runtime dependencies for the core.
+        </p>
+      </div>
+      <div class="param-block" style="border-left-color:var(--accent-green);">
+        <div class="param-label-row">
+          <span class="param-label">Web Framework</span>
+        </div>
+        <p class="param-desc">
+          FastAPI + Jinja2 templates + Server-Sent Events for live training
+          metrics. Async SQLAlchemy with SQLite (WAL mode) for metadata
+          persistence. MLflow for experiment tracking.
+        </p>
+      </div>
+      <div class="param-block" style="border-left-color:var(--accent-purple);">
+        <div class="param-label-row">
+          <span class="param-label">Frontend</span>
+        </div>
+        <p class="param-desc">
+          Zero JavaScript libraries. Native EventSource, IntersectionObserver,
+          Canvas API, and CSS custom properties with an iOS-inspired design
+          system. Dark mode default with theme toggle.
+        </p>
+      </div>
+      <div class="param-block" style="border-left-color:var(--accent-orange);">
+        <div class="param-label-row">
+          <span class="param-label">Distribution</span>
+        </div>
+        <p class="param-desc">
+          Pip-installable Python package (PEP 621). Docker multi-stage builds.
+          CI via GitHub Actions with automated semantic versioning.
+        </p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="section-card" style="--stagger-i: 2">
+  <div class="section-card__header">
+    <span class="section-card__icon">&#9733;</span>
+    <h2 class="section-card__title">Architecture Overview</h2>
+  </div>
+  <div class="section-card__content" style="max-width:720px;">
+
+    <p style="color:var(--text-secondary);margin-bottom:var(--space-3);">
+      The codebase follows strict layered architecture: Repository &rarr;
+      Service &rarr; God Class (<code>AnvilWorkbench</code>) &rarr; Routes/CLI.
+      No shortcuts.
+    </p>
+
+    <ul style="color:var(--text-secondary);line-height:1.8;padding-left:var(--space-5);margin-bottom:var(--space-3);">
+      <li><strong style="color:var(--text);">Core</strong> &mdash; Zero-dependency training engine with Llama-class architecture (RoPE, SwiGLU, RMSNorm).</li>
+      <li><strong style="color:var(--text);">Services</strong> &mdash; Domain-decomposed business logic: training, datasets, inference, tracking, governance, demo.</li>
+      <li><strong style="color:var(--text);">API</strong> &mdash; FastAPI with versioned v1 router. Jinja2 pages, SSE streaming, REST endpoints.</li>
+      <li><strong style="color:var(--text);">Storage</strong> &mdash; SQLite via async SQLAlchemy + LocalFileStore (S3-ready abstraction).</li>
+      <li><strong style="color:var(--text);">Governance</strong> &mdash; Hash-chained audit trail, acceptable-use gate, provenance tracking, license catalog.</li>
+    </ul>
+
+    <p style="color:var(--text-tertiary);font-size:var(--text-footnote);">
+      See the
+      <a href="https://github.com/shapeandshare/anvil" class="action-link">project README</a>
+      for the full architectural breakdown.
+    </p>
+
+  </div>
+</div>
+
+<div class="section-card" style="--stagger-i: 3">
+  <div class="section-card__header">
+    <span class="section-card__icon">&#9878;</span>
+    <h2 class="section-card__title">Governance &amp; Licensing</h2>
+  </div>
+  <div class="section-card__content" style="max-width:720px;">
+
+    <p style="color:var(--text-secondary);margin-bottom:var(--space-3);">
+      anvil includes a built-in governance framework for responsible data
+      handling. Every dataset that enters the system passes through an
+      acceptable-use gate, and all operations are recorded in a
+      hash-chained audit trail.
+    </p>
+
+    <div class="help-box" style="margin-bottom:var(--space-4);">
+      <div class="help-title">Acceptable Use</div>
+      anvil operates under a universal no-harm policy. Prohibited uses include
+      harmful generation, weaponisation, disinformation, child safety violations,
+      unauthorised data collection, and discrimination.
+      <a href="/v1/acceptable-use" class="action-link" style="display:inline-block;margin-top:var(--space-2);">Read the full policy &rarr;</a>
+    </div>
+
+    {% if licenses %}
+    <h3 style="font-family:var(--font-body);font-size:var(--text-headline);font-weight:600;color:var(--text);margin-bottom:var(--space-3);margin-top:var(--space-4);">Approved License Catalog</h3>
+
+    <p style="color:var(--text-secondary);margin-bottom:var(--space-3);">
+      The following {{ licenses|length }} licenses are approved for data
+      provenance declarations. Third-party content must be accompanied by
+      one of these license identifiers.
+    </p>
+
+    <div style="display:flex;flex-direction:column;gap:var(--space-2);margin-bottom:var(--space-4);">
+      {% for lic in licenses %}
+      <div class="param-block" style="border-left-color:var(--accent-green);">
+        <div class="param-label-row">
+          <span class="param-label">{{ lic.display_name }}</span>
+          {% if lic.requires_attribution %}
+          <span class="badge badge--amber" style="margin-left:var(--space-2);flex-shrink:0;">Attribution required</span>
+          {% endif %}
+        </div>
+        <p class="param-desc" style="font-family:var(--font-mono);font-size:var(--text-mono);">
+          {{ lic.identifier }}
+        </p>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <h3 style="font-family:var(--font-body);font-size:var(--text-headline);font-weight:600;color:var(--text);margin-bottom:var(--space-3);margin-top:var(--space-4);">Data Provenance</h3>
+
+    <p style="color:var(--text-secondary);margin-bottom:var(--space-3);">
+      Every dataset and corpus in the system carries provenance metadata:
+      source description, license identifier, attribution text, and origin
+      (bundled or user-uploaded). Bundled demo data provenance is validated
+      against the approved license catalog at startup.
+    </p>
+
+    <div class="param-block" style="border-left-color:var(--accent);">
+      <div class="param-label-row">
+        <span class="param-label">Bundled Demo Data</span>
+      </div>
+      <p class="param-desc">
+        Demo samples include works from Project Gutenberg (public domain),
+        MIT-licensed name lists, and project-generated content. Each item is
+        declared in a machine-readable provenance manifest with source,
+        license, and attribution.
+      </p>
+    </div>
+
+  </div>
+</div>
+
+<div class="section-card" style="--stagger-i: 4">
+  <div class="section-card__header">
+    <span class="section-card__icon">&#9776;</span>
+    <h2 class="section-card__title">Resources</h2>
+  </div>
+  <div class="section-card__content" style="max-width:720px;">
+
+    <div style="display:flex;flex-direction:column;gap:var(--space-2);margin-bottom:var(--space-2);">
+      <a href="/v1/acceptable-use" class="btn btn-secondary" style="text-decoration:none;justify-content:flex-start;">
+        Acceptable Use Policy &rarr;
+      </a>
+      <a href="/v1/datasets-page" class="btn btn-secondary" style="text-decoration:none;justify-content:flex-start;">
+        Dataset Management &rarr;
+      </a>
+      <a href="/v1/learn" class="btn btn-secondary" style="text-decoration:none;justify-content:flex-start;">
+        Interactive Lessons &rarr;
+      </a>
+      <a href="/v1/operations-page" class="btn btn-secondary" style="text-decoration:none;justify-content:flex-start;">
+        Operations Dashboard &rarr;
+      </a>
+    </div>
+
+    <div style="margin-top:var(--space-4);padding-top:var(--space-3);border-top:1px solid var(--separator);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:var(--space-2);">
+      <span class="type-footnote" style="color:var(--text-tertiary);">anvil &middot; v{{ version }} &middot; MIT License</span>
+      <a href="/" class="btn btn-sm btn-secondary" style="text-decoration:none;">Back to Dashboard</a>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

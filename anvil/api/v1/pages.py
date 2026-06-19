@@ -5,8 +5,14 @@ experiments, datasets, inference, operations, learning). Extracted from
 ``router.py`` as part of structural decomposition.
 """
 
-from fastapi import APIRouter, Request
+from collections.abc import Sequence
+
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
+
+from ...api.deps import get_workbench
+from ...db.models.license_entry import LicenseEntry
+from ...workbench import AnvilWorkbench
 
 from .learning import LEARNING_ARC, _arc_context
 
@@ -75,22 +81,31 @@ async def graph_concept_page(request: Request):
 
 
 @router.get("/datasets-page", response_class=HTMLResponse)
-async def datasets_page(request: Request):
+async def datasets_page(
+    request: Request,
+    workbench: AnvilWorkbench = Depends(get_workbench),
+):
     """Render the dataset management page.
 
     Parameters
     ----------
     request : Request
         The incoming HTTP request.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench for fetching license catalog.
 
     Returns
     -------
     HTMLResponse
-        Rendered ``datasets.html`` template.
+        Rendered ``datasets.html`` template with license catalog context.
     """
+    licenses = await workbench.governance.list_licenses(
+        include_own_content=False,
+    )
     return request.app.state.templates.TemplateResponse(
         request,
         "datasets.html",
+        {"licenses": licenses},
     )
 
 
@@ -155,3 +170,32 @@ def _arc_context(key: str) -> dict:
     from .learning import _arc_context as _ctx
 
     return _ctx(key)
+
+
+@router.get("/about", response_class=HTMLResponse)
+async def about_page(
+    request: Request,
+    workbench: AnvilWorkbench = Depends(get_workbench),
+):
+    """Render the about page with governance info, licenses, and project overview.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming HTTP request.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench for fetching license catalog.
+
+    Returns
+    -------
+    HTMLResponse
+        Rendered ``about.html`` template with license catalog context.
+    """
+    licenses: Sequence[LicenseEntry] = await workbench.governance.list_licenses(
+        include_own_content=False,
+    )
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "about.html",
+        {"licenses": licenses},
+    )
