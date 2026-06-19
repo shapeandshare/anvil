@@ -3,18 +3,12 @@ import json
 import os
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import FileResponse
 from mlflow.tracking import MlflowClient
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from anvil.api.deps import get_db_session
 from anvil.config import get_config, get_mlflow_browser_uri
 from anvil.core.engine import LlamaModel
-from anvil.db.models.training_config import TrainingConfig
-from anvil.db.repositories import ExperimentRepository
-from anvil.services.experiments import ExperimentService
 from anvil.services.memory_estimator import estimate_training_memory
 from anvil.services.tracking import TrackingService
 
@@ -64,14 +58,34 @@ def _get_mlflow_experiment_id() -> str | None:
         return None
 
 
-async def get_service(session: AsyncSession = Depends(get_db_session)):
-    repo = ExperimentRepository(session)
-    return ExperimentService(repo)
-
-
 @router.get("/experiments")
-async def list_experiments(request: Request, svc: ExperimentService = Depends(get_service)):
-    experiments = await svc.list_experiments()
+async def list_experiments(request: Request):
+    tracking_svc = TrackingService()
+    experiments = await tracking_svc.list_experiments()
+
+    # Enrich with dataset names and artifact availability
+    from anvil.db.session import AsyncSessionLocal
+
+    async with AsyncSessionLocal() as session:
+        from anvil.db.repositories.datasets import DatasetRepository
+
+        ds_repo = DatasetRepository(session)
+
+        for exp in experiments:
+            ds_id = exp.get("dataset_id")
+            if ds_id:
+                try:
+                    ds = await ds_repo.get(int(ds_id))
+                    if ds:
+                        exp["dataset_name"] = ds.name
+                except Exception:
+                    pass
+
+            # Check artifact availability
+            exp["artifact_available"] = Path(
+                f"data/models/experiment_{exp['id']}.json"
+            ).exists() if exp.get("id") else False
+
     mlflow_exp_id = _get_mlflow_experiment_id()
     return {
         "mlflow_experiment_id": mlflow_exp_id,
@@ -80,48 +94,25 @@ async def list_experiments(request: Request, svc: ExperimentService = Depends(ge
             if mlflow_exp_id
             else None
         ),
-        "experiments": [
-            {
-                "id": e.id,
-                "status": e.status,
-                "run_name": e.run_name,
-                "final_loss": e.final_loss,
-                "config_id": e.config_id,
-                "mlflow_run_id": e.mlflow_run_id,
-                "mlflow_run_url": (
-                    f"{get_mlflow_browser_uri(request)}/#/experiments/{mlflow_exp_id}/runs/{e.mlflow_run_id}"
-                    if (mlflow_exp_id and e.mlflow_run_id)
-                    else None
-                ),
-                "created_at": str(e.created_at),
-                "artifact_available": Path(
-                    f"data/models/experiment_{e.id}.json"
-                ).exists(),
-                "dataset_name": e.dataset.name if e.dataset_id else None,
-                "input_digest": e.input_digest,
-                "input_role": e.input_role,
-                "engine_backend": e.engine_backend,
-                "device": e.device,
-            }
-            for e in experiments
-        ],
+        "experiments": experiments,
     }
 
 
 @router.get("/experiments/compare")
 async def compare_experiments(
-    id: list[int] = Query(...), svc: ExperimentService = Depends(get_service)
+    id: list[int] = Query(...),
 ):
+    tracking_svc = TrackingService()
     experiments = []
     for eid in id:
-        exp = await svc.get_experiment(eid)
+        exp = await tracking_svc.get_experiment(eid)
         if exp:
             experiments.append(
                 {
-                    "id": exp.id,
-                    "status": exp.status,
-                    "final_loss": exp.final_loss,
-                    "created_at": str(exp.created_at),
+                    "id": exp["id"],
+                    "status": exp["status"],
+                    "final_loss": exp["final_loss"],
+                    "created_at": exp.get("created_at", ""),
                 }
             )
     return {"experiments": experiments}
@@ -131,29 +122,19 @@ async def compare_experiments(
 async def get_experiment(
     id: int,
     request: Request,
-    svc: ExperimentService = Depends(get_service),
-    session: AsyncSession = Depends(get_db_session),
 ):
-    exp = await svc.get_experiment(id)
+    tracking_svc = TrackingService()
+    exp = await tracking_svc.get_experiment(id)
     if exp is None:
         raise HTTPException(status_code=404, detail="Experiment not found")
 
-    # Load training config
-    config = None
-    if exp.config_id:
-        result = await session.execute(
-            select(TrainingConfig).where(TrainingConfig.id == exp.config_id)
-        )
-        config = result.scalar_one_or_none()
-
-    # Calculate duration
-    duration_seconds = None
-    if exp.started_at and exp.completed_at:
-        duration_seconds = (exp.completed_at - exp.started_at).total_seconds()
+    mlflow_run_id = exp.get("mlflow_run_id")
+    params = exp.get("params", {})
+    tags = exp.get("tags", {})
 
     # Model architecture from saved artifact
     model_architecture = None
-    model_path = Path(f"data/models/experiment_{exp.id}.json")
+    model_path = Path(f"data/models/experiment_{id}.json")
     if model_path.exists():
         try:
             with open(model_path) as f:
@@ -175,39 +156,24 @@ async def get_experiment(
         except Exception:
             model_architecture = None
 
-    # Hyperparameters from config
-    hyperparameters = {}
-    if config:
-        hyperparameters = {
-            "n_layer": config.n_layer,
-            "n_embd": config.n_embd,
-            "n_head": config.n_head,
-            "block_size": config.block_size,
-            "num_steps": config.num_steps,
-            "learning_rate": config.learning_rate,
-            "beta1": config.beta1,
-            "beta2": config.beta2,
-            "temperature": config.temperature,
-            "use_gpu": config.use_gpu,
-            "dataset_id": config.dataset_id,
-            "corpus_id": config.corpus_id,
-        }
+    # Hyperparameters from MLflow params
+    hyperparameters = _hyperparams_from_mlflow(params)
 
     # MLflow data
     mlflow_data = None
     safetensors_artifacts = None
     gpu_memory_peak_gb = None
     gpu_util_peak_pct = None
-    if exp.mlflow_run_id:
+    if mlflow_run_id:
         try:
             client = MlflowClient(tracking_uri=get_config()["mlflow_uri"])
-            run = client.get_run(exp.mlflow_run_id)
+            run = client.get_run(mlflow_run_id)
             mlflow_exp_id = _get_mlflow_experiment_id()
             mlflow_data = {
                 "params": dict(run.data.params),
                 "metrics": dict(run.data.metrics),
                 "run_url": (
-                    f"{get_mlflow_browser_uri(request)}/#/experiments/{mlflow_exp_id}/runs/{exp.mlflow_run_id}"
+                    f"{get_mlflow_browser_uri(request)}/#/experiments/{mlflow_exp_id}/runs/{mlflow_run_id}"
                     if mlflow_exp_id
                     else None
                 ),
@@ -215,28 +181,37 @@ async def get_experiment(
             # Peak GPU memory / utilization from per-step metric histories
             if GPU_MEMORY_METRIC in run.data.metrics:
                 mem_hist = client.get_metric_history(
-                    exp.mlflow_run_id, GPU_MEMORY_METRIC
+                    mlflow_run_id, GPU_MEMORY_METRIC
                 )
                 if mem_hist:
                     gpu_memory_peak_gb = max(m.value for m in mem_hist)
             if GPU_UTIL_METRIC in run.data.metrics:
                 util_hist = client.get_metric_history(
-                    exp.mlflow_run_id, GPU_UTIL_METRIC
+                    mlflow_run_id, GPU_UTIL_METRIC
                 )
                 if util_hist:
                     gpu_util_peak_pct = max(m.value for m in util_hist)
-            # Fallback hyperparameters from MLflow params when no config row exists
-            if not hyperparameters:
-                hyperparameters = _hyperparams_from_mlflow(mlflow_data["params"])
             # T049: Query safetensors artifacts from MLflow
-            tracking_svc = TrackingService(tracking_uri=get_config()["mlflow_uri"])
             safetensors_artifacts = await tracking_svc.get_safetensors_artifacts(
-                exp.mlflow_run_id
+                mlflow_run_id
             )
         except Exception:
             mlflow_data = None
 
-    # Estimated training memory footprint from architecture (always shown if model exists)
+    # Calculate duration
+    duration_seconds = None
+    created_at = exp.get("created_at", "")
+    completed_at = exp.get("completed_at")
+    if created_at and completed_at:
+        try:
+            start_ts = int(created_at) / 1000 if created_at.isdigit() else None
+            end_ts = int(completed_at) / 1000 if completed_at.isdigit() else None
+            if start_ts and end_ts:
+                duration_seconds = end_ts - start_ts
+        except (ValueError, TypeError):
+            pass
+
+    # Estimated training memory footprint from architecture
     memory_estimate = None
     if model_architecture:
         est = estimate_training_memory(
@@ -258,26 +233,35 @@ async def get_experiment(
         }
 
     # Architecture type from safetensors config or tag
-    architecture_type = None
-    if exp.mlflow_run_id:
-        try:
-            client = MlflowClient(tracking_uri=get_config()["mlflow_uri"])
-            run = client.get_run(exp.mlflow_run_id)
-            tags = dict(run.data.tags)
-            architecture_type = tags.get("architectures")
-        except Exception:
-            pass
+    architecture_type = tags.get("architectures")
+
+    # Dataset name lookup
+    dataset_name = exp.get("dataset_name")
+    if not dataset_name:
+        ds_id = params.get("dataset_id")
+        if ds_id:
+            try:
+                from anvil.db.repositories.datasets import DatasetRepository
+                from anvil.db.session import AsyncSessionLocal
+
+                async with AsyncSessionLocal() as sess:
+                    ds_repo = DatasetRepository(sess)
+                    ds = await ds_repo.get(int(ds_id))
+                    if ds:
+                        dataset_name = ds.name
+            except Exception:
+                pass
 
     return {
-        "id": exp.id,
-        "status": exp.status,
-        "run_name": exp.run_name,
-        "final_loss": exp.final_loss,
-        "config_id": exp.config_id,
-        "mlflow_run_id": exp.mlflow_run_id,
-        "created_at": str(exp.created_at),
-        "completed_at": str(exp.completed_at) if exp.completed_at else None,
-        "dataset_name": exp.dataset.name if exp.dataset_id else None,
+        "id": exp["id"],
+        "status": exp["status"],
+        "run_name": exp["run_name"],
+        "final_loss": exp["final_loss"],
+        "config_id": None,
+        "mlflow_run_id": mlflow_run_id,
+        "created_at": exp.get("created_at", ""),
+        "completed_at": exp.get("completed_at"),
+        "dataset_name": dataset_name,
         "duration_seconds": duration_seconds,
         "hyperparameters": hyperparameters,
         "model_architecture": model_architecture,
@@ -287,19 +271,22 @@ async def get_experiment(
         "mlflow": mlflow_data,
         "safetensors_artifacts": safetensors_artifacts,
         "architecture_type": architecture_type,
-        "input_digest": exp.input_digest,
-        "input_role": exp.input_role,
-        "engine_backend": exp.engine_backend,
-        "device": exp.device,
+        "input_digest": exp.get("input_digest"),
+        "input_role": exp.get("input_role"),
+        "engine_backend": exp.get("engine_backend", ""),
+        "device": exp.get("device", ""),
     }
 
 
 @router.get("/experiments/{id}/mlflow")
-async def get_experiment_mlflow(id: int, request: Request, svc: ExperimentService = Depends(get_service)):
-    exp = await svc.get_experiment(id)
+async def get_experiment_mlflow(id: int, request: Request):
+    tracking_svc = TrackingService()
+    exp = await tracking_svc.get_experiment(id)
     if exp is None:
         raise HTTPException(status_code=404, detail="Experiment not found")
-    if not exp.mlflow_run_id:
+
+    mlflow_run_id = exp.get("mlflow_run_id")
+    if not mlflow_run_id:
         return {
             "mlflow_run_id": None,
             "params": {},
@@ -312,12 +299,12 @@ async def get_experiment_mlflow(id: int, request: Request, svc: ExperimentServic
 
     try:
         client = MlflowClient(tracking_uri=get_config()["mlflow_uri"])
-        run = client.get_run(exp.mlflow_run_id)
+        run = client.get_run(mlflow_run_id)
 
         # Full per-step histories for all metrics
         metric_histories = {}
         for metric_name in run.data.metrics:
-            history = client.get_metric_history(exp.mlflow_run_id, metric_name)
+            history = client.get_metric_history(mlflow_run_id, metric_name)
             metric_histories[metric_name] = [
                 {"step": m.step, "value": m.value, "timestamp": m.timestamp}
                 for m in history
@@ -325,35 +312,34 @@ async def get_experiment_mlflow(id: int, request: Request, svc: ExperimentServic
 
         # List artifact file names
         try:
-            artifacts = client.list_artifacts(exp.mlflow_run_id)
+            artifacts = client.list_artifacts(mlflow_run_id)
             artifact_paths = [a.path for a in artifacts]
         except Exception:
             artifact_paths = []
 
         # T049: Query safetensors artifact info
-        tracking_svc = TrackingService(tracking_uri=get_config()["mlflow_uri"])
         safetensors_artifacts = await tracking_svc.get_safetensors_artifacts(
-            exp.mlflow_run_id
+            mlflow_run_id
         )
 
         mlflow_exp_id = _get_mlflow_experiment_id()
 
         return {
-            "mlflow_run_id": exp.mlflow_run_id,
+            "mlflow_run_id": mlflow_run_id,
             "params": dict(run.data.params),
             "metrics": dict(run.data.metrics),
             "metric_histories": metric_histories,
             "artifacts": artifact_paths,
             "safetensors_artifacts": safetensors_artifacts,
             "run_url": (
-                f"{get_mlflow_browser_uri(request)}/#/experiments/{mlflow_exp_id}/runs/{exp.mlflow_run_id}"
+                f"{get_mlflow_browser_uri(request)}/#/experiments/{mlflow_exp_id}/runs/{mlflow_run_id}"
                 if mlflow_exp_id
                 else None
             ),
         }
     except Exception as e:
         return {
-            "mlflow_run_id": exp.mlflow_run_id,
+            "mlflow_run_id": mlflow_run_id,
             "params": {},
             "metrics": {},
             "metric_histories": {},
@@ -365,26 +351,45 @@ async def get_experiment_mlflow(id: int, request: Request, svc: ExperimentServic
 
 
 @router.get("/experiments/{id}/metrics")
-async def get_experiment_metrics(
-    id: int, svc: ExperimentService = Depends(get_service)
-):
-    exp = await svc.get_experiment(id)
+async def get_experiment_metrics(id: int):
+    tracking_svc = TrackingService()
+    exp = await tracking_svc.get_experiment(id)
     if exp is None:
         raise HTTPException(status_code=404, detail="Experiment not found")
-    if not exp.mlflow_run_id:
+
+    mlflow_run_id = exp.get("mlflow_run_id")
+    if not mlflow_run_id:
         return {"metrics": [], "mlflow_run_id": None}
+
     try:
         client = MlflowClient(tracking_uri=get_config()["mlflow_uri"])
-        metric_history = client.get_metric_history(exp.mlflow_run_id, "loss")
+        metric_history = client.get_metric_history(mlflow_run_id, "loss")
         metrics = [{"step": m.step, "loss": m.value} for m in metric_history]
-        return {"metrics": metrics, "mlflow_run_id": exp.mlflow_run_id}
+        return {"metrics": metrics, "mlflow_run_id": mlflow_run_id}
     except Exception as e:
-        return {"metrics": [], "mlflow_run_id": exp.mlflow_run_id, "error": str(e)}
+        return {"metrics": [], "mlflow_run_id": mlflow_run_id, "error": str(e)}
 
 
 @router.delete("/experiments/{id}")
-async def delete_experiment(id: int, svc: ExperimentService = Depends(get_service)):
-    await svc.delete_experiment(id)
+async def delete_experiment(id: int):
+    tracking_svc = TrackingService()
+    exp = await tracking_svc.get_experiment(id)
+    if exp is None:
+        raise HTTPException(status_code=404, detail="Experiment not found")
+
+    mlflow_run_id = exp.get("mlflow_run_id")
+    if mlflow_run_id:
+        loop = asyncio.get_event_loop()
+        try:
+            client = tracking_svc._client or await loop.run_in_executor(
+                None, lambda: tracking_svc._lazy_init()
+            )
+            if client:
+                await loop.run_in_executor(
+                    None, lambda: client.delete_run(mlflow_run_id)
+                )
+        except Exception:
+            pass
     return {"status": "deleted"}
 
 
@@ -392,7 +397,6 @@ async def delete_experiment(id: int, svc: ExperimentService = Depends(get_servic
 async def list_artifacts(
     experiment_id: int,
     run_id: str,
-    svc: ExperimentService = Depends(get_service),
 ):
     """List all safetensors export artifacts for a given experiment/run.
 
@@ -401,15 +405,15 @@ async def list_artifacts(
       files: list of {path, file_size, is_safetensors, is_config, is_tokenizer}
       error: str or None
     """
-    exp = await svc.get_experiment(experiment_id)
+    tracking_svc = TrackingService()
+    exp = await tracking_svc.get_experiment(experiment_id)
     if exp is None:
         raise HTTPException(status_code=404, detail="Experiment not found")
-    if not exp.mlflow_run_id:
+    if not exp.get("mlflow_run_id"):
         raise HTTPException(status_code=404, detail="No MLflow run associated")
-    if exp.mlflow_run_id != run_id:
+    if exp["mlflow_run_id"] != run_id:
         raise HTTPException(status_code=400, detail="Run ID does not match experiment")
 
-    tracking_svc = TrackingService(tracking_uri=get_config()["mlflow_uri"])
     artifacts_info = await tracking_svc.get_safetensors_artifacts(run_id)
     return artifacts_info
 
@@ -419,22 +423,21 @@ async def download_artifact(
     experiment_id: int,
     run_id: str,
     path: str = Query(..., description="Artifact file path to download"),
-    svc: ExperimentService = Depends(get_service),
 ):
     """Download a single artifact file for a given experiment/run.
 
     The path parameter is the artifact path as returned by the artifacts endpoint
     (e.g. 'model.safetensors', 'config.json', 'tokenizer.json').
     """
-    exp = await svc.get_experiment(experiment_id)
+    tracking_svc = TrackingService()
+    exp = await tracking_svc.get_experiment(experiment_id)
     if exp is None:
         raise HTTPException(status_code=404, detail="Experiment not found")
-    if not exp.mlflow_run_id:
+    if not exp.get("mlflow_run_id"):
         raise HTTPException(status_code=404, detail="No MLflow run associated")
-    if exp.mlflow_run_id != run_id:
+    if exp["mlflow_run_id"] != run_id:
         raise HTTPException(status_code=400, detail="Run ID does not match experiment")
 
-    tracking_svc = TrackingService(tracking_uri=get_config()["mlflow_uri"])
     artifacts_info = await tracking_svc.get_safetensors_artifacts(run_id)
     if not artifacts_info["available"]:
         raise HTTPException(
@@ -475,14 +478,15 @@ async def download_artifact(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Failed to download artifact: {str(e)}"
-        )
+            status_code=500, detail=f"Failed to download artifact: {e!s}"
+        ) from e
 
 
 @router.post("/experiments/{experiment_id}/retry-export")
-async def retry_export(experiment_id: int, svc: ExperimentService = Depends(get_service)):
+async def retry_export(experiment_id: int):
     """Retry safetensors export from a finished experiment's model.json."""
-    exp = await svc.get_experiment(experiment_id)
+    tracking_svc = TrackingService()
+    exp = await tracking_svc.get_experiment(experiment_id)
     if exp is None:
         raise HTTPException(status_code=404, detail="Experiment not found")
 
@@ -509,11 +513,11 @@ async def retry_export(experiment_id: int, svc: ExperimentService = Depends(get_
             status_code=500, detail=f"Export retry failed: {result['error']}"
         )
 
-    if exp.mlflow_run_id:
-        tracking_svc = TrackingService(tracking_uri=get_config()["mlflow_uri"])
+    mlflow_run_id = exp.get("mlflow_run_id")
+    if mlflow_run_id:
         if result.get("safetensors_path"):
             await tracking_svc.log_artifacts(
-                exp.mlflow_run_id,
+                mlflow_run_id,
                 safetensors_path=result["safetensors_path"],
                 config_path=result.get("config_path"),
                 tokenizer_path=result.get("tokenizer_path"),
