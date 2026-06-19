@@ -93,6 +93,35 @@ def _load_weights_into_model(model: LlamaModel, weights: dict) -> None:
 | Final norm | `rmsnorm(x) * rms_final` | `F.rms_norm(x) * rms_final` |
 | Output | `linear(n, lm_head)` | `F.linear(x, lm_head)` |
 
+## Compute Backend Registry
+
+Training no longer selects backends via a simple `use_gpu` boolean. The ADR-015 pluggable compute backend abstraction uses a **string-key registry** (`anvil/services/compute/registry.py`) with composite names:
+
+| Registry name | Engine | Registering module |
+|---|---|---|
+| `"local-stdlib"` | Stdlib (`engine.py`) | `anvil/services/compute/local.py` |
+| `"local-torch"` | PyTorch (`torch_engine.py`) | `anvil/services/compute/local.py` |
+| `"modal"` | PyTorch (remote) | `anvil/services/compute/modal_backend.py` |
+
+### Naming Layer Gap
+
+**`resolve_backend()`** (in `anvil/services/compute/resolve.py`) returns human-facing category names: `"local"` for both local-stdlib and local-torch, `"modal"` for cloud GPU. The registry expects the composite name.
+
+**`TrainingService.start_training()`** is the bridge layer that must translate:
+
+```python
+resolved = resolve_backend(config)
+backend_name = resolved["backend"]  # "local" | "modal"
+engine_name = resolved["engine"]    # "stdlib" | "torch"
+
+if backend_name == "local":
+    backend_name = f"local-{engine_name}"  # "local-stdlib" | "local-torch"
+
+backend = get_backend(backend_name)
+```
+
+**`"modal"`** matches 1:1 in both layers — no translation needed. But for `"local"`, the translation was missing, causing `get_backend("local")` to raise `ComputeBackendUnavailable`. This silently killed training in the background task before any SSE metrics were emitted (see [[Sessions/2026-06-18-backend-registry-orphaned-name]]).
+
 ## Device Resolution
 
 Device selection happens in `anvil/gpu.py` via `resolve_device()`:

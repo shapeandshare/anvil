@@ -1,9 +1,11 @@
 ---
 title: Decision Log
 type: reference
-tags: [type/reference, domain/governance]
-created: 2026-06-10
-updated: 2026-06-16
+tags:
+  - type/reference
+  - domain/governance
+created: 2026-06-10T00:00:00.000Z
+updated: '2026-06-18'
 ---
 
 # Decision Log
@@ -25,3 +27,5 @@ updated: 2026-06-16
 | 2026-06-15 | ADR-012 | Derive MLflow browser URL from HTTP request Host header | Accepted |
 | 2026-06-15 | ADR-013 | Training Config Footgun Guards — Multi-Layer Hyperparameter Validation | Accepted |
 | 2026-06-16 | ADR-014 | ML Infrastructure Tier Strategy — Compute & Orchestration Trajectory | Accepted |
+| 2026-06-18 | — | Backend registry orphaned-name — `resolve_backend` returns `"local"` but registry expects `"local-stdlib"`/`"local-torch"` | Fixed |
+| 2026-06-18 | ADR-016 | MLflow as Primary Lineage Source of Truth | Accepted |

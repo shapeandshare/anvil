@@ -4,8 +4,8 @@ type: reference
 tags:
   - type/reference
   - domain/architecture
-created: 2026-06-15
-updated: 2026-06-15
+created: 2026-06-15T00:00:00.000Z
+updated: '2026-06-18'
 aliases:
   - architecture-overview
   - system-architecture
@@ -140,15 +140,13 @@ Browser                 FastAPI               TrainingService         Core Engin
 After training finishes, `on_complete` fires (in order):
 
 1. **MLflow Tracking** (`TrackingService`):
-   - `log_params()` — all hyperparameters
+   - `set_tag()` — anvil.experiment_id, anvil.status, anvil.final_loss, anvil.input_digest, dataset/corpus metadata tags
+   - `log_params()` — all hyperparameters (dataset_id, corpus_id, engine_backend, device)
    - `log_metrics()` — final loss, device, elapsed time
    - `log_model()` — upload model.json + samples.txt as artifacts
-   - `register_model()` — create/update model registry version
+   - `register_source_model()` — create/update model registry version via MLflow Model Registry
 
-2. **Local DB** (`ExperimentRepository`):
-   - INSERT Experiment record with run metadata, MLflow run ID, model registry reference
-
-3. **Disk**:
+2. **Disk**:
    - Save `data/models/experiment_{experiment_id}.json` for inference loading
    - Safetensors export (if available): `model.safetensors`, `config.json`, `tokenizer.json`
 
@@ -157,8 +155,11 @@ After training finishes, `on_complete` fires (in order):
 ```
 POST /v1/inference/sample  {model_id, version, temperature, num_samples, prompt, top_k, top_p}
   │
-  ├── DB lookup → get artifact_path from ModelRegistry (or experiment fallback)
-  ├── Load model.json from disk → reconstruct LlamaModel
+  ├── InferenceService.load_model(model_id, version)
+  │     ├── Phase 1: Try local artifact data/models/experiment_{id}.json
+  │     ├── Phase 2: Fall back to MLflow Model Registry download
+  │     │            (MlflowClient.download_artifacts by run_id)
+  │     └── Return LoadedModel(model, chars, model_id, cache_key, name)
   │
   └── Autoregressive sampling:
         ┌─────────────────────────────────────────┐
