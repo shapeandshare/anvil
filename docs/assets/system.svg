@@ -81,10 +81,10 @@
   <!-- ARROWS — Main Process → Bottom Row                                 -->
   <!-- ================================================================== -->
 
-  <line x1="220" y1="510" x2="220" y2="555" stroke="#ff9500" stroke-width="2.5" marker-end="url(#arrowhead)"/>
-  <line x1="500" y1="510" x2="500" y2="555" stroke="#ff9500" stroke-width="2.5" marker-end="url(#arrowhead)"/>
-  <line x1="780" y1="510" x2="780" y2="555" stroke="#ff9500" stroke-width="2.5" marker-end="url(#arrowhead)"/>
-  <line x1="1060" y1="510" x2="1060" y2="555" stroke="#ff9500" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <line x1="220" y1="510" x2="220" y2="550" stroke="#ff9500" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <line x1="500" y1="510" x2="500" y2="550" stroke="#ff9500" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <line x1="780" y1="510" x2="780" y2="550" stroke="#ff9500" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <line x1="1060" y1="510" x2="1060" y2="550" stroke="#ff9500" stroke-width="2.5" marker-end="url(#arrowhead)"/>
 
   <!-- Arrow labels (positioned alongside each downward arrow) -->
   <text x="235" y="540" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="11" font-weight="600" fill="#ff9500" opacity="0.9">tracking client</text>
@@ -113,12 +113,12 @@
   <text x="220" y="706" text-anchor="middle" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="14" font-weight="600" fill="#ffffff">mlruns/</text>
   <text x="220" y="726" text-anchor="middle" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11" fill="#ebebf5" opacity="0.78">mlflow.db + artifacts</text>
 
-  <!-- === Column 2: App Database (cylinder) === -->
-  <path d="M 380 560 L 380 656 Q 500 672 620 656 L 620 560 Z" fill="#1c1c1e" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1"/>
-  <ellipse cx="500" cy="560" rx="120" ry="14" fill="#1c1c1e" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1"/>
-  <text x="500" y="596" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="16" font-weight="700" fill="#ffffff">App Database</text>
-  <text x="500" y="618" text-anchor="middle" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" fill="#ebebf5" opacity="0.78">data/anvil-state.db</text>
-  <text x="500" y="640" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="11" fill="#ebebf5" opacity="0.65">async SQLAlchemy · WAL · Alembic</text>
+  <!-- === Column 2: App Database (cylinder; top aligned with the card tops at y=560) === -->
+  <path d="M 380 574 L 380 670 Q 500 686 620 670 L 620 574 Z" fill="#1c1c1e" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1"/>
+  <ellipse cx="500" cy="574" rx="120" ry="14" fill="#1c1c1e" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1"/>
+  <text x="500" y="610" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="16" font-weight="700" fill="#ffffff">App Database</text>
+  <text x="500" y="632" text-anchor="middle" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" fill="#ebebf5" opacity="0.78">data/anvil-state.db</text>
+  <text x="500" y="654" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="11" fill="#ebebf5" opacity="0.65">async SQLAlchemy · WAL · Alembic</text>
 
   <!-- === Column 3: LocalFileStore (card) === -->
   <rect x="660" y="560" width="240" height="96" rx="12" fill="#1c1c1e" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1"/>
