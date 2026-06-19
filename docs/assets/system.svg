@@ -1,0 +1,149 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 860" width="100%" height="100%">
+  <defs>
+    <!-- Forge gradient for accents, port pills, and MLflow border -->
+    <linearGradient id="forgeGradient" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ff9500"/>
+      <stop offset="100%" stop-color="#ffcc00"/>
+    </linearGradient>
+
+    <!-- Soft glow behind the main process container -->
+    <filter id="forgeGlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="7"/>
+    </filter>
+
+    <!-- Downward arrowhead marker (reused for all direction arrows via orient="auto") -->
+    <marker id="arrowhead" viewBox="0 0 10 8" refX="5" refY="8" markerWidth="7" markerHeight="6" orient="auto">
+      <path d="M0 0 L5 8 L10 0 Z" fill="#ff9500"/>
+    </marker>
+  </defs>
+
+  <!-- Solid dark background panel (ensures legibility on both GitHub light and dark themes) -->
+  <rect x="0" y="0" width="1280" height="860" rx="24" fill="#0c0c0d"/>
+
+  <!-- ===== TITLE ===== -->
+  <text x="640" y="36" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="700" fill="#ebebf5" opacity="0.5" letter-spacing="3">RUNTIME SYSTEM ARCHITECTURE</text>
+
+  <!-- ================================================================== -->
+  <!-- TOP ROW — Entry Points                                             -->
+  <!-- ================================================================== -->
+
+  <!-- Browser card -->
+  <rect x="180" y="60" width="280" height="68" rx="12" fill="#1c1c1e" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1"/>
+  <text x="320" y="90" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="20" font-weight="700" fill="#ffffff">Browser</text>
+  <text x="320" y="115" text-anchor="middle" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" fill="#ebebf5" opacity="0.78">HTTP · localhost:8080</text>
+
+  <!-- CLI card -->
+  <rect x="820" y="60" width="280" height="68" rx="12" fill="#1c1c1e" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1"/>
+  <text x="960" y="90" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="20" font-weight="700" fill="#ffffff">CLI</text>
+  <text x="960" y="115" text-anchor="middle" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" fill="#ebebf5" opacity="0.78">anvil · anvil-train · anvil-db</text>
+
+  <!-- Arrows: Browser / CLI → main process -->
+  <line x1="320" y1="128" x2="320" y2="165" stroke="#ff9500" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <line x1="960" y1="128" x2="960" y2="165" stroke="#ff9500" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+
+  <!-- ================================================================== -->
+  <!-- CENTER — Main Process                                              -->
+  <!-- ================================================================== -->
+
+  <!-- Forge glow behind container -->
+  <rect x="48" y="158" width="1184" height="364" rx="22" fill="url(#forgeGradient)" opacity="0.06" filter="url(#forgeGlow)"/>
+
+  <!-- Large process container -->
+  <rect x="60" y="170" width="1160" height="340" rx="18" fill="#161618" stroke="#ff9500" stroke-width="2"/>
+
+  <!-- Process header -->
+  <text x="90" y="208" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="22" font-weight="700" fill="#ffffff">anvil process — uvicorn + FastAPI</text>
+
+  <!-- Port pill :8080 -->
+  <rect x="545" y="192" width="56" height="24" rx="12" fill="url(#forgeGradient)"/>
+  <text x="573" y="208" text-anchor="middle" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="12" font-weight="700" fill="#0c0c0d">:8080</text>
+
+  <!-- Sub-block 1: API layer -->
+  <rect x="90" y="228" width="1100" height="62" rx="10" fill="#1c1c1e"/>
+  <text x="115" y="254" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="18" font-weight="700" fill="#ffffff">API layer</text>
+  <text x="115" y="278" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="13" fill="#ebebf5" opacity="0.78">Jinja2 pages · /static · /v1 routes · SSE training stream</text>
+
+  <!-- Sub-block 2: AnvilWorkbench (god class) with forge gradient accent bar -->
+  <rect x="90" y="300" width="1100" height="52" rx="10" fill="#1c1c1e"/>
+  <rect x="90" y="300" width="6" height="52" rx="3" fill="url(#forgeGradient)"/>
+  <text x="115" y="327" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="18" font-weight="700" fill="url(#forgeGradient)">AnvilWorkbench</text>
+  <text x="115" y="344" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="13" fill="#ebebf5" opacity="0.78">god class · single service surface</text>
+
+  <!-- Sub-block 3: Services -->
+  <rect x="90" y="362" width="1100" height="62" rx="10" fill="#1c1c1e"/>
+  <text x="115" y="388" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="18" font-weight="700" fill="#ffffff">Services</text>
+  <text x="115" y="412" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="13" fill="#ebebf5" opacity="0.78">training · tracking · datasets · inference</text>
+
+  <!-- Lifespan note (italic, inside container) -->
+  <text x="640" y="488" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="12" font-style="italic" fill="#ebebf5" opacity="0.65">FastAPI lifespan supervises the MLflow subprocess + runs Alembic migrations on startup</text>
+
+  <!-- ================================================================== -->
+  <!-- ARROWS — Main Process → Bottom Row                                 -->
+  <!-- ================================================================== -->
+
+  <line x1="220" y1="510" x2="220" y2="555" stroke="#ff9500" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <line x1="500" y1="510" x2="500" y2="555" stroke="#ff9500" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <line x1="780" y1="510" x2="780" y2="555" stroke="#ff9500" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <line x1="1060" y1="510" x2="1060" y2="555" stroke="#ff9500" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+
+  <!-- Arrow labels (positioned alongside each downward arrow) -->
+  <text x="235" y="540" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="11" font-weight="600" fill="#ff9500" opacity="0.9">tracking client</text>
+  <text x="515" y="540" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="11" font-weight="600" fill="#ff9500" opacity="0.9">ORM / repositories</text>
+  <text x="795" y="540" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="11" font-weight="600" fill="#ff9500" opacity="0.9">artifacts</text>
+  <text x="1075" y="540" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="11" font-weight="600" fill="#ff9500" opacity="0.9">train</text>
+
+  <!-- ================================================================== -->
+  <!-- BOTTOM ROW — Sidecar Process + Data Stores + Compute Backends      -->
+  <!-- ================================================================== -->
+
+  <!-- === Column 1: MLflow server (forge-accent process card) === -->
+  <rect x="100" y="560" width="240" height="80" rx="12" fill="#1c1c1e" stroke="url(#forgeGradient)" stroke-width="1.5"/>
+  <text x="120" y="592" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="18" font-weight="700" fill="#ffffff">MLflow server</text>
+  <rect x="245" y="575" width="50" height="22" rx="11" fill="url(#forgeGradient)"/>
+  <text x="270" y="590" text-anchor="middle" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11" font-weight="700" fill="#0c0c0d">:5001</text>
+  <text x="120" y="618" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="13" fill="#ebebf5" opacity="0.78">subprocess</text>
+
+  <!-- Arrow: MLflow server → mlruns/ store -->
+  <line x1="220" y1="640" x2="220" y2="670" stroke="#ff9500" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="233" y="662" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="10" font-weight="600" fill="#ff9500" opacity="0.8">SQLite</text>
+
+  <!-- mlruns/ cylinder (SQLite store for MLflow artifacts) -->
+  <path d="M 100 678 L 100 736 Q 220 752 340 736 L 340 678 Z" fill="#1c1c1e" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1"/>
+  <ellipse cx="220" cy="678" rx="120" ry="14" fill="#1c1c1e" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1"/>
+  <text x="220" y="706" text-anchor="middle" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="14" font-weight="600" fill="#ffffff">mlruns/</text>
+  <text x="220" y="726" text-anchor="middle" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11" fill="#ebebf5" opacity="0.78">mlflow.db + artifacts</text>
+
+  <!-- === Column 2: App Database (cylinder) === -->
+  <path d="M 380 560 L 380 656 Q 500 672 620 656 L 620 560 Z" fill="#1c1c1e" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1"/>
+  <ellipse cx="500" cy="560" rx="120" ry="14" fill="#1c1c1e" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1"/>
+  <text x="500" y="596" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="16" font-weight="700" fill="#ffffff">App Database</text>
+  <text x="500" y="618" text-anchor="middle" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" fill="#ebebf5" opacity="0.78">data/anvil-state.db</text>
+  <text x="500" y="640" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="11" fill="#ebebf5" opacity="0.65">async SQLAlchemy · WAL · Alembic</text>
+
+  <!-- === Column 3: LocalFileStore (card) === -->
+  <rect x="660" y="560" width="240" height="96" rx="12" fill="#1c1c1e" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1"/>
+  <text x="680" y="592" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="16" font-weight="700" fill="#ffffff">LocalFileStore</text>
+  <text x="680" y="614" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="13" fill="#ebebf5" opacity="0.78">Filesystem storage</text>
+  <text x="680" y="638" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11" fill="#ebebf5" opacity="0.65">data/models · data/datasets</text>
+  <text x="680" y="652" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11" fill="#ebebf5" opacity="0.65">data/storage</text>
+
+  <!-- === Column 4: Compute backends (widened for label clearance) === -->
+  <rect x="920" y="560" width="280" height="138" rx="12" fill="#1c1c1e" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1"/>
+  <text x="940" y="592" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="16" font-weight="700" fill="#ffffff">Compute</text>
+
+  <!-- Compute row 1: local-stdlib -->
+  <rect x="934" y="604" width="252" height="26" rx="6" fill="#2c2c2e"/>
+  <text x="950" y="621" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="12" fill="#ebebf5">local-stdlib</text>
+  <text x="1180" y="621" text-anchor="end" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="12" fill="#ff9500" opacity="0.85">CPU (zero-dep)</text>
+
+  <!-- Compute row 2: local-torch -->
+  <rect x="934" y="634" width="252" height="26" rx="6" fill="#2c2c2e"/>
+  <text x="950" y="651" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="12" fill="#ebebf5">local-torch</text>
+  <text x="1180" y="651" text-anchor="end" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="12" fill="#ff9500" opacity="0.85">CUDA / MPS</text>
+
+  <!-- Compute row 3: modal -->
+  <rect x="934" y="664" width="252" height="26" rx="6" fill="#2c2c2e"/>
+  <text x="950" y="681" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="12" fill="#ebebf5">modal</text>
+  <text x="1180" y="681" text-anchor="end" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="12" fill="#ff9500" opacity="0.85">cloud GPU</text>
+
+</svg>

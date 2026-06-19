@@ -200,6 +200,27 @@ anvil/                         # Python package (implicit namespace)
 
 <br>
 
+### Runtime topology
+
+At run time, anvil is a single FastAPI process that supervises an MLflow sidecar and reads/writes a handful of local stores:
+
+<p align="center">
+  <img src="docs/assets/system.svg" alt="Runtime topology: Browser/CLI → FastAPI on :8080 → MLflow server on :5001, SQLite databases, LocalFileStore, and CPU/GPU/cloud compute backends" width="100%">
+</p>
+
+<br>
+
+- **Web process** — `uvicorn` serves the FastAPI app on **`:8080`** (host `0.0.0.0`, so it's reachable across your LAN). It renders Jinja2 pages, mounts `/static`, exposes the `/v1` API router, and streams live training metrics over **SSE**.
+- **Startup lifespan** — on boot the FastAPI lifespan handler (1) initializes the async SQLAlchemy engine in **WAL** mode, (2) runs **Alembic** auto-migration (`ANVIL_DB_AUTO_MIGRATE`), then (3) launches the **MLflow server** as a managed subprocess.
+- **MLflow** — runs on **`:5001`** with a SQLite backend store (`mlruns/mlflow.db`) and artifacts under `mlruns/`. The app talks to it via the MLflow client; point at a remote/hosted MLflow with `ANVIL_MLFLOW_URI`.
+- **App database** — `data/anvil-state.db` (SQLite via async SQLAlchemy + `aiosqlite`), accessed strictly through the repository layer.
+- **Storage** — `LocalFileStore` abstracts the filesystem; trained models land in `data/models/`, datasets in `data/datasets/`, general blobs in `data/storage/`. The abstraction is S3-ready.
+- **Compute backends** — selected at train time and pluggable: **`local-stdlib`** (pure-Python engine, CPU, zero deps), **`local-torch`** (PyTorch on CUDA or Apple **MPS**), and **`modal`** (remote cloud GPU). Device auto-detects CUDA → MPS → CPU, overridable via `ANVIL_DEVICE`.
+
+The whole stack comes up with `make run` (web + MLflow) and is torn down with `make stop`. In Docker, a single service exposes both `:8080` and `:5001` over a `/workspace` volume.
+
+<br>
+
 <p align="center"><img src="docs/assets/divider.svg" alt="" width="100%"></p>
 
 ## 🎛️ Hyperparameter Guide
