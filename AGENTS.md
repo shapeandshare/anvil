@@ -29,6 +29,10 @@ The design system is implemented via CSS custom properties in `anvil/api/static/
 | `make format` | Auto-format (black + isort) |
 | `make typecheck` | Run mypy/pyright |
 | `make clean` | Remove artifacts |
+| `make vault-audit` | Run vault audit + graph health (report only) |
+| `make vault-audit-apply` | Run vault audit with safe auto-fixes |
+| `make vault-audit-diff` | Preview audit auto-fixes (no changes) |
+| `make vault-audit-fast` | Mechanical audit only (skip graph-health) |
 
 ### Project Structure
 
@@ -63,6 +67,14 @@ anvil/          # Python package (implicit namespace)
 - Update `docs/vault/Sessions/` with a session log
 - Update any notes that are stale
 - Ensure all wikilinks resolve
+- Run `make vault-audit` — it must report 0 errors before committing vault changes
+
+### Vault Conventions
+- All tags MUST come from `docs/vault/_meta/tags.md` — controlled vocabulary only
+- Every note MUST have frontmatter: `title`, `type`, `tags`, `created`, `updated`
+- Notes follow `draft → reviewed → canonical` status lifecycle; agents never set `canonical`
+- No orphans — every note should have inbound wikilinks (MOCs and session logs exempt)
+- Use templates from `docs/vault/_meta/templates/` for new notes
 
 ## Architecture Rules
 
