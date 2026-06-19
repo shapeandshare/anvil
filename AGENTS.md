@@ -113,6 +113,8 @@ anvil/          # Python package (implicit namespace)
 - `pyproject.toml` (version source), `CHANGELOG.md` (changelog), git tags (release markers), GitHub Releases API (release artifacts) (007-automated-semver-release)
 - Python 3.11+ (stdlib for migration service, async for web layer) + Alembic >=1.13 (existing), SQLAlchemy[asyncio] >=2.0 (existing), aiosqlite >=0.20 (existing) (008-auto-db-schema)
 - SQLite via async SQLAlchemy (`data/anvil-state.db`, configurable via `ANVIL_STATE_DB_PATH`) (008-auto-db-schema)
+- Python 3.11+ (`requires-python = ">=3.11"`) + setuptools (build backend), `build`/`uv build` (wheel build), FastAPI, SQLAlchemy[asyncio], Alembic, MLflow (in-process), Jinja2 — all existing. No new runtime deps. New dev-only: `build` (or reuse `uv build`), `pytest` + `httpx` (existing) for system tests. (009-pip-installable-package)
+- SQLite via async SQLAlchemy (`data/anvil-state.db`); MLflow SQLite (`mlruns/mlflow.db`); demo/seed files bundled in package, imported into DB on first run. (009-pip-installable-package)
 
 ## Recent Changes
 - 002-directory-corpus-ingestion: Added Python 3.11+ + Existing project deps (FastAPI, SQLAlchemy, aiofiles) + `pathspec` (lightweight gitignore pattern matching, pure Python, no binary deps)
