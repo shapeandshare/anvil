@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, PropertyMock
 
 import pytest
 
-from anvil.services.capability_unavailable import CapabilityUnavailable
+from anvil.services._shared.capability_unavailable import CapabilityUnavailable
 
 
 @pytest.mark.asyncio
