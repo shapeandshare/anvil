@@ -73,6 +73,11 @@ def _load_docs(corpus_id: int | None = None) -> list[str]:
 
 
 def serve():
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(levelname)s [%(name)s] %(message)s",
+        force=True,
+    )
     cfg = get_config()
     pid_path = write_pid("web", pid_dir=cfg["log_dir"])
     try:
