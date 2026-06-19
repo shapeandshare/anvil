@@ -1,12 +1,10 @@
 import asyncio
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from anvil.api.app import app
-from anvil.db.repositories.experiments import ExperimentRepository
 from anvil.services.tracking import TrackingService
 
 
@@ -15,6 +13,7 @@ class _FakeClientForFailure:
         self.tracking_uri = tracking_uri
         self.created_runs = []
         self.terminated = {}
+        self.logged_metrics: dict[str, dict[str, float]] = {}
 
     def get_experiment_by_name(self, name):
         from unittest.mock import MagicMock
@@ -35,7 +34,9 @@ class _FakeClientForFailure:
         pass
 
     def log_metric(self, run_id, key, value, step=None):
-        pass
+        if run_id not in self.logged_metrics:
+            self.logged_metrics[run_id] = {}
+        self.logged_metrics[run_id][key] = value
 
     def set_terminated(self, run_id, status="FINISHED"):
         self.terminated[run_id] = status
@@ -74,7 +75,7 @@ def _fake_tracking():
 
 @pytest.mark.asyncio
 async def test_training_exception_triggers_fail_run(
-    session: AsyncSession, _fake_tracking
+    _fake_tracking,
 ):
     from anvil.api.v1 import training as training_module
 
@@ -108,7 +109,6 @@ async def test_training_exception_triggers_fail_run(
             response = await client.post("/v1/training/start", json=config)
             assert response.status_code == 200
             data = response.json()
-            experiment_id = data["experiment_id"]
 
             await asyncio.sleep(1)
 
@@ -117,106 +117,81 @@ async def test_training_exception_triggers_fail_run(
             assert call_reason == "training failed!"
             assert len(_fake_tracking._finish_run_calls) == 0
 
-            repo = ExperimentRepository(session)
-            exp = await repo.get(experiment_id)
-            assert exp is not None
-            assert exp.status == "failed"
-            assert exp.error_message == "training failed!"
-            assert exp.completed_at is not None
+            assert _fake_tracking._client is not None
+            assert _fake_tracking._client.terminated.get(data["mlflow_run_id"]) == "FAILED"
     finally:
         training_module.tracking_svc = orig_tracking_svc
         training_module.svc.start_training = orig_start_training
 
 
 @pytest.mark.asyncio
-async def test_successful_training_marks_finished(session: AsyncSession):
-    repo = ExperimentRepository(session)
-    exp = await repo.create_running(
-        config_id=0,
-        run_name="happy-path-test",
-        mlflow_run_id="mlflow_42",
-        engine_backend="stdlib",
-        device="cpu",
+async def test_successful_training_marks_finished():
+    """Successful training finishes the MLflow run and logs final_loss."""
+    client = _FakeClientForFailure("http://127.0.0.1:5000")
+    client.create_experiment("anvil")
+    client.create_run("exp_1")
+    run_id = client.created_runs[0]
+
+    svc = TrackingService(
+        tracking_uri="http://127.0.0.1:5000",
+        client_factory=lambda uri: client,
     )
-    await session.commit()
-    experiment_id = exp.id
+    svc._lazy_init()
 
-    from datetime import UTC, datetime
+    await svc.finish_run(run_id)
+    await svc.log_final_metric(run_id, "final_loss", 0.123)
 
-    await repo.mark_finished(
-        experiment_id=experiment_id,
-        final_loss=0.123,
-        completed_at=datetime.now(UTC),
-    )
-    await session.commit()
-
-    updated = await repo.get(experiment_id)
-    assert updated is not None
-    assert updated.status == "finished"
-    assert updated.final_loss == 0.123
+    assert client.terminated.get(run_id) == "FINISHED"
+    assert client.logged_metrics.get(run_id, {}).get("final_loss") == 0.123
 
 
 @pytest.mark.asyncio
-async def test_list_artifacts_no_mlflow_run(session: AsyncSession, client: AsyncClient):
-    """GET /experiments/{id}/runs/{run_id}/artifacts returns 404 when experiment has no MLflow run."""
-    repo = ExperimentRepository(session)
-    exp = await repo.create_running(
-        config_id=0,
-        run_name="no-mlflow",
-        mlflow_run_id=None,
-        engine_backend="stdlib",
-        device="cpu",
-    )
-    await session.commit()
-
-    response = await client.get(f"/v1/experiments/{exp.id}/runs/nonexistent/artifacts")
+async def test_list_artifacts_no_mlflow_run(client: AsyncClient):
+    response = await client.get("/v1/experiments/999/runs/nonexistent/artifacts")
     assert response.status_code == 404
-    assert "No MLflow run associated" in response.json()["detail"]
+    assert "Experiment not found" in response.json()["detail"]
 
 
 @pytest.mark.asyncio
-async def test_download_artifact_no_mlflow_run(session: AsyncSession, client: AsyncClient):
-    """GET /experiments/{id}/runs/{run_id}/download returns 404 when experiment has no MLflow run."""
-    repo = ExperimentRepository(session)
-    exp = await repo.create_running(
-        config_id=0,
-        run_name="no-mlflow-dl",
-        mlflow_run_id=None,
-        engine_backend="stdlib",
-        device="cpu",
-    )
-    await session.commit()
-
+async def test_download_artifact_no_mlflow_run(client: AsyncClient):
     response = await client.get(
-        f"/v1/experiments/{exp.id}/runs/nonexistent/download",
+        "/v1/experiments/999/runs/nonexistent/download",
         params={"path": "model.safetensors"},
     )
     assert response.status_code == 404
-    assert "No MLflow run associated" in response.json()["detail"]
+    assert "Experiment not found" in response.json()["detail"]
 
 
 @pytest.mark.asyncio
-async def test_download_artifact_not_found(session: AsyncSession, client: AsyncClient):
+async def test_download_artifact_not_found(client: AsyncClient):
     """GET /experiments/{id}/runs/{run_id}/download returns 404 when no artifacts exist for the run."""
-    from anvil.services.tracking import TrackingService
+    exp_id = 42
+    mlflow_run_id = "mlflow_artifact_test"
 
-    repo = ExperimentRepository(session)
-    exp = await repo.create_running(
-        config_id=0,
-        run_name="artifact-test",
-        mlflow_run_id="mlflow_artifact_test",
-        engine_backend="stdlib",
-        device="cpu",
-    )
-    await session.commit()
+    async def _fake_get_experiment(eid: int) -> dict | None:
+        if eid == exp_id:
+            return {
+                "id": exp_id,
+                "mlflow_run_id": mlflow_run_id,
+                "status": "running",
+                "run_name": "artifact-test",
+                "final_loss": None,
+                "params": {},
+                "metrics": {},
+                "tags": {},
+            }
+        return None
 
-    with patch.object(
-        TrackingService, "get_safetensors_artifacts", return_value={
-            "available": False, "files": [], "error": None,
-        }
+    with (
+        patch.object(TrackingService, "get_experiment", side_effect=_fake_get_experiment),
+        patch.object(
+            TrackingService, "get_safetensors_artifacts", return_value={
+                "available": False, "files": [], "error": None,
+            }
+        ),
     ):
         response = await client.get(
-            f"/v1/experiments/{exp.id}/runs/mlflow_artifact_test/download",
+            f"/v1/experiments/{exp_id}/runs/{mlflow_run_id}/download",
             params={"path": "nonexistent.safetensors"},
         )
     assert response.status_code == 404
@@ -224,20 +199,27 @@ async def test_download_artifact_not_found(session: AsyncSession, client: AsyncC
 
 
 @pytest.mark.asyncio
-async def test_list_artifacts_run_id_mismatch(session: AsyncSession, client: AsyncClient):
+async def test_list_artifacts_run_id_mismatch(client: AsyncClient):
     """GET /experiments/{id}/runs/{run_id}/artifacts returns 400 when run_id doesn't match."""
-    repo = ExperimentRepository(session)
-    exp = await repo.create_running(
-        config_id=0,
-        run_name="mismatch-test",
-        mlflow_run_id="real_run_id",
-        engine_backend="stdlib",
-        device="cpu",
-    )
-    await session.commit()
+    exp_id = 42
 
-    response = await client.get(
-        f"/v1/experiments/{exp.id}/runs/wrong_run_id/artifacts"
-    )
+    async def _fake_get_experiment(eid: int) -> dict | None:
+        if eid == exp_id:
+            return {
+                "id": exp_id,
+                "mlflow_run_id": "real_run_id",
+                "status": "running",
+                "run_name": "mismatch-test",
+                "final_loss": None,
+                "params": {},
+                "metrics": {},
+                "tags": {},
+            }
+        return None
+
+    with patch.object(TrackingService, "get_experiment", side_effect=_fake_get_experiment):
+        response = await client.get(
+            f"/v1/experiments/{exp_id}/runs/wrong_run_id/artifacts"
+        )
     assert response.status_code == 400
     assert "does not match" in response.json()["detail"]

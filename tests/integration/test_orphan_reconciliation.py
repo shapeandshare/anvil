@@ -1,8 +1,5 @@
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from anvil.db.repositories.experiments import ExperimentRepository
-from anvil.db.session import AsyncSessionLocal
 from anvil.services.tracking import TrackingService
 
 
@@ -62,20 +59,10 @@ def _fake_client():
 
 
 @pytest.mark.asyncio
-async def test_reconcile_orphans_marks_local_experiments_failed(
-    session: AsyncSession, _fake_client: _FakeMLflowClient
+async def test_reconcile_orphans_kills_running_mlflow_runs(
+    _fake_client: _FakeMLflowClient,
 ):
-    repo = ExperimentRepository(session)
-    exp = await repo.create_running(
-        config_id=1,
-        run_name="orphan-test",
-        mlflow_run_id="mlflow_orphan_1",
-        engine_backend="stdlib",
-        device="cpu",
-    )
-    await session.commit()
-    exp_id = exp.id
-
+    """reconcile_orphans kills RUNNING MLflow runs and returns their run_ids."""
     _fake_client.runs["mlflow_orphan_1"] = "RUNNING"
 
     svc = TrackingService(
@@ -88,27 +75,12 @@ async def test_reconcile_orphans_marks_local_experiments_failed(
     assert "mlflow_orphan_1" in reconciled
     assert _fake_client.terminated.get("mlflow_orphan_1") == "KILLED"
 
-    async with AsyncSessionLocal() as fresh_session:
-        fresh_repo = ExperimentRepository(fresh_session)
-        updated = await fresh_repo.get(exp_id)
-        assert updated.status == "failed"
-        assert updated.error_message == "interrupted/terminated"
-        assert updated.completed_at is not None
-
 
 @pytest.mark.asyncio
 async def test_reconcile_orphans_idempotent(
-    session: AsyncSession, _fake_client: _FakeMLflowClient
+    _fake_client: _FakeMLflowClient,
 ):
-    repo = ExperimentRepository(session)
-    exp = await repo.create_running(
-        config_id=1,
-        run_name="idempotent-test",
-        mlflow_run_id="mlflow_idempotent_1",
-    )
-    await session.commit()
-    exp_id = exp.id
-
+    """After a run is killed, a second reconcile call should return empty."""
     _fake_client.runs["mlflow_idempotent_1"] = "RUNNING"
 
     svc = TrackingService(
@@ -123,31 +95,12 @@ async def test_reconcile_orphans_idempotent(
     reconciled2 = await svc.reconcile_orphans()
     assert len(reconciled2) == 0
 
-    async with AsyncSessionLocal() as fresh_session:
-        fresh_repo = ExperimentRepository(fresh_session)
-        updated = await fresh_repo.get(exp_id)
-        assert updated.status == "failed"
-        assert updated.error_message == "interrupted/terminated"
-
 
 @pytest.mark.asyncio
 async def test_reconcile_orphans_skips_finished_runs(
-    session: AsyncSession, _fake_client: _FakeMLflowClient
+    _fake_client: _FakeMLflowClient,
 ):
-    repo = ExperimentRepository(session)
-    exp = await repo.create_running(
-        config_id=1,
-        run_name="finished-test",
-        mlflow_run_id="mlflow_finished_1",
-    )
-    exp_id = exp.id
-    await session.commit()
-    await repo.mark_finished(
-        experiment_id=exp_id,
-        final_loss=0.5,
-    )
-    await session.commit()
-
+    """reconcile_orphans does not touch runs that are already FINISHED."""
     _fake_client.runs["mlflow_finished_1"] = "FINISHED"
 
     svc = TrackingService(
@@ -159,11 +112,6 @@ async def test_reconcile_orphans_skips_finished_runs(
     reconciled = await svc.reconcile_orphans()
     assert len(reconciled) == 0
     assert "mlflow_finished_1" not in _fake_client.terminated
-
-    async with AsyncSessionLocal() as fresh_session:
-        fresh_repo = ExperimentRepository(fresh_session)
-        updated = await fresh_repo.get(exp_id)
-        assert updated.status == "finished"
 
 
 def test_lifespan_calls_reconcile_orphans_source():

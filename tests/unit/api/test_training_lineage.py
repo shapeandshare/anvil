@@ -15,6 +15,7 @@ class FakeLineageClient:
         self.tracking_uri = tracking_uri
         self.created_runs = []
         self.logged_inputs = []
+        self.tags: dict[str, dict[str, str]] = {}
 
     def get_experiment_by_name(self, name):
         from unittest.mock import MagicMock
@@ -29,6 +30,7 @@ class FakeLineageClient:
 
         run_id = f"mlflow_{len(self.created_runs) + 1}"
         self.created_runs.append(run_id)
+        self.tags[run_id] = {}
         return MagicMock(info=MagicMock(run_id=run_id))
 
     def log_batch(self, run_id, params=None, metrics=None, tags=None):
@@ -47,6 +49,11 @@ class FakeLineageClient:
         self.logged_inputs.append(
             {"run_id": run_id, "dataset": dataset, "context": context}
         )
+
+    def set_tag(self, run_id, key, value):
+        if run_id not in self.tags:
+            self.tags[run_id] = {}
+        self.tags[run_id][key] = value
 
 
 @pytest.fixture
@@ -173,7 +180,6 @@ async def test_no_dataset_or_corpus_no_phantom_input(db_session, fake_tracking):
 @pytest.mark.asyncio
 async def test_start_with_dataset_id_persists_input_digest(db_session, fake_tracking):
     from anvil.api.v1 import training as training_module
-    from anvil.db.repositories.experiments import ExperimentRepository
 
     orig_svc = training_module.tracking_svc
     training_module.tracking_svc = fake_tracking
@@ -191,15 +197,15 @@ async def test_start_with_dataset_id_persists_input_digest(db_session, fake_trac
                 assert response.status_code == 200
                 data = response.json()
 
-            experiment_id = data.get("experiment_id")
-            assert experiment_id is not None
+            mlflow_run_id = data.get("mlflow_run_id")
+            assert mlflow_run_id is not None
 
-            async with AsyncSessionLocal() as session:
-                repo = ExperimentRepository(session)
-                exp = await repo.get(experiment_id)
-                assert exp is not None
-                assert exp.input_digest == "abc123digest"
-                assert exp.input_role == "training"
+            # input_digest is now stored as MLflow tags, not in ExperimentRepository
+            client = fake_tracking._client
+            assert client is not None
+            run_tags = client.tags.get(mlflow_run_id, {})
+            assert run_tags.get("anvil.input_digest") == "abc123digest"
+            assert run_tags.get("anvil.input_role") == "training"
 
         finally:
             training_module.tracking_svc = orig_svc
@@ -208,7 +214,6 @@ async def test_start_with_dataset_id_persists_input_digest(db_session, fake_trac
 @pytest.mark.asyncio
 async def test_no_input_id_no_digest(db_session, fake_tracking):
     from anvil.api.v1 import training as training_module
-    from anvil.db.repositories.experiments import ExperimentRepository
 
     orig_svc = training_module.tracking_svc
     training_module.tracking_svc = fake_tracking
@@ -221,13 +226,15 @@ async def test_no_input_id_no_digest(db_session, fake_tracking):
             assert response.status_code == 200
             data = response.json()
 
-        experiment_id = data.get("experiment_id")
-        async with AsyncSessionLocal() as session:
-            repo = ExperimentRepository(session)
-            exp = await repo.get(experiment_id)
-            assert exp is not None
-            assert exp.input_digest is None
-            assert exp.input_role is None
+        mlflow_run_id = data.get("mlflow_run_id")
+        assert mlflow_run_id is not None
+
+        # input_digest is now stored as MLflow tags; no dataset/corpus means no tag set
+        client = fake_tracking._client
+        assert client is not None
+        run_tags = client.tags.get(mlflow_run_id, {})
+        assert run_tags.get("anvil.input_digest") is None
+        assert run_tags.get("anvil.input_role") is None
 
     finally:
         training_module.tracking_svc = orig_svc
