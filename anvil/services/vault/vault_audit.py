@@ -14,9 +14,9 @@ from pathlib import Path
 from typing import Any, cast
 
 try:
-    import yaml
+    import yaml  # type: ignore[import-untyped]
 except ImportError:
-    yaml = None  # type: ignore[assignment]
+    yaml = None
 
 from ._types import Finding, MechanicalReport
 

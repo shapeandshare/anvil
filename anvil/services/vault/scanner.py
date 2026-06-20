@@ -67,7 +67,7 @@ class GraphHealthRunner:
     def scan_all_notes(self) -> None:
         """Read all vault .md files and extract metadata + wikilinks."""
         import unicodedata
-        import yaml
+        import yaml  # type: ignore[import-untyped]
 
         all_md = sorted(self.vault_root.rglob("*.md"))
         self.notes = {}

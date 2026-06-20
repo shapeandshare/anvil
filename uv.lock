@@ -241,6 +241,9 @@ gpu = [
     { name = "nvidia-ml-py" },
     { name = "torch" },
 ]
+vault-health = [
+    { name = "networkx" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -257,6 +260,7 @@ requires-dist = [
     { name = "mlflow", specifier = ">=3.1,<4" },
     { name = "modal", marker = "extra == 'compute'", specifier = ">=0.70,<1" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10,<2" },
+    { name = "networkx", marker = "extra == 'vault-health'", specifier = ">=3,<4" },
     { name = "numpy", specifier = ">=1.24,<2" },
     { name = "nvidia-ml-py", marker = "extra == 'gpu'", specifier = ">=12,<13" },
     { name = "pathspec", specifier = ">=0.12,<1" },
@@ -275,7 +279,7 @@ requires-dist = [
     { name = "torch", marker = "extra == 'gpu'", specifier = ">=2.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30,<1" },
 ]
-provides-extras = ["gpu", "compute", "dev"]
+provides-extras = ["gpu", "compute", "vault-health", "dev"]
 
 [[package]]
 name = "anyio"

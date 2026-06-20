@@ -288,8 +288,8 @@ def save_state(state_root: Path, state: dict[str, Any]) -> None:
 
 def filter_by_state(
     scored: list[ScoredPair],
-state: dict[str, Any] | None = None,  # noqa: ARG001
-    current_scores: dict[tuple[str, str], float] | None = None,  # noqa: ARG001
+state: dict[str, Any] | None = None,
+    current_scores: dict[tuple[str, str], float] | None = None,
 ) -> list[ScoredPair]:
     """Filter scored pairs against persisted state.
 

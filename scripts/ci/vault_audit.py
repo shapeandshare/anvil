@@ -21,8 +21,12 @@ import sys
 def main() -> None:
     """CLI entry point — delegate to ``anvil-vault audit``."""
     cmd = ["anvil-vault", "audit"]
-    # Skip argv[0] (this script's path)
-    cmd.extend(sys.argv[1:])
+    args = sys.argv[1:]
+    # Legacy positional vault_dir arg -> --vault-dir
+    if args and not args[0].startswith("-"):
+        cmd.append("--vault-dir")
+        cmd.append(args.pop(0))
+    cmd.extend(args)
     result = subprocess.run(cmd)
     sys.exit(result.returncode)
 
