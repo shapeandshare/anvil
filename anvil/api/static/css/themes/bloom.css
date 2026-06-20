@@ -1,0 +1,92 @@
+[data-skin="bloom"] {
+  --bg:             #faf3f7;
+  --surface:        #ffffff;
+  --surface-2:      #f3e7ef;
+  --grouped-bg:     #faf3f7;
+  --separator:      #e6cdda;
+  --text:           #3a1f33;
+  --text-secondary: #6b4a60;
+  --text-tertiary:  #9a7a8e;
+  --text-bright:    #2a1525;
+
+  --accent:         #e0568f;
+  --accent-green:   #4fae6b;
+  --accent-red:     #e0568f;
+  --accent-orange:  #f0915a;
+  --accent-yellow:  #e8b94a;
+  --accent-purple:  #a766d6;
+  --accent-cyan:    #46b0a8;
+
+  --glass-bg:       rgba(255, 255, 255, 0.8);
+  --glass-border:   rgba(224, 86, 143, 0.16);
+
+  --open: 0.2;
+  --sway: 0;
+}
+
+[data-skin="bloom"][data-theme="dark"] {
+  --bg:             #160913;
+  --surface:        #23101d;
+  --surface-2:      #2e1626;
+  --grouped-bg:     #110710;
+  --separator:      #4a263c;
+  --text:           #f7e3ef;
+  --text-secondary: #d9b6cd;
+  --text-tertiary:  #a07f93;
+  --text-bright:    #ffffff;
+
+  --accent:         #ff7ab0;
+  --accent-green:   #6cd589;
+  --accent-purple:  #c58bff;
+
+  --glass-bg:       rgba(35, 16, 29, 0.84);
+  --glass-border:   rgba(255, 122, 176, 0.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="bloom"] * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+[data-skin="bloom"] .app-main::after {
+  content: "";
+  position: fixed;
+  left: 50%;
+  bottom: -25vh;
+  width: 70vw;
+  height: 60vh;
+  transform: translateX(-50%) rotate(calc(var(--sway, 0) * 6deg - 3deg));
+  transform-origin: 50% 100%;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    50% 55% at 50% 100%,
+    rgba(224, 86, 143, calc(0.06 + var(--open, 0.2) * 0.30)),
+    rgba(167, 102, 214, calc(0.03 + var(--open, 0.2) * 0.14)) 55%,
+    transparent 78%
+  );
+  animation: bloom-sway calc(8s - var(--sway, 0) * 4s) ease-in-out infinite alternate;
+  transition: background var(--dur-slow) var(--ease);
+}
+
+@keyframes bloom-sway {
+  from { transform: translateX(-50%) rotate(-3deg); }
+  to   { transform: translateX(-50%) rotate(3deg); }
+}
+
+[data-skin="bloom"][data-bloom="flower"] .app-main::after {
+  background: radial-gradient(
+    55% 60% at 50% 100%,
+    rgba(255, 200, 120, 0.5),
+    rgba(224, 86, 143, 0.28) 55%,
+    transparent 80%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="bloom"] .app-main::after {
+    transform: translateX(-50%);
+  }
+}

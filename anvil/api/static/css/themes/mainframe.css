@@ -1,0 +1,80 @@
+[data-skin="mainframe"] {
+  --bg:             #03120a;
+  --surface:        #071d10;
+  --surface-2:      #0a2615;
+  --grouped-bg:     #020d07;
+  --separator:      #14492a;
+  --text:           #b8f5c8;
+  --text-secondary: #8fd6a3;
+  --text-tertiary:  #5e9b71;
+  --text-bright:    #e6ffee;
+
+  --accent:         #43d67a;
+  --accent-green:   #43d67a;
+  --accent-red:     #ff6a52;
+  --accent-orange:  #ffb347;
+  --accent-yellow:  #ffd24a;
+  --accent-purple:  #8fe0a0;
+  --accent-cyan:    #45d6c0;
+
+  --font-body:      var(--font-mono);
+  --font-display:   var(--font-mono);
+
+  --glass-bg:       rgba(7, 29, 16, 0.88);
+  --glass-border:   rgba(67, 214, 122, 0.2);
+
+  --activity: 0;
+}
+
+[data-skin="mainframe"][data-theme="light"] {
+  --bg:             #eef6ea;
+  --surface:        #ffffff;
+  --surface-2:      #e2efdc;
+  --grouped-bg:     #eef6ea;
+  --separator:      #c5ddbb;
+  --text:           #103620;
+  --text-secondary: #2f5a3d;
+  --text-tertiary:  #5d8268;
+  --text-bright:    #103620;
+
+  --accent:         #1f9d4f;
+  --accent-green:   #1f9d4f;
+  --accent-purple:  #2f8a5c;
+
+  --glass-bg:       rgba(255, 255, 255, 0.82);
+  --glass-border:   rgba(31, 157, 79, 0.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="mainframe"] * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+[data-skin="mainframe"] .app-main::after {
+  content: "";
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  width: 0.7ch;
+  height: 1.1em;
+  pointer-events: none;
+  z-index: 40;
+  background: var(--accent);
+  opacity: calc(0.4 + var(--activity, 0) * 0.6);
+  animation: mainframe-cursor calc(1.4s - var(--activity, 0) * 1s) steps(1) infinite;
+}
+
+@keyframes mainframe-cursor {
+  0%, 50%   { opacity: 0.85; }
+  51%, 100% { opacity: 0.08; }
+}
+
+[data-skin="mainframe"][data-mainframe="error"] .app-main::after {
+  background: var(--accent-orange);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="mainframe"] .app-main::after { animation: none !important; }
+}

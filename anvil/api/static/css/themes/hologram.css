@@ -1,0 +1,83 @@
+[data-skin="hologram"] {
+  --bg:             #030a10;
+  --surface:        #07151f;
+  --surface-2:      #0b1f2d;
+  --grouped-bg:     #02080d;
+  --separator:      #163848;
+  --text:           #d6f4ff;
+  --text-secondary: #a3d8ea;
+  --text-tertiary:  #6c9eb2;
+  --text-bright:    #eafaff;
+
+  --accent:         #38d6ff;
+  --accent-green:   #4ff0c8;
+  --accent-red:     #ff6f9a;
+  --accent-orange:  #ffae66;
+  --accent-yellow:  #ffe08a;
+  --accent-purple:  #9d9bff;
+  --accent-cyan:    #38d6ff;
+
+  --glass-bg:       rgba(7, 21, 31, 0.84);
+  --glass-border:   rgba(56, 214, 255, 0.2);
+
+  --hex-grid: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='34.64'%3E%3Cdefs%3E%3Cpattern id='h' width='60' height='34.64' patternUnits='userSpaceOnUse'%3E%3Cpath d='M-17.32,-10 L17.32,-10 L34.64,0 L17.32,10 L-17.32,10 L-34.64,0 Z M17.32,-10 L51.96,-10 L69.28,0 L51.96,10 L17.32,10 L0,0 Z M12.68,7.32 L47.32,7.32 L64.64,17.32 L47.32,27.32 L12.68,27.32 L-4.64,17.32 Z M47.32,7.32 L81.96,7.32 L99.28,17.32 L81.96,27.32 L47.32,27.32 L30,17.32 Z' fill='none' stroke='rgb(56,214,255)' stroke-opacity='0.4' stroke-width='1'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23h)'/%3E%3C/svg%3E");
+
+  --focus: 0.4;
+  --ghost: 0.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="hologram"] * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+[data-skin="hologram"] .app-main::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: calc(0.15 + var(--focus, 0.4) * 0.25);
+  background-image: var(--hex-grid);
+  background-size: 60px 34.64px;
+  -webkit-mask-image: radial-gradient(80% 80% at 50% 40%, #000 30%, transparent 85%);
+  mask-image: radial-gradient(80% 80% at 50% 40%, #000 30%, transparent 85%);
+  transition: opacity var(--dur-slow) var(--ease);
+}
+
+[data-skin="hologram"] .app-main::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 41;
+  opacity: calc(var(--ghost, 0.6) * 0.5);
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0 2px,
+    rgba(56, 214, 255, 0.06) 2px 4px
+  );
+  animation: holo-flicker 5s steps(40) infinite;
+}
+
+@keyframes holo-flicker {
+  0%, 100% { opacity: calc(var(--ghost, 0.6) * 0.5); }
+  47%      { opacity: calc(var(--ghost, 0.6) * 0.3); }
+  48%      { opacity: calc(var(--ghost, 0.6) * 0.6); }
+  49%      { opacity: calc(var(--ghost, 0.6) * 0.25); }
+}
+
+[data-skin="hologram"] .card,
+[data-skin="hologram"] .panel,
+[data-skin="hologram"] h1,
+[data-skin="hologram"] h2 {
+  text-shadow:
+    calc(var(--ghost, 0.6) * 2px) 0 rgba(255, 80, 140, calc(var(--ghost, 0.6) * 0.5)),
+    calc(var(--ghost, 0.6) * -2px) 0 rgba(56, 214, 255, calc(var(--ghost, 0.6) * 0.5));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="hologram"] .app-main::after { animation: none !important; }
+}

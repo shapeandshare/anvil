@@ -1,0 +1,88 @@
+[data-skin="tectonic"] {
+  --bg:             #14171c;
+  --surface:        #1d222a;
+  --surface-2:      #262d37;
+  --grouped-bg:     #101317;
+  --separator:      #39424f;
+  --text:           #e4e8ee;
+  --text-secondary: #b3bcc9;
+  --text-tertiary:  #828d9c;
+  --text-bright:    #ffffff;
+
+  --accent:         #c98a4b;
+  --accent-green:   #6fae7a;
+  --accent-red:     #e25c4a;
+  --accent-orange:  #d98b3f;
+  --accent-yellow:  #d9b34a;
+  --accent-purple:  #9485c8;
+  --accent-cyan:    #5fa6ad;
+
+  --glass-bg:       rgba(29, 34, 42, 0.84);
+  --glass-border:   rgba(201, 138, 75, 0.14);
+
+  --tremor: 0;
+}
+
+[data-skin="tectonic"][data-theme="light"] {
+  --bg:             #ecebe7;
+  --surface:        #ffffff;
+  --surface-2:      #e0ded8;
+  --grouped-bg:     #ecebe7;
+  --separator:      #cbc8bf;
+  --text:           #23211d;
+  --text-secondary: #514d45;
+  --text-tertiary:  #7d786e;
+  --text-bright:    #23211d;
+
+  --accent:         #a8682b;
+  --accent-green:   #4f8a5b;
+  --accent-purple:  #6a5ca0;
+
+  --glass-bg:       rgba(255, 255, 255, 0.8);
+  --glass-border:   rgba(168, 104, 43, 0.16);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="tectonic"] * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+[data-skin="tectonic"] .app-main {
+  animation: tectonic-shake 0.18s linear infinite;
+}
+
+@keyframes tectonic-shake {
+  0%   { transform: translate(0, 0); }
+  25%  { transform: translate(calc(var(--tremor, 0) * -1.5px), calc(var(--tremor, 0) * 1px)); }
+  50%  { transform: translate(calc(var(--tremor, 0) * 1.5px), calc(var(--tremor, 0) * -1px)); }
+  75%  { transform: translate(calc(var(--tremor, 0) * -1px), calc(var(--tremor, 0) * -1.5px)); }
+  100% { transform: translate(0, 0); }
+}
+
+[data-skin="tectonic"] .app-main::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
+  opacity: calc(var(--tremor, 0) * 0.85);
+  background:
+    linear-gradient(115deg, transparent 49.6%, rgba(226, 92, 74, 0.5) 49.8%, rgba(226, 92, 74, 0.5) 50.2%, transparent 50.4%),
+    linear-gradient(58deg, transparent 67.8%, rgba(226, 92, 74, 0.35) 68%, rgba(226, 92, 74, 0.35) 68.3%, transparent 68.5%);
+  transition: opacity var(--dur-slow) var(--ease);
+}
+
+[data-skin="tectonic"][data-tectonic="rupture"] .app-main::after {
+  opacity: 1;
+  background:
+    linear-gradient(115deg, transparent 48.5%, rgba(255, 90, 70, 0.85) 49.4%, rgba(255, 200, 120, 0.6) 50%, rgba(255, 90, 70, 0.85) 50.6%, transparent 51.5%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="tectonic"] .app-main {
+    animation: none !important;
+    transform: none !important;
+  }
+}

@@ -1,0 +1,85 @@
+[data-skin="resonance"] {
+  --bg:             #0a0810;
+  --surface:        #14111e;
+  --surface-2:      #1d1829;
+  --grouped-bg:     #07060c;
+  --separator:      #322a48;
+  --text:           #ece6f7;
+  --text-secondary: #c3b9d8;
+  --text-tertiary:  #897ea0;
+  --text-bright:    #ffffff;
+
+  --accent:         #b07cff;
+  --accent-green:   #4fe0c0;
+  --accent-red:     #ff6a92;
+  --accent-orange:  #ff9d6b;
+  --accent-yellow:  #ffd97e;
+  --accent-purple:  #b07cff;
+  --accent-cyan:    #54c8ff;
+
+  --glass-bg:       rgba(20, 17, 30, 0.85);
+  --glass-border:   rgba(176, 124, 255, 0.18);
+
+  --amp: 0;
+  --tone: 0.4;
+}
+
+[data-skin="resonance"][data-theme="light"] {
+  --bg:             #f3eefb;
+  --surface:        #ffffff;
+  --surface-2:      #e8def6;
+  --grouped-bg:     #f3eefb;
+  --separator:      #d2c2ea;
+  --text:           #1f1430;
+  --text-secondary: #483a60;
+  --text-tertiary:  #74688c;
+  --text-bright:    #1f1430;
+
+  --accent:         #7d3fd0;
+  --accent-green:   #1aa98c;
+  --accent-purple:  #7d3fd0;
+
+  --glass-bg:       rgba(255, 255, 255, 0.8);
+  --glass-border:   rgba(125, 63, 208, 0.16);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="resonance"] * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+[data-skin="resonance"] .app-main::after {
+  content: "";
+  position: fixed;
+  inset: auto 0 0 0;
+  height: 22vh;
+  pointer-events: none;
+  z-index: 0;
+  opacity: calc(0.25 + var(--amp, 0) * 0.55);
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(176, 124, 255, calc(0.3 + var(--tone, 0.4) * 0.4)) 0 4px,
+    transparent 4px 14px
+  );
+  -webkit-mask-image: linear-gradient(0deg, #000, transparent),
+    repeating-linear-gradient(90deg, #000 0 4px, transparent 4px 14px);
+  mask-image: linear-gradient(0deg, #000, transparent);
+  transform-origin: bottom;
+  transform: scaleY(calc(0.2 + var(--amp, 0) * 0.8));
+  animation: resonance-wave calc(2.4s - var(--amp, 0) * 1.8s) ease-in-out infinite alternate;
+  transition: opacity var(--dur-slow) var(--ease);
+}
+
+@keyframes resonance-wave {
+  from { transform: scaleY(calc(0.2 + var(--amp, 0) * 0.5)); }
+  to   { transform: scaleY(calc(0.4 + var(--amp, 0) * 0.8)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="resonance"] .app-main::after {
+    animation: none !important;
+    transform: scaleY(0.4);
+  }
+}

@@ -1,0 +1,102 @@
+[data-skin="tide"] {
+  --bg:             #04101c;
+  --surface:        #0a1d31;
+  --surface-2:      #10293f;
+  --grouped-bg:     #03101b;
+  --separator:      #1d4661;
+  --text:           #e2f1ff;
+  --text-secondary: #b6d2e8;
+  --text-tertiary:  #7da0bb;
+  --text-bright:    #ffffff;
+
+  --accent:         #4cc7e6;
+  --accent-green:   #38d9b0;
+  --accent-red:     #ff6f7a;
+  --accent-orange:  #ffb066;
+  --accent-yellow:  #ffe08a;
+  --accent-purple:  #8fb6ff;
+  --accent-cyan:    #4cc7e6;
+
+  --glass-bg:       rgba(10, 29, 49, 0.82);
+  --glass-border:   rgba(76, 199, 230, 0.16);
+
+  --level: 0.4;
+  --surge: 0;
+}
+
+[data-skin="tide"][data-theme="light"] {
+  --bg:             #eaf6fd;
+  --surface:        #ffffff;
+  --surface-2:      #dceffa;
+  --grouped-bg:     #eaf6fd;
+  --separator:      #bfdcec;
+  --text:           #06283d;
+  --text-secondary: #2f5570;
+  --text-tertiary:  #5e7d94;
+  --text-bright:    #06283d;
+
+  --accent:         #1c89ad;
+  --accent-green:   #18a589;
+  --accent-purple:  #4a6fc4;
+
+  --glass-bg:       rgba(255, 255, 255, 0.78);
+  --glass-border:   rgba(28, 137, 173, 0.16);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="tide"] * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+[data-skin="tide"] .app-main::after {
+  content: "";
+  position: fixed;
+  inset: auto 0 0 0;
+  height: calc(8vh + var(--level, 0.4) * 42vh);
+  pointer-events: none;
+  z-index: 0;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(56, 217, 176, calc(0.05 + var(--surge, 0) * 0.10)) 30%,
+    rgba(76, 199, 230, calc(0.10 + var(--level, 0.4) * 0.18)) 100%
+  );
+  transition: height var(--dur-slow) var(--ease), background var(--dur-slow) var(--ease);
+}
+
+[data-skin="tide"] .app-main::before {
+  content: "";
+  position: fixed;
+  inset: auto 0 0 0;
+  height: calc(8vh + var(--level, 0.4) * 42vh);
+  pointer-events: none;
+  z-index: 1;
+  opacity: calc(0.2 + var(--surge, 0) * 0.6);
+  background: repeating-linear-gradient(
+    115deg,
+    transparent 0 28px,
+    rgba(76, 199, 230, 0.12) 28px 32px
+  );
+  background-size: 200% 100%;
+  animation: tide-swell calc(14s - var(--surge, 0) * 9s) linear infinite;
+}
+
+@keyframes tide-swell {
+  from { background-position: 0 0; }
+  to   { background-position: 200% 0; }
+}
+
+[data-skin="tide"][data-tide-state="riptide"] .app-main::after {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(255, 111, 122, 0.14) 30%,
+    rgba(255, 90, 77, 0.30) 100%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="tide"] .app-main::before { display: none; }
+}

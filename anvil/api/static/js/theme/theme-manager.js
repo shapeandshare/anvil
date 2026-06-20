@@ -10,6 +10,11 @@
   var activeTeardown = null;
   var bus = window.SignalBus ? window.SignalBus.create() : null;
 
+  // Picker keyboard-navigation / live-preview state.
+  var pickerItems = [];   // theme buttons, in registry order
+  var activeIndex = -1;   // currently highlighted item
+  var previewBase = null; // committed { themeId, mode } captured when menu opens
+
   function osMode() {
     if (typeof window.matchMedia === 'function' &&
         window.matchMedia('(prefers-color-scheme: light)').matches) {
@@ -87,6 +92,7 @@
 
   function apply(id, mode, opts) {
     opts = opts || {};
+    var persist = opts.persist !== false;
     var theme = registry.get(id);
     if (!theme) {
       theme = registry.get(registry.defaultId);
@@ -97,7 +103,7 @@
     teardownMapping();
     applyAttributes(theme.id, resolved);
     ensureLayer(theme.cssLayer);
-    writePref(theme.id, resolved);
+    if (persist) writePref(theme.id, resolved);
     bindMapping(theme);
 
     updateToggleState(theme);
@@ -143,26 +149,120 @@
   function buildPicker() {
     var menu = document.getElementById('theme-picker-menu');
     if (!menu || !registry) return;
-    var html = registry.list().map(function (t) {
+    var html = '<div class="theme-picker__grid" role="none">';
+    html += registry.list().map(function (t) {
       return '<button type="button" class="theme-picker__item" role="menuitemradio"' +
-        ' data-theme-id="' + t.id + '" aria-current="false">' +
+        ' tabindex="-1" data-theme-id="' + t.id + '" aria-current="false"' +
+        ' title="' + escapeHtml(t.displayName + ' \u2014 ' + t.previewHint) + '">' +
         '<span class="theme-picker__name">' + escapeHtml(t.displayName) + '</span>' +
         '<span class="theme-picker__hint">' + escapeHtml(t.previewHint) + '</span>' +
         '</button>';
     }).join('');
+    html += '</div>';
     html += '<div class="theme-picker__controls">' +
       '<label class="theme-picker__toggle"><input type="checkbox" id="theme-reduce-effects"> Reduce effects</label>' +
       '<label class="theme-picker__toggle"><input type="checkbox" id="theme-audio-optin"> Enable theme audio</label>' +
       '</div>';
     menu.innerHTML = html;
+
+    pickerItems = Array.prototype.slice.call(
+      menu.querySelectorAll('.theme-picker__item')
+    );
+
     menu.addEventListener('click', function (e) {
       var item = e.target.closest('[data-theme-id]');
       if (!item) return;
-      apply(item.getAttribute('data-theme-id'), current().mode);
-      closeMenu();
+      commitSelection(item.getAttribute('data-theme-id'));
     });
+    // Hovering previews too, so mouse exploration is as fast as the keyboard.
+    pickerItems.forEach(function (item, i) {
+      item.addEventListener('mouseenter', function () { setActive(i, true); });
+    });
+    menu.addEventListener('keydown', onMenuKeydown);
+
     wireEffectControls();
     updatePickerUI(current().themeId);
+  }
+
+  function colCount() {
+    var top, n, i;
+    if (pickerItems.length < 2) return 1;
+    top = pickerItems[0].offsetTop;
+    n = 0;
+    for (i = 0; i < pickerItems.length; i++) {
+      if (pickerItems[i].offsetTop === top) n++;
+      else break;
+    }
+    return n || 1;
+  }
+
+  function indexOfTheme(themeId) {
+    var i;
+    for (i = 0; i < pickerItems.length; i++) {
+      if (pickerItems[i].getAttribute('data-theme-id') === themeId) return i;
+    }
+    return 0;
+  }
+
+  function setActive(i, preview) {
+    if (i < 0 || i >= pickerItems.length) return;
+    if (activeIndex >= 0 && pickerItems[activeIndex]) {
+      pickerItems[activeIndex].tabIndex = -1;
+    }
+    activeIndex = i;
+    var el = pickerItems[i];
+    el.tabIndex = 0;
+    el.focus();
+    if (el.scrollIntoView) el.scrollIntoView({ block: 'nearest' });
+    if (preview) previewApply(el.getAttribute('data-theme-id'));
+  }
+
+  function moveActive(delta) {
+    var next = activeIndex + delta;
+    if (next < 0 || next >= pickerItems.length) return;
+    setActive(next, true);
+  }
+
+  function onMenuKeydown(e) {
+    var cols = colCount();
+    var trigger;
+    switch (e.key) {
+      case 'ArrowRight': e.preventDefault(); moveActive(1); break;
+      case 'ArrowLeft':  e.preventDefault(); moveActive(-1); break;
+      case 'ArrowDown':  e.preventDefault(); moveActive(cols); break;
+      case 'ArrowUp':    e.preventDefault(); moveActive(-cols); break;
+      case 'Home':       e.preventDefault(); setActive(0, true); break;
+      case 'End':        e.preventDefault(); setActive(pickerItems.length - 1, true); break;
+      case 'Enter':
+      case ' ':
+        if (activeIndex >= 0) {
+          e.preventDefault();
+          commitSelection(pickerItems[activeIndex].getAttribute('data-theme-id'));
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        closeMenu(true);
+        trigger = document.getElementById('theme-picker-trigger');
+        if (trigger) trigger.focus();
+        break;
+      default: break;
+    }
+  }
+
+  function previewApply(themeId) {
+    // Live preview: apply visuals WITHOUT persisting, so Escape can revert.
+    var mode = previewBase ? previewBase.mode : current().mode;
+    apply(themeId, mode, { persist: false });
+  }
+
+  function commitSelection(themeId) {
+    var mode = previewBase ? previewBase.mode : current().mode;
+    apply(themeId, mode, { persist: true });
+    previewBase = null; // nothing to revert to
+    closeMenu(false);
+    var trigger = document.getElementById('theme-picker-trigger');
+    if (trigger) trigger.focus();
   }
 
   function wireEffectControls() {
@@ -203,13 +303,23 @@
     var trigger = document.getElementById('theme-picker-trigger');
     if (menu) menu.hidden = false;
     if (trigger) trigger.setAttribute('aria-expanded', 'true');
+    // Remember what to revert to if the user cancels (Escape / click-away).
+    previewBase = current();
+    if (pickerItems.length) {
+      setActive(indexOfTheme(previewBase.themeId), false);
+    }
   }
 
-  function closeMenu() {
+  function closeMenu(revert) {
     var menu = document.getElementById('theme-picker-menu');
     var trigger = document.getElementById('theme-picker-trigger');
     if (menu) menu.hidden = true;
     if (trigger) trigger.setAttribute('aria-expanded', 'false');
+    // Cancel path: restore the theme that was committed when the menu opened.
+    if (revert && previewBase) {
+      apply(previewBase.themeId, previewBase.mode, { persist: true });
+    }
+    previewBase = null;
   }
 
   function wirePicker() {
@@ -218,10 +328,11 @@
     trigger.addEventListener('click', function (e) {
       e.stopPropagation();
       var menu = document.getElementById('theme-picker-menu');
-      if (menu && menu.hidden) { openMenu(); } else { closeMenu(); }
+      if (menu && menu.hidden) { openMenu(); } else { closeMenu(true); }
     });
     document.addEventListener('click', function (e) {
-      if (!e.target.closest('#theme-picker')) closeMenu();
+      var menu = document.getElementById('theme-picker-menu');
+      if (menu && !menu.hidden && !e.target.closest('#theme-picker')) closeMenu(true);
     });
   }
 

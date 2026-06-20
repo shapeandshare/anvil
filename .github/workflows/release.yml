@@ -216,11 +216,20 @@ jobs:
         run: |
           set -euo pipefail
 
+          # cz bump creates a commit, so git identity must be configured
+          # first or it fails with "empty ident name not allowed". The bump
+          # PR step branches at this commit and amends its message, so the
+          # commit must exist with a valid author here.
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
           INCREMENT="${{ steps.increment.outputs.increment }}"
           echo "Running cz bump --changelog --increment ${INCREMENT}"
 
-          # cz bump updates pyproject.toml version and appends CHANGELOG.md
-          python3 -m commitizen bump --yes --changelog --increment "${INCREMENT}"
+          # cz bump updates pyproject.toml version and appends CHANGELOG.md.
+          # --no-tag prevents a local tag that would collide with the
+          # explicit tag created later from the merged main branch.
+          python3 -m commitizen bump --yes --no-tag --changelog --increment "${INCREMENT}"
 
           NEW_VERSION=$(grep '^version =' pyproject.toml \
             | sed 's/version = "\(.*\)"/\1/')
@@ -320,12 +329,16 @@ jobs:
           VERSION="${{ steps.release-notes.outputs.version }}"
           BRANCH="ci/bump-v${VERSION}"
 
+          # Identity already set in the bump step, but set again here in
+          # case this step runs in a fresh shell context.
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+          # `cz bump` already committed the version + changelog change onto
+          # the current branch (HEAD). Create the PR branch at that commit
+          # and rewrite the message to include [skip ci] for loop prevention.
           git checkout -b "${BRANCH}"
-          git add pyproject.toml CHANGELOG.md
-          git commit -m "chore: bump version to v${VERSION}
+          git commit --amend -m "chore: bump version to v${VERSION}
 
           Automated version bump from release workflow.
 

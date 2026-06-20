@@ -9,7 +9,7 @@ tags:
   - domain/ui
 title: 'Session: Theme Picker Transparency Fix'
 type: session-log
-updated: '2026-06-19T00:00:00.000Z'
+updated: '2026-06-19T01:00:00.000Z'
 ---
 # Session: Theme Picker Transparency Fix
 
@@ -27,3 +27,7 @@ Replaced `.theme-picker__menu` background from `var(--glass-bg)` (rgba with `bac
 ## Files Changed
 
 - `anvil/api/static/css/base.css` — `.theme-picker__menu`: `background: var(--glass-bg); backdrop-filter: var(--glass-blur)` → `background: var(--surface)`
+
+## Follow-up
+
+Re-reported afterward; see [[Sessions/2026-06-19-theme-picker-transparency-recheck]]. Root cause was transparent `.theme-picker__item` backgrounds (not the container) combined with flex `gap` — documented as [[Discoveries/transparent-items-gap-trick]].

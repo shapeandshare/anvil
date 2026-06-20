@@ -1,0 +1,88 @@
+[data-skin="solarflare"] {
+  --bg:             #08060a;
+  --surface:        #110c16;
+  --surface-2:      #1a1422;
+  --grouped-bg:     #060408;
+  --separator:      #342a40;
+  --text:           #f0e6ff;
+  --text-secondary: #cebfe3;
+  --text-tertiary:  #8f7aa8;
+  --text-bright:    #ffffff;
+
+  --accent:         #ff7b24;
+  --accent-green:   #4dd9a0;
+  --accent-red:     #ff5044;
+  --accent-orange:  #ff7b24;
+  --accent-yellow:  #ffc85a;
+  --accent-purple:  #b07cff;
+  --accent-cyan:    #5cc4e0;
+
+  --glass-bg:       rgba(17, 12, 22, 0.85);
+  --glass-border:   rgba(255, 123, 36, 0.14);
+
+  --shadow-sm:      0 1px 2px rgba(0, 0, 0, 0.6);
+  --shadow-md:      0 2px 10px rgba(0, 0, 0, 0.6);
+  --shadow-lg:      0 8px 28px rgba(0, 0, 0, 0.7);
+
+  --flare: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="solarflare"] * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+[data-skin="solarflare"] .app-main::before {
+  content: "";
+  position: fixed;
+  left: 50%;
+  bottom: -15vh;
+  width: 80vw;
+  height: 50vh;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    50% 50% at 50% 100%,
+    rgba(255, 200, 90, calc(0.02 + var(--flare, 0) * 0.30)),
+    rgba(255, 123, 36, calc(0.01 + var(--flare, 0) * 0.20)) 40%,
+    transparent 70%
+  );
+  transition: background var(--dur-slow) var(--ease);
+}
+
+[data-skin="solarflare"] .app-main::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 41;
+  background: radial-gradient(
+    circle at 50% 60%,
+    rgba(255, 255, 220, 0.6),
+    transparent 35%
+  );
+  opacity: 0;
+  animation: flare-burst calc(4s - var(--flare, 0) * 3.5s) ease-out infinite;
+}
+
+@keyframes flare-burst {
+  0%, 100% { opacity: 0; }
+  2%       { opacity: calc(var(--flare, 0) * 0.35); }
+  5%       { opacity: calc(var(--flare, 0) * 0.10); }
+}
+
+[data-skin="solarflare"][data-solar-state="coronal"] .app-main::before {
+  background: radial-gradient(
+    50% 50% at 50% 100%,
+    rgba(255, 80, 68, 0.35),
+    rgba(255, 50, 30, 0.20) 40%,
+    transparent 70%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="solarflare"] .app-main::after { display: none; }
+}

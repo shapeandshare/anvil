@@ -1,0 +1,112 @@
+[data-skin="loom"] {
+  --bg:             #0c0a10;
+  --surface:        #161226;
+  --surface-2:      #1e1a34;
+  --grouped-bg:     #0a0812;
+  --separator:      #302c4a;
+  --text:           #eae2ff;
+  --text-secondary: #c8bce8;
+  --text-tertiary:  #8078a8;
+  --text-bright:    #ffffff;
+
+  --accent:         #b890f0;
+  --accent-green:   #50d4a8;
+  --accent-red:     #ff6a6a;
+  --accent-orange:  #ff9a4a;
+  --accent-yellow:  #ffcc6a;
+  --accent-purple:  #b890f0;
+  --accent-cyan:    #60cce0;
+
+  --glass-bg:       rgba(22, 18, 38, 0.85);
+  --glass-border:   rgba(184, 144, 240, 0.14);
+
+  --weft: 0;
+}
+
+[data-skin="loom"][data-theme="light"] {
+  --bg:             #eeeaf8;
+  --surface:        #ffffff;
+  --surface-2:      #e0daf0;
+  --grouped-bg:     #eeeaf8;
+  --separator:      #c8c0e0;
+  --text:           #141030;
+  --text-secondary: #343058;
+  --text-tertiary:  #606088;
+  --text-bright:    #141030;
+
+  --accent:         #6848c4;
+  --accent-green:   #1aa07a;
+  --accent-purple:  #6848c4;
+
+  --glass-bg:       rgba(255, 255, 255, 0.78);
+  --glass-border:   rgba(104, 72, 196, 0.16);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="loom"] * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+[data-skin="loom"] .app-main::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 2px,
+    rgba(184, 144, 240, 0.04) 2px 3px,
+    transparent 3px 40px
+  );
+}
+
+[data-skin="loom"] .app-main::after {
+  content: "";
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  opacity: calc(0.05 + var(--weft, 0) * 0.25);
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0 1px,
+    rgba(184, 144, 240, calc(0.15 + var(--weft, 0) * 0.30)) 1px 2px,
+    transparent 2px calc(4px + (1 - var(--weft, 0)) * 12px)
+  );
+  transition: opacity var(--dur-slow) var(--ease), background var(--dur-slow) var(--ease);
+}
+
+[data-skin="loom"][data-theme="light"] .app-main::after {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0 1px,
+    rgba(104, 72, 196, calc(0.08 + var(--weft, 0) * 0.20)) 1px 2px,
+    transparent 2px calc(4px + (1 - var(--weft, 0)) * 12px)
+  );
+}
+
+[data-skin="loom"][data-loom-state="snag"] .app-main::after {
+  opacity: 0.5;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0 1px,
+    var(--accent-red) 1px 3px,
+    transparent 3px 15px
+  );
+  animation: loom-snag 0.3s steps(2) 3;
+}
+
+@keyframes loom-snag {
+  from { transform: translateX(0); }
+  to   { transform: translateX(4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="loom"] .app-main::after { display: none; }
+}

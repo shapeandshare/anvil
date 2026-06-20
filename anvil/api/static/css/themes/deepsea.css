@@ -1,0 +1,112 @@
+[data-skin="deepsea"] {
+  --bg:             #020b14;
+  --surface:        #061627;
+  --surface-2:      #0a1d34;
+  --grouped-bg:     #010912;
+  --separator:      #143554;
+  --text:           #d6f0ff;
+  --text-secondary: #aad0e8;
+  --text-tertiary:  #6896b8;
+  --text-bright:    #ffffff;
+
+  --accent:         #00d4b3;
+  --accent-green:   #2ed9a0;
+  --accent-red:     #ff6b70;
+  --accent-orange:  #ffa85c;
+  --accent-yellow:  #ffd966;
+  --accent-purple:  #7ab0ff;
+  --accent-cyan:    #00d4b3;
+
+  --glass-bg:       rgba(6, 22, 39, 0.85);
+  --glass-border:   rgba(0, 212, 179, 0.14);
+
+  --depth: 0.3;
+  --glow: 0;
+}
+
+[data-skin="deepsea"][data-theme="light"] {
+  --bg:             #e8f4fd;
+  --surface:        #ffffff;
+  --surface-2:      #d6ecf7;
+  --grouped-bg:     #e8f4fd;
+  --separator:      #b4d6e8;
+  --text:           #042438;
+  --text-secondary: #1e4a62;
+  --text-tertiary:  #4c748c;
+  --text-bright:    #042438;
+
+  --accent:         #009f88;
+  --accent-green:   #18a07a;
+  --accent-purple:  #4078c4;
+
+  --glass-bg:       rgba(255, 255, 255, 0.78);
+  --glass-border:   rgba(0, 159, 136, 0.16);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="deepsea"] * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+[data-skin="deepsea"] .app-main::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(0, 40, 60, calc(0.10 + (1 - var(--depth, 0.3)) * 0.35)) 40%,
+    rgba(0, 10, 20, calc(0.20 + (1 - var(--depth, 0.3)) * 0.45)) 100%
+  );
+  transition: background var(--dur-slow) var(--ease);
+}
+
+[data-skin="deepsea"] .app-main::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: calc(0.02 + var(--depth, 0.3) * 0.20);
+  background-image:
+    radial-gradient(2px 2px at 15% 40%, rgba(0, 212, 179, 0.6)),
+    radial-gradient(3px 3px at 35% 65%, rgba(0, 212, 179, 0.4)),
+    radial-gradient(2px 2px at 55% 30%, rgba(0, 212, 179, 0.5)),
+    radial-gradient(2px 2px at 75% 70%, rgba(0, 212, 179, 0.3)),
+    radial-gradient(3px 3px at 90% 45%, rgba(0, 212, 179, 0.5)),
+    radial-gradient(2px 2px at 25% 80%, rgba(0, 212, 179, 0.4)),
+    radial-gradient(2px 2px at 65% 20%, rgba(0, 212, 179, 0.3));
+  background-size: 200% 200%;
+  animation: deepsea-drift calc(30s - var(--depth, 0.3) * 20s) linear infinite;
+}
+
+[data-skin="deepsea"][data-deepsea-state="abyss"] .app-main::before {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(255, 80, 80, 0.08) 40%,
+    rgba(120, 10, 10, 0.20) 100%
+  );
+}
+
+[data-skin="deepsea"][data-deepsea-flash="true"] .app-main::after {
+  animation: deepsea-flash 0.6s ease-out;
+}
+
+@keyframes deepsea-drift {
+  from { background-position: 0 0; }
+  to   { background-position: 100% 100%; }
+}
+
+@keyframes deepsea-flash {
+  0%   { opacity: 0.5; }
+  100% { opacity: calc(0.02 + var(--depth, 0.3) * 0.20); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="deepsea"] .app-main::after { display: none; }
+}

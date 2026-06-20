@@ -4,6 +4,7 @@ aliases:
 code-refs:
   - anvil/api/templates/archetypes/models.html
   - anvil/api/templates/archetypes/playground.html
+  - anvil/api/templates/archetypes/model_detail.html
 created: '2026-06-19'
 related: []
 session: opencode/sunny-meadow
@@ -11,14 +12,14 @@ source: agent
 status: draft
 summary: >-
   Changed model name link from detail page to play page for single-click
-  inference access
+  inference access; added Play button to model detail page
 tags:
   - type/discovery
   - domain/ui
   - status/draft
 title: Models-Page Single-Click Play Navigation
 type: discovery
-updated: '2026-06-19'
+updated: '2026-06-20'
 ---
 # Models-Page Single-Click Play Navigation
 
@@ -40,7 +41,12 @@ The playground already supports URL-based pre-selection (`model_id` query param)
 
 The "View" (detail page) and "Play" buttons remain as secondary actions for users who need inspection or an explicit call to action.
 
+## Extension: Model Detail Page Play Button
+
+The same pattern was applied to the model detail page (`model_detail.html`). The page previously had no Play button at all — after inspecting a model's architecture and version history, users had to navigate back to the models table to reach the playground. Added a `btn-primary "Play"` link below the model name/description that links to `/v1/inference-page?model_id={id}`, giving a direct path from detail inspection to interaction.
+
 ## References
 
 - `anvil/api/templates/archetypes/models.html:67` — model name link target changed
 - `anvil/api/templates/archetypes/playground.html:113-125` — URL param pre-selection logic
+- `anvil/api/templates/archetypes/model_detail.html:63` — Play button added below model header

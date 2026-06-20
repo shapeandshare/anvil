@@ -1,0 +1,79 @@
+[data-skin="glacier"] {
+  --bg:             #0a141c;
+  --surface:        #12212e;
+  --surface-2:      #1a2d3d;
+  --grouped-bg:     #08111a;
+  --separator:      #294356;
+  --text:           #e6f3fb;
+  --text-secondary: #bcd6e6;
+  --text-tertiary:  #83a0b3;
+  --text-bright:    #ffffff;
+
+  --accent:         #7fd4e8;
+  --accent-green:   #6fdcc4;
+  --accent-red:     #ff7d8a;
+  --accent-orange:  #f3b277;
+  --accent-yellow:  #ffe2a0;
+  --accent-purple:  #9cb6ff;
+  --accent-cyan:    #7fd4e8;
+
+  --glass-bg:       rgba(18, 33, 46, 0.84);
+  --glass-border:   rgba(127, 212, 232, 0.18);
+
+  --freeze: 0.3;
+}
+
+[data-skin="glacier"][data-theme="light"] {
+  --bg:             #eef6fa;
+  --surface:        #ffffff;
+  --surface-2:      #deecf3;
+  --grouped-bg:     #eef6fa;
+  --separator:      #c4dae5;
+  --text:           #0c2733;
+  --text-secondary: #335160;
+  --text-tertiary:  #5f7d8b;
+  --text-bright:    #0c2733;
+
+  --accent:         #2a8bab;
+  --accent-green:   #1ba089;
+  --accent-purple:  #5a6fc0;
+
+  --glass-bg:       rgba(255, 255, 255, 0.8);
+  --glass-border:   rgba(42, 139, 171, 0.16);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="glacier"] * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+[data-skin="glacier"] .app-main::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: calc(0.25 + var(--freeze, 0.3) * 0.6);
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgba(127, 212, 232, 0.18), transparent 45%),
+    radial-gradient(120% 80% at 100% 0%, rgba(156, 182, 255, 0.15), transparent 45%),
+    radial-gradient(120% 80% at 0% 100%, rgba(111, 220, 196, 0.12), transparent 45%);
+  transition: opacity var(--dur-slow) var(--ease);
+}
+
+[data-skin="glacier"] .app-main::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: calc(var(--freeze, 0.3) * 0.5);
+  background: repeating-linear-gradient(
+    62deg,
+    transparent 0 40px,
+    rgba(200, 235, 245, 0.10) 40px 41px
+  );
+  transition: opacity var(--dur-slow) var(--ease);
+}

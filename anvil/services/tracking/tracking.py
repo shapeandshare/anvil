@@ -1079,11 +1079,14 @@ class TrackingService:
             try:
                 latest_versions = await loop.run_in_executor(
                     None,
-                    lambda name=rm.name: client.get_latest_versions(name),
+                    lambda name=rm.name: client.search_model_versions(f"name='{name}'"),
                 )
                 if not latest_versions:
                     continue
-                latest = latest_versions[0]
+                sorted_versions = sorted(
+                    latest_versions, key=lambda v: int(v.version), reverse=True
+                )
+                latest = sorted_versions[0]
 
                 # Get run data for final_loss
                 final_loss = None
