@@ -4,25 +4,34 @@ Stale notes (updated_date -> created_date -> last_modified fallback).
 Temporal coherence of directed edges (created_date deltas).
 """
 
+from __future__ import annotations
+
 from datetime import date
+from typing import TYPE_CHECKING
 
-import networkx as nx
+if TYPE_CHECKING:
+    import networkx as nx
 
-from .types import NoteMetadata, TemporalMetrics
+from ._types import NoteMetadata, TemporalMetrics
 
 
 def compute_temporal(
-    G: nx.DiGraph, notes: dict[str, NoteMetadata]
+    G: nx.DiGraph,
+    notes: dict[str, NoteMetadata],
 ) -> TemporalMetrics:
     """Compute temporal decay metrics for the vault graph.
 
-    Args:
-        G: Directed wikilink graph (stem -> stem edges).
-        notes: Mapping from stem to NoteMetadata.
+    Parameters
+    ----------
+    G : nx.DiGraph
+        Directed wikilink graph (stem -> stem edges).
+    notes : dict[str, NoteMetadata]
+        Mapping from stem to ``NoteMetadata``.
 
-    Returns:
-        TemporalMetrics with stale notes, dead weight, temporal deltas,
-        and coherence stats.
+    Returns
+    -------
+    TemporalMetrics
+        Stale notes, dead weight, temporal deltas, and coherence stats.
     """
     metrics = TemporalMetrics()
     today = date.today()
@@ -83,9 +92,6 @@ def compute_temporal(
         metrics.low_coherence_pct = (
             (low_coherence / total_links) * 100 if total_links > 0 else 0.0
         )
-    else:
-        metrics.high_coherence_pct = 0.0
-        metrics.low_coherence_pct = 0.0
 
     return metrics
 
@@ -94,15 +100,19 @@ def _get_staleness_date(meta: NoteMetadata) -> date | None:
     """Get the date to use for staleness determination using fallback chain.
 
     Fallback chain:
-    1. updated_date from frontmatter
-    2. created_date from frontmatter
-    3. last_modified (filesystem mtime)
+    1. ``updated_date`` from frontmatter
+    2. ``created_date`` from frontmatter
+    3. ``last_modified`` (filesystem mtime)
 
-    Args:
-        meta: NoteMetadata for the note.
+    Parameters
+    ----------
+    meta : NoteMetadata
+        Note metadata to check.
 
-    Returns:
-        Date object or None if no date is available.
+    Returns
+    -------
+    date or None
+        The staleness reference date, or ``None`` if unavailable.
     """
     if meta.updated_date is not None:
         return meta.updated_date

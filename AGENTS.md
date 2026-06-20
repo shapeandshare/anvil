@@ -292,6 +292,8 @@ SomeException
 - N/A — no new persistence. (Coverage baseline stored as a config value in `pyproject.toml`; gate config stored in workflow YAML.) (013-dx-harness-hardening)
 - Python 3.11+ (backend), TypeScript 5.x (CDK infrastructure), JavaScript ES6+ (frontend unchanged) + FastAPI (existing), SQLAlchemy[asyncio] (existing), `boto3` (new, SaaS extra), `redis-py` (new, SaaS extra), `aws-jwt-verify` (new, SaaS extra), `aws-cdk-lib` (dev only, infra package) (opencode/mighty-tiger)
 - RDS PostgreSQL (SaaS), SQLite (local), S3 (SaaS), local filesystem (local), ElastiCache Redis (SaaS, for SSE) (opencode/mighty-tiger)
+- Python 3.11+ + PyYAML (existing), networkx (optional via `anvil[vault-health]` extra) (015-graph-health-subsumption)
+- Filesystem — vault health reports written to `_meta/audit/` under vault dir (legacy behavior preserved) (015-graph-health-subsumption)
 
 ## Recent Changes
 - 002-directory-corpus-ingestion: Added Python 3.11+ + Existing project deps (FastAPI, SQLAlchemy, aiofiles) + `pathspec` (lightweight gitignore pattern matching, pure Python, no binary deps)

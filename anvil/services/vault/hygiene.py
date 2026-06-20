@@ -4,84 +4,70 @@ Tag conformity vs controlled vocabulary, near-duplicate tags,
 frontmatter completeness, phantom links, over-linking.
 """
 
+from __future__ import annotations
+
 import re
 from collections import defaultdict
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
-from .types import HygieneMetrics, NoteMetadata
+from ._types import HygieneMetrics, NoteMetadata
 
-# Controlled vocabulary constants (copied from vault_audit.py conventions)
+# Controlled vocabulary constants (mirrors docs/vault/_meta/tags.md)
 TYPE_VOCAB: set[str] = {
-    "type/principle",
-    "type/design",
-    "type/system",
-    "type/reference",
-    "type/moc",
-    "type/decision",
-    "type/discovery",
-    "type/session-log",
+    "type/principle", "type/design", "type/system", "type/reference",
+    "type/moc", "type/decision", "type/discovery", "type/session-log",
 }
 
 STATUS_VOCAB: set[str] = {
-    "status/draft",
-    "status/wip",
-    "status/reviewed",
-    "status/canonical",
+    "status/draft", "status/wip", "status/reviewed", "status/canonical",
 }
 
 DOMAIN_VOCAB: set[str] = {
-    "domain/architecture",
-    "domain/core",
-    "domain/training",
-    "domain/inference",
-    "domain/export",
-    "domain/ui",
-    "domain/database",
-    "domain/operations",
-    "domain/tooling",
-    "domain/vault",
-    "domain/governance",
-    "domain/mcp",
-    "domain/content",
+    "domain/architecture", "domain/core", "domain/training",
+    "domain/inference", "domain/export", "domain/ui", "domain/database",
+    "domain/operations", "domain/mlops", "domain/tracking",
+    "domain/infrastructure", "domain/registry", "domain/tooling",
+    "domain/vault", "domain/governance", "domain/mcp", "domain/content",
 }
 
 
 def compute_hygiene(
     notes: dict[str, NoteMetadata],
     vault_root: Path,
-    filename_index: dict[str, list[Path]] | None,
+    filename_index: dict[str, list[Path]] | None = None,
 ) -> HygieneMetrics:
     """Compute semantic hygiene metrics for the vault.
 
-    Args:
-        notes: Mapping from note stem to NoteMetadata.
-        vault_root: Path to docs/vault/.
-        filename_index: Optional pre-built index mapping wikilink stems to file paths.
+    Parameters
+    ----------
+    notes : dict[str, NoteMetadata]
+        Mapping from note stem to ``NoteMetadata``.
+    vault_root : Path
+        Path to ``docs/vault/``.
+    filename_index : dict[str, list[Path]] or None
+        Optional pre-built filename index for phantom link detection.
 
-    Returns:
-        HygieneMetrics dataclass with all hygiene checks.
+    Returns
+    -------
+    HygieneMetrics
+        All hygiene checks.
     """
     controlled_tags = _load_controlled_tags(vault_root)
 
     non_conformant_tags: list[tuple[str, str]] = []
     near_duplicate_tags: list[tuple[str, str]] = []
-    single_use_tags: list[str] = []
     missing_fields: list[tuple[str, str]] = []
     type_mismatches: list[tuple[str, str, str]] = []
     inconsistent_dates: list[tuple[str, str]] = []
     phantom_links: list[tuple[str, str]] = []
-    over_linking: list[tuple[str, str, str]] = []
 
     all_tags: dict[str, int] = defaultdict(int)
-    tag_notes: dict[str, list[str]] = defaultdict(list)
 
     for stem, note in notes.items():
         for tag in note.tags:
             all_tags[tag] += 1
-            tag_notes[tag].append(stem)
-
             if tag not in controlled_tags:
                 non_conformant_tags.append((stem, tag))
 
@@ -133,9 +119,7 @@ def compute_hygiene(
     )
 
     tag_conformity_class = _classify_percentage(tag_conformity_pct)
-    frontmatter_completeness_class = _classify_percentage(
-        frontmatter_completeness_pct
-    )
+    frontmatter_completeness_class = _classify_percentage(frontmatter_completeness_pct)
 
     return HygieneMetrics(
         non_conformant_tags=non_conformant_tags,
@@ -155,13 +139,17 @@ def compute_hygiene(
 
 
 def _load_controlled_tags(vault_root: Path) -> set[str]:
-    """Load controlled vocabulary tags from _meta/tags.md and constants.
+    """Load controlled vocabulary tags from ``_meta/tags.md`` and constants.
 
-    Args:
-        vault_root: Path to the vault root.
+    Parameters
+    ----------
+    vault_root : Path
+        Path to the vault root.
 
-    Returns:
-        Set of all controlled tag strings.
+    Returns
+    -------
+    set of str
+        All controlled tag strings.
     """
     tags: set[str] = set()
 
@@ -204,11 +192,15 @@ def _load_controlled_tags(vault_root: Path) -> set[str]:
 def _find_near_duplicate_tags(tags: list[str]) -> list[tuple[str, str]]:
     """Find near-duplicate tags based on case and Levenshtein distance.
 
-    Args:
-        tags: List of all tag strings used in the vault.
+    Parameters
+    ----------
+    tags : list of str
+        All tag strings used in the vault.
 
-    Returns:
-        List of (tag_a, tag_b) pairs that are near duplicates.
+    Returns
+    -------
+    list[tuple[str, str]]
+        (tag_a, tag_b) pairs that are near duplicates.
     """
     duplicates: list[tuple[str, str]] = []
     seen_lower: set[str] = set()
@@ -236,18 +228,23 @@ def _find_near_duplicate_tags(tags: list[str]) -> list[tuple[str, str]]:
 def _levenshtein_distance(s1: str, s2: str) -> int:
     """Compute Levenshtein edit distance between two strings.
 
-    Args:
-        s1: First string.
-        s2: Second string.
+    Parameters
+    ----------
+    s1 : str
+        First string.
+    s2 : str
+        Second string.
 
-    Returns:
-        Edit distance (number of insertions/deletions/substitutions).
+    Returns
+    -------
+    int
+        Edit distance (insertions/deletions/substitutions).
     """
     if len(s1) < len(s2):
         return _levenshtein_distance(s2, s1)
     if len(s2) == 0:
         return len(s1)
-    previous_row = range(len(s2) + 1)
+    previous_row: list[int] = list(range(len(s2) + 1))
     for i, c1 in enumerate(s1):
         current_row = [i + 1]
         for j, c2 in enumerate(s2):
@@ -262,10 +259,14 @@ def _levenshtein_distance(s1: str, s2: str) -> int:
 def _is_valid_date(value: Any) -> bool:
     """Check if a value is a valid date string or date object.
 
-    Args:
-        value: Value to check.
+    Parameters
+    ----------
+    value : Any
+        Value to check.
 
-    Returns:
+    Returns
+    -------
+    bool
         True if the value is a valid date.
     """
     if isinstance(value, (date, datetime)):
@@ -283,18 +284,24 @@ def _is_valid_date(value: Any) -> bool:
 
 
 def _find_over_linking(
-    notes: dict[str, NoteMetadata], vault_root: Path
+    notes: dict[str, NoteMetadata],
+    vault_root: Path,
 ) -> list[tuple[str, str, str]]:
     """Find over-linking within sections of notes.
 
     Detects duplicate wikilinks in the same section of a note.
 
-    Args:
-        notes: All scanned notes.
-        vault_root: Root of the vault (unused, kept for API compatibility).
+    Parameters
+    ----------
+    notes : dict[str, NoteMetadata]
+        All scanned notes.
+    vault_root : Path
+        Root of the vault (unused, kept for API compatibility).
 
-    Returns:
-        List of (note_stem, section, target) for over-linked targets.
+    Returns
+    -------
+    list[tuple[str, str, str]]
+        (note_stem, section, target) for over-linked targets.
     """
     over_linking: list[tuple[str, str, str]] = []
     wikilink_pattern = re.compile(r"\[\[([^\]]+)\]\]")
@@ -305,10 +312,9 @@ def _find_over_linking(
         except OSError:
             continue
 
-        # Strip YAML frontmatter
         fm_match = re.match(r"^---\s*\n.*?\n---\s*\n", content, re.DOTALL)
         if fm_match:
-            content = content[fm_match.end() :]
+            content = content[fm_match.end():]
 
         sections = re.split(r"^(##+ .+)$", content, flags=re.MULTILINE)
         current_section = "root"
@@ -335,11 +341,15 @@ def _find_over_linking(
 def _classify_percentage(pct: float) -> str:
     """Classify a percentage into healthy/warning/critical.
 
-    Args:
-        pct: Percentage value (0-100).
+    Parameters
+    ----------
+    pct : float
+        Percentage value (0-100).
 
-    Returns:
-        Classification string.
+    Returns
+    -------
+    str
+        ``healthy``, ``warning``, or ``critical``.
     """
     if pct >= 100:
         return "healthy"

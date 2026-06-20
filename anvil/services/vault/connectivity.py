@@ -1,33 +1,48 @@
-"""Connectivity metrics and wikilink graph builder.
+"""Connectivity metrics for vault wikilink graph analysis.
 
 FR-001-FR-008: inbound/outbound counts, orphan/dead-end detection,
 link density, bidirectional completeness, largest component.
 """
 
-import networkx as nx
+from __future__ import annotations
 
-from .types import ConnectivityMetrics, NoteMetadata
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import networkx as nx
+
+from ._types import ConnectivityMetrics, NoteMetadata
+
+# Exempt note types and names for orphan/dead-end detection
+EXEMPT_ORPHAN_TYPES: set[str] = {"type/moc", "type/session-log"}
+EXEMPT_ORPHAN_NAMES: set[str] = {"index", "README"}
+EXEMPT_DEADEND_TYPES: set[str] = {"type/moc", "type/session-log"}
+EXEMPT_DEADEND_NAMES: set[str] = {"index", "README"}
 
 
 def compute_connectivity(
-    G: "nx.DiGraph",
+    G: nx.DiGraph,
     notes: dict[str, NoteMetadata],
 ) -> ConnectivityMetrics:
     """Compute connectivity metrics: orphans, dead ends, density, component, bidirectionals.
 
-    Args:
-        G: Directed wikilink graph (node stems with edges for links).
-        notes: Mapping from stem to NoteMetadata.
+    Parameters
+    ----------
+    G : nx.DiGraph
+        Directed wikilink graph (node stems with edges for links).
+    notes : dict[str, NoteMetadata]
+        Mapping from stem to ``NoteMetadata``.
 
-    Returns:
-        ConnectivityMetrics dataclass with all connectivity calculations.
+    Returns
+    -------
+    ConnectivityMetrics
+        All connectivity calculations.
     """
+    import networkx as nx
+
     metrics = ConnectivityMetrics()
 
     # --- Orphan detection ---
-    EXEMPT_ORPHAN_TYPES = {"type/moc", "type/session-log"}
-    EXEMPT_ORPHAN_NAMES = {"index", "README"}
-
     for stem in G.nodes():
         meta = notes.get(stem)
         if meta is None:
@@ -46,9 +61,6 @@ def compute_connectivity(
     )
 
     # --- Dead end detection ---
-    EXEMPT_DEADEND_TYPES = {"type/moc", "type/session-log"}
-    EXEMPT_DEADEND_NAMES = {"index", "README"}
-
     for stem in G.nodes():
         meta = notes.get(stem)
         if meta is None:
@@ -67,7 +79,7 @@ def compute_connectivity(
     )
 
     # --- Link density ---
-    total_out = sum(1 for _ in G.edges())
+    total_out = G.number_of_edges()
     if len(G.nodes()) > 0:
         metrics.link_density_avg = total_out / len(G.nodes())
     if metrics.link_density_avg >= 3:
@@ -96,8 +108,7 @@ def compute_connectivity(
 
     for u, v in G.edges():
         if u == v:
-            continue  # Skip self-loops
-
+            continue
         if _is_reciprocal_exempt(u, v, notes):
             continue
 
@@ -128,25 +139,23 @@ def compute_connectivity(
 
 
 def _is_spec_subfile(meta: NoteMetadata) -> bool:
-    """Check if a note is a spec subfile.
+    """Check if a note is a spec subfile (intentional leaf, not a navigation target).
 
-    Spec directories are organized as subdirectories within a vault with
-    a root note and subfiles (plans, tasks, etc.). Subfiles are intentional
-    leaves: they document a spec but are not navigation targets. Exempting
-    them from orphan/dead-end detection prevents noise.
+    Parameters
+    ----------
+    meta : NoteMetadata
+        Note metadata to check.
 
-    Args:
-        meta: NoteMetadata for the note to check.
-
-    Returns:
-        True if the note is a spec subfile (not the root spec note).
+    Returns
+    -------
+    bool
+        True if the note is a spec subfile.
     """
     try:
         parts = meta.path.parts
         specs_idx = parts.index("Specs")
     except ValueError:
         return False
-    # Need at least Specs/NNN Title/filename
     if specs_idx + 2 >= len(parts):
         return False
     spec_dir = parts[specs_idx + 1]
@@ -155,16 +164,24 @@ def _is_spec_subfile(meta: NoteMetadata) -> bool:
 
 
 def _is_exempt(
-    meta: NoteMetadata, exempt_types: set[str], exempt_names: set[str]
+    meta: NoteMetadata,
+    exempt_types: set[str],
+    exempt_names: set[str],
 ) -> bool:
     """Check if a note is exempt from a metric based on type, name, or path.
 
-    Args:
-        meta: NoteMetadata for the note.
-        exempt_types: Set of type strings to exempt (e.g. {"type/moc"}).
-        exempt_names: Set of stem names to exempt (e.g. {"index"}).
+    Parameters
+    ----------
+    meta : NoteMetadata
+        Note metadata.
+    exempt_types : set of str
+        Type strings to exempt.
+    exempt_names : set of str
+        Stem names to exempt.
 
-    Returns:
+    Returns
+    -------
+    bool
         True if the note should be exempted.
     """
     if meta.stem in exempt_names:
@@ -180,16 +197,24 @@ def _is_exempt(
 
 
 def _count_exempt(
-    notes: dict[str, NoteMetadata], exempt_types: set[str], exempt_names: set[str]
+    notes: dict[str, NoteMetadata],
+    exempt_types: set[str],
+    exempt_names: set[str],
 ) -> int:
     """Count how many notes are exempt from a metric.
 
-    Args:
-        notes: All scanned notes.
-        exempt_types: Set of type strings to exempt.
-        exempt_names: Set of stem names to exempt.
+    Parameters
+    ----------
+    notes : dict[str, NoteMetadata]
+        All scanned notes.
+    exempt_types : set of str
+        Type strings to exempt.
+    exempt_names : set of str
+        Stem names to exempt.
 
-    Returns:
+    Returns
+    -------
+    int
         Count of exempt notes.
     """
     count = 0
@@ -202,24 +227,24 @@ def _count_exempt(
 
 
 def _is_reciprocal_exempt(
-    source: str, target: str, notes: dict[str, NoteMetadata]
+    source: str,
+    target: str,
+    notes: dict[str, NoteMetadata],
 ) -> bool:
-    """Check if a (source, target) edge should be excluded from reciprocal expectation.
+    """Check if an edge should be excluded from reciprocal expectation.
 
-    Three categories are exempt:
-    1. Target is Constitution -- foundational governance doc cited by many;
-       expecting reciprocity would produce meaningless backlinks.
-    2. Target is a thread/essay note -- outward-facing essays link to concepts;
-       concepts should not reciprocate many thread backlinks.
-    3. Source is a spec sub-artifact (plan/task/etc.) -- template-generated
-       files that link to their parent spec by design.
+    Parameters
+    ----------
+    source : str
+        Source stem of the edge.
+    target : str
+        Target stem of the edge.
+    notes : dict[str, NoteMetadata]
+        All scanned notes.
 
-    Args:
-        source: Source stem of the edge.
-        target: Target stem of the edge.
-        notes: All scanned notes.
-
-    Returns:
+    Returns
+    -------
+    bool
         True if this edge should be exempt from reciprocal expectation.
     """
     if target == "Constitution":

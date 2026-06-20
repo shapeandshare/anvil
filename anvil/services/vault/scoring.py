@@ -3,25 +3,30 @@
 Weighted health scoring based on connectivity, topological, and hygiene metrics.
 """
 
-from .types import GraphHealthReport, HealthScore
+from __future__ import annotations
+
+from ._types import GraphHealthReport, HealthScore
 
 
 def compute_health_score(report: GraphHealthReport) -> HealthScore:
     """Compute weighted health score from graph health report.
 
-    Follows FR-023 scoring table with threshold boundaries (no interpolation).
     Each component contributes weight * (1.0 for healthy, 0.5 for warning, 0.0 for critical).
     Overall score is sum of all component scores, scaled to 0-100.
 
-    Args:
-        report: Fully-populated GraphHealthReport with all metrics.
+    Parameters
+    ----------
+    report : GraphHealthReport
+        Fully-populated ``GraphHealthReport`` with all metrics.
 
-    Returns:
-        HealthScore with overall score and individual component scores.
+    Returns
+    -------
+    HealthScore
+        Overall score and individual component scores.
     """
     score = HealthScore()
 
-    # Component weights from FR-023
+    # Component weights
     weights: dict[str, float] = {
         "orphan": 0.20,
         "dead_end": 0.15,
@@ -118,7 +123,6 @@ def compute_health_score(report: GraphHealthReport) -> HealthScore:
     ]
     score.overall = sum(component_scores) * 100.0
 
-    # Populate breakdown dictionary
     score.breakdown = {
         "orphan_rate": score.orphan_score * 100.0,
         "dead_end_rate": score.dead_end_score * 100.0,

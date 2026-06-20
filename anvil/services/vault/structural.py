@@ -5,56 +5,71 @@ Inter-cluster bridge density — potential silos between communities.
 Broken cycles — isolated cycles with no external connections.
 """
 
-import networkx as nx
+from __future__ import annotations
 
-from .types import NoteMetadata, StructuralMetrics, TopologicalMetrics
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import networkx as nx
+
+from ._types import NoteMetadata, StructuralMetrics, TopologicalMetrics
+from .connectivity import _is_spec_subfile
 
 # Maximum out-degree for a note to be considered a specific-enough
 # intermediate concept (rather than a broad hub like a MOC or thread).
-# Notes with more outbound links than this are excluded from being
-# suggested as "missing intermediate" concepts in chain gap detection.
 _CHAIN_GAP_MAX_OUT_DEGREE = 8
 
 
 def compute_structural(
-    G: "nx.DiGraph",
+    G: nx.DiGraph,
     notes: dict[str, NoteMetadata],
     topological: TopologicalMetrics,
 ) -> StructuralMetrics:
     """Compute structural gap metrics: chain gaps, potential silos, broken cycles.
 
-    Args:
-        G: Directed wikilink graph (nodes = note stems).
-        notes: Stem -> NoteMetadata mapping.
-        topological: Precomputed topological metrics (contains communities).
+    Parameters
+    ----------
+    G : nx.DiGraph
+        Directed wikilink graph (nodes = note stems).
+    notes : dict[str, NoteMetadata]
+        Stem -> ``NoteMetadata`` mapping.
+    topological : TopologicalMetrics
+        Precomputed topological metrics (contains communities).
 
-    Returns:
-        StructuralMetrics with chain_gaps, potential_silos, broken_cycles.
+    Returns
+    -------
+    StructuralMetrics
+        Chain gaps, potential silos, and broken cycles.
     """
     metrics = StructuralMetrics()
 
-    # Chain gaps
     metrics.chain_gaps = _find_chain_gaps(G, notes)
-
-    # Inter-cluster bridge density
     metrics.potential_silos = _find_potential_silos(G, topological.communities)
-
-    # Broken cycles
     metrics.broken_cycles = _find_broken_cycles(G)
 
     return metrics
 
 
-def _is_hub(meta: NoteMetadata | None, out_degree: int, G: nx.DiGraph) -> bool:
+def _is_hub(
+    meta: NoteMetadata | None,
+    out_degree: int,
+    G: nx.DiGraph,
+) -> bool:
     """Check if a note is a hub too broad to be a meaningful intermediate.
 
-    Args:
-        meta: NoteMetadata for the note.
-        out_degree: Out-degree of the note in the graph.
-        G: Directed wikilink graph.
+    Parameters
+    ----------
+    meta : NoteMetadata or None
+        Note metadata.
+    out_degree : int
+        Out-degree of the note in the graph.
+    G : nx.DiGraph
+        Directed wikilink graph (unused, retained for API compat).
 
-    Returns:
-        True if the note is a hub (MOC, reference, high out-degree, or spec subfile).
+    Returns
+    -------
+    bool
+        True if the note is a hub.
     """
     if meta is None:
         return False
@@ -63,26 +78,30 @@ def _is_hub(meta: NoteMetadata | None, out_degree: int, G: nx.DiGraph) -> bool:
         return True
     if out_degree > _CHAIN_GAP_MAX_OUT_DEGREE:
         return True
-    from .scanner import _is_spec_subfile
-
     return _is_spec_subfile(meta)
 
 
 def _find_chain_gaps(
-    G: "nx.DiGraph", notes: dict[str, NoteMetadata]
+    G: nx.DiGraph,
+    notes: dict[str, NoteMetadata],
 ) -> list[tuple[str, str, str]]:
     """Find missing intermediate notes in transitive relationships.
 
-    Args:
-        G: Directed wikilink graph.
-        notes: Stem -> NoteMetadata mapping.
+    Parameters
+    ----------
+    G : nx.DiGraph
+        Directed wikilink graph.
+    notes : dict[str, NoteMetadata]
+        Stem -> ``NoteMetadata`` mapping.
 
-    Returns:
-        List of (source, target, intermediate) tuples where a chain gap exists.
+    Returns
+    -------
+    list[tuple[str, str, str]]
+        (source, target, intermediate) tuples where a chain gap exists.
     """
     pred_cache = {node: set(G.predecessors(node)) for node in G.nodes()}
-
     chain_gaps: list[tuple[str, str, str]] = []
+
     for a in G.nodes():
         successors = list(G.successors(a))
         pred_a = pred_cache[a]
@@ -106,21 +125,24 @@ def _find_chain_gaps(
 
 
 def _find_potential_silos(
-    G: "nx.DiGraph", communities: list[list[str]]
+    G: nx.DiGraph,
+    communities: list[list[str]],
 ) -> list[tuple[int, int, float]]:
     """Find potential silos between clusters based on bridge density.
 
-    For each pair of clusters (ci, cj), count bridging notes that have
-    links to members of BOTH clusters. Compute bridge density as:
-    bridging_notes / min(len(ci), len(cj)). If density < 0.02 (< 2%),
-    flag as potential silo.
+    If bridge density < 0.02 (< 2%), flag as potential silo.
 
-    Args:
-        G: Directed wikilink graph.
-        communities: List of clusters, each cluster is list of note stems.
+    Parameters
+    ----------
+    G : nx.DiGraph
+        Directed wikilink graph.
+    communities : list[list[str]]
+        List of clusters, each cluster is list of note stems.
 
-    Returns:
-        List of (cluster_i, cluster_j, density) tuples where density < 0.02.
+    Returns
+    -------
+    list[tuple[int, int, float]]
+        (cluster_i, cluster_j, density) tuples where density < 0.02.
     """
     potential_silos: list[tuple[int, int, float]] = []
 
@@ -189,12 +211,18 @@ def _find_potential_silos(
 def _find_broken_cycles(G: nx.DiGraph) -> list[list[str]]:
     """Find isolated cycles (<=6 nodes) with no external edges.
 
-    Args:
-        G: Directed wikilink graph.
+    Parameters
+    ----------
+    G : nx.DiGraph
+        Directed wikilink graph.
 
-    Returns:
+    Returns
+    -------
+    list[list[str]]
         List of cycles, where each cycle is a list of note stems.
     """
+    import networkx as nx
+
     broken_cycles: list[list[str]] = []
 
     try:
