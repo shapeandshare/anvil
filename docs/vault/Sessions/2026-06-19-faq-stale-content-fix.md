@@ -30,6 +30,12 @@ Critical review and correction of three out-of-date FAQ items on the `/v1/learn/
 
 3. **"What if I change the dataset?"** — Same stale `4,192 parameters` → same fix.
 
-## Key Discovery
+## Addendum (second pass)
 
-The FAQ page had a self-contradiction: "Why is it so slow?" said no GPU acceleration, while "Can I train on GPU, or only CPU?" (same page) correctly described dual backends. The parameter count was also inconsistent across items — only the ChatGPT FAQ used the correct `4,192+` form while two others were stuck at the old `4,192`.
+4. **"Is there a glossary of terms?"** — The Glossary link at line 212 pointed to `/v1/learn/faq` (the FAQ page itself). Dead self-referential link. Created `/v1/learn/glossary` route with 47 terms rendered as collapsible entries, added glossary entry to `LEARNING_ARC`, and fixed the FAQ link.
+
+## Key Discoveries
+
+1. **Self-contradiction**: "Why is it so slow?" said no GPU acceleration, while "Can I train on GPU, or only CPU?" (same page) correctly described dual backends.
+2. **Stale parameter count**: Only the ChatGPT FAQ used the correct `4,192+` form while two others were stuck at the old `4,192`.
+3. **Dead self-referential link**: The Glossary link pointed to the FAQ page itself. No glossary route existed despite the FAQ claiming one was "accessible from the learning page."
