@@ -1,27 +1,39 @@
-"""Topological analysis of vault wikilink graph.
+"""Topological analysis for vault wikilink graph.
 
 PageRank authority, betweenness centrality bridges,
 Louvain community detection, information sink detection.
 """
 
-import networkx as nx
+from __future__ import annotations
 
-from .types import NoteMetadata, TopologicalMetrics
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import networkx as nx
+
+from ._types import NoteMetadata, TopologicalMetrics
 
 
 def compute_topological(
-    G: "nx.DiGraph",
+    G: nx.DiGraph,
     notes: dict[str, NoteMetadata],
 ) -> TopologicalMetrics:
     """Compute topological metrics: PageRank, betweenness, communities, sinks.
 
-    Args:
-        G: Directed wikilink graph.
-        notes: Mapping from stem to NoteMetadata.
+    Parameters
+    ----------
+    G : nx.DiGraph
+        Directed wikilink graph.
+    notes : dict[str, NoteMetadata]
+        Mapping from stem to ``NoteMetadata``.
 
-    Returns:
-        TopologicalMetrics with all topology calculations.
+    Returns
+    -------
+    TopologicalMetrics
+        All topology calculations.
     """
+    import networkx as nx
+
     metrics = TopologicalMetrics()
 
     # --- PageRank authority ---
@@ -96,18 +108,23 @@ def compute_topological(
 
 
 def _community_has_moc(
-    community: list[str], notes: dict[str, NoteMetadata]
+    community: list[str],
+    notes: dict[str, NoteMetadata],
 ) -> bool:
     """Check if a community has a Map of Content node.
 
-    A community needs a MOC if it has >=5 members. Checks both note_type
-    field and type/moc or type/spec tags.
+    A community needs a MOC if it has >=5 members.
 
-    Args:
-        community: List of note stems in the community.
-        notes: Mapping from stem to NoteMetadata.
+    Parameters
+    ----------
+    community : list of str
+        List of note stems in the community.
+    notes : dict[str, NoteMetadata]
+        Mapping from stem to ``NoteMetadata``.
 
-    Returns:
+    Returns
+    -------
+    bool
         True if the community has a MOC.
     """
     for stem in community:

@@ -2,20 +2,20 @@
 
 Ranks missing reciprocal links by a weighted ensemble of structural
 (Adamic-Adar), content (TF-IDF cosine), and community (Louvain) signals.
-Supports dry-run (ranked table) and --fix mode (auto-insert reciprocals).
+Supports dry-run (ranked table) and ``--fix`` mode (auto-insert reciprocals).
 """
 
+from __future__ import annotations
+
 import json
+import re
 import subprocess
 from pathlib import Path
 from typing import Any
 
-from .types import LinkPredictionResult, NoteMetadata, ScoredPair
+from ._types import LinkPredictionResult, NoteMetadata, ScoredPair
 
-# ---------------------------------------------------------------------------
 # Configuration
-# ---------------------------------------------------------------------------
-
 ENSEMBLE_WEIGHTS: dict[str, float] = {
     "adamic_adar": 0.4,
     "community_match": 0.3,
@@ -27,25 +27,26 @@ TOP_N = 20
 STATE_FILE = "_meta/audit/link_prediction_state.json"
 
 
-# ---------------------------------------------------------------------------
-# Signal computation
-# ---------------------------------------------------------------------------
-
-
 def compute_adamic_adar(
     graph: Any,
     candidates: list[tuple[str, str]],
 ) -> dict[tuple[str, str], float]:
     """Compute Adamic-Adar index for each candidate pair.
 
-    Args:
-        graph: Directed wikilink graph.
-        candidates: List of (source, target) pairs to score.
+    Parameters
+    ----------
+    graph : nx.DiGraph
+        Directed wikilink graph.
+    candidates : list[tuple[str, str]]
+        (source, target) pairs to score.
 
-    Returns:
-        Dict mapping (source, target) -> score (0-1 normalized via tanh).
+    Returns
+    -------
+    dict[tuple[str, str], float]
+        Mapping from (source, target) -> score (0-1 normalized via tanh).
     """
     import math
+
     import networkx as nx
 
     undirected = graph.to_undirected()
@@ -67,20 +68,24 @@ def compute_tfidf(
 ) -> dict[tuple[str, str], float]:
     """Compute TF-IDF cosine similarity between each candidate pair's body text.
 
-    Args:
-        notes: Stem -> NoteMetadata mapping.
-        candidates: List of (source, target) pairs to score.
+    Parameters
+    ----------
+    notes : dict[str, NoteMetadata]
+        Stem -> ``NoteMetadata`` mapping.
+    candidates : list[tuple[str, str]]
+        (source, target) pairs to score.
 
-    Returns:
-        Dict mapping (source, target) -> cosine similarity (0-1).
-        Returns empty dict if scikit-learn is not installed (signal reweights).
+    Returns
+    -------
+    dict[tuple[str, str], float]
+        (source, target) -> cosine similarity (0-1).
+        Returns empty dict if scikit-learn is unavailable (signal reweights).
     """
     try:
         from sklearn.feature_extraction.text import TfidfVectorizer
         from sklearn.metrics.pairwise import cosine_similarity
     except ImportError:
         return {}
-    import re
 
     unique_stems: set[str] = set()
     for u, v in candidates:
@@ -99,7 +104,7 @@ def compute_tfidf(
             stem_text[stem] = ""
             continue
         fm_match = re.match(r"^---\s*\n.*?\n---\s*\n", content, re.DOTALL)
-        body = content[fm_match.end() :] if fm_match else content
+        body = content[fm_match.end():] if fm_match else content
         stem_text[stem] = body.strip()
 
     if not stem_text:
@@ -136,22 +141,21 @@ def compute_tfidf(
 def _build_community_lookup(communities: list[list[str]]) -> dict[str, int]:
     """Convert communities into {node: community_id} lookup.
 
-    Args:
-        communities: List of clusters, each cluster is list of note stems.
+    Parameters
+    ----------
+    communities : list[list[str]]
+        List of clusters, each cluster is list of note stems.
 
-    Returns:
-        Dict mapping note stem -> community index.
+    Returns
+    -------
+    dict[str, int]
+        Note stem -> community index.
     """
     lookup: dict[str, int] = {}
     for cid, cluster in enumerate(communities):
         for node in cluster:
             lookup[node] = cid
     return lookup
-
-
-# ---------------------------------------------------------------------------
-# Ensemble scoring
-# ---------------------------------------------------------------------------
 
 
 def compute_link_prediction(
@@ -163,15 +167,23 @@ def compute_link_prediction(
 ) -> LinkPredictionResult:
     """Score all missing reciprocal pairs and return a ranked result.
 
-    Args:
-        graph: Directed wikilink graph.
-        notes: Stem -> NoteMetadata mapping.
-        communities: List of Louvain clusters from topology phase.
-        missing_reciprocals: List of (source, target) pairs needing backlinks.
-        weights: Optional override for ensemble weights.
+    Parameters
+    ----------
+    graph : nx.DiGraph
+        Directed wikilink graph.
+    notes : dict[str, NoteMetadata]
+        Stem -> ``NoteMetadata`` mapping.
+    communities : list[list[str]]
+        Louvain clusters from topology phase.
+    missing_reciprocals : list[tuple[str, str]]
+        (source, target) pairs needing backlinks.
+    weights : dict[str, float] or None
+        Optional override for ensemble weights.
 
-    Returns:
-        LinkPredictionResult with scored_pairs sorted by ensemble score descending.
+    Returns
+    -------
+    LinkPredictionResult
+        Scored pairs sorted by ensemble score descending.
     """
     if not missing_reciprocals:
         return LinkPredictionResult()
@@ -217,73 +229,89 @@ def compute_link_prediction(
         )
 
     scored.sort(key=lambda p: p.ensemble_score, reverse=True)
-
     return LinkPredictionResult(scored_pairs=scored)
 
 
-# ---------------------------------------------------------------------------
-# State persistence
-# ---------------------------------------------------------------------------
-
-
-def _state_path(repo_root: Path) -> Path:
+def _state_path(state_root: Path) -> Path:
     """Get the path to the link prediction state file.
 
-    Args:
-        repo_root: Repository root path (vault root in practice).
+    Parameters
+    ----------
+    state_root : Path
+        Root directory for state storage (vault root in practice).
 
-    Returns:
+    Returns
+    -------
+    Path
         Path to the state JSON file.
     """
-    return repo_root / STATE_FILE
+    return state_root / STATE_FILE
 
 
-def load_state(repo_root: Path) -> dict:
+def load_state(state_root: Path) -> dict[str, Any]:
     """Load human-in-the-loop decisions from sidecar JSON.
 
-    Args:
-        repo_root: Repository root path (vault root in practice).
+    Parameters
+    ----------
+    state_root : Path
+        Root directory for state storage.
 
-    Returns:
-        Dict of state entries, or empty dict on failure.
+    Returns
+    -------
+    dict
+        State entries, or empty dict on failure.
     """
-    path = _state_path(repo_root)
+    path = _state_path(state_root)
     if not path.exists():
         return {}
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        result: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
+        return result
     except (json.JSONDecodeError, OSError):
         return {}
 
 
-def save_state(repo_root: Path, state: dict) -> None:
+def save_state(state_root: Path, state: dict[str, Any]) -> None:
     """Persist human-in-the-loop decisions to sidecar JSON.
 
-    Args:
-        repo_root: Repository root path (vault root in practice).
-        state: Dict of state entries to persist.
+    Parameters
+    ----------
+    state_root : Path
+        Root directory for state storage.
+    state : dict
+        State entries to persist.
     """
-    path = _state_path(repo_root)
+    path = _state_path(state_root)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(state, indent=2), encoding="utf-8")
 
 
 def filter_by_state(
     scored: list[ScoredPair],
-    state: dict,
-    current_scores: dict[tuple[str, str], float],
+state: dict[str, Any] | None = None,
+    current_scores: dict[tuple[str, str], float] | None = None,
 ) -> list[ScoredPair]:
-    """Remove confirmed/dismissed candidates unless score drifted > 30%.
+    """Filter scored pairs against persisted state.
 
-    Args:
-        scored: List of scored pairs.
-        state: Dict of state entries from load_state().
-        current_scores: Dict mapping (source, target) -> current ensemble score.
+    Parameters
+    ----------
+    scored : list[ScoredPair]
+        List of scored pairs.
+    state : dict or None
+        State entries from ``load_state()``.
+    current_scores : dict or None
+        (source, target) -> current ensemble score.
 
-    Returns:
-        Filtered list of ScoredPair, excluding stale confirmed/dismissed entries.
+    Returns
+    -------
+    list[ScoredPair]
+        Filtered list, excluding stale confirmed/dismissed entries.
     """
     filtered: list[ScoredPair] = []
+    if state is None:
+        state = {}
+    if current_scores is None:
+        current_scores = {}
     for pair in scored:
         key = f"({pair.source}, {pair.target})"
         entry = state.get(key)
@@ -302,29 +330,38 @@ def filter_by_state(
 
 
 def clean_stale_entries(
-    state: dict, missing_reciprocals: set[tuple[str, str]]
-) -> dict:
+    state: dict[str, Any],
+    current_missing: set[tuple[str, str]],
+) -> dict[str, Any]:
     """Remove state entries for pairs that are no longer missing.
 
-    Args:
-        state: Dict of state entries.
-        missing_reciprocals: Current set of (source, target) pairs.
+    Parameters
+    ----------
+    state : dict
+        State entries.
+    current_missing : set[tuple[str, str]]
+        Current set of missing reciprocal pairs.
 
-    Returns:
-        Cleaned state dict.
+    Returns
+    -------
+    dict
+        Cleaned state.
     """
-    missing_set = set(missing_reciprocals)
-    return {k: v for k, v in state.items() if _parse_state_key(k) in missing_set}
+    return {k: v for k, v in state.items() if _parse_state_key(k) in current_missing}
 
 
 def _parse_state_key(key: str) -> tuple[str, str] | None:
-    """Parse '(source, target)' string back to tuple.
+    """Parse ``(source, target)`` string back to tuple.
 
-    Args:
-        key: String key like "(source, target)".
+    Parameters
+    ----------
+    key : str
+        String key like ``"(source, target)"``.
 
-    Returns:
-        Tuple of (source, target) or None if unparseable.
+    Returns
+    -------
+    tuple[str, str] or None
+        (source, target) tuple, or ``None`` if unparseable.
     """
     try:
         inner = key.strip("()")
@@ -336,15 +373,12 @@ def _parse_state_key(key: str) -> tuple[str, str] | None:
     return None
 
 
-# ---------------------------------------------------------------------------
-# Fix mode
-# ---------------------------------------------------------------------------
-
-
 def _is_working_tree_dirty() -> bool:
     """Check if git working tree has uncommitted changes.
 
-    Returns:
+    Returns
+    -------
+    bool
         True if there are uncommitted changes.
     """
     try:
@@ -366,15 +400,21 @@ def apply_fix(
 ) -> bool:
     """Insert reciprocal wikilinks for high-confidence candidates.
 
-    For each candidate with ensemble_score >= threshold, adds [[source]]
+    For each candidate with ``ensemble_score >= threshold``, adds ``[[source]]``
     to the target note's ``related:`` frontmatter field.
 
-    Args:
-        scored_pairs: List of scored pairs.
-        notes: Stem -> NoteMetadata mapping.
-        threshold: Minimum ensemble score to auto-fix.
+    Parameters
+    ----------
+    scored_pairs : list[ScoredPair]
+        Scored pairs.
+    notes : dict[str, NoteMetadata]
+        Stem -> ``NoteMetadata`` mapping.
+    threshold : float
+        Minimum ensemble score to auto-fix (default 0.7).
 
-    Returns:
+    Returns
+    -------
+    bool
         True if any fix was applied.
     """
     if _is_working_tree_dirty():
@@ -469,7 +509,8 @@ def apply_fix(
 
     if applied:
         print(
-            f"  [fix] Applied {len(candidates)} reciprocal links (threshold >= {threshold})."
+            f"  [fix] Applied {len(candidates)} reciprocal links "
+            f"(threshold >= {threshold})."
         )
 
     return applied

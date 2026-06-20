@@ -58,6 +58,9 @@ gpu = [
 compute = [
     "modal>=0.70,<1",
 ]
+vault-health = [
+    "networkx>=3,<4",
+]
 dev = [
     "ruff>=0.5,<1",
     "black>=24.0,<25",
@@ -78,6 +81,7 @@ anvil-corpus = "anvil.cli:corpus_main"
 anvil-stop = "anvil.cli:stop"
 anvil-bootstrap-datasets = "anvil.cli:bootstrap_datasets_main"
 anvil-db = "anvil.cli:db_main"
+anvil-vault = "anvil.services.vault.cli:main"
 
 [tool.ruff]
 target-version = "py311"

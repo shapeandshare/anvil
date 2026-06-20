@@ -1,0 +1,440 @@
+"""VaultAuditService — mechanical audit of vault frontmatter and wikilinks.
+
+Migrated from ``scripts/ci/vault_audit.py``.
+Exposes async interface per Constitution Art V, wrapping sync file I/O
+in ``asyncio.to_thread()``.
+"""
+
+from __future__ import annotations
+
+import re
+import unicodedata
+from datetime import date, datetime
+from pathlib import Path
+from typing import Any, cast
+
+try:
+    import yaml  # type: ignore[import-untyped]
+except ImportError:
+    yaml = None
+
+from ._types import Finding, MechanicalReport
+
+# Controlled vocabulary (mirrors docs/vault/_meta/tags.md)
+TYPE_VOCAB: set[str] = {
+    "type/principle", "type/design", "type/system", "type/reference",
+    "type/moc", "type/decision", "type/discovery", "type/session-log",
+}
+
+STATUS_VOCAB: set[str] = {
+    "status/draft", "status/wip", "status/reviewed", "status/canonical",
+}
+
+DOMAIN_VOCAB: set[str] = {
+    "domain/architecture", "domain/core", "domain/training",
+    "domain/inference", "domain/export", "domain/ui", "domain/database",
+    "domain/operations", "domain/mlops", "domain/tracking",
+    "domain/infrastructure", "domain/registry",
+    "domain/tooling", "domain/vault",
+    "domain/governance", "domain/mcp", "domain/content",
+}
+
+KNOWN_TAG_PREFIXES: set[str] = {"type/", "status/", "domain/"}
+AGENT_NOTE_TYPES: set[str] = {"type/decision", "type/discovery", "type/session-log"}
+GROUNDED_NOTE_TYPES: set[str] = {"type/decision", "type/discovery"}
+REQUIRED_FIELDS: set[str] = {"title", "type", "tags", "created", "updated"}
+
+
+def nfc(s: str) -> str:
+    """Apply NFC Unicode normalization.
+
+    Parameters
+    ----------
+    s : str
+        Input string.
+
+    Returns
+    -------
+    str
+        NFC-normalized string.
+    """
+    return unicodedata.normalize("NFC", s)
+
+
+def _nfc_strings(obj: object) -> Any:
+    """Recursively NFC-normalize all strings.
+
+    Parameters
+    ----------
+    obj : object
+        Any nested dict/list/str structure.
+
+    Returns
+    -------
+    object
+        NFC-normalized version.
+    """
+    if isinstance(obj, str):
+        return nfc(obj)
+    if isinstance(obj, dict):
+        return {k: _nfc_strings(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_nfc_strings(item) for item in obj]
+    return obj
+
+
+def parse_frontmatter(path: Path) -> dict[str, Any]:
+    """Parse YAML frontmatter from a Markdown file.
+
+    Parameters
+    ----------
+    path : Path
+        Path to the markdown file.
+
+    Returns
+    -------
+    dict
+        Parsed frontmatter, or empty dict on failure.
+    """
+    if yaml is None:
+        return {}
+    try:
+        content = path.read_text(encoding="utf-8")
+    except OSError:
+        return {}
+
+    parts = content.split("---\n", 2)
+    if len(parts) < 3:
+        parts = content.split("---\r\n", 2)
+    if len(parts) < 3:
+        return {}
+
+    try:
+        data = yaml.safe_load(parts[1]) or {}
+    except Exception:
+        return {}
+
+    if not isinstance(data, dict):
+        return {}
+
+    return cast(dict[str, Any], _nfc_strings(data))
+
+
+def extract_wikilinks(text: str) -> list[str]:
+    """Extract wikilink targets from text.
+
+    Handles ``[[Target]]`` and ``[[Target|Display]]`` forms. Strips fenced
+    and inline code spans first. Skips Obsidian attachment embeds.
+
+    Parameters
+    ----------
+    text : str
+        Markdown text to scan.
+
+    Returns
+    -------
+    list of str
+        Wikilink targets (NFC-normalized).
+    """
+    _ATTACHMENT_EXTENSIONS: set[str] = {
+        ".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp",
+        ".pdf", ".mp3", ".mp4", ".ogg", ".wav", ".mov", ".avi",
+    }
+    clean_text = re.sub(r"```.*?```", "", text, flags=re.DOTALL)
+    clean_text = re.sub(r"`[^`\n]+`", "", clean_text)
+    pattern = r"\[\[([^\]|#]+)(?:[|#][^\]]+)?\]\]"
+    matches = re.findall(pattern, clean_text)
+    result: list[str] = []
+    for m in matches:
+        stripped = m.strip()
+        if stripped and stripped[0] in ("!", "-", '"', "'", "$"):
+            continue
+        ext = Path(stripped.split("/")[-1]).suffix.lower()
+        if ext in _ATTACHMENT_EXTENSIONS:
+            continue
+        result.append(nfc(stripped))
+    return result
+
+
+def _resolve_note_type(fm: dict[str, Any]) -> str:
+    """Resolve the note's type tag from frontmatter.
+
+    Parameters
+    ----------
+    fm : dict
+        Parsed frontmatter.
+
+    Returns
+    -------
+    str
+        Resolved type tag (e.g. ``type/decision``), or empty string.
+    """
+    tags = fm.get("tags", [])
+    if not isinstance(tags, list):
+        tags = []
+    type_tags = [t for t in tags if isinstance(t, str) and t.startswith("type/")]
+    if len(type_tags) == 1:
+        return type_tags[0]
+
+    bare_type = fm.get("type")
+    if isinstance(bare_type, str) and bare_type:
+        mapped = f"type/{bare_type}"
+        if mapped in TYPE_VOCAB:
+            return mapped
+
+    return ""
+
+
+def _parse_date_value(val: object) -> date | None:
+    """Parse a date from frontmatter.
+
+    Parameters
+    ----------
+    val : object
+        Value to parse.
+
+    Returns
+    -------
+    date or None
+    """
+    if val is None:
+        return None
+    if isinstance(val, date) and not isinstance(val, datetime):
+        return val
+    if isinstance(val, datetime):
+        return val.date()
+    if isinstance(val, str):
+        val = val.strip().strip("'\"")
+        for fmt in (
+            "%Y-%m-%d",
+            "%Y-%m-%dT%H:%M:%S",
+            "%Y-%m-%dT%H:%M:%S.%fZ",
+            "%Y-%m-%dT%H:%M:%S%z",
+        ):
+            try:
+                return datetime.strptime(val, fmt).date()
+            except ValueError:
+                continue
+    return None
+
+
+def validate_schema(
+    path: Path,
+    fm: dict[str, Any],
+    note_path_str: str,
+) -> list[Finding]:
+    """Validate frontmatter against the controlled vocabulary schema.
+
+    Parameters
+    ----------
+    path : Path
+        File path (for attribution).
+    fm : dict
+        Parsed frontmatter.
+    note_path_str : str
+        String path for error messages.
+
+    Returns
+    -------
+    list of Finding
+        Validation findings.
+    """
+    findings: list[Finding] = []
+
+    def _err(rule: str, msg: str, fixable: bool = False) -> None:
+        findings.append(Finding(
+            note_path=note_path_str, line=1, rule=rule,
+            message=msg, severity="ERROR", fixable=fixable,
+        ))
+
+    def _warn(rule: str, msg: str, fixable: bool = False) -> None:
+        findings.append(Finding(
+            note_path=note_path_str, line=1, rule=rule,
+            message=msg, severity="WARN", fixable=fixable,
+        ))
+
+    if not fm:
+        _warn("missing_frontmatter", "note has no frontmatter")
+        return findings
+
+    for f in REQUIRED_FIELDS:
+        if f not in fm:
+            _err("missing_required_field", f"missing required field: {f}")
+
+    tags = fm.get("tags", [])
+    if not isinstance(tags, list):
+        tags = []
+
+    type_tags = [t for t in tags if isinstance(t, str) and t.startswith("type/")]
+    bare_type = fm.get("type")
+    has_bare_type = isinstance(bare_type, str) and bool(bare_type)
+
+    if len(type_tags) == 0 and not has_bare_type:
+        _err("missing_type_tag",
+             "missing required type/* tag (and no bare type: field)")
+    elif len(type_tags) == 0 and has_bare_type:
+        mapped = f"type/{bare_type}"
+        if mapped not in TYPE_VOCAB:
+            _err("invalid_type_tag",
+                 f"invalid bare type field: {bare_type!r} "
+                 f"(not in controlled vocabulary)")
+    elif len(type_tags) > 1:
+        _err("multiple_type_tags", f"multiple type/* tags: {type_tags}")
+    elif type_tags[0] not in TYPE_VOCAB:
+        _err("invalid_type_tag",
+             f"invalid type tag: {type_tags[0]!r} "
+             f"(not in controlled vocabulary)")
+
+    note_type = _resolve_note_type(fm)
+
+    for tag in tags:
+        if not isinstance(tag, str):
+            continue
+        if not any(tag.startswith(prefix) for prefix in KNOWN_TAG_PREFIXES):
+            continue
+        if tag.startswith("status/"):
+            if tag not in STATUS_VOCAB:
+                _err("invalid_status_tag", f"invalid status tag: {tag!r}")
+        elif tag.startswith("domain/"):
+            if tag not in DOMAIN_VOCAB:
+                _err("invalid_domain_tag", f"invalid domain tag: {tag!r}")
+
+    if note_type in AGENT_NOTE_TYPES:
+        if "aliases" not in fm:
+            _err("missing_aliases", "agent note missing 'aliases'")
+        if "source" not in fm:
+            _err("missing_source", "agent note missing 'source'")
+        if note_type in GROUNDED_NOTE_TYPES and "code-refs" not in fm:
+            _err("missing_code_refs",
+                 "decision/discovery note missing 'code-refs'")
+
+    created = fm.get("created")
+    updated = fm.get("updated")
+    if isinstance(created, str) and _parse_date_value(created) is None:
+        _err("invalid_date",
+             f"created date is not a valid ISO date: {created!r}")
+    if isinstance(updated, str) and _parse_date_value(updated) is None:
+        _err("invalid_date",
+             f"updated date is not a valid ISO date: {updated!r}")
+
+    return findings
+
+
+class VaultAuditService:
+    """Mechanical audit service for vault frontmatter and wikilink integrity.
+
+    Parameters
+    ----------
+    vault_dir : str
+        Path to the Obsidian vault directory.
+    """
+
+    def __init__(self, vault_dir: str = "docs/vault") -> None:
+        if yaml is None:
+            msg = "PyYAML is required. Install with: pip install PyYAML"
+            raise ImportError(msg)
+        self.vault_dir = Path(vault_dir)
+
+    async def run_mechanical_audit(self) -> MechanicalReport:
+        """Run mechanical audit (frontmatter, wikilinks, links).
+
+        Returns
+        -------
+        MechanicalReport
+            Audit findings organized by severity.
+        """
+        import asyncio
+
+        return await asyncio.to_thread(self._run_mechanical_audit_sync)
+
+    def _run_mechanical_audit_sync(self) -> MechanicalReport:
+        """Run mechanical audit synchronously.
+
+        Returns
+        -------
+        MechanicalReport
+        """
+        report = MechanicalReport()
+        vault_root = self.vault_dir
+
+        if not vault_root.exists():
+            report.add(Finding(
+                note_path=str(vault_root),
+                line=0,
+                rule="vault_not_found",
+                message=f"vault directory not found: {vault_root}",
+                severity="ERROR",
+            ))
+            return report
+
+        all_md = sorted(vault_root.rglob("*.md"))
+        report.stats["files_scanned"] = len(all_md)
+        filename_index: dict[str, list[Path]] = {}
+
+        for md_path in all_md:
+            try:
+                rel = md_path.relative_to(vault_root)
+            except ValueError:
+                continue
+
+            if any(
+                part in {"_meta", ".obsidian", "addons"}
+                for part in rel.parts
+            ):
+                continue
+
+            note_path_str = str(rel)
+
+            stem = md_path.stem
+            if stem not in filename_index:
+                filename_index[stem] = []
+            filename_index[stem].append(md_path)
+
+            fm = parse_frontmatter(md_path)
+            for f in validate_schema(md_path, fm, note_path_str):
+                report.add(f)
+
+            try:
+                content = md_path.read_text(encoding="utf-8")
+            except OSError as e:
+                report.add(Finding(
+                    note_path=note_path_str,
+                    line=0,
+                    rule="read_error",
+                    message=f"cannot read file: {e}",
+                    severity="ERROR",
+                ))
+                continue
+
+            wikilinks = extract_wikilinks(content)
+            for wl in wikilinks:
+                target_stem = wl.rsplit("/", 1)[-1] if "/" in wl else wl
+                if target_stem not in filename_index:
+                    report.add(Finding(
+                        note_path=note_path_str,
+                        line=0,
+                        rule="broken_wikilink",
+                        message=f"broken [[wikilink]]: target '{wl}' not found",
+                        severity="ERROR",
+                    ))
+
+        report.stats["notes_with_issues"] = (
+            len(report.errors) + len(report.warnings)
+        )
+        return report
+
+    def build_filename_index(self) -> dict[str, list[Path]]:
+        """Build a filename index mapping stems to file paths.
+
+        Returns
+        -------
+        dict[str, list[Path]]
+            Stem -> list of matching file paths.
+        """
+        index: dict[str, list[Path]] = {}
+        if not self.vault_dir.exists():
+            return index
+        for md_path in self.vault_dir.rglob("*.md"):
+            key = md_path.stem
+            index[key] = [*index.get(key, []), md_path]
+        return index

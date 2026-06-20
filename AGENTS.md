@@ -292,6 +292,8 @@ SomeException
 - N/A — no new persistence. (Coverage baseline stored as a config value in `pyproject.toml`; gate config stored in workflow YAML.) (013-dx-harness-hardening)
 - Python 3.11+ (backend), TypeScript 5.x (CDK infrastructure), JavaScript ES6+ (frontend unchanged) + FastAPI (existing), SQLAlchemy[asyncio] (existing), `boto3` (new, SaaS extra), `redis-py` (new, SaaS extra), `aws-jwt-verify` (new, SaaS extra), `aws-cdk-lib` (dev only, infra package) (opencode/mighty-tiger)
 - RDS PostgreSQL (SaaS), SQLite (local), S3 (SaaS), local filesystem (local), ElastiCache Redis (SaaS, for SSE) (opencode/mighty-tiger)
+- Python 3.11+ + PyYAML (existing), networkx (optional via `anvil[vault-health]` extra) (015-graph-health-subsumption)
+- Filesystem — vault health reports written to `_meta/audit/` under vault dir (legacy behavior preserved) (015-graph-health-subsumption)
 - Python 3.11+ (backend), JavaScript ES6+ (frontend, no build step / no framework) + FastAPI, Jinja2, async SQLAlchemy (all existing). **No new runtime dependencies** — themes are vanilla JS + CSS; signal instrumentation is stdlib (`math.isnan`) + existing Pydantic. (015-theme-engine)
 - Client-side only — `localStorage` for theme preference (`theme` key extended) and light/dark choice; `sessionStorage` not required. No DB schema change, no Alembic migration (per spec Assumption: server-side per-user persistence out of scope for v1). (015-theme-engine)
 - Python 3.11+ + FastAPI, SQLAlchemy[asyncio], Jinja2 (all existing — no new deps) (opencode/crisp-rocket)

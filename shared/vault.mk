@@ -1,7 +1,7 @@
 # Vault health tooling — mechanical audit + graph health analysis
 #
-# Requires PyYAML (already in project deps). Graph health requires
-# networkx (optional — skipped if not installed).
+# Delegates to the ``anvil-vault`` CLI. Legacy ``scripts/ci/`` scripts are
+# retained as thin wrappers during the transition period.
 #
 # See docs/vault/Systems/Vault Health.md.
 
@@ -9,24 +9,24 @@ VAULT_DIR := docs/vault
 
 .PHONY: vault-audit
 vault-audit: $(VENV_DIR)/activate ## Run vault audit + graph health (report only, no changes)
-	$(PYTHON) scripts/ci/vault_audit.py $(VAULT_DIR)
+	anvil-vault audit --vault-dir $(VAULT_DIR)
 
 .PHONY: vault-audit-apply
 vault-audit-apply: $(VENV_DIR)/activate ## Run vault audit with safe auto-fixes applied in-place
-	$(PYTHON) scripts/ci/vault_audit.py $(VAULT_DIR) --apply
+	anvil-vault audit --vault-dir $(VAULT_DIR) --apply
 
 .PHONY: vault-audit-diff
 vault-audit-diff: $(VENV_DIR)/activate ## Show auto-fixes the audit would apply (no changes)
-	$(PYTHON) scripts/ci/vault_audit.py $(VAULT_DIR) --diff
+	anvil-vault audit --vault-dir $(VAULT_DIR) --diff
 
 .PHONY: vault-audit-fast
 vault-audit-fast: $(VENV_DIR)/activate ## Mechanical audit only (skip networkx graph-health pass)
-	$(PYTHON) scripts/ci/vault_audit.py $(VAULT_DIR) --skip-graph-health
+	anvil-vault audit --vault-dir $(VAULT_DIR) --skip-graph-health
 
 .PHONY: adr-check
-adr-check: $(VENV_DIR)/activate ## Validate ADR uniqueness and naming conventions
-	$(PYTHON) scripts/ci/check_adr_unique.py
+adr-check: ## Validate ADR uniqueness and naming conventions
+	anvil-vault check-adrs
 
 .PHONY: guarded-imports-check
-guarded-imports-check: $(VENV_DIR)/activate ## Validate TYPE_CHECKING guarded imports are annotation-only
-	$(PYTHON) scripts/ci/check_guarded_imports.py
+guarded-imports-check: ## Validate TYPE_CHECKING guarded imports are annotation-only
+	anvil-vault check-guarded-imports
