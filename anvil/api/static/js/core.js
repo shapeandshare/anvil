@@ -185,9 +185,6 @@
     })
       .then(function(r) {
         if (!r.ok) {
-          // Non-2xx response (server error, not found, etc.) —
-          // fall back to full page navigation so the user sees
-          // the actual error page instead of a silent no-op.
           window.location.href = url;
           return null;
         }
