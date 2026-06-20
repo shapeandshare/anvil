@@ -299,7 +299,7 @@ SomeException
 - Python 3.11+ + FastAPI, SQLAlchemy[asyncio], Jinja2 (all existing — no new deps) (opencode/crisp-rocket)
 - SQLite via async SQLAlchemy (`data/anvil-state.db`) — demo entities use `origin="bundled"` (opencode/crisp-rocket)
 - Python 3.11+ + FastAPI, async SQLAlchemy + aiosqlite, Alembic, Jinja2, MLflow (016-lakefs-content-repo)
-- SQLite (`data/anvil-state.db`) for metadata; content-addressed blobs on the (016-lakefs-content-repo)
+- SQLite (`data/anvil-state.db`) for metadata; content-addressed blobs on the filesystem via `LocalFileStore` (`data/content/`); LakeFS reserved for SaaS mode (016-lakefs-content-repo)
 
 ## Recent Changes
 - 002-directory-corpus-ingestion: Added Python 3.11+ + Existing project deps (FastAPI, SQLAlchemy, aiofiles) + `pathspec` (lightweight gitignore pattern matching, pure Python, no binary deps)
