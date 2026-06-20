@@ -32,3 +32,40 @@
     transition: none !important;
   }
 }
+
+[data-skin="oldgrowth"] .app-main::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0,
+    rgba(0, 0, 0, 0) 1px,
+    rgba(0, 0, 0, calc(0.12 + var(--disturbance, 0) * 0.3)) 2px,
+    rgba(0, 0, 0, calc(0.12 + var(--disturbance, 0) * 0.3)) 3px
+  );
+  opacity: calc(0.35 + var(--disturbance, 0) * 0.65);
+  mix-blend-mode: multiply;
+}
+
+[data-skin="oldgrowth"] .app-main::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 41;
+  background: radial-gradient(
+    120% 120% at 50% 50%,
+    transparent 55%,
+    rgba(0, 0, 0, calc(0.4 + var(--disturbance, 0) * 0.3)) 100%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="oldgrowth"] .app-main::before {
+    opacity: 0.2;
+  }
+}
+

@@ -49,3 +49,20 @@
     transition: none !important;
   }
 }
+
+[data-skin="aurora"] .app-main::after {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 45vh;
+  pointer-events: none;
+  z-index: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(87, 224, 194, calc(0.04 + var(--flow, 0) * 0.16)),
+    rgba(110, 168, 255, calc(0.03 + var(--calm, 1) * 0.12)) 45%,
+    transparent 100%
+  );
+  transition: background var(--dur-slow) var(--ease);
+}
+

@@ -35,13 +35,17 @@
     function attach(session) {
       if (!session) return;
       boundSession = session;
-      session.onmetrics = function (m) { emit('metrics', m); };
-      session.ondivergence = function (d) { emit('divergence', d); };
-      session.onmilestone = function (c) { emit('milestone', c); };
-      var priorComplete = session.oncomplete;
-      session.oncomplete = function (c) {
-        emit('complete', c);
-        if (typeof priorComplete === 'function') priorComplete(c);
+      chain(session, 'onmetrics', 'metrics');
+      chain(session, 'ondivergence', 'divergence');
+      chain(session, 'onmilestone', 'milestone');
+      chain(session, 'oncomplete', 'complete');
+    }
+
+    function chain(session, prop, eventName) {
+      var prior = session[prop];
+      session[prop] = function (payload) {
+        emit(eventName, payload);
+        if (typeof prior === 'function') prior(payload);
       };
     }
 

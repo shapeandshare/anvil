@@ -34,3 +34,42 @@
     transition: none !important;
   }
 }
+
+[data-skin="forge"] .app-main {
+  position: relative;
+}
+
+[data-skin="forge"] .app-main::after {
+  content: "";
+  position: fixed;
+  left: 50%;
+  bottom: -20vh;
+  width: 80vw;
+  height: 40vh;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    50% 60% at 50% 100%,
+    rgba(255, 122, 26, calc(0.05 + var(--heat, 0) * 0.35)),
+    transparent 70%
+  );
+  transition: background var(--dur-slow) var(--ease);
+}
+
+[data-skin="forge"][data-forge-state="quench"] .app-main::after {
+  background: radial-gradient(
+    50% 60% at 50% 100%,
+    rgba(92, 199, 212, 0.4),
+    transparent 70%
+  );
+}
+
+[data-skin="forge"][data-forge-state="diverged"] .app-main::after {
+  background: radial-gradient(
+    50% 70% at 50% 100%,
+    rgba(255, 69, 58, 0.45),
+    transparent 75%
+  );
+}
+

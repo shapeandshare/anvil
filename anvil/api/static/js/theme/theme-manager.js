@@ -2,6 +2,8 @@
   'use strict';
 
   var STORAGE_KEY = 'theme';
+  var EFFECTS_KEY = 'theme:reduce-effects';
+  var AUDIO_KEY = 'theme:audio';
   var LAYER_LINK_ID = 'theme-layer-css';
   var registry = window.ThemeRegistry;
 
@@ -148,6 +150,10 @@
         '<span class="theme-picker__hint">' + escapeHtml(t.previewHint) + '</span>' +
         '</button>';
     }).join('');
+    html += '<div class="theme-picker__controls">' +
+      '<label class="theme-picker__toggle"><input type="checkbox" id="theme-reduce-effects"> Reduce effects</label>' +
+      '<label class="theme-picker__toggle"><input type="checkbox" id="theme-audio-optin"> Enable theme audio</label>' +
+      '</div>';
     menu.innerHTML = html;
     menu.addEventListener('click', function (e) {
       var item = e.target.closest('[data-theme-id]');
@@ -155,7 +161,35 @@
       apply(item.getAttribute('data-theme-id'), current().mode);
       closeMenu();
     });
+    wireEffectControls();
     updatePickerUI(current().themeId);
+  }
+
+  function wireEffectControls() {
+    var reduce = document.getElementById('theme-reduce-effects');
+    var audio = document.getElementById('theme-audio-optin');
+    if (reduce) {
+      reduce.checked = readFlag(EFFECTS_KEY);
+      reduce.addEventListener('change', function () {
+        writeFlag(EFFECTS_KEY, reduce.checked);
+        if (window.EffectLevel) window.EffectLevel.setReducedEffects(reduce.checked);
+      });
+    }
+    if (audio) {
+      audio.checked = readFlag(AUDIO_KEY);
+      audio.addEventListener('change', function () {
+        writeFlag(AUDIO_KEY, audio.checked);
+        if (window.EffectLevel) window.EffectLevel.setAudioOptIn(audio.checked);
+      });
+    }
+  }
+
+  function readFlag(key) {
+    try { return localStorage.getItem(key) === '1'; } catch (e) { return false; }
+  }
+
+  function writeFlag(key, on) {
+    try { localStorage.setItem(key, on ? '1' : '0'); } catch (e) { return; }
   }
 
   function escapeHtml(s) {
@@ -214,6 +248,10 @@
 
   function init() {
     var pref = readPref();
+    if (window.EffectLevel) {
+      window.EffectLevel.setReducedEffects(readFlag(EFFECTS_KEY));
+      window.EffectLevel.setAudioOptIn(readFlag(AUDIO_KEY));
+    }
     apply(pref.themeId, pref.mode);
     buildPicker();
     wirePicker();
