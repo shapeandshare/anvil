@@ -36,6 +36,7 @@ graph TB
         EB[EventBus]
         JQ[JobQueue]
         CB[ComputeBackend]
+        LR[LogsReader]
     end
 
     subgraph "anvil/db/ — Repositories"
@@ -66,6 +67,7 @@ graph LR
         I2[EventBus]
         I3[JobQueue]
         I4[ComputeBackend]
+        I5[LogsReader]
     end
 
     subgraph "Local Mode"
@@ -73,6 +75,7 @@ graph LR
         L2[InProcessEventBus<br/>asyncio.Queue]
         L3[InProcessJobQueue<br/>create_task]
         L4[LocalStdlib/Torch<br/>in-process]
+        L5[LocalLogsReader<br/>disk files]
     end
 
     subgraph "SaaS Mode (anvil/_saas/)"
@@ -80,12 +83,14 @@ graph LR
         S2[RedisEventBus<br/>ElastiCache pub/sub]
         S3[BatchJobQueue<br/>boto3 submit_job]
         S4[BatchComputeBackend<br/>EC2 CPU/GPU/multi-node]
+        S5[CloudWatchLogsReader<br/>boto3 filter-log-events]
     end
 
     I1 -.-> L1 & S1
     I2 -.-> L2 & S2
     I3 -.-> L3 & S3
     I4 -.-> L4 & S4
+    I5 -.-> L5 & S5
 ```
 
 ### SaaS Runtime Topology (AWS)
@@ -152,7 +157,8 @@ sequenceDiagram
 
 **Language/Version**: Python 3.11+ (backend), TypeScript 5.x (CDK infrastructure), JavaScript ES6+ (frontend unchanged)
 **Primary Dependencies**: FastAPI (existing), SQLAlchemy[asyncio] (existing), `boto3` (new, SaaS extra), `redis-py` (new, SaaS extra), `aws-jwt-verify` (new, SaaS extra), `aws-cdk-lib` (dev only, infra package)
-**Storage**: RDS PostgreSQL (SaaS), SQLite (local), S3 (SaaS), local filesystem (local), ElastiCache Redis (SaaS, for SSE)
+**Monitoring Dependencies** (optional `[monitoring]` / `[monitoring-aws]` extras): `opentelemetry-distro[otlp]`, `opentelemetry-instrumentation-fastapi`, `opentelemetry-instrumentation-redis`, `opentelemetry-instrumentation-boto3`, `opentelemetry-instrumentation-httpx`, `prometheus-fastapi-instrumentator`, `prometheus-client`, `aws-opentelemetry-distro`
+**Storage**: RDS PostgreSQL (SaaS), SQLite (local), S3 (SaaS), local filesystem (local), ElastiCache Redis (SaaS, for SSE), Prometheus (ECS Fargate, in-cluster), Grafana (ECS Fargate or Grafana Cloud)
 **Testing**: pytest (existing), CDK assertions (new, `packages/infra/`)
 **Target Platform**: Linux x86_64 (ECS Fargate web tier + AWS Batch on EC2 for compute, CPU + GPU instance families), macOS/Linux (local mode)
 **Project Type**: Python web application (FastAPI) with AWS CDK infrastructure package
@@ -236,12 +242,19 @@ anvil/_saas/
 ├── __init__.py                # Package docstring
 ├── app.py                     # SaaS-mode FastAPI factory (wires cloud implementations)
 ├── compute_worker.py          # AWS Batch entrypoint (standalone script)
+├── observability/             # NEW — logging, tracing, metrics
+│   ├── __init__.py
+│   ├── logging.py             # JsonFormatter, setup_logging()
+│   ├── tracing.py             # setup_tracing(), TRACEPARENT propagation
+│   └── metrics.py             # Prometheus custom metric definitions
+├── reconciler.py              # Job state reconciler (AD-4)
 └── implementations/
     ├── __init__.py
     ├── s3_file_store.py
     ├── redis_event_bus.py
     ├── batch_job_queue.py
-    └── batch_compute_backend.py
+    ├── batch_compute_backend.py
+    └── cw_logs_reader.py      # NEW — CloudWatch Logs API reader
 
 # Abstraction interfaces (shared, no cloud deps)
 anvil/storage/
@@ -251,7 +264,9 @@ anvil/storage/
 ├── in_process_event_bus.py    # InProcessEventBus (local)
 ├── job_queue.py               # JobQueue interface (abstract)
 ├── in_process_job_queue.py    # InProcessJobQueue (local)
-└── compute_backend.py         # ComputeBackend interface (extends existing)
+├── compute_backend.py         # ComputeBackend interface (extends existing)
+├── logs.py                    # NEW — LogsReader interface (abstract)
+└── local_logs.py              # NEW — LocalLogsReader (file-based, existing)
 
 # Deploy CLI (installed with anvil[aws] extra)
 anvil/deploy/
@@ -298,19 +313,19 @@ FileStore / EventBus / JobQueue (+ ResourceSpec) / ComputeBackend interfaces + l
 App-managed OIDC/JWT via `aws-jwt-verify` (AD-2). Native email/password; social BYO post-deploy (AD-3). SSE signed-token auth. CLI device grant. **Gate G3.**
 
 ### Phase 4 — RBAC Multi-Tenancy (US3)
-Organization/Team/Membership/Role models, ownership columns, RBAC middleware + service guard, org/team/member API, cross-org isolation tests (AD-8). **Gate G4.**
+Organization/Team/Membership/Role models, `is_cluster_admin` column on `users`, ownership columns, RBAC middleware + service guard with cluster-admin bypass (cross-org unfiltered access), cluster admin API (cross-org listing, system operations), org/team/member API, local-mode auth bypass (no JWT required, unfiltered queries), cross-org isolation tests (AD-8). **Gate G4.**
 
 ### Phase 5 — Durable Training Pipeline (US2)
-TrainingJob + JobEvent (append-only) + UsageRecord models. S3FileStore, RedisEventBus, BatchJobQueue (CPU/GPU/multi-node), BatchComputeBackend, compute worker, reconciler (AD-4), SSE with replay (AD-5), usage metering (AD-9). **Gate G5.**
+TrainingJob + JobEvent (append-only, with metric throttling + index strategy + archival, FR-043a) + UsageRecord models. S3FileStore, RedisEventBus, BatchJobQueue (CPU/GPU/multi-node), BatchComputeBackend, compute worker, reconciler with operating parameters (period/grace/stateless/idempotent/backoff/heartbeat, FR-044a), SSE with replay (AD-5) + server-signaled degradation (FR-045r), usage metering (AD-9). **Gate G5.**
 
 ### Phase 6 — CDK Infrastructure (US6)
-VPC, RDS+Proxy, Redis, S3, Batch-on-EC2 (CPU+GPU+multi-node), ECS (web+MLflow), migration task (AD-6), CloudFront+WAF, IAM, asset-free synth with digest-pinned images (AD-7).
+VPC, RDS+Proxy (automated snapshots + PITR, FR-058), Redis (Multi-AZ + failover, FR-045q), S3 (versioning + lifecycle, FR-059), Batch-on-EC2 (CPU+GPU+multi-node), ECS (web+MLflow+prometheus+grafana+alertmanager), EFS (Prometheus TSDB), SNS (alert routing), migration task (AD-6), CloudFront+WAF, IAM, asset-free synth with digest-pinned images (AD-7).
 
 ### Phase 7 — One-Command Deploy + Agentic Verify (US7)
 Pre-synth templates, boto3 deploy, `anvil deploy init/status`, and the 3-layer `anvil deploy verify` (infra/api/browser). **Gate G6.**
 
 ### Phase 8 — Deploy Lifecycle (US8)
-`destroy` (S3 cleanup), `update` (image roll), `config set/get/list`, `config set-idp` (social BYO). **Gate G7.**
+`destroy` (S3 version cleanup + final-snapshot safety, FR-060), `update` (image roll), `restore --snapshot` (DR, FR-061), `config set/get/list`, `config set-idp` (social BYO), non-interactive CI deploy via `ANVIL_DEPLOY_*` + `--json` (FR-028a). **Gate G7.**
 
 ### Phase 9 — Local Mode Regression (US4)
 Verify zero SaaS deps/imports in local mode; full suite passes. **Gate G8.**
@@ -318,11 +333,17 @@ Verify zero SaaS deps/imports in local mode; full suite passes. **Gate G8.**
 ### Phase 10 — Docker Compose Dev Stack (US5)
 Full local SaaS emulation + hot-reload + dev auth + seed data.
 
-### Phase 11 — CLI Remote (US9)
-`anvil remote login/push/pull/ls` via device-grant auth.
+### Phase 11 — CLI Remote + Cluster Management (US9)
+`anvil remote cluster add/list/remove/configure` commands, cluster registry at `~/.anvil/clusters.json`, active cluster concept, `anvil deploy init` auto-adds cluster entry, `anvil deploy destroy` removes entry, `anvil remote login/logout/push/pull/ls` via device-grant auth against a selected cluster (FR-014/FR-014a/FR-014b).
 
-### Phase 12 — Polish & Cross-Cutting
-Lint/typecheck, SaaS import isolation rule, SSE latency monitoring, CI E2E harness, cost/teardown docs.
+### Phase 12 — Observability + MLflow Proxy (Gate G9)
+Structured JSON logging (FR-052/FR-052a/FR-052b), log viewer cost control (no auto-refresh, FR-052c) + graceful degradation without monitoring extra (FR-052d), `LogsReader` abstraction + `CloudWatchLogsReader`, compute pod log retrieval via `batch_log_stream` column. OTel auto-instrumentation + AWS X-Ray export (FR-053/FR-053a/FR-053b/FR-053c/FR-053d). Prometheus `/metrics` endpoint + custom metrics (FR-054/FR-054a). Prometheus ECS Fargate server (1 vCPU/2GB, EFS-backed, ecs_sd rate-limited, FR-054b) + Grafana with CloudWatch data source (FR-054c). Compute pod CW EMF metrics (FR-054d). Alertmanager + default rules + SNS routing (FR-054e). `[monitoring]`/`[monitoring-aws]`/`saas` extras (FR-055/FR-055a). Package structure in `_saas/observability/` (FR-055b). `batch_log_stream` migration (FR-056). MLflow browser proxy with `--static-prefix` (FR-057/FR-057a/FR-057b/FR-057d/FR-057e/FR-057g). CloudFront-aware `get_mlflow_browser_uri()` (FR-057c). Org-scoped experiment linking (FR-057f). **Gate G9.**
+
+### Phase 13 — Resilience & DR (Gate G10)
+RDS automated snapshots + PITR (FR-058), S3 versioning + lifecycle (FR-059), destroy safety with final snapshot (FR-060), `deploy restore` (FR-061), Redis Multi-AZ failover validation (FR-045q), secret rotation dual-key window for SSE signing + Redis token (FR-045s), reconciler crash-recovery + dependency-degradation backoff chaos tests (FR-044a). **Gate G10.**
+
+### Phase 14 — Polish & Cross-Cutting
+Lint/typecheck, SaaS import isolation rule, SSE latency monitoring, API version negotiation (FR-014c), CI E2E harness, cost/teardown docs.
 
 ## Complexity Tracking
 
@@ -330,5 +351,54 @@ Lint/typecheck, SaaS import isolation rule, SSE latency monitoring, CI E2E harne
 |------|---------------|
 | Article VII exception — compute worker bypasses God Class | The compute worker is a standalone process in a Batch pod running only `anvil/core` + I/O. Not a web-tier component. Documented in Constitution Check. |
 | New cloud dependencies (`boto3`, `redis`, `aws-jwt-verify`) | Optional `[aws]` extras only; never installed or imported in local mode (Gate G8 enforces). |
+| Observability dependencies (`opentelemetry-*`, `prometheus-*`, `aws-opentelemetry-distro`) | Optional `[monitoring]` / `[monitoring-aws]` extras only; never installed in base or `[aws]` extras. Local mode gracefully degrades (console exporter, no /metrics). |
 | RBAC complexity (org/team/role) added in v1 | User requirement; Oracle review confirmed retrofitting `tenant_id` post-launch is painful (HIGH finding). First-class now. |
 | Batch-on-EC2 instead of Fargate-default | Oracle CRITICAL finding — Fargate has no GPU. Required for GPU/multi-node training (AD-1). |
+| Prometheus + Grafana + Alertmanager ECS tasks | New ECS tasks. Prometheus 1 vCPU/2GB with EFS-backed TSDB (persistent across restarts) and rate-limited ecs_sd_configs; Grafana with Prometheus + CloudWatch data sources; Alertmanager with default rules → SNS. First-class CDK constructs. |
+| Cluster admin two-tier model (read-wide, write-narrow) | `is_cluster_admin` boolean on `users` table. Elevates READ/LIST scoping (cross-org visibility) + a fixed cluster-operation action matrix (FR-037b), but does NOT bypass the org-role guard for tenant-data WRITES. Resolves the read-vs-write authority conflict. Local mode has implicit full access (no auth). |
+| Multi-cluster management | CLI cluster registry at `~/.anvil/clusters.json` (includes `region`, `api_version`) — separate from the per-deploy deploy config. `anvil remote cluster add/list/remove/configure`. API version negotiation via `GET /v1/version` (FR-014c). `deploy init` auto-adds, `deploy destroy` removes. CLI-only concern. |
+| Backup/DR + Redis HA | RDS automated snapshots + PITR, S3 versioning, Redis Multi-AZ failover, destroy-time final snapshot. All default-on CDK settings. Adds cost but is non-negotiable for production trust. |
+| `job_events` high-volume table | Metric-event throttling (sampled cadence), composite indexes, 30-day archival to `job_events_archive`, tuned autovacuum. Prevents unbounded growth from per-step events. |
+| Secret rotation dual-key window | SSE signing secret stored as `{current, previous}` set; verification tries both during rotation overlap. Redis two-token rotation. Prevents rotation from killing in-flight SSE streams. |
+
+## Dependency Changes
+
+### New optional extras (pyproject.toml)
+
+```toml
+[project.optional-dependencies]
+aws = [
+    "boto3>=1.35",
+    "redis>=5.0",
+    "aws-jwt-verify>=4.0",
+]
+monitoring = [
+    "opentelemetry-distro[otlp]>=0.50",
+    "opentelemetry-instrumentation-fastapi>=0.50",
+    "opentelemetry-instrumentation-redis>=0.50",
+    "opentelemetry-instrumentation-boto3>=0.50",
+    "opentelemetry-instrumentation-httpx>=0.50",
+    "prometheus-fastapi-instrumentator>=7.0",
+    "prometheus-client>=0.21",
+]
+monitoring-aws = [
+    "anvil[monitoring]",
+    "aws-opentelemetry-distro>=1.0",
+]
+# Composite extra for a full SaaS deployment — install this on ECS/Batch images.
+saas = [
+    "anvil[aws]",
+    "anvil[monitoring-aws]",
+]
+```
+
+**Extra selection by audience:**
+
+| Audience | Install | Gets |
+|----------|---------|------|
+| Local user | `pip install anvil` | Core only, zero cloud/monitoring deps |
+| Local user wanting JSON logs | `pip install anvil[monitoring]` | OTel/Prometheus libs, console exporter, no AWS |
+| Operator deploying (CLI only) | `pip install anvil[aws]` | boto3/redis/jwt for `anvil deploy`, no monitoring |
+| **SaaS runtime (ECS/Batch image)** | `pip install anvil[saas]` | Everything: aws + monitoring-aws |
+
+The `saas` composite is what the container image installs. The base `monitoring` extra works for local dev (console exporter only, no AWS). This avoids operators needing to remember `anvil[aws,monitoring-aws]`.

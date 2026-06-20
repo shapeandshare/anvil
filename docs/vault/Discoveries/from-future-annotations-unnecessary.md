@@ -24,7 +24,7 @@ title: '`from __future__ import annotations` Is Unnecessary in a Python 3.11+ Co
 type: discovery
 updated: '2026-06-19'
 ---
-> **⚠️ SUPERSEDED**: This finding was reversed by project owner on 2026-06-19. The new convention prefers `from __future__ import annotations` (PEP 563) over string-literal forward references. See updated [[AGENTS.md#9-forward-references-via-pep-563]] and the session log [[Sessions/2026-06-19-pep-563-adoption|PEP 563 Adoption]].
+> **⚠️ SUPERSEDED**: This finding was reversed by project owner on 2026-06-19. The new convention prefers `from __future__ import annotations` (PEP 563) over string-literal forward references. See the updated `AGENTS.md` rule #10 (Forward References via PEP 563) and the session log [[Sessions/2026-06-19-type-checking-and-future-annotations-removal|TYPE_CHECKING and Future Annotations Removal]].
 
 A Python 3.11+ codebase never needs `from __future__ import annotations` (PEP 563). A systematic audit of 49 files in the anvil codebase — many with SQLAlchemy `Mapped` forward refs, dataclass self-references, and cross-module type annotations — confirmed zero dependencies on PEP 563 deferred evaluation.
 
