@@ -14,28 +14,19 @@ directly (or via ``make vault-audit``).
 
 from __future__ import annotations
 
-import re
-import subprocess
 import sys
-
-# Allowlist pattern for vault directory paths: only safe path characters.
-_SAFE_PATH_RE = re.compile(r"^[\w./\\-]+$")
 
 
 def main() -> None:
     """CLI entry point — delegate to ``anvil-vault audit``."""
-    cmd = ["anvil-vault", "audit"]
-    args = sys.argv[1:]
-    # Legacy positional vault_dir arg -> --vault-dir
-    if args and not args[0].startswith("-"):
-        val = args.pop(0)
-        if not _SAFE_PATH_RE.match(val):
-            sys.exit(f"error: invalid vault directory: {val!r}")
-        cmd.append("--vault-dir")
-        cmd.append(val)
-    cmd.extend(args)
-    result = subprocess.run(cmd, check=False)
-    sys.exit(result.returncode)
+    from anvil.services.vault.cli import main as audit_main
+
+    args = ["audit"] + sys.argv[1:]
+    # Translate legacy positional vault_dir arg to --vault-dir
+    if len(args) > 1 and not args[1].startswith("-"):
+        a = args[1]
+        args = ["audit", "--vault-dir", a] + args[2:]
+    audit_main(args)
 
 
 if __name__ == "__main__":
