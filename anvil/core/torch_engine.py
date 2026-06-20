@@ -6,6 +6,7 @@ and autograd so training can run on CUDA or MPS devices.
 It is an optional backend — torch must be installed (``pip install torch``).
 """
 
+import math
 import random
 from collections.abc import Callable
 from types import ModuleType
@@ -385,7 +386,7 @@ def train_torch(
     beta1: float = 0.85,
     beta2: float = 0.99,
     temperature: float = 0.5,
-    progress_callback: Callable[[int, float], None] | None = None,
+    progress_callback: Callable[..., None] | None = None,
     stop_check: Callable[[], bool] | None = None,
 ) -> tuple[dict[str, list[list[float]]], float, list[str], list[str]]:
     """Train a ``TorchLlamaModel`` on a list of documents using PyTorch.
@@ -491,6 +492,13 @@ def train_torch(
 
         optim.zero_grad()
         loss.backward()
+
+        grad_sq = 0.0
+        for p in model.parameters():
+            if p.grad is not None:
+                grad_sq += float(p.grad.detach().pow(2).sum().item())
+        grad_norm = math.sqrt(grad_sq)
+
         optim.step()
         scheduler.step()
 
@@ -498,7 +506,7 @@ def train_torch(
         final_loss_val = loss_val
 
         if progress_callback is not None:
-            progress_callback(step, loss_val)
+            progress_callback(step, loss_val, tokens=n, grad_norm=grad_norm)
 
     samples: list[str] = []
     with torch.no_grad():

@@ -136,7 +136,7 @@ class LocalStdlibBackend:
                 ),
             )
         except Exception as exc:
-            if type(exc).__name__ == "StopRequested":
+            if type(exc).__name__ in ("StopRequested", "DivergenceError"):
                 raise
             return ComputeResult(
                 status=ComputeStatus.FAILED,

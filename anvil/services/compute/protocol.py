@@ -14,9 +14,10 @@ from typing import Protocol
 
 from .result import ComputeResult
 
-ProgressCallback = Callable[[int, float], None]
-#: Callback invoked with ``(step, loss)`` to report training progress.
-#: A ``step`` value of ``-1`` signals that a remote job has been submitted.
+ProgressCallback = Callable[..., None]
+#: Callback invoked with ``(step, loss)`` and optional keyword-only signals
+#: (``tokens``, ``grad_norm``) to report training progress. A ``step`` value
+#: of ``-1`` signals that a remote job has been submitted.
 
 StopCheck = Callable[[], bool]
 #: Callback invoked periodically; returns ``True`` if the caller has

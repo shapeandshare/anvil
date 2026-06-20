@@ -9,7 +9,6 @@ import asyncio
 import json
 import threading
 import time
-from collections import deque
 from collections.abc import Awaitable, Callable
 
 # Side-effect imports: each module registers its backends at module level.
@@ -23,7 +22,10 @@ from ..compute.resolve import resolve_backend
 from ..compute.compute_backend_result import ComputeBackendResult
 from ..compute.result import ComputeResult
 from ..compute.training_engine import TrainingEngine
+from .divergence_error import DivergenceError
+from .step_metrics import StepMetrics
 from .stop_requested import StopRequested
+from .throughput import ThroughputTracker, classify_divergence
 
 
 class TrainingService:
@@ -41,6 +43,118 @@ class TrainingService:
         self._stop_events: dict[int, threading.Event] = {}
         self._running = 0
         self._run_metadata: dict[int, dict] = {}
+        self._diverged_runs: set[int] = set()
+
+    def is_diverged(self, run_id: int) -> bool:
+        """Return whether a run terminated due to divergence.
+
+        Parameters
+        ----------
+        run_id : int
+            The local run ID.
+
+        Returns
+        -------
+        bool
+            ``True`` if the run was halted by a divergence (non-finite loss).
+        """
+        return run_id in self._diverged_runs
+
+    def _build_progress_callback(
+        self,
+        *,
+        run_id: int,
+        queue: asyncio.Queue,
+        loop: asyncio.AbstractEventLoop,
+        device: str,
+        num_steps: int,
+        progress_callback_override: Callable[[int, float], None] | None,
+    ) -> Callable[..., None]:
+        """Build the per-step progress callback for a run.
+
+        The returned callback (invoked on a worker thread) emits neutral SSE
+        signals: a ``metrics`` payload each step, a periodic ``milestone``
+        marker, and on non-finite loss a ``divergence`` event followed by a
+        raised :class:`DivergenceError` to halt the run.
+
+        Parameters
+        ----------
+        run_id : int
+            Local run ID, used to honour stop requests.
+        queue : asyncio.Queue
+            SSE event queue for this run.
+        loop : asyncio.AbstractEventLoop
+            Event loop the worker thread marshals events into.
+        device : str
+            Compute device label included in each metrics payload.
+        num_steps : int
+            Total planned steps (drives ETA and milestone cadence).
+        progress_callback_override : callable or None
+            Optional external ``(step, loss)`` progress hook.
+
+        Returns
+        -------
+        callable
+            The progress callback.
+        """
+        start_time = time.monotonic()
+        tracker = ThroughputTracker(window=20)
+        milestone_every = max(1, num_steps // 10)
+
+        def progress_callback(
+            step: int,
+            loss: float,
+            *,
+            tokens: int = 0,
+            grad_norm: float | None = None,
+        ) -> None:
+            stop_event = self._stop_events.get(run_id)
+            if stop_event is not None and stop_event.is_set():
+                raise StopRequested(f"Training stopped at step {step}")
+
+            reason = classify_divergence(loss)
+            if reason is not None:
+                asyncio.run_coroutine_threadsafe(
+                    queue.put(
+                        {
+                            "event": "divergence",
+                            "data": json.dumps(
+                                {"step": step, "reason": reason.value}
+                            ),
+                        }
+                    ),
+                    loop,
+                )
+                raise DivergenceError(step, reason)
+
+            now = time.monotonic()
+            tracker.record(tokens=tokens, now=now)
+            metrics = StepMetrics(
+                step=step,
+                loss=loss,
+                device=device,
+                elapsed_sec=now - start_time,
+                steps_per_sec=tracker.steps_per_sec,
+                eta_sec=tracker.eta_sec(step, num_steps),
+                grad_norm=grad_norm,
+                tokens_per_sec=tracker.tokens_per_sec,
+            )
+            asyncio.run_coroutine_threadsafe(
+                queue.put({"event": "metrics", "data": metrics.model_dump_json()}),
+                loop,
+            )
+
+            if step > 0 and step % milestone_every == 0:
+                asyncio.run_coroutine_threadsafe(
+                    queue.put(
+                        {"event": "milestone", "data": json.dumps({"step": step})}
+                    ),
+                    loop,
+                )
+            if progress_callback_override:
+                progress_callback_override(step, loss)
+
+        return progress_callback
 
     def store_run_metadata(
         self,
@@ -272,54 +386,14 @@ class TrainingService:
         config["device"] = device
 
         _num_steps = config.get("num_steps", 1000)
-        _start_time = time.monotonic()
-        _step_timestamps: deque = deque(maxlen=20)
-
-        def progress_callback(step: int, loss: float) -> None:
-            stop_event = self._stop_events.get(run_id)
-            if stop_event is not None and stop_event.is_set():
-                raise StopRequested(f"Training stopped at step {step}")
-
-            now = time.monotonic()
-            _step_timestamps.append(now)
-            elapsed_sec = now - _start_time
-
-            steps_per_sec: float | None = None
-            eta_sec: float | None = None
-            if len(_step_timestamps) >= 2:
-                window_elapsed = _step_timestamps[-1] - _step_timestamps[0]
-                window_intervals = len(_step_timestamps) - 1
-                steps_per_sec = (
-                    window_intervals / window_elapsed if window_elapsed > 0 else 0.0
-                )
-                if len(_step_timestamps) >= 5:
-                    remaining = max(0, _num_steps - step - 1)
-                    eta_sec = (
-                        remaining / steps_per_sec
-                        if steps_per_sec and steps_per_sec > 0
-                        else None
-                    )
-
-            asyncio.run_coroutine_threadsafe(
-                queue.put(
-                    {
-                        "event": "metrics",
-                        "data": json.dumps(
-                            {
-                                "step": step,
-                                "loss": loss,
-                                "device": device,
-                                "elapsed_sec": elapsed_sec,
-                                "steps_per_sec": steps_per_sec,
-                                "eta_sec": eta_sec,
-                            }
-                        ),
-                    }
-                ),
-                loop,
-            )
-            if progress_callback_override:
-                progress_callback_override(step, loss)
+        progress_callback = self._build_progress_callback(
+            run_id=run_id,
+            queue=queue,
+            loop=loop,
+            device=device,
+            num_steps=_num_steps,
+            progress_callback_override=progress_callback_override,
+        )
 
         # ── get backend from registry ─────────────────────────────────
         backend = get_backend(backend_name)
@@ -361,6 +435,9 @@ class TrainingService:
                     "data": json.dumps({"message": "Training stopped by user"}),
                 }
             )
+            raise
+        except DivergenceError:
+            self._diverged_runs.add(run_id)
             raise
         finally:
             self._queues.pop(run_id, None)

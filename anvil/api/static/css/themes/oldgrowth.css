@@ -1,0 +1,34 @@
+[data-skin="oldgrowth"] {
+  --bg:             #070b08;
+  --surface:        #0e1a10;
+  --surface-2:      #11231a;
+  --grouped-bg:     #050807;
+  --separator:      #234029;
+  --text:           #cfe8c4;
+  --text-secondary: #a9d39a;
+  --text-tertiary:  #7ba06a;
+  --text-bright:    #e8f6df;
+
+  --accent:         #86c06a;
+  --accent-green:   #86c06a;
+  --accent-red:     #e0623a;
+  --accent-orange:  #d6a94e;
+  --accent-yellow:  #d6a94e;
+  --accent-purple:  #9ad07f;
+  --accent-cyan:    #6fd0a0;
+
+  --font-body:      var(--font-mono);
+  --font-display:   var(--font-mono);
+
+  --glass-bg:       rgba(7, 11, 8, 0.88);
+  --glass-border:   rgba(134, 192, 106, 0.22);
+
+  --disturbance: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="oldgrowth"] * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
