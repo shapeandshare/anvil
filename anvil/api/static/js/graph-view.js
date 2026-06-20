@@ -78,7 +78,7 @@
       var depth = parseInt(d);
       var totalH = nodes.length * (nodeH + 12) - 12;
       var startY = Math.max(nodeH / 2, (h - totalH) / 2);
-      var x = depth * 150 + 40;
+      var x = depth * 150 + 60;
       nodes.forEach(function (n, i) {
         var y = startY + i * (nodeH + 12);
         nodePositions[n.id] = { x: x, y: y, depth: depth };
