@@ -183,8 +183,18 @@
       signal: _navAbort.signal,
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
     })
-      .then(function(r) { return r.text(); })
+      .then(function(r) {
+        if (!r.ok) {
+          // Non-2xx response (server error, not found, etc.) —
+          // fall back to full page navigation so the user sees
+          // the actual error page instead of a silent no-op.
+          window.location.href = url;
+          return null;
+        }
+        return r.text();
+      })
       .then(function(html) {
+        if (html === null) return;
         var doc, newMain, currentMain, head, href, clone, afterCore, ns, i, j, link, s, tab, attr;
 
         doc = new DOMParser().parseFromString(html, 'text/html');

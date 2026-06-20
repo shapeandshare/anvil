@@ -8,7 +8,7 @@ instances here.
 
 from __future__ import annotations
 
-from ..db.models.license_entry import LicenseEntry
+from ...db.models.license_entry import LicenseEntry
 
 
 class LicenseSeedEntry:
