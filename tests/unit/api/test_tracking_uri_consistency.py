@@ -130,7 +130,6 @@ async def test_training_start_degraded_mode_returns_200():
     try:
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             config = {
-                "use_gpu": False,
                 "n_layer": 1,
                 "n_embd": 16,
                 "n_head": 4,
@@ -160,7 +159,6 @@ async def test_training_start_active_mode_returns_mlflow_run_id():
     try:
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             config = {
-                "use_gpu": False,
                 "n_layer": 1,
                 "n_embd": 16,
                 "n_head": 4,

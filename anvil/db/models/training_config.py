@@ -49,8 +49,6 @@ class TrainingConfig(Base, TimestampMixin):
         Adam beta2 coefficient (default ``0.99``).
     temperature : float
         Sampling temperature (default ``0.5``).
-    use_gpu : bool
-        Whether to use GPU acceleration (default ``False``).
     dataset_id : int or None
         Foreign key to ``datasets.id``.
     corpus_id : int or None
@@ -70,7 +68,6 @@ class TrainingConfig(Base, TimestampMixin):
     beta1: Mapped[float] = mapped_column(Float, default=0.85)
     beta2: Mapped[float] = mapped_column(Float, default=0.99)
     temperature: Mapped[float] = mapped_column(Float, default=0.5)
-    use_gpu: Mapped[bool] = mapped_column(Boolean, default=False)
     dataset_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("datasets.id"), nullable=True
     )

@@ -63,7 +63,7 @@ class Dataset(Base, TimestampMixin):
     total_size_bytes: Mapped[int] = mapped_column(Integer, default=0)
     curation_version: Mapped[int] = mapped_column(Integer, default=0)
     status: Mapped[str] = mapped_column(String(20), default=DatasetStatus.EMPTY)
-    # Provenance fields (added by 014_add_governance migration).
+    # Provenance fields.
     source_description: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     license_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("license_catalog.id", ondelete="RESTRICT"), nullable=True

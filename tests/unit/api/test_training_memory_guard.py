@@ -7,6 +7,7 @@ from anvil.api.app import app
 from anvil.db.base import Base
 from anvil.db.session import async_engine
 from anvil.gpu import GpuInfo
+from anvil.services._shared.device_type import DeviceType
 
 
 @pytest.fixture
@@ -33,7 +34,10 @@ async def test_oom_config_rejected_with_422(db_ready, monkeypatch):
     from anvil.api.v1 import training as training_module
 
     monkeypatch.setattr(training_module, "detect_gpu", _tiny_cuda)
-    monkeypatch.setattr(training_module, "resolve_device", lambda **kw: "cuda:0")
+    monkeypatch.setattr(
+        "anvil.services.compute.resolve._detect_device",
+        lambda: DeviceType.CUDA,
+    )
 
     svc = training_module.svc
     running_before = svc._running
@@ -48,7 +52,6 @@ async def test_oom_config_rejected_with_422(db_ready, monkeypatch):
                 "n_head": 8,
                 "block_size": 512,
                 "num_steps": 1,
-                "use_gpu": True,
             },
         )
 
@@ -70,7 +73,10 @@ async def test_oom_guard_skipped_for_cpu(db_ready, monkeypatch):
         return _tiny_cuda()
 
     monkeypatch.setattr(training_module, "detect_gpu", _should_not_block)
-    monkeypatch.setattr(training_module, "resolve_device", lambda **kw: "cpu")
+    monkeypatch.setattr(
+        "anvil.services.compute.resolve._detect_device",
+        lambda: DeviceType.CPU,
+    )
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -82,7 +88,6 @@ async def test_oom_guard_skipped_for_cpu(db_ready, monkeypatch):
                 "n_head": 8,
                 "block_size": 512,
                 "num_steps": 1,
-                "use_gpu": False,
             },
         )
 

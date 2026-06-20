@@ -36,7 +36,7 @@ class TestFormatCount:
 
 class TestCpuMode:
     def test_cpu_never_ooms_and_has_no_available(self):
-        est = estimate_training_memory(vocab_size=50, use_gpu=False)
+        est = estimate_training_memory(vocab_size=50)
         assert est.would_oom is False
         assert est.available_bytes is None
         assert est.available_mb is None
@@ -46,7 +46,7 @@ class TestCpuMode:
 
     def test_breakdown_components(self):
         est = estimate_training_memory(
-            vocab_size=50, n_embd=16, n_head=4, n_layer=1, block_size=16, use_gpu=False
+            vocab_size=50, n_embd=16, n_head=4, n_layer=1, block_size=16
         )
         assert est.gradients_bytes == est.weights_bytes
         assert est.optimizer_bytes == est.weights_bytes * 2
@@ -62,7 +62,7 @@ class TestCpuMode:
         assert est.total_mb == est.total_bytes / (1024**2)
 
     def test_to_dict_with_no_gpu(self):
-        d = estimate_training_memory(vocab_size=50, use_gpu=False).to_dict()
+        d = estimate_training_memory(vocab_size=50).to_dict()
         assert d["available_mb"] is None
         assert d["available_gb"] is None
         assert d["utilization_pct"] is None
@@ -87,7 +87,6 @@ class TestCudaPaths:
             n_head=4,
             n_layer=1,
             block_size=16,
-            use_gpu=True,
             gpu_info=self._cuda(16, 14),
         )
         assert est.would_oom is False
@@ -103,7 +102,6 @@ class TestCudaPaths:
             n_head=8,
             n_layer=12,
             block_size=512,
-            use_gpu=True,
             gpu_info=self._cuda(0.5, 0.3),
         )
         assert est.would_oom is True
@@ -116,7 +114,6 @@ class TestCudaPaths:
             n_head=4,
             n_layer=4,
             block_size=256,
-            use_gpu=True,
             gpu_info=self._cuda(64, 64),
         )
         peak_gb = base.peak_bytes / (1024**3)
@@ -127,7 +124,6 @@ class TestCudaPaths:
             n_head=4,
             n_layer=4,
             block_size=256,
-            use_gpu=True,
             gpu_info=self._cuda(avail_gb, avail_gb),
         )
         assert est.would_oom is False
@@ -138,7 +134,6 @@ class TestCudaPaths:
     def test_cuda_without_available_falls_back_then_no_info(self):
         est = estimate_training_memory(
             vocab_size=50,
-            use_gpu=True,
             gpu_info=GpuInfo(
                 available=True,
                 backend="cuda",
@@ -160,7 +155,6 @@ class TestMpsPath:
             n_head=4,
             n_layer=4,
             block_size=256,
-            use_gpu=True,
             gpu_info=GpuInfo(
                 available=True,
                 backend="mps",
@@ -173,31 +167,20 @@ class TestMpsPath:
         assert est.device_backend == "mps"
 
 
-class TestGpuRequestedUnavailable:
-    def test_explicit_unavailable_gpu(self):
+class TestUnavailableGpu:
+    def test_unavailable_gpu_falls_back_to_cpu(self):
         est = estimate_training_memory(
             vocab_size=50,
-            use_gpu=True,
             gpu_info=GpuInfo(available=False),
         )
-        assert est.would_oom is None
-        assert any("not available" in w for w in est.warnings)
-
-    def test_autodetect_when_gpu_info_none(self, monkeypatch):
-        import anvil.services.training.memory_estimator as me
-
-        monkeypatch.setattr(me, "detect_gpu", lambda: GpuInfo(available=False))
-        est = estimate_training_memory(vocab_size=50, use_gpu=True, gpu_info=None)
-        assert isinstance(est, MemoryEstimate)
-        assert est.param_count > 0
-        assert any("not available" in w for w in est.warnings)
+        assert est.would_oom is False
+        assert any("CPU training" in w for w in est.warnings)
 
 
 class TestToDictWithGpu:
     def test_to_dict_populates_gpu_fields(self):
         d = estimate_training_memory(
             vocab_size=50,
-            use_gpu=True,
             gpu_info=GpuInfo(
                 available=True,
                 backend="cuda",

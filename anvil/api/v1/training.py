@@ -59,7 +59,6 @@ async def start_training(config: dict):
           - ``beta1``: float, optional (default ``0.85``)
           - ``beta2``: float, optional (default ``0.99``)
           - ``temperature``: float, optional (default ``0.5``)
-          - ``use_gpu``: bool, optional (default ``False``)
           - ``compute_backend``: str, optional (default ``ComputeBackend.AUTO``)
           - ``dataset_id``: int, optional
           - ``corpus_id``: int, optional
@@ -101,16 +100,9 @@ async def start_training(config: dict):
             f"Try adjusting n_embd or n_head so that n_embd / n_head is even.",
         )
 
-    use_gpu = config.get("use_gpu", False)
     compute_backend = config.get("compute_backend", "auto")
     dataset_id = config.get("dataset_id")
     corpus_id = config.get("corpus_id")
-
-    # Backward compat: if legacy use_gpu is set without compute_backend, map it
-    if "compute_backend" not in config and use_gpu:
-        compute_backend = "local-gpu"
-    elif "compute_backend" not in config and not use_gpu:
-        compute_backend = "auto"
 
     try:
         resolved = resolve_backend({"compute_backend": compute_backend})
@@ -130,7 +122,6 @@ async def start_training(config: dict):
             n_head=n_head,
             n_layer=config.get("n_layer", 1),
             block_size=block_size,
-            use_gpu=True,
             gpu_info=gpu_info,
         )
         if memory_est.would_oom:
@@ -169,7 +160,6 @@ async def start_training(config: dict):
         "beta1": config.get("beta1", 0.85),
         "beta2": config.get("beta2", 0.99),
         "temperature": config.get("temperature", 0.5),
-        "use_gpu": use_gpu,
         "compute_backend": compute_backend,
         "corpus_id": corpus_id,
         "dataset_id": dataset_id,
@@ -658,7 +648,6 @@ async def list_configs():
                     "num_steps": c.num_steps,
                     "learning_rate": c.learning_rate,
                     "temperature": c.temperature,
-                    "use_gpu": c.use_gpu,
                     "created_at": str(c.created_at),
                 }
                 for c in configs

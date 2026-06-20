@@ -61,16 +61,16 @@ def test_migrations_dir_contains_version_files() -> None:
     versions_dir = Path(script_location) / "versions"
     assert versions_dir.is_dir(), f"versions dir not found at {versions_dir}"
     py_files = list(versions_dir.glob("*.py"))
-    assert len(py_files) >= 13, (  # 13+ version files exist
-        f"Expected at least 13 migration version files in {versions_dir}, "
+    assert len(py_files) >= 1, (  # At least the squashed 001_initial
+        f"Expected at least 1 migration version file in {versions_dir}, "
         f"found {len(py_files)}. "
         "Migrate from the relocated package (T009) completed?"
     )
-    # Verify the merge head is present
-    merge_files = [f for f in py_files if "merge" in f.name.lower()]
-    assert len(merge_files) >= 1, (
-        f"No merge revision found in {versions_dir}. "
-        "All version files must be bundled (incl. 12a4027155f0)."
+    # Verify the initial revision is present
+    initial_files = [f for f in py_files if "001_initial" in f.name]
+    assert len(initial_files) >= 1, (
+        f"No initial revision found in {versions_dir}. "
+        "001_initial.py must be bundled."
     )
 
 

@@ -54,7 +54,7 @@ async def rebootstrap_demo(
     """
     if not _bootstrap_lock.locked():
         async with _bootstrap_lock:
-            result = await workbench.demo().bootstrap_all()
+            result = await workbench.demo.bootstrap_all()
             return result.model_dump()
     raise HTTPException(
         status_code=409,

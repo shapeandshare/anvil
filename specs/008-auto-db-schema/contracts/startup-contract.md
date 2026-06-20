@@ -147,7 +147,7 @@ All migration activity uses the `anvil.db.migration` logger at INFO level:
 ```log
 INFO  [anvil.db.migration] Database does not exist at /path/to/anvil-state.db — creating...
 INFO  [anvil.db.migration] Auto-migrating DB: <base> → abc123def456
-INFO  [anvil.db.migration] Applied 14 migration(s). Current HEAD: abc123def456
+INFO  [anvil.db.migration] Applied 1 migration(s). Current HEAD: abc123def456
 INFO  [anvil.db.migration] Database already at HEAD: abc123def456 — no action needed
 ERROR [anvil.db.migration] Migration failed: <traceback>
 ERROR [anvil.db.migration] Schema mismatch: DB at def789abc012, code expects abc123def456 (HEAD).

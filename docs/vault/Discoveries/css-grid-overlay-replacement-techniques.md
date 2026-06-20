@@ -4,10 +4,12 @@ aliases:
   - Irregular Polygon CSS Technique
 created: '2026-06-20T00:00:00.000Z'
 source: agent
+code-refs:
+  - anvil/api/static/css/themes/stainedglass.css
+  - anvil/api/static/css/themes/hologram.css
 tags:
   - type/discovery
   - domain/ui
-  - domain/frontend
 title: CSS Techniques for Replacing Rigid Grid Overlays in Behavioral Themes
 type: discovery
 updated: '2026-06-20T00:00:00.000Z'

@@ -249,7 +249,7 @@ The whole stack comes up with `make run` (web + MLflow) and is torn down with `m
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `ANVIL_PORT` | `8080` | Web server port |
-| `ANVIL_STATE_DB_PATH` | `./data/anvil-state.db` | Database file (`ANVIL_DB_PATH` deprecated) |
+| `ANVIL_STATE_DB_PATH` | `./data/anvil-state.db` | SQLite database file |
 | `ANVIL_DB_AUTO_MIGRATE` | `true` | Auto-migrate schema on startup; set `false` for strict verification |
 | `ANVIL_LOG_DIR` | `./logs/` | Log directory |
 | `ANVIL_MLFLOW_URI` | `http://127.0.0.1:5001` | MLflow tracking server |

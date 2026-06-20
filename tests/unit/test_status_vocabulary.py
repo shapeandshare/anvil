@@ -7,6 +7,8 @@ from pathlib import Path
 # ComputeStatus enum (see anvil/services/compute/result.py).
 _ALLOWED_FILES: set[str] = {
     "result.py",
+    "compute_status.py",
+    "demo_model_provider.py",
 }
 
 

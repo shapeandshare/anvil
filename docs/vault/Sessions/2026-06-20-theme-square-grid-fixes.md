@@ -6,7 +6,6 @@ source: agent
 tags:
   - type/session-log
   - domain/ui
-  - domain/frontend
 title: 'Session: Theme Square-Grid Fixes — Stained Glass + Hologram'
 type: session-log
 updated: '2026-06-20T00:00:00.000Z'

@@ -82,12 +82,7 @@ BASE_CONFIG = {
     "n_embd": 16,
     "n_head": 4,
     "block_size": 16,
-    "num_steps": 1,
-    "learning_rate": 0.01,
-    "beta1": 0.85,
-    "beta2": 0.99,
-    "temperature": 0.5,
-    "use_gpu": False,
+    "num_steps": 100,
 }
 
 
