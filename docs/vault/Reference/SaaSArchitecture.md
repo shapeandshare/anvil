@@ -52,7 +52,7 @@ graph TB
         S2 --- S3[S3 object store]
         S3 --- S4[AWS Batch compute pods]
         S4 --- S5[Redis pub/sub + job queue]
-        S5[S6 --- S6[Cognito auth<br/>Hosted UI + social login<br/>CloudFront + Route53]
+        S5 --- S6[Cognito auth<br/>Hosted UI + social login<br/>CloudFront + Route53]
         S6 --- S7[Auto-scaling<br/>multi-tenant]
     end
 
