@@ -1,6 +1,10 @@
 ---
 title: Bootstrap Demo Datasets Implementation
 type: session
+aliases:
+  - 2026-06-14 Bootstrap Datasets
+  - Bootstrap Demo Datasets Session
+source: agent
 tags:
 - type/session-log
 created: '2026-06-14T00:00:00.000Z'

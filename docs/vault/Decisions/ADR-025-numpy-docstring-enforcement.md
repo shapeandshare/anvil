@@ -10,6 +10,7 @@ updated: '2026-06-19'
 status: reviewed
 aliases:
   - ADR-010
+source: agent
 code-refs:
   - AGENTS.md
   - pyproject.toml

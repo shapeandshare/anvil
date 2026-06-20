@@ -9,6 +9,11 @@ updated: 2026-06-13
 aliases:
 - 'ADR-003 — Pit of Success: Opt-In Optional Capabilities with Silent Fallback'
 source: agent
+code-refs:
+- anvil/gpu.py
+- anvil/core/torch_engine.py
+- anvil/services/training/training_service.py
+- .specify/memory/constitution.md
 ---
 
 # ADR-003: Pit of Success — Opt-In Optional Capabilities with Silent Fallback

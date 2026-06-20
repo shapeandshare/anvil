@@ -1,6 +1,10 @@
 ---
 title: Auto Database Schema Management Session
 type: session-log
+aliases:
+  - 2026-06-18 Auto DB Schema
+  - Auto Database Schema Management
+source: agent
 tags:
   - type/session-log
   - domain/infrastructure

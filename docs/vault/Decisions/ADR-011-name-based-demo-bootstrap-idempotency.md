@@ -10,6 +10,10 @@ updated: '2026-06-14T00:00:00.000Z'
 aliases:
 - 'ADR-011: Name-Based Idempotency for Demo Data Bootstrap'
 source: agent
+code-refs:
+- anvil/services/demo/demo_bootstrap.py
+- anvil/db/repositories/corpora.py
+- anvil/db/repositories/datasets.py
 ---
 # ADR-011: Name-Based Idempotency for Demo Data Bootstrap
 

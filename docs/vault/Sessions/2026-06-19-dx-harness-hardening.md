@@ -1,6 +1,10 @@
 ---
 title: Session — 2026-06-19 — DX Hardening Implementation
 type: session-log
+aliases:
+  - 2026-06-19 DX Harness Hardening
+  - DX Hardening Implementation
+source: agent
 tags:
   - type/session-log
   - domain/tooling

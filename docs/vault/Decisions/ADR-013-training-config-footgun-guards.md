@@ -9,6 +9,11 @@ updated: 2026-06-15
 aliases:
 - 'ADR-013 — Training Config Footgun Guards: Multi-Layer Hyperparameter Validation'
 source: agent
+code-refs:
+- anvil/api/v1/training.py
+- anvil/core/torch_engine.py
+- anvil/core/engine.py
+- anvil/api/templates/training.html
 ---
 
 # ADR-013: Training Config Footgun Guards — Multi-Layer Hyperparameter Validation

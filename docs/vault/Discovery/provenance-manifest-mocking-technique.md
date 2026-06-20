@@ -12,6 +12,10 @@ updated: '2026-06-19'
 aliases:
   - Provenance Manifest Mocking in Tests
 source: agent
+code-refs:
+  - anvil/services/demo/demo_bootstrap.py
+  - tests/test_bootstrap.py
+  - specs/014-demo-data-bootstrap/spec.md
 ---
 # Provenance Manifest Mocking in Tests
 

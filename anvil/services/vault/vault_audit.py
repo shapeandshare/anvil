@@ -28,6 +28,7 @@ TYPE_VOCAB: set[str] = {
 
 STATUS_VOCAB: set[str] = {
     "status/draft", "status/wip", "status/reviewed", "status/canonical",
+    "status/superseded",
 }
 
 DOMAIN_VOCAB: set[str] = {
@@ -376,6 +377,7 @@ class VaultAuditService:
         # populating the index incrementally inside the loop produced spurious
         # "broken wikilink" errors for any such forward reference.
         filename_index: dict[str, list[Path]] = {}
+        scannable: list[tuple[Path, str]] = []
         for md_path in all_md:
             try:
                 rel = md_path.relative_to(vault_root)
@@ -387,21 +389,10 @@ class VaultAuditService:
             ):
                 continue
             filename_index.setdefault(md_path.stem, []).append(md_path)
+            scannable.append((md_path, str(rel)))
 
-        for md_path in all_md:
-            try:
-                rel = md_path.relative_to(vault_root)
-            except ValueError:
-                continue
-
-            if any(
-                part in {"_meta", ".obsidian", "addons"}
-                for part in rel.parts
-            ):
-                continue
-
-            note_path_str = str(rel)
-
+        # Validate schema and wikilinks against the fully-built index.
+        for md_path, note_path_str in scannable:
             fm = parse_frontmatter(md_path)
             for f in validate_schema(md_path, fm, note_path_str):
                 report.add(f)

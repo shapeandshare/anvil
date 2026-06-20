@@ -10,6 +10,10 @@ aliases:
 - ADR-009 — MLflow Pyfunc Model Compliance
 source: agent
 updated: '2026-06-18'
+code-refs:
+- anvil/_pyfunc_model.py
+- anvil/services/training/export.py
+- anvil/services/tracking/tracking_service.py
 ---
 # ADR-009: MLflow Pyfunc Model Compliance for Safetensors Export
 

@@ -1,5 +1,9 @@
 ---
 created: '2026-06-18'
+aliases:
+  - 2026-06-18 MLflow Primary Lineage
+  - MLflow Primary Lineage Implementation
+source: agent
 tags:
   - type/session-log
   - domain/mlops

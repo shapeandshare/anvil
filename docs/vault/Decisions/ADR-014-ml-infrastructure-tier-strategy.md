@@ -10,6 +10,10 @@ updated: '2026-06-16'
 aliases:
 - ML Infrastructure Tier Strategy — Compute & Orchestration Trajectory
 source: agent
+code-refs:
+- anvil/services/tracking/tracking_service.py
+- anvil/services/training/export.py
+- docs/vault/Reference/InfraParadigms.md
 ---
 # ADR-014: ML Infrastructure Tier Strategy — Compute & Orchestration Trajectory
 

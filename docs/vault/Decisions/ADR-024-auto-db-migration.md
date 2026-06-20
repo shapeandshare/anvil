@@ -6,6 +6,14 @@ tags:
   - domain/infrastructure
 created: '2026-06-18T00:00:00.000Z'
 updated: '2026-06-18T00:00:00.000Z'
+aliases:
+  - ADR-016
+  - Auto Database Schema Migration
+source: agent
+code-refs:
+  - anvil/db/migration.py
+  - anvil/api/app.py
+  - anvil/config.py
 ---
 # ADR-016: Auto Database Schema Migration
 

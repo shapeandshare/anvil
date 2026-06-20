@@ -11,6 +11,7 @@ aliases:
   - ADR-021
   - init-py-ownership-policy
 status: draft
+source: agent
 code-refs:
   - AGENTS.md
   - .specify/memory/constitution.md

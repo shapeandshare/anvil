@@ -11,6 +11,12 @@ aliases:
 - ADR-023
 - responsible-data-governance
 source: speckit
+code-refs:
+- anvil/workbench.py
+- anvil/services/governance/audit_service.py
+- anvil/services/governance/governance_service.py
+- anvil/db/models/audit_event.py
+- anvil/data/demo/provenance.json
 ---
 # ADR-023: Responsible Data Governance — Provenance, Hash-Chained Audit, and Acceptable-Use Gate
 

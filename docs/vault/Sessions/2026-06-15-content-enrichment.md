@@ -1,6 +1,10 @@
 ---
 title: Content Enrichment Session
 type: session
+aliases:
+  - 2026-06-15 Content Enrichment
+  - Content Enrichment Session
+source: agent
 tags:
   - type/session-log
   - domain/content

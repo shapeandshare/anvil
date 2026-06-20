@@ -9,6 +9,11 @@ updated: 2026-06-13
 aliases:
 - ADR-006 iOS Design Overhaul
 source: agent
+code-refs:
+- DESIGN.md
+- anvil/api/static/css/tokens.css
+- anvil/api/static/css/components.css
+- .specify/memory/constitution.md
 ---
 
 # ADR-006: iOS Design Overhaul

@@ -1,6 +1,10 @@
 ---
 title: Learning Content Enrichment Implementation
 type: session
+aliases:
+  - 2026-06-13 Learning Content Enrichment
+  - Learning Content Enrichment Session
+source: agent
 tags:
 - type/session-log
 created: 2026-06-13

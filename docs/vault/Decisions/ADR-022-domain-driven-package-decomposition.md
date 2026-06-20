@@ -11,6 +11,7 @@ aliases:
   - ADR-022
   - domain-driven-decomposition
 status: draft
+source: agent
 code-refs:
   - .specify/memory/constitution.md
   - AGENTS.md

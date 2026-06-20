@@ -9,6 +9,12 @@ created: 2026-06-19
 updated: 2026-06-19
 aliases:
   - ADR-028-ci-merge-gate-enforcement
+source: agent
+code-refs:
+  - .github/workflows/ci.yml
+  - scripts/ci/check_bump_scope.py
+  - scripts/ci/check_adr_unique.py
+  - shared/vault.mk
 ---
 
 # ADR-028: CI Merge Gate Enforcement

@@ -1,4 +1,7 @@
 ---
+aliases:
+  - 'Session: Theme Picker Transparency Fix'
+  - Theme Picker Transparency
 created: '2026-06-19T00:00:00.000Z'
 source: agent
 tags:

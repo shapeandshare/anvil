@@ -1,6 +1,10 @@
 ---
 title: "Session: Graph Health Subsumption"
 type: session-log
+aliases:
+  - 2026-06-19 Graph Health Subsumption
+  - Graph Health Subsumption Session
+source: agent
 tags:
   - type/session-log
   - domain/governance

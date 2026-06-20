@@ -9,6 +9,11 @@ created: 2026-06-19
 updated: 2026-06-19
 aliases:
   - ADR-026-coverage-ratcheting-baseline
+source: agent
+code-refs:
+  - pyproject.toml
+  - .github/workflows/ci.yml
+  - .specify/memory/constitution.md
 ---
 
 # ADR-026: Coverage Ratcheting Baseline

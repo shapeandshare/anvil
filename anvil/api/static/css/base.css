@@ -221,6 +221,7 @@ a:hover { text-decoration: underline; }
   font-size: var(--text-caption-1);
   color: var(--text-tertiary);
   opacity: 0.55;
+  background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--bg) 60%, transparent));
   padding: var(--space-2) var(--space-4) calc(var(--space-2) + env(safe-area-inset-bottom, 0));
 }
 
