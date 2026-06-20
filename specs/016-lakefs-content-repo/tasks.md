@@ -222,6 +222,7 @@ recipe; pin → training applies weights.
 - [ ] T071 [US4] Implement `CompositionService` in `anvil/services/content/composition_service.py`: `preview(corpus_id, spec)` and `freeze(corpus_id, spec)` building a composition manifest (`is_composition=True`) (FR-018/019/020/022).
 - [ ] T072 [US4] Implement weighted resolution in resolver/training data path (apply `weight` at sampling) (FR-021).
 - [ ] T073 [US4] Add `CompositionSpec` schema + endpoints `POST /content/corpora/{id}/composition/preview` and composition path in `/content/corpora/{id}/freeze` in `anvil/api/v1/content.py` + `schemas.py`.
+- [ ] T073a [US4] Implement the composition-preview SSE endpoint `GET /content/stream/composition` (`StreamingResponse` + `asyncio.Queue`, mirror `training.py`) that emits projected per-source token/byte contribution as the curator adjusts weights (FR-019; contracts/api-endpoints.md line 48). Backend only — consumed by the Composer view (T082a).
 
 **Checkpoint**: SC-006 satisfied.
 
@@ -229,11 +230,16 @@ recipe; pin → training applies weights.
 
 ## Phase 8: User Story 5 - Browse library, version timeline & lineage (P2)
 
-**Goal**: Forge screens for Corpus Library, Version Timeline (diff vs prior), Lineage; live
-Injection Monitor via SSE.
+**Goal**: A polished, design-system-conformant **content hub** in the browser — Corpus
+Library, Version Timeline (diff vs prior), Lineage, and a live Injection Monitor — plus the
+client interactions (forms + SSE) for the full corpus workflow, and the **Ensemble Composer**
+view (consuming US4's preview SSE). This is the phase where the content repository becomes
+usable from the UI (the MVP, Phases 1–3, is intentionally API-first — quickstart uses curl).
 
-**Independent Test**: with several corpora/versions, library shows accurate summaries, timeline
-shows diffs, lineage lists sources + referencing runs.
+**Independent Test**: with several corpora/versions, the content hub renders accurate library
+summaries, timeline diffs, and lineage; a curator can create a corpus, ingest, validate,
+accept, freeze, tag, and revert entirely from the browser; the Injection Monitor and Composer
+update live; screens pass the design-system + accessibility checks (T080b).
 
 ### Tests
 
@@ -246,9 +252,12 @@ shows diffs, lineage lists sources + referencing runs.
 - [ ] T077 [US5] Implement version-timeline diff (entries added/removed vs prior version) in `ContentVersionRepository`/service (FR-028).
 - [ ] T078 [US5] Implement endpoints: GET `/content/corpora`, GET `/content/corpora/{id}/versions` (timeline), GET `/content/versions/{id}/lineage`, GET `/content/sessions` in `anvil/api/v1/content.py` (FR-027/028/029/031).
 - [ ] T079 [US5] Implement SSE injection-status stream `GET /content/stream/injection` (StreamingResponse + asyncio.Queue, mirror `training.py`) (FR-029).
-- [ ] T080 [P] [US5] Create forge page templates `anvil/api/templates/archetypes/content_library.html` (extends base.html; library + timeline + lineage views).
-- [ ] T081 [US5] Add `/v1/content-page` route in `anvil/api/v1/pages.py` and a "Content" nav tab in `anvil/api/templates/base.html`.
-- [ ] T082 [P] [US5] Wire the Injection Monitor live view to the SSE stream using the existing `SSESession` client (`anvil/api/static/js/sse.js`) within the content page JS.
+- [ ] T080 [P] [US5] Create the **content hub shell** `anvil/api/templates/archetypes/content_library.html` (extends `base.html`; renders the Corpus Library, Version Timeline w/ diff, and Lineage views, with mount points for the Composer/Import Console/Checkout Board views added in their phases). Follow the forge archetype.
+- [ ] T081 [US5] Add `/v1/content-page` route in `anvil/api/v1/pages.py` and a "Content" nav tab (with icon) in `anvil/api/templates/base.html`.
+- [ ] T082 [P] [US5] Wire the Injection Monitor live view to the SSE injection-status stream using the existing `SSESession` client (`anvil/api/static/js/sse.js`).
+- [ ] T080a [US5] Create `anvil/api/static/js/content.js` (+ `anvil/api/static/css/` additions if needed): client interactions/forms for create-corpus, register-source, open-session, stage/upload (multipart), validate, accept, freeze, tag, and revert; consume the `{data, error}` envelope and surface validation `problems`; use `SSESession` for live views. (Covers U-D.)
+- [ ] T082a [P] [US5] Implement the **Ensemble Composer** view (design-doc forge screen): entry/source selection, weight sliders, live mix distribution (token/byte) + chunking preview via the composition-preview SSE (T073a), and a "freeze composition" action calling the US4 endpoints (FR-018/019/020/022). (Covers U-A.)
+- [ ] T080b [US5] **Design-system & accessibility conformance** (Constitution Article VIII + `DESIGN.md`): all content forge screens MUST reference `tokens.css`/`components.css`/`archetypes.css`/`utilities.css` (no raw colors/spacing/type values), integrate the theme system (`data-skin`/`data-theme`), be responsive across breakpoints, meet WCAG AA contrast, and honor `prefers-reduced-motion` + `prefers-reduced-transparency`. Verify against `DESIGN.md`. **Execute via the `visual-engineering` category + `frontend-ui-ux` skill.** (Covers U-C.)
 
 **Checkpoint**: SC-007, SC-008 satisfied.
 
@@ -270,7 +279,7 @@ content passed gates and appears in the corpus.
 
 - [ ] T085 [US6] Implement `ImportService` in `anvil/services/content/import_service.py`: `start` (opens an IngestSession, streams source content, accepts through gates) + `status` (FR-032/033).
 - [ ] T086 [US6] Add endpoints POST `/content/imports`, GET `/content/imports/{id}`, SSE `GET /content/stream/import` + `ImportStart`/`ImportJobOut` schemas.
-- [ ] T087 [P] [US6] Add Import Console view to the content forge page + live progress via SSE.
+- [ ] T087 [P] [US6] Add the Import Console view to the content hub (mount point from T080) + live progress via the import-progress SSE; conform to the design system (T080b). Build via `visual-engineering` + `frontend-ui-ux`.
 
 **Checkpoint**: US6 import works through the standard validation path.
 
@@ -291,7 +300,7 @@ held → release clears it.
 
 - [ ] T089 [US7] Implement `LockService` in `anvil/services/content/lock_service.py` (acquire/release/list_active) (FR-034).
 - [ ] T090 [US7] Add endpoints POST/DELETE/GET `/content/locks`, SSE `GET /content/stream/locks` + `LockBody`/`LockOut` schemas (FR-035).
-- [ ] T091 [P] [US7] Add Checkout Board view to the content forge page + live updates via SSE.
+- [ ] T091 [P] [US7] Add the Checkout Board view to the content hub (mount point from T080) + live updates via the lock-events SSE; conform to the design system (T080b). Build via `visual-engineering` + `frontend-ui-ux`.
 
 **Checkpoint**: US7 advisory locks work.
 
@@ -321,7 +330,7 @@ held → release clears it.
 - [ ] T097a [P] Retention/GC test in `tests/integration/content/test_retention_gc.py`: a run-referenced version AND its content-addressed blobs survive a GC cycle (zero loss), while unreferenced blobs + expired failed-session staging are collected (SC-002, FR-024/025).
 - [ ] T098 [P] Add `data/content/` to `.gitignore` and to the Docker/compose volume + packaging notes (mirrors `mlruns/`, `data/`).
 - [ ] T098a [P] Relabel the legacy directory-based corpus surface as "Directory Corpus (deprecated)" wherever it remains present (existing corpora templates/nav/labels) to distinguish it from the canonical Corpus (FR-038b).
-- [ ] T099 Run quickstart.md end-to-end and check off its acceptance boxes (SC-001/002/003/004/005/006/010/012).
+- [ ] T099 Run quickstart.md end-to-end and check off its acceptance boxes (SC-001/002/003/004/005/006/010/012). Include a UI pass: verify the content hub renders the Library/Timeline/Lineage/Injection Monitor/Composer/Import Console/Checkout Board screens, is responsive, theme-switches cleanly (`data-skin`/`data-theme`), meets WCAG AA contrast, and honors reduced-motion (Article VIII / DESIGN.md).
 - [ ] T100 Run `make lint`, `make typecheck` (mypy strict), `make test`; raise `fail_under` coverage to the new measured level (Article IV ratchet); ensure all gates pass.
 - [ ] T101 [P] Vault enrichment: session log + any Discovery notes in `docs/vault/`; run `make vault-audit` (0 errors).
 
@@ -389,3 +398,15 @@ US9/SaaS (LakeFS) is a **separate later delivery** (plan Phase F) gated by its o
 - One class per file; StrEnum over magic strings; Pydantic BaseModel for value/HTTP types.
 - The single Alembic migration (T025) creates all tables; tables for later stories are
   harmless until used.
+- **Visual/frontend tasks** (T080, T080a, T080b, T082a, the T087 Import Console view, and
+  the T091 Checkout Board view) MUST be delegated to the **`visual-engineering`** category
+  with the **`frontend-ui-ux`** skill and conform to `DESIGN.md` (Constitution Article VIII).
+  Do not hand-build UI ad hoc.
+- **MVP is intentionally API-first** (U-E): Phases 1–3 (US1) deliver the reproducibility
+  flow via the API (quickstart uses curl); the browser experience lands in US5 (Phase 8).
+  This is a deliberate sequencing decision, not a gap.
+- **All 8 design-doc forge screens are covered**: Corpus Library (T080), Version Timeline
+  (T080), Lineage (T080), Injection Monitor (T079/T082), Ensemble Composer (T082a/T073a),
+  Import Console (T087), Checkout Board (T091); Back-office/SQLAdmin is the SaaS-deferred
+  `/admin` (T094). All four SSE streams have tasks: injection (T079), composition (T073a),
+  import (T086), locks (T090).

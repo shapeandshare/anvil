@@ -69,10 +69,20 @@ SSE endpoints use `StreamingResponse(media_type="text/event-stream")` + `asyncio
 
 ## Pages (forge screens) — `anvil/api/v1/pages.py`
 
-| Path | Template | Screen |
-|---|---|---|
-| `/v1/content-page` | `archetypes/content_library.html` | Corpus Library + nav tab |
-| (sub-views rendered within, or dedicated pages) | timeline / composer / injection / import / checkout / lineage | FR-027–031, 035 |
+A single **content hub** page hosts the views (forge archetype, `base.html`,
+design-system conformant per Article VIII / DESIGN.md). Client interactions live in
+`anvil/api/static/js/content.js`; live views use the `SSESession` client.
+
+| Path / view | Template / mount | Screen | FR |
+|---|---|---|---|
+| `/v1/content-page` | `archetypes/content_library.html` (hub shell) + nav tab | Corpus Library | FR-027 |
+| Version Timeline view | hub mount | timeline + diff vs prior | FR-028 |
+| Lineage view | hub mount | sources + referencing runs | FR-031 |
+| Injection Monitor view | hub mount | live sessions (injection SSE) | FR-029 |
+| Ensemble Composer view | hub mount | weights + live mix preview (composition SSE) | FR-018/019/020/022 |
+| Import Console view | hub mount | import jobs (import SSE) | FR-030/032 |
+| Checkout Board view | hub mount | active locks (lock SSE) | FR-035 |
+| Back-office | SQLAdmin `/admin` (SaaS-deferred) | RBAC/raw records | FR-037 |
 
 ## Back-office (optional, lower priority)
 

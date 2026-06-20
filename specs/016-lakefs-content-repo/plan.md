@@ -168,8 +168,12 @@ conventions. No new top-level project; SaaS substrate (`anvil/_saas/`) is out of
   retention/GC of unreferenced blobs, app-level producer scoping. **US2/US3, SC-002/003/004/005**.
 - **Phase C — Composition/ensembling**: weighted selection, preview (token/byte), freeze
   composition versions, weighted resolution. **US4, SC-006**.
-- **Phase D — Visibility (forge screens + SSE)**: Corpus Library, Version Timeline (diff),
-  Injection Monitor, Lineage; SSE streams. **US5, SC-007/008**.
+- **Phase D — Visibility (forge screens + SSE)**: the browser **content hub** — Corpus
+  Library, Version Timeline (diff), Lineage, Injection Monitor, and the **Ensemble
+  Composer** — plus `content.js` workflow interactions, the 4 SSE streams, and a
+  **design-system + accessibility conformance pass** (Constitution Article VIII / DESIGN.md;
+  delegated to `visual-engineering` + `frontend-ui-ux`). The MVP (Phase A) is API-first;
+  the UI lands here. **US5, SC-007/008**.
 - **Phase E — Import + advisory**: import jobs (through gates), near-dup advisory,
   re-tokenize/derived-state refresh, checkout board/locks. **US6/US7, FR-015/026a**.
 - **Phase F — SaaS mode (separate delivery + ADR)**: `LakeFSVersionedContentStore` behind
