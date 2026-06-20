@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
+{% block content %}
+<div class="training-dashboard" style="grid-template-columns: 1fr; max-width: 760px; margin: 0 auto; padding: var(--space-4);">
+  <div class="section-card">
+    <div class="section-card__header" style="justify-content:center;">
+      <h1 class="section-card__title type-title-3" style="text-align:center;">Glossary</h1>
+    </div>
+    <div class="section-card__content">
+      <p class="page-intro">Definitions for every technical term used across the learning arc and codebase.</p>
+
+      <div class="faq-list">
+        {% for term in terms %}
+        <div class="faq-item section-card" style="cursor: pointer; margin-bottom: var(--space-2);" onclick="toggleFaq(this)">
+          <div class="faq-question section-card__header" style="margin-bottom: 0; cursor: pointer;">
+            <span class="section-card__title"><code>{{ term.name }}</code></span>
+            <span class="faq-toggle text-mono type-caption-1" style="flex-shrink:0;">[+]</span>
+          </div>
+          <div class="faq-answer section-card__content" style="display: none; margin-top: var(--space-3);">
+            <p class="text-muted">{{ term.definition }}</p>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div style="text-align: center; margin-top: var(--space-4);">
+        <p class="space-y-2">
+          <a href="/v1/learn" class="action-link">Back to Learning Index</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function toggleFaq(el) {
+  var answer = el.querySelector('.faq-answer');
+  var toggle = el.querySelector('.faq-toggle');
+  if (answer.style.display === 'none' || answer.style.display === '') {
+    answer.style.display = 'block';
+    toggle.textContent = '[-]';
+  } else {
+    answer.style.display = 'none';
+    toggle.textContent = '[+]';
+  }
+}
+</script>
+{% endblock %}
+{% block didyouknow_banner %}
+<div id="didyouknow-banner" class="didyouknow">
+  <span class="didyouknow__icon" aria-hidden="true">&#9670;</span>
+  <div>
+    <div class="didyouknow__label">&#9670; Did You Know?</div>
+    <span id="didyouknow-text"></span>
+  </div>
+  <button type="button" class="didyouknow__dismiss" aria-label="Dismiss">&#10005;</button>
+</div>
+{% endblock %}
