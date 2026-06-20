@@ -20,6 +20,7 @@ THEME_IDS = [
     "oldgrowth",
     "aurora",
     "tide",
+    "unicorn",
     "bloom",
     "tectonic",
     "glacier",

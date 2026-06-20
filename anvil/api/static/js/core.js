@@ -204,6 +204,13 @@
         if (!newMain || !currentMain) return;
         currentMain.innerHTML = newMain.innerHTML;
 
+        /* 1b. Swap modals content ({% block modals %}, outside <main>) */
+        var newModals = doc.querySelector('#modals-container');
+        var currentModals = document.querySelector('#modals-container');
+        if (newModals && currentModals) {
+          currentModals.innerHTML = newModals.innerHTML;
+        }
+
         /* 2. Re-execute inline scripts from the new content */
         _execScripts(currentMain);
 
