@@ -1,5 +1,6 @@
 """Tests for InferenceService and DemoModelProvider."""
 
+import asyncio
 import tempfile
 from pathlib import Path
 
@@ -63,13 +64,26 @@ def test_loaded_model_vocab():
     assert loaded.info()["is_demo"] is False
 
 
-def test_inference_service_load_demo(demo_service):
-    import asyncio
-    loaded = asyncio.run(demo_service.load_model())
-    assert loaded.is_demo is True
-    assert loaded.model_id is None
-    assert loaded.model is not None
-    assert len(loaded.chars) > 0
+def test_inference_service_load_by_id(demo_service):
+    """load_model(ID, version) loads from experiment_{ID}.json on disk."""
+    import tempfile
+    from pathlib import Path
+
+    docs = ["abc", "def", "ghi"]
+    model, _, _, uchars = train(docs, num_steps=20, n_embd=8, n_head=2)
+
+    models_dir = Path("data/models")
+    models_dir.mkdir(parents=True, exist_ok=True)
+    model_path = models_dir / "experiment_99.json"
+    model.save(str(model_path), uchars)
+    try:
+        loaded = asyncio.run(demo_service.load_model(model_id=99))
+        assert loaded.model_id == 99
+        assert loaded.version == 1
+        assert loaded.model is not None
+        assert len(loaded.chars) > 0
+    finally:
+        model_path.unlink(missing_ok=True)
 
 
 def test_inference_service_tokenize(demo_service, trained_loaded_model):

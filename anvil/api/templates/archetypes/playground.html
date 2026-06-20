@@ -274,6 +274,11 @@
       statusEl.textContent = 'Select a model first';
       return;
     }
+    var model = findModelByKey(modelKey);
+    if (!model) {
+      statusEl.textContent = 'Model not found';
+      return;
+    }
     var version = versionLabel.style.display !== 'none'
       ? parseInt(versionSelect.value)
       : 1;
@@ -289,7 +294,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model_id: modelKey,
+          model_id: model.id,
           version: version,
           temperature: parseFloat(temperatureInput.value),
           num_samples: parseInt(numSamplesInput.value),

@@ -1088,19 +1088,21 @@ class TrackingService:
                 )
                 latest = sorted_versions[0]
 
-                # Get run data for final_loss
+                # Get run data for final_loss and experiment_id tag
                 final_loss = None
+                experiment_id = None
                 try:
                     run = await loop.run_in_executor(
                         None, lambda rid=latest.run_id: client.get_run(rid)
                     )
-                    if run and run.data and run.data.metrics:
-                        final_loss = run.data.metrics.get("final_loss")
+                    if run and run.data:
+                        if run.data.metrics:
+                            final_loss = run.data.metrics.get("final_loss")
+                        raw = run.data.tags.get("anvil.experiment_id")
+                        if raw is not None:
+                            experiment_id = int(raw)
                 except Exception:
                     pass
-
-                # Local experiment ID lookup removed — all tracking via MLflow now
-                experiment_id = None
 
                 # Count total versions
                 all_versions = await loop.run_in_executor(
