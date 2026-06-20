@@ -428,7 +428,7 @@ def train(
         for p in model.params:
             p.grad = 0
         if progress_callback:
-            progress_callback(step, loss.data)
+            progress_callback(step, loss.data, tokens=n, grad_norm=None)
 
     samples = []
     for _ in range(20):

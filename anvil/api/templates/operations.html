@@ -32,6 +32,7 @@
     <button class="btn btn-secondary" onclick="ops.restartAll()" id="btn-restart-all">⟳ Restart All</button>
     <button class="btn btn-secondary" onclick="ops.clearAllLogs()" id="btn-clear-logs">✕ Clear Logs</button>
     <button class="btn btn-secondary" onclick="ops.healthCheck()" id="btn-health">◉ Health Check</button>
+    <button class="btn btn-secondary" onclick="ops.rebootstrapDemo()" id="btn-rebootstrap-demo">↻ Re-bootstrap Demo</button>
   </div>
 </div>
 
@@ -134,6 +135,24 @@
         toast('Network error', 'error');
       }
       setBtnLoading('btn-health', false);
+    },
+
+    rebootstrapDemo: async function() {
+      setBtnLoading('btn-rebootstrap-demo', true);
+      try {
+        var resp = await fetch('/v1/demo/bootstrap', { method: 'POST' });
+        var data = await resp.json();
+        if (resp.ok) {
+          var created = data.corpora_created + data.datasets_created;
+          var skipped = data.corpora_skipped + data.datasets_skipped;
+          toast('Demo: ' + created + ' created, ' + skipped + ' skipped', 'success');
+        } else {
+          toast(data.detail || 'Error', 'error');
+        }
+      } catch(e) {
+        toast('Network error', 'error');
+      }
+      setBtnLoading('btn-rebootstrap-demo', false);
     },
 
     killPort: async function(name) {

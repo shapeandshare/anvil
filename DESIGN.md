@@ -423,6 +423,15 @@ When `prefers-reduced-transparency: reduce` is active, all `backdrop-filter` gla
 
 **Intentional exemption**: The global ambient radial gradient on `.app-main` and the floating ambient particles are CSS `radial-gradient` and positioned elements (not `backdrop-filter`), so they are deliberately unaffected by this preference. These effects create visual atmosphere and carry no functional content — no information is lost if a user has reduced-transparency enabled.
 
+## Behavioral Themes
+
+The UI supports a gallery of **behavioral themes** (feature 015, ADR-031) beyond the default light/dark system. A theme is a self-contained module: a JS registration under `anvil/api/static/js/themes/<id>.js` plus a CSS layer at `anvil/api/static/css/themes/<id>.css`.
+
+- **Attribute model**: `data-theme` carries the light/dark **mode** (unchanged — all existing `[data-theme="light"]` rules keep working); a new `data-skin` attribute carries the **theme id**. Theme CSS layers key off `[data-skin="<id>"]` and override design tokens, so all token-reactive components re-theme automatically — a systemic restyle remains a token edit.
+- **Default parity**: the `default` theme has no CSS layer and uses base `tokens.css` only, so its appearance is byte-identical to the pre-feature baseline.
+- **Expressive layer**: a theme MAY map live training signals to coordinated visual responses via a `mapping(signalBus, effectLevel)` hook. The backend emits only neutral signals (`metrics` with `grad_norm`/`tokens_per_sec`, plus `divergence` and `milestone` events); themes own their interpretation client-side (e.g. Old Growth derives its "disturbance" from instability). Mappings drive theme-private CSS variables (`--heat`, `--prog`, `--disturbance`, `--calm`, `--flow`) and state attributes.
+- **Accessibility**: every theme layer includes a `prefers-reduced-motion` reset; the centralized effect-level resolver suppresses legibility-degrading effects under reduced-effects/maximum-legibility and pauses continuous effects when the tab is hidden. Primary content must meet WCAG AA in every theme and mode.
+
 ## Do's and Don'ts
 
 - **Do** use the system blue accent for interactive elements only. One interactive accent per viewport section maximum.

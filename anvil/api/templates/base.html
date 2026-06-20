@@ -6,14 +6,42 @@
 <title>anvil</title>
 <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
-<script>
-(function(){var t=localStorage.getItem('theme');if(!t){t='dark'}document.documentElement.setAttribute('data-theme',t)})();
-</script>
 <link rel="stylesheet" href="/static/css/tokens.css">
 <link rel="stylesheet" href="/static/css/base.css">
 <link rel="stylesheet" href="/static/css/utilities.css">
 <link rel="stylesheet" href="/static/css/components.css">
 <link rel="stylesheet" href="/static/css/code.css">
+<script>
+(function () {
+  var raw = null;
+  var parsed = null;
+  var themeId = 'default';
+  var mode = 'dark';
+  var root = document.documentElement;
+  var link;
+  try { raw = localStorage.getItem('theme'); } catch (e) { raw = null; }
+  if (raw === 'light' || raw === 'dark') {
+    mode = raw;
+  } else if (raw) {
+    try { parsed = JSON.parse(raw); } catch (e) { parsed = null; }
+    if (parsed && typeof parsed.themeId === 'string') {
+      themeId = parsed.themeId;
+      mode = parsed.mode === 'light' ? 'light' : 'dark';
+    }
+  } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+    mode = 'light';
+  }
+  root.setAttribute('data-skin', themeId);
+  root.setAttribute('data-theme', mode);
+  if (themeId !== 'default') {
+    link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.id = 'theme-layer-css';
+    link.href = '/static/css/themes/' + themeId + '.css';
+    document.head.appendChild(link);
+  }
+})();
+</script>
 {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -30,6 +58,7 @@
       <a href="/v1/operations-page" class="tab-item"><span class="tab-icon"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><defs><mask id="og"><rect width="24" height="24" fill="white"/><circle cx="12" cy="12" r="3" fill="black"/></mask></defs><g mask="url(#og)"><circle cx="12" cy="12" r="7"/><rect x="10" y="2" width="4" height="4" rx="0.8"/><rect x="10" y="2" width="4" height="4" rx="0.8" transform="rotate(45 12 12)"/><rect x="10" y="2" width="4" height="4" rx="0.8" transform="rotate(90 12 12)"/><rect x="10" y="2" width="4" height="4" rx="0.8" transform="rotate(135 12 12)"/><rect x="10" y="2" width="4" height="4" rx="0.8" transform="rotate(180 12 12)"/><rect x="10" y="2" width="4" height="4" rx="0.8" transform="rotate(225 12 12)"/><rect x="10" y="2" width="4" height="4" rx="0.8" transform="rotate(270 12 12)"/><rect x="10" y="2" width="4" height="4" rx="0.8" transform="rotate(315 12 12)"/></g></svg></span><span class="tab-label">Ops</span></a>
       <a href="/v1/about" class="tab-item"><span class="tab-icon"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><line x1="12" y1="11" x2="12" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="8" r="1.2"/></svg></span><span class="tab-label">About</span></a>
     </div>
+    {% include "components/theme_picker.html" %}
     <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
       <svg class="theme-icon theme-icon--sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
       <svg class="theme-icon theme-icon--moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -64,6 +93,14 @@
   <footer class="site-footer">anvil v{{ version }}</footer>
 </div>
 <div id="toast-container" class="toast-container"></div>
+<script src="/static/js/theme/theme-registry.js"></script>
+<script src="/static/js/theme/effect-level.js"></script>
+<script src="/static/js/theme/signal-bus.js"></script>
+<script src="/static/js/theme/theme-manager.js"></script>
+<script src="/static/js/themes/default.js"></script>
+<script src="/static/js/themes/forge.js"></script>
+<script src="/static/js/themes/oldgrowth.js"></script>
+<script src="/static/js/themes/aurora.js"></script>
 <script src="/static/js/core.js"></script>
 {% block scripts %}{% endblock %}
 </body>

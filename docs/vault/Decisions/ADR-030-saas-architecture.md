@@ -93,7 +93,7 @@ SaaS code lives in `anvil/_saas/` and is **never imported in local mode** -- no 
 
 - **Repository pattern refactor** -- every repository method needs an `org_id` scope (full RBAC: org/team/role, AD-8) for SaaS. Local mode uses a single default org. Touches ~20+ methods.
 - **New dependency for SaaS deployment** -- `boto3`, `redis-py`, `aws-jwt-verify` are SaaS-only extras, not in the base package.
-- **MLflow URL construction** -- `get_mlflow_browser_uri(request)` currently uses `request.host`. SaaS mode needs CloudFront-aware URL construction.
+- **MLflow URL construction** -- `get_mlflow_browser_uri(request)` currently uses `request.host`. SaaS mode needs CloudFront-aware URL construction. **Resolved by AD-13**: an authenticated reverse proxy at `/v1/mlflow-proxy/` plus a CloudFront-aware URI builder; MLflow stays private.
 - **Docker compose complexity** -- developers manage 5+ containers locally (PostgreSQL, Redis, MinIO, MLflow, anvil-web). Cognito emulation needs a local mock or dev pool.
 - **SSE auth** -- EventSource cannot set custom headers; the SSE endpoint reads a short-lived signed token via query parameter (AD-2/FR-020). The ALB does NOT perform `authenticate-cognito` (app-managed OIDC).
 - **CLI auth complexity** -- CLI uses Cognito OAuth2 device grant flow (browser popup) rather than API keys. More steps, more secure.
@@ -105,7 +105,7 @@ SaaS code lives in `anvil/_saas/` and is **never imported in local mode** -- no 
 - **Batch job state consistency** -- resolved by AD-4: PostgreSQL is the source of truth via append-only `job_events`; a reconciler repairs stuck jobs. Redis is delivery-only.
 - **CloudFront cache invalidation** -- static assets served through CloudFront need invalidation on deploy. Mitigation: versioned asset filenames or deploy-time invalidation.
 
-## Architecture Decisions (Canonical: AD-1 .. AD-11)
+## Architecture Decisions (Canonical: AD-1 .. AD-16)
 
 The detailed, binding decisions resolving the pre-implementation review live in `specs/014-saas-architecture/spec.md` and supersede any summary here:
 
@@ -118,12 +118,19 @@ The detailed, binding decisions resolving the pre-implementation review live in 
 | AD-5 | SSE per-connection subscribe + `Last-Event-ID` replay |
 | AD-6 | Migrations as a single pre-deploy step |
 | AD-7 | Asset-free CloudFormation with digest-pinned images |
-| AD-8 | Full RBAC: Organization -> Team -> Role -> User |
+| AD-8 | Full RBAC: Cluster admin (read-wide/write-narrow) + Organization -> Team -> Role -> User |
 | AD-9 | Usage metering for billback derived from `job_events` |
 | AD-10 | Single container image, two entrypoints (web + compute worker) |
 | AD-11 | Three-plane orchestration; AWS Batch owns scheduling; fair-share + quotas + checkpointed retries |
+| AD-12 | Observability: in-app CloudWatch Logs viewer, OpenTelemetry->X-Ray tracing, Prometheus `/metrics` + Grafana + Alertmanager; all SaaS-only optional extras (FR-052-FR-056) |
+| AD-13 | MLflow stays private; browser access via an authenticated `/v1/mlflow-proxy/` reverse proxy with `--static-prefix` (FR-057) |
+| AD-14 | Two-tier admin: `is_cluster_admin` flag is read-wide, write-narrow -- cross-org read + fixed cluster-op action matrix, but tenant-data writes still gated by org role (FR-034-FR-038b). Local mode is implicit admin, no auth |
+| AD-15 | Multi-cluster CLI: `~/.anvil/clusters.json` registry (with `region`, `api_version`), `anvil remote cluster *` commands, `GET /v1/version` negotiation (FR-014a/c) |
+| AD-16 | Production posture: single-region multi-AZ HA (RDS Multi-AZ + PITR, Redis Multi-AZ failover, S3 versioning), backup/DR with destroy-time final snapshot + `deploy restore`, secret-rotation dual-key window, reconciler operating parameters, `job_events` retention (FR-043a, FR-044a, FR-045q-s, FR-058-061) |
 
-See also: [[SaaSArchitecture]], [[SaaSSystemDiagrams]], [[SaaSSecurityAndFlowDiagrams]].
+**Key clarification (AD-14)**: the cluster-admin elevation is NOT a blanket bypass. It widens the read scoping predicate (cross-org visibility) and grants a fixed cluster-operation matrix (suspend orgs, cancel jobs, manage cluster admins, view health/logs), but destructive tenant-data mutation in a foreign org still requires an explicit org role there. This resolved a blocking authority conflict in the spec review (FR-037 vs FR-038a).
+
+See also: [[SaaSArchitecture]], [[SaaSSystemDiagrams]], [[SaaSSecurityAndFlowDiagrams]], [[2026-06-19-saas-spec-hardening|SaaS Spec Hardening Session]].
 
 ## Compliance
 
