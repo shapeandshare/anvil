@@ -284,6 +284,8 @@ SomeException
 - `anvil/services/` decomposed into domain sub-packages: `datasets/`, `training/`, `tracking/`, `inference/`, `demo/`, `_shared/`. 29 flat modules → 6 domain directories. (012-ddd-services-restructure)
 - Python 3.11+ (helper scripts, refactors); YAML (GitHub Actions); Markdown (governance/docs); POSIX sh + GNU make (gate orchestration, existing `shared/*.mk`) + Existing dev tooling only — `ruff`, `black`, `isort`, `pylint`, `mypy` (strict), `pytest` + `pytest-cov`, `commitizen`, `uv`; GitHub Actions (`actions/checkout@v4`, `astral-sh/setup-uv` or `actions/setup-python@v5`); existing `scripts/ci/vault_audit.py` + `graph_health/`. **No new runtime or dev dependency is required.** (013-dx-harness-hardening)
 - N/A — no new persistence. (Coverage baseline stored as a config value in `pyproject.toml`; gate config stored in workflow YAML.) (013-dx-harness-hardening)
+- Python 3.11+ (backend), TypeScript 5.x (CDK infrastructure), JavaScript ES6+ (frontend unchanged) + FastAPI (existing), SQLAlchemy[asyncio] (existing), `boto3` (new, SaaS extra), `redis-py` (new, SaaS extra), `aws-jwt-verify` (new, SaaS extra), `aws-cdk-lib` (dev only, infra package) (opencode/mighty-tiger)
+- RDS PostgreSQL (SaaS), SQLite (local), S3 (SaaS), local filesystem (local), ElastiCache Redis (SaaS, for SSE) (opencode/mighty-tiger)
 
 ## Recent Changes
 - 002-directory-corpus-ingestion: Added Python 3.11+ + Existing project deps (FastAPI, SQLAlchemy, aiofiles) + `pathspec` (lightweight gitignore pattern matching, pure Python, no binary deps)
