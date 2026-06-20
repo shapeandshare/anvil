@@ -1212,6 +1212,44 @@ margin-bottom: var(--space-2);
 }
 .wizard-panel--active { display: block; }
 
+/* ── Panel Step Badge ── */
+.wizard-panel-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--separator);
+}
+
+.wizard-panel-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--accent);
+  flex-shrink: 0;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+#panel-config .wizard-panel-badge {
+  background: var(--accent-purple);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-purple) 25%, transparent);
+}
+
+.wizard-panel-title {
+  font-family: var(--font-body);
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  color: var(--text);
+}
+
 @keyframes panel-slide-in {
   from { opacity: 0; transform: translateX(12px); }
   to { opacity: 1; transform: translateX(0); }
