@@ -3,20 +3,25 @@
 {% block content %}
 
 {# ── WIZARD STEPS (visual progress legend) ── #}
-<div class="wizard-steps" role="list" aria-label="Data management workflow: three steps">
-  <div class="wizard-step wizard-step--active">
+<div class="wizard-steps" role="list" aria-label="Data management workflow: four steps">
+  <div class="wizard-step wizard-step--active" data-tab="tab-datasets">
     <div class="wizard-step-bubble"><span>1</span></div>
     <span class="wizard-step-label">Add Data</span>
   </div>
   <div class="wizard-step-connector wizard-step-connector--filled"></div>
-  <div class="wizard-step">
+  <div class="wizard-step" data-tab="tab-corpora">
     <div class="wizard-step-bubble"><span>2</span></div>
     <span class="wizard-step-label">Organize Sources</span>
   </div>
   <div class="wizard-step-connector wizard-step-connector--filled"></div>
-  <div class="wizard-step">
+  <div class="wizard-step" data-tab="tab-imports">
     <div class="wizard-step-bubble"><span>3</span></div>
     <span class="wizard-step-label">Combine &amp; Curate</span>
+  </div>
+  <div class="wizard-step-connector wizard-step-connector--filled"></div>
+  <div class="wizard-step" data-tab="tab-alldata">
+    <div class="wizard-step-bubble"><span>4</span></div>
+    <span class="wizard-step-label">All Data</span>
   </div>
 </div>
 
@@ -104,24 +109,16 @@
   </div>
 </div>
 
-{# ── SECTION CARD #2: GUIDED DATA MANAGER (all panels visible) ── #}
-<div class="section-card" style="--stagger-i: 1">
-  <div class="page-intro">Upload .txt files as training datasets, or create corpora that ingest files from directories using glob patterns. Corpora support gitignore-style filtering for code repos &mdash; great for training models on your own codebase. Start with step one, then work your way through.</div>
-  <div class="section-card__header">
-    <span class="section-card__icon">&#128193;</span>
-    <h2 class="section-card__title">Data Manager</h2>
-  </div>
-
-  {# ── Tab navigation (jump-nav to panels — all visible) ── #}
-  <div class="wizard-tabs">
+{# ── TAB NAVIGATION (jump-nav to sections) ── #}
+<div class="wizard-tabs">
     <button class="wizard-tab wizard-tab--active" data-tab="tab-datasets">(1) Add Data</button>
     <button class="wizard-tab" data-tab="tab-corpora">(2) Organize Sources</button>
     <button class="wizard-tab" data-tab="tab-imports">(3) Combine &amp; Curate</button>
+    <button class="wizard-tab" data-tab="tab-alldata">(4) All Data</button>
   </div>
 
-  {# ══════════════════════════════════════════════════════ #}
-  {# PANEL (1): Add Data — upload + create + list         #}
-  {# ══════════════════════════════════════════════════════ #}
+{# ── SECTION: Add Data ── #}
+<div class="section-card" style="--stagger-i: 1">
   <div class="wizard-panel wizard-panel--active" id="tab-datasets">
     <div class="ds-flow-section" data-step="1">
       <div class="ds-flow-header">
@@ -190,10 +187,10 @@
       <div id="dataset-list"><span class="text-muted type-subhead">Loading...</span></div>
     </div>
   </div>
+</div>
 
-  {# ══════════════════════════════════════════════════════ #}
-  {# PANEL (2): Organize Sources — corpus wizard + list   #}
-  {# ══════════════════════════════════════════════════════ #}
+{# ── SECTION: Organize Sources ── #}
+<div class="section-card" style="--stagger-i: 2">
   <div class="wizard-panel" id="tab-corpora">
     <div class="ds-flow-section" data-step="2">
       <div class="ds-flow-header">
@@ -345,10 +342,10 @@
     </div>
 
   </div>
+</div>
 
-  {# ══════════════════════════════════════════════════════ #}
-  {# PANEL (3): Combine & Curate — imports + All Data      #}
-  {# ══════════════════════════════════════════════════════ #}
+{# ── SECTION: Combine & Curate ── #}
+<div class="section-card" style="--stagger-i: 3">
   <div class="wizard-panel" id="tab-imports">
     <div class="ds-flow-section" data-step="3">
       <div class="ds-flow-header">
@@ -395,19 +392,26 @@
     </div>
 
   </div>
-
 </div>
 
-{# ── SECTION CARD #3: COMBINED TABLE ────────────────── #}
-<div class="section-card" style="--stagger-i: 2">
-  <div class="section-card__header">
-    <span class="section-card__icon">&#128451;</span>
-    <h2 class="section-card__title">All Data</h2>
-    <span class="text-muted type-caption-1">datasets + corpora combined</span>
-  </div>
+{# ── SECTION: All Data ── #}
+<div class="section-card" style="--stagger-i: 4">
+  <div class="wizard-panel" id="tab-alldata">
+    <div class="ds-flow-section" data-step="4">
+      <div class="ds-flow-header">
+        <div class="ds-flow-bubble"><span>4</span></div>
+        <div>
+          <div class="ds-flow-label">Step Four</div>
+          <div class="ds-flow-title">All Data</div>
+        </div>
+      </div>
+      <p class="ds-flow-desc">Every dataset and corpus in one place. View, filter, edit, clone, curate, or delete any item &mdash; datasets and corpora listed together with their provenance, size, and status.</p>
+    </div>
 
-  <div id="combined-table-container" class="ds-table-wrapper" style="overflow-x:auto;">
-    <span class="text-muted type-subhead">Loading...</span>
+    <div id="combined-table-container" class="ds-table-wrapper" style="overflow-x:auto;">
+      <span class="text-muted type-subhead">Loading...</span>
+    </div>
+  </div>
 </div>
 
 {# ── JavaScript (preserved in full + extensions) ── #}
@@ -1297,6 +1301,11 @@
       var isActive = tab.getAttribute('data-tab') === tabId;
       tab.classList.toggle('wizard-tab--active', isActive);
     });
+    /* Update wizard-step active state (step nodes at top) */
+    document.querySelectorAll('.wizard-steps .wizard-step').forEach(function(step) {
+      var isActive = step.getAttribute('data-tab') === tabId;
+      step.classList.toggle('wizard-step--active', isActive);
+    });
     /* Panels are always visible — scroll to the target section */
     var targetPanel = document.getElementById(tabId);
     if (targetPanel) {
@@ -1312,6 +1321,20 @@
         populateImportSelects();
       }
     });
+  });
+
+  /* ── wizard-step click → switchTab (same as tab click) ── */
+  document.querySelector('.wizard-steps').addEventListener('click', function(e) {
+    var step = e.target.closest('.wizard-step');
+    if (step) {
+      var tabId = step.getAttribute('data-tab');
+      if (tabId) {
+        switchTab(tabId);
+        if (tabId === 'tab-imports') {
+          populateImportSelects();
+        }
+      }
+    }
   });
 
   /* ════════════════════════════════════════════════════════════

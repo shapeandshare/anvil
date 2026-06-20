@@ -1,0 +1,143 @@
+[data-skin="unicorn"] {
+  --bg:             #0d0618;
+  --surface:        #1a0f2e;
+  --surface-2:      #271840;
+  --grouped-bg:     #0a0412;
+  --separator:      #3c2860;
+  --text:           #f0e8ff;
+  --text-secondary: #d0c0f0;
+  --text-tertiary:  #9080b0;
+  --text-bright:    #ffffff;
+
+  --accent:         #ff7ae9;
+  --accent-green:   #7ae9a0;
+  --accent-red:     #ff6a8a;
+  --accent-orange:  #ffb06a;
+  --accent-yellow:  #ffe66a;
+  --accent-purple:  #c07aff;
+  --accent-cyan:    #6ad4ff;
+
+  --glass-bg:       rgba(26, 15, 46, 0.85);
+  --glass-border:   rgba(255, 122, 233, 0.16);
+
+  --magic: 0.3;
+  --twinkle: 0;
+  --hue: 0;
+}
+
+[data-skin="unicorn"][data-theme="light"] {
+  --bg:             #faf0ff;
+  --surface:        #ffffff;
+  --surface-2:      #f0e4ff;
+  --grouped-bg:     #faf0ff;
+  --separator:      #dcc8f0;
+  --text:           #2a1838;
+  --text-secondary: #5a4078;
+  --text-tertiary:  #8870a8;
+  --text-bright:    #2a1838;
+
+  --accent:         #d040b0;
+  --accent-green:   #30a070;
+  --accent-red:     #d04060;
+  --accent-orange:  #d08030;
+  --accent-yellow:  #c0a030;
+  --accent-purple:  #9040d0;
+  --accent-cyan:    #3090c0;
+
+  --glass-bg:       rgba(255, 255, 255, 0.78);
+  --glass-border:   rgba(208, 64, 176, 0.16);
+}
+
+/* Sparkle field — subtle star overlay driven by --twinkle */
+[data-skin="unicorn"] .app-main::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: calc(0.04 + var(--magic, 0.3) * 0.14);
+  background: linear-gradient(
+    135deg,
+    hsl(calc(var(--hue, 0) + 0),   90%, 75%) 0%,
+    hsl(calc(var(--hue, 0) + 51),  85%, 70%) 14%,
+    hsl(calc(var(--hue, 0) + 102), 90%, 65%) 28%,
+    hsl(calc(var(--hue, 0) + 153), 85%, 70%) 42%,
+    hsl(calc(var(--hue, 0) + 204), 90%, 75%) 57%,
+    hsl(calc(var(--hue, 0) + 255), 85%, 70%) 71%,
+    hsl(calc(var(--hue, 0) + 306), 90%, 65%) 85%,
+    hsl(calc(var(--hue, 0) + 360), 90%, 75%) 100%
+  );
+  transition: opacity var(--dur-slow) var(--ease);
+}
+
+[data-skin="unicorn"][data-theme="light"] .app-main::before {
+  opacity: calc(0.04 + var(--magic, 0.3) * 0.10);
+}
+
+/* Twinkle stars */
+[data-skin="unicorn"] .app-main::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: calc(0 + var(--twinkle, 0) * 0.35);
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, rgba(255, 255, 255, 0.7) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 25% 45%, rgba(255, 200, 255, 0.7) 0%, transparent 100%),
+    radial-gradient(1px 1px at 40% 10%, rgba(200, 255, 255, 0.6) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 55% 60%, rgba(255, 255, 200, 0.7) 0%, transparent 100%),
+    radial-gradient(1px 1px at 70% 30%, rgba(255, 200, 200, 0.6) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 85% 75%, rgba(200, 200, 255, 0.7) 0%, transparent 100%),
+    radial-gradient(1px 1px at 15% 80%, rgba(255, 220, 255, 0.6) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 35% 90%, rgba(220, 255, 255, 0.7) 0%, transparent 100%),
+    radial-gradient(1px 1px at 60% 15%, rgba(255, 240, 200, 0.6) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 80% 50%, rgba(240, 200, 255, 0.7) 0%, transparent 100%),
+    radial-gradient(1px 1px at 90% 85%, rgba(255, 255, 255, 0.5) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 5% 55%, rgba(200, 255, 220, 0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 45% 35%, rgba(255, 200, 240, 0.5) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 65% 70%, rgba(220, 220, 255, 0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 95% 10%, rgba(255, 255, 220, 0.5) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 30% 5%, rgba(200, 240, 255, 0.6) 0%, transparent 100%);
+  animation: unicorn-twinkle 3s ease-in-out infinite alternate;
+  transition: opacity var(--dur-slow) var(--ease);
+}
+
+@keyframes unicorn-twinkle {
+  0%   { opacity: calc(0 + var(--twinkle, 0) * 0.25); }
+  100% { opacity: calc(0 + var(--twinkle, 0) * 0.45); }
+}
+
+/* Rainbow burst on milestone */
+[data-skin="unicorn"][data-unicorn-burst="true"] .app-main::before {
+  animation: unicorn-rainbow-burst 1s ease-out;
+}
+
+@keyframes unicorn-rainbow-burst {
+  0%   { opacity: 0.50; filter: saturate(1.6); }
+  100% { opacity: calc(0.04 + var(--magic, 0.3) * 0.14); filter: saturate(1); }
+}
+
+/* Divergence — magic fades to monochrome */
+[data-skin="unicorn"][data-unicorn-state="faded"] .app-main::before {
+  opacity: 0.20;
+  background: linear-gradient(135deg, #665577 0%, #443355 50%, #665577 100%);
+}
+
+[data-skin="unicorn"][data-unicorn-state="faded"] .app-main::after {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="unicorn"] * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="unicorn"] .app-main::before,
+  [data-skin="unicorn"] .app-main::after {
+    display: none;
+  }
+}

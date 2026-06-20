@@ -1,8 +1,9 @@
 """Learning content routes and progressive walkthrough data structures.
 
 Provides interactive concept pages (tokenization → full transformer),
-the ``LEARNING_ARC`` navigation tree, and inference/sampling endpoints.
-Extracted from ``router.py`` as part of structural decomposition.
+the ``LEARNING_ARC`` navigation tree (split into ``LEARNING_ARC_LESSONS``
+and ``LEARNING_ARC_ADDITIONAL`` for the index page), and inference/sampling
+endpoints. Extracted from ``router.py`` as part of structural decomposition.
 """
 
 import random
@@ -83,12 +84,6 @@ LEARNING_ARC = [
         "desc": "Scrub through the Llama forward pass step by step on an interactive computation graph.",
     },
     {
-        "key": "data-flow",
-        "title": "Data Flow",
-        "path": "/v1/learn/data-flow",
-        "desc": "How a training request travels from browser to engine and back via SSE.",
-    },
-    {
         "key": "export",
         "title": "Model Export",
         "path": "/v1/learn/export",
@@ -111,6 +106,102 @@ LEARNING_ARC = [
         "title": "Training in the Cloud",
         "path": "/v1/learn/cloud-compute",
         "desc": "Run training on external compute with Modal, Modal GPUs, MLflow artifact sync, and the submitted/poll/complete lifecycle.",
+    },
+]
+
+LEARNING_ARC_LESSONS = [
+    {
+        "key": "tokenization",
+        "title": "Tokenization",
+        "path": "/v1/learn/tokenization",
+        "desc": "How the model chops text into character tokens and maps them to IDs.",
+    },
+    {
+        "key": "embeddings",
+        "title": "Embeddings",
+        "path": "/v1/learn/embeddings",
+        "desc": "How each token ID becomes a dense vector the model can compute with.",
+    },
+    {
+        "key": "parameters",
+        "title": "Parameters",
+        "path": "/v1/learn/parameters",
+        "desc": "Where the model's ~4K parameters live and what each matrix does.",
+    },
+    {
+        "key": "autograd",
+        "title": "Autograd",
+        "path": "/v1/learn/autograd",
+        "desc": "How gradients flow backward through the computation graph to train the model.",
+    },
+    {
+        "key": "attention",
+        "title": "Attention",
+        "path": "/v1/learn/attention",
+        "desc": "How each token looks at its predecessors to build context-aware representations.",
+    },
+    {
+        "key": "loss",
+        "title": "Cross-Entropy Loss",
+        "path": "/v1/learn/loss",
+        "desc": "How prediction error is measured and what the loss number means.",
+    },
+    {
+        "key": "sampling",
+        "title": "Sampling",
+        "path": "/v1/learn/sampling",
+        "desc": "How the model picks the next character from its probability distribution.",
+    },
+    {
+        "key": "adam",
+        "title": "Adam Optimizer",
+        "path": "/v1/learn/adam",
+        "desc": "How momentum and adaptive learning rates make training converge faster.",
+    },
+    {
+        "key": "training-loop",
+        "title": "Training Loop",
+        "path": "/v1/learn/training-loop",
+        "desc": "How the model learns by minimizing prediction error step by step.",
+    },
+    {
+        "key": "architecture",
+        "title": "Architecture",
+        "path": "/v1/learn/architecture",
+        "desc": "The full Llama decoder stack — RoPE, RMSNorm, SwiGLU — visualized end to end.",
+    },
+    {
+        "key": "graph",
+        "title": "Forward Pass",
+        "path": "/v1/learn/graph",
+        "desc": "Scrub through the Llama forward pass step by step on an interactive computation graph.",
+    },
+    {
+        "key": "export",
+        "title": "Model Export",
+        "path": "/v1/learn/export",
+        "desc": "How trained models are exported to safetensors for HuggingFace compatibility.",
+    },
+]
+
+LEARNING_ARC_ADDITIONAL = [
+    {
+        "key": "cloud-compute",
+        "title": "Training in the Cloud",
+        "path": "/v1/learn/cloud-compute",
+        "desc": "Run training on external compute with Modal, Modal GPUs, MLflow artifact sync, and the submitted/poll/complete lifecycle.",
+    },
+    {
+        "key": "faq",
+        "title": "FAQ",
+        "path": "/v1/learn/faq",
+        "desc": "Frequently asked questions about how anvil works and what it can do.",
+    },
+    {
+        "key": "glossary",
+        "title": "Glossary",
+        "path": "/v1/learn/glossary",
+        "desc": "Definitions for every technical term used across the learning arc and codebase.",
     },
 ]
 
@@ -778,80 +869,6 @@ AUTOGRAD_STEPS = [
     },
 ]
 
-DATA_FLOW_STEPS = [
-    {
-        "key": "browser-button",
-        "title": "Browser Button Click",
-        "body": (
-            "When you click 'Start Training' in the Training Dashboard, the browser "
-            "POSTs a JSON config body to /v1/training/start. This body includes all "
-            "hyperparameters (n_embd, n_head, n_layer, num_steps, etc.) along with "
-            "the data source ID (dataset_id or corpus_id). The route handler creates "
-            "an asyncio task and returns immediately with a run_id — training runs "
-            "in the background."
-        ),
-        "widget": "dataflow",
-    },
-    {
-        "key": "service-orchestration",
-        "title": "Service Orchestration",
-        "body": (
-            "The route delegates to TrainingService.start_training() which: "
-            "(1) reserves a run_id with an SSE event queue and stop event, "
-            "(2) loads training documents in a thread pool (run_in_executor), "
-            "(3) resolves the compute device (CUDA > MPS > CPU), "
-            "(4) dispatches to train() or train_torch() — the CPU or GPU backend. "
-            "All of this runs in the async event loop, with the sync engine "
-            "offloaded to a thread pool to avoid blocking the web server."
-        ),
-        "widget": "dataflow",
-    },
-    {
-        "key": "sse-bridge",
-        "title": "The SSE Bridge",
-        "body": (
-            "The core engine calls a progress callback every training step. This "
-            "callback runs in the thread pool thread, so it uses "
-            "asyncio.run_coroutine_threadsafe() to push events into an asyncio.Queue. "
-            "The SSE endpoint at /v1/training/stream/{run_id} reads from that same "
-            "queue and sends Server-Sent Events to the browser. Events include: "
-            "metrics (step, loss, steps/sec, ETA), optimizer_state (per-parameter "
-            "m/v/grad snapshots), complete (final loss + samples), and error."
-        ),
-        "widget": "dataflow",
-    },
-    {
-        "key": "persistence-chain",
-        "title": "Persistence Chain",
-        "body": (
-            "When training finishes, on_complete fires a chain of actions: "
-            "(1) TrackingService logs params + metrics to MLflow, "
-            "(2) the model.json artifact is uploaded to MLflow storage, "
-            "(3) the model is registered in MLflow Model Registry, "
-            "(4) the local DB gets an Experiment record, "
-            "(5) model.json is saved to data/models/ for inference loading, "
-            "(6) SafetensorsExportService generates model.safetensors + "
-            "config.json + tokenizer.json for HuggingFace compatibility. "
-            "Finally, the SSE 'complete' event reaches the browser."
-        ),
-        "widget": "dataflow",
-    },
-    {
-        "key": "inference-path",
-        "title": "Inference Path",
-        "body": (
-            "Loading a trained model for inference reverses the pipeline: "
-            "POST to /v1/inference/sample with model_id and version. The endpoint "
-            "looks up the artifact path in the Model Registry (or falls back to "
-            "the experiment), loads model.json from disk, reconstructs a LlamaModel, "
-            "and runs autoregressive sampling. The sampling code supports temperature "
-            "scaling, top-K filtering, and top-P (nucleus) filtering — the same "
-            "techniques explained in the Sampling lesson."
-        ),
-        "widget": "dataflow",
-    },
-]
-
 ARCHITECTURE_STEPS = [
     {
         "key": "the-big-picture",
@@ -1073,11 +1090,12 @@ CLOUD_COMPUTE_STEPS = [
 
 @router.get("/learn", response_class=HTMLResponse)
 async def learn_index(request: Request):
-    """Render the learning hub index page."""
+    """Render the learning hub index page with ordered lessons and additional sections."""
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/learn-index.html",
-        {"arc": LEARNING_ARC},
+        {"lessons": LEARNING_ARC_LESSONS,
+         "additional": LEARNING_ARC_ADDITIONAL},
     )
 
 
@@ -1178,16 +1196,6 @@ async def architecture_concept_page(request: Request):
         request,
         "archetypes/architecture.html",
         {"steps": ARCHITECTURE_STEPS, **_arc_context("architecture")},
-    )
-
-
-@router.get("/learn/data-flow", response_class=HTMLResponse)
-async def data_flow_concept_page(request: Request):
-    """Render the data flow walkthrough page with interactive steps."""
-    return request.app.state.templates.TemplateResponse(
-        request,
-        "archetypes/concept.html",
-        {"steps": DATA_FLOW_STEPS, **_arc_context("data-flow")},
     )
 
 
