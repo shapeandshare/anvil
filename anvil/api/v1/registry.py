@@ -8,6 +8,7 @@ Model IDs are resolved via convention-based naming (``dataset-<id>`` or
 """
 
 import asyncio
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Query
 from mlflow.tracking import MlflowClient
@@ -128,6 +129,29 @@ async def list_registered_models(
     return {"models": models}
 
 
+def _fmt_ts(ts: int | None) -> str | None:
+    """Convert epoch-millis timestamp to ``YYYY-MM-DD HH:MM UTC`` string.
+
+    Parameters
+    ----------
+    ts : int | None
+        Epoch milliseconds timestamp, or ``None``.
+
+    Returns
+    -------
+    str | None
+        Formatted date string or ``None``.
+    """
+    if ts is None:
+        return None
+    try:
+        return datetime.fromtimestamp(ts / 1000, tz=timezone.utc).strftime(
+            "%Y-%m-%d %H:%M UTC"
+        )
+    except (OSError, OverflowError, ValueError):
+        return str(ts)
+
+
 @router.get("/registry/models/{model_id}")
 async def get_model(model_id: str):
     """Retrieve details for a specific registered model and all its versions.
@@ -162,6 +186,7 @@ async def get_model(model_id: str):
 
     # Resolve model_id to MLflow registered model name
     model_name = None
+    models: list[dict] = []
     try:
         id_as_int = int(model_id)
         # Integer: find by convention dataset-{id} or corpus-{id}
@@ -174,6 +199,18 @@ async def get_model(model_id: str):
     except ValueError:
         # String: use as MLflow model name directly
         model_name = model_id
+
+    if not model_name:
+        # Fallback: try matching by experiment_id (e.g. demo models
+        # registered under a dataset/corpus name, not dataset-X).
+        try:
+            id_as_int = int(model_id)
+            for m in models:
+                if m.get("id") == id_as_int:
+                    model_name = m["name"]
+                    break
+        except (ValueError, TypeError):
+            pass
 
     if not model_name:
         raise HTTPException(status_code=404, detail="Model not found")
@@ -198,7 +235,7 @@ async def get_model(model_id: str):
 
     versions_list = []
     for v in all_versions or []:
-        run_data = {"params": {}, "metrics": {}}
+        run_data = {"params": {}, "metrics": {}, "tags": {}}
         try:
             run = await loop.run_in_executor(
                 None, lambda rid=v.run_id: client.get_run(rid)
@@ -206,21 +243,59 @@ async def get_model(model_id: str):
             if run and run.data:
                 run_data["params"] = dict(run.data.params)
                 run_data["metrics"] = dict(run.data.metrics)
+                run_data["tags"] = dict(run.data.tags)
         except Exception:
             pass
+
+        # Resolve experiment_id from MLflow run tag (same pattern as
+        # TrackingService.list_registered_models).
+        experiment_id: int | None = None
+        raw_exp = run_data["tags"].get("anvil.experiment_id")
+        if raw_exp is not None:
+            try:
+                experiment_id = int(raw_exp)
+            except (ValueError, TypeError):
+                pass
+
+        # Resolve dataset/corpus name from DB if the run has a source ID.
+        dataset_name: str | None = None
+        ds_id_raw = run_data["params"].get("dataset_id")
+        corp_id_raw = run_data["params"].get("corpus_id")
+        if ds_id_raw is not None:
+            try:
+                from ...db.repositories.datasets import DatasetRepository
+                from ...db.session import AsyncSessionLocal
+
+                async with AsyncSessionLocal() as sess:
+                    ds_repo = DatasetRepository(sess)
+                    ds = await ds_repo.get(int(ds_id_raw))
+                    if ds:
+                        dataset_name = ds.name
+            except Exception:
+                dataset_name = f"Dataset #{ds_id_raw}"
+        elif corp_id_raw is not None:
+            try:
+                from ...db.repositories.corpora import CorpusRepository
+                from ...db.session import AsyncSessionLocal
+
+                async with AsyncSessionLocal() as sess:
+                    corp_repo = CorpusRepository(sess)
+                    corp = await corp_repo.get(int(corp_id_raw))
+                    if corp:
+                        dataset_name = corp.name
+            except Exception:
+                dataset_name = f"Corpus #{corp_id_raw}"
 
         versions_list.append(
             {
                 "version": int(v.version),
-                "experiment_id": None,
-                "dataset_name": run_data["params"].get("dataset_id"),
+                "experiment_id": experiment_id,
+                "dataset_name": dataset_name,
                 "final_loss": run_data["metrics"].get("final_loss"),
                 "hyperparameters": (
                     dict(run_data["params"]) if run_data["params"] else None
                 ),
-                "created_at": (
-                    str(v.creation_timestamp) if v.creation_timestamp else None
-                ),
+                "created_at": _fmt_ts(v.creation_timestamp),
             }
         )
 
@@ -229,9 +304,9 @@ async def get_model(model_id: str):
         "name": rm.name,
         "description": rm.description if hasattr(rm, "description") else None,
         "versions": versions_list,
-        "created_at": (
-            str(rm.creation_timestamp)
-            if hasattr(rm, "creation_timestamp") and rm.creation_timestamp
+        "created_at": _fmt_ts(
+            rm.creation_timestamp
+            if hasattr(rm, "creation_timestamp")
             else None
         ),
     }
@@ -270,6 +345,7 @@ async def get_version(model_id: str, version: int):
 
     # Resolve model_id to MLflow registered model name
     model_name = None
+    models: list[dict] = []
     try:
         id_as_int = int(model_id)
         models = await tracking_svc.list_registered_models()
@@ -280,6 +356,16 @@ async def get_version(model_id: str, version: int):
                 break
     except ValueError:
         model_name = model_id
+
+    if not model_name:
+        try:
+            id_as_int = int(model_id)
+            for m in models:
+                if m.get("id") == id_as_int:
+                    model_name = m["name"]
+                    break
+        except (ValueError, TypeError):
+            pass
 
     if not model_name:
         raise HTTPException(status_code=404, detail="Model not found")
@@ -304,7 +390,7 @@ async def get_version(model_id: str, version: int):
         raise HTTPException(status_code=404, detail="Version not found")
 
     # Get run data for this version
-    run_data = {"params": {}, "metrics": {}}
+    run_data = {"params": {}, "metrics": {}, "tags": {}}
     try:
         run = await loop.run_in_executor(
             None,
@@ -313,23 +399,58 @@ async def get_version(model_id: str, version: int):
         if run and run.data:
             run_data["params"] = dict(run.data.params)
             run_data["metrics"] = dict(run.data.metrics)
+            run_data["tags"] = dict(run.data.tags)
     except Exception:
         pass
 
+    # Resolve experiment_id from MLflow run tag.
+    experiment_id: int | None = None
+    raw_exp = run_data["tags"].get("anvil.experiment_id")
+    if raw_exp is not None:
+        try:
+            experiment_id = int(raw_exp)
+        except (ValueError, TypeError):
+            pass
+
+    # Resolve dataset/corpus name from DB if the run has a source ID.
+    dataset_name: str | None = None
+    ds_id_raw = run_data["params"].get("dataset_id")
+    corp_id_raw = run_data["params"].get("corpus_id")
+    if ds_id_raw is not None:
+        try:
+            from ...db.repositories.datasets import DatasetRepository
+            from ...db.session import AsyncSessionLocal
+
+            async with AsyncSessionLocal() as sess:
+                ds_repo = DatasetRepository(sess)
+                ds = await ds_repo.get(int(ds_id_raw))
+                if ds:
+                    dataset_name = ds.name
+        except Exception:
+            dataset_name = f"Dataset #{ds_id_raw}"
+    elif corp_id_raw is not None:
+        try:
+            from ...db.repositories.corpora import CorpusRepository
+            from ...db.session import AsyncSessionLocal
+
+            async with AsyncSessionLocal() as sess:
+                corp_repo = CorpusRepository(sess)
+                corp = await corp_repo.get(int(corp_id_raw))
+                if corp:
+                    dataset_name = corp.name
+        except Exception:
+            dataset_name = f"Corpus #{corp_id_raw}"
+
     return {
         "version": int(target_version.version),
-        "experiment_id": None,
-        "dataset_name": run_data["params"].get("dataset_id"),
+        "experiment_id": experiment_id,
+        "dataset_name": dataset_name,
         "final_loss": run_data["metrics"].get("final_loss"),
         "hyperparameters": (dict(run_data["params"]) if run_data["params"] else None),
         "artifact_path": (
             target_version.source if hasattr(target_version, "source") else None
         ),
-        "created_at": (
-            str(target_version.creation_timestamp)
-            if target_version.creation_timestamp
-            else None
-        ),
+        "created_at": _fmt_ts(target_version.creation_timestamp),
     }
 
 
@@ -361,6 +482,7 @@ async def delete_version(model_id: str, version: int):
 
     # Resolve model_id to MLflow registered model name
     model_name = None
+    models: list[dict] = []
     try:
         id_as_int = int(model_id)
         models = await tracking_svc.list_registered_models()
@@ -371,6 +493,16 @@ async def delete_version(model_id: str, version: int):
                 break
     except ValueError:
         model_name = model_id
+
+    if not model_name:
+        try:
+            id_as_int = int(model_id)
+            for m in models:
+                if m.get("id") == id_as_int:
+                    model_name = m["name"]
+                    break
+        except (ValueError, TypeError):
+            pass
 
     if not model_name:
         raise HTTPException(status_code=404, detail="Model not found")
@@ -419,6 +551,7 @@ async def delete_model(model_id: str):
 
     # Resolve model_id to MLflow registered model name
     model_name = None
+    models: list[dict] = []
     try:
         id_as_int = int(model_id)
         models = await tracking_svc.list_registered_models()
@@ -429,6 +562,16 @@ async def delete_model(model_id: str):
                 break
     except ValueError:
         model_name = model_id
+
+    if not model_name:
+        try:
+            id_as_int = int(model_id)
+            for m in models:
+                if m.get("id") == id_as_int:
+                    model_name = m["name"]
+                    break
+        except (ValueError, TypeError):
+            pass
 
     if not model_name:
         raise HTTPException(status_code=404, detail="Model not found")
