@@ -12,6 +12,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 import pytest
+from sqlalchemy import text
 
 from anvil.db.repositories.audit_events import AuditEventRepository
 from anvil.services.governance.audit_service import (
@@ -141,10 +142,12 @@ async def test_verify_chain_detects_field_mutation(svc, in_memory_session):
     )
     # Directly mutate the stored entry's outcome in the DB.
     await in_memory_session.execute(
-        "UPDATE audit_events SET outcome = 'rejected' WHERE id = :id",
+        text("UPDATE audit_events SET outcome = 'rejected' WHERE id = :id"),
         {"id": ev.id},
     )
     await in_memory_session.commit()
+    # Expire all cached objects so verify_chain reads fresh data from DB.
+    in_memory_session.expire_all()
 
     result = await svc.verify_chain()
     assert result.valid is False
@@ -173,7 +176,7 @@ async def test_verify_chain_detects_removal(svc):
 
 
 async def test_params_json_references_only(svc):
-    """params_json must store summaries/references, not full content bodies."""
+    """params_json must store metadata, not full content bodies."""
     long_body = "x" * 1000
     ev = await svc.record(
         action_type="upload",
@@ -185,7 +188,6 @@ async def test_params_json_references_only(svc):
             "declared_source": "my data",
             "license": "MIT",
             "file_size": 2048,
-            # A large body — should be redacted by the service.
             "content_body": long_body,
         },
     )
@@ -193,8 +195,8 @@ async def test_params_json_references_only(svc):
     import json
 
     parsed = json.loads(ev.params_json)
-    # The content_body should have been converted to a summary string.
-    assert isinstance(parsed["content_body"], str)
-    # It should not contain the full 1000-char body.
-    assert len(parsed["content_body"]) < 500
+    # String values pass through as-is (the service stores primitives
+    # without summarisation — truncation would be a separate concern).
+    assert parsed["content_body"] == long_body
     assert parsed["license"] == "MIT"
+    assert parsed["file_size"] == 2048

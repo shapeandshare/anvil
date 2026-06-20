@@ -221,3 +221,20 @@ class TestSafetensorsExportService:
             result = svc.retry_export("/nonexistent/model.json", tmpdir)
             assert result["error"] is not None
             assert result["safetensors_path"] is None
+
+
+class TestSafetensorsExportError:
+    """Tests for the SafetensorsExportError exception class."""
+
+    def test_construct_with_message(self):
+        """Constructing SafetensorsExportError with a message should
+        store and expose it via str and repr."""
+        from anvil.services.training.safetensors_export_error import (
+            SafetensorsExportError,
+        )
+
+        msg = "failed to export model"
+        err = SafetensorsExportError(msg)
+        assert str(err) == msg
+        assert msg in repr(err)
+        assert isinstance(err, Exception)
