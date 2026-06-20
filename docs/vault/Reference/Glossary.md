@@ -3,7 +3,7 @@ title: Glossary
 type: reference
 tags: [type/reference, domain/governance]
 created: 2026-06-10
-updated: 2026-06-14
+updated: 2026-06-19
 ---
 
 # Glossary
@@ -41,3 +41,19 @@ updated: 2026-06-14
 | **Conventional Commits** | Structured commit message format: `<type>(<scope>): <description>` — types: feat, fix, perf, refactor, chore, docs, ci, test, style, build |
 | **SemVer** | Semantic Versioning (`MAJOR.MINOR.PATCH`) — bump rules: fix→PATCH, feat→MINOR, BREAKING CHANGE→MAJOR |
 | **BUMP_PAT** | Fine-grained GitHub Personal Access Token used by CI workflows to create auto-merge PRs (Contents+PRs+Workflows: write) |
+| **ANVIL_MODE** | Env var selecting operating mode (`local` or `saas`). A guard + config selector, not the primary switch — the entrypoint module is (`anvil.api.app` vs `anvil._saas.app`). Never auto-detected. See [[SaaSArchitecture]] |
+| **Three-Mode Model** | anvil's operating modes: Local User (pip install, SQLite, in-process), SaaS User (hosted multi-tenant on AWS), SaaS Developer (docker compose / dev AWS / cdk). Same package, infra swapped behind four interfaces. See [[SaaSArchitecture]] |
+| **EventBus** | Pluggable async pub/sub abstraction for live training metrics. Local = `InProcessEventBus` (asyncio.Queue); SaaS = `RedisEventBus` (ElastiCache). Delivery-only — never the source of truth (AD-4) |
+| **JobQueue** | Pluggable training-job dispatch abstraction. Local = `InProcessJobQueue` (immediate task); SaaS = `BatchJobQueue` (AWS Batch submit). Carries a `ResourceSpec` |
+| **ComputeBackend** | Pluggable training execution abstraction. Local = stdlib/torch in-process; SaaS = `BatchComputeBackend` (Batch on EC2: CPU/GPU/multi-node) |
+| **ResourceSpec** | Structured compute requirement `{node_count, gpus_per_node, vcpus, memory_mb, instance_class}` — makes multi-node training a first-class job shape (AD-1) |
+| **Organization** | Top-level tenant and billing boundary in SaaS mode. Owns all resources; no query crosses `org_id`. Root of the RBAC hierarchy (AD-8) |
+| **Team** | A group of users within an Organization; resources may be team-scoped. Users may belong to multiple teams (AD-8) |
+| **Role** | RBAC role — `owner`/`admin`/`member`/`viewer`. Assigned at org level, optionally overridden per team. Governs permitted actions (AD-8) |
+| **JobEvent** | Append-only lifecycle event `(job_id, sequence)` in PostgreSQL — the authoritative record of training-job state. `TrainingJob.status` is derived from the latest event (AD-4) |
+| **Reconciler** | Scheduled task that compares Batch/DB/MLflow/S3 state and repairs jobs stuck in non-terminal states beyond a grace period — the self-healing backstop (AD-4) |
+| **UsageRecord** | Per-job billback record (GPU-seconds, instance-hours) attributed to `org_id`/`team_id`/`user_id`, derived from terminal `JobEvent` (AD-9) |
+| **Cognito** | Amazon Cognito User Pools — the SaaS identity provider. App-managed OIDC/JWT (validated via `aws-jwt-verify` + JWKS), native users default, social login BYO (AD-2/AD-3) |
+| **RDS Proxy + IAM Auth** | DB access pattern for SaaS — pods generate short-lived (≤15 min) IAM tokens from their role; no static DB password ever reaches a pod (AD-11 / FR-045c) |
+| **anvil deploy** | Turnkey CLI deploying the full SaaS stack into any AWS account via pre-synthesized, digest-pinned CloudFormation through boto3 — no Node.js/CDK on the user's machine (AD-7). Includes `verify` 3-layer validation |
+| **Compute Shape** | One of `cpu`/`gpu`/`multi-gpu`/`multi-node` — selects the pre-registered Batch job definition and queue (AD-1/AD-11) |
