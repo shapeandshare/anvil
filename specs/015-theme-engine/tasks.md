@@ -129,7 +129,7 @@ Web application (existing layout). Backend: `anvil/...`. Frontend static: `anvil
 - [X] T046 [US3] Add in-app "Maximum legibility / reduce effects" toggle and "Enable theme audio" opt-in (default off) to the picker partial `anvil/api/templates/components/theme_picker.html` + wire to `effect-level.js` (FR-018, FR-020)
 - [X] T047 [US3] Gate legibility-degrading effects (Old Growth glyph corruption/overlays; Forge re-noise) behind `effectLevel.legible`/`reducedEffects` in `themes/forge.js`, `themes/oldgrowth.js`, `themes/aurora.js` (FR-018) (depends on T042, T037, T038, T039)
 - [X] T048 [US3] Implement visibility throttle/pause of continuous canvas/rAF effects in each theme mapping using `effectLevel.visible` (FR-021); additionally degrade effect intensity (e.g. reduce particle/spark counts, lower update cadence) before allowing any perceptible loss of control interactivity on baseline hardware, so expressive effects never impair the underlying tool (FR-031) (depends on T042)
-- [ ] T049 [US3] WCAG AA contrast audit of primary text/controls for every theme × mode; fix token values failing AA in the `css/themes/*.css` layers (FR-016, SC-006)
+- [X] T049 [US3] WCAG AA contrast audit of primary text/controls for every theme × mode; fix token values failing AA in the `css/themes/*.css` layers (FR-016, SC-006)
 - [ ] T050 [US3] Reduced-motion audit: confirm no continuous/looping animation runs under `prefers-reduced-motion` in any theme (SC-005)
 
 **Checkpoint**: All themes are accessible and gracefully degrade; default-experience guarantee intact.
@@ -157,12 +157,12 @@ Web application (existing layout). Backend: `anvil/...`. Frontend static: `anvil
 
 **Purpose**: Finalize docs, extensibility proof, and full gate run.
 
-- [ ] T055 [P] Finalize ADR `docs/vault/Decisions/ADR-024-behavioral-theme-engine.md` (status reviewed), add session log under `docs/vault/Sessions/`, ensure wikilinks resolve, run `make vault-audit` (0 errors)
+- [X] T055 [P] Finalize ADR `docs/vault/Decisions/ADR-024-behavioral-theme-engine.md` (status reviewed), add session log under `docs/vault/Sessions/`, ensure wikilinks resolve, run `make vault-audit` (0 errors)
 - [X] T056 [P] Update `DESIGN.md` and `AGENTS.md` design-system notes to document the theme-layer override contract and `css/themes/` location
 - [ ] T057 Run the quickstart.md §2 "add a theme end-to-end" proof to validate FR-015/SC-009 (a theme added with only new CSS+JS+`<script>` include, no engine edits)
 - [ ] T058 Full gate run: `make lint`, `make typecheck` (strict), `make test` (coverage at `fail_under`); fix any failures
 - [ ] T059 Execute the spec Success-Criteria QA matrix (SC-001…SC-012) across all 4 themes × modes per quickstart.md §4 done-criteria — including SC-011 (no input lag/stutter with the heaviest theme on the live dashboard; effects pause when hidden) and SC-012 (a non-finite-loss run stops and shows diverged/failed within one update cycle, every theme); record results in the session log
-- [ ] T060 Add an end-to-end system test under `tests/system/test_theme_engine.py` (run via `make test-system`) exercising the JS theme engine through the served app: select a non-default theme → assert `data-theme` applied app-wide + persisted across reload with no flash (SC-010), reset → default restored, and an unknown saved theme id falls back to default (FR-024, SC-008). Authored RED early in US1 per Article IV (closes the JS-coverage gap; the JS unit layer has no in-repo runner)
+- [X] T060 Add an end-to-end system test under `tests/system/test_theme_engine.py` (run via `make test-system`) exercising the JS theme engine through the served app: select a non-default theme → assert `data-theme` applied app-wide + persisted across reload with no flash (SC-010), reset → default restored, and an unknown saved theme id falls back to default (FR-024, SC-008). Authored RED early in US1 per Article IV (closes the JS-coverage gap; the JS unit layer has no in-repo runner)
 
 ---
 
