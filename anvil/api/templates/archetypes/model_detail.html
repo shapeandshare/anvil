@@ -2,9 +2,10 @@
 {% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
 {% block content %}
 
+<div class="page-intro">Inspect a registered model's architecture, version history, and download artifacts. Each version captures everything needed to reproduce or use the model.</div>
+
 <div class="section-card">
   <div class="section-card__header"><span class="section-card__icon">&#128269;</span><h2 class="section-card__title">Model Detail <span class="text-muted">#{{ model_id }}</span></h2></div>
-  <p class="page-intro" style="padding:0 var(--space-4) var(--space-3);">Inspect a registered model's architecture, version history, and download artifacts. Each version captures everything needed to reproduce or use the model.</p>
   <div id="model-detail" class="section-card__content">
     {% if error %}
     <div class="error-text">{{ error }}</div>
