@@ -14,8 +14,12 @@ directly (or via ``make vault-audit``).
 
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
+
+# Allowlist pattern for vault directory paths: only safe path characters.
+_SAFE_PATH_RE = re.compile(r"^[\w./\\-]+$")
 
 
 def main() -> None:
@@ -24,10 +28,13 @@ def main() -> None:
     args = sys.argv[1:]
     # Legacy positional vault_dir arg -> --vault-dir
     if args and not args[0].startswith("-"):
+        val = args.pop(0)
+        if not _SAFE_PATH_RE.match(val):
+            sys.exit(f"error: invalid vault directory: {val!r}")
         cmd.append("--vault-dir")
-        cmd.append(args.pop(0))
+        cmd.append(val)
     cmd.extend(args)
-    result = subprocess.run(cmd)
+    result = subprocess.run(cmd, check=False)
     sys.exit(result.returncode)
 
 
