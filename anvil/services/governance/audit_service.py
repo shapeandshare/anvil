@@ -14,7 +14,7 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .audit_action import AuditAction
 from .audit_outcome import AuditOutcome
@@ -131,7 +131,10 @@ class AuditService:
             surrounding transaction can be rolled back.
         """
         if event_timestamp is None:
-            event_timestamp = datetime.now(datetime.UTC)
+            event_timestamp = datetime.now(timezone.utc)
+        # Store as UTC-naive so round-trip through SQLite preserves the
+        # isoformat string identically for hash-chain verification.
+        event_timestamp = event_timestamp.replace(tzinfo=None)
 
         # Determine the chain tail and compute the next sequence/hash.
         tail = await self._repo.get_tail()

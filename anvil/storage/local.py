@@ -145,7 +145,7 @@ class LocalFileStore(FileStore):
                 stat = p.stat()
                 results.append(
                     FileInfo(
-                        path=str(p.relative_to(self.base_path)),
+                        path=str(p.relative_to(full_dir)),
                         size=stat.st_size,
                         etag=str(stat.st_mtime_ns),
                         content_type="application/octet-stream",

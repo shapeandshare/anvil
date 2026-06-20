@@ -81,7 +81,7 @@ class SampleRepository:
             number of active samples matching the filter.
         """
         query = select(Sample).where(
-            Sample.dataset_id == dataset_id, not Sample.is_removed
+            Sample.dataset_id == dataset_id, Sample.is_removed.is_(False)
         )
         count_query = select(func.count()).select_from(query.subquery())
 
@@ -204,7 +204,7 @@ class SampleRepository:
         """
         stmt = (
             update(Sample)
-            .where(Sample.dataset_id == dataset_id, not Sample.is_removed)
+            .where(Sample.dataset_id == dataset_id, Sample.is_removed.is_(False))
             .values(is_removed=True, removed_by_op_id=op_id)
         )
         if where_clause is not None:
@@ -228,7 +228,7 @@ class SampleRepository:
         """
         result = await self._session.execute(
             select(func.count()).where(
-                Sample.dataset_id == dataset_id, not Sample.is_removed
+Sample.dataset_id == dataset_id, Sample.is_removed.is_(False)
             )
         )
         return result.scalar() or 0
@@ -249,7 +249,7 @@ class SampleRepository:
         """
         result = await self._session.execute(
             select(Sample.content_hash, func.count().label("cnt"))
-            .where(Sample.dataset_id == dataset_id, not Sample.is_removed)
+            .where(Sample.dataset_id == dataset_id, Sample.is_removed.is_(False))
             .group_by(Sample.content_hash)
             .having(func.count() > 1)
         )
@@ -270,7 +270,7 @@ class SampleRepository:
         """
         result = await self._session.execute(
             select(Sample)
-            .where(Sample.dataset_id == dataset_id, not Sample.is_removed)
+            .where(Sample.dataset_id == dataset_id, Sample.is_removed.is_(False))
             .order_by(Sample.index)
         )
         return result.scalars().all()
