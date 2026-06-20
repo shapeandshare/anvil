@@ -90,19 +90,34 @@ async def lifespan(app: FastAPI):
 
     # Auto-bootstrap demo data if not yet imported (best-effort)
     try:
+        from ..db.repositories.corpora import CorpusRepository
+        from ..db.repositories.datasets import DatasetRepository
         from ..db.session import AsyncSessionLocal
         from ..services.demo.demo_bootstrap import DemoBootstrapService
 
         async with AsyncSessionLocal() as session:
-            svc = DemoBootstrapService(session)
-            result = await svc.bootstrap_all()
-            if result.corpora_created > 0 or result.datasets_created > 0:
-                logger.info(
-                    "Bootstrapped %d corpora, %d datasets from data/demo/",
-                    result.corpora_created,
-                    result.datasets_created,
+            corpus_repo = CorpusRepository(session)
+            dataset_repo = DatasetRepository(session)
+            corpus_count = await corpus_repo.count_by_origin("bundled")
+            dataset_count = await dataset_repo.count_by_origin("bundled")
+
+            if corpus_count > 0 or dataset_count > 0:
+                logger.debug(
+                    "Demo data already exists (%d corpora, %d datasets), "
+                    "skipping bootstrap",
+                    corpus_count,
+                    dataset_count,
                 )
-            await session.commit()
+            else:
+                svc = DemoBootstrapService(session)
+                result = await svc.bootstrap_all()
+                if result.corpora_created > 0 or result.datasets_created > 0:
+                    logger.info(
+                        "Bootstrapped %d corpora, %d datasets from data/demo/",
+                        result.corpora_created,
+                        result.datasets_created,
+                    )
+                await session.commit()
     except Exception:
         pass
 

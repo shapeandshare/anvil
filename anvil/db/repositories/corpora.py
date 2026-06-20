@@ -2,7 +2,7 @@
 
 from collections.abc import Sequence
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.corpus import Corpus
@@ -89,6 +89,23 @@ class CorpusRepository:
         """
         result = await self._session.execute(select(Corpus).where(Corpus.name == name))
         return result.scalar_one_or_none()
+
+    async def count_by_origin(self, origin: str) -> int:
+        """Count corpora with the given origin value.
+
+        Parameters
+        ----------
+        origin : str
+            The origin value to count (e.g., ``"bundled"`` or ``"user"``).
+
+        Returns
+        -------
+        int
+            Number of corpora with this origin.
+        """
+        stmt = select(func.count()).where(Corpus.origin == origin)
+        result = await self._session.execute(stmt)
+        return result.scalar_one()
 
     async def delete(self, id: int) -> bool:
         """Delete a corpus by its primary key.
