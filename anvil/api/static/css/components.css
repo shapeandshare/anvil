@@ -140,6 +140,7 @@ a:hover { text-decoration: underline; }
 .hp-item .hp-value { font-family: var(--font-body); font-size: var(--text-callout); color: var(--accent); }
 .hp-item .hp-value-null { color: var(--text-tertiary); }
 
+.example-label { font-family: var(--font-body); font-size: var(--text-subhead); color: var(--text-tertiary); margin-right: var(--space-1); }
 .example-prompt { display: inline-block; font-family: var(--font-body); font-size: var(--text-subhead); padding: var(--space-1) var(--space-3); margin: var(--space-1) var(--space-1) var(--space-1) 0; background: var(--surface-2); color: var(--text-secondary); cursor: pointer; user-select: none; border-radius: var(--radius-lg); transition: background var(--dur-fast) var(--ease); }
 .example-prompt:hover { background: var(--accent); color: #fff; }
 
@@ -462,8 +463,169 @@ font-size: var(--text-body);
 .phase-label--convergence { background: color-mix(in srgb, var(--accent-green) 12%, transparent); color: var(--accent-green); }
 
 /* ════════════════════════════════════════════════
-   End Content Enrichment
+   Modal / Dialog (iOS Alert Style)
    ════════════════════════════════════════════════ */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: modal-overlay-in 0.25s var(--ease) both;
+  padding: var(--space-5);
+}
+
+@keyframes modal-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-dialog {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  max-width: 380px;
+  width: 100%;
+  animation: modal-dialog-in 0.35s var(--spring-quick) both;
+  overflow: hidden;
+}
+
+@keyframes modal-dialog-in {
+  from { opacity: 0; transform: scale(0.92) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal-dialog__header {
+  padding: var(--space-5) var(--space-5) var(--space-2);
+  text-align: center;
+}
+
+.modal-dialog__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto var(--space-3);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent-orange) 15%, transparent);
+  color: var(--accent-orange);
+  font-size: 1.3rem;
+}
+
+.modal-dialog__title {
+  font-family: var(--font-body);
+  font-size: var(--text-headline);
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 var(--space-1);
+}
+
+.modal-dialog__body {
+  padding: 0 var(--space-5) var(--space-3);
+  text-align: center;
+}
+
+.modal-dialog__message {
+  font-family: var(--font-body);
+  font-size: var(--text-subhead);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.modal-dialog__config {
+  margin: var(--space-3) var(--space-5);
+  padding: var(--space-3);
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-1) var(--space-3);
+}
+
+.modal-dialog__config-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.modal-dialog__config-label {
+  font-family: var(--font-body);
+  font-size: var(--text-caption-2);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.modal-dialog__config-value {
+  font-family: var(--font-mono);
+  font-size: var(--text-subhead);
+  color: var(--text);
+}
+
+.modal-dialog__actions {
+  display: flex;
+  border-top: 1px solid var(--separator);
+}
+
+.modal-dialog__btn {
+  flex: 1;
+  padding: var(--space-4);
+  border: none;
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: var(--text-callout);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease);
+  min-height: var(--touch-min);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.modal-dialog__btn:hover {
+  background: var(--surface-2);
+}
+
+.modal-dialog__btn:active {
+  background: var(--separator);
+}
+
+.modal-dialog__btn--cancel {
+  color: var(--text-tertiary);
+  border-right: 1px solid var(--separator);
+}
+
+.modal-dialog__btn--confirm {
+  color: var(--accent-orange);
+}
+
+[data-theme="light"] .modal-dialog__btn--confirm {
+  color: var(--accent);
+}
+
+@keyframes modal-dialog-out {
+  from { opacity: 1; transform: scale(1) translateY(0); }
+  to { opacity: 0; transform: scale(0.92) translateY(12px); }
+}
+
+.modal-overlay--closing .modal-dialog {
+  animation: modal-dialog-out 0.2s var(--ease) both;
+}
+
+@keyframes modal-overlay-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.modal-overlay--closing {
+  animation: modal-overlay-out 0.2s var(--ease) both;
+}
 
 /* ── Forge Start Button ── */
 .btn--forge {

@@ -5,10 +5,18 @@ discovers subdirectories (corpora) and ``.txt`` files (datasets), and imports
 them into the database via the existing corpus and dataset ingestion pipelines.
 It is designed to be called from a CLI command (``anvil bootstrap-datasets``),
 from ``make setup``, or from app startup.
+
+Starting with the responsible-data-governance feature, the bootstrap also
+loads ``provenance.json`` from the demo directory, validates each item's
+license against the approved catalog, and either assigns provenance with
+``origin="bundled"`` or skips the item (recording a refusal).
 """
+
+from __future__ import annotations
 
 import asyncio
 import importlib.resources as _resources
+import json
 import time
 from collections.abc import Sequence
 from pathlib import Path
@@ -19,12 +27,14 @@ from ...db.models.corpus import Corpus
 from ...db.models.dataset import Dataset
 from ...db.repositories.corpora import CorpusRepository
 from ...db.repositories.datasets import DatasetRepository
+from ...db.repositories.licenses import LicenseRepository
 from .bootstrap_result import BootstrapResult
 from ..datasets.chunking_strategy import ChunkingStrategy
 from ..datasets.corpora import CorpusService
 from ..datasets.corpus_loader import CorpusLoader
 from ..datasets.dataset_import import DatasetImportService
 from ..datasets.datasets import DatasetService
+from ..governance.data_origin import DataOrigin
 
 
 # Resolve the bundled demo data directory from the installed package,
@@ -76,6 +86,33 @@ class DemoBootstrapService:
         self._corpus_loader = CorpusLoader()
         self._corpus_svc = CorpusService(self._corpus_repo, self._corpus_loader)
         self._dataset_svc = DatasetService(self._dataset_repo)
+        # Load the provenance manifest (best-effort — may not exist in dev).
+        self._provenance_manifest: dict[str, dict[str, str]] = {}
+        self._license_repo: LicenseRepository | None = None
+        self._load_manifest()
+
+    # ------------------------------------------------------------------
+    # Manifest loading
+    # ------------------------------------------------------------------
+
+    def _load_manifest(self) -> None:
+        """Load ``provenance.json`` from the bundled demo directory."""
+        try:
+            ref = _resources.files("anvil").joinpath("data", "demo", "provenance.json")
+            text = ref.read_text(encoding="utf-8")
+            self._provenance_manifest = json.loads(text)
+        except Exception:
+            self._provenance_manifest = {}
+
+    def _get_provenance_for(self, item: Path) -> dict[str, str] | None:
+        """Look up provenance info for a bundled item by relative path."""
+        try:
+            rel = str(item.relative_to(DEMO_DIR))
+        except ValueError:
+            return None
+        # Strip .txt suffix for datasets; leave directories as-is.
+        key = rel.removesuffix(".txt")
+        return self._provenance_manifest.get(key)
 
     # ------------------------------------------------------------------
     # Public API
@@ -211,6 +248,20 @@ class DemoBootstrapService:
 
         rel = str(item.relative_to(DEMO_DIR))
         cfg = _CORPUS_CONFIG.get(rel, {})
+
+        # Validate provenance from manifest (FR-003).
+        prov = self._get_provenance_for(item)
+        if prov is None:
+            result.errors.append(
+                f"Corpus '{name}' skipped: no provenance manifest entry"
+            )
+            return False
+        if not prov.get("license"):
+            result.errors.append(
+                f"Corpus '{name}' skipped: missing license in provenance manifest"
+            )
+            return False
+
         try:
             resolved = await asyncio.to_thread(item.resolve)
             corpus = await self._corpus_svc.create(
@@ -222,6 +273,8 @@ class DemoBootstrapService:
                 chunk_overlap=cfg.get("overlap", 0.0),
             )
             await self._corpus_svc.ingest(corpus.id)
+            # Assign provenance.
+            await self._assign_provenance(corpus, prov)
             return True
         except Exception as exc:
             result.errors.append(f"Failed to create corpus '{name}': {exc}")
@@ -249,6 +302,19 @@ class DemoBootstrapService:
             result.datasets_skipped += 1
             return False
 
+        # Validate provenance from manifest (FR-003).
+        prov = self._get_provenance_for(item)
+        if prov is None:
+            result.errors.append(
+                f"Dataset '{name}' skipped: no provenance manifest entry"
+            )
+            return False
+        if not prov.get("license"):
+            result.errors.append(
+                f"Dataset '{name}' skipped: missing license in provenance manifest"
+            )
+            return False
+
         try:
             dataset = await self._dataset_svc.create_dataset(
                 name=name,
@@ -257,10 +323,43 @@ class DemoBootstrapService:
             text = await asyncio.to_thread(item.read_text, encoding="utf-8")
             import_svc = DatasetImportService(self._session, dataset.id)
             await import_svc.commit_import(text, fmt="txt")
+            # Assign provenance.
+            await self._assign_provenance(dataset, prov)
             return True
         except Exception as exc:
             result.errors.append(f"Failed to create dataset '{name}': {exc}")
             return False
+
+    async def _assign_provenance(
+        self, entity: Dataset | Corpus, prov: dict[str, str]
+    ) -> None:
+        """Set provenance fields on a freshly-created demo entity.
+
+        Parameters
+        ----------
+        entity : Dataset | Corpus
+            The entity to annotate. Must have been flushed to the DB so
+            ``license_id`` FK lookups succeed.
+        prov : dict[str, str]
+            Provenance from the manifest (must have ``source`` and
+            ``license`` keys; ``attribution`` is optional).
+        """
+        source = prov.get("source", "")
+        license_val = prov.get("license", "Public Domain")
+        attribution = prov.get("attribution", "")
+
+        # Resolve the license catalog entry.
+        if self._license_repo is None:
+            self._license_repo = LicenseRepository(self._session)
+        lic = await self._license_repo.get_by_identifier(license_val)
+        license_id = lic.id if lic is not None else None
+
+        entity.source_description = source
+        entity.license_id = license_id
+        entity.attribution_text = attribution
+        entity.origin = DataOrigin.BUNDLED.value
+        # parent_provenance_ref stays None — these are root entities.
+        await self._session.flush()
 
     @staticmethod
     def _corpus_name_for(item: Path) -> str:

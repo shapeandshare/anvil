@@ -14,6 +14,7 @@ from fastapi.responses import HTMLResponse
 
 from anvil.api.v1.compute import router as compute_router
 from anvil.api.v1.corpora import router as corpora_router
+from anvil.api.v1.governance import router as governance_router
 from anvil.api.v1.datasets import router as datasets_router
 from anvil.api.v1.eval import router as eval_router
 from anvil.api.v1.eval_datasets import router as eval_datasets_router
@@ -35,6 +36,7 @@ router.include_router(eval_router)
 router.include_router(eval_datasets_router)
 router.include_router(inference_router)
 router.include_router(compute_router)
+router.include_router(governance_router)
 router.include_router(health_ops_router)
 router.include_router(pages_router)
 router.include_router(learning_router)
@@ -50,4 +52,24 @@ async def root(request: Request):
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/training.html",
+    )
+
+
+@router.get("/acceptable-use", response_class=HTMLResponse)
+async def acceptable_use_page(request: Request):
+    """Render the acceptable-use policy page.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming HTTP request.
+
+    Returns
+    -------
+    HTMLResponse
+        Rendered ``acceptable_use.html`` template.
+    """
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "acceptable_use.html",
     )

@@ -1,4 +1,13 @@
-"""Async Alembic environment configuration."""
+"""Async Alembic environment configuration.
+
+Note
+----
+Alembic loads this file via ``importlib.util.spec_from_file_location`` +
+``exec_module``, which does **not** set ``__package__``. Relative imports
+therefore fail. We use absolute ``anvil.*`` imports instead, which work
+because ``anvil`` is either installed in site-packages or importable via
+``prepend_sys_path`` (``alembic.ini``) + the configured script_location.
+"""
 
 import asyncio
 from logging.config import fileConfig
@@ -8,7 +17,13 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-from ...db.base import Base
+from anvil.db.base import Base
+
+# Import ORM model modules so they register on Base.metadata
+# for Alembic autogenerate. One import per model file (Article VI
+# — bare __init__.py, no re-exports, so no star-import available).
+from anvil.db.models.audit_event import AuditEvent
+from anvil.db.models.license_entry import LicenseEntry
 
 config = context.config
 if config.config_file_name is not None:

@@ -183,8 +183,15 @@
       signal: _navAbort.signal,
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
     })
-      .then(function(r) { return r.text(); })
+      .then(function(r) {
+        if (!r.ok) {
+          window.location.href = url;
+          return null;
+        }
+        return r.text();
+      })
       .then(function(html) {
+        if (html === null) return;
         var doc, newMain, currentMain, head, href, clone, afterCore, ns, i, j, link, s, tab, attr;
 
         doc = new DOMParser().parseFromString(html, 'text/html');
