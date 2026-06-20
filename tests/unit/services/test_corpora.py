@@ -30,11 +30,11 @@ class TestCorpusService:
         result = await corpus_svc.list()
         assert len(result) == 0
 
-    async def test_create_and_get(self, corpus_svc):
+    async def test_create_and_get(self, corpus_svc, tmp_path):
         """create should persist a corpus; get should retrieve it."""
         saved = await corpus_svc.create(
             name="test-corpus",
-            root_path="/var/tmp",
+            root_path=str(tmp_path),
             description="test",
         )
         assert saved.id is not None
@@ -49,17 +49,17 @@ class TestCorpusService:
         result = await corpus_svc.get(9999)
         assert result is None
 
-    async def test_list_after_create(self, corpus_svc):
+    async def test_list_after_create(self, corpus_svc, tmp_path):
         """list should include created corpora."""
-        await corpus_svc.create(name="c1", root_path="/var/tmp")
-        await corpus_svc.create(name="c2", root_path="/var/tmp")
+        await corpus_svc.create(name="c1", root_path=str(tmp_path))
+        await corpus_svc.create(name="c2", root_path=str(tmp_path))
         result = await corpus_svc.list()
         assert len(result) == 2
 
-    async def test_delete(self, corpus_svc):
+    async def test_delete(self, corpus_svc, tmp_path):
         """delete should remove a corpus by id."""
         saved = await corpus_svc.create(
-            name="delete-me", root_path="/var/tmp"
+            name="delete-me", root_path=str(tmp_path)
         )
         await corpus_svc.delete(saved.id)
         result = await corpus_svc.get(saved.id)
@@ -69,9 +69,9 @@ class TestCorpusService:
         """delete should not raise for a non-existent corpus."""
         await corpus_svc.delete(9999)
 
-    async def test_get_files_empty(self, corpus_svc):
+    async def test_get_files_empty(self, corpus_svc, tmp_path):
         """get_files should return empty list for a corpus with no
         files."""
-        saved = await corpus_svc.create(name="files", root_path="/var/tmp")
+        saved = await corpus_svc.create(name="files", root_path=str(tmp_path))
         files = await corpus_svc.get_files(saved.id)
         assert files == []

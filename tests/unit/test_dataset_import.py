@@ -162,6 +162,6 @@ class TestCommitImport:
         await in_memory_session.refresh(ds)
 
         svc = DatasetImportService(in_memory_session, ds.id)
-        samples, errors = await svc.preview_import("hello\nworld", "txt")
+        samples, _ = await svc.preview_import("hello\nworld", "txt")
         assert len(samples) == 2
         assert samples[0]["text_preview"] == "hello"

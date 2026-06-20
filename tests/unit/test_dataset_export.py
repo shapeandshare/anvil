@@ -51,7 +51,7 @@ class TestExportService:
         await in_memory_session.flush()
         await in_memory_session.refresh(ds)
 
-        await store.put("samples/0.txt", _BytesStream(b"hello export"))
+        await store.put("samples/0.txt", _BytesStream(b"hello export"))  # NOSONAR
         sample = Sample(
             dataset_id=ds.id,
             index=0,
@@ -81,7 +81,7 @@ class TestExportService:
         await in_memory_session.flush()
         await in_memory_session.refresh(ds)
 
-        await store.put("samples/0.txt", _BytesStream(b"csv data"))
+        await store.put("samples/0.txt", _BytesStream(b"csv data"))  # NOSONAR
         sample = Sample(
             dataset_id=ds.id,
             index=0,
@@ -112,7 +112,7 @@ class TestExportService:
         await in_memory_session.flush()
         await in_memory_session.refresh(ds)
 
-        await store.put("samples/0.txt", _BytesStream(b"jsonl data"))
+        await store.put("samples/0.txt", _BytesStream(b"jsonl data"))  # NOSONAR
         sample = Sample(
             dataset_id=ds.id,
             index=7,

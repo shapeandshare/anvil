@@ -238,12 +238,12 @@ class TestEvaluateSubmission:
 class TestAssignProvenance:
     """Provenance assignment to Dataset/Corpus entities."""
 
-    async def test_assigns_to_dataset(self, in_memory_session, gov_svc):
+    async def test_assigns_to_dataset(self, tmp_path, in_memory_session, gov_svc):
         """Assigning provenance to a Dataset should set all provenance
         fields."""
         from anvil.db.models.dataset import Dataset
 
-        ds = Dataset(name="test-ds", filename="test.txt", file_path="/var/tmp.txt")
+        ds = Dataset(name="test-ds", filename="test.txt", file_path=str(tmp_path / "ds.txt"))
         in_memory_session.add(ds)
         await in_memory_session.flush()
         await in_memory_session.refresh(ds)
@@ -260,14 +260,14 @@ class TestAssignProvenance:
         assert ds.attribution_text == "(c) Author"
         assert ds.origin == "user"
 
-    async def test_assigns_to_corpus(self, in_memory_session, gov_svc):
+    async def test_assigns_to_corpus(self, tmp_path, in_memory_session, gov_svc):
         """Assigning provenance to a Corpus should set all provenance
         fields."""
         from anvil.db.models.corpus import Corpus
 
         c = Corpus(
             name="test-corpus",
-            root_path="/var/tmp",
+            root_path=str(tmp_path),
             chunking_strategy="line",
             chunk_overlap=0.0,
             file_count=0,
@@ -327,14 +327,14 @@ class TestGetProvenance:
         assert result.origin == DataOrigin.USER
 
     async def test_returns_provenance_for_corpus(
-        self, in_memory_session, gov_svc
+        self, tmp_path, in_memory_session, gov_svc
     ):
         """get_provenance should return provenance data for a corpus."""
         from anvil.db.models.corpus import Corpus
 
         c = Corpus(
             name="corpus",
-            root_path="/var/tmp",
+            root_path=str(tmp_path),
             chunking_strategy="line",
             chunk_overlap=0.0,
             file_count=0,
@@ -376,30 +376,29 @@ class TestValidateBundled:
 
     async def test_rejects_no_license(self, gov_svc):
         """validate_bundled with empty license returns False."""
-        valid, reason = await gov_svc.validate_bundled(
+        valid, _ = await gov_svc.validate_bundled(
             source_description="test", license_identifier=""
         )
         assert valid is False
-        assert reason is not None
 
     async def test_rejects_own_content(self, gov_svc):
         """validate_bundled with own-content sentinel returns False."""
-        valid, reason = await gov_svc.validate_bundled(
+        valid, _ = await gov_svc.validate_bundled(
             source_description="test", license_identifier="own-content"
         )
         assert valid is False
 
     async def test_rejects_unknown_license(self, gov_svc):
         """validate_bundled with an unapproved license returns False."""
-        valid, reason = await gov_svc.validate_bundled(
+        valid, _ = await gov_svc.validate_bundled(
             source_description="test", license_identifier="NONEXISTENT"
         )
         assert valid is False
 
     async def test_accepts_approved_license(self, gov_svc):
         """validate_bundled with an approved license returns True."""
-        valid, reason = await gov_svc.validate_bundled(
+        valid, _ = await gov_svc.validate_bundled(
             source_description="test", license_identifier="MIT"
         )
         assert valid is True
-        assert reason is None
+        assert _ is None

@@ -51,7 +51,7 @@ class TestPutAndGet:
     async def test_put_and_get_round_trip(self):
         with tempfile.TemporaryDirectory() as tmp:
             store = LocalFileStore(tmp)
-            etag = await store.put("hello.txt", _BytesStream(b"hello world"))
+            etag = await store.put("hello.txt", _BytesStream(b"hello world"))  # NOSONAR
             assert isinstance(etag, str)
             assert len(etag) > 0
             chunks = [c async for c in store.get("hello.txt")]
@@ -60,7 +60,7 @@ class TestPutAndGet:
     async def test_put_returns_mtime_etag(self):
         with tempfile.TemporaryDirectory() as tmp:
             store = LocalFileStore(tmp)
-            etag = await store.put("f.bin", _BytesStream(b"data"))
+            etag = await store.put("f.bin", _BytesStream(b"data"))  # NOSONAR
             assert etag.isdigit()
 
     async def test_put_cleanup_on_failure(self):
@@ -91,7 +91,7 @@ class TestDelete:
     async def test_delete_existing(self):
         with tempfile.TemporaryDirectory() as tmp:
             store = LocalFileStore(tmp)
-            await store.put("del.txt", _BytesStream(b"data"))
+            await store.put("del.txt", _BytesStream(b"data"))  # NOSONAR
             await store.delete("del.txt")
             full = store._resolve("del.txt")
             assert not full.exists()
@@ -106,8 +106,8 @@ class TestList:
     async def test_list_existing_dir(self):
         with tempfile.TemporaryDirectory() as tmp:
             store = LocalFileStore(tmp)
-            await store.put("a.txt", _BytesStream(b"aaa"))
-            await store.put("b.txt", _BytesStream(b"bbb"))
+            await store.put("a.txt", _BytesStream(b"aaa"))  # NOSONAR
+            await store.put("b.txt", _BytesStream(b"bbb"))  # NOSONAR
             results = await store.list("")
             assert len(results) == 2
             paths = {r.path for r in results}
@@ -123,7 +123,7 @@ class TestList:
     async def test_list_includes_metadata(self):
         with tempfile.TemporaryDirectory() as tmp:
             store = LocalFileStore(tmp)
-            await store.put("meta.txt", _BytesStream(b"metadata"))
+            await store.put("meta.txt", _BytesStream(b"metadata"))  # NOSONAR
             results = await store.list("")
             assert len(results) == 1
             info = results[0]
