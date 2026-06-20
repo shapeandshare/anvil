@@ -292,6 +292,8 @@ SomeException
 - N/A — no new persistence. (Coverage baseline stored as a config value in `pyproject.toml`; gate config stored in workflow YAML.) (013-dx-harness-hardening)
 - Python 3.11+ (backend), TypeScript 5.x (CDK infrastructure), JavaScript ES6+ (frontend unchanged) + FastAPI (existing), SQLAlchemy[asyncio] (existing), `boto3` (new, SaaS extra), `redis-py` (new, SaaS extra), `aws-jwt-verify` (new, SaaS extra), `aws-cdk-lib` (dev only, infra package) (opencode/mighty-tiger)
 - RDS PostgreSQL (SaaS), SQLite (local), S3 (SaaS), local filesystem (local), ElastiCache Redis (SaaS, for SSE) (opencode/mighty-tiger)
+- Python 3.11+ + FastAPI, SQLAlchemy[asyncio], Jinja2 (all existing — no new deps) (opencode/crisp-rocket)
+- SQLite via async SQLAlchemy (`data/anvil-state.db`) — demo entities use `origin="bundled"` (opencode/crisp-rocket)
 
 ## Recent Changes
 - 002-directory-corpus-ingestion: Added Python 3.11+ + Existing project deps (FastAPI, SQLAlchemy, aiofiles) + `pathspec` (lightweight gitignore pattern matching, pure Python, no binary deps)
@@ -302,3 +304,4 @@ SomeException
 - 011-enum-convention: Added "Prefer Enumerations over Magic Strings" as Agent Behavioral Principle 11 in AGENTS.md, with rules for StrEnum usage, naming conventions, domain placement, and correct/incorrect examples. Added cross-reference in Architecture Rules.
 - 012-ddd-services-restructure: Decomposed `anvil/services/` from 29 flat `.py` modules into 6 domain sub-packages (`datasets/`, `training/`, `tracking/`, `inference/`, `demo/`, `_shared/`). All imports rewritten across 65 files. +449/−317 lines, zero behavioral delta. See Constitution Article X and ADR-022.
 - 013-responsible-data-governance: Added provenance columns to Dataset/Corpus, `license_catalog` and hash-chained `audit_events` tables, `provenance.json` manifest, `AuditService` (sha256 chain), `GovernanceService` (acceptable-use gate), and Article VII God-Class refactor (`AnvilWorkbench` session-bound, `get_workbench` dep). Alembic migration 014. See `specs/010-responsible-data-governance/` and ADR-023.
+- 014-demo-data-bootstrap: Added first-run guard to demo data bootstrap (origin-based detection via `count_by_origin("bundled")` in repository layer), conditional startup skip, `POST /v1/demo/bootstrap` ops-menu re-trigger endpoint with `asyncio.Lock` concurrency protection, and CLI banner conditional. Also fixed stale monkeypatch paths in test_bootstrap.py (`anvil.services.demo_bootstrap` → `anvil.services.demo.demo_bootstrap`) and provenance manifest injection pattern (`_svc_with_provenance` helper). See `specs/014-demo-data-bootstrap/` and `docs/vault/Discovery/provenance-manifest-mocking-technique.md`.

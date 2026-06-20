@@ -727,8 +727,9 @@ def bootstrap_datasets_main():
                 )
                 return
 
-            print("Bootstrapping demo data from data/demo/...")
             bootstrap = await svc.bootstrap_all()
+            if bootstrap.corpora_created > 0 or bootstrap.datasets_created > 0:
+                print("Bootstrapping demo data from data/demo/...")
 
             for err in bootstrap.errors:
                 print(f"  ⚠ {err}")

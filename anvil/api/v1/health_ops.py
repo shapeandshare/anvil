@@ -5,6 +5,7 @@ background services (web, MLflow). Extracted from ``router.py``
 as part of structural decomposition.
 """
 
+import asyncio
 import os
 import signal
 import subprocess
@@ -12,17 +13,53 @@ import time
 from pathlib import Path
 
 import psutil
-from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Depends, HTTPException, Request
+from typing import Annotated
 
 from anvil import __version__ as anvil_version
+from anvil.api.deps import get_workbench
 from anvil.config import get_config, get_mlflow_browser_uri
 from anvil.gpu import detect_gpu
+from anvil.workbench import AnvilWorkbench
 
 router = APIRouter()
 
 _start_time: float = time.time()
 """float: Unix timestamp (epoch seconds) when the server process started."""
+
+_bootstrap_lock: asyncio.Lock = asyncio.Lock()
+"""asyncio.Lock: Server-side concurrency guard for POST /v1/demo/bootstrap."""
+
+
+@router.post("/demo/bootstrap")
+async def rebootstrap_demo(
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
+) -> dict:
+    """Re-bootstrap all demo data into the database.
+
+    Idempotent — existing entities are skipped, not duplicated.
+    Protected by a server-side ``asyncio.Lock`` (FR-009) that returns
+    HTTP 409 if a bootstrap is already in progress.
+
+    Parameters
+    ----------
+    workbench : AnvilWorkbench
+        Session-bound workbench injected via FastAPI dependency.
+
+    Returns
+    -------
+    dict
+        BootstrapResult fields (corpora_created, datasets_created,
+        corpora_skipped, datasets_skipped, errors, total_time_ms).
+    """
+    if not _bootstrap_lock.locked():
+        async with _bootstrap_lock:
+            result = await workbench.demo().bootstrap_all()
+            return result.model_dump()
+    raise HTTPException(
+        status_code=409,
+        detail={"status": "busy", "message": "Bootstrap already in progress"},
+    )
 
 
 @router.get("/health")
