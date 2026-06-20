@@ -2,10 +2,6 @@
 {% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
 {% block content %}
 <div class="training-dashboard">
-  <div class="page-intro">
-    <p>This is where you configure and train a character-level transformer model from scratch. Select your data source, tune the architecture, then watch it learn in real time through live loss curves and streaming output. Every parameter below changes how the model learns — hover the ⓘ icons to learn what each one does.</p>
-  </div>
-
   <div class="training-runs section-card" id="runs-panel" style="display:none;--stagger-i: 0">
     <div class="section-card__header"><span class="section-card__icon">&#9654;</span><h2 class="section-card__title">Active Training Runs</h2></div>
     <div id="runs-list"></div>
@@ -16,6 +12,7 @@
       <span class="section-card__icon">&#9881;</span>
       <h2 class="section-card__title">Training Setup</h2>
     </div>
+    <p class="section-card__content" style="margin-bottom:var(--space-4);">This is where you configure and train a character-level transformer model from scratch. Select your data source, tune the architecture, then watch it learn in real time through live loss curves and streaming output. Every parameter below changes how the model learns — hover the ⓘ icons to learn what each one does.</p>
 
     <div class="wizard-steps" id="wizard-steps">
       <button type="button" class="wizard-step wizard-step--active" data-step="1" data-tab="data">
@@ -172,21 +169,7 @@
       <pre class="loss-display" id="loss-display"></pre>
       <div id="output-actions" class="output-actions"></div>
     </div>
-  <div class="modal-overlay" id="train-confirm-modal" style="display:none;">
-    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-      <div class="modal-dialog__header">
-        <div class="modal-dialog__icon">&#9874;</div>
-        <h3 class="modal-dialog__title" id="modal-title">Forge Model</h3>
-        <p class="modal-dialog__message">Review your configuration before forging.</p>
-      </div>
-      <div class="modal-dialog__config" id="modal-config-summary"></div>
-      <div class="modal-dialog__actions">
-        <button type="button" class="modal-dialog__btn modal-dialog__btn--cancel" id="modal-cancel-btn">Cancel</button>
-        <button type="button" class="modal-dialog__btn modal-dialog__btn--confirm" id="modal-confirm-btn">Forge Ahead</button>
-      </div>
-    </div>
   </div>
-</div>
 {% endblock %}
 {% block scripts %}
 <script src="/static/js/sse.js"></script>
@@ -1360,4 +1343,20 @@ var gpuToggle = document.getElementById('compute_backend');
   });
 })();
 </script>
+{% endblock %}
+{% block modals %}
+<div class="modal-overlay" id="train-confirm-modal" style="display:none;">
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-dialog__header">
+        <div class="modal-dialog__icon">&#9874;</div>
+        <h3 class="modal-dialog__title" id="modal-title">Forge Model</h3>
+        <p class="modal-dialog__message">Review your configuration before forging.</p>
+      </div>
+      <div class="modal-dialog__config" id="modal-config-summary"></div>
+      <div class="modal-dialog__actions">
+        <button type="button" class="modal-dialog__btn modal-dialog__btn--cancel" id="modal-cancel-btn">Cancel</button>
+        <button type="button" class="modal-dialog__btn modal-dialog__btn--confirm" id="modal-confirm-btn">Forge Ahead</button>
+      </div>
+    </div>
+  </div>
 {% endblock %}

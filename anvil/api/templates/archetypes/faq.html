@@ -111,14 +111,17 @@
           </div>
           <div class="faq-answer section-card__content" style="display: none; margin-top: var(--space-3);">
             <p class="text-muted">
-              Both. anvil has two training backends with identical Llama architecture.
-              The CPU backend uses pure Python (zero dependencies) with a custom Value
-              autograd graph — this is the default and requires no additional packages.
+              All three. anvil has three training backends with identical Llama architecture.
+The CPU backend is implemented in pure Python (stdlib only, no framework)
+with a custom Value autograd graph — this is the default.
               The GPU backend uses PyTorch tensors and runs 10-100x faster on CUDA
-              (NVIDIA) or MPS (Apple Silicon). Switching is automatic: TrainingService
-              detects the best available device and dispatches accordingly. GPU-trained
-              weights are bridged back into a CPU LlamaModel so downstream code never
-              knows which backend ran. Check the Operations page to see detected GPU info.
+              (NVIDIA) or MPS (Apple Silicon). The Cloud backend dispatches to Modal
+              for training on remote GPUs, with artifacts synced back to MLflow.
+              Switching is automatic: TrainingService detects the best available local
+              device (CUDA &gt; MPS &gt; CPU) or can be set to Modal for remote execution.
+              GPU-trained weights are bridged back into a CPU LlamaModel so downstream
+              code never knows which backend ran. Check the Operations page to see
+              detected GPU info, or the Cloud Compute walkthrough for remote setup.
             </p>
           </div>
         </div>
@@ -173,11 +176,12 @@
             <p class="text-muted">
               The learning arc grows as new content is added. The Learning Index page
               dynamically shows all available lessons — check it for the full up-to-date
-              list. Recent additions include the Data Flow walkthrough (end-to-end
-              pipeline from browser to engine to persistence) and the Model Export
-              walkthrough (safetensors export and HuggingFace compatibility).
-              The learning arc is defined in <code>LEARNING_ARC</code> in
-              <code>anvil/api/v1/router.py</code> and automatically wired with
+              list. As of the latest release the arc spans 14 interactive walkthroughs
+              plus the FAQ and Glossary, including step-by-step deep dives into data
+              flow, model export, the forward pass computation graph, full architecture
+              visualization, and cloud compute with Modal. The arc is defined in
+              <code>LEARNING_ARC</code> in
+              <code>anvil/api/v1/learning.py</code> and automatically wired with
               prev/next navigation.
             </p>
           </div>
@@ -225,14 +229,15 @@
           </div>
           <div class="faq-answer section-card__content" style="display: none; margin-top: var(--space-3);">
             <p class="text-muted">
-              The CPU backend is pure Python — no GPU acceleration, no vectorised ops.
-              Every forward pass loops through scalar operations (add, multiply, softmax)
-              one value at a time. Production models use GPU kernels that process thousands
-              of operations in parallel. The slowness is intentional: it lets you inspect
-              every intermediate value and watch the computation unfold step by step —
-              something impossible with optimised frameworks like PyTorch.
-              If you have a GPU, anvil can use a PyTorch backend that runs 10-100x faster
-              &mdash; see &ldquo;Can I train on GPU, or only CPU?&rdquo; above.
+              The CPU backend is implemented in pure Python (stdlib only, no framework)
+              — no GPU acceleration, no vectorised ops. Every forward pass loops through
+              scalar operations (add, multiply, softmax) one value at a time. Production
+              models use GPU kernels that process thousands of operations in parallel.
+              The slowness is intentional: it lets you inspect every intermediate value
+              and watch the computation unfold step by step — something impossible with
+              optimised frameworks like PyTorch. If you have a GPU, anvil can use a
+              PyTorch backend that runs 10-100x faster &mdash; see &ldquo;Can I train
+              on GPU, or only CPU?&rdquo; above.
             </p>
           </div>
         </div>
