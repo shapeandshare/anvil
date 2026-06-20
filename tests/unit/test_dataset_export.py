@@ -12,13 +12,19 @@ from anvil.services.datasets.dataset_export import DatasetExportService
 
 
 class _BytesStream:
-    """Async iterable that yields a single bytes chunk."""
+    def __init__(self, data: bytes) -> None:
+        self._data = data
 
+    def __aiter__(self):
+        return _BytesStreamIterator(self._data)
+
+
+class _BytesStreamIterator:
     def __init__(self, data: bytes) -> None:
         self._data = data
         self._consumed = False
 
-    def __aiter__(self) -> AsyncIterator[bytes]:
+    def __aiter__(self):
         return self
 
     async def __anext__(self) -> bytes:

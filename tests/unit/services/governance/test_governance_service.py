@@ -304,12 +304,12 @@ class TestGetProvenance:
     """Provenance lookup for datasets and corpora."""
 
     async def test_returns_provenance_for_dataset(
-        self, in_memory_session, gov_svc
+        self, tmp_path, in_memory_session, gov_svc
     ):
         """get_provenance should return provenance data for a dataset."""
         from anvil.db.models.dataset import Dataset
 
-        ds = Dataset(name="ds", filename="ds.txt", file_path="/tmp/ds.txt")
+        ds = Dataset(name="ds", filename="ds.txt", file_path=str(tmp_path / "ds.txt"))
         in_memory_session.add(ds)
         await in_memory_session.flush()
         await in_memory_session.refresh(ds)
