@@ -4,10 +4,28 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import AsyncIterator
 
 import pytest
 
 from anvil.services.datasets.dataset_export import DatasetExportService
+
+
+class _BytesStream:
+    """Async iterable that yields a single bytes chunk."""
+
+    def __init__(self, data: bytes) -> None:
+        self._data = data
+        self._consumed = False
+
+    def __aiter__(self) -> AsyncIterator[bytes]:
+        return self
+
+    async def __anext__(self) -> bytes:
+        if self._consumed:
+            raise StopAsyncIteration
+        self._consumed = True
+        return self._data
 
 
 class TestExportService:
@@ -33,7 +51,7 @@ class TestExportService:
         await in_memory_session.flush()
         await in_memory_session.refresh(ds)
 
-        await store.put("samples/0.txt", _stream(b"hello export"))
+        await store.put("samples/0.txt", _BytesStream(b"hello export"))
         sample = Sample(
             dataset_id=ds.id,
             index=0,
@@ -63,7 +81,7 @@ class TestExportService:
         await in_memory_session.flush()
         await in_memory_session.refresh(ds)
 
-        await store.put("samples/0.txt", _stream(b"csv data"))
+        await store.put("samples/0.txt", _BytesStream(b"csv data"))
         sample = Sample(
             dataset_id=ds.id,
             index=0,
@@ -94,7 +112,7 @@ class TestExportService:
         await in_memory_session.flush()
         await in_memory_session.refresh(ds)
 
-        await store.put("samples/0.txt", _stream(b"jsonl data"))
+        await store.put("samples/0.txt", _BytesStream(b"jsonl data"))
         sample = Sample(
             dataset_id=ds.id,
             index=7,
@@ -112,19 +130,15 @@ class TestExportService:
         assert parsed["index"] == 7
         assert parsed["text"] == "jsonl data"
 
-    async def test_export_empty_dataset(self, in_memory_session):
+    async def test_export_empty_dataset(self, tmp_path_factory, in_memory_session):
         """Exporting an empty dataset should yield no lines."""
         from anvil.db.models.dataset import Dataset
 
-        ds = Dataset(name="empty", filename="empty.txt", file_path="/tmp/empty.txt")
+        store_root = tmp_path_factory.mktemp("empty")
+        ds = Dataset(name="empty", filename="empty.txt", file_path=str(store_root / "empty.txt"))
         in_memory_session.add(ds)
         await in_memory_session.commit()
 
         svc = DatasetExportService(in_memory_session, ds.id)
         txt_lines = [l async for l in svc.export_txt()]
         assert txt_lines == []
-
-
-async def _stream(data: bytes):
-    """Helper to produce an async byte-stream."""
-    yield data

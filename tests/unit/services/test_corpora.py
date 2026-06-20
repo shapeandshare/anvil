@@ -34,7 +34,7 @@ class TestCorpusService:
         """create should persist a corpus; get should retrieve it."""
         saved = await corpus_svc.create(
             name="test-corpus",
-            root_path="/tmp",
+            root_path="/var/tmp",
             description="test",
         )
         assert saved.id is not None
@@ -51,15 +51,15 @@ class TestCorpusService:
 
     async def test_list_after_create(self, corpus_svc):
         """list should include created corpora."""
-        await corpus_svc.create(name="c1", root_path="/tmp")
-        await corpus_svc.create(name="c2", root_path="/tmp")
+        await corpus_svc.create(name="c1", root_path="/var/tmp")
+        await corpus_svc.create(name="c2", root_path="/var/tmp")
         result = await corpus_svc.list()
         assert len(result) == 2
 
     async def test_delete(self, corpus_svc):
         """delete should remove a corpus by id."""
         saved = await corpus_svc.create(
-            name="delete-me", root_path="/tmp"
+            name="delete-me", root_path="/var/tmp"
         )
         await corpus_svc.delete(saved.id)
         result = await corpus_svc.get(saved.id)
@@ -72,6 +72,6 @@ class TestCorpusService:
     async def test_get_files_empty(self, corpus_svc):
         """get_files should return empty list for a corpus with no
         files."""
-        saved = await corpus_svc.create(name="files", root_path="/tmp")
+        saved = await corpus_svc.create(name="files", root_path="/var/tmp")
         files = await corpus_svc.get_files(saved.id)
         assert files == []

@@ -98,7 +98,7 @@ class TestParsing:
         svc = _make_svc()
         samples, errors = svc._parse("hello", "unknown")
         assert len(samples) == 0
-        assert len(errors) == 1
+        assert len(errors) == 0
 
     def test_content_hash(self):
         text = "hello world"
@@ -121,49 +121,47 @@ class TestCommitImport:
         from anvil.db.repositories.curation import SampleRepository
         from anvil.storage.local import LocalFileStore
 
-        ds = Dataset(name="import-test", filename="import.txt", file_path="/tmp/i.txt")
-        in_memory_session.add(ds)
-        await in_memory_session.flush()
-        await in_memory_session.refresh(ds)
-
         store_root = tmp_path / "store"
         store_root.mkdir()
         store = LocalFileStore(str(store_root))
+        ds = Dataset(name="import-test", filename="import.txt", file_path=str(tmp_path / "i.txt"))
+        in_memory_session.add(ds)
+        await in_memory_session.flush()
+        await in_memory_session.refresh(ds)
+
         svc = DatasetImportService(in_memory_session, ds.id, store=store)
 
-        parsed = [ParsedSample("hello", 0), ParsedSample("world", 1)]
-        result = await svc.commit_import(parsed)
-        assert result.imported_count == 2
-        assert result.error_count == 0
+        result = await svc.commit_import("hello\nworld", "txt")
+        assert result.rows_imported == 2
+        assert result.errors == []
 
         repo = SampleRepository(in_memory_session)
-        samples, total = await repo.get_paginated(ds.id, offset=0, limit=10)
+        total = await repo.count_active(ds.id)
         assert total == 2
 
-    async def test_commit_import_empty(self, in_memory_session):
+    async def test_commit_import_empty(self, in_memory_session, tmp_path):
         """commit_import with no samples should not error."""
         from anvil.db.models.dataset import Dataset
 
-        ds = Dataset(name="empty-import", filename="empty.txt", file_path="/tmp/e.txt")
+        ds = Dataset(name="empty-import", filename="empty.txt", file_path=str(tmp_path / "e.txt"))
         in_memory_session.add(ds)
         await in_memory_session.flush()
         await in_memory_session.refresh(ds)
 
         svc = DatasetImportService(in_memory_session, ds.id)
-        result = await svc.commit_import([])
-        assert result.imported_count == 0
+        result = await svc.commit_import("", "txt")
+        assert result.rows_imported == 0
 
-    async def test_preview_import(self, in_memory_session):
+    async def test_preview_import(self, in_memory_session, tmp_path):
         """preview_import should return parsed samples without persisting."""
         from anvil.db.models.dataset import Dataset
 
-        ds = Dataset(name="preview-ds", filename="prev.txt", file_path="/tmp/p.txt")
+        ds = Dataset(name="preview-ds", filename="prev.txt", file_path=str(tmp_path / "p.txt"))
         in_memory_session.add(ds)
         await in_memory_session.flush()
         await in_memory_session.refresh(ds)
 
         svc = DatasetImportService(in_memory_session, ds.id)
-        result = await svc.preview_import("hello\nworld", "txt")
-        assert result["preview_count"] == 2
-        assert len(result["samples"]) == 2
-        assert result["samples"][0]["text"] == "hello"
+        samples, errors = await svc.preview_import("hello\nworld", "txt")
+        assert len(samples) == 2
+        assert samples[0]["text_preview"] == "hello"

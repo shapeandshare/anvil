@@ -22,9 +22,9 @@ from anvil.supervisor.supervisor import (
 )
 
 
-# ═══════════════════════════════════════════════════════════════════
+# --
 # PID file helpers
-# ═══════════════════════════════════════════════════════════════════
+# --
 
 
 class TestWriteReadPid:
@@ -75,9 +75,9 @@ class TestKillPidFile:
             assert not path.exists()
 
 
-# ═══════════════════════════════════════════════════════════════════
+# --
 # ProcessSupervisor
-# ═══════════════════════════════════════════════════════════════════
+# --
 
 
 class TestProcessSupervisor:

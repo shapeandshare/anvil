@@ -243,7 +243,7 @@ class TestAssignProvenance:
         fields."""
         from anvil.db.models.dataset import Dataset
 
-        ds = Dataset(name="test-ds", filename="test.txt", file_path="/tmp/test.txt")
+        ds = Dataset(name="test-ds", filename="test.txt", file_path="/var/tmp.txt")
         in_memory_session.add(ds)
         await in_memory_session.flush()
         await in_memory_session.refresh(ds)
@@ -267,7 +267,7 @@ class TestAssignProvenance:
 
         c = Corpus(
             name="test-corpus",
-            root_path="/tmp",
+            root_path="/var/tmp",
             chunking_strategy="line",
             chunk_overlap=0.0,
             file_count=0,
@@ -334,7 +334,7 @@ class TestGetProvenance:
 
         c = Corpus(
             name="corpus",
-            root_path="/tmp",
+            root_path="/var/tmp",
             chunking_strategy="line",
             chunk_overlap=0.0,
             file_count=0,
