@@ -311,7 +311,7 @@ jobs:
       # Create bump PR (T012) — auto-merge pattern with [skip ci]
       # -----------------------------------------------------------------------
       - name: Create bump PR with auto-merge
-        if: steps.release-notes.outputs.exists != 'true'
+        if: steps.release-notes.outputs.exists != 'true' && steps.preflight.outputs.skip-bump != 'true'
         env:
           GH_TOKEN: ${{ secrets.BUMP_PAT }}
         run: |

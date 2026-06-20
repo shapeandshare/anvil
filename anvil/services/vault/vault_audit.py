@@ -370,34 +370,28 @@ class VaultAuditService:
 
         all_md = sorted(vault_root.rglob("*.md"))
         report.stats["files_scanned"] = len(all_md)
+
+        # Pre-build the complete filename index BEFORE auditing wikilinks so
+        # that link resolution is independent of file iteration order. A note
+        # may legitimately link to a target that sorts after it alphabetically;
+        # populating the index incrementally inside the loop produced spurious
+        # "broken wikilink" errors for any such forward reference.
         filename_index: dict[str, list[Path]] = {}
-
-        # Notes eligible for schema/wikilink validation (excludes meta dirs).
         scannable: list[tuple[Path, str]] = []
-
-        # First pass: build the complete filename index so wikilink
-        # resolution does not depend on alphabetical iteration order.
         for md_path in all_md:
             try:
                 rel = md_path.relative_to(vault_root)
             except ValueError:
                 continue
-
             if any(
                 part in {"_meta", ".obsidian", "addons"}
                 for part in rel.parts
             ):
                 continue
+            filename_index.setdefault(md_path.stem, []).append(md_path)
+            scannable.append((md_path, str(rel)))
 
-            note_path_str = str(rel)
-            scannable.append((md_path, note_path_str))
-
-            stem = md_path.stem
-            if stem not in filename_index:
-                filename_index[stem] = []
-            filename_index[stem].append(md_path)
-
-        # Second pass: validate schema and wikilinks against the full index.
+        # Validate schema and wikilinks against the fully-built index.
         for md_path, note_path_str in scannable:
             fm = parse_frontmatter(md_path)
             for f in validate_schema(md_path, fm, note_path_str):

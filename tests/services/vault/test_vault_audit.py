@@ -117,3 +117,37 @@ class TestVaultAuditService:
         assert not any(
             "OrphanNote" in m for m in broken_targets
         ), f"Existing forward-link target wrongly flagged: {broken_targets}"
+
+    @pytest.mark.asyncio
+    async def test_forward_wikilink_resolves(self, tmp_path: Path) -> None:
+        """A link to an alphabetically-later note must not be reported broken.
+
+        Regression: the filename index was previously populated incrementally
+        inside the audit loop, so a note linking to a target that sorted after
+        it (e.g. ``Aaa`` -> ``Zzz``) was flagged as a broken wikilink because
+        the target had not yet been indexed.
+        """
+        fm = (
+            "---\n"
+            "title: {title}\n"
+            "type: reference\n"
+            "tags:\n  - type/reference\n"
+            "created: '2026-06-19'\n"
+            "updated: '2026-06-19'\n"
+            "aliases:\n  - {title}\n"
+            "---\n"
+        )
+        (tmp_path / "Aaa.md").write_text(
+            fm.format(title="Aaa") + "Links forward to [[Zzz]].\n",
+            encoding="utf-8",
+        )
+        (tmp_path / "Zzz.md").write_text(
+            fm.format(title="Zzz") + "A leaf note.\n",
+            encoding="utf-8",
+        )
+
+        svc = VaultAuditService(vault_dir=str(tmp_path))
+        report = await svc.run_mechanical_audit()
+
+        broken = [f for f in report.errors if f.rule == "broken_wikilink"]
+        assert broken == [], f"unexpected broken wikilinks: {broken}"

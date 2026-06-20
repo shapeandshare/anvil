@@ -33,7 +33,7 @@ session notes.
   `filename_index` in the same loop that validated wikilinks, so links to
   alphabetically-later files were wrongly reported broken. Split into a
   two-pass approach (build full index, then validate). See
-  [[Discoveries/vault-audit-index-ordering-bug|Vault Audit Index Ordering Bug]].
+  [[Discoveries/vault-audit-forward-wikilink-resolution-bug|Vault Audit Forward Wikilink Resolution Bug]].
 - **`tests/services/vault/test_vault_audit.py`** — added regression test
   `test_forward_wikilink_not_flagged_broken` (TDD: written failing first).
 

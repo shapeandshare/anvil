@@ -64,7 +64,7 @@
       row.innerHTML =
         '<td>' +
           (m.id != null
-            ? '<a href="/v1/model-detail/' + m.id + '" class="action-link">' + escHtml(m.name) + '</a>'
+            ? '<a href="/v1/inference-page?model_id=' + m.id + '" class="action-link">' + escHtml(m.name) + '</a>'
             : '<span class="text-dim">' + escHtml(m.name) + '</span>') +
         '</td>' +
         '<td class="text-dim">' + (m.description ? escHtml(m.description) : '—') + '</td>' +

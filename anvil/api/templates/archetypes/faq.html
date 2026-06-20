@@ -209,7 +209,7 @@
           <div class="faq-answer section-card__content" style="display: none; margin-top: var(--space-3);">
             <p class="text-muted">
               Yes. The documentation vault includes a
-              <a href="/v1/learn/faq" class="action-link">Glossary</a>
+              <a href="/v1/learn/glossary" class="action-link">Glossary</a>
               with definitions for every technical term: Value, RMSNorm, KV Cache,
               AdamW, BOS, Softmax, Cross-Entropy, State Dict, RoPE, SwiGLU, Safetensors,
               Dual Backend, and more. It lives at <code>docs/vault/Reference/Glossary.md</code>
@@ -225,12 +225,14 @@
           </div>
           <div class="faq-answer section-card__content" style="display: none; margin-top: var(--space-3);">
             <p class="text-muted">
-              The core engine is pure Python with no GPU acceleration. Every forward pass
-              loops through scalar operations (add, multiply, softmax) one value at a time.
-              Production models use GPU kernels that process thousands of operations in
-              parallel. The slowness is intentional: it lets you inspect every intermediate
-              value and watch the computation unfold step by step — something impossible
-              with optimised frameworks like PyTorch.
+              The CPU backend is pure Python — no GPU acceleration, no vectorised ops.
+              Every forward pass loops through scalar operations (add, multiply, softmax)
+              one value at a time. Production models use GPU kernels that process thousands
+              of operations in parallel. The slowness is intentional: it lets you inspect
+              every intermediate value and watch the computation unfold step by step —
+              something impossible with optimised frameworks like PyTorch.
+              If you have a GPU, anvil can use a PyTorch backend that runs 10-100x faster
+              &mdash; see &ldquo;Can I train on GPU, or only CPU?&rdquo; above.
             </p>
           </div>
         </div>
@@ -246,7 +248,7 @@
               a small collection of medieval guild names. You can upload your own .txt
               dataset through the Data tab and retrain. Training for more steps, increasing
               n_embd, or adding n_layer also helps the model pick up longer-range patterns.
-              But with 4,192 parameters, it will never produce genuinely creative or
+              But with 4,192+ parameters (depending on architecture config), it will never produce genuinely creative or
               coherent names — it can only recombine patterns it has seen.
             </p>
           </div>
@@ -262,7 +264,7 @@
               The model learns whatever character-level patterns exist in the training text.
               Give it Shakespeare and it will generate Shakespeare-like character sequences.
               Give it Python code and it will generate plausible-looking code (though with
-              only 4,192 parameters it won't compile). The vocabulary is built from the
+              only 4,192+ parameters (depending on architecture config) it won't compile). The vocabulary is built from the
               unique characters in the dataset, so a dataset with more diverse characters
               (uppercase, digits, punctuation) gives the model more tokens to work with
               but spreads its limited capacity thinner.
