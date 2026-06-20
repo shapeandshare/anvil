@@ -33,7 +33,7 @@ source: agent
 
 anvil operates in three distinct modes, each targeting a different user persona. All three share the same codebase — the `anvil` pip package — and the same business logic layer. Differences are confined to infrastructure implementations behind four abstraction interfaces.
 
-> For granular, full-fidelity per-subsystem diagrams (C4 levels, network, ERD, auth sequences, compute, orchestration, reconciler, deploy flows, CI/CD — 33 diagrams), see [[SaaSSystemDiagrams]]. For security, perimeter, egress, tenant/access boundaries, DFDs, and per-user-story flows (37 diagrams), see [[SaaSSecurityAndFlowDiagrams]].
+> For granular, full-fidelity per-subsystem diagrams (C4 levels, network, ERD, auth sequences, compute, orchestration, reconciler, deploy flows, CI/CD, observability, MLflow proxy, multi-cluster, HA — 38 diagrams), see [[SaaSSystemDiagrams]]. For security, perimeter, egress, tenant/access boundaries, DFDs, per-user-story flows, and cluster-admin authority (39 diagrams), see [[SaaSSecurityAndFlowDiagrams]].
 
 ```mermaid
 graph TB

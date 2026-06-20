@@ -7,10 +7,9 @@ source: agent
 status: draft
 tags:
   - type/session-log
-  - domain/api
-  - domain/cli
-  - domain/testing
-  - domain/ux
+  - domain/architecture
+  - domain/tooling
+  - domain/ui
 title: 'Session: Demo Data Bootstrap Guard Implementation'
 type: session-log
 updated: '2026-06-19'

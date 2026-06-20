@@ -6,7 +6,7 @@ tags:
   - domain/governance
   - domain/core
   - domain/database
-  - domain/api
+  - domain/architecture
 created: '2026-06-19'
 updated: '2026-06-19'
 status: draft

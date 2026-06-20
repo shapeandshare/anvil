@@ -59,6 +59,7 @@ Authorship lifecycle.
 - `status/wip` — Actively being worked, not yet verifiable.
 - `status/reviewed` — Verified against sources this session. Eligible for auto-injection. Agent may set.
 - `status/canonical` — Human-ratified as authoritative. **Human-only.**
+- `status/superseded` — A prior finding/decision that has been reversed or replaced. Retained for audit trail; excluded from auto-injection. Body MUST link to the superseding note.
 
 ## Staleness Fields (frontmatter, not tags)
 

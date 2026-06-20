@@ -61,6 +61,7 @@ TYPE_VOCAB = {
 
 STATUS_VOCAB = {
     "status/draft", "status/wip", "status/reviewed", "status/canonical",
+    "status/superseded",
 }
 
 DOMAIN_VOCAB = {
