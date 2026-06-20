@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.ci.check_bump_scope import (
+from anvil.services.vault.check_bump_scope import (
     _changed_files,
     _is_version_only,
     _validate_bump_scope,
