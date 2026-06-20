@@ -35,5 +35,6 @@ This index lists all ADRs in this repository. ADRs document significant architec
 | ADR-028 | CI Merge Gate Enforcement | Draft | 2026-06-19 |
 | ADR-029 | ADR Renumbering and Uniqueness Enforcement | Draft | 2026-06-19 |
 | ADR-030 | SaaS Architecture -- Three-Mode Operating Model | Proposed | 2026-06-19 |
+| ADR-031 | Behavioral Theme Engine and Neutral Signal Instrumentation | Proposed | 2026-06-19 |
 
 **Status**: Draft → Reviewed → Canonical (human-only). See `_meta/tags.md` for lifecycle.

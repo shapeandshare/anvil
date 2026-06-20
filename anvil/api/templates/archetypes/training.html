@@ -902,6 +902,9 @@ var gpuToggle = document.getElementById('compute_backend');
         }).catch(function() {});
       };
       session.start();
+      if (window.ThemeManager && window.ThemeManager.bindSession) {
+        window.ThemeManager.bindSession(session);
+      }
       renderRunsList(window.coreSession.getActiveRuns());
       window._currentSession = session;
     }
@@ -1171,6 +1174,9 @@ var gpuToggle = document.getElementById('compute_backend');
         renderRunsList(window.coreSession.getActiveRuns());
       };
       session.start();
+      if (window.ThemeManager && window.ThemeManager.bindSession) {
+        window.ThemeManager.bindSession(session);
+      }
       /* Save initial state immediately so new run shows in runs list */
       window.coreSession.addRun(runId, {
         runId: runId,

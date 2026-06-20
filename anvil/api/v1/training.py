@@ -611,7 +611,7 @@ async def stream_training(run_id: int):
             try:
                 msg = await asyncio.wait_for(queue.get(), timeout=30)
                 yield f"event: {msg['event']}\ndata: {msg['data']}\n\n"
-                if msg["event"] in ("complete", "error"):
+                if msg["event"] in ("complete", "error", "divergence"):
                     break
             except TimeoutError:
                 yield "event: heartbeat\ndata: {}\n\n"
