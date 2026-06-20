@@ -1,0 +1,80 @@
+[data-skin="inkwash"] {
+  --bg:             #f4f1ea;
+  --surface:        #fffdf8;
+  --surface-2:      #ebe6da;
+  --grouped-bg:     #f4f1ea;
+  --separator:      #d6cfbf;
+  --text:           #1f1c17;
+  --text-secondary: #494339;
+  --text-tertiary:  #7c7466;
+  --text-bright:    #100e0a;
+
+  --accent:         #3a3a38;
+  --accent-green:   #5b7355;
+  --accent-red:     #a23b30;
+  --accent-orange:  #b5713a;
+  --accent-yellow:  #b89a42;
+  --accent-purple:  #6a5e7a;
+  --accent-cyan:    #4a6f72;
+
+  --glass-bg:       rgba(255, 253, 248, 0.82);
+  --glass-border:   rgba(31, 28, 23, 0.12);
+
+  --clarity: 0.4;
+  --bleed: 0.6;
+}
+
+[data-skin="inkwash"][data-theme="dark"] {
+  --bg:             #131210;
+  --surface:        #1d1b18;
+  --surface-2:      #262320;
+  --grouped-bg:     #0e0d0b;
+  --separator:      #3b3631;
+  --text:           #e9e4da;
+  --text-secondary: #c0b9ab;
+  --text-tertiary:  #8c8475;
+  --text-bright:    #fbf7ee;
+
+  --accent:         #cfc9bd;
+  --accent-green:   #8fae86;
+  --accent-red:     #e0705f;
+  --accent-purple:  #a596bb;
+
+  --glass-bg:       rgba(29, 27, 24, 0.84);
+  --glass-border:   rgba(233, 228, 218, 0.14);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="inkwash"] * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+[data-skin="inkwash"] .app-main::after {
+  content: "";
+  position: fixed;
+  left: 50%;
+  top: 45%;
+  width: 60vmin;
+  height: 60vmin;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 48% 52% 60% 40% / 55% 45% 55% 45%;
+  background: radial-gradient(
+    circle at 45% 45%,
+    rgba(31, 28, 23, calc(0.04 + var(--clarity, 0.4) * 0.07)),
+    transparent 70%
+  );
+  filter: blur(calc(var(--bleed, 0.6) * 28px));
+  transition: filter var(--dur-slow) var(--ease), background var(--dur-slow) var(--ease);
+}
+
+[data-skin="inkwash"][data-theme="dark"] .app-main::after {
+  background: radial-gradient(
+    circle at 45% 45%,
+    rgba(233, 228, 218, calc(0.04 + var(--clarity, 0.4) * 0.08)),
+    transparent 70%
+  );
+}

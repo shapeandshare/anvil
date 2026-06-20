@@ -1,0 +1,95 @@
+[data-skin="stormfront"] {
+  --bg:             #0c1014;
+  --surface:        #161c22;
+  --surface-2:      #1f272f;
+  --grouped-bg:     #090c0f;
+  --separator:      #313d48;
+  --text:           #e3e9ef;
+  --text-secondary: #b4c0cc;
+  --text-tertiary:  #818e9b;
+  --text-bright:    #ffffff;
+
+  --accent:         #7ba7d8;
+  --accent-green:   #5fc7a0;
+  --accent-red:     #ff6960;
+  --accent-orange:  #ffb259;
+  --accent-yellow:  #ffe27a;
+  --accent-purple:  #9b9bf0;
+  --accent-cyan:    #6fc4e0;
+
+  --glass-bg:       rgba(22, 28, 34, 0.85);
+  --glass-border:   rgba(123, 167, 216, 0.16);
+
+  --charge: 0;
+  --clearing: 0.3;
+}
+
+[data-skin="stormfront"][data-theme="light"] {
+  --bg:             #dde4ea;
+  --surface:        #f4f7fa;
+  --surface-2:      #ccd6df;
+  --grouped-bg:     #dde4ea;
+  --separator:      #b0bdc8;
+  --text:           #1a2630;
+  --text-secondary: #41505c;
+  --text-tertiary:  #6c7a86;
+  --text-bright:    #1a2630;
+
+  --accent:         #3c6fa3;
+  --accent-green:   #1f9d77;
+  --accent-purple:  #5a5ac0;
+
+  --glass-bg:       rgba(244, 247, 250, 0.8);
+  --glass-border:   rgba(60, 111, 163, 0.16);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="stormfront"] * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+[data-skin="stormfront"] .app-main::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 55vh;
+  pointer-events: none;
+  z-index: 0;
+  opacity: calc(0.3 + (1 - var(--clearing, 0.3)) * 0.55);
+  background: linear-gradient(
+    180deg,
+    rgba(20, 26, 32, 0.55),
+    rgba(40, 50, 60, 0.2) 60%,
+    transparent 100%
+  );
+  transition: opacity var(--dur-slow) var(--ease);
+}
+
+[data-skin="stormfront"] .app-main::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 41;
+  background: rgba(220, 235, 255, 0.85);
+  opacity: 0;
+  animation: storm-lightning calc(9s - var(--charge, 0) * 7.5s) ease-out infinite;
+}
+
+@keyframes storm-lightning {
+  0%, 4%, 100% { opacity: 0; }
+  1%           { opacity: calc(var(--charge, 0) * 0.5); }
+  2%           { opacity: calc(var(--charge, 0) * 0.15); }
+  3%           { opacity: calc(var(--charge, 0) * 0.6); }
+}
+
+[data-skin="stormfront"][data-storm="tempest"] .app-main::before {
+  opacity: 0.9;
+  background: linear-gradient(180deg, rgba(255, 105, 96, 0.25), rgba(20, 26, 32, 0.6) 60%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="stormfront"] .app-main::after { animation: none !important; opacity: 0; }
+}

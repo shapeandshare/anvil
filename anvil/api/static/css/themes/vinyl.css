@@ -1,0 +1,100 @@
+[data-skin="vinyl"] {
+  --bg:             #140e0a;
+  --surface:        #201812;
+  --surface-2:      #2a2018;
+  --grouped-bg:     #100c08;
+  --separator:      #3d3128;
+  --text:           #f0e6da;
+  --text-secondary: #d4c8b8;
+  --text-tertiary:  #96887a;
+  --text-bright:    #fff8ee;
+
+  --accent:         #d4945a;
+  --accent-green:   #6cc48a;
+  --accent-red:     #ff6a5a;
+  --accent-orange:  #d4945a;
+  --accent-yellow:  #e8c06a;
+  --accent-purple:  #b888d0;
+  --accent-cyan:    #6ab8c4;
+
+  --glass-bg:       rgba(32, 24, 18, 0.85);
+  --glass-border:   rgba(212, 148, 90, 0.16);
+
+  --wobble: 0.8;
+  --warmth: 0.4;
+}
+
+[data-skin="vinyl"][data-theme="light"] {
+  --bg:             #f7f0e8;
+  --surface:        #ffffff;
+  --surface-2:      #ede2d6;
+  --grouped-bg:     #f7f0e8;
+  --separator:      #d8c8b8;
+  --text:           #2a1e14;
+  --text-secondary: #4a3a2e;
+  --text-tertiary:  #786858;
+  --text-bright:    #2a1e14;
+
+  --accent:         #a86e38;
+  --accent-green:   #2a9a70;
+  --accent-purple:  #7a58b0;
+
+  --glass-bg:       rgba(255, 255, 255, 0.78);
+  --glass-border:   rgba(168, 110, 56, 0.16);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="vinyl"] * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+[data-skin="vinyl"] .app-main::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    ellipse 80% 50% at 50% 60%,
+    rgba(212, 148, 90, calc(0.02 + var(--warmth, 0.4) * 0.12)),
+    transparent 60%
+  );
+  transition: background var(--dur-slow) var(--ease);
+}
+
+[data-skin="vinyl"] .app-main {
+  animation: vinyl-wobble calc(12s - var(--wobble, 0.8) * 8s) ease-in-out infinite;
+}
+
+[data-skin="vinyl"][data-theme="light"] .app-main {
+  animation-name: vinyl-wobble-light;
+}
+
+@keyframes vinyl-wobble {
+  0%, 100% { transform: rotate(0deg); }
+  25%      { transform: rotate(calc(var(--wobble, 0.8) * 0.06deg)); }
+  75%      { transform: rotate(calc(var(--wobble, 0.8) * -0.06deg)); }
+}
+
+@keyframes vinyl-wobble-light {
+  0%, 100% { transform: rotate(0deg); }
+  25%      { transform: rotate(calc(var(--wobble, 0.8) * 0.04deg)); }
+  75%      { transform: rotate(calc(var(--wobble, 0.8) * -0.04deg)); }
+}
+
+[data-skin="vinyl"][data-vinyl-state="skip"] .app-main {
+  animation: vinyl-skip 0.4s ease-out;
+}
+
+@keyframes vinyl-skip {
+  0%   { transform: rotate(0deg); }
+  20%  { transform: rotate(1.5deg); }
+  60%  { transform: rotate(-1deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="vinyl"] .app-main { animation: none !important; }
+}

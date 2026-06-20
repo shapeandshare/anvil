@@ -191,12 +191,15 @@ class InferenceService:
             client = MlflowClient(get_mlflow_uri())
             try:
                 # Find the latest version's run_id
-                latest_versions = await loop.run_in_executor(
+                all_versions = await loop.run_in_executor(
                     None,
-                    lambda: client.get_latest_versions(model_name),
+                    lambda: client.search_model_versions(f"name='{model_name}'"),
                 )
-                if latest_versions:
-                    run_id = latest_versions[0].run_id
+                if all_versions:
+                    sorted_versions = sorted(
+                        all_versions, key=lambda v: int(v.version), reverse=True
+                    )
+                    run_id = sorted_versions[0].run_id
                     local_dir = await loop.run_in_executor(
                         None,
                         lambda: client.download_artifacts(

@@ -218,11 +218,11 @@ The base font size on `<html>` is a fixed 17px — matching iOS's standard body 
 ### App shell
 Every page lives inside a shared app shell with three structural layers:
 
-1. **Navigation bar** (fixed top, glass): Horizontal scrollable tab strip (all nav items) with glass backdrop and vertical fade mask. Theme toggle button at the right. No large title — the nav bar is purely navigational. Height: `56px + env(safe-area-inset-top)`.
-2. **Main** (scrollable, center): Content area with padding matching iOS standard margins (16px on each side). Has an ambient orange radial gradient at the top for depth.
+1. **Navigation bar** (top, floating inset box): Horizontal scrollable tab strip (all nav items) plus the theme picker and light/dark toggle on the right. The bar is a **floating rounded box inset from the screen edges** — `margin: space-3 space-3 space-2` (tighter on phones), `border-radius: --radius-lg`, a 1px `--glass-border`, solid `--surface` background, and **no drop shadow** (the border, not a shadow, defines the box — see Elevation rules). No large title — the nav bar is purely navigational.
+2. **Main** (scrollable, center): Content area with padding matching iOS standard margins (16px on each side). The ambient background lives on the shell (see Ambient background), so the glow shows continuously around the floating nav box and behind the content.
 3. **Footer**: Subtle centered footer with version, separated by a hairline rule. Uses `env(safe-area-inset-bottom)` for home indicator clearance.
 
-The layout uses a `100dvh` flexbox column: `app-shell` → `app-main` (flex: 1, scrollable) → `site-footer` (flex-shrink: 0). No bottom tab bar exists — all navigation is in the top nav bar.
+The layout uses a `100dvh` flexbox column: `app-shell` (carries the ambient background) → `nav-bar` (inset floating box) → `app-main` (flex: 1, scrollable) → `site-footer` (flex-shrink: 0). No bottom tab bar exists — all navigation is in the top nav bar.
 
 ### Page archetypes
 Pages follow five layout archetypes:
@@ -263,18 +263,17 @@ Text sizing is handled by the fluid `--text-*` tokens (see Typography), not by b
 
 ### Ambient background
 Every page (via `base.css`) has:
-- A **radial gradient** at the top of `.app-main`: `radial-gradient(ellipse 1200px 700px at 50% 8%, color-mix(in srgb, var(--accent-orange) 12%, transparent), transparent)` — a subtle orange glow at the top of the content area.
+- A **radial gradient** on `.app-shell`: `radial-gradient(ellipse 1200px 700px at 50% 5%, color-mix(in srgb, var(--accent-orange) 12%, transparent), transparent)` — a subtle orange glow that spans the full viewport. It lives on the shell (not `.app-main`) so the background reads as one continuous surface **around the floating nav box** and behind the content, rather than starting below the nav.
 - **Floating ambient particles** in `.ambient-particles`: fixed-position, pointer-events-none ember-like circles that float upward from random positions across the viewport. 20 particles with varied delays and speeds (`--s: 6-12s`, `--d: 0-12s`). Warm variants glow with a yellow box-shadow. These are always present on every page.
 
 ## Elevation & Depth
 
 Depth is communicated through glass materials, subtle shadows, and ambient glow — not through heavy borders.
 
-### Glass Navigation
-The navigation bar uses `backdrop-filter: saturate(180%) blur(20px)` with a translucent backing (`rgba(28, 28, 30, 0.85)` in dark, `rgba(255, 255, 255, 0.72)` in light). The glass has a **vertical fade mask**: `mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%)` — the glass effect fades out at the bottom of the nav bar. A subtle `--glass-border` provides the bottom edge definition.
+### Navigation (floating inset box)
+The navigation bar renders as a **solid floating rounded box** inset from the screen edges: `background: var(--surface)`, `border: 1px solid var(--glass-border)`, `border-radius: var(--radius-lg)`, inset via `margin`. It is **not** a `backdrop-filter` glass surface and carries **no drop shadow** — the 1px border plus the surrounding ambient background (on `.app-shell`) give it definition and the floating appearance. The `prefers-reduced-transparency` rule in `tokens.css` pins the background to solid `--surface` (a no-op given the bar is already solid, kept for safety).
 
-### Glass Fallback
-When `backdrop-filter` is unsupported or `prefers-reduced-transparency` is active, the nav bar falls back to solid `--surface` background with a 1px bottom separator. No information is lost.
+> Historical note: earlier revisions specified a `backdrop-filter` glass nav with a vertical fade mask. The shipped implementation is the solid floating box described here; treat this section as canonical.
 
 ### Forge Glow (Hero only)
 The hero page's forge section has a pulsing orange radial glow behind the anvil icon: `radial-gradient(circle, color-mix(in srgb, orange 35%, transparent), transparent 70%)`. Animates via `forge-pulse`: scale(0.9→1.1), opacity(0.5→1), 3s infinite alternate.
@@ -303,7 +302,7 @@ Border radius follows iOS conventions:
 ## Components
 
 ### Navigation Bar
-Fixed top bar with inline horizontal-scrolling tab strip and a theme toggle button on the right. Glass backdrop (`backdrop-filter`) with vertical fade mask. Height: `56px + env(safe-area-inset-top)`.
+Top bar rendered as a **floating rounded box inset from the screen edges** (`margin`, `border-radius: --radius-lg`, 1px `--glass-border`, solid `--surface`, no shadow). Holds an inline horizontal-scrolling tab strip, the theme picker, and the light/dark toggle on the right.
 
 - Tabs are `<a href>` elements with icon + label
 - Active tab shows `--accent` color
@@ -311,6 +310,15 @@ Fixed top bar with inline horizontal-scrolling tab strip and a theme toggle butt
 - Tab icon: 1.2rem
 - Scrollable on overflow with hidden scrollbar
 - Theme toggle: `--surface-2` background, `--accent` color, 44px touch target
+- On phones (≤480px) the inset margin and padding tighten
+
+### Theme Picker
+A dropdown menu opened from a button in the nav bar, listing all registered behavioral themes (see Behavioral Themes). Built client-side by `theme-manager.js` from the registry, so it scales as themes are added.
+
+- **Layout**: a **2-column grid of compact tiles** (name + truncated preview hint, full text in `title`), fixed 320px width (`max-width: calc(100vw - space-4)`).
+- **Overflow**: the grid is `max-height: min(58vh, 440px)` with `overflow-y: auto`, so a long theme list scrolls while the effect-control checkboxes (Reduce effects, Enable theme audio) stay pinned below.
+- **Keyboard navigation**: Arrow Left/Right move by one tile, Up/Down by a row (column count derived from layout), Home/End jump to ends, **Enter/Space commit**, **Escape cancels**. Roving `tabindex` + `focus()` track the active tile; `aria-current` marks the active/selected theme.
+- **Live preview**: highlighting a tile (arrow or hover) applies the theme immediately **without persisting** (`apply(id, mode, {persist:false})`), so users can sweep the whole gallery fast. The committed theme is captured on open; Escape, click-away, or re-opening the trigger revert to it, while Enter or a click persists to `localStorage`.
 
 ### Hero Page (Archetype E)
 
@@ -421,7 +429,7 @@ When `prefers-reduced-motion: reduce` is active, ALL transitions and animations 
 ### Reduced Transparency
 When `prefers-reduced-transparency: reduce` is active, all `backdrop-filter` glass effects are replaced with solid `--surface` backgrounds. The nav bar loses the blur but maintains the scrim color.
 
-**Intentional exemption**: The global ambient radial gradient on `.app-main` and the floating ambient particles are CSS `radial-gradient` and positioned elements (not `backdrop-filter`), so they are deliberately unaffected by this preference. These effects create visual atmosphere and carry no functional content — no information is lost if a user has reduced-transparency enabled.
+**Intentional exemption**: The global ambient radial gradient on `.app-shell` and the floating ambient particles are CSS `radial-gradient` and positioned elements (not `backdrop-filter`), so they are deliberately unaffected by this preference. These effects create visual atmosphere and carry no functional content — no information is lost if a user has reduced-transparency enabled.
 
 ## Behavioral Themes
 
@@ -429,8 +437,10 @@ The UI supports a gallery of **behavioral themes** (feature 015, ADR-031) beyond
 
 - **Attribute model**: `data-theme` carries the light/dark **mode** (unchanged — all existing `[data-theme="light"]` rules keep working); a new `data-skin` attribute carries the **theme id**. Theme CSS layers key off `[data-skin="<id>"]` and override design tokens, so all token-reactive components re-theme automatically — a systemic restyle remains a token edit.
 - **Default parity**: the `default` theme has no CSS layer and uses base `tokens.css` only, so its appearance is byte-identical to the pre-feature baseline.
-- **Expressive layer**: a theme MAY map live training signals to coordinated visual responses via a `mapping(signalBus, effectLevel)` hook. The backend emits only neutral signals (`metrics` with `grad_norm`/`tokens_per_sec`, plus `divergence` and `milestone` events); themes own their interpretation client-side (e.g. Old Growth derives its "disturbance" from instability). Mappings drive theme-private CSS variables (`--heat`, `--prog`, `--disturbance`, `--calm`, `--flow`) and state attributes.
-- **Accessibility**: every theme layer includes a `prefers-reduced-motion` reset; the centralized effect-level resolver suppresses legibility-degrading effects under reduced-effects/maximum-legibility and pauses continuous effects when the tab is hidden. Primary content must meet WCAG AA in every theme and mode.
+- **Expressive layer**: a theme MAY map live training signals to coordinated visual responses via a `mapping(signalBus, effectLevel)` hook. The backend emits only neutral signals (`metrics` with `grad_norm`/`tokens_per_sec`, plus `divergence` and `milestone` events); themes own their interpretation client-side (e.g. Old Growth derives its "disturbance" from instability). Mappings drive theme-private CSS variables (`--heat`, `--prog`, `--disturbance`, `--calm`, `--flow`, `--level`, `--surge`, `--open`, `--sway`, `--tremor`, `--freeze`, `--throughput`, `--output`, `--velocity`, `--focus`, `--activity`, `--ghost`, `--charge`, `--clearing`, `--warmth`, `--density`, `--amp`, `--tone`, `--clarity`, `--bleed`, `--lumin`) and state attributes.
+- **Theme gallery**: 17 themes ship today. Cosmetic: `default`. Loss-led: Forge, Aurora, Tide, Bloom, Glacier, Inkwash, Stained Glass, Hologram. Throughput-led: Reactor, Hyperspace, Ember Drift, Mainframe. Instability-led (grad-norm / loss volatility): Old Growth, Tectonic, Storm Front. Spectrum/audio: Resonance. Dual light+dark wherever the metaphor allows (Tide, Bloom, Tectonic, Glacier, Mainframe, Storm Front, Resonance, Inkwash + Default/Aurora); inherently luminous or single-appearance themes use `modes: ['single']` (Old Growth, Reactor, Hyperspace, Hologram, Ember Drift, Stained Glass) or dark-only (Forge).
+- **Audio dimension (opt-in)**: `Resonance` is the first theme to use the reserved audio layer (FR-020). It synthesizes a low-gain WebAudio tone (pitch ← loss, gain ← gradient amplitude) only after the user enables "theme audio" in the picker, is gated by the effect-level resolver, and is torn down with the theme. No theme produces sound without explicit opt-in.
+- **Accessibility**: every theme layer includes a `prefers-reduced-motion` reset; the centralized effect-level resolver suppresses legibility-degrading effects under reduced-effects/maximum-legibility and pauses continuous effects when the tab is hidden. Legibility-degrading effects (Hologram chromatic ghosting, Inkwash ink-bleed blur, Tectonic shake, Old Growth scanlines) sit behind a theme-private var the resolver zeroes at maximum legibility. Primary content must meet WCAG AA in every theme and mode.
 
 ## Do's and Don'ts
 
@@ -449,7 +459,7 @@ The UI supports a gallery of **behavioral themes** (feature 015, ADR-031) beyond
 - **Don't** use serif fonts for anything.
 - **Don't** use text-based ASCII spinners (| / - \). Use CSS spinning indicators.
 - **Don't** use outlined buttons (fill → outline was the old pattern).
-- **Don't** add drop shadows to nav bars — use glass instead.
+- **Don't** add drop shadows to the nav bar — it's a solid floating inset box defined by a 1px `--glass-border` and the surrounding ambient background, not a shadow.
 - **Don't** use `@font-face` to embed SF Pro.
 - **Don't** apply `backdrop-filter` to more than 3 simultaneous surfaces.
 - **Don't** create new bespoke page layouts. Every page must fit into one of the five archetypes.

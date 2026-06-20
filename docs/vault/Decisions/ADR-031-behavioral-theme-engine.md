@@ -86,6 +86,23 @@ clean iOS-modern accessible default established in `004-frontend-refactor`
   theme-independent (FR-030).
 - The default experience is visually byte-identical for non-adopters (SC-007).
 
+### Addendum (2026-06-19) — Gallery expansion to 17 themes
+
+The extensibility contract was exercised in [[2026-06-19-theme-gallery-expansion]]:
+13 themes were added (Tide, Bloom, Tectonic, Glacier, Reactor, Hyperspace,
+Mainframe, Hologram, Storm Front, Ember Drift, Resonance, Inkwash, Stained Glass)
+with **zero engine/manager/registry/SSE changes** — only new `themes/<id>.js` +
+`css/themes/<id>.css` pairs and `base.html` include lines, validating SC-009.
+Two notable points within (not departing from) this ADR:
+
+- **Signal diversity**: new themes are deliberately split across loss-led,
+  throughput-led, and instability-led drivers so identical run telemetry reads
+  differently per theme.
+- **Audio dimension activated**: `Resonance` is the first theme to use the
+  reserved opt-in audio layer (FR-020) — a low-gain WebAudio tone created on the
+  opt-in user gesture, gated by the effect-level resolver, torn down on switch.
+  This remains opt-in and theme-owned; the engine/contract are unchanged.
+
 ## Compliance
 
 - Article I: `core/` stays stdlib-only (`CoreStepObservation` is a `NamedTuple`;

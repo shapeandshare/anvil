@@ -14,26 +14,52 @@ import pytest
 
 from conftest import compose_exec
 
-THEME_IDS = ["default", "forge", "oldgrowth", "aurora"]
+THEME_IDS = [
+    "default",
+    "forge",
+    "oldgrowth",
+    "aurora",
+    "tide",
+    "bloom",
+    "tectonic",
+    "glacier",
+    "reactor",
+    "hyperspace",
+    "mainframe",
+    "hologram",
+    "stormfront",
+    "emberdrift",
+    "resonance",
+    "inkwash",
+    "stainedglass",
+    "ash",
+    "deepsea",
+    "echo",
+    "loom",
+    "prism",
+    "pulse",
+    "solarflare",
+    "static",
+    "vinyl",
+]
 THEME_SCRIPTS = [
     "/static/js/theme/theme-registry.js",
     "/static/js/theme/effect-level.js",
     "/static/js/theme/signal-bus.js",
     "/static/js/theme/theme-manager.js",
 ]
-THEME_REGISTRATIONS = [
-    "/static/js/themes/default.js",
-    "/static/js/themes/forge.js",
-    "/static/js/themes/oldgrowth.js",
-    "/static/js/themes/aurora.js",
-]
+THEME_REGISTRATIONS = [f"/static/js/themes/{t}.js" for t in THEME_IDS]
+
+# Themes that ship a CSS layer (every theme except the cosmetic `default`).
+THEME_CSS_LAYERS = [t for t in THEME_IDS if t != "default"]
+
 
 
 class TestThemeAssets:
     """ST-T1: All theme engine JS and CSS assets resolve."""
 
     ALL_ASSETS = THEME_SCRIPTS + THEME_REGISTRATIONS + [
-        f"/static/css/themes/{t}.css" for t in ("forge", "oldgrowth", "aurora")
+        f"/static/css/themes/{t}.css" for t in THEME_CSS_LAYERS
     ]
 
     @pytest.mark.parametrize("path", ALL_ASSETS)
@@ -93,10 +119,38 @@ class TestThemePageIntegration:
         assert "theme-audio-optin" in html, "Audio opt-in control missing from picker"
 
 
+class TestPickerKeyboardNavigation:
+    """ST-T4: The theme manager ships the grid keyboard-navigation + preview logic.
+
+    The picker grid/items are rendered client-side, so we assert the behavior is
+    present in the shipped ``theme-manager.js`` asset rather than in served HTML.
+    """
+
+    def test_manager_implements_arrow_navigation(self, client: httpx.Client) -> None:
+        js = client.get("/static/js/theme/theme-manager.js").text
+        for token in ("ArrowRight", "ArrowLeft", "ArrowUp", "ArrowDown"):
+            assert token in js, f"theme-manager.js missing arrow-key handler for {token}"
+        assert "Enter" in js, "theme-manager.js missing Enter-to-commit handling"
+        assert "Escape" in js, "theme-manager.js missing Escape-to-cancel handling"
+
+    def test_manager_has_live_preview_without_persist(self, client: httpx.Client) -> None:
+        js = client.get("/static/js/theme/theme-manager.js").text
+        assert "previewApply" in js, "theme-manager.js missing live-preview function"
+        assert "persist: false" in js, "preview must apply without persisting"
+        assert "commitSelection" in js, "theme-manager.js missing commit-on-Enter function"
+
+    def test_manager_builds_scrollable_grid(self, client: httpx.Client) -> None:
+        js = client.get("/static/js/theme/theme-manager.js").text
+        assert "theme-picker__grid" in js, "picker should render a grid container"
+        css = client.get("/static/css/base.css").text
+        assert ".theme-picker__grid" in css, "base.css missing grid rule"
+        assert "overflow-y: auto" in css, "picker grid must scroll when list is long"
+
+
 class TestThemeCssFiles:
     """ST-T3: Theme CSS files exist in the container."""
 
-    @pytest.mark.parametrize("theme", ["forge", "oldgrowth", "aurora"])
+    @pytest.mark.parametrize("theme", THEME_CSS_LAYERS)
     def test_theme_css_layer_exists_in_container(self, theme: str) -> None:
         result = compose_exec(
             f"test -f /anvil/api/static/css/themes/{theme}.css && echo FOUND"

@@ -1,0 +1,57 @@
+[data-skin="stainedglass"] {
+  --bg:             #0a0712;
+  --surface:        #150f22;
+  --surface-2:      #1e1630;
+  --grouped-bg:     #07050d;
+  --separator:      #36284f;
+  --text:           #f0e9fb;
+  --text-secondary: #cabfe2;
+  --text-tertiary:  #8f82ad;
+  --text-bright:    #ffffff;
+
+  --accent:         #d4a23a;
+  --accent-green:   #3aae8a;
+  --accent-red:     #d6455c;
+  --accent-orange:  #e08740;
+  --accent-yellow:  #e6c14a;
+  --accent-purple:  #8f5ed6;
+  --accent-cyan:    #3f93c4;
+
+  --glass-bg:       rgba(21, 15, 34, 0.86);
+  --glass-border:   rgba(212, 162, 58, 0.2);
+
+  --lumin: 0.3;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="stainedglass"] * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+[data-skin="stainedglass"] .app-main::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: calc(0.18 + var(--lumin, 0.3) * 0.42);
+  background:
+    repeating-linear-gradient(40deg, transparent 0 84px, rgba(10, 7, 18, 0.5) 84px 87px),
+    repeating-linear-gradient(-35deg, transparent 0 69px, rgba(10, 7, 18, 0.5) 69px 72px),
+    repeating-linear-gradient(18deg, transparent 0 102px, rgba(10, 7, 18, 0.5) 102px 105px),
+    conic-gradient(from 20deg at 30% 20%,
+      rgba(143, 94, 214, 0.5), rgba(63, 147, 196, 0.4), rgba(214, 69, 92, 0.45),
+      rgba(212, 162, 58, 0.45), rgba(58, 174, 138, 0.4), rgba(143, 94, 214, 0.5)),
+    radial-gradient(60% 50% at 70% 80%, rgba(214, 162, 58, 0.4), transparent 70%);
+  background-size: 160px 160px, 160px 160px, 160px 160px, auto, auto;
+  background-repeat: repeat, repeat, repeat, no-repeat, no-repeat;
+  background-position: 0 0, 0 0, 0 0, 0 0, 0 0;
+  filter: blur(1px);
+  transition: opacity var(--dur-slow) var(--ease);
+}
+
+[data-skin="stainedglass"][data-glass="lit"] .app-main::before {
+  opacity: 0.85;
+}

@@ -7,12 +7,13 @@
   </div>
 
   <div class="training-runs section-card" id="runs-panel" style="display:none;--stagger-i: 0">
-    <div class="section-card__header"><h2 class="section-card__title">Active Training Runs</h2></div>
+    <div class="section-card__header"><span class="section-card__icon">&#9654;</span><h2 class="section-card__title">Active Training Runs</h2></div>
     <div id="runs-list"></div>
   </div>
 
   <div class="training-data-source section-card training-wizard" style="--stagger-i: 1">
     <div class="section-card__header">
+      <span class="section-card__icon">&#9881;</span>
       <h2 class="section-card__title">Training Setup</h2>
     </div>
 
@@ -137,7 +138,7 @@
   </div>
 
   <div class="training-chart section-card" style="--stagger-i: 2">
-    <div class="section-card__header"><h2 class="section-card__title">Loss Curve</h2></div>
+    <div class="section-card__header"><span class="section-card__icon">&#128200;</span><h2 class="section-card__title">Loss Curve</h2></div>
     <div class="connection-state" id="connection-state">idle</div>
     <div id="training-phase" class="phase-label" style="display:none;"></div>
     <div class="chart-container">
@@ -146,7 +147,7 @@
   </div>
 
   <div class="training-metrics section-card" style="--stagger-i: 3">
-    <div class="section-card__header"><h2 class="section-card__title">Metrics</h2></div>
+    <div class="section-card__header"><span class="section-card__icon">&#128202;</span><h2 class="section-card__title">Metrics</h2></div>
     <div class="metrics-grid">
       <div class="metric"><span class="metric-label">Step</span><span class="metric-value" id="metric-step">—</span></div>
       <div class="metric"><span class="metric-label">Loss</span><span class="metric-value" id="metric-loss">—</span></div>
@@ -162,6 +163,7 @@
 
   <div class="training-output section-card" style="--stagger-i: 4">
     <div class="section-card__header section-card__header--clickable" id="output-header" role="button" tabindex="0" aria-expanded="false" aria-controls="output-body">
+      <span class="section-card__icon">&#128228;</span>
       <h2 class="section-card__title">Output</h2>
       <span class="output-indicator" id="output-indicator"></span>
       <span class="output-toggle-icon collapsed" id="output-toggle-icon">▼</span>

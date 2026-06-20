@@ -1,0 +1,79 @@
+[data-skin="reactor"] {
+  --bg:             #060b0e;
+  --surface:        #0c161b;
+  --surface-2:      #122027;
+  --grouped-bg:     #04090b;
+  --separator:      #1f3a44;
+  --text:           #d8f0f4;
+  --text-secondary: #a6cdd4;
+  --text-tertiary:  #6f969e;
+  --text-bright:    #eafbff;
+
+  --accent:         #2fd6c8;
+  --accent-green:   #2fd6c8;
+  --accent-red:     #ff5347;
+  --accent-orange:  #ffb13d;
+  --accent-yellow:  #ffd24d;
+  --accent-purple:  #7fa6ff;
+  --accent-cyan:    #2fd6c8;
+
+  --glass-bg:       rgba(12, 22, 27, 0.86);
+  --glass-border:   rgba(47, 214, 200, 0.16);
+
+  --shadow-md:      0 2px 10px rgba(0, 0, 0, 0.55);
+  --shadow-lg:      0 8px 28px rgba(0, 0, 0, 0.65);
+
+  --throughput: 0;
+  --output: 0.4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="reactor"] * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+[data-skin="reactor"] .app-main::after {
+  content: "";
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  width: 70vmin;
+  height: 70vmin;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(47, 214, 200, calc(0.05 + var(--throughput, 0) * 0.22)),
+    rgba(127, 166, 255, calc(0.02 + var(--output, 0.4) * 0.08)) 40%,
+    transparent 68%
+  );
+  animation: reactor-pulse calc(6s - var(--throughput, 0) * 4.5s) ease-in-out infinite;
+  transition: background var(--dur-slow) var(--ease);
+}
+
+@keyframes reactor-pulse {
+  0%, 100% { opacity: 0.55; transform: translate(-50%, -50%) scale(0.96); }
+  50%      { opacity: 1;    transform: translate(-50%, -50%) scale(1.04); }
+}
+
+[data-skin="reactor"][data-reactor="scram"] .app-main::after {
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(255, 83, 71, 0.4),
+    transparent 65%
+  );
+  animation: reactor-scram 0.5s steps(2) infinite;
+}
+
+@keyframes reactor-scram {
+  0%, 100% { opacity: 0.3; }
+  50%      { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="reactor"] .app-main::after { animation: none !important; }
+}
