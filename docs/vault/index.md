@@ -43,4 +43,5 @@ Open this vault in [Obsidian](https://obsidian.md) for graph navigation.
 | **Model Export** | [[Reference/SafetensorsExport|Safetensors & HF Interop]] |
 | **Infrastructure** | [[Decisions/ADR-024-auto-db-migration|ADR-024: Auto DB Schema]] · [[Decisions/ADR-018-packaging-resource-relocation|ADR-018: Packaging Resources Inside Wheel]] · [[Sessions/2026-06-18-auto-db-schema|Auto DB Schema Session]] · [[Sessions/2026-06-18-pip-installable-package|Pip-Installable Package Session]] |
 | **SaaS Architecture** | [[Reference/SaaSArchitecture|SaaS Three-Mode Overview]] · [[Reference/SaaSSystemDiagrams|System Diagrams (38)]] · [[Reference/SaaSSecurityAndFlowDiagrams|Security & Boundary Diagrams (39)]] · [[Decisions/ADR-030-saas-architecture|ADR-030: SaaS Architecture]] |
+| **Data Management** | [[Reference/ContentManagementLandscape|CMS & Python Ecosystem vs. anvil Data Layer]] · [[Reference/TrainingDataFlow|Training Render Loop]] |
 | **Reference** | [[Reference/Glossary|Glossary]] · [[Reference/OpenQuestions|Open Questions]] |
