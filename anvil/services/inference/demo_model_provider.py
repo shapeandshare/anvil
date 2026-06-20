@@ -272,6 +272,12 @@ def warmup_demo_via_system_pipeline() -> None:
         # Fall back to the old inline path so the server still works
         try:
             model = _train_demo_model()
+            # Save to experiment path so load_model() can find it via filesystem.
+            # The demo warmup is always the first to allocate, so ID is reliably 1.
+            MODELS_DIR = Path("data/models")
+            MODELS_DIR.mkdir(parents=True, exist_ok=True)
+            experiment_path = MODELS_DIR / "experiment_1.json"
+            model.save(str(experiment_path), model.chars)
             _demo_provider._model = model
             _demo_provider._chars = model.chars
         except Exception:

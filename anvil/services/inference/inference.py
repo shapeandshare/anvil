@@ -12,7 +12,6 @@ from typing import Any
 
 from ...core.autograd import Value
 from ...core.engine import LlamaModel
-from .demo_model_provider import _demo_provider
 from .loaded_model import LoadedModel
 
 
@@ -117,23 +116,24 @@ class InferenceService:
     def __init__(self) -> None:
         """Initialise the inference service with an empty model cache."""
         self._cache: dict[tuple[int, int], tuple[LlamaModel, list[str]]] = {}
-        self._demo_provider = _demo_provider
+        self._default_id: int | None = None
 
     async def load_model(
         self,
         model_id: int | None = None,
         version: int | None = None,
     ) -> LoadedModel:
-        """Load a model by ID and optional version.
+        """Load a model by experiment ID and optional version.
 
-        Resolution order: demo model (when ``model_id`` is ``None``),
-        in-memory cache, experiment artifact file (``experiment_{id}.json``),
-        then MLflow Model Registry.
+        Resolution order: in-memory cache, experiment artifact file
+        (``data/models/experiment_{id}.json``), then MLflow Model Registry.
+        When ``model_id`` is ``None``, resolves to the demo model via
+        :meth:`_resolve_default_id`.
 
         Parameters
         ----------
         model_id : int, optional
-            The model/experiment ID. ``None`` loads the demo model.
+            The experiment ID. ``None`` resolves a default (demo model).
         version : int, optional
             Model version in the registry. Defaults to ``1``.
 
@@ -148,16 +148,15 @@ class InferenceService:
             If no model is found for the given ID and version.
         """
         if model_id is None:
-            gpt_model, chars = self._demo_provider.get_model()
-            return LoadedModel(gpt_model, chars, None, None, "demo", is_demo=True)
+            model_id = await self._resolve_default_id()
 
-        cache_key = (model_id, version if version is not None else 1)
+        version = version if version is not None else 1
+        cache_key = (model_id, version)
         if cache_key in self._cache:
             gpt_model, chars = self._cache[cache_key]
-            name = "cached"
-            return LoadedModel(gpt_model, chars, model_id, cache_key[1], name)
+            return LoadedModel(gpt_model, chars, model_id, version, "cached")
 
-        # Primary path: treat model_id as experiment_id and load from saved artifact
+        # Primary path: load from saved experiment artifact
         model_path = Path(f"data/models/experiment_{model_id}.json")
         if model_path.exists():
             gpt_model = LlamaModel.load(str(model_path))
@@ -165,22 +164,19 @@ class InferenceService:
                 raise ValueError("Model has no character mapping")
             name = f"experiment-{model_id}"
             self._cache[cache_key] = (gpt_model, gpt_model.chars)
-            return LoadedModel(gpt_model, gpt_model.chars, model_id, cache_key[1], name)
+            return LoadedModel(gpt_model, gpt_model.chars, model_id, version, name)
 
-        # Secondary path: try loading from MLflow Model Registry
+        # Fallback: try loading from MLflow Model Registry
         from ..tracking.tracking import TrackingService
 
         tracking_svc = TrackingService()
         models = await tracking_svc.list_registered_models()
-        model_name = None
-        if isinstance(model_id, str):
-            model_name = model_id
-        else:
-            candidates = {f"dataset-{model_id}", f"corpus-{model_id}"}
-            for m in models:
-                if m.get("name") in candidates:
-                    model_name = m["name"]
-                    break
+        model_name: str | None = None
+        candidates = {f"dataset-{model_id}", f"corpus-{model_id}"}
+        for m in models:
+            if m.get("name") in candidates:
+                model_name = m["name"]
+                break
 
         if model_name:
             from mlflow.tracking import MlflowClient
@@ -190,7 +186,6 @@ class InferenceService:
             loop = asyncio.get_event_loop()
             client = MlflowClient(get_mlflow_uri())
             try:
-                # Find the latest version's run_id
                 all_versions = await loop.run_in_executor(
                     None,
                     lambda: client.search_model_versions(f"name='{model_name}'"),
@@ -203,9 +198,7 @@ class InferenceService:
                     local_dir = await loop.run_in_executor(
                         None,
                         lambda: client.download_artifacts(
-                            run_id=run_id,
-                            path="",
-                            dst_path=None,
+                            run_id=run_id, path="", dst_path=None
                         ),
                     )
                     model_file = Path(local_dir) / "model.json"
@@ -213,15 +206,56 @@ class InferenceService:
                         gpt_model = LlamaModel.load(str(model_file))
                         if gpt_model.chars is None:
                             raise ValueError("Model has no character mapping")
-                        name = model_name
                         self._cache[cache_key] = (gpt_model, gpt_model.chars)
                         return LoadedModel(
-                            gpt_model, gpt_model.chars, model_id, cache_key[1], name
+                            gpt_model, gpt_model.chars, model_id, version, model_name
                         )
             except Exception:
                 pass
 
         raise ValueError(f"Model not found: model_id={model_id}, version={version}")
+
+    async def _resolve_default_id(self) -> int:
+        """Resolve the default model (demo) to its numeric experiment ID.
+
+        Resolution order: in-memory cache, MLflow Model Registry (preferring
+        a model named ``"demo"``), then the filesystem for
+        ``data/models/experiment_1.json`` (the inline fallback path).
+        Raises ``ValueError`` when no model is found.
+
+        Returns
+        -------
+        int
+            The experiment ID of the default model.
+        """
+        if self._default_id is not None:
+            return self._default_id
+
+        from ..tracking.tracking import TrackingService
+
+        tracking_svc = TrackingService()
+        models = await tracking_svc.list_registered_models()
+
+        if models:
+            for m in models:
+                if m.get("name") == "demo" and m.get("id") is not None:
+                    self._default_id = m["id"]
+                    return m["id"]
+            for m in models:
+                mid = m.get("id")
+                if mid is not None:
+                    self._default_id = mid
+                    return mid
+
+        # Filesystem fallback: inline fallback saves to experiment_1.json
+        fallback_path = Path("data/models/experiment_1.json")
+        if fallback_path.exists():
+            self._default_id = 1
+            return 1
+
+        raise ValueError(
+            "No models available. Train or bootstrap a model first."
+        )
 
     def tokenize(self, text: str, loaded: LoadedModel) -> dict[str, Any]:
         """Tokenise text and return token metadata.
