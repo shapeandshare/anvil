@@ -19,10 +19,10 @@ source: agent
 
 # SaaS Security, Boundary & Flow Diagrams
 
-Security-, boundary-, and flow-focused diagrams complementing [[SaaSSystemDiagrams]]. Aligned with Architecture Decisions **AD-1..AD-11** in `specs/014-saas-architecture/spec.md`.
+Security-, boundary-, and flow-focused diagrams complementing [[SaaSSystemDiagrams]]. Aligned with Architecture Decisions **AD-1..AD-16** in `specs/014-saas-architecture/spec.md`.
 
-> [!WARNING]
-> **Pending Updates (2026-06-19)**: These 37 diagrams predate the SaaS spec-hardening session. The RBAC/access-boundary diagrams (Parts G/H) do NOT yet reflect the **cluster-admin read-wide/write-narrow** model (FR-034–FR-038b, AD-14), and there are no diagrams for observability data flows (FR-052–FR-056), the MLflow proxy auth path (FR-057), secret-rotation dual-key windows (FR-045s), or backup/DR (FR-058–061). The spec now defines **AD-1 through AD-16**. See [[Decisions/ADR-030-saas-architecture|ADR-030]] and [[2026-06-19-saas-spec-hardening|the hardening session log]]. Diagram redraw is deferred follow-up.
+> [!NOTE]
+> **Updated 2026-06-19**: Part H adds the cluster-admin read-wide/write-narrow diagram and local-mode contrast (AD-14). Observability data-flow and secret-rotation diagrams are covered in [[SaaSSystemDiagrams]] Part G and [[Decisions/ADR-030-saas-architecture|ADR-030]]; remaining Part A–G flow diagrams reflect AD-1..AD-11 and are supplemented by the new entries. See [[2026-06-19-saas-spec-hardening|the hardening session log]].
 
 ## Index
 
@@ -891,6 +891,42 @@ flowchart LR
     I1 & E1 & E2 & C1 & C2 -.->|never| F1 & F2 & F3
 ```
 
+## H7. Cluster Admin — Read-Wide, Write-Narrow (AD-14, FR-037a/b)
+
+Added 2026-06-19. The `is_cluster_admin` flag is NOT a blanket bypass: it widens the read-scoping
+predicate and grants a fixed cluster-operation matrix, but tenant-data writes still flow through the
+org-role guard.
+
+```mermaid
+flowchart TB
+    REQ[Authenticated request<br/>is_cluster_admin=true] --> KIND{operation kind}
+
+    KIND -->|read / list| READ[bypass org_id scoping<br/>→ cross-org rows returned]
+
+    KIND -->|cluster op| MATRIX{in cluster-admin<br/>action matrix?}
+    MATRIX -->|suspend org / cancel job /<br/>manage cluster admins /<br/>view health, logs, usage| ALLOWOP[Allow]
+    MATRIX -->|no| DENYOP[403]
+
+    KIND -->|tenant-data write<br/>delete corpus / mutate dataset| ORGGUARD{holds org owner/admin<br/>role in THAT org?}
+    ORGGUARD -->|yes| ALLOWW[Allow]
+    ORGGUARD -->|no| DENYW[403 — flag alone insufficient]
+
+    style READ fill:#e8f5e9
+    style ALLOWOP fill:#e8f5e9
+    style ALLOWW fill:#e8f5e9
+    style DENYOP fill:#fce4ec
+    style DENYW fill:#fce4ec
+```
+
+### Local mode contrast (FR-038b)
+
+```mermaid
+flowchart LR
+    LREQ[Request in local mode] --> NOAUTH[No JWT middleware]
+    NOAUTH --> NOSCOPE[No org scoping]
+    NOSCOPE --> FULL[Implicit full access<br/>is_cluster_admin / roles not consulted]
+```
+
 ---
 
 ## Diagram Inventory
@@ -904,13 +940,13 @@ flowchart LR
 | E — Perimeter & Trust | trust zones, boundary controls, attack surface (3) |
 | F — Egress | egress paths, exfil controls, pod egress (3) |
 | G — Tenant Boundaries | layer isolation, boundary map, denial paths, shared/isolated (4) |
-| H — Access Boundaries | IAM roles, RBAC enforcement, access matrix, secrets, DB credential IAM flow, secret delivery paths (6) |
+| H — Access Boundaries | IAM roles, RBAC enforcement, access matrix, secrets, DB credential IAM flow, secret delivery paths, cluster-admin read-wide/write-narrow + local-mode contrast (8) |
 
-**Total: 37 diagrams.** Combined with [[SaaSSystemDiagrams]] (33), the architecture has **70 diagrams**.
+**Total: 39 diagrams.** Combined with [[SaaSSystemDiagrams]] (38), the architecture has **77 diagrams**.
 
 ## See Also
 
-- [[SaaSSystemDiagrams]] — structural, data, auth, compute, deploy (33 diagrams)
+- [[SaaSSystemDiagrams]] — structural, data, auth, compute, deploy, observability, proxy, multi-cluster, HA (38 diagrams)
 - [[SaaSArchitecture]] — narrative overview + feature matrix
-- `specs/014-saas-architecture/spec.md` — AD-1..AD-11, acceptance gates
+- `specs/014-saas-architecture/spec.md` — AD-1..AD-16, acceptance gates
 - `specs/014-saas-architecture/data-model.md` — schema source

@@ -42,5 +42,5 @@ Open this vault in [Obsidian](https://obsidian.md) for graph navigation.
 | **MLflow Lineage** | [[Decisions/ADR-016-mlflow-primary-lineage|ADR-016: MLflow as Primary Lineage Source of Truth]] |
 | **Model Export** | [[Reference/SafetensorsExport|Safetensors & HF Interop]] |
 | **Infrastructure** | [[Decisions/ADR-024-auto-db-migration|ADR-024: Auto DB Schema]] · [[Decisions/ADR-018-packaging-resource-relocation|ADR-018: Packaging Resources Inside Wheel]] · [[Sessions/2026-06-18-auto-db-schema|Auto DB Schema Session]] · [[Sessions/2026-06-18-pip-installable-package|Pip-Installable Package Session]] |
-| **SaaS Architecture** | [[Reference/SaaSArchitecture|SaaS Three-Mode Overview]] · [[Reference/SaaSSystemDiagrams|System Diagrams (33)]] · [[Reference/SaaSSecurityAndFlowDiagrams|Security & Boundary Diagrams (37)]] · [[Decisions/ADR-030-saas-architecture|ADR-030: SaaS Architecture]] |
+| **SaaS Architecture** | [[Reference/SaaSArchitecture|SaaS Three-Mode Overview]] · [[Reference/SaaSSystemDiagrams|System Diagrams (38)]] · [[Reference/SaaSSecurityAndFlowDiagrams|Security & Boundary Diagrams (39)]] · [[Decisions/ADR-030-saas-architecture|ADR-030: SaaS Architecture]] |
 | **Reference** | [[Reference/Glossary|Glossary]] · [[Reference/OpenQuestions|Open Questions]] |

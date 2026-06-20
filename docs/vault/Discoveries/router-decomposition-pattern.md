@@ -16,6 +16,10 @@ summary: >-
   Router decomposition pattern: router.py went from 1958→45 lines by extracting
   health_ops, pages, and learning modules. Sub-routers cannot have empty path
   prefixes.
+tags:
+  - type/discovery
+  - domain/architecture
+  - status/reviewed
 ---
 # Router Decomposition Pattern
 

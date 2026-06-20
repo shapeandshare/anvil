@@ -2,12 +2,16 @@
 created: '2026-06-19'
 status: draft
 tags:
-  - domain/testing
+  - type/discovery
+  - domain/tooling
   - domain/governance
-  - tech/python
+  - status/draft
 title: Provenance Manifest Mocking in Tests
-type: discovery-note
+type: discovery
 updated: '2026-06-19'
+aliases:
+  - Provenance Manifest Mocking in Tests
+source: agent
 ---
 # Provenance Manifest Mocking in Tests
 
