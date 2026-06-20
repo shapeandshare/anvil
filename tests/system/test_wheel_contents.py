@@ -54,16 +54,16 @@ def test_wheel_contains_migration_versions() -> None:
     with zipfile.ZipFile(_wheel_path()) as zf:
         names = zf.namelist()
     versions = [n for n in names if "anvil/_resources/migrations/versions/" in n and n.endswith(".py")]
-    # Expect at least 13 version files (002b + 006 merge = 14 version files + 1 merge = 14+)
-    assert len(versions) >= 13, (
-        f"Expected at least 13 migration version files in wheel, found {len(versions)}. "
+    # Expect at least 1 version file (squashed 001_initial)
+    assert len(versions) >= 1, (
+        f"Expected at least 1 migration version file in wheel, found {len(versions)}. "
         "Check [tool.setuptools.package-data] for _resources/migrations/versions/*.py"
     )
-    # Verify merge head is included
-    merge = [v for v in versions if "merge" in v.lower()]
-    assert len(merge) >= 1, (
-        "No merge revision found in wheel versions. "
-        "The 12a4027155f0_merge file must be bundled."
+    # Verify initial revision is included
+    initial = [v for v in versions if "001_initial" in v]
+    assert len(initial) >= 1, (
+        "No initial revision found in wheel versions. "
+        "The 001_initial.py file must be bundled."
     )
 
 

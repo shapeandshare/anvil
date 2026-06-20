@@ -9,6 +9,7 @@ created: '2026-06-18'
 related:
   - '[[Sessions/2026-06-18-db-stamped-without-tables]]'
   - '[[Sessions/2026-06-20-ui-layout-overhaul]]'
+  - '[[Decisions/ADR-032-greenfield-legacy-removal]]'
 session: 2026-06-18-db-stamped-without-tables
 source: agent
 summary: >-
@@ -70,6 +71,16 @@ The same issue appeared at revision **014** (`014_add_governance`). The `alembic
 Fix was identical: delete the stale DB and re-run all migrations from scratch.
 
 **Takeaway**: This is a recurring failure mode. Any environment where the database was initialised by the ORM (`Base.metadata.create_all()`) rather than by Alembic migrations is at risk — Alembic stamps the revision on `--autogenerate` but doesn't replay the SQL. A future safeguard would be a runtime check that verifies a known table exists for the current revision before trusting the stamp.
+
+## Update (2026-06-20): migration chain squashed
+
+The 14-migration chain described above (`None → 001 → … → 013`) and the later
+`014` no longer exist. As of [[Decisions/ADR-032-greenfield-legacy-removal]] the
+entire history was squashed into a single `001_initial.py` (the project has no
+deployments). The failure mode documented here — `alembic_version` stamped ahead
+of the physical schema — still applies, but recovery now replays one migration
+rather than fourteen. The recurrence narrative is retained as an audit record of
+what happened before the squash.
 
 ## References
 

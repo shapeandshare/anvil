@@ -30,7 +30,6 @@ class _FakeMlflowClient:
             "block_size": "32",
             "num_steps": "100",
             "learning_rate": "0.01",
-            "use_gpu": "True",
         }
 
     def get_experiment_by_name(self, name):
@@ -65,24 +64,17 @@ class TestHyperparamsFromMlflow:
             "beta1": "0.85",
             "beta2": "0.99",
             "temperature": "0.5",
-            "use_gpu": "True",
         }
         hp = _hyperparams_from_mlflow(params)
         assert hp["n_layer"] == 4
         assert isinstance(hp["n_layer"], int)
         assert hp["learning_rate"] == 0.01
         assert isinstance(hp["learning_rate"], float)
-        assert hp["use_gpu"] is True
 
     def test_skips_missing_and_unparseable(self):
         hp = _hyperparams_from_mlflow({"n_embd": "not-a-number", "n_head": "4"})
         assert "n_embd" not in hp
         assert hp["n_head"] == 4
-        assert "use_gpu" not in hp
-
-    def test_use_gpu_false_variants(self):
-        assert _hyperparams_from_mlflow({"use_gpu": "False"})["use_gpu"] is False
-        assert _hyperparams_from_mlflow({"use_gpu": "0"})["use_gpu"] is False
 
 
 @pytest.mark.asyncio
@@ -195,7 +187,6 @@ async def test_experiment_detail_surfaces_gpu_peaks_and_param_fallback(client):
                     "block_size": "32",
                     "num_steps": "100",
                     "learning_rate": "0.01",
-                    "use_gpu": "True",
                 },
                 "metrics": {},
                 "tags": {},
@@ -221,4 +212,3 @@ async def test_experiment_detail_surfaces_gpu_peaks_and_param_fallback(client):
     assert data["gpu_memory_peak_gb"] == 3.5
     assert data["gpu_util_peak_pct"] == 80.0
     assert data["hyperparameters"]["n_embd"] == 64
-    assert data["hyperparameters"]["use_gpu"] is True

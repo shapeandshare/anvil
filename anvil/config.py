@@ -123,8 +123,6 @@ def get_config():
     -------------
     port : int
         Web server port (default: ``8080``).
-    db_path : str
-        Resolved path to the state database (alias for ``state_db_path``).
     state_db_path : str
         Resolved path to ``anvil-state.db``.
     log_dir : str
@@ -156,22 +154,12 @@ def get_config():
         "yes",
     )
 
-    # Deprecation path: ANVIL_DB_PATH → ANVIL_STATE_DB_PATH
-    state_db_path = os.getenv("ANVIL_STATE_DB_PATH")
-    legacy_db_path = os.getenv("ANVIL_DB_PATH")
-    if state_db_path is None and legacy_db_path is not None:
-        import logging
-
-        logging.getLogger(__name__).warning(
-            "ANVIL_DB_PATH is deprecated. Use ANVIL_STATE_DB_PATH instead."
-        )
-        state_db_path = legacy_db_path
-    if state_db_path is None:
-        state_db_path = str(Path("data/anvil-state.db").resolve())
+    state_db_path = os.getenv("ANVIL_STATE_DB_PATH") or str(
+        Path("data/anvil-state.db").resolve()
+    )
 
     return {
         "port": int(os.getenv("ANVIL_PORT", "8080")),
-        "db_path": state_db_path,
         "state_db_path": state_db_path,
         "log_dir": os.getenv("ANVIL_LOG_DIR", "logs"),
         "mlflow_uri": default_mlflow_uri,

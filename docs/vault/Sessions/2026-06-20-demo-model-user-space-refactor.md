@@ -1,10 +1,11 @@
 ---
 title: 'Session: Demo model moved into user-space loading path'
 type: session-log
+source: agent
 tags:
   - type/session-log
   - domain/inference
-  - domain/model-registry
+  - domain/registry
 created: '2026-06-20T00:00:00.000Z'
 updated: '2026-06-20T00:00:00.000Z'
 aliases:

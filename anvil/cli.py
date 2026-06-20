@@ -205,11 +205,6 @@ def train():
         ),
     )
     parser.add_argument(
-        "--gpu",
-        action="store_true",
-        help="Alias for --backend local-gpu (mutually exclusive with --backend)",
-    )
-    parser.add_argument(
         "--device",
         type=str,
         default=None,
@@ -217,11 +212,7 @@ def train():
     )
     args, _ = parser.parse_known_args()
 
-    # Resolve backend from --gpu/--backend
-    if args.backend and args.gpu:
-        parser.error("--backend and --gpu are mutually exclusive")
-    use_gpu = args.gpu or os.getenv("USE_GPU", "").lower() in ("true", "1", "yes")
-    compute_backend = args.backend or ("local-gpu" if use_gpu else "auto")
+    compute_backend = args.backend or "auto"
 
     from .services.compute.resolve import resolve_backend
     from .services.tracking.tracking import TrackingService

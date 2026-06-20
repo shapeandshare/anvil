@@ -183,7 +183,7 @@ async def test_compute_backend_defaults_to_auto(fake_tracking):
     orig_svc = training_module.tracking_svc
     training_module.tracking_svc = fake_tracking
 
-    config = _make_config({})  # no compute_backend, no use_gpu
+    config = _make_config({})  # no compute_backend, defaults to auto
     transport = ASGITransport(app=app)
     try:
         async with AsyncClient(transport=transport, base_url="http://test") as client:

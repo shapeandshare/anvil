@@ -28,7 +28,6 @@ from anvil.db.models import (  # noqa: F401  # isort: skip
     dataset,
     import_source,
     license_entry,
-    registry,
     sample,
     training_config,
 )

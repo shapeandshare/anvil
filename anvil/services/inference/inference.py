@@ -247,12 +247,6 @@ class InferenceService:
                     self._default_id = mid
                     return mid
 
-        # Filesystem fallback: inline fallback saves to experiment_1.json
-        fallback_path = Path("data/models/experiment_1.json")
-        if fallback_path.exists():
-            self._default_id = 1
-            return 1
-
         raise ValueError(
             "No models available. Train or bootstrap a model first."
         )

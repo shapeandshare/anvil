@@ -94,18 +94,15 @@ def _get_mps_memory() -> float | None:
     return psutil.virtual_memory().total / (1024**3)
 
 
-def resolve_device(use_gpu: bool = False, preferred: str | None = None) -> str:
+def resolve_device(preferred: str | None = None) -> str:
     """Resolve the best available device string for PyTorch.
 
     If *preferred* is provided it is returned immediately. Otherwise
-    the function detects the available GPU backend and returns
-    ``"cuda:0"``, ``"mps"``, or falls back to ``"cpu"``.
+    the function auto-detects the available GPU backend and returns
+    ``"cuda:0"`` (CUDA), ``"mps"`` (Apple Silicon), or ``"cpu"``.
 
     Parameters
     ----------
-    use_gpu : bool
-        Whether to prefer a GPU backend when available. Defaults to
-        ``False``.
     preferred : str, optional
         Explicit device override such as ``"cuda:0"``, ``"mps"``, or
         ``"cpu"``. Defaults to ``None``.
@@ -118,9 +115,6 @@ def resolve_device(use_gpu: bool = False, preferred: str | None = None) -> str:
     """
     if preferred is not None:
         return preferred
-
-    if not use_gpu:
-        return "cpu"
 
     info = detect_gpu()
     if info.available and info.backend:

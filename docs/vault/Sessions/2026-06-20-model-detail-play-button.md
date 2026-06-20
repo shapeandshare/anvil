@@ -1,6 +1,8 @@
 ---
 created: '2026-06-20T00:00:00.000Z'
 source: agent
+aliases:
+  - 'Session: Model Detail Page Play Button'
 tags:
   - type/session-log
   - domain/ui

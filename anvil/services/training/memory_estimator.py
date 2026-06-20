@@ -231,7 +231,6 @@ def estimate_training_memory(
     n_head: int = 4,
     n_layer: int = 1,
     block_size: int = 16,
-    use_gpu: bool = False,
     gpu_info: GpuInfo | None = None,
 ) -> MemoryEstimate:
     """Estimate peak memory usage for a training run with the given config.
@@ -253,11 +252,8 @@ def estimate_training_memory(
         Number of transformer layers. Defaults to ``1``.
     block_size : int
         Context window (sequence length). Defaults to ``16``.
-    use_gpu : bool
-        Whether GPU training is requested. Defaults to ``False``.
     gpu_info : GpuInfo or None
-        Pre-detected GPU info, or ``None`` to auto-detect when
-        ``use_gpu`` is ``True``.
+        Pre-detected GPU info, or ``None`` for CPU-only estimate.
 
     Returns
     -------
@@ -283,17 +279,13 @@ def estimate_training_memory(
     # but we use fp32 estimates since that's the bottleneck on GPU.
     peak = int(total * 2)
 
-    # Detect GPU if not provided
-    if gpu_info is None and use_gpu:
-        gpu_info = detect_gpu()
-
     available = None
     device_backend = None
     device_name = None
     would_oom = None
     warnings: list[str] = []
 
-    if use_gpu and gpu_info and gpu_info.available:
+    if gpu_info and gpu_info.available:
         device_backend = gpu_info.backend
         device_name = gpu_info.device_name
 
@@ -327,8 +319,6 @@ def estimate_training_memory(
             warnings.append(
                 "GPU available but memory info not available — cannot estimate"
             )
-    elif use_gpu:
-        warnings.append("GPU requested but not available — will fall back to CPU")
     else:
         # CPU mode: less likely to OOM (slower but uses virtual memory)
         would_oom = False

@@ -41,7 +41,6 @@ anvil = [
     "_resources/alembic.ini",
     "_resources/migrations/*.py",
     "_resources/migrations/*.mako",
-    "_resources/migrations/scripts/*.py",
     "_resources/migrations/versions/*.py",
     "data/demo/**/*.txt",
     "data/demo/**/*.md",

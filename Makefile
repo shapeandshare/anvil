@@ -15,9 +15,8 @@ setup-gpu: install-gpu ## Force GPU setup (auto-detected on Apple Silicon / NVID
 run-gpu: export ANVIL_DEVICE=auto
 run-gpu: run ## Start web server with GPU auto-detection
 
-train-gpu: export USE_GPU=true
-train-gpu: $(VENV_DIR)/activate ## Train with GPU acceleration (also defined in cli.mk)
-	$(PYTHON) -c "from anvil.cli import train; train()"
+train-gpu: $(VENV_DIR)/activate ## Train with GPU acceleration (--backend local-gpu)
+	$(PYTHON) -c "import sys; sys.argv += ['--backend', 'local-gpu']; from anvil.cli import train; train()"
 
 docker: ## [deprecated] Use `make compose-up` instead (multi-stage pip-installed build)
 	@echo "DEPRECATED: Use 'make compose-up' which builds + runs via compose.yaml."

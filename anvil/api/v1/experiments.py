@@ -27,12 +27,12 @@ GPU_MEMORY_METRIC = "system/gpu_memory_gb"
 GPU_UTIL_METRIC = "system/gpu_util_pct"
 """str: MLflow metric name for peak GPU utilization percentage."""
 
-_HYPERPARAM_COERCERS: dict[str, type] = {
-    """Type coercers for reconstructing typed hyperparameters from MLflow params.
+"""Type coercers for reconstructing typed hyperparameters from MLflow params.
 
-    Maps hyperparameter names to their target types for deserialization
-    from string-valued MLflow parameter storage.
-    """
+Maps hyperparameter names to their target types for deserialization
+from string-valued MLflow parameter storage.
+"""
+_HYPERPARAM_COERCERS: dict[str, type] = {
     "n_layer": int,
     "n_embd": int,
     "n_head": int,
@@ -50,7 +50,6 @@ def _hyperparams_from_mlflow(params: dict[str, str]) -> dict:
 
     Used as a fallback when the experiment has no linked TrainingConfig row.
     Coerces string values to their appropriate types using ``_HYPERPARAM_COERCERS``.
-    Handles the ``use_gpu`` boolean specially via string comparison.
 
     Parameters
     ----------
@@ -72,8 +71,6 @@ def _hyperparams_from_mlflow(params: dict[str, str]) -> dict:
             result[key] = caster(raw)
         except (ValueError, TypeError):
             continue
-    if "use_gpu" in params:
-        result["use_gpu"] = str(params["use_gpu"]).lower() in ("true", "1", "yes")
     return result
 
 
@@ -338,7 +335,6 @@ async def get_experiment(
             n_head=model_architecture["n_head"],
             n_layer=model_architecture["n_layer"],
             block_size=model_architecture["block_size"],
-            use_gpu=False,
         )
         memory_estimate = {
             "param_count": est.param_count,
