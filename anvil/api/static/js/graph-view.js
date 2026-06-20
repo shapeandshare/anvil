@@ -35,9 +35,12 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
 
+    var style = getComputedStyle(document.documentElement);
+    var accent = style.getPropertyValue('--accent').trim() || '#3b82f6';
+    var muted = style.getPropertyValue('--text-muted').trim() || '#888';
+    var surface = style.getPropertyValue('--surface').trim() || '#181a1f';
+
     if (this._nodes.length === 0) {
-      var style = getComputedStyle(document.documentElement);
-      var muted = style.getPropertyValue('--text-muted').trim() || '#888';
       ctx.fillStyle = muted;
       ctx.font = '12px "SF Mono","Fira Code",monospace';
       ctx.textAlign = 'center';
@@ -46,14 +49,19 @@
       return;
     }
 
-    var style = getComputedStyle(document.documentElement);
-    var accent = style.getPropertyValue('--accent').trim() || '#3b82f6';
-    var muted = style.getPropertyValue('--text-muted').trim() || '#888';
-    var surface = style.getPropertyValue('--surface').trim() || '#181a1f';
+    var step = this._currentStep !== undefined ? this._currentStep : Infinity;
+    var visibleNodes = this._nodes.filter(function (n) {
+      return n.step <= step;
+    });
+    var visibleIds = {};
+    visibleNodes.forEach(function (n) { visibleIds[n.id] = true; });
+    var visibleEdges = this._edges.filter(function (e) {
+      return visibleIds[e.from] && visibleIds[e.to];
+    });
 
     /* Group nodes by depth */
     var layers = {};
-    this._nodes.forEach(function (n) {
+    visibleNodes.forEach(function (n) {
       var depth = n.depth !== undefined ? n.depth : 0;
       if (!layers[depth]) layers[depth] = [];
       layers[depth].push(n);
@@ -106,7 +114,7 @@
     ctx.strokeStyle = muted;
     ctx.lineWidth = 1;
     ctx.globalAlpha = 0.4;
-    this._edges.forEach(function (e) {
+    visibleEdges.forEach(function (e) {
       var fromPos = nodePositions[e.from];
       var toPos = nodePositions[e.to];
       if (!fromPos || !toPos) return;
