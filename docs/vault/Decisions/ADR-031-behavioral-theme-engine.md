@@ -11,6 +11,12 @@ updated: 2026-06-19
 aliases:
 - Behavioral Theme Engine
 source: agent
+code-refs:
+- anvil/api/static/js/theme-manager.js
+- anvil/api/static/js/signal-bus.js
+- anvil/core/engine.py
+- anvil/services/training/
+- anvil/api/static/css/tokens.css
 ---
 
 # Behavioral Theme Engine and Neutral Signal Instrumentation

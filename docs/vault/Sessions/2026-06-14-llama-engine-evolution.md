@@ -1,6 +1,10 @@
 ---
 title: Session — Llama Engine Evolution & Safetensors Export
 type: session
+aliases:
+  - 2026-06-14 Llama Engine Evolution
+  - Llama Engine Evolution & Safetensors Export
+source: agent
 tags:
   - type/session-log
   - domain/core

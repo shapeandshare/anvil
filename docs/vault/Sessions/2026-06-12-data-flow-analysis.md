@@ -1,6 +1,10 @@
 ---
 title: Data Flow Analysis Session — 2026-06-12
 type: session
+aliases:
+  - 2026-06-12 Data Flow Analysis
+  - Data Flow Analysis Session
+source: agent
 tags: [type/session-log, domain/core]
 created: 2026-06-12
 updated: 2026-06-12

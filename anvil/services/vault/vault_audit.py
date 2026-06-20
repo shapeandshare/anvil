@@ -28,6 +28,7 @@ TYPE_VOCAB: set[str] = {
 
 STATUS_VOCAB: set[str] = {
     "status/draft", "status/wip", "status/reviewed", "status/canonical",
+    "status/superseded",
 }
 
 DOMAIN_VOCAB: set[str] = {
@@ -371,6 +372,11 @@ class VaultAuditService:
         report.stats["files_scanned"] = len(all_md)
         filename_index: dict[str, list[Path]] = {}
 
+        # Notes eligible for schema/wikilink validation (excludes meta dirs).
+        scannable: list[tuple[Path, str]] = []
+
+        # First pass: build the complete filename index so wikilink
+        # resolution does not depend on alphabetical iteration order.
         for md_path in all_md:
             try:
                 rel = md_path.relative_to(vault_root)
@@ -384,12 +390,15 @@ class VaultAuditService:
                 continue
 
             note_path_str = str(rel)
+            scannable.append((md_path, note_path_str))
 
             stem = md_path.stem
             if stem not in filename_index:
                 filename_index[stem] = []
             filename_index[stem].append(md_path)
 
+        # Second pass: validate schema and wikilinks against the full index.
+        for md_path, note_path_str in scannable:
             fm = parse_frontmatter(md_path)
             for f in validate_schema(md_path, fm, note_path_str):
                 report.add(f)

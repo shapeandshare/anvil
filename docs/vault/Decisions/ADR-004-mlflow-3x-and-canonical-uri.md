@@ -9,6 +9,10 @@ updated: 2026-06-13
 aliases:
 - ADR-004 — MLflow 3.x bump and canonical HTTP-server tracking URI
 source: agent
+code-refs:
+- pyproject.toml
+- anvil/services/tracking/tracking_service.py
+- anvil/config.py
 ---
 
 # ADR-004: MLflow 3.x bump and canonical HTTP-server tracking URI

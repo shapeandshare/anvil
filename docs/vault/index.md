@@ -27,7 +27,7 @@ Open this vault in [Obsidian](https://obsidian.md) for graph navigation.
 | [[Decisions/ADR-001-architecture-decisions|Decisions]] | Architecture Decision Records |
 | [[Reference/ArchitectureOverview|Reference]] | Glossary, architecture guides, topic references |
 | [[Discoveries/Discoveries|Discoveries]] | Non-obvious constraints found during sessions |
-| [[Sessions/2026-06-19-version-footer-transparency|Sessions]] | Agent session logs |
+| [[Sessions/2026-06-19-vault-audit-cleanup|Sessions]] | Agent session logs |
 
 ### Vault Meta
 

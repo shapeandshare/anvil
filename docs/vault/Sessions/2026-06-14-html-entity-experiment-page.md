@@ -2,6 +2,10 @@
 date: '2026-06-14'
 title: HTML Entity Rendering Fix in Experiment Page
 type: session-log
+aliases:
+  - 2026-06-14 HTML Entity Experiment Page
+  - HTML Entity Rendering Fix
+source: agent
 tags:
 - type/session-log
 - domain/ui

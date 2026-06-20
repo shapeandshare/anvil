@@ -10,6 +10,10 @@ updated: '2026-06-19T00:00:00.000Z'
 aliases:
   - One Class Per File
 source: agent
+code-refs:
+  - AGENTS.md
+  - .specify/memory/constitution.md
+  - anvil/services/training/export.py
 ---
 # ADR-020: One Class Per File
 

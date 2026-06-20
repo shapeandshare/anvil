@@ -9,6 +9,10 @@ updated: 2026-06-10
 aliases:
 - Architecture Decision Record Template
 source: agent
+code-refs:
+- AGENTS.md
+- anvil/
+- .specify/memory/constitution.md
 ---
 
 # ADR Template

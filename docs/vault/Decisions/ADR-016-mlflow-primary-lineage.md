@@ -7,6 +7,15 @@ tags:
 title: MLflow as Primary Lineage Source of Truth
 type: decision
 updated: '2026-06-18'
+aliases:
+  - ADR-016
+  - MLflow Primary Lineage
+source: agent
+code-refs:
+  - anvil/services/tracking/tracking_service.py
+  - anvil/db/models/training_config.py
+  - anvil/services/inference/inference_service.py
+  - anvil/db/repositories/experiments.py
 ---
 # ADR-016: MLflow as Primary Lineage Source of Truth
 

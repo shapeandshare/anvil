@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-import pytest
 from pathlib import Path
+
+import pytest
 
 from anvil.services.vault.vault_audit import (
     VaultAuditService,
-    parse_frontmatter,
     extract_wikilinks,
+    parse_frontmatter,
     validate_schema,
 )
 
@@ -95,3 +96,24 @@ class TestVaultAuditService:
         assert "ValidNote" in index
         assert "InvalidNote" in index
         assert "AnotherNote" in index
+
+    @pytest.mark.asyncio
+    async def test_forward_wikilink_not_flagged_broken(
+        self, test_vault_dir: Path
+    ) -> None:
+        """A wikilink to an existing file that sorts later is not broken.
+
+        Regression test: the filename index must be built fully before
+        wikilink resolution, so links to alphabetically-later targets
+        (e.g. ``AnotherNote`` -> ``[[OrphanNote]]``) resolve correctly.
+        """
+        svc = VaultAuditService(vault_dir=str(test_vault_dir))
+        report = await svc.run_mechanical_audit()
+        broken_targets = {
+            f.message for f in report.errors if f.rule == "broken_wikilink"
+        }
+        # OrphanNote.md exists and sorts after AnotherNote.md; it must
+        # not be reported as a broken target.
+        assert not any(
+            "OrphanNote" in m for m in broken_targets
+        ), f"Existing forward-link target wrongly flagged: {broken_targets}"

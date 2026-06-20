@@ -8,6 +8,15 @@ tags:
 created: '2026-06-19'
 updated: '2026-06-19'
 status: draft
+source: agent
+aliases:
+  - Core File Docstring Revert
+  - Core Engine Docstring Revert
+code-refs:
+  - anvil/core/autograd.py
+  - anvil/core/engine.py
+  - anvil/core/tokenizer.py
+  - AGENTS.md
 ---
 # Core Engine Files Persistently Revert Docstring Changes
 

@@ -3,6 +3,9 @@ title: AnvilWorkbench God Class Was a Stub
 type: discovery
 status: draft
 source: agent
+aliases:
+  - God Class Was a Stub
+  - AnvilWorkbench Stub
 related:
   - '[[Decisions/ADR-028-ci-merge-gate-enforcement]]'
 code-refs:

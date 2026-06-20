@@ -26,6 +26,7 @@ Non-obvious constraints, gaps, and conflicts discovered during agent sessions. E
 - [[Discoveries/tracking-service-swallows-audit-events|TrackingService Silently Swallows Audit Events]] — Lifecycle event logging silently catches all exceptions; events can go unrecorded without visibility.
 - [[Discoveries/datasets-page-license-context-missing|Datasets Page License Dropdown Missing Template Context]] — License dropdown rendered empty because `datasets_page` handler never passed license catalog to the template context.
 - [[Discoveries/playground-css-class-mismatch|Playground Example Prompt CSS Class Mismatch]] — CSS class `example-prompt` defined but HTML used `example-chip`; example chips were unstyled.
+- [[Discoveries/vault-audit-index-ordering-bug|Vault Audit Index Ordering Bug]] — `VaultAuditService` built its filename index in the same loop as wikilink resolution, falsely flagging forward links to alphabetically-later notes; fixed with a two-pass approach.
 
 ## Related MOCs
 

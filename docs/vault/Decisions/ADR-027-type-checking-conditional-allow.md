@@ -9,6 +9,12 @@ created: 2026-06-19
 updated: 2026-06-19
 aliases:
   - ADR-027-type-checking-conditional-allow
+source: agent
+code-refs:
+  - scripts/ci/check_guarded_imports.py
+  - anvil/db/models/corpus.py
+  - anvil/services/inference/inference.py
+  - .github/workflows/ci.yml
 ---
 
 # ADR-027: TYPE_CHECKING Conditional Allow with Exception Discipline

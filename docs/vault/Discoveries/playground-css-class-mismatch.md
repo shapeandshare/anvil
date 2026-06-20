@@ -10,6 +10,10 @@ updated: 2026-06-19
 code-refs:
   - anvil/api/templates/archetypes/playground.html
   - anvil/api/static/css/components.css
+source: agent
+aliases:
+  - Playground CSS Class Mismatch
+  - Example Prompt CSS Mismatch
 ---
 
 # Playground Example Prompt CSS Class Mismatch

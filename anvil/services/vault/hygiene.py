@@ -22,6 +22,7 @@ TYPE_VOCAB: set[str] = {
 
 STATUS_VOCAB: set[str] = {
     "status/draft", "status/wip", "status/reviewed", "status/canonical",
+    "status/superseded",
 }
 
 DOMAIN_VOCAB: set[str] = {

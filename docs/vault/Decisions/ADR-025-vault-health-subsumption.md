@@ -9,9 +9,18 @@ tags:
 created: 2026-06-19
 updated: 2026-06-19
 related:
-  - "[[ADR-013]]"
-  - "[[ADR-022]]"
-  - "[[ADR-023]]"
+  - "[[Decisions/ADR-020-one-class-per-file|ADR-020]]"
+  - "[[Decisions/ADR-022-domain-driven-package-decomposition|ADR-022]]"
+  - "[[Decisions/ADR-023-responsible-data-governance|ADR-023]]"
+aliases:
+  - ADR-025
+  - Vault Health Subsumption
+source: agent
+code-refs:
+  - anvil/services/vault/
+  - scripts/ci/vault_audit.py
+  - scripts/ci/check_adr_unique.py
+  - shared/vault.mk
 ---
 
 # ADR-025: Vault Health Subsumption into Anvil

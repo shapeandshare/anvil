@@ -1,6 +1,10 @@
 ---
 title: Anvil Emblem Re-path + Favicon Set
 type: session-log
+aliases:
+  - 2026-06-14 Anvil Emblem Favicon
+  - Emblem Re-path + Favicon Set
+source: agent
 tags:
 - type/session-log
 - domain/ui

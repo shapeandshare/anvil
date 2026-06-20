@@ -9,6 +9,10 @@ updated: 2026-06-13
 aliases:
 - ADR-005 — Source-keyed model registry consolidation
 source: agent
+code-refs:
+- anvil/services/tracking/tracking_service.py
+- anvil/db/models/registry.py
+- anvil/api/v1/registry.py
 ---
 
 # ADR-005: Source-keyed model registry consolidation

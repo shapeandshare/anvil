@@ -9,6 +9,11 @@ created: 2026-06-19
 updated: 2026-06-19
 aliases:
   - ADR-029-adr-renumbering-and-uniqueness
+source: agent
+code-refs:
+  - scripts/ci/check_adr_unique.py
+  - docs/vault/Decisions/
+  - scripts/ci/vault_audit.py
 ---
 
 # ADR-029: ADR Renumbering and Uniqueness Enforcement

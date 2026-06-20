@@ -3,6 +3,9 @@ title: Router Decomposition Pattern
 type: discovery
 status: reviewed
 source: agent
+aliases:
+  - Router Decomposition Pattern
+  - Router Decomposition
 related: []
 code-refs:
   - anvil/api/v1/router.py
