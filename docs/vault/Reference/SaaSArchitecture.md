@@ -17,8 +17,17 @@ source: agent
 ---
 # SaaS Architecture — Three-Mode Operating Model
 
+> [!WARNING]
+> **Pending Updates (2026-06-19)**: This document predates the SaaS spec-hardening session and does
+> NOT yet depict: observability (logs/traces/metrics, FR-052–FR-056), the MLflow reverse proxy
+> (FR-057), the cluster-admin model (FR-034–FR-038b), multi-cluster CLI management (FR-014a/c), or
+> the backup/DR + HA posture (FR-043a, FR-044a, FR-045q–s, FR-058–061). The spec now defines
+> **AD-1 through AD-16**. See [[Decisions/ADR-030-saas-architecture|ADR-030]] and
+> [[2026-06-19-saas-spec-hardening|the hardening session log]]. Full narrative + diagram redraw is
+> deferred follow-up.
+
 > [!IMPORTANT]
-> **Authoritative source**: `specs/014-saas-architecture/spec.md` Architecture Decisions **AD-1 through AD-11** supersede any conflicting detail in this exploration document. Key post-review corrections: compute is **AWS Batch on EC2** (CPU+GPU+multi-node, not Fargate-default — Fargate has no GPU); auth is **app-managed Cognito OIDC/JWT** (not ALB-managed, not custom JWT+refresh); tenancy is **full RBAC** (Organization→Team→Role→User, not user_id-only); job state is **Postgres source-of-truth + append-only job_events + reconciler**; usage metering enables **billback per user/org**.
+> **Authoritative source**: `specs/014-saas-architecture/spec.md` Architecture Decisions **AD-1 through AD-16** supersede any conflicting detail in this exploration document. Key post-review corrections: compute is **AWS Batch on EC2** (CPU+GPU+multi-node, not Fargate-default — Fargate has no GPU); auth is **app-managed Cognito OIDC/JWT** (not ALB-managed, not custom JWT+refresh); tenancy is **full RBAC** (Organization→Team→Role→User, not user_id-only); job state is **Postgres source-of-truth + append-only job_events + reconciler**; usage metering enables **billback per user/org**.
 
 ## Overview
 

@@ -21,6 +21,9 @@ source: agent
 
 Security-, boundary-, and flow-focused diagrams complementing [[SaaSSystemDiagrams]]. Aligned with Architecture Decisions **AD-1..AD-11** in `specs/014-saas-architecture/spec.md`.
 
+> [!WARNING]
+> **Pending Updates (2026-06-19)**: These 37 diagrams predate the SaaS spec-hardening session. The RBAC/access-boundary diagrams (Parts G/H) do NOT yet reflect the **cluster-admin read-wide/write-narrow** model (FR-034–FR-038b, AD-14), and there are no diagrams for observability data flows (FR-052–FR-056), the MLflow proxy auth path (FR-057), secret-rotation dual-key windows (FR-045s), or backup/DR (FR-058–061). The spec now defines **AD-1 through AD-16**. See [[Decisions/ADR-030-saas-architecture|ADR-030]] and [[2026-06-19-saas-spec-hardening|the hardening session log]]. Diagram redraw is deferred follow-up.
+
 ## Index
 
 - **Part A — User Story Flows** (US1–US9)

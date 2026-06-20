@@ -20,6 +20,9 @@ source: agent
 
 Granular per-subsystem diagrams for the anvil SaaS architecture. Aligned with Architecture Decisions **AD-1 through AD-11** in `specs/014-saas-architecture/spec.md`. For the narrative overview and feature matrix see [[SaaSArchitecture]].
 
+> [!WARNING]
+> **Pending Updates (2026-06-19)**: These 33 diagrams predate the SaaS spec-hardening session. They do NOT yet depict observability (Prometheus/Grafana/Alertmanager/X-Ray, FR-052–FR-056), the MLflow reverse proxy (FR-057), the cluster-admin tier (FR-034–FR-038b), multi-cluster topology (FR-014a/c), Redis Multi-AZ (FR-045q), EFS-backed Prometheus, or the SNS alerting path. The spec now defines **AD-1 through AD-16**. See [[Decisions/ADR-030-saas-architecture|ADR-030]] and [[2026-06-19-saas-spec-hardening|the hardening session log]]. Diagram redraw is deferred follow-up.
+
 ## Index
 
 - **Part A — Structural**: C4 context, containers, components, network, CDK composition
