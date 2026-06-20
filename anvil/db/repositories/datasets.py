@@ -13,7 +13,7 @@ DatasetRepository
 
 from collections.abc import Sequence
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.dataset import Dataset
@@ -105,6 +105,23 @@ class DatasetRepository:
             select(Dataset).where(Dataset.name == name)
         )
         return result.scalar_one_or_none()
+
+    async def count_by_origin(self, origin: str) -> int:
+        """Count datasets with the given origin value.
+
+        Parameters
+        ----------
+        origin : str
+            The origin value to count (e.g., ``"bundled"`` or ``"user"``).
+
+        Returns
+        -------
+        int
+            Number of datasets with this origin.
+        """
+        stmt = select(func.count()).where(Dataset.origin == origin)
+        result = await self._session.execute(stmt)
+        return result.scalar_one()
 
     async def update(self, dataset: Dataset) -> Dataset:
         """Persist in-memory changes to an existing dataset.

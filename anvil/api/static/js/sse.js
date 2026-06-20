@@ -65,6 +65,23 @@
     } catch(_) {}
   };
 
+  SSESession.prototype._handleMilestone = function(e) {
+    try {
+      var d = JSON.parse(e.data);
+      if (typeof this.onmilestone === 'function') this.onmilestone(d);
+    } catch(_) {}
+  };
+
+  SSESession.prototype._handleDivergence = function(e) {
+    this._destroyed = true;
+    try {
+      var d = JSON.parse(e.data);
+      if (typeof this.ondivergence === 'function') this.ondivergence(d);
+    } catch(_) {}
+    this._setState('done');
+    if (this._es) this._es.close();
+  };
+
   SSESession.prototype._handleError = function(e) {
     if (this._destroyed) return;
 
@@ -115,6 +132,8 @@
     this._es.addEventListener('error', function(e) { self._handleError(e); });
     this._es.addEventListener('submitted', function(e) { self._handleSubmitted(e); });
     this._es.addEventListener('status', function(e) { self._handleStatus(e); });
+    this._es.addEventListener('milestone', function(e) { self._handleMilestone(e); });
+    this._es.addEventListener('divergence', function(e) { self._handleDivergence(e); });
   };
 
   SSESession.prototype.start = function() {

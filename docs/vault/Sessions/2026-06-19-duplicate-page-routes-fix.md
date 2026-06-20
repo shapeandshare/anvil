@@ -1,16 +1,16 @@
 ---
-aliases:
-  - 'Session: Duplicate Page Routes Fix'
-  - route-duplication-cleanup
-created: '2026-06-19'
-source: agent
-status: draft
-tags:
-  - type/session-log
-  - domain/api
 title: 'Session: Duplicate Page Route Cleanup'
 type: session-log
+tags:
+  - type/session-log
+  - domain/architecture
+aliases:
+  - 'Session: Duplicate Page Route Cleanup'
+  - route-duplication-cleanup
+created: '2026-06-19'
 updated: '2026-06-19'
+source: agent
+status: draft
 ---
 # Session: Fix Duplicate Page Route Definitions
 

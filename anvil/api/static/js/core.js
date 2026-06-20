@@ -27,6 +27,8 @@
     if (moon) moon.classList.toggle('hidden', theme === 'light');
   }
 
+  window.updateThemeUI = updateThemeUI;
+
   function initNav() {
     var path = window.location.pathname;
     document.querySelectorAll('.tab-item').forEach(function(tab) {
@@ -264,7 +266,11 @@
   /* ── Event wiring ─────────────────────────────────────── */
 
   document.addEventListener('DOMContentLoaded', function() {
-    initTheme();
+    if (window.ThemeManager) {
+      window.ThemeManager.init();
+    } else {
+      initTheme();
+    }
     initNav();
     initDidYouKnow();
     initTooltips();
@@ -292,7 +298,15 @@
     });
 
     var btn = document.getElementById('theme-toggle');
-    if (btn) btn.addEventListener('click', toggleTheme);
+    if (btn) {
+      btn.addEventListener('click', function() {
+        if (window.ThemeManager) {
+          window.ThemeManager.toggleMode();
+        } else {
+          toggleTheme();
+        }
+      });
+    }
   });
 
   /* ── Did You Know? Rotator ───────────────────────────── */

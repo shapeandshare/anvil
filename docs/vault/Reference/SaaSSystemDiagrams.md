@@ -18,7 +18,10 @@ source: agent
 
 # SaaS System Diagrams — Full Fidelity
 
-Granular per-subsystem diagrams for the anvil SaaS architecture. Aligned with Architecture Decisions **AD-1 through AD-11** in `specs/014-saas-architecture/spec.md`. For the narrative overview and feature matrix see [[SaaSArchitecture]].
+Granular per-subsystem diagrams for the anvil SaaS architecture. Aligned with Architecture Decisions **AD-1 through AD-16** in `specs/014-saas-architecture/spec.md`. For the narrative overview and feature matrix see [[SaaSArchitecture]].
+
+> [!NOTE]
+> **Updated 2026-06-19**: Part G adds observability, MLflow-proxy, multi-cluster, and HA diagrams (AD-12..AD-16). Parts A–F structural/auth/compute/deploy diagrams are not yet annotated with the cluster-admin tier or Multi-AZ details inline, but the new Part G and [[Decisions/ADR-030-saas-architecture|ADR-030]] cover the deltas. See [[2026-06-19-saas-spec-hardening|the hardening session log]].
 
 ## Index
 
@@ -947,6 +950,155 @@ graph TB
 
 ---
 
+# Part G — Observability, MLflow Proxy & Multi-Cluster
+
+Added in the 2026-06-19 spec-hardening session (AD-12..AD-16). See [[Decisions/ADR-030-saas-architecture|ADR-030]].
+
+## G1. Observability Topology (AD-12, FR-052–FR-056)
+
+```mermaid
+graph TB
+    subgraph "anvil-web (ECS)"
+        WEBLOG[stdout JSON logs<br/>trace_id, org_id, job_id]
+        WEBMET["/metrics endpoint<br/>prometheus-fastapi-instrumentator"]
+        WEBTR[OTel SDK spans]
+    end
+    subgraph "Compute Pod (Batch)"
+        PODLOG[stdout JSON logs]
+        PODEMF[CloudWatch EMF<br/>TrainingSteps, JobDuration]
+        PODTR[OTel SDK spans]
+    end
+
+    subgraph "Logs"
+        CWL[(CloudWatch Logs<br/>/ecs/* + /batch/*)]
+        VIEWER[In-app log viewer<br/>GET /v1/services/logs/name<br/>+ /v1/training/job_id/logs<br/>FilterLogEvents, manual refresh]
+    end
+    subgraph "Traces"
+        XRAY[AWS X-Ray<br/>via ADOT / OTLP]
+    end
+    subgraph "Metrics"
+        PROM[Prometheus ECS<br/>1 vCPU/2GB, EFS TSDB<br/>ecs_sd_configs rate-limited]
+        GRAF[Grafana<br/>Prometheus + CloudWatch sources]
+        ALERT[Alertmanager]
+        SNS[SNS topic<br/>email / webhook]
+    end
+
+    WEBLOG --> CWL
+    PODLOG --> CWL
+    PODEMF --> CWL
+    CWL --> VIEWER
+    WEBTR --> XRAY
+    PODTR --> XRAY
+    WEBMET -->|scrape 30s| PROM
+    PODEMF -.->|CW data source| GRAF
+    PROM --> GRAF
+    PROM --> ALERT --> SNS
+```
+
+## G2. Trace Context Propagation Across Boundaries (FR-053a/b)
+
+```mermaid
+sequenceDiagram
+    participant B as Browser
+    participant W as anvil-web (OTel)
+    participant BA as AWS Batch
+    participant P as Compute Pod (OTel)
+    participant R as Redis
+    participant W2 as anvil-web (SSE replica)
+    participant X as X-Ray
+
+    B->>W: POST /v1/training/start (traceparent header)
+    W->>W: span: submit_job
+    W->>BA: submit_job(env: TRACEPARENT=00-...)
+    W-->>X: export web spans
+    BA->>P: launch (TRACEPARENT in env)
+    P->>P: extract context → child span "training-run"
+    loop each step (sampled)
+        P->>R: PUBLISH {metric, traceparent}
+        R-->>W2: message (traceparent in payload)
+        W2->>W2: extract → span "sse-deliver"
+        W2-->>B: SSE event
+    end
+    P-->>X: export pod spans
+    W2-->>X: export sse spans
+    Note over X: single trace tree:<br/>browser → web → Batch pod → Redis → SSE
+```
+
+## G3. MLflow Reverse Proxy (AD-13, FR-057)
+
+```mermaid
+graph TB
+    BROWSER[Browser] -->|HTTPS| CF[CloudFront + WAF]
+    CF --> ALB[ALB]
+    ALB -->|:8080| WEB[anvil-web]
+
+    subgraph "anvil-web"
+        AUTH[Cognito JWT + RBAC<br/>FR-057a]
+        PROXY["/v1/mlflow-proxy/path<br/>httpx.AsyncClient<br/>stream-through"]
+    end
+
+    WEB --> AUTH --> PROXY
+    PROXY -->|Cloud Map<br/>ANVIL_MLFLOW_INTERNAL_URI| MLF[MLflow ECS<br/>private subnet<br/>--static-prefix=/v1/mlflow-proxy]
+    MLF --> PGML[(anvil_mlflow DB)]
+    MLF --> S3ML[(s3://anvil-ml)]
+
+    NOTE[No ALB/CloudFront/internet<br/>route direct to MLflow]
+    NOTE -.-> MLF
+```
+
+## G4. Multi-Cluster CLI Management (AD-15, FR-014a/c)
+
+```mermaid
+graph TB
+    subgraph "Local machine"
+        CLI[anvil CLI]
+        REG[(~/.anvil/clusters.json<br/>name, url, region,<br/>api_version, auth_method)]
+        CREDS[(~/.anvil/credentials/<br/>0600 JWT cache)]
+    end
+
+    CLI --> REG
+    CLI --> CREDS
+
+    CLI -->|cluster add / login<br/>device grant| PROD[prod cluster<br/>us-east-1]
+    CLI -->|push/pull/ls| STG[staging-eu cluster<br/>eu-west-1]
+    CLI -->|GET /v1/version<br/>min_cli_version check| PROD
+
+    DEPLOY[anvil deploy init] -->|auto-add entry| REG
+    DESTROY[anvil deploy destroy] -->|remove entry| REG
+```
+
+## G5. High-Availability Topology (AD-16, FR-045q, FR-058/059)
+
+```mermaid
+graph TB
+    subgraph "AZ-a"
+        WEBA[ECS web task]
+        RDSA[RDS primary]
+        REDISA[Redis primary]
+        NATA[NAT-a]
+    end
+    subgraph "AZ-b"
+        WEBB[ECS web task]
+        RDSB[RDS standby<br/>Multi-AZ sync]
+        REDISB[Redis replica<br/>auto-failover]
+        NATB[NAT-b]
+    end
+
+    ALB[ALB spans both AZ] --> WEBA & WEBB
+    RDSA -.sync replication.-> RDSB
+    REDISA -.replication.-> REDISB
+
+    subgraph "Durability"
+        SNAP[RDS automated snapshots<br/>+ PITR, ≥7d]
+        VER[S3 versioning<br/>+ noncurrent lifecycle]
+        FINAL[destroy: final snapshot<br/>DeletionPolicy=Snapshot]
+    end
+    RDSA --> SNAP
+    RDSA --> FINAL
+```
+
+---
+
 ## Diagram Inventory
 
 | Part | Diagrams |
@@ -957,13 +1109,14 @@ graph TB
 | D — Training & Compute | orchestration three-plane + policy, failure disposition, shape routing, gang scheduling, pod lifecycle, reconciler, SSE replay, usage metering, MLflow (9) |
 | E — Deploy & Ops | init, migration, destroy, update, verify pyramid, CI/CD (6) |
 | F — Local & Mode Selection | local topology, mode selection, three-mode comparison (3) |
+| G — Observability, Proxy & Multi-Cluster | observability topology, trace propagation, MLflow proxy, multi-cluster CLI, HA topology (5) |
 
-**Total: 33 diagrams.**
+**Total: 38 diagrams.**
 
 ## See Also
 
-- [[SaaSSecurityAndFlowDiagrams]] — user-story flows, DFDs, perimeter, egress, tenant/access boundaries (37 diagrams)
+- [[SaaSSecurityAndFlowDiagrams]] — user-story flows, DFDs, perimeter, egress, tenant/access boundaries (39 diagrams)
 - [[SaaSArchitecture]] — narrative overview + feature matrix
-- `specs/014-saas-architecture/spec.md` — AD-1..AD-11, FRs, acceptance gates
+- `specs/014-saas-architecture/spec.md` — AD-1..AD-16, FRs, acceptance gates
 - `specs/014-saas-architecture/data-model.md` — schema detail
 - `docs/vault/Decisions/ADR-030-saas-architecture.md` — decision record

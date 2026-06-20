@@ -15,6 +15,10 @@ summary: >-
   The AnvilWorkbench god class mandated by the constitution was never
   instantiated anywhere — a stub exposing only TrainingService. The DX hardening
   feature created a proper workbench.
+tags:
+  - type/discovery
+  - domain/architecture
+  - status/draft
 ---
 # AnvilWorkbench God Class Was a Stub
 
