@@ -88,5 +88,7 @@ def compute_manifest_digest(manifest: Manifest) -> str:
     data = manifest.model_dump()
     data["entries"] = [e.model_dump() for e in sorted_entries]
 
-    canonical = json.dumps(data, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+    canonical = json.dumps(
+        data, sort_keys=True, separators=(",", ":"), ensure_ascii=True
+    )
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()

@@ -121,7 +121,8 @@ class TestTagLifecycle:
         self, store: FakeVersionedContentStore
     ) -> None:
         """A tagged ``VersionRef`` is resolvable by its tag name, and
-        the resolved ref carries the same manifest digest."""
+        the resolved ref carries the same manifest digest.
+        """
         await _seed_version(store, "name-check", "a.txt", b"alpha")
         ref = await store.freeze_version("name-check")
         await store.tag_version("release-1", ref)
@@ -142,7 +143,8 @@ class TestDuplicateTagRejection:
         self, store: FakeVersionedContentStore
     ) -> None:
         """Tagging a second version with an existing tag name raises
-        ``ValueError``."""
+        ``ValueError``.
+        """
         await _seed_version(store, "dup", "v1.txt", b"version one")
         ref1 = await store.freeze_version("dup")
         await store.tag_version("my-tag", ref1)
@@ -157,7 +159,8 @@ class TestDuplicateTagRejection:
         self, store: FakeVersionedContentStore
     ) -> None:
         """After a failed duplicate tag attempt, the original tag still
-        resolves correctly."""
+        resolves correctly.
+        """
         await _seed_version(store, "dup-safe", "a.txt", b"first")
         ref1 = await store.freeze_version("dup-safe")
         await store.tag_version("safe-tag", ref1)
@@ -175,7 +178,8 @@ class TestDuplicateTagRejection:
         self, store: FakeVersionedContentStore
     ) -> None:
         """Tag names are case-sensitive; ``"Release"`` and ``"release"``
-        are distinct tags."""
+        are distinct tags.
+        """
         await _seed_version(store, "case", "x.txt", b"content")
         ref1 = await store.freeze_version("case")
         ref2 = await store.freeze_version("case")

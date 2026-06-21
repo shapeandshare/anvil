@@ -29,8 +29,12 @@ def upgrade() -> None:
         sa.Column("slug", sa.String(128), nullable=False),
         sa.Column("name", sa.String(255)),
         sa.Column("kind", sa.String(20), nullable=False, server_default="manual"),
-        sa.Column("created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
+        ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("slug"),
     )
@@ -40,8 +44,12 @@ def upgrade() -> None:
         "content_blobs",
         sa.Column("content_hash", sa.String(64), nullable=False),
         sa.Column("size_bytes", sa.Integer(), nullable=False),
-        sa.Column("created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
+        ),
         sa.PrimaryKeyConstraint("content_hash"),
     )
 
@@ -54,7 +62,10 @@ def upgrade() -> None:
         sa.Column("name", sa.String(255)),
         sa.Column("description", sa.String(1000), nullable=True),
         sa.Column(
-            "chunking_strategy", sa.String(20), nullable=False, server_default="windowed"
+            "chunking_strategy",
+            sa.String(20),
+            nullable=False,
+            server_default="windowed",
         ),
         sa.Column("block_size", sa.Integer(), nullable=False, server_default="16"),
         sa.Column("chunk_overlap", sa.Float(), nullable=False, server_default="0.5"),
@@ -62,6 +73,12 @@ def upgrade() -> None:
             "default_language", sa.String(16), nullable=False, server_default="en"
         ),
         sa.Column("status", sa.String(20), nullable=False, server_default="draft"),
+        sa.Column(
+            "current_version_id",
+            sa.Integer(),
+            sa.ForeignKey("content_versions.id", ondelete="SET NULL"),
+            nullable=True,
+        ),
         sa.Column("source_description", sa.String(1000), nullable=True),
         sa.Column(
             "license_id",
@@ -72,8 +89,12 @@ def upgrade() -> None:
         sa.Column("attribution_text", sa.String(1000), nullable=True),
         sa.Column("origin", sa.String(20), nullable=False, server_default="user"),
         sa.Column("parent_provenance_ref", sa.Integer(), nullable=True),
-        sa.Column("created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
+        ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("slug"),
     )
@@ -95,24 +116,20 @@ def upgrade() -> None:
         sa.Column("is_composition", sa.Boolean(), nullable=False, server_default="0"),
         sa.Column("entry_count", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("total_bytes", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
+        ),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("corpus_id", "version_number"),
-        sa.UniqueConstraint("corpus_id", "manifest_digest"),
+        sa.UniqueConstraint(
+            "corpus_id", "version_number", name="uq_content_versions_corpus_number"
+        ),
+        sa.UniqueConstraint(
+            "corpus_id", "manifest_digest", name="uq_content_versions_corpus_digest"
+        ),
     )
-
-    # ── 5. Add current_version_id to content_corpora (batch mode for     ─
-    #    SQLite compatibility).
-    with op.batch_alter_table("content_corpora") as batch_op:
-        batch_op.add_column(
-            sa.Column(
-                "current_version_id",
-                sa.Integer(),
-                sa.ForeignKey("content_versions.id", ondelete="SET NULL"),
-                nullable=True,
-            )
-        )
 
     # ── 6. Content entries (FK → content_versions, content_sources) ──────
     op.create_table(
@@ -134,8 +151,12 @@ def upgrade() -> None:
             nullable=True,
         ),
         sa.Column("size_bytes", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(
@@ -155,8 +176,12 @@ def upgrade() -> None:
         ),
         sa.Column("name", sa.String(256), nullable=False),
         sa.Column("gc_protected", sa.Boolean(), nullable=False, server_default="1"),
-        sa.Column("created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
+        ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("version_id"),
         sa.UniqueConstraint("name"),
@@ -181,7 +206,9 @@ def upgrade() -> None:
         ),
         sa.Column("staging_key", sa.String(512), nullable=False),
         sa.Column("status", sa.String(20), nullable=False, server_default="open"),
-        sa.Column("staged_entry_count", sa.Integer(), nullable=False, server_default="0"),
+        sa.Column(
+            "staged_entry_count", sa.Integer(), nullable=False, server_default="0"
+        ),
         sa.Column("problems_json", sa.Text(), nullable=True),
         sa.Column(
             "accepted_version_id",
@@ -189,10 +216,16 @@ def upgrade() -> None:
             sa.ForeignKey("content_versions.id", ondelete="SET NULL"),
             nullable=True,
         ),
-        sa.Column("opened_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "opened_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
+        ),
         sa.Column("closed_at", sa.DateTime(), nullable=True),
-        sa.Column("created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
+        ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("staging_key"),
     )
@@ -223,10 +256,16 @@ def upgrade() -> None:
             nullable=True,
         ),
         sa.Column("message", sa.String(1000), nullable=True),
-        sa.Column("started_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "started_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
+        ),
         sa.Column("finished_at", sa.DateTime(), nullable=True),
-        sa.Column("created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
 
@@ -237,10 +276,16 @@ def upgrade() -> None:
         sa.Column("scope", sa.String(512)),
         sa.Column("holder", sa.String(256)),
         sa.Column("state", sa.String(20), nullable=False, server_default="held"),
-        sa.Column("acquired_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "acquired_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
+        ),
         sa.Column("released_at", sa.DateTime(), nullable=True),
-        sa.Column("created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
 
@@ -256,8 +301,12 @@ def upgrade() -> None:
         ),
         sa.Column("mlflow_run_id", sa.String(64)),
         sa.Column("corpus_ref", sa.String(64)),
-        sa.Column("created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(
@@ -277,9 +326,7 @@ def downgrade() -> None:
     op.drop_table("content_import_jobs")
     op.drop_table("content_ingest_sessions")
     op.drop_table("content_tags")
-    op.drop_index(
-        "ix_content_entries_version_path", table_name="content_entries"
-    )
+    op.drop_index("ix_content_entries_version_path", table_name="content_entries")
     op.drop_table("content_entries")
     op.drop_table("content_versions")
     op.drop_table("content_corpora")

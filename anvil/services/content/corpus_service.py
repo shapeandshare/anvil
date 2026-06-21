@@ -18,8 +18,8 @@ from ...db.models.content_tag import ContentTag
 from ...db.repositories.content_corpora import ContentCorpusRepository
 from ...db.repositories.content_sources import ContentSourceRepository
 from ...db.repositories.content_versions import ContentVersionRepository
-from .local_versioned_content_store import LocalVersionedContentStore
 from .version_ref import VersionRef
+from .versioned_content_store import VersionedContentStore
 
 
 class CorpusService:
@@ -37,7 +37,7 @@ class CorpusService:
     db_session : AsyncSession
         SQLAlchemy async session for direct model persistence (e.g.
         tags).
-    content_store : LocalVersionedContentStore or None
+    content_store : VersionedContentStore or None
         Content store for revert operations.  When ``None``, revert
         raises ``ValueError``.
     """
@@ -48,7 +48,7 @@ class CorpusService:
         source_repo: ContentSourceRepository,
         version_repo: ContentVersionRepository,
         db_session: AsyncSession,
-        content_store: LocalVersionedContentStore | None = None,
+        content_store: VersionedContentStore | None = None,
     ) -> None:
         self._corpus_repo = corpus_repo
         self._source_repo = source_repo
@@ -191,9 +191,7 @@ class CorpusService:
 
     # ── Versions ────────────────────────────────────────────────────
 
-    async def list_versions(
-        self, corpus_id: int
-    ) -> Sequence[ContentCorpus]:
+    async def list_versions(self, corpus_id: int) -> Sequence[ContentCorpus]:
         """List all versions of a corpus, newest first.
 
         Parameters
@@ -210,9 +208,7 @@ class CorpusService:
         """
         return await self._version_repo.list_by_corpus(corpus_id)  # type: ignore[return-value]
 
-    async def revert(
-        self, corpus_id: int, to_version_id: int
-    ) -> VersionRef:
+    async def revert(self, corpus_id: int, to_version_id: int) -> VersionRef:
         """Revert a corpus to a previous version.
 
         Delegates to the content store's :meth:`revert` method.
@@ -236,9 +232,7 @@ class CorpusService:
             is not found.
         """
         if self._content_store is None:
-            raise ValueError(
-                "Content store not configured; revert unavailable"
-            )
+            raise ValueError("Content store not configured; revert unavailable")
 
         corpus = await self._corpus_repo.get(corpus_id)
         if corpus is None:
@@ -260,9 +254,7 @@ class CorpusService:
         if updated_corpus is None or updated_corpus.current_version_id is None:
             raise ValueError("Revert failed: no current version set")
 
-        new_version = await self._version_repo.get(
-            updated_corpus.current_version_id
-        )
+        new_version = await self._version_repo.get(updated_corpus.current_version_id)
         if new_version is None:
             raise ValueError("Revert failed: new version not found")
 

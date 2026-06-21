@@ -19,18 +19,16 @@ if TYPE_CHECKING:
     from .db.repositories.content_blobs import ContentBlobRepository
     from .db.repositories.content_corpora import ContentCorpusRepository
     from .db.repositories.content_import_jobs import ContentImportJobRepository
-    from .db.repositories.content_ingest_sessions import (
-        ContentIngestSessionRepository,
-    )
+    from .db.repositories.content_ingest_sessions import ContentIngestSessionRepository
     from .db.repositories.content_locks import ContentLockRepository
     from .db.repositories.content_sources import ContentSourceRepository
     from .db.repositories.content_versions import ContentVersionRepository
     from .db.repositories.corpora import CorpusRepository
     from .db.repositories.datasets import DatasetRepository
+    from .services.content.corpus_service import CorpusService as ContentCorpusService
+    from .services.content.ingestion_service import IngestionService
     from .services.content.lineage_service import LineageService
-    from .services.content.versioned_content_store import (
-        VersionedContentStore,
-    )
+    from .services.content.versioned_content_store import VersionedContentStore
     from .services.datasets.corpora import CorpusService
     from .services.datasets.dataset_curation import DatasetCurationService
     from .services.datasets.dataset_export import DatasetExportService
@@ -75,17 +73,15 @@ class AnvilWorkbench:
         self._content_corpus_repo: ContentCorpusRepository | None = None
         self._content_source_repo: ContentSourceRepository | None = None
         self._content_version_repo: ContentVersionRepository | None = None
-        self._content_ingest_session_repo: (
-            ContentIngestSessionRepository | None
-        ) = None
+        self._content_ingest_session_repo: ContentIngestSessionRepository | None = None
         self._content_blob_repo: ContentBlobRepository | None = None
         self._content_import_job_repo: ContentImportJobRepository | None = None
         self._content_lock_repo: ContentLockRepository | None = None
         self._content_store: VersionedContentStore | None = None
-        self._content_corpora: object | None = None  # will be CorpusService
-        self._content_ingestion: object | None = None  # will be IngestionService
+        self._content_corpora: ContentCorpusService | None = None
+        self._content_ingestion: IngestionService | None = None
         self._content_composition: object | None = None  # will be CompositionService
-        self._content_lineage: object | None = None  # will be LineageService
+        self._content_lineage: LineageService | None = None
         self._content_imports: object | None = None  # will be ImportService
         self._content_locks: object | None = None  # will be LockService
 
@@ -144,8 +140,8 @@ class AnvilWorkbench:
     def corpora(self) -> CorpusService:
         """Return a ``CorpusService`` wired to *session*."""
         if self._corpora is None:
-            from .services.datasets.corpus_loader import CorpusLoader
             from .services.datasets.corpora import CorpusService
+            from .services.datasets.corpus_loader import CorpusLoader
 
             self._corpora = CorpusService(self.corpus_repo, CorpusLoader())
         return self._corpora
@@ -219,43 +215,34 @@ class AnvilWorkbench:
     @property
     def content_corpus_repo(self) -> ContentCorpusRepository:
         """Lazily-initialised ``ContentCorpusRepository`` bound to
-        *session*."""
+        *session*.
+        """
         if self._content_corpus_repo is None:
-            from .db.repositories.content_corpora import (
-                ContentCorpusRepository,
-            )
+            from .db.repositories.content_corpora import ContentCorpusRepository
 
-            self._content_corpus_repo = ContentCorpusRepository(
-                self._session
-            )
+            self._content_corpus_repo = ContentCorpusRepository(self._session)
         return self._content_corpus_repo
 
     @property
     def content_source_repo(self) -> ContentSourceRepository:
         """Lazily-initialised ``ContentSourceRepository`` bound to
-        *session*."""
+        *session*.
+        """
         if self._content_source_repo is None:
-            from .db.repositories.content_sources import (
-                ContentSourceRepository,
-            )
+            from .db.repositories.content_sources import ContentSourceRepository
 
-            self._content_source_repo = ContentSourceRepository(
-                self._session
-            )
+            self._content_source_repo = ContentSourceRepository(self._session)
         return self._content_source_repo
 
     @property
     def content_version_repo(self) -> ContentVersionRepository:
         """Lazily-initialised ``ContentVersionRepository`` bound to
-        *session*."""
+        *session*.
+        """
         if self._content_version_repo is None:
-            from .db.repositories.content_versions import (
-                ContentVersionRepository,
-            )
+            from .db.repositories.content_versions import ContentVersionRepository
 
-            self._content_version_repo = ContentVersionRepository(
-                self._session
-            )
+            self._content_version_repo = ContentVersionRepository(self._session)
         return self._content_version_repo
 
     @property
@@ -263,25 +250,25 @@ class AnvilWorkbench:
         self,
     ) -> ContentIngestSessionRepository:
         """Lazily-initialised ``ContentIngestSessionRepository`` bound
-        to *session*."""
+        to *session*.
+        """
         if self._content_ingest_session_repo is None:
             from .db.repositories.content_ingest_sessions import (
                 ContentIngestSessionRepository,
             )
 
-            self._content_ingest_session_repo = (
-                ContentIngestSessionRepository(self._session)
+            self._content_ingest_session_repo = ContentIngestSessionRepository(
+                self._session
             )
         return self._content_ingest_session_repo
 
     @property
     def content_blob_repo(self) -> ContentBlobRepository:
         """Lazily-initialised ``ContentBlobRepository`` bound to
-        *session*."""
+        *session*.
+        """
         if self._content_blob_repo is None:
-            from .db.repositories.content_blobs import (
-                ContentBlobRepository,
-            )
+            from .db.repositories.content_blobs import ContentBlobRepository
 
             self._content_blob_repo = ContentBlobRepository(self._session)
         return self._content_blob_repo
@@ -289,25 +276,21 @@ class AnvilWorkbench:
     @property
     def content_import_job_repo(self) -> ContentImportJobRepository:
         """Lazily-initialised ``ContentImportJobRepository`` bound to
-        *session*."""
+        *session*.
+        """
         if self._content_import_job_repo is None:
-            from .db.repositories.content_import_jobs import (
-                ContentImportJobRepository,
-            )
+            from .db.repositories.content_import_jobs import ContentImportJobRepository
 
-            self._content_import_job_repo = ContentImportJobRepository(
-                self._session
-            )
+            self._content_import_job_repo = ContentImportJobRepository(self._session)
         return self._content_import_job_repo
 
     @property
     def content_lock_repo(self) -> ContentLockRepository:
         """Lazily-initialised ``ContentLockRepository`` bound to
-        *session*."""
+        *session*.
+        """
         if self._content_lock_repo is None:
-            from .db.repositories.content_locks import (
-                ContentLockRepository,
-            )
+            from .db.repositories.content_locks import ContentLockRepository
 
             self._content_lock_repo = ContentLockRepository(self._session)
         return self._content_lock_repo
@@ -326,28 +309,41 @@ class AnvilWorkbench:
             )
 
             self._content_store = LocalVersionedContentStore(
-                self.content_corpus_repo,
-                self.content_version_repo,
-                self.content_blob_repo,
+                db_session=self._session,
             )
         return self._content_store
 
     @property
-    def content_corpora(self) -> object:  # will be CorpusService
-        """Lazily-initialised ``CorpusService`` wired to *session*."""
+    def content_corpora(self) -> ContentCorpusService:
+        """Return the content ``CorpusService`` wired to *session*."""
         if self._content_corpora is None:
             from .services.content.corpus_service import CorpusService
 
-            # The CorpusService will be created by T041.
-            self._content_corpora = object()
+            self._content_corpora = CorpusService(
+                self.content_corpus_repo,
+                self.content_source_repo,
+                self.content_version_repo,
+                self._session,
+                self.content_store,
+            )
         return self._content_corpora
 
     @property
-    def content_ingestion(self) -> object:  # will be IngestionService
-        """Lazily-initialised content ingestion service."""
+    def content_ingestion(self) -> IngestionService:
+        """Return the content ``IngestionService`` wired to *session*."""
         if self._content_ingestion is None:
-            # Placeholder — implemented by T042.
-            self._content_ingestion = object()
+            from .services.content.ingestion_service import IngestionService
+            from .services.content.validation_service import ValidationService
+
+            self._content_ingestion = IngestionService(
+                self.content_ingest_session_repo,
+                self.content_version_repo,
+                self.content_blob_repo,
+                self.content_corpus_repo,
+                self.content_source_repo,
+                self.content_store,
+                ValidationService(),
+            )
         return self._content_ingestion
 
     @property
@@ -369,9 +365,7 @@ class AnvilWorkbench:
         if self._content_lineage is None:
             from .services.content.lineage_service import LineageService
 
-            self._content_lineage = LineageService(
-                self.content_version_repo
-            )
+            self._content_lineage = LineageService(self.content_version_repo)
         return self._content_lineage
 
     @property

@@ -53,10 +53,14 @@ class TestManifestDigestStability:
         digest = compute_manifest_digest(manifest)
 
         # Manually replicate the algorithm.
-        sorted_entries = sorted(manifest.entries, key=lambda e: (e.path, e.content_hash))
+        sorted_entries = sorted(
+            manifest.entries, key=lambda e: (e.path, e.content_hash)
+        )
         data = manifest.model_dump()
         data["entries"] = [e.model_dump() for e in sorted_entries]
-        canonical = json.dumps(data, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+        canonical = json.dumps(
+            data, sort_keys=True, separators=(",", ":"), ensure_ascii=True
+        )
         expected = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
         assert digest == expected
@@ -122,19 +126,13 @@ class TestManifestDigestImmutability:
         base = Manifest(
             corpus_slug="s",
             version_number=1,
-            entries=[
-                ManifestEntry(
-                    path="a.txt", content_hash="aa" * 32, source=None
-                )
-            ],
+            entries=[ManifestEntry(path="a.txt", content_hash="aa" * 32, source=None)],
         )
         modified = Manifest(
             corpus_slug="s",
             version_number=1,
             entries=[
-                ManifestEntry(
-                    path="a.txt", content_hash="aa" * 32, source="injector-x"
-                )
+                ManifestEntry(path="a.txt", content_hash="aa" * 32, source="injector-x")
             ],
         )
         assert compute_manifest_digest(base) != compute_manifest_digest(modified)
@@ -244,7 +242,8 @@ class TestManifestDigestOrdering:
 
     def test_same_path_different_hash_ordering(self) -> None:
         """Entries with same path but different content_hashes are
-        sorted by content_hash, making ordering irrelevant."""
+        sorted by content_hash, making ordering irrelevant.
+        """
         entries = [
             ManifestEntry(path="a.txt", content_hash="cc" * 32),
             ManifestEntry(path="a.txt", content_hash="aa" * 32),

@@ -16,7 +16,9 @@ from ..base import Base
 from ..timestamp_mixin import TimestampMixin
 
 if TYPE_CHECKING:
-    from .content_version import ContentVersion  # TYPE_CHECKING-only: breaks ContentEntry↔ContentVersion cycle
+    from .content_version import (
+        ContentVersion,
+    )  # TYPE_CHECKING-only: breaks ContentEntry↔ContentVersion cycle
 
 
 class ContentEntry(Base, TimestampMixin):
@@ -50,9 +52,7 @@ class ContentEntry(Base, TimestampMixin):
 
     __tablename__ = "content_entries"
 
-    __table_args__ = (
-        Index("ix_content_entries_version_path", "version_id", "path"),
-    )
+    __table_args__ = (Index("ix_content_entries_version_path", "version_id", "path"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     version_id: Mapped[int] = mapped_column(

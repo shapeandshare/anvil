@@ -104,7 +104,9 @@ class FakeVersionedContentStore(VersionedContentStore):
         if sid not in self._sessions:
             raise ValueError(f"Session {sid} not found")
         if self._session_refs[sid].status != "open":
-            raise ValueError(f"Session {sid} is not open (status={self._session_refs[sid].status})")
+            raise ValueError(
+                f"Session {sid} is not open (status={self._session_refs[sid].status})"
+            )
 
         chunks: list[bytes] = []
         async for chunk in data:
@@ -115,7 +117,9 @@ class FakeVersionedContentStore(VersionedContentStore):
         self._blobs[content_hash] = content
         self._sessions[sid][path] = content
 
-        return StagedEntry(path=path, content_hash=content_hash, size_bytes=len(content))
+        return StagedEntry(
+            path=path, content_hash=content_hash, size_bytes=len(content)
+        )
 
     async def validate_batch(self, session: IngestSessionRef) -> ValidationReport:
         self._assert_session_open(session.session_id)
@@ -137,7 +141,9 @@ class FakeVersionedContentStore(VersionedContentStore):
         accepted_entries: list[tuple[StagedEntry, bytes]] = []
         for path, content in staged.items():
             content_hash = hashlib.sha256(content).hexdigest()
-            entry = StagedEntry(path=path, content_hash=content_hash, size_bytes=len(content))
+            entry = StagedEntry(
+                path=path, content_hash=content_hash, size_bytes=len(content)
+            )
             accepted_entries.append((entry, content))
             total_bytes += len(content)
 
@@ -324,7 +330,7 @@ class FakeVersionedContentStore(VersionedContentStore):
         """
         if self._corpora:
             return next(iter(self._corpora))
-        raise ValueError(f"No corpora exist")
+        raise ValueError("No corpora exist")
 
     _next_vid: int = 1
 
@@ -355,7 +361,8 @@ async def _store_blob_bytes(data: bytes) -> AsyncIterator[bytes]:
 
 class TestVCS1:
     """A ``VersionRef.manifest_digest`` resolves to a byte-identical
-    entry set forever (FR-003, SC-001)."""
+    entry set forever (FR-003, SC-001).
+    """
 
     async def test_freeze_then_resolve_returns_entries(
         self, store: FakeVersionedContentStore
@@ -381,7 +388,8 @@ class TestVCS1:
         self, store: FakeVersionedContentStore
     ) -> None:
         """The ``VersionRef.manifest_digest`` equals the digest computed
-        from the resolved manifest."""
+        from the resolved manifest.
+        """
         await store.ensure_corpus("digest-match")
         session = await store.open_session("digest-match", "src")
         await store.stage(session, "data.csv", _store_blob_bytes(b"a,b,c"))
@@ -398,7 +406,8 @@ class TestVCS1:
         self, store: FakeVersionedContentStore
     ) -> None:
         """Blobs referenced by frozen entries can be opened and match
-        the original staged content byte-for-byte."""
+        the original staged content byte-for-byte.
+        """
         await store.ensure_corpus("byte-identity")
         content_a = b"\x00\x01\x02"
         content_b = b"\xff\xfe\xfd"
@@ -418,15 +427,16 @@ class TestVCS1:
             async for chunk in stream:
                 chunks.append(chunk)
             retrieved = b"".join(chunks)
-            assert retrieved == expected_by_path[entry.path], (
-                f"Blob content for {entry.path} does not match original"
-            )
+            assert (
+                retrieved == expected_by_path[entry.path]
+            ), f"Blob content for {entry.path} does not match original"
 
     async def test_resolve_same_version_multiple_times(
         self, store: FakeVersionedContentStore
     ) -> None:
         """Resolving the same ``VersionRef`` multiple times produces
-        identical manifests."""
+        identical manifests.
+        """
         await store.ensure_corpus("repeat")
         session = await store.open_session("repeat", "src")
         await store.stage(session, "stable.txt", _store_blob_bytes(b"constant"))
@@ -443,7 +453,8 @@ class TestVCS1:
         self, store: FakeVersionedContentStore
     ) -> None:
         """VCS-1 (SC-001): A frozen version's resolve is unaffected by
-        later corpus changes."""
+        later corpus changes.
+        """
         await store.ensure_corpus("mutate-after-freeze")
 
         s1 = await store.open_session("mutate-after-freeze", "batch-1")
@@ -475,13 +486,15 @@ class TestVCS1:
 
 class TestVCS2:
     """Frozen versions are immutable; mutation creates a new version
-    (FR-004)."""
+    (FR-004).
+    """
 
     async def test_freeze_twice_produces_different_digests(
         self, store: FakeVersionedContentStore
     ) -> None:
         """Freezing the same corpus after mutating HEAD produces a
-        different ``manifest_digest``."""
+        different ``manifest_digest``.
+        """
         await store.ensure_corpus("freeze-twice")
 
         s1 = await store.open_session("freeze-twice", "src")
@@ -520,7 +533,10 @@ class TestVCS2:
 
         ref2 = await store.freeze_version("immutable-after-freeze")
 
-        assert ref1.version_number != ref2.version_number or ref1.manifest_digest != ref2.manifest_digest
+        assert (
+            ref1.version_number != ref2.version_number
+            or ref1.manifest_digest != ref2.manifest_digest
+        )
 
         manifest1 = await store.resolve(ref1)
         assert len(manifest1.entries) == 1
@@ -551,7 +567,8 @@ class TestVCS2:
         self, store: FakeVersionedContentStore
     ) -> None:
         """Freezing with an explicit composition creates an immutable version
-        that is independent of the corpus HEAD."""
+        that is independent of the corpus HEAD.
+        """
         await store.ensure_corpus("composition-corpus")
 
         s1 = await store.open_session("composition-corpus", "src")
@@ -560,15 +577,21 @@ class TestVCS2:
         await store.accept_session(s1)
 
         composition = [
-            ManifestEntry(path="comp-a.bin", content_hash=hashlib.sha256(b"comp A").hexdigest()),
-            ManifestEntry(path="comp-b.bin", content_hash=hashlib.sha256(b"comp B").hexdigest()),
+            ManifestEntry(
+                path="comp-a.bin", content_hash=hashlib.sha256(b"comp A").hexdigest()
+            ),
+            ManifestEntry(
+                path="comp-b.bin", content_hash=hashlib.sha256(b"comp B").hexdigest()
+            ),
         ]
         for entry in composition:
             if entry.content_hash not in store._blobs:
                 data = b"comp A" if "comp-a" in entry.path else b"comp B"
                 store._blobs[entry.content_hash] = data
 
-        ref_comp = await store.freeze_version("composition-corpus", composition=composition)
+        ref_comp = await store.freeze_version(
+            "composition-corpus", composition=composition
+        )
         manifest_comp = await store.resolve(ref_comp)
 
         assert len(manifest_comp.entries) == 2

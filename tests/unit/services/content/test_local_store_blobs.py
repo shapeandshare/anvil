@@ -145,7 +145,8 @@ class TestBlobDedup:
         self, blob_store: _InMemoryBlobStore
     ) -> None:
         """Staging two entries with identical content produces the same
-        ``content_hash``, verifying that ``StagedEntry`` values match."""
+        ``content_hash``, verifying that ``StagedEntry`` values match.
+        """
         data = b"shared content across entries"
         h1 = await blob_store.store(data)
         h2 = await blob_store.store(data)
@@ -177,9 +178,7 @@ class TestBlobRoundTrip:
 
         assert retrieved == data
 
-    async def test_large_blob_round_trip(
-        self, blob_store: _InMemoryBlobStore
-    ) -> None:
+    async def test_large_blob_round_trip(self, blob_store: _InMemoryBlobStore) -> None:
         """A large blob (~1 MB) round-trips correctly."""
         data = b"X" * 1_000_000
         h = await blob_store.store(data)
@@ -192,9 +191,7 @@ class TestBlobRoundTrip:
         assert len(retrieved) == 1_000_000
         assert retrieved == data
 
-    async def test_binary_blob_round_trip(
-        self, blob_store: _InMemoryBlobStore
-    ) -> None:
+    async def test_binary_blob_round_trip(self, blob_store: _InMemoryBlobStore) -> None:
         """Binary content (null bytes, non-UTF8) round-trips intact."""
         data = bytes(range(256))
         h = await blob_store.store(data)
@@ -206,9 +203,7 @@ class TestBlobRoundTrip:
 
         assert retrieved == data
 
-    async def test_zero_length_blob(
-        self, blob_store: _InMemoryBlobStore
-    ) -> None:
+    async def test_zero_length_blob(self, blob_store: _InMemoryBlobStore) -> None:
         """Zero-length blob stores and retrieves correctly."""
         data = b""
         h = await blob_store.store(data)
@@ -245,9 +240,7 @@ class TestBlobHashDifferentiation:
         h_b = await blob_store.store(b"content B")
         assert h_a != h_b
 
-    async def test_single_byte_difference(
-        self, blob_store: _InMemoryBlobStore
-    ) -> None:
+    async def test_single_byte_difference(self, blob_store: _InMemoryBlobStore) -> None:
         """Changing a single byte produces a completely different hash."""
         h1 = await blob_store.store(b"hello world")
         h2 = await blob_store.store(b"hello worlD")  # single char diff
@@ -284,7 +277,8 @@ class TestBlobHashDifferentiation:
         self, blob_store: _InMemoryBlobStore
     ) -> None:
         """A ``ManifestEntry`` created from a stored blob's content hash
-        correctly references the blob."""
+        correctly references the blob.
+        """
         data = b"manifest entry blob"
         h = await blob_store.store(data)
 

@@ -62,9 +62,7 @@ class ContentBlobRepository:
             ``True`` if a blob with the given hash exists in the table.
         """
         result = await self._session.execute(
-            select(ContentBlob).where(
-                ContentBlob.content_hash == content_hash
-            )
+            select(ContentBlob).where(ContentBlob.content_hash == content_hash)
         )
         return result.scalar_one_or_none() is not None
 
@@ -79,14 +77,10 @@ class ContentBlobRepository:
         Sequence[str]
             All ``content_hash`` values currently in the table.
         """
-        result = await self._session.execute(
-            select(ContentBlob.content_hash)
-        )
+        result = await self._session.execute(select(ContentBlob.content_hash))
         return result.scalars().all()
 
-    async def delete_unreferenced(
-        self, keep_hashes: set[str]
-    ) -> int:
+    async def delete_unreferenced(self, keep_hashes: set[str]) -> int:
         """Delete blob rows whose hash is not in the keep set.
 
         Parameters

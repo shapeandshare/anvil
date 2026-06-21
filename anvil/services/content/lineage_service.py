@@ -10,9 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ...db.repositories.content_versions import (
-        ContentVersionRepository,
-    )
+    from ...db.repositories.content_versions import ContentVersionRepository
 
 
 class LineageService:

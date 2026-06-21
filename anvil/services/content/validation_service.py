@@ -73,9 +73,7 @@ class ValidationService:
 
         # Gate 1 — UTF-8 readability.
         for entry in incoming:
-            problem = await self._check_utf8_readable(
-                entry, content_dir=content_dir
-            )
+            problem = await self._check_utf8_readable(entry, content_dir=content_dir)
             if problem is not None:
                 problems.append(problem)
 
@@ -156,10 +154,7 @@ class ValidationService:
             blob is valid UTF-8.
         """
         blob_path = (
-            Path(content_dir)
-            / "blobs"
-            / entry.content_hash[:2]
-            / entry.content_hash
+            Path(content_dir) / "blobs" / entry.content_hash[:2] / entry.content_hash
         )
 
         try:

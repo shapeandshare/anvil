@@ -5,7 +5,7 @@ entity via the async SQLAlchemy repository pattern.
 """
 
 from collections.abc import Sequence
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -85,7 +85,7 @@ class ContentLockRepository:
             .where(CheckoutLock.id == id)
             .values(
                 state=LockState.RELEASED,
-                released_at=datetime.now(timezone.utc),
+                released_at=datetime.now(UTC),
             )
         )
 

@@ -25,9 +25,7 @@ from ...db.models.content_entry import ContentEntry
 from ...db.models.content_version import ContentVersion
 from ...db.repositories.content_blobs import ContentBlobRepository
 from ...db.repositories.content_corpora import ContentCorpusRepository
-from ...db.repositories.content_ingest_sessions import (
-    ContentIngestSessionRepository,
-)
+from ...db.repositories.content_ingest_sessions import ContentIngestSessionRepository
 from ...db.repositories.content_versions import ContentVersionRepository
 from .accept_result import AcceptResult
 from .ingest_session_ref import IngestSessionRef
@@ -221,9 +219,7 @@ class LocalVersionedContentStore(VersionedContentStore):
             size_bytes=size_bytes,
         )
 
-    async def validate_batch(
-        self, session: IngestSessionRef
-    ) -> ValidationReport:
+    async def validate_batch(self, session: IngestSessionRef) -> ValidationReport:
         """Run all validation gates over a session's staged content.
 
         Delegates to :class:`ValidationService.validate`.
@@ -312,9 +308,7 @@ class LocalVersionedContentStore(VersionedContentStore):
         # Read staged entries.
         staged = await self._read_staged_entries(session)
         if not staged:
-            raise ValueError(
-                f"Session {session.session_id} has no staged content"
-            )
+            raise ValueError(f"Session {session.session_id} has no staged content")
 
         # Run validation gates (fail-closed).
         report = await self._validation.validate(
@@ -343,8 +337,7 @@ class LocalVersionedContentStore(VersionedContentStore):
 
         # Build entries for the new version.
         manifest_entries = [
-            ManifestEntry(path=e.path, content_hash=e.content_hash)
-            for e in staged
+            ManifestEntry(path=e.path, content_hash=e.content_hash) for e in staged
         ]
         manifest = Manifest(
             corpus_slug=corpus_slug,
@@ -373,11 +366,12 @@ class LocalVersionedContentStore(VersionedContentStore):
                 total_bytes=total_bytes,
             )
             version = await self._version_repo.add(version)
+            new_version_id = version.id
 
             # 3. Create entry records.
             for entry in staged:
                 content_entry = ContentEntry(
-                    version_id=version.id,
+                    version_id=new_version_id,
                     path=entry.path,
                     content_hash=entry.content_hash,
                     weight=1.0,
@@ -386,16 +380,12 @@ class LocalVersionedContentStore(VersionedContentStore):
                 await self._version_repo.add_entry(content_entry)
 
             # 4. Update corpus current version.
-            await self._corpus_repo.set_current_version(
-                corpus.id, version.id
-            )
+            await self._corpus_repo.set_current_version(corpus.id, new_version_id)
 
             # 5. Write canonical entries.json.
-            await self._write_canonical_entries(
-                corpus_slug, staged, version_number
-            )
+            await self._write_canonical_entries(corpus_slug, staged, version_number)
 
-            # 6. Commit the transaction.
+            # 6. Commit the transaction (expires ORM objects).
             await self._db_session.commit()
         except Exception:
             await self._db_session.rollback()
@@ -406,7 +396,7 @@ class LocalVersionedContentStore(VersionedContentStore):
         await _rmtree(staging_area)
 
         return AcceptResult(
-            version_id=version.id,
+            version_id=new_version_id,
             manifest_digest=manifest_digest,
             version_number=version_number,
             entry_count=len(staged),
@@ -468,7 +458,7 @@ class LocalVersionedContentStore(VersionedContentStore):
                 self._canonical_dir / corpus_slug / _CANONICAL_ENTRIES_FILENAME
             )
             if canonical_path.exists():
-                async with async_open(str(canonical_path), "r") as f:
+                async with async_open(str(canonical_path)) as f:
                     raw = await f.read()
                 data = json.loads(raw)
                 entries = [
@@ -516,21 +506,21 @@ class LocalVersionedContentStore(VersionedContentStore):
             total_bytes=total_bytes,
         )
         version = await self._version_repo.add(version)
+        new_version_id = version.id
 
         for entry in entries:
             content_entry = ContentEntry(
-                version_id=version.id,
+                version_id=new_version_id,
                 path=entry.path,
                 content_hash=entry.content_hash,
                 weight=entry.weight,
-                size_bytes=0,  # size from blob metadata
+                size_bytes=0,
             )
             await self._version_repo.add_entry(content_entry)
 
-        # Persist manifest as a portable JSON file.
         manifest_dir = self._canonical_dir / corpus_slug / "manifests"
         manifest_dir.mkdir(parents=True, exist_ok=True)
-        manifest_path = manifest_dir / f"{version.id}.json"
+        manifest_path = manifest_dir / f"{new_version_id}.json"
         async with async_open(str(manifest_path), "w") as f:
             await f.write(
                 json.dumps(
@@ -544,7 +534,7 @@ class LocalVersionedContentStore(VersionedContentStore):
 
         return VersionRef(
             manifest_digest=manifest_digest,
-            version_id=version.id,
+            version_id=new_version_id,
             version_number=version_number,
         )
 
@@ -571,9 +561,7 @@ class LocalVersionedContentStore(VersionedContentStore):
         """
         version = await self._version_repo.get(version_ref.version_id)
         if version is None:
-            raise KeyError(
-                f"Version not found: id={version_ref.version_id}"
-            )
+            raise KeyError(f"Version not found: id={version_ref.version_id}")
 
         entries_orm = await self._version_repo.get_entries(version.id)
         entries = [
@@ -586,10 +574,10 @@ class LocalVersionedContentStore(VersionedContentStore):
             for e in entries_orm
         ]
 
+        corpus = await self._corpus_repo.get(version.corpus_id)
+
         return Manifest(
-            corpus_slug=version.corpus.slug
-            if hasattr(version, "corpus") and version.corpus
-            else "",
+            corpus_slug=corpus.slug if corpus is not None else "",
             version_number=version.version_number,
             is_composition=version.is_composition,
             entries=entries,
@@ -616,9 +604,7 @@ class LocalVersionedContentStore(VersionedContentStore):
         KeyError
             If the blob file is not found on disk.
         """
-        blob_path = (
-            self._blobs_dir / content_hash[:2] / content_hash
-        )
+        blob_path = self._blobs_dir / content_hash[:2] / content_hash
         if not blob_path.exists():
             raise KeyError(f"Blob not found: {content_hash}")
 
@@ -688,7 +674,7 @@ class LocalVersionedContentStore(VersionedContentStore):
             if ref_path.name == _STAGING_REF_FILENAME:
                 continue
             # Each file is a staging reference JSON.
-            async with async_open(str(ref_path), "r") as f:
+            async with async_open(str(ref_path)) as f:
                 raw = await f.read()
             data = json.loads(raw)
             entries.append(
@@ -735,9 +721,7 @@ class LocalVersionedContentStore(VersionedContentStore):
         }
         path = canonical_dir / _CANONICAL_ENTRIES_FILENAME
         async with async_open(str(path), "w") as f:
-            await f.write(
-                json.dumps(data, indent=2, sort_keys=True)
-            )
+            await f.write(json.dumps(data, indent=2, sort_keys=True))
 
 
 # ── Module-level helpers ────────────────────────────────────────────
@@ -772,7 +756,6 @@ async def _rmtree(path: Path) -> None:
     path : Path
         Root of the directory tree to remove.
     """
-    import os
     import shutil
 
     loop = asyncio.get_running_loop()

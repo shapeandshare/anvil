@@ -14,9 +14,7 @@ from collections.abc import AsyncIterator, Sequence
 from ...db.models.content_ingest_session import IngestSession
 from ...db.repositories.content_blobs import ContentBlobRepository
 from ...db.repositories.content_corpora import ContentCorpusRepository
-from ...db.repositories.content_ingest_sessions import (
-    ContentIngestSessionRepository,
-)
+from ...db.repositories.content_ingest_sessions import ContentIngestSessionRepository
 from ...db.repositories.content_sources import ContentSourceRepository
 from ...db.repositories.content_versions import ContentVersionRepository
 from .accept_result import AcceptResult
@@ -68,9 +66,7 @@ class IngestionService:
         self._content_store = content_store
         self._validation = validation_service
 
-    async def open_session(
-        self, corpus_id: int, source_id: int
-    ) -> IngestSessionRef:
+    async def open_session(self, corpus_id: int, source_id: int) -> IngestSessionRef:
         """Open a new ingestion session.
 
         Looks up the corpus and source by their primary keys,
@@ -103,9 +99,7 @@ class IngestionService:
         if source is None:
             raise ValueError(f"Source not found: {source_id}")
 
-        store_ref = await self._content_store.open_session(
-            corpus.slug, source.slug
-        )
+        store_ref = await self._content_store.open_session(corpus.slug, source.slug)
 
         db_session = IngestSession(
             corpus_id=corpus.id,
@@ -158,8 +152,7 @@ class IngestionService:
             raise ValueError(f"Session not found: {session_id}")
         if db_session.status != IngestStatus.OPEN:
             raise ValueError(
-                f"Session {session_id} is not open "
-                f"(status={db_session.status})"
+                f"Session {session_id} is not open " f"(status={db_session.status})"
             )
 
         session_ref = IngestSessionRef(
@@ -169,13 +162,9 @@ class IngestionService:
             status=db_session.status,
         )
 
-        staged = await self._content_store.stage(
-            session_ref, path, data_stream
-        )
+        staged = await self._content_store.stage(session_ref, path, data_stream)
 
-        await self._session_repo.update_status(
-            session_id, IngestStatus.OPEN
-        )
+        await self._session_repo.update_status(session_id, IngestStatus.OPEN)
 
         return staged
 
@@ -205,9 +194,7 @@ class IngestionService:
         if db_session is None:
             raise ValueError(f"Session not found: {session_id}")
 
-        await self._session_repo.update_status(
-            session_id, IngestStatus.VALIDATING
-        )
+        await self._session_repo.update_status(session_id, IngestStatus.VALIDATING)
 
         session_ref = IngestSessionRef(
             session_id=db_session.id,
@@ -254,12 +241,8 @@ class IngestionService:
 
         result = await self._content_store.accept_session(session_ref)
 
-        await self._session_repo.update_status(
-            session_id, IngestStatus.ACCEPTED
-        )
-        await self._session_repo.set_accepted_version(
-            session_id, result.version_id
-        )
+        await self._session_repo.update_status(session_id, IngestStatus.ACCEPTED)
+        await self._session_repo.set_accepted_version(session_id, result.version_id)
 
         return result
 
@@ -291,9 +274,7 @@ class IngestionService:
         )
 
         await self._content_store.abandon_session(session_ref)
-        await self._session_repo.update_status(
-            session_id, IngestStatus.FAILED
-        )
+        await self._session_repo.update_status(session_id, IngestStatus.FAILED)
 
     async def list_active(self) -> Sequence[IngestSession]:
         """List all currently active (non-terminal) ingestion sessions.

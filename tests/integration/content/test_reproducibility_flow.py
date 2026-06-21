@@ -22,7 +22,6 @@ from collections.abc import AsyncIterator
 import pytest
 
 from anvil.services.content.manifest import compute_manifest_digest
-
 from tests.unit.services.content.test_versioned_content_store_contract import (
     FakeVersionedContentStore,
 )
@@ -31,7 +30,8 @@ from tests.unit.services.content.test_versioned_content_store_contract import (
 @pytest.fixture
 def store() -> FakeVersionedContentStore:
     """Provide a fresh in-memory ``FakeVersionedContentStore`` for the
-    reproducibility flow."""
+    reproducibility flow.
+    """
     return FakeVersionedContentStore()
 
 
@@ -59,14 +59,16 @@ async def _stream(data: bytes) -> AsyncIterator[bytes]:
 
 class TestFullPipeline:
     """End-to-end pipeline: every step executes without error and
-    produces a consistent final state."""
+    produces a consistent final state.
+    """
 
     async def test_full_pipeline_round_trip(
         self, store: FakeVersionedContentStore
     ) -> None:
         """Create corpus, open session, stage multiple entries, validate,
         accept, freeze, and resolve. The resolved manifest entries match
-        what was staged."""
+        what was staged.
+        """
         await store.ensure_corpus("pipeline-test")
         session = await store.open_session("pipeline-test", "test-source")
 
@@ -96,7 +98,8 @@ class TestFullPipeline:
         self, store: FakeVersionedContentStore
     ) -> None:
         """The ``AcceptResult.manifest_digest`` matches the digest
-        computed from the frozen manifest."""
+        computed from the frozen manifest.
+        """
         await store.ensure_corpus("digest-in-accept")
         session = await store.open_session("digest-in-accept", "src")
         await store.stage(session, "data.bin", _stream(b"important data"))
@@ -116,13 +119,15 @@ class TestFullPipeline:
 
 class TestReproducibilityAfterMutation:
     """SC-001: A pinned version re-resolves to identical content after
-    later corpus changes."""
+    later corpus changes.
+    """
 
     async def test_pinned_version_survives_new_content(
         self, store: FakeVersionedContentStore
     ) -> None:
         """Freeze a version, add new content, accept a new version,
-        then resolve the original — the original entries are unchanged."""
+        then resolve the original — the original entries are unchanged.
+        """
         await store.ensure_corpus("survives-new")
 
         s1 = await store.open_session("survives-new", "phase-1")
@@ -148,13 +153,16 @@ class TestReproducibilityAfterMutation:
         manifest_v1_again = await store.resolve(ref_v1)
         v1_paths_again = {e.path for e in manifest_v1_again.entries}
         assert v1_paths_again == {"original.txt"}
-        assert compute_manifest_digest(manifest_v1) == compute_manifest_digest(manifest_v1_again)
+        assert compute_manifest_digest(manifest_v1) == compute_manifest_digest(
+            manifest_v1_again
+        )
 
     async def test_pinned_version_survives_revert(
         self, store: FakeVersionedContentStore
     ) -> None:
         """Freeze a version, add content, revert to original, then
-        resolve the pinned version — still returns original entries."""
+        resolve the pinned version — still returns original entries.
+        """
         await store.ensure_corpus("survives-revert")
 
         s1 = await store.open_session("survives-revert", "phase-1")
@@ -181,7 +189,8 @@ class TestReproducibilityAfterMutation:
         self, store: FakeVersionedContentStore
     ) -> None:
         """Multiple frozen versions coexist, each returning their own
-        entry set regardless of later changes."""
+        entry set regardless of later changes.
+        """
         await store.ensure_corpus("multi-pin")
 
         s1 = await store.open_session("multi-pin", "batch-1")
@@ -208,7 +217,11 @@ class TestReproducibilityAfterMutation:
 
         assert {e.path for e in m1.entries} == {"v1-file.txt"}
         assert {e.path for e in m2.entries} == {"v1-file.txt", "v2-file.txt"}
-        assert {e.path for e in m3.entries} == {"v1-file.txt", "v2-file.txt", "v3-file.txt"}
+        assert {e.path for e in m3.entries} == {
+            "v1-file.txt",
+            "v2-file.txt",
+            "v3-file.txt",
+        }
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -218,13 +231,15 @@ class TestReproducibilityAfterMutation:
 
 class TestVersionIsolation:
     """Each version is an independent snapshot; mutations to one do
-    not affect others."""
+    not affect others.
+    """
 
     async def test_original_version_entries_unchanged_after_new_accept(
         self, store: FakeVersionedContentStore
     ) -> None:
         """After accepting new content into the same corpus, the
-        original frozen version's entries remain unchanged."""
+        original frozen version's entries remain unchanged.
+        """
         await store.ensure_corpus("isolation")
 
         s1 = await store.open_session("isolation", "src")
@@ -251,7 +266,8 @@ class TestVersionIsolation:
         self, store: FakeVersionedContentStore
     ) -> None:
         """Blobs referenced by a frozen version are preserved even
-        after the HEAD has moved to different content."""
+        after the HEAD has moved to different content.
+        """
         await store.ensure_corpus("blob-preservation")
 
         content_v1 = b"original blob content"
@@ -285,17 +301,21 @@ class TestVersionIsolation:
 
 class TestStagedContentIsolation:
     """Content staged in one session is not visible to other sessions
-    or to resolution until accepted."""
+    or to resolution until accepted.
+    """
 
     async def test_unaccepted_content_not_in_freeze(
         self, store: FakeVersionedContentStore
     ) -> None:
         """Staging content then freezing without accepting should NOT
-        include the staged content in the frozen version."""
+        include the staged content in the frozen version.
+        """
         await store.ensure_corpus("staged-not-accepted")
 
         session = await store.open_session("staged-not-accepted", "src")
-        await store.stage(session, "not-accepted.txt", _stream(b"staged but not accepted"))
+        await store.stage(
+            session, "not-accepted.txt", _stream(b"staged but not accepted")
+        )
         assert (await store.validate_batch(session)).ok
 
         ref = await store.freeze_version("staged-not-accepted")

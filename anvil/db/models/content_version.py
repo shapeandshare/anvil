@@ -17,7 +17,9 @@ from ..timestamp_mixin import TimestampMixin
 
 if TYPE_CHECKING:
     from .content_corpus import ContentCorpus  # TYPE_CHECKING-only: breaks cycle
-    from .content_entry import ContentEntry  # TYPE_CHECKING-only: breaks ContentVersion↔ContentEntry cycle
+    from .content_entry import (
+        ContentEntry,
+    )  # TYPE_CHECKING-only: breaks ContentVersion↔ContentEntry cycle
 
 
 class ContentVersion(Base, TimestampMixin):
@@ -65,8 +67,12 @@ class ContentVersion(Base, TimestampMixin):
     __tablename__ = "content_versions"
 
     __table_args__ = (
-        UniqueConstraint("corpus_id", "version_number"),
-        UniqueConstraint("corpus_id", "manifest_digest"),
+        UniqueConstraint(
+            "corpus_id", "version_number", name="uq_content_versions_corpus_number"
+        ),
+        UniqueConstraint(
+            "corpus_id", "manifest_digest", name="uq_content_versions_corpus_digest"
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -82,7 +88,9 @@ class ContentVersion(Base, TimestampMixin):
     total_bytes: Mapped[int] = mapped_column(Integer, default=0)
 
     corpus: Mapped[ContentCorpus] = relationship(
-        "ContentCorpus", back_populates="versions"
+        "ContentCorpus",
+        back_populates="versions",
+        foreign_keys="ContentVersion.corpus_id",
     )
     entries: Mapped[list[ContentEntry]] = relationship(
         "ContentEntry", back_populates="version", cascade="all, delete-orphan"

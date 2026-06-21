@@ -91,9 +91,7 @@ class ContentIngestSessionRepository:
             update(IngestSession).where(IngestSession.id == id).values(**values)
         )
 
-    async def set_accepted_version(
-        self, id: int, version_id: int
-    ) -> None:
+    async def set_accepted_version(self, id: int, version_id: int) -> None:
         """Record the accepted version for a completed ingest session.
 
         Parameters

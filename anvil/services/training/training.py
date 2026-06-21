@@ -118,9 +118,7 @@ class TrainingService:
                     queue.put(
                         {
                             "event": "divergence",
-                            "data": json.dumps(
-                                {"step": step, "reason": reason.value}
-                            ),
+                            "data": json.dumps({"step": step, "reason": reason.value}),
                         }
                     ),
                     loop,
@@ -286,9 +284,7 @@ class TrainingService:
 
         return asyncio.run(_load_default())
 
-    def _load_docs_from_version(
-        self, content_version_id: int
-    ) -> list[str]:
+    def _load_docs_from_version(self, content_version_id: int) -> list[str]:
         """Load training documents from a versioned content repository
         version.
 
@@ -329,20 +325,9 @@ class TrainingService:
                 from ...services.content.local_versioned_content_store import (
                     LocalVersionedContentStore,
                 )
-                from ...db.repositories.content_corpora import (
-                    ContentCorpusRepository,
-                )
-                from ...db.repositories.content_blobs import (
-                    ContentBlobRepository,
-                )
 
-                corpus_repo = ContentCorpusRepository(session)
-                blob_repo = ContentBlobRepository(session)
-                store = LocalVersionedContentStore(
-                    corpus_repo, ver_repo, blob_repo
-                )
+                store = LocalVersionedContentStore(db_session=session)
 
-                # Resolve manifest for chunking config
                 from ...services.content.version_ref import VersionRef
 
                 version_ref = VersionRef(
@@ -364,23 +349,21 @@ class TrainingService:
                 from ..chunking.file_chunker import FileAsDocChunker
                 from ..chunking.line_chunker import LineAsDocChunker
 
-                if strategy == ChunkingStrategy.WINDOWED:
-                    chunker = FixedSizeWindowChunker(
-                        block_size, overlap
-                    )
-                elif strategy == ChunkingStrategy.FILE:
+                from ..chunking.base import Chunker
+
+                chunker: Chunker
+                if strategy == ChunkingStrategy.FILE:
                     chunker = FileAsDocChunker()
                 elif strategy == ChunkingStrategy.LINE:
                     chunker = LineAsDocChunker()
                 else:
-                    chunker = FixedSizeWindowChunker(16, 0.5)
+                    chunker = FixedSizeWindowChunker(block_size, overlap)
 
                 all_chunks: list[str] = []
                 for entry in entries:
                     blob_bytes = b""
-                    async for chunk in store.open_blob(
-                        entry.content_hash
-                    ):
+                    blob_stream = await store.open_blob(entry.content_hash)
+                    async for chunk in blob_stream:
                         blob_bytes += chunk
                     text = blob_bytes.decode("utf-8")
                     all_chunks.extend(chunker.chunk(text))
@@ -495,7 +478,9 @@ class TrainingService:
         # ── resolve backend ───────────────────────────────────────────
         resolved = resolve_backend(config)
         backend_name = resolved["backend"]  # ComputeBackendResult.LOCAL | .MODAL
-        engine_name: TrainingEngine = resolved["engine"]  # TrainingEngine.STDLIB | .TORCH
+        engine_name: TrainingEngine = resolved[
+            "engine"
+        ]  # TrainingEngine.STDLIB | .TORCH
         device: str = resolved["device"]  # DeviceType.CPU | .CUDA | .MPS
 
         # Map generic "local" to engine-qualified registry name

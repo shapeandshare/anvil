@@ -5,7 +5,7 @@ Provides CRUD operations and status management for the ``ImportJob``
 entity via the async SQLAlchemy repository pattern.
 """
 
-from sqlalchemy import select, update
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.content_import_job import ImportJob

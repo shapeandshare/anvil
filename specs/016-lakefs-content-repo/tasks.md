@@ -29,13 +29,13 @@ deprecated, out of scope). See data-model.md.
 
 **Purpose**: Domain package skeleton, enums, config, test scaffolding.
 
-- [ ] T001 Create domain package `anvil/services/content/__init__.py` (bare docstring per Article VI) and the directory.
-- [ ] T002 [P] Create `ContentCorpusStatus` StrEnum in `anvil/services/content/content_corpus_status.py` (DRAFT/ACTIVE/ARCHIVED).
-- [ ] T003 [P] Create `SourceKind` StrEnum in `anvil/services/content/source_kind.py` (INJECTOR/IMPORTER/MANUAL).
-- [ ] T004 [P] Create `IngestStatus` StrEnum in `anvil/services/content/ingest_status.py` (OPEN/VALIDATING/ACCEPTED/FAILED).
-- [ ] T005 [P] Create `LockState` StrEnum in `anvil/services/content/lock_state.py` (HELD/RELEASED).
-- [ ] T006 Add content-storage config keys to `anvil/config.py` (`content_dir` default `data/content`, derived `content_blobs_dir`, `content_staging_dir`) in `get_config()`; document in `.env.example` (`ANVIL_CONTENT_DIR`).
-- [ ] T007 [P] Create test package dirs + fixtures: `tests/unit/services/content/__init__.py`, `tests/integration/content/__init__.py`, and an async DB + temp-content-dir fixture in `tests/integration/content/conftest.py`.
+- [X] T001 Create domain package `anvil/services/content/__init__.py` (bare docstring per Article VI) and the directory.
+- [X] T002 [P] Create `ContentCorpusStatus` StrEnum in `anvil/services/content/content_corpus_status.py` (DRAFT/ACTIVE/ARCHIVED).
+- [X] T003 [P] Create `SourceKind` StrEnum in `anvil/services/content/source_kind.py` (INJECTOR/IMPORTER/MANUAL).
+- [X] T004 [P] Create `IngestStatus` StrEnum in `anvil/services/content/ingest_status.py` (OPEN/VALIDATING/ACCEPTED/FAILED).
+- [X] T005 [P] Create `LockState` StrEnum in `anvil/services/content/lock_state.py` (HELD/RELEASED).
+- [X] T006 Add content-storage config keys to `anvil/config.py` (`content_dir` default `data/content`, derived `content_blobs_dir`, `content_staging_dir`) in `get_config()`; document in `.env.example` (`ANVIL_CONTENT_DIR`).
+- [X] T007 [P] Create test package dirs + fixtures: `tests/unit/services/content/__init__.py`, `tests/integration/content/__init__.py`, and an async DB + temp-content-dir fixture in `tests/integration/content/conftest.py`.
 
 ---
 
@@ -48,48 +48,48 @@ repositories, and router/workbench wiring. **No user story can begin until this 
 
 ### Value types (Pydantic BaseModel, `anvil/services/content/`)
 
-- [ ] T008 [P] Create `ManifestEntry` + `Manifest` value types and the canonical-digest helper in `anvil/services/content/manifest.py` (sha256 over canonical JSON per contracts/manifest.schema.md).
-- [ ] T009 [P] Create `VersionRef` value type in `anvil/services/content/version_ref.py` (carries `manifest_digest`, `version_id`, `version_number`, `label`).
-- [ ] T010 [P] Create `IngestSessionRef` value type in `anvil/services/content/ingest_session_ref.py`.
-- [ ] T011 [P] Create `ValidationProblem` + `ValidationReport` value types in `anvil/services/content/validation_report.py`.
-- [ ] T012 [P] Create `AcceptResult` value type in `anvil/services/content/accept_result.py`.
+- [X] T008 [P] Create `ManifestEntry` + `Manifest` value types and the canonical-digest helper in `anvil/services/content/manifest.py` (sha256 over canonical JSON per contracts/manifest.schema.md).
+- [X] T009 [P] Create `VersionRef` value type in `anvil/services/content/version_ref.py` (carries `manifest_digest`, `version_id`, `version_number`, `label`).
+- [X] T010 [P] Create `IngestSessionRef` value type in `anvil/services/content/ingest_session_ref.py`.
+- [X] T011 [P] Create `ValidationProblem` + `ValidationReport` value types in `anvil/services/content/validation_report.py`.
+- [X] T012 [P] Create `AcceptResult` value type in `anvil/services/content/accept_result.py`.
 
 ### Substrate interface
 
-- [ ] T013 Create the `VersionedContentStore` ABC in `anvil/services/content/versioned_content_store.py` (all async methods per contracts/versioned-content-store.md).
+- [X] T013 Create the `VersionedContentStore` ABC in `anvil/services/content/versioned_content_store.py` (all async methods per contracts/versioned-content-store.md).
 
 ### ORM models (one class per file, `anvil/db/models/`)
 
-- [ ] T014 [P] Create `ContentSource` model in `anvil/db/models/content_source.py` (table `content_sources`).
-- [ ] T015 [P] Create `ContentCorpus` model in `anvil/db/models/content_corpus.py` (table `content_corpora`, provenance FK to `license_catalog`, `current_version_id` FK).
-- [ ] T016 [P] Create `ContentVersion` model in `anvil/db/models/content_version.py` (table `content_versions`, unique `(corpus_id, version_number)` and `(corpus_id, manifest_digest)`).
-- [ ] T017 [P] Create `ContentEntry` model in `anvil/db/models/content_entry.py` (table `content_entries`, index `(version_id, path)`).
-- [ ] T018 [P] Create `ContentBlob` model in `anvil/db/models/content_blob.py` (table `content_blobs`, PK `content_hash`).
-- [ ] T019 [P] Create `ContentTag` model in `anvil/db/models/content_tag.py` (table `content_tags`, unique `version_id`/`name`).
-- [ ] T020 [P] Create `IngestSession` model in `anvil/db/models/content_ingest_session.py` (table `content_ingest_sessions`).
-- [ ] T021 [P] Create `ImportJob` model in `anvil/db/models/content_import_job.py` (table `content_import_jobs`).
-- [ ] T022 [P] Create `CheckoutLock` model in `anvil/db/models/content_lock.py` (table `content_locks`).
-- [ ] T023 [P] Create `VersionRunRef` model in `anvil/db/models/content_version_run_ref.py` (table `content_version_run_refs`, indexed `mlflow_run_id`).
+- [X] T014 [P] Create `ContentSource` model in `anvil/db/models/content_source.py` (table `content_sources`).
+- [X] T015 [P] Create `ContentCorpus` model in `anvil/db/models/content_corpus.py` (table `content_corpora`, provenance FK to `license_catalog`, `current_version_id` FK).
+- [X] T016 [P] Create `ContentVersion` model in `anvil/db/models/content_version.py` (table `content_versions`, unique `(corpus_id, version_number)` and `(corpus_id, manifest_digest)`).
+- [X] T017 [P] Create `ContentEntry` model in `anvil/db/models/content_entry.py` (table `content_entries`, index `(version_id, path)`).
+- [X] T018 [P] Create `ContentBlob` model in `anvil/db/models/content_blob.py` (table `content_blobs`, PK `content_hash`).
+- [X] T019 [P] Create `ContentTag` model in `anvil/db/models/content_tag.py` (table `content_tags`, unique `version_id`/`name`).
+- [X] T020 [P] Create `IngestSession` model in `anvil/db/models/content_ingest_session.py` (table `content_ingest_sessions`).
+- [X] T021 [P] Create `ImportJob` model in `anvil/db/models/content_import_job.py` (table `content_import_jobs`).
+- [X] T022 [P] Create `CheckoutLock` model in `anvil/db/models/content_lock.py` (table `content_locks`).
+- [X] T023 [P] Create `VersionRunRef` model in `anvil/db/models/content_version_run_ref.py` (table `content_version_run_refs`, indexed `mlflow_run_id`).
 
 ### Migration + registration
 
-- [ ] T024 Add explicit imports of all 10 new models to `anvil/_resources/migrations/env.py` (so `Base.metadata` sees them; `anvil/db/models/__init__.py` stays bare).
-- [ ] T025 Create reversible Alembic migration `anvil/_resources/migrations/versions/0NN_add_content_repository.py` creating all 10 `content_*` tables (no changes to `corpora`/`datasets`; reuse `license_catalog` FK). Verify `upgrade`/`downgrade` round-trip.
+- [X] T024 Add explicit imports of all 10 new models to `anvil/_resources/migrations/env.py` (so `Base.metadata` sees them; `anvil/db/models/__init__.py` stays bare).
+- [X] T025 Create reversible Alembic migration `anvil/_resources/migrations/versions/0NN_add_content_repository.py` creating all 10 `content_*` tables (no changes to `corpora`/`datasets`; reuse `license_catalog` FK). Verify `upgrade`/`downgrade` round-trip.
 
 ### Repositories (`anvil/db/repositories/`)
 
-- [ ] T026 [P] Create `ContentCorpusRepository` in `anvil/db/repositories/content_corpora.py` (CRUD, get_by_slug, list, set_current_version).
-- [ ] T027 [P] Create `ContentSourceRepository` in `anvil/db/repositories/content_sources.py`.
-- [ ] T028 [P] Create `ContentVersionRepository` in `anvil/db/repositories/content_versions.py` (add version+entries, get_by_digest, list_by_corpus, run-ref writes/reads).
-- [ ] T029 [P] Create `ContentIngestSessionRepository` in `anvil/db/repositories/content_ingest_sessions.py`.
-- [ ] T030 [P] Create `ContentBlobRepository` in `anvil/db/repositories/content_blobs.py` (upsert, exists, reachable-refs query for GC).
-- [ ] T031 [P] Create `ContentImportJobRepository` in `anvil/db/repositories/content_import_jobs.py`.
-- [ ] T032 [P] Create `ContentLockRepository` in `anvil/db/repositories/content_locks.py`.
+- [X] T026 [P] Create `ContentCorpusRepository` in `anvil/db/repositories/content_corpora.py` (CRUD, get_by_slug, list, set_current_version).
+- [X] T027 [P] Create `ContentSourceRepository` in `anvil/db/repositories/content_sources.py`.
+- [X] T028 [P] Create `ContentVersionRepository` in `anvil/db/repositories/content_versions.py` (add version+entries, get_by_digest, list_by_corpus, run-ref writes/reads).
+- [X] T029 [P] Create `ContentIngestSessionRepository` in `anvil/db/repositories/content_ingest_sessions.py`.
+- [X] T030 [P] Create `ContentBlobRepository` in `anvil/db/repositories/content_blobs.py` (upsert, exists, reachable-refs query for GC).
+- [X] T031 [P] Create `ContentImportJobRepository` in `anvil/db/repositories/content_import_jobs.py`.
+- [X] T032 [P] Create `ContentLockRepository` in `anvil/db/repositories/content_locks.py`.
 
 ### Wiring
 
-- [ ] T033 Add lazy content accessors to `anvil/workbench.py` (`content_corpora`, `content_ingestion`, `content_composition`, `content_lineage`, `content_imports`, `content_locks`, repositories, and a `content_store` accessor returning `LocalVersionedContentStore` — the SaaS injection seam).
-- [ ] T034 Create empty content router `anvil/api/v1/content.py` (`router = APIRouter()`) and include it in `anvil/api/v1/router.py`.
+- [X] T033 Add lazy content accessors to `anvil/workbench.py` (`content_corpora`, `content_ingestion`, `content_composition`, `content_lineage`, `content_imports`, `content_locks`, repositories, and a `content_store` accessor returning `LocalVersionedContentStore` — the SaaS injection seam).
+- [X] T034 Create empty content router `anvil/api/v1/content.py` (`router = APIRouter()`) and include it in `anvil/api/v1/router.py`.
 
 **Checkpoint**: Schema migrates, models/repos importable, mypy strict clean — stories can begin.
 
@@ -105,24 +105,24 @@ the pinned version and confirm byte-identical entries (SC-001).
 
 ### Tests (write first, must FAIL)
 
-- [ ] T035 [P] [US1] Unit test manifest digest determinism + immutability in `tests/unit/services/content/test_manifest_digest.py` (sorted entries, stable sha256, change→new digest).
-- [ ] T036 [P] [US1] Unit test content-addressed blob store (put dedup, open_blob round-trip) in `tests/unit/services/content/test_local_store_blobs.py`.
-- [ ] T037 [P] [US1] Contract test for `VersionedContentStore` freeze/resolve guarantees (VCS-1/2) in `tests/unit/services/content/test_versioned_content_store_contract.py`.
-- [ ] T038 [P] [US1] Integration test full reproducibility flow (create→stage→validate→accept→freeze→resolve-after-mutation identical) in `tests/integration/content/test_reproducibility_flow.py`.
-- [ ] T038a [P] [US1] Integration test promotion tagging (freeze → tag → version exposes tag; duplicate tag name rejected) in `tests/integration/content/test_promotion_tag.py` (FR-023).
+- [X] T035 [P] [US1] Unit test manifest digest determinism + immutability in `tests/unit/services/content/test_manifest_digest.py` (sorted entries, stable sha256, change→new digest).
+- [X] T036 [P] [US1] Unit test content-addressed blob store (put dedup, open_blob round-trip) in `tests/unit/services/content/test_local_store_blobs.py`.
+- [X] T037 [P] [US1] Contract test for `VersionedContentStore` freeze/resolve guarantees (VCS-1/2) in `tests/unit/services/content/test_versioned_content_store_contract.py`.
+- [X] T038 [P] [US1] Integration test full reproducibility flow (create→stage→validate→accept→freeze→resolve-after-mutation identical) in `tests/integration/content/test_reproducibility_flow.py`.
+- [X] T038a [P] [US1] Integration test promotion tagging (freeze → tag → version exposes tag; duplicate tag name rejected) in `tests/integration/content/test_promotion_tag.py` (FR-023).
 
 ### Implementation
 
-- [ ] T039 [US1] Implement `LocalVersionedContentStore` in `anvil/services/content/local_versioned_content_store.py`: content-addressed blob put/open over `LocalFileStore` (`data/content/blobs/<aa>/<sha256>`), single-session `open_session`/`stage` into `data/content/staging/<key>/`, `freeze_version` (manifest+digest), `resolve`, `open_blob` (depends on T008–T013, T039 store needs repos T028/T030).
-- [ ] T040 [P] [US1] Implement minimal per-batch `ValidationService` in `anvil/services/content/validation_service.py`: UTF-8/readability, size bounds, required provenance metadata, intra-batch exact dedup; returns `ValidationReport` (~5s target).
-- [ ] T041 [US1] Implement `CorpusService` in `anvil/services/content/corpus_service.py`: `create` (with `GovernanceService` provenance/license gate), `get`, `list`, `list_versions` (depends on T026, T028).
-- [ ] T042 [US1] Implement `IngestionService` (single-session happy path) in `anvil/services/content/ingestion_service.py`: `open_session`, `stage`, `validate` (per-batch), `accept` (fold→new version) (depends on T039, T040, T029).
-- [ ] T043 [US1] Implement `LineageService.record_run_ref` in `anvil/services/content/lineage_service.py` (writes `VersionRunRef`) (depends on T028).
-- [ ] T044 [US1] Add content Pydantic request/response bodies for US1 to `anvil/api/v1/schemas.py` (`CorpusCreate`, `SessionOpen`, `StageEntry`, `FreezeVersionBody`, `CorpusOut`, `VersionOut`, `SessionOut`, `ValidationReportOut`).
-- [ ] T045 [US1] Implement US1 endpoints in `anvil/api/v1/content.py`: POST/GET `/content/corpora`, GET `/content/corpora/{id}`, GET `/content/corpora/{id}/versions`, POST `/content/sources`, POST `/content/sessions`, POST `/content/sessions/{id}/stage`, POST `/content/sessions/{id}/validate`, POST `/content/sessions/{id}/accept`, POST `/content/corpora/{id}/freeze`, GET `/content/versions/{id}` (uses `get_workbench`).
-- [ ] T045a [US1] Implement promotion tagging (FR-023): add `tag(version_id, name)` to `ContentVersionRepository`/`CorpusService`, `TagBody`/`tag` field in `VersionOut` (`anvil/api/v1/schemas.py`), and `POST /content/versions/{id}/tag` in `anvil/api/v1/content.py` (sets `ContentTag`, `gc_protected=True`). Used by quickstart §4 + contracts/api-endpoints.md.
-- [ ] T046 [US1] Wire reproducibility into training start: in `anvil/api/v1/training.py` accept `content_version_id`, resolve via `content_store`, log `corpus_ref`=digest + `MetaDataset` + `corpus_manifest.json`, and call `record_run_ref` (depends on T043).
-- [ ] T047 [US1] Implement corpus version resolution for training data loading (resolve manifest → stream blobs → chunk via existing `ChunkingStrategy`) consumed by the training data path.
+- [X] T039 [US1] Implement `LocalVersionedContentStore` in `anvil/services/content/local_versioned_content_store.py`: content-addressed blob put/open over `LocalFileStore` (`data/content/blobs/<aa>/<sha256>`), single-session `open_session`/`stage` into `data/content/staging/<key>/`, `freeze_version` (manifest+digest), `resolve`, `open_blob` (depends on T008–T013, T039 store needs repos T028/T030).
+- [X] T040 [P] [US1] Implement minimal per-batch `ValidationService` in `anvil/services/content/validation_service.py`: UTF-8/readability, size bounds, required provenance metadata, intra-batch exact dedup; returns `ValidationReport` (~5s target).
+- [X] T041 [US1] Implement `CorpusService` in `anvil/services/content/corpus_service.py`: `create` (with `GovernanceService` provenance/license gate), `get`, `list`, `list_versions` (depends on T026, T028).
+- [X] T042 [US1] Implement `IngestionService` (single-session happy path) in `anvil/services/content/ingestion_service.py`: `open_session`, `stage`, `validate` (per-batch), `accept` (fold→new version) (depends on T039, T040, T029).
+- [X] T043 [US1] Implement `LineageService.record_run_ref` in `anvil/services/content/lineage_service.py` (writes `VersionRunRef`) (depends on T028).
+- [X] T044 [US1] Add content Pydantic request/response bodies for US1 to `anvil/api/v1/schemas.py` (`CorpusCreate`, `SessionOpen`, `StageEntry`, `FreezeVersionBody`, `CorpusOut`, `VersionOut`, `SessionOut`, `ValidationReportOut`).
+- [X] T045 [US1] Implement US1 endpoints in `anvil/api/v1/content.py`: POST/GET `/content/corpora`, GET `/content/corpora/{id}`, GET `/content/corpora/{id}/versions`, POST `/content/sources`, POST `/content/sessions`, POST `/content/sessions/{id}/stage`, POST `/content/sessions/{id}/validate`, POST `/content/sessions/{id}/accept`, POST `/content/corpora/{id}/freeze`, GET `/content/versions/{id}` (uses `get_workbench`).
+- [X] T045a [US1] Implement promotion tagging (FR-023): add `tag(version_id, name)` to `ContentVersionRepository`/`CorpusService`, `TagBody`/`tag` field in `VersionOut` (`anvil/api/v1/schemas.py`), and `POST /content/versions/{id}/tag` in `anvil/api/v1/content.py` (sets `ContentTag`, `gc_protected=True`). Used by quickstart §4 + contracts/api-endpoints.md.
+- [X] T046 [US1] Wire reproducibility into training start: in `anvil/api/v1/training.py` accept `content_version_id`, resolve via `content_store`, log `corpus_ref`=digest + `MetaDataset` + `corpus_manifest.json`, and call `record_run_ref` (depends on T043).
+- [X] T047 [US1] Implement corpus version resolution for training data loading (resolve manifest → stream blobs → chunk via existing `ChunkingStrategy`) consumed by the training data path.
 
 **Checkpoint**: MVP — reproducibility-by-reference works end-to-end. Delivers SC-001, SC-012(per-batch).
 

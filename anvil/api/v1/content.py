@@ -2,7 +2,7 @@
 
 Provides REST endpoints for versioned content corpora, ingestion
 sessions, version management, and training-data composition.
-Endpoints are added in phases per US1–US9.
+Endpoints are added in phases per US1-US9.
 
 Envelope
 --------
@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 
@@ -322,8 +322,8 @@ async def open_session(
     if source is None:
         raise HTTPException(status_code=404, detail=f"Source '{body.source}' not found")
 
-    from ...services.content.ingest_status import IngestStatus
     from ...db.models.content_ingest_session import IngestSession
+    from ...services.content.ingest_status import IngestStatus
 
     staging_key = f"{body.corpus_id}/{uuid.uuid4().hex}"
     session = IngestSession(
@@ -406,8 +406,9 @@ async def stage_file(
     )
     await workbench.content_blob_repo.upsert(blob)
 
-    from ...db.models.content_ingest_session import IngestSession
     from sqlalchemy import update
+
+    from ...db.models.content_ingest_session import IngestSession
 
     await workbench._session.execute(
         update(IngestSession)
@@ -524,13 +525,11 @@ async def accept_session(
             detail=f"Cannot accept session in status '{session.status}'",
         )
 
-    # Governance gate: check acceptable-use before accepting.
-    # Use the fallback placeholder until IngestionService (T042) is available.
     try:
-        result = await _fallback_accept(
-            session, workbench
-        )
+        result = await workbench.content_ingestion.accept(id)
+        await workbench.session.commit()
     except ValueError as exc:
+        await workbench.session.rollback()
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     return {
@@ -543,73 +542,6 @@ async def accept_session(
         ).model_dump(),
         "error": None,
     }
-
-
-async def _fallback_accept(session, workbench):
-    """Fallback accept that creates a version directly when
-    ``IngestionService`` is not yet available.
-
-    Placeholder for T042 — removed once ``workbench.content_ingestion``
-    is a real ``IngestionService``.
-    """
-    from ...db.models.content_version import ContentVersion
-    from ...db.models.content_entry import ContentEntry
-    from ...services.content.ingest_status import IngestStatus
-    from ...services.content.manifest import (
-        Manifest,
-        ManifestEntry,
-        compute_manifest_digest,
-    )
-
-    corpus = await workbench.content_corpus_repo.get(session.corpus_id)
-    if corpus is None:
-        raise ValueError("Corpus not found")
-
-    existing = await workbench.content_version_repo.list_by_corpus(corpus.id)
-    next_version = max((v.version_number for v in existing), default=0) + 1
-
-    # Without ContentStagedEntryRepository we create an empty version.
-    # Full implementation comes with T042.
-    manifest = Manifest(
-        corpus_slug=corpus.slug,
-        version_number=next_version,
-        chunk_cfg={
-            "strategy": corpus.chunking_strategy,
-            "block_size": corpus.block_size,
-            "chunk_overlap": corpus.chunk_overlap,
-        },
-        entries=[],
-    )
-    digest = compute_manifest_digest(manifest)
-
-    version = ContentVersion(
-        corpus_id=corpus.id,
-        version_number=next_version,
-        manifest_digest=digest,
-        entry_count=0,
-        total_bytes=0,
-    )
-    version = await workbench.content_version_repo.add(version)
-
-    await workbench.content_ingest_session_repo.update_status(
-        session.id, IngestStatus.ACCEPTED
-    )
-    await workbench.content_ingest_session_repo.set_accepted_version(
-        session.id, version.id
-    )
-    await workbench.content_corpus_repo.set_current_version(
-        corpus.id, version.id
-    )
-
-    from ...services.content.accept_result import AcceptResult
-
-    return AcceptResult(
-        version_id=version.id,
-        manifest_digest=digest,
-        version_number=next_version,
-        entry_count=0,
-        total_bytes=0,
-    )
 
 
 @router.post("/content/sessions/{id}/abandon")
@@ -644,9 +576,7 @@ async def abandon_session(
 
     from ...services.content.ingest_status import IngestStatus
 
-    await workbench.content_ingest_session_repo.update_status(
-        id, IngestStatus.FAILED
-    )
+    await workbench.content_ingest_session_repo.update_status(id, IngestStatus.FAILED)
     return {"data": {"status": "abandoned"}, "error": None}
 
 
@@ -720,12 +650,10 @@ async def freeze_version(
     if corpus is None:
         raise HTTPException(status_code=404, detail="Corpus not found")
 
-    existing = await workbench.content_version_repo.list_by_corpus(id)
-    next_version = max((v.version_number for v in existing), default=0) + 1
-
     version = await workbench.content_store.freeze_version(
         corpus_slug=corpus.slug,
     )
+    await workbench.session.commit()
 
     return {
         "data": ContentVersionOut(
@@ -736,7 +664,7 @@ async def freeze_version(
             label=version.label or (body.label if body else None),
             entry_count=0,
             total_bytes=0,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         ).model_dump(),
         "error": None,
     }
@@ -911,9 +839,7 @@ async def revert_corpus(
 
     target = await workbench.content_version_repo.get(body.to_version_id)
     if target is None:
-        raise HTTPException(
-            status_code=404, detail="Target version not found"
-        )
+        raise HTTPException(status_code=404, detail="Target version not found")
     if target.corpus_id != id:
         raise HTTPException(
             status_code=422,
@@ -924,8 +850,8 @@ async def revert_corpus(
     existing = await workbench.content_version_repo.list_by_corpus(id)
     next_version = max((v.version_number for v in existing), default=0) + 1
 
-    from ...db.models.content_version import ContentVersion
     from ...db.models.content_entry import ContentEntry
+    from ...db.models.content_version import ContentVersion
 
     new_version = ContentVersion(
         corpus_id=id,

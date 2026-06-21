@@ -69,9 +69,7 @@ class ContentVersionRepository:
         await self._session.refresh(version)
         return version
 
-    async def get_by_digest(
-        self, corpus_id: int, digest: str
-    ) -> ContentVersion | None:
+    async def get_by_digest(self, corpus_id: int, digest: str) -> ContentVersion | None:
         """Retrieve a version by its corpus and manifest digest.
 
         Parameters
@@ -95,9 +93,7 @@ class ContentVersionRepository:
         )
         return result.scalar_one_or_none()
 
-    async def list_by_corpus(
-        self, corpus_id: int
-    ) -> Sequence[ContentVersion]:
+    async def list_by_corpus(self, corpus_id: int) -> Sequence[ContentVersion]:
         """List all versions belonging to a corpus, ordered by version
         number descending.
 
@@ -141,9 +137,7 @@ class ContentVersionRepository:
         await self._session.refresh(entry)
         return entry
 
-    async def get_entries(
-        self, version_id: int
-    ) -> Sequence[ContentEntry]:
+    async def get_entries(self, version_id: int) -> Sequence[ContentEntry]:
         """Retrieve all entries belonging to a version, ordered by path.
 
         Parameters
@@ -186,9 +180,7 @@ class ContentVersionRepository:
         await self._session.refresh(ref)
         return ref
 
-    async def get_run_refs(
-        self, version_id: int
-    ) -> Sequence[VersionRunRef]:
+    async def get_run_refs(self, version_id: int) -> Sequence[VersionRunRef]:
         """Retrieve all run references for a version.
 
         Parameters
@@ -202,8 +194,6 @@ class ContentVersionRepository:
             All ``VersionRunRef`` records linked to the given version.
         """
         result = await self._session.execute(
-            select(VersionRunRef).where(
-                VersionRunRef.version_id == version_id
-            )
+            select(VersionRunRef).where(VersionRunRef.version_id == version_id)
         )
         return result.scalars().all()

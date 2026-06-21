@@ -20,7 +20,9 @@ from ..base import Base
 from ..timestamp_mixin import TimestampMixin
 
 if TYPE_CHECKING:
-    from .content_version import ContentVersion  # TYPE_CHECKING-only: breaks ContentCorpus↔ContentVersion cycle
+    from .content_version import (
+        ContentVersion,
+    )  # TYPE_CHECKING-only: breaks ContentCorpus↔ContentVersion cycle
 
 
 class ContentCorpus(Base, TimestampMixin):
@@ -80,9 +82,7 @@ class ContentCorpus(Base, TimestampMixin):
     block_size: Mapped[int] = mapped_column(Integer, default=16)
     chunk_overlap: Mapped[float] = mapped_column(Float, default=0.5)
     default_language: Mapped[str] = mapped_column(String(16), default="en")
-    status: Mapped[str] = mapped_column(
-        String(20), default=ContentCorpusStatus.DRAFT
-    )
+    status: Mapped[str] = mapped_column(String(20), default=ContentCorpusStatus.DRAFT)
     current_version_id: Mapped[int | None] = mapped_column(
         Integer,
         ForeignKey("content_versions.id", ondelete="SET NULL"),
@@ -100,5 +100,8 @@ class ContentCorpus(Base, TimestampMixin):
     parent_provenance_ref: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     versions: Mapped[list[ContentVersion]] = relationship(
-        "ContentVersion", back_populates="corpus", cascade="all, delete-orphan"
+        "ContentVersion",
+        back_populates="corpus",
+        cascade="all, delete-orphan",
+        foreign_keys="ContentVersion.corpus_id",
     )

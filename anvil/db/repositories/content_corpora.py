@@ -118,9 +118,7 @@ class ContentCorpusRepository:
 
     # ---- Domain operations ----
 
-    async def set_current_version(
-        self, corpus_id: int, version_id: int
-    ) -> None:
+    async def set_current_version(self, corpus_id: int, version_id: int) -> None:
         """Set the current (canonical) version for a corpus.
 
         Parameters
