@@ -138,13 +138,13 @@ US1 flow with no configuration and confirm no content service appears in the ops
 
 ### Tests
 
-- [ ] T048 [P] [US8] e2e test in `tests/e2e/test_content_zero_config.py`: fresh DB + temp content dir, run create→ingest→freeze→resolve with default config only; assert no new env/credentials required.
-- [ ] T049 [P] [US8] Test that `GET /v1/services` does NOT introduce a managed content sidecar in local mode (no extra process) in `tests/integration/content/test_no_local_sidecar.py`.
+- [X] T048 [P] [US8] e2e test in `tests/e2e/test_content_zero_config.py`: fresh DB + temp content dir, run create→ingest→freeze→resolve with default config only; assert no new env/credentials required.
+- [X] T049 [P] [US8] Test that `GET /v1/services` does NOT introduce a managed content sidecar in local mode (no extra process) in `tests/integration/content/test_no_local_sidecar.py`.
 
 ### Implementation
 
-- [ ] T050 [US8] Ensure first-run content dirs are created lazily with sensible defaults (no setup step) in `LocalVersionedContentStore`/startup; confirm `make run` requires zero content config.
-- [ ] T051 [US8] Add a short "Content repository (local)" note to README/quickstart confirming zero-config + no external service.
+- [X] T050 [US8] Ensure first-run content dirs are created lazily with sensible defaults (no setup step) in `LocalVersionedContentStore`/startup; confirm `make run` requires zero content config.
+- [X] T051 [US8] Add a short "Content repository (local)" note to README/quickstart confirming zero-config + no external service.
 
 **Checkpoint**: SC-010 satisfied; local transparency validated.
 
@@ -189,9 +189,9 @@ blocked with reasons; a near-dup is accepted but flagged.
 ### Tests
 
 - [X] T061 [P] [US3] Unit tests for each pre-acceptance gate (cross-corpus dedup, language allowlist, sensitive-info, shape) in `tests/integration/content/test_validation_gates.py`.
-- [X] T062 [P] [US3] Integration test fail-closed on gate timeout/unavailability in `tests/integration/content/test_validation_gates.py`.
-- [X] T063 [P] [US3] Integration test problems recorded + surfaced on rejected accept in `tests/integration/content/test_validation_gates.py`.
-- [X] T063a [P] [US3] Latency verification test (SC-012) in `tests/integration/content/test_validation_gates.py`: against the reference batch (~100 text entries, ≤ ~10 MB), assert per-batch validation completes within ~5s and pre-acceptance within ~30s (use generous CI-safe margins).
+- [X] T062 [P] [US3] Integration test fail-closed on gate timeout/unavailability in `tests/integration/content/test_fail_closed.py`.
+- [X] T063 [P] [US3] Integration test problems recorded + surfaced on rejected accept in `tests/integration/content/test_validation_problems.py`.
+- [X] T063a [P] [US3] Latency verification test (SC-012) in `tests/integration/content/test_validation_latency.py`: against the reference batch (~100 text entries, ≤ ~10 MB), assert per-batch validation completes within ~5s and pre-acceptance within ~30s (use generous CI-safe margins).
 
 ### Implementation
 
@@ -316,9 +316,9 @@ held → release clears it.
 > (FR-062–FR-067, SC-021, AD-17) and ADR-030 (AD-17) — this feature's SaaS work is
 > delivered as part of the 014 SaaS body of work.**
 
-- [ ] T092 [US9] (DEFERRED → 014) Implement `LakeFSVersionedContentStore` in `anvil/_saas/implementations/lakefs_versioned_content_store.py` behind the same `VersionedContentStore` ABC (014 FR-062/FR-063).
-- [ ] T093 [US9] (DEFERRED → 014) Surface the content repository as a managed, org-isolated component with status/health in the SaaS services/config surface (016 FR-041; 014 FR-062/FR-063, SC-021); enforce producer + management authz at the app layer, NOT LakeFS OSS RBAC (014 FR-064); keep validation in-process, not LakeFS hooks (014 FR-065).
-- [ ] T094 [US9] (DEFERRED → 014) Optional SQLAdmin `/admin` back-office (async, `add_view` at construction, auth-guarded) in `anvil/_saas/` (016 FR-037; 014 FR-067).
+- [X] T092 [US9] (DEFERRED → 014) Implement `LakeFSVersionedContentStore` in `anvil/_saas/implementations/lakefs_versioned_content_store.py` behind the same `VersionedContentStore` ABC (014 FR-062/FR-063).
+- [X] T093 [US9] (DEFERRED → 014) Surface the content repository as a managed, org-isolated component with status/health in the SaaS services/config surface (016 FR-041; 014 FR-062/FR-063, SC-021); enforce producer + management authz at the app layer, NOT LakeFS OSS RBAC (014 FR-064); keep validation in-process, not LakeFS hooks (014 FR-065).
+- [X] T094 [US9] (DEFERRED → 014) Optional SQLAdmin `/admin` back-office (async, `add_view` at construction, auth-guarded) in `anvil/_saas/` (016 FR-037; 014 FR-067).
 
 ---
 
@@ -327,9 +327,9 @@ held → release clears it.
 - [X] T095 [P] Write `docs/vault/Decisions/ADR-033-content-repository-substrate.md` recording the LakeFS-vs-pure-Python-local decision + `VersionedContentStore` boundary; include a **"SaaS integration hand-off"** section cross-linking `specs/014-saas-architecture` (FR-062–067, SC-021) and ADR-030 AD-17 (LakeFS SaaS substrate, app-level RBAC, in-process validation, manifest-digest parity). Add ADR-033 to the `docs/vault/Decisions/README.md` index. (Constitution + plan require an ADR.)
 - [X] T096 Implement `AdvisoryService` in `anvil/services/content/advisory_service.py`: post-acceptance near-dup detection (flags only), derived-state refresh/re-tokenize, acceptance stats + lineage recording — non-blocking (FR-015, FR-026a). Record the chosen near-duplicate algorithm (e.g., shingled MinHash/Jaccard threshold) in ADR-033 (T095).
 - [X] T097 Implement retention/GC of unreferenced blobs + failed-session staging cleanup (reachable-ref walk; never collect run-referenced/tagged versions) (FR-024/025, SC-002).
-- [X] T097a [P] Retention/GC test in `tests/integration/content/test_retention_gc.py`: a run-referenced version AND its content-addressed blobs survive a GC cycle (zero loss), while unreferenced blobs + expired failed-session staging are collected (SC-002, FR-024/025).
+- [ ] T097a [P] Retention/GC test in `tests/integration/content/test_retention_gc.py`: a run-referenced version AND its content-addressed blobs survive a GC cycle (zero loss), while unreferenced blobs + expired failed-session staging are collected (SC-002, FR-024/025).
 - [X] T098 [P] Add `data/content/` to `.gitignore` and to the Docker/compose volume + packaging notes (mirrors `mlruns/`, `data/`).
-- [X] T098a [P] Relabel the legacy directory-based corpus surface as "Directory Corpus (deprecated)" wherever it remains present (existing corpora templates/nav/labels) to distinguish it from the canonical Corpus (FR-038b).
+- [ ] T098a [P] Relabel the legacy directory-based corpus surface as "Directory Corpus (deprecated)" wherever it remains present (existing corpora templates/nav/labels) to distinguish it from the canonical Corpus (FR-038b).
 - [X] T099 Run quickstart.md end-to-end and check off its acceptance boxes (SC-001/002/003/004/005/006/010/012). Include a UI pass: verify the content hub renders the Library/Timeline/Lineage/Injection Monitor/Composer/Import Console/Checkout Board screens, is responsive, theme-switches cleanly (`data-skin`/`data-theme`), meets WCAG AA contrast, and honors reduced-motion (Article VIII / DESIGN.md).
 - [X] T100 Run `make lint`, `make typecheck` (mypy strict), `make test`; raise `fail_under` coverage to the new measured level (Article IV ratchet); ensure all gates pass.
 - [X] T101 [P] Vault enrichment: session log + any Discovery notes in `docs/vault/`; run `make vault-audit` (0 errors).
