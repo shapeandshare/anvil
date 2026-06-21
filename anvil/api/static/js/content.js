@@ -2,17 +2,17 @@
   'use strict';
 
   /* ── State ── */
-  var corporaCache = {};
-  var sourcesCache = {};
-  var sessionsCache = {};
-  var _currentSessionId = null;
+  let corporaCache = {};
+  let sourcesCache = {};
+  let sessionsCache = {};
+  let _currentSessionId = null;
 
-  var _injectionMonitor = null;
+  let _injectionMonitor = null;
 
   /* ── Helpers ── */
   function escHtml(s) {
     if (s == null) return '';
-    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return String(s).replaceAll(/&/g, '&amp;').replaceAll(/</g, '&lt;').replaceAll(/>/g, '&gt;').replaceAll(/"/g, '&quot;');
   }
 
   function trunc(s, len) {
@@ -23,10 +23,10 @@
 
   function toast(msg, type) {
     type = type || 'info';
-    var duration = 3000;
-    var container = document.getElementById('toast-container');
+    let duration = 3000;
+    let container = document.getElementById('toast-container');
     if (!container) return;
-    var el = document.createElement('div');
+    let el = document.createElement('div');
     el.className = 'toast toast-' + type;
     el.textContent = msg;
     container.appendChild(el);
@@ -54,7 +54,7 @@
 
   /* ── Status line helper ── */
   function setStatus(id, msg, ok) {
-    var el = document.getElementById(id);
+    let el = document.getElementById(id);
     if (!el) return;
     el.textContent = msg;
     el.style.display = 'block';
@@ -63,23 +63,23 @@
 
   /* ── Corpus Form ── */
   function showCorpusForm() {
-    var card = document.getElementById('corpus-form-card');
+    let card = document.getElementById('corpus-form-card');
     if (card) card.style.display = '';
   }
 
   function hideCorpusForm() {
-    var card = document.getElementById('corpus-form-card');
+    let card = document.getElementById('corpus-form-card');
     if (card) card.style.display = 'none';
   }
 
   function createCorpus() {
-    var name = document.getElementById('corpus-name').value.trim();
+    let name = document.getElementById('corpus-name').value.trim();
     if (!name) { setStatus('corpus-form-status', 'Name is required', false); return; }
-    var slug = document.getElementById('corpus-slug').value.trim() || null;
-    var desc = document.getElementById('corpus-desc').value.trim() || null;
-    var chunking = document.getElementById('corpus-chunking').value;
-    var blockSize = parseInt(document.getElementById('corpus-block-size').value) || 16;
-    var overlap = parseFloat(document.getElementById('corpus-overlap').value) || 0.5;
+    let slug = document.getElementById('corpus-slug').value.trim() || null;
+    let desc = document.getElementById('corpus-desc').value.trim() || null;
+    let chunking = document.getElementById('corpus-chunking').value;
+    let blockSize = Number.parseInt(document.getElementById('corpus-block-size').value) || 16;
+    let overlap = parseFloat(document.getElementById('corpus-overlap').value) || 0.5;
 
     api('/v1/content/corpora', {
       method: 'POST',
@@ -111,22 +111,22 @@
     api('/v1/content/corpora')
       .then(function (data) {
         corporaCache = {};
-        var list = document.getElementById('corpus-list');
+        let list = document.getElementById('corpus-list');
         if (!list) return;
 
         // Populate both corpus selectors
-        var ingestSelect = document.getElementById('ingest-corpus');
-        var timelineSelect = document.getElementById('timeline-corpus');
+        let ingestSelect = document.getElementById('ingest-corpus');
+        let timelineSelect = document.getElementById('timeline-corpus');
 
         if (!data || !data.length) {
           list.innerHTML = '<div class="empty-state-card"><span class="empty-state-card__icon">&#128193;</span><span>No corpora yet.</span></div>';
           return;
         }
 
-        var html = '<div class="grouped-rows">';
+        let html = '<div class="grouped-rows">';
         data.forEach(function (c, i) {
           corporaCache[c.id] = c;
-          var statusBadge = c.status === 'active' ? 'badge-green' : 'badge';
+          let statusBadge = c.status === 'active' ? 'badge-green' : 'badge';
           html += '<div class="grouped-row" style="--row-i: ' + i + '">'
             + '<span class="grouped-row__icon">&#128193;</span>'
             + '<div class="grouped-row__content">'
@@ -142,7 +142,7 @@
         list.innerHTML = html;
 
         // Populate selectors
-        var opts = '<option value="">— select corpus —</option>';
+        let opts = '<option value="">— select corpus —</option>';
         data.forEach(function (c) {
           opts += '<option value="' + c.id + '">' + escHtml(c.name) + ' (' + c.slug + ')</option>';
         });
@@ -150,16 +150,16 @@
         if (timelineSelect) timelineSelect.innerHTML = opts;
       })
       .catch(function (err) {
-        var list = document.getElementById('corpus-list');
+        let list = document.getElementById('corpus-list');
         if (list) list.innerHTML = '<div class="empty-state-card"><span class="empty-state-card__icon">&#9888;</span><span>Error loading corpora: ' + escHtml(err.message) + '</span></div>';
       });
   }
 
   /* ── Create Source ── */
   function createSource() {
-    var name = document.getElementById('source-name').value.trim();
-    var slug = document.getElementById('source-slug').value.trim();
-    var kind = document.getElementById('source-kind').value;
+    let name = document.getElementById('source-name').value.trim();
+    let slug = document.getElementById('source-slug').value.trim();
+    let kind = document.getElementById('source-kind').value;
     if (!name || !slug) {
       setStatus('source-status', 'Name and slug are required', false);
       return;
@@ -185,9 +185,9 @@
     api('/v1/content/sources')
       .then(function (data) {
         sourcesCache = {};
-        var select = document.getElementById('ingest-source');
+        let select = document.getElementById('ingest-source');
         if (!select) return;
-        var opts = '<option value="">— select source —</option>';
+        let opts = '<option value="">— select source —</option>';
         (data || []).forEach(function (s) {
           sourcesCache[s.id] = s;
           opts += '<option value="' + s.slug + '">' + escHtml(s.name) + ' (' + s.slug + ')</option>';
@@ -199,8 +199,8 @@
 
   /* ── Open Session ── */
   function openSession() {
-    var corpusId = parseInt(document.getElementById('ingest-corpus').value);
-    var source = document.getElementById('ingest-source').value;
+    let corpusId = Number.parseInt(document.getElementById('ingest-corpus').value);
+    let source = document.getElementById('ingest-source').value;
     if (!corpusId || !source) {
       toastError('Select both a corpus and a source');
       return;
@@ -224,7 +224,7 @@
   }
 
   function renderSessionInfo(s) {
-    var el = document.getElementById('session-info');
+    let el = document.getElementById('session-info');
     if (!el) return;
     el.innerHTML = '<div class="help-box" style="margin:0;">'
       + '<span class="help-title">Session #' + s.id + '</span> &mdash; '
@@ -235,19 +235,19 @@
 
   /* ── Stage File ── */
   function stageFile() {
-    var sessionId = _currentSessionId;
+    let sessionId = _currentSessionId;
     if (!sessionId) { toastError('No active session'); return; }
-    var path = document.getElementById('stage-path').value.trim();
-    var fileInput = document.getElementById('stage-file');
+    let path = document.getElementById('stage-path').value.trim();
+    let fileInput = document.getElementById('stage-file');
     if (!path || !fileInput.files.length) {
       toastError('Provide a path and select a file');
       return;
     }
-    var file = fileInput.files[0];
-    var formData = new FormData();
+    let file = fileInput.files[0];
+    let formData = new FormData();
     formData.append('file', file);
 
-    var statusEl = document.getElementById('stage-status');
+    let statusEl = document.getElementById('stage-status');
     if (statusEl) statusEl.textContent = 'Uploading...';
 
     fetch('/v1/content/sessions/' + sessionId + '/stage?path=' + encodeURIComponent(path), {
@@ -276,9 +276,9 @@
 
   /* ── Validate Session ── */
   function validateSession() {
-    var sessionId = _currentSessionId;
+    let sessionId = _currentSessionId;
     if (!sessionId) { toastError('No active session'); return; }
-    var reportEl = document.getElementById('validation-report');
+    let reportEl = document.getElementById('validation-report');
     if (reportEl) reportEl.innerHTML = '<span class="spinner"></span> Validating...';
 
     api('/v1/content/sessions/' + sessionId + '/validate', { method: 'POST' })
@@ -289,8 +289,8 @@
             + '<span style="color:var(--accent-green);font-weight:600;">&#10003; Validation passed</span></div>';
           toastSuccess('Validation passed');
         } else {
-          var problems = data.problems || [];
-          var html = '<div class="help-box" style="margin:0;border-left:3px solid var(--accent-orange);">'
+          let problems = data.problems || [];
+          let html = '<div class="help-box" style="margin:0;border-left:3px solid var(--accent-orange);">'
             + '<span style="color:var(--accent-orange);font-weight:600;">&#9888; ' + problems.length + ' problem(s)</span>';
           problems.forEach(function (p) {
             html += '<div style="margin-top:var(--space-1);font-size:var(--text-footnote);">'
@@ -310,9 +310,9 @@
 
   /* ── Accept Session ── */
   function acceptSession() {
-    var sessionId = _currentSessionId;
+    let sessionId = _currentSessionId;
     if (!sessionId) { toastError('No active session'); return; }
-    var resultEl = document.getElementById('accept-result');
+    let resultEl = document.getElementById('accept-result');
     if (resultEl) resultEl.innerHTML = '<span class="spinner"></span> Accepting...';
 
     api('/v1/content/sessions/' + sessionId + '/accept', { method: 'POST' })
@@ -342,7 +342,7 @@
 
   /* ── Abandon Session ── */
   function abandonSession() {
-    var sessionId = _currentSessionId;
+    let sessionId = _currentSessionId;
     if (!sessionId) { toastError('No active session'); return; }
     api('/v1/content/sessions/' + sessionId + '/abandon', { method: 'POST' })
       .then(function () {
@@ -362,12 +362,12 @@
     api('/v1/content/sessions')
       .then(function (data) {
         sessionsCache = {};
-        var container = document.getElementById('injection-sessions');
-        var badge = document.getElementById('injection-badge');
+        let container = document.getElementById('injection-sessions');
+        let badge = document.getElementById('injection-badge');
         if (!container) return;
-        var sessions = data || [];
+        let sessions = data || [];
         if (badge) {
-          var active = sessions.length;
+          let active = sessions.length;
           badge.textContent = active + ' active';
           badge.style.display = active ? '' : 'none';
         }
@@ -375,10 +375,10 @@
           container.innerHTML = '<div class="empty-state-card"><span class="empty-state-card__icon">&#9889;</span><span>No active ingestion sessions.</span></div>';
           return;
         }
-        var html = '<div class="table-scroll"><table class="grouped-list">'
+        let html = '<div class="table-scroll"><table class="grouped-list">'
           + '<thead><tr><th>ID</th><th>Source</th><th>Status</th><th>Staged</th><th>Opened</th></tr></thead><tbody>';
         sessions.forEach(function (s) {
-          var statusClass = 'badge-green';
+          let statusClass = 'badge-green';
           if (s.status === 'validating') statusClass = 'badge-yellow';
           else if (s.status === 'failed') statusClass = 'badge-red';
           html += '<tr>'
@@ -397,15 +397,15 @@
 
   /* ── Show Versions (corpus) ── */
   function showVersions(corpusId) {
-    var timelineSelect = document.getElementById('timeline-corpus');
+    let timelineSelect = document.getElementById('timeline-corpus');
     if (timelineSelect) timelineSelect.value = corpusId;
     loadTimeline();
   }
 
   /* ── Load Version Timeline ── */
   function loadTimeline() {
-    var corpusId = parseInt(document.getElementById('timeline-corpus').value);
-    var container = document.getElementById('version-timeline');
+    let corpusId = Number.parseInt(document.getElementById('timeline-corpus').value);
+    let container = document.getElementById('version-timeline');
     if (!container) return;
     if (!corpusId) {
       container.innerHTML = '<div class="empty-state-card"><span class="empty-state-card__icon">&#128196;</span><span>Select a corpus to view versions.</span></div>';
@@ -418,11 +418,11 @@
           container.innerHTML = '<div class="empty-state-card"><span class="empty-state-card__icon">&#128196;</span><span>No versions yet.</span></div>';
           return;
         }
-        var html = '<div class="table-scroll"><table class="grouped-list">'
+        let html = '<div class="table-scroll"><table class="grouped-list">'
           + '<thead><tr><th>Version</th><th>Manifest Digest</th><th>Entries</th><th>Label/Tag</th><th>Created</th><th>Diff</th><th>Lineage</th></tr></thead><tbody>';
 
         data.forEach(function (v, i) {
-          var prevDigest = i > 0 ? '(v' + data[i - 1].version_number + ')' : '—';
+          let prevDigest = i > 0 ? '(v' + data[i - 1].version_number + ')' : '—';
           html += '<tr>'
             + '<td class="cell-mono"><strong>v' + v.version_number + '</strong></td>'
             + '<td class="cell-mono cell-wrap" style="max-width:140px;"><code style="font-size:var(--text-caption-1);">' + trunc(v.manifest_digest, 20) + '</code></td>'
@@ -443,7 +443,7 @@
 
   /* ── Load Lineage ── */
   function loadLineage(versionId) {
-    var container = document.getElementById('lineage-view');
+    let container = document.getElementById('lineage-view');
     if (!container) return;
     container.innerHTML = '<span class="spinner"></span> Loading lineage...';
 
@@ -453,7 +453,7 @@
           container.innerHTML = '<div class="empty-state-card"><span class="empty-state-card__icon">&#128279;</span><span>No lineage data for this version.</span></div>';
           return;
         }
-        var html = '<div class="help-box" style="margin:0;">'
+        let html = '<div class="help-box" style="margin:0;">'
           + '<div class="help-title">Version #' + versionId + ' — Lineage</div>';
         data.run_refs.forEach(function (ref) {
           html += '<div style="margin-top:var(--space-1);font-size:var(--text-footnote);">'
@@ -475,8 +475,8 @@
       _injectionMonitor.destroy();
       _injectionMonitor = null;
     }
-    var stateEl = document.getElementById('injection-state');
-    var badge = document.getElementById('injection-badge');
+    let stateEl = document.getElementById('injection-state');
+    let badge = document.getElementById('injection-badge');
 
     _injectionMonitor = {
       _es: null,
@@ -488,7 +488,7 @@
       connect: function () {
         if (this._destroyed) return;
         if (this._es) this._es.close();
-        var self = this;
+        let self = this;
         this._es = new EventSource('/v1/content/stream/injection');
         if (stateEl) { stateEl.textContent = 'connecting'; stateEl.className = 'connection-state cs-connecting'; }
 
@@ -499,7 +499,7 @@
 
         this._es.addEventListener('injection-status', function (e) {
           try {
-            var d = JSON.parse(e.data);
+            let d = JSON.parse(e.data);
             if (badge && d.active_sessions != null) {
               badge.textContent = d.active_sessions + ' active';
               badge.style.display = d.active_sessions ? '' : 'none';
@@ -516,7 +516,7 @@
           if (self._destroyed) return;
           if (self._retryCount < self._maxRetries) {
             if (stateEl) { stateEl.textContent = 'reconnecting (' + (self._retryCount + 1) + ')'; stateEl.className = 'connection-state cs-reconnecting'; }
-            var delay = self._backoff[self._retryCount];
+            let delay = self._backoff[self._retryCount];
             self._retryCount++;
             setTimeout(function () { self.connect(); }, delay);
           } else {
