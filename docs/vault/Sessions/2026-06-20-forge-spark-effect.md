@@ -1,8 +1,12 @@
 ---
+aliases:
+  - Forge Spark Effect
+  - Metal-Struck Sparks
+source: agent
 created: '2026-06-20'
 status: draft
 tags:
-  - type/session
+  - type/session-log
   - domain/ui
   - status/draft
 title: Forge Spark Effect — Metal-Struck Sparks Replace Ember Glow

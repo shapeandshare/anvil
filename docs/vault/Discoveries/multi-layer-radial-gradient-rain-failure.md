@@ -8,6 +8,7 @@ tags:
   - type/discovery
   - domain/ui
 title: Multi-Layer Radial-Gradient Rain Effect Invisible on Pseudo-Elements
+type: discovery
 updated: '2026-06-20'
 code-refs:
   - anvil/api/static/css/themes/inkwash.css

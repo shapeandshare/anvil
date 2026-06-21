@@ -1,4 +1,10 @@
 ---
+aliases:
+  - TOCTOU asyncio.Lock
+  - Bootstrap lock race condition
+source: agent
+code-refs:
+  - anvil/api/v1/health_ops.py
 created: '2026-06-21T00:00:00.000Z'
 tags:
   - type/discovery
