@@ -252,17 +252,17 @@ class TrainingService:
             return self._load_docs_from_version(content_version_id)
 
         if dataset_id is not None:
-            from ...db.repositories.corpora import CorpusRepository
+            from ...db.repositories.datasets import DatasetRepository
             from ...db.session import AsyncSessionLocal
-            from ..datasets.corpora import CorpusService
-            from ..datasets.corpus_loader import CorpusLoader
+            from ...storage.local import LocalFileStore
+            from ..datasets.datasets import DatasetService
 
             async def _load():
                 async with AsyncSessionLocal() as session:
-                    repo = CorpusRepository(session)
-                    loader = CorpusLoader()
-                    svc = CorpusService(repo, loader)
-                    return await svc.load_docs(corpus_id)
+                    repo = DatasetRepository(session)
+                    store = LocalFileStore()
+                    svc = DatasetService(repo, store)
+                    return await svc.load_docs(dataset_id)
 
             return asyncio.run(_load())
 
