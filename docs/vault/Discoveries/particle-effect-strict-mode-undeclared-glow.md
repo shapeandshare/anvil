@@ -1,6 +1,9 @@
 ---
 title: Particle Effect Strict-Mode Undeclared Variable (glow)
 type: discovery
+aliases:
+  - Particle Effect Strict-Mode Undeclared Variable (glow)
+  - Strict-Mode Undeclared glow Variable
 tags:
   - type/discovery
   - domain/ui

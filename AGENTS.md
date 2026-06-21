@@ -1,6 +1,6 @@
 # anvil — Agent Guidelines
 
-**Last updated**: 2026-06-21 (scripts-python-over-bash + package-module-migration, testing-guide consolidation in AGENTS.md)
+**Last updated**: 2026-06-21 (scripts-python-over-bash + package-module-migration, testing-guide consolidation; OWASP remediation spec 017 + ADRs 035/036)
 
 ## Project Overview
 

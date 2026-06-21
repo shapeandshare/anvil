@@ -1,12 +1,18 @@
 ---
 created: '2026-06-21'
+source: agent
 tags:
-  - test
-  - pytest-asyncio
-  - python-3.14
+  - type/discovery
+  - domain/tooling
 title: pytest-asyncio + Python 3.14 async generator fixture compatibility
 type: discovery
+aliases:
+  - pytest-asyncio + Python 3.14 async generator fixture compatibility
+  - pytest-asyncio Python 3.14 compatibility
 updated: '2026-06-21'
+code-refs:
+  - pyproject.toml
+  - tests/conftest.py
 ---
 # pytest-asyncio + Python 3.14 Async Generator Fixture Compatibility
 
@@ -42,5 +48,5 @@ The `-k` filter approach does NOT work because pytest collects ALL test modules 
 ## References
 
 - Session: [[Sessions/2026-06-21-unit-test-coverage-fixes]]
-- [[012-ddd-services-restructure]]
+- [[Decisions/ADR-022-domain-driven-package-decomposition]]
 - [pytest-asyncio 1.0 changelog](https://pytest-asyncio.readthedocs.io/en/latest/)

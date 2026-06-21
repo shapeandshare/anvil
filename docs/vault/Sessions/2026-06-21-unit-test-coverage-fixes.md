@@ -1,12 +1,13 @@
 ---
 created: '2026-06-21'
+source: agent
 tags:
-  - test
-  - coverage
-  - ddd-restructure
-  - pytest-asyncio
+  - type/session-log
+  - domain/tooling
 title: Unit test coverage fixes — pytest-asyncio 1.4 + DDD path repair
-type: session
+type: session-log
+aliases:
+  - Unit test coverage fixes — pytest-asyncio 1.4 + DDD path repair
 updated: '2026-06-21'
 ---
 # Unit Test Coverage Fixes
@@ -47,5 +48,5 @@ Increased unit test coverage from 25% → **37.55%** by fixing 39 test failures 
 
 ## Related Artifacts
 
-- [[404 - pytest-asyncio Python 3.14 compatibility]] (discovery to create)
-- [[012-ddd-services-restructure]] (reference)
+- [[Discoveries/pytest-asyncio-python-3.14-compatibility]] (discovery)
+- [[Decisions/ADR-022-domain-driven-package-decomposition]] (reference)

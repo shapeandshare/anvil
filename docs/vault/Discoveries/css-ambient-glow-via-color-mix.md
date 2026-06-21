@@ -3,15 +3,16 @@ aliases:
   - CSS Ambient Glow via color-mix
 created: '2026-06-20'
 status: draft
+source: agent
 tags:
   - domain/ui
   - type/discovery
 title: CSS Ambient Glow via color-mix + var(--accent)
 type: discovery
 updated: '2026-06-20'
-source: agent
 code-refs:
   - anvil/api/static/css/themes/resonance.css
+  - anvil/api/static/css/tokens.css
 ---
 # CSS Ambient Glow via `color-mix` + `var(--accent)`
 

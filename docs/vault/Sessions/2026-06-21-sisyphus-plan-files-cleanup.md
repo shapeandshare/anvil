@@ -1,10 +1,14 @@
 ---
 created: '2026-06-21'
+source: agent
 tags:
   - type/session-log
   - domain/tooling
   - status/reviewed
 title: Sisyphus Plan Files Cleanup
+type: session-log
+aliases:
+  - Sisyphus Plan Files Cleanup
 updated: '2026-06-21'
 ---
 # Sisyphus Plan Files Cleanup
