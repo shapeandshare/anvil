@@ -213,16 +213,16 @@ recipe; pin → training applies weights.
 
 ### Tests
 
-- [ ] T068 [P] [US4] Unit test composition preview (per-source token/byte contribution) in `tests/unit/services/content/test_composition_preview.py`.
-- [ ] T069 [P] [US4] Integration test freeze composition + identical re-resolution + weighted apply in `tests/integration/content/test_composition_freeze.py`.
-- [ ] T070 [P] [US4] Unit test reject empty / all-zero-weight composition in `tests/unit/services/content/test_composition_guards.py`.
+- [X] T068 [P] [US4] Unit test composition preview (per-source token/byte contribution) in `tests/unit/services/content/test_composition_preview.py`.
+- [X] T069 [P] [US4] Integration test freeze composition + identical re-resolution + weighted apply in `tests/integration/content/test_composition_freeze.py`.
+- [X] T070 [P] [US4] Unit test reject empty / all-zero-weight composition in `tests/unit/services/content/test_composition_guards.py`.
 
 ### Implementation
 
-- [ ] T071 [US4] Implement `CompositionService` in `anvil/services/content/composition_service.py`: `preview(corpus_id, spec)` and `freeze(corpus_id, spec)` building a composition manifest (`is_composition=True`) (FR-018/019/020/022).
-- [ ] T072 [US4] Implement weighted resolution in resolver/training data path (apply `weight` at sampling) (FR-021).
-- [ ] T073 [US4] Add `CompositionSpec` schema + endpoints `POST /content/corpora/{id}/composition/preview` and composition path in `/content/corpora/{id}/freeze` in `anvil/api/v1/content.py` + `schemas.py`.
-- [ ] T073a [US4] Implement the composition-preview SSE endpoint `GET /content/stream/composition` (`StreamingResponse` + `asyncio.Queue`, mirror `training.py`) that emits projected per-source token/byte contribution as the curator adjusts weights (FR-019; contracts/api-endpoints.md line 48). Backend only — consumed by the Composer view (T082a).
+- [X] T071 [US4] Implement `CompositionService` in `anvil/services/content/composition_service.py`: `preview(corpus_id, spec)` and `freeze(corpus_id, spec)` building a composition manifest (`is_composition=True`) (FR-018/019/020/022).
+- [X] T072 [US4] Implement weighted resolution in resolver/training data path (apply `weight` at sampling) (FR-021).
+- [X] T073 [US4] Add `CompositionSpec` schema + endpoints `POST /content/corpora/{id}/composition/preview` and composition path in `/content/corpora/{id}/freeze` in `anvil/api/v1/content.py` + `schemas.py`.
+- [X] T073a [US4] Implement the composition-preview SSE endpoint `GET /content/stream/composition` (`StreamingResponse` + `asyncio.Queue`, mirror `training.py`) that emits projected per-source token/byte contribution as the curator adjusts weights (FR-019; contracts/api-endpoints.md line 48). Backend only — consumed by the Composer view (T082a).
 
 **Checkpoint**: SC-006 satisfied.
 

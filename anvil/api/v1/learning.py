@@ -7,7 +7,6 @@ endpoints. Extracted from ``router.py`` as part of structural decomposition.
 """
 
 import random
-from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
@@ -67,12 +66,12 @@ DATA_FUNDAMENTALS_STEPS = [
         "key": "when-to-use-what",
         "title": "When to Use What",
         "body": (
-            '<b>Use Datasets when</b> you have curated text you want to edit, filter, '
+            "<b>Use Datasets when</b> you have curated text you want to edit, filter, "
             "or deduplicate &mdash; fine-tuning data, evaluation sets, small to medium "
             "collections.<br><br>"
-            '<b>Use Corpora when</b> you want to scan existing code repos, documentation '
+            "<b>Use Corpora when</b> you want to scan existing code repos, documentation "
             "trees, or large directory structures and auto-chunk them optimally.<br><br>"
-            '<b>Combine both</b> &mdash; scan with a corpus for discovery, then import '
+            "<b>Combine both</b> &mdash; scan with a corpus for discovery, then import "
             "into a dataset for curation. Get the best of both worlds.<br><br>"
             '<b>Pro tip</b> &mdash; head to the <a href="/v1/datasets-page" '
             'class="action-link">Datasets page</a> and start with Add Data. '
@@ -1171,8 +1170,7 @@ async def learn_index(request: Request):
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/learn-index.html",
-        {"lessons": LEARNING_ARC_LESSONS,
-         "additional": LEARNING_ARC_ADDITIONAL},
+        {"lessons": LEARNING_ARC_LESSONS, "additional": LEARNING_ARC_ADDITIONAL},
     )
 
 
@@ -1297,53 +1295,194 @@ async def export_concept_page(request: Request):
 
 
 GLOSSARY_TERMS = [
-    {"name": "anvil (core engine)", "definition": "The core Llama training engine — ~200 lines of pure Python, zero dependencies."},
-    {"name": "God Class", "definition": "<code>AnvilWorkbench</code> — single entry point exposing all service methods to routes/CLI/tests."},
-    {"name": "FileStore", "definition": "Pluggable async file storage abstraction (local filesystem or S3)."},
-    {"name": "Repository", "definition": "Data access class encapsulating all DB operations for a single entity."},
-    {"name": "SSE", "definition": "Server-Sent Events — unidirectional HTTP streaming for real-time updates."},
-    {"name": "UoW", "definition": "Unit of Work — transaction boundary spanning multiple repository operations."},
-    {"name": "ADR", "definition": "Architecture Decision Record — documents significant architecture decisions."},
-    {"name": "Vault", "definition": "Obsidian-compatible documentation directory at <code>docs/vault/</code>."},
-    {"name": "Constitution", "definition": "Project governance document (<code>.specify/memory/constitution.md</code>) defining non-negotiable principles."},
-    {"name": "Value", "definition": "Autograd scalar node in <code>anvil/core/autograd.py</code> — stores <code>data</code>, <code>grad</code>, children and local partial derivatives for reverse-mode AD."},
-    {"name": "Autograd", "definition": "Automatic differentiation via computation graph — forward pass builds DAG, <code>.backward()</code> traverses in topological order applying chain rule."},
-    {"name": "KV Cache", "definition": "Key-Value cache for causal self-attention — per-layer lists appended at each autoregressive step, avoids recomputing previous positions."},
-    {"name": "RMSNorm", "definition": "Root Mean Square Layer Normalization — <code>x / sqrt(mean(x\u00b2) + \u03b5)</code> — the base computation is stateless; learned scale parameters (<code>rms_1</code>, <code>rms_2</code>, <code>rms_final</code>) are applied elementwise after normalization."},
-    {"name": "Adam", "definition": "Adaptive Moment Estimation optimizer — bias-corrected first/second moment estimates (m, v) + linear LR decay, implemented manually in <code>train()</code>. Plain Adam, NOT AdamW."},
-    {"name": "BOS", "definition": "Begin-of-Sequence sentinel token — always <code>len(uchars)</code> (last index in vocabulary), used to delimit documents and stop sampling."},
-    {"name": "Autoregressive", "definition": "Generating one token at a time, conditioning each prediction on all previous tokens via the KV cache."},
-    {"name": "Softmax", "definition": "Normalized exponential function — <code>e^x_i / \u03a3 e^x_j</code> — converts logits to probability distribution over vocabulary."},
-    {"name": "Cross-Entropy", "definition": "Loss function for classification — <code>-log(p_target)</code> — negative log probability of the correct next token."},
-    {"name": "State Dict", "definition": "The model's parameter dictionary — maps weight names (wte, lm_head, rms_final, layer.N.{attn_wq/wk/wv/wo, mlp_gate/up/down, rms_1/rms_2}) to lists of Value objects."},
-    {"name": "Safetensors", "definition": "Safe serialization format for neural network tensors. anvil exports trained models to safetensors with HuggingFace-compatible tensor names."},
-    {"name": "RoPE", "definition": "Rotary Position Embedding — encodes token position by rotating Query and Key vectors by an angle proportional to position. Half-split (rotate_half) convention: dim i paired with dim i + head_dim/2."},
-    {"name": "SwiGLU", "definition": "SiLU-gated gated MLP — replaces ReLU with <code>(SiLU(x\u00b7Wgate) \u2299 x\u00b7Wup)\u00b7Wdown</code>. Three projections (gate, up, down) with <code>intermediate_size = int(8 \u00d7 n_embd / 3)</code>."},
-    {"name": "Dual Backend", "definition": "anvil's CPU and GPU training backends. CPU (<code>train()</code>) uses pure Python with Value autograd. GPU (<code>train_torch()</code>) uses PyTorch tensors."},
-    {"name": "GPU Bridge", "definition": "<code>_load_weights_into_model()</code> — copies GPU-trained weight lists into a CPU LlamaModel for downstream compatibility."},
-    {"name": "Dataset", "definition": "Static collection of text samples where each line in a <code>.txt</code> file becomes one training sample. Supports inline editing, curation (dedup, filter, replace), and export."},
-    {"name": "Corpus", "definition": "Dynamic directory source scanned with glob patterns and chunking strategies (windowed/file/line). Supports gitignore-style include/exclude filtering."},
-    {"name": "Run-in-Executor", "definition": "Python asyncio pattern for offloading blocking/sync code to a thread pool thread, used by <code>TrainingService</code> to run the core engine."},
-    {"name": "Commitizen", "definition": "CLI tool for conventional commit enforcement and semantic version bump management (<code>cz commit</code>, <code>cz bump</code>, <code>cz check</code>)."},
-    {"name": "Conventional Commits", "definition": "Structured commit message format: <code>&lt;type&gt;(&lt;scope&gt;): &lt;description&gt;</code>."},
-    {"name": "SemVer", "definition": "Semantic Versioning (<code>MAJOR.MINOR.PATCH</code>) — bump rules: fix\u2192PATCH, feat\u2192MINOR, BREAKING CHANGE\u2192MAJOR."},
-    {"name": "BUMP_PAT", "definition": "Fine-grained GitHub Personal Access Token used by CI workflows to create auto-merge PRs (Contents+PRs+Workflows: write)."},
-    {"name": "ANVIL_MODE", "definition": "Env var selecting operating mode (<code>local</code> or <code>saas</code>). Never auto-detected."},
-    {"name": "Three-Mode Model", "definition": "anvil's operating modes: Local User (pip install, SQLite), SaaS User (hosted multi-tenant on AWS), SaaS Developer (docker compose / dev AWS / cdk)."},
-    {"name": "EventBus", "definition": "Pluggable async pub/sub abstraction for live training metrics. Local = <code>InProcessEventBus</code> (asyncio.Queue); SaaS = <code>RedisEventBus</code> (ElastiCache)."},
-    {"name": "JobQueue", "definition": "Pluggable training-job dispatch abstraction. Local = <code>InProcessJobQueue</code> (immediate task); SaaS = <code>BatchJobQueue</code> (AWS Batch submit)."},
-    {"name": "ComputeBackend", "definition": "Pluggable training execution abstraction. Local = stdlib/torch in-process; SaaS = <code>BatchComputeBackend</code> (Batch on EC2)."},
-    {"name": "ResourceSpec", "definition": "Structured compute requirement <code>{node_count, gpus_per_node, vcpus, memory_mb, instance_class}</code>."},
-    {"name": "Organization", "definition": "Top-level tenant and billing boundary in SaaS mode. Owns all resources; no query crosses <code>org_id</code>."},
-    {"name": "Team", "definition": "A group of users within an Organization; resources may be team-scoped. Users may belong to multiple teams."},
-    {"name": "Role", "definition": "RBAC role — <code>owner</code>/<code>admin</code>/<code>member</code>/<code>viewer</code>. Assigned at org level, optionally overridden per team."},
-    {"name": "JobEvent", "definition": "Append-only lifecycle event <code>(job_id, sequence)</code> in PostgreSQL — the authoritative record of training-job state."},
-    {"name": "Reconciler", "definition": "Scheduled task that compares Batch/DB/MLflow/S3 state and repairs jobs stuck in non-terminal states beyond a grace period."},
-    {"name": "UsageRecord", "definition": "Per-job billback record (GPU-seconds, instance-hours) attributed to <code>org_id</code>/<code>team_id</code>/<code>user_id</code>, derived from terminal <code>JobEvent</code>."},
-    {"name": "Cognito", "definition": "Amazon Cognito User Pools — the SaaS identity provider. App-managed OIDC/JWT validated via <code>aws-jwt-verify</code> + JWKS."},
-    {"name": "RDS Proxy + IAM Auth", "definition": "DB access pattern for SaaS — pods generate short-lived (\u226415 min) IAM tokens from their role; no static DB password ever reaches a pod."},
-    {"name": "anvil deploy", "definition": "Turnkey CLI deploying the full SaaS stack into any AWS account via pre-synthesized, digest-pinned CloudFormation through boto3."},
-    {"name": "Compute Shape", "definition": "One of <code>cpu</code>/<code>gpu</code>/<code>multi-gpu</code>/<code>multi-node</code> — selects the pre-registered Batch job definition and queue."},
+    {
+        "name": "anvil (core engine)",
+        "definition": "The core Llama training engine — ~200 lines of pure Python, zero dependencies.",
+    },
+    {
+        "name": "God Class",
+        "definition": "<code>AnvilWorkbench</code> — single entry point exposing all service methods to routes/CLI/tests.",
+    },
+    {
+        "name": "FileStore",
+        "definition": "Pluggable async file storage abstraction (local filesystem or S3).",
+    },
+    {
+        "name": "Repository",
+        "definition": "Data access class encapsulating all DB operations for a single entity.",
+    },
+    {
+        "name": "SSE",
+        "definition": "Server-Sent Events — unidirectional HTTP streaming for real-time updates.",
+    },
+    {
+        "name": "UoW",
+        "definition": "Unit of Work — transaction boundary spanning multiple repository operations.",
+    },
+    {
+        "name": "ADR",
+        "definition": "Architecture Decision Record — documents significant architecture decisions.",
+    },
+    {
+        "name": "Vault",
+        "definition": "Obsidian-compatible documentation directory at <code>docs/vault/</code>.",
+    },
+    {
+        "name": "Constitution",
+        "definition": "Project governance document (<code>.specify/memory/constitution.md</code>) defining non-negotiable principles.",
+    },
+    {
+        "name": "Value",
+        "definition": "Autograd scalar node in <code>anvil/core/autograd.py</code> — stores <code>data</code>, <code>grad</code>, children and local partial derivatives for reverse-mode AD.",
+    },
+    {
+        "name": "Autograd",
+        "definition": "Automatic differentiation via computation graph — forward pass builds DAG, <code>.backward()</code> traverses in topological order applying chain rule.",
+    },
+    {
+        "name": "KV Cache",
+        "definition": "Key-Value cache for causal self-attention — per-layer lists appended at each autoregressive step, avoids recomputing previous positions.",
+    },
+    {
+        "name": "RMSNorm",
+        "definition": "Root Mean Square Layer Normalization — <code>x / sqrt(mean(x\u00b2) + \u03b5)</code> — the base computation is stateless; learned scale parameters (<code>rms_1</code>, <code>rms_2</code>, <code>rms_final</code>) are applied elementwise after normalization.",
+    },
+    {
+        "name": "Adam",
+        "definition": "Adaptive Moment Estimation optimizer — bias-corrected first/second moment estimates (m, v) + linear LR decay, implemented manually in <code>train()</code>. Plain Adam, NOT AdamW.",
+    },
+    {
+        "name": "BOS",
+        "definition": "Begin-of-Sequence sentinel token — always <code>len(uchars)</code> (last index in vocabulary), used to delimit documents and stop sampling.",
+    },
+    {
+        "name": "Autoregressive",
+        "definition": "Generating one token at a time, conditioning each prediction on all previous tokens via the KV cache.",
+    },
+    {
+        "name": "Softmax",
+        "definition": "Normalized exponential function — <code>e^x_i / \u03a3 e^x_j</code> — converts logits to probability distribution over vocabulary.",
+    },
+    {
+        "name": "Cross-Entropy",
+        "definition": "Loss function for classification — <code>-log(p_target)</code> — negative log probability of the correct next token.",
+    },
+    {
+        "name": "State Dict",
+        "definition": "The model's parameter dictionary — maps weight names (wte, lm_head, rms_final, layer.N.{attn_wq/wk/wv/wo, mlp_gate/up/down, rms_1/rms_2}) to lists of Value objects.",
+    },
+    {
+        "name": "Safetensors",
+        "definition": "Safe serialization format for neural network tensors. anvil exports trained models to safetensors with HuggingFace-compatible tensor names.",
+    },
+    {
+        "name": "RoPE",
+        "definition": "Rotary Position Embedding — encodes token position by rotating Query and Key vectors by an angle proportional to position. Half-split (rotate_half) convention: dim i paired with dim i + head_dim/2.",
+    },
+    {
+        "name": "SwiGLU",
+        "definition": "SiLU-gated gated MLP — replaces ReLU with <code>(SiLU(x\u00b7Wgate) \u2299 x\u00b7Wup)\u00b7Wdown</code>. Three projections (gate, up, down) with <code>intermediate_size = int(8 \u00d7 n_embd / 3)</code>.",
+    },
+    {
+        "name": "Dual Backend",
+        "definition": "anvil's CPU and GPU training backends. CPU (<code>train()</code>) uses pure Python with Value autograd. GPU (<code>train_torch()</code>) uses PyTorch tensors.",
+    },
+    {
+        "name": "GPU Bridge",
+        "definition": "<code>_load_weights_into_model()</code> — copies GPU-trained weight lists into a CPU LlamaModel for downstream compatibility.",
+    },
+    {
+        "name": "Dataset",
+        "definition": "Static collection of text samples where each line in a <code>.txt</code> file becomes one training sample. Supports inline editing, curation (dedup, filter, replace), and export.",
+    },
+    {
+        "name": "Corpus",
+        "definition": "Dynamic directory source scanned with glob patterns and chunking strategies (windowed/file/line). Supports gitignore-style include/exclude filtering.",
+    },
+    {
+        "name": "Run-in-Executor",
+        "definition": "Python asyncio pattern for offloading blocking/sync code to a thread pool thread, used by <code>TrainingService</code> to run the core engine.",
+    },
+    {
+        "name": "Commitizen",
+        "definition": "CLI tool for conventional commit enforcement and semantic version bump management (<code>cz commit</code>, <code>cz bump</code>, <code>cz check</code>).",
+    },
+    {
+        "name": "Conventional Commits",
+        "definition": "Structured commit message format: <code>&lt;type&gt;(&lt;scope&gt;): &lt;description&gt;</code>.",
+    },
+    {
+        "name": "SemVer",
+        "definition": "Semantic Versioning (<code>MAJOR.MINOR.PATCH</code>) — bump rules: fix\u2192PATCH, feat\u2192MINOR, BREAKING CHANGE\u2192MAJOR.",
+    },
+    {
+        "name": "BUMP_PAT",
+        "definition": "Fine-grained GitHub Personal Access Token used by CI workflows to create auto-merge PRs (Contents+PRs+Workflows: write).",
+    },
+    {
+        "name": "ANVIL_MODE",
+        "definition": "Env var selecting operating mode (<code>local</code> or <code>saas</code>). Never auto-detected.",
+    },
+    {
+        "name": "Three-Mode Model",
+        "definition": "anvil's operating modes: Local User (pip install, SQLite), SaaS User (hosted multi-tenant on AWS), SaaS Developer (docker compose / dev AWS / cdk).",
+    },
+    {
+        "name": "EventBus",
+        "definition": "Pluggable async pub/sub abstraction for live training metrics. Local = <code>InProcessEventBus</code> (asyncio.Queue); SaaS = <code>RedisEventBus</code> (ElastiCache).",
+    },
+    {
+        "name": "JobQueue",
+        "definition": "Pluggable training-job dispatch abstraction. Local = <code>InProcessJobQueue</code> (immediate task); SaaS = <code>BatchJobQueue</code> (AWS Batch submit).",
+    },
+    {
+        "name": "ComputeBackend",
+        "definition": "Pluggable training execution abstraction. Local = stdlib/torch in-process; SaaS = <code>BatchComputeBackend</code> (Batch on EC2).",
+    },
+    {
+        "name": "ResourceSpec",
+        "definition": "Structured compute requirement <code>{node_count, gpus_per_node, vcpus, memory_mb, instance_class}</code>.",
+    },
+    {
+        "name": "Organization",
+        "definition": "Top-level tenant and billing boundary in SaaS mode. Owns all resources; no query crosses <code>org_id</code>.",
+    },
+    {
+        "name": "Team",
+        "definition": "A group of users within an Organization; resources may be team-scoped. Users may belong to multiple teams.",
+    },
+    {
+        "name": "Role",
+        "definition": "RBAC role — <code>owner</code>/<code>admin</code>/<code>member</code>/<code>viewer</code>. Assigned at org level, optionally overridden per team.",
+    },
+    {
+        "name": "JobEvent",
+        "definition": "Append-only lifecycle event <code>(job_id, sequence)</code> in PostgreSQL — the authoritative record of training-job state.",
+    },
+    {
+        "name": "Reconciler",
+        "definition": "Scheduled task that compares Batch/DB/MLflow/S3 state and repairs jobs stuck in non-terminal states beyond a grace period.",
+    },
+    {
+        "name": "UsageRecord",
+        "definition": "Per-job billback record (GPU-seconds, instance-hours) attributed to <code>org_id</code>/<code>team_id</code>/<code>user_id</code>, derived from terminal <code>JobEvent</code>.",
+    },
+    {
+        "name": "Cognito",
+        "definition": "Amazon Cognito User Pools — the SaaS identity provider. App-managed OIDC/JWT validated via <code>aws-jwt-verify</code> + JWKS.",
+    },
+    {
+        "name": "RDS Proxy + IAM Auth",
+        "definition": "DB access pattern for SaaS — pods generate short-lived (\u226415 min) IAM tokens from their role; no static DB password ever reaches a pod.",
+    },
+    {
+        "name": "anvil deploy",
+        "definition": "Turnkey CLI deploying the full SaaS stack into any AWS account via pre-synthesized, digest-pinned CloudFormation through boto3.",
+    },
+    {
+        "name": "Compute Shape",
+        "definition": "One of <code>cpu</code>/<code>gpu</code>/<code>multi-gpu</code>/<code>multi-node</code> — selects the pre-registered Batch job definition and queue.",
+    },
 ]
 
 

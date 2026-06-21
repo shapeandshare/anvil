@@ -467,6 +467,21 @@ class ValidationReportOut(BaseModel):
     problems: list[dict] = []
 
 
+class CompositionSpecItem(BaseModel):
+    """A single item in a composition specification.
+
+    Parameters
+    ----------
+    content_hash : str
+        SHA-256 hex digest of the content blob to include.
+    weight : float
+        Sampling weight for this entry in the composition.
+    """
+
+    content_hash: str
+    weight: float
+
+
 class FreezeVersionBody(BaseModel):
     """Request body for freezing a new corpus version.
 
@@ -476,10 +491,15 @@ class FreezeVersionBody(BaseModel):
         Optional version note. Defaults to ``None``.
     label : str | None, optional
         Optional human-readable label. Defaults to ``None``.
+    composition : list[CompositionSpecItem] | None, optional
+        Optional composition specification for creating a virtual
+        composition version. When present, creates a weighted
+        composition instead of a HEAD snapshot. Defaults to ``None``.
     """
 
     note: str | None = None
     label: str | None = None
+    composition: list[CompositionSpecItem] | None = None
 
 
 class TagBody(BaseModel):

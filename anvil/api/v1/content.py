@@ -12,16 +12,20 @@ or raise ``HTTPException`` on error.
 
 from __future__ import annotations
 
+import asyncio
 import re
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 
+from starlette.responses import StreamingResponse
+
 from ...api.deps import get_workbench
 from ...workbench import AnvilWorkbench
 from .schemas import (
     AcceptOut,
+    CompositionSpecItem,
     ContentCorpusCreate,
     ContentCorpusOut,
     ContentVersionOut,
@@ -598,14 +602,17 @@ async def freeze_version(
 ):
     """Freeze a new immutable version of a corpus.
 
-    Snapshots the current HEAD content into a new version record.
+    When ``body.composition`` is ``None``, snapshots the current HEAD
+    content into a new version record.  When *composition* is provided,
+    delegates to ``CompositionService.freeze()`` to create a weighted
+    composition version.
 
     Parameters
     ----------
     id : int
         The corpus primary key.
     body : FreezeVersionBody, optional
-        Optional note and label for the version.
+        Optional note, label, and composition specification.
     workbench : AnvilWorkbench
         Injected session-bound workbench.
 
@@ -617,15 +624,28 @@ async def freeze_version(
     Raises
     ------
     HTTPException
-        If the corpus is not found (404).
+        If the corpus is not found (404), or the composition spec
+        is invalid (422).
     """
     corpus = await workbench.content_corpus_repo.get(id)
     if corpus is None:
         raise HTTPException(status_code=404, detail="Corpus not found")
 
-    version = await workbench.content_store.freeze_version(
-        corpus_slug=corpus.slug,
-    )
+    if body is not None and body.composition is not None:
+        # Delegate to CompositionService for weighted composition.
+        spec = [
+            {"content_hash": item.content_hash, "weight": item.weight}
+            for item in body.composition
+        ]
+        try:
+            version = await workbench.content_composition.freeze(id, spec)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+    else:
+        version = await workbench.content_store.freeze_version(
+            corpus_slug=corpus.slug,
+        )
+
     await workbench.session.commit()
 
     return {
@@ -641,6 +661,89 @@ async def freeze_version(
         ).model_dump(),
         "error": None,
     }
+
+
+@router.post("/content/corpora/{id}/composition/preview")
+async def composition_preview(
+    id: int,
+    entries: list[CompositionSpecItem],
+    workbench: AnvilWorkbench = Depends(get_workbench),
+):
+    """Preview the token/byte contribution of a composition spec.
+
+    Accepts a list of ``CompositionSpecItem`` dicts and returns a
+    per-source breakdown of bytes and estimated tokens for the
+    proposed composition.
+
+    Parameters
+    ----------
+    id : int
+        The corpus primary key.
+    entries : list[CompositionSpecItem]
+        Composition specification entries.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
+
+    Returns
+    -------
+    dict
+        Preview data wrapped in ``{"data": ..., "error": None}``.
+
+    Raises
+    ------
+    HTTPException
+        If the corpus is not found (404).
+    """
+    corpus = await workbench.content_corpus_repo.get(id)
+    if corpus is None:
+        raise HTTPException(status_code=404, detail="Corpus not found")
+
+    spec = [
+        {"content_hash": item.content_hash, "weight": item.weight} for item in entries
+    ]
+    try:
+        result = await workbench.content_composition.preview(id, spec)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    return {"data": result, "error": None}
+
+
+@router.get("/content/stream/composition")
+async def stream_composition(
+    workbench: AnvilWorkbench = Depends(get_workbench),
+):
+    """SSE event stream for composition preview updates.
+
+    Placeholder endpoint (T073a) — clients connect and receive a
+    heartbeat keep-alive every 30 seconds.  Live preview updates
+    will be wired when the UI consumer is built (US5 T082a).
+
+    Parameters
+    ----------
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
+
+    Returns
+    -------
+    StreamingResponse
+        SSE stream with ``text/event-stream`` content type.
+    """
+
+    async def event_stream():
+        """Generator that yields SSE heartbeats every 30 seconds."""
+        while True:
+            await asyncio.sleep(30)
+            yield "event: heartbeat\ndata: {}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @router.post("/content/versions/{id}/tag")

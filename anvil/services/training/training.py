@@ -366,7 +366,16 @@ class TrainingService:
                     async for chunk in blob_stream:
                         blob_bytes += chunk
                     text = blob_bytes.decode("utf-8")
-                    all_chunks.extend(chunker.chunk(text))
+                    chunks = chunker.chunk(text)
+
+                    # FR-021: apply weight-based replication.
+                    # Replicate chunks by weight factor (round to nearest
+                    # int, minimum 1) so heavily weighted entries contribute
+                    # proportionally more training examples.
+                    weight = getattr(entry, "weight", 1.0)
+                    factor = max(1, round(weight))
+                    for _ in range(factor):
+                        all_chunks.extend(chunks)
                 return all_chunks
 
         return asyncio.run(_load())

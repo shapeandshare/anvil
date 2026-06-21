@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     from .db.repositories.content_versions import ContentVersionRepository
     from .db.repositories.corpora import CorpusRepository
     from .db.repositories.datasets import DatasetRepository
+    from .services.content.composition_service import CompositionService
     from .services.content.corpus_service import CorpusService as ContentCorpusService
     from .services.content.ingestion_service import IngestionService
     from .services.content.lineage_service import LineageService
@@ -80,7 +81,7 @@ class AnvilWorkbench:
         self._content_store: VersionedContentStore | None = None
         self._content_corpora: ContentCorpusService | None = None
         self._content_ingestion: IngestionService | None = None
-        self._content_composition: object | None = None  # will be CompositionService
+        self._content_composition: CompositionService | None = None
         self._content_lineage: LineageService | None = None
         self._content_imports: object | None = None  # will be ImportService
         self._content_locks: object | None = None  # will be LockService
@@ -349,11 +350,23 @@ class AnvilWorkbench:
         return self._content_ingestion
 
     @property
-    def content_composition(self) -> object:  # will be CompositionService
-        """Lazily-initialised content composition service."""
+    def content_composition(self) -> CompositionService:
+        """Return the ``CompositionService`` wired to *session*.
+
+        Lazily initialised on first access.  Provides ``preview``
+        and ``freeze`` operations for weighted composition versions.
+        """
         if self._content_composition is None:
-            # Placeholder — implemented by a future US.
-            self._content_composition = object()
+            from .services.content.composition_service import (
+                CompositionService,
+            )
+
+            self._content_composition = CompositionService(
+                store=self.content_store,
+                version_repo=self.content_version_repo,
+                corpus_repo=self.content_corpus_repo,
+                db_session=self._session,
+            )
         return self._content_composition
 
     @property

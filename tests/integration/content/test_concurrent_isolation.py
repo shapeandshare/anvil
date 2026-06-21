@@ -237,7 +237,7 @@ async def test_serialized_atomic_acceptance(
 
     # Open and stage three sessions.
     refs = []
-    for (source, (path, data)) in zip(sources, entries, strict=True):
+    for source, (path, data) in zip(sources, entries, strict=True):
         ref = await ingestion.open_session(corpus.id, source.id)
         await ingestion.stage(ref.session_id, path, _stream(data))
         refs.append(ref)
