@@ -28,7 +28,7 @@ async def test_add_and_get_corpus(db_session):
     repo = CorpusRepository(db_session)
     c = Corpus(
         name="repo-test",
-        root_path="/tmp",
+        root_path="/test/corpus",
         chunking_strategy="line",
         chunk_overlap=0.0,
         file_count=0,
@@ -75,7 +75,7 @@ async def test_delete_corpus(db_session):
     repo = CorpusRepository(db_session)
     c = Corpus(
         name="delete-me",
-        root_path="/tmp",
+        root_path="/test/corpus",
         chunking_strategy="line",
         chunk_overlap=0.0,
         file_count=0,
@@ -93,7 +93,7 @@ async def test_add_and_get_files(db_session):
     repo = CorpusRepository(db_session)
     c = Corpus(
         name="files-test",
-        root_path="/tmp",
+        root_path="/test/corpus",
         chunking_strategy="line",
         chunk_overlap=0.0,
         file_count=0,
@@ -113,7 +113,7 @@ async def test_delete_files_for_corpus(db_session):
     repo = CorpusRepository(db_session)
     c = Corpus(
         name="del-files",
-        root_path="/tmp",
+        root_path="/test/corpus",
         chunking_strategy="line",
         chunk_overlap=0.0,
         file_count=0,

@@ -12,7 +12,7 @@ import pytest
 async def test_create_corpus(client):
     r = await client.post(
         "/v1/corpora",
-        json={"name": "api-test", "root_path": "/tmp"},
+        json={"name": "api-test", "root_path": "/test/corpus"},
     )
     assert r.status_code == 200
     data = r.json()["data"]
@@ -24,7 +24,7 @@ async def test_create_corpus(client):
 async def test_create_corpus_validation(client):
     r = await client.post(
         "/v1/corpora",
-        json={"name": "valid-test", "root_path": "/tmp"},
+        json={"name": "valid-test", "root_path": "/test/corpus"},
     )
     assert r.status_code == 200
 
@@ -45,7 +45,7 @@ async def test_list_corpora(client):
 async def test_get_corpus(client):
     created = await client.post(
         "/v1/corpora",
-        json={"name": "get-api", "root_path": "/tmp"},
+        json={"name": "get-api", "root_path": "/test/corpus"},
     )
     cid = created.json()["data"]["id"]
     r = await client.get(f"/v1/corpora/{cid}")
@@ -63,7 +63,7 @@ async def test_get_corpus_not_found(client):
 async def test_delete_corpus(client):
     created = await client.post(
         "/v1/corpora",
-        json={"name": "del-api", "root_path": "/tmp"},
+        json={"name": "del-api", "root_path": "/test/corpus"},
     )
     cid = created.json()["data"]["id"]
     r = await client.delete(f"/v1/corpora/{cid}")
@@ -73,72 +73,44 @@ async def test_delete_corpus(client):
 
 
 @pytest.mark.asyncio
-async def test_ingest_corpus(client):
-    import tempfile
-
-    td = tempfile.mkdtemp()
-    try:
-        from pathlib import Path
-
-        (Path(td) / "test.py").write_text("print('hello')\n")
-        created = await client.post(
-            "/v1/corpora",
-            json={"name": "ingest-api", "root_path": td},
-        )
-        cid = created.json()["data"]["id"]
-        r = await client.post(f"/v1/corpora/{cid}/ingest")
-        assert r.status_code == 200
-        data = r.json()["data"]
-        assert data["file_count"] == 1
-        assert data["document_count"] > 0
-    finally:
-        import shutil
-
-        shutil.rmtree(td)
+async def test_ingest_corpus(client, tmp_path):
+    (tmp_path / "test.py").write_text("print('hello')\n")
+    created = await client.post(
+        "/v1/corpora",
+        json={"name": "ingest-api", "root_path": str(tmp_path)},
+    )
+    cid = created.json()["data"]["id"]
+    r = await client.post(f"/v1/corpora/{cid}/ingest")
+    assert r.status_code == 200
+    data = r.json()["data"]
+    assert data["file_count"] == 1
+    assert data["document_count"] > 0
 
 
 @pytest.mark.asyncio
-async def test_list_corpus_files(client):
-    import tempfile
-
-    td = tempfile.mkdtemp()
-    try:
-        from pathlib import Path
-
-        (Path(td) / "main.py").write_text("x=1\n")
-        (Path(td) / "utils.py").write_text("y=2\n")
-        created = await client.post(
-            "/v1/corpora",
-            json={"name": "files-api", "root_path": td},
-        )
-        cid = created.json()["data"]["id"]
-        await client.post(f"/v1/corpora/{cid}/ingest")
-        r = await client.get(f"/v1/corpora/{cid}/files")
-        assert r.status_code == 200
-        files = r.json()["data"]
-        assert len(files) == 2
-    finally:
-        import shutil
-
-        shutil.rmtree(td)
+async def test_list_corpus_files(client, tmp_path):
+    (tmp_path / "main.py").write_text("x=1\n")
+    (tmp_path / "utils.py").write_text("y=2\n")
+    created = await client.post(
+        "/v1/corpora",
+        json={"name": "files-api", "root_path": str(tmp_path)},
+    )
+    cid = created.json()["data"]["id"]
+    await client.post(f"/v1/corpora/{cid}/ingest")
+    r = await client.get(f"/v1/corpora/{cid}/files")
+    assert r.status_code == 200
+    files = r.json()["data"]
+    assert len(files) == 2
 
 
 @pytest.mark.asyncio
-async def test_list_corpus_files_empty(client):
-    import tempfile
-
-    td = tempfile.mkdtemp()
-    try:
-        created = await client.post(
-            "/v1/corpora",
-            json={"name": "empty-files", "root_path": td},
-        )
-        cid = created.json()["data"]["id"]
-        await client.post(f"/v1/corpora/{cid}/ingest")
-        r = await client.get(f"/v1/corpora/{cid}/files")
-        assert r.status_code == 200
-        assert r.json()["data"] == []
-    finally:
-        import shutil
-
-        shutil.rmtree(td)
+async def test_list_corpus_files_empty(client, tmp_path):
+    created = await client.post(
+        "/v1/corpora",
+        json={"name": "empty-files", "root_path": str(tmp_path)},
+    )
+    cid = created.json()["data"]["id"]
+    await client.post(f"/v1/corpora/{cid}/ingest")
+    r = await client.get(f"/v1/corpora/{cid}/files")
+    assert r.status_code == 200
+    assert r.json()["data"] == []

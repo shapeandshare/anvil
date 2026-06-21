@@ -45,7 +45,7 @@ async def test_load_docs_uses_demo_corpus_when_specified(session, monkeypatch):
     corpus = await repo.add(
         Corpus(
             name="test-corpus",
-            root_path="/tmp/nonexistent",
+            root_path="/nonexistent/test/corpus",
             chunking_strategy="file",
         )
     )

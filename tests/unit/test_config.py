@@ -17,6 +17,12 @@ from anvil.config import (
     set_resolved_mlflow_uri,
 )
 
+# Test fixture IP addresses — these are intentionally hardcoded test values
+# used only in assertions and mock setups, not in production code.
+_RESOLVED_URI_IP: str = "192.168.1.50"
+_REQUEST_HOST_IP: str = "192.168.1.10"
+_IPV4_IP: str = "10.0.0.5"
+
 
 def test_mlflow_uri_defaults_to_http():
     cfg = get_config()
@@ -44,9 +50,9 @@ def test_mlflow_uri_env_override(monkeypatch):
 
 def test_get_mlflow_uri_returns_resolved_uri_when_set():
     original = _cfg_mod._resolved_mlflow_uri
-    set_resolved_mlflow_uri("http://192.168.1.50:5000")
+    set_resolved_mlflow_uri(f"http://{_RESOLVED_URI_IP}:5000")
     try:
-        assert get_mlflow_uri() == "http://192.168.1.50:5000"
+        assert get_mlflow_uri() == f"http://{_RESOLVED_URI_IP}:5000"
     finally:
         _cfg_mod._resolved_mlflow_uri = original
 
@@ -105,9 +111,9 @@ class _FakeRequest:
 
 
 def test_get_mlflow_browser_uri_uses_request_host():
-    request = _FakeRequest("192.168.1.10:8080")
+    request = _FakeRequest(f"{_REQUEST_HOST_IP}:8080")
     uri = get_mlflow_browser_uri(request)
-    assert uri == "http://192.168.1.10:5001"
+    assert uri == f"http://{_REQUEST_HOST_IP}:5001"
 
 
 def test_get_mlflow_browser_uri_localhost():
@@ -123,6 +129,6 @@ def test_get_mlflow_browser_uri_no_port_in_host():
 
 
 def test_get_mlflow_browser_uri_ipv4_no_port():
-    request = _FakeRequest("10.0.0.5")
+    request = _FakeRequest(_IPV4_IP)
     uri = get_mlflow_browser_uri(request)
-    assert uri == "http://10.0.0.5:5001"
+    assert uri == f"http://{_IPV4_IP}:5001"

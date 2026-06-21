@@ -28,16 +28,17 @@ def mock_alembic_cfg():
 
 
 @pytest.fixture
-def svc(mock_alembic_cfg):
+def svc(mock_alembic_cfg, tmp_path):
     """Build a MigrationService with a mocked Alembic config."""
+    db_path = tmp_path / "state.db"
     with patch("anvil.db.migration.AlembicConfig", return_value=mock_alembic_cfg):
         with patch("anvil.db.migration.get_config") as mock_get_config:
             mock_get_config.return_value = {
-                "state_db_path": "/tmp/test-anvil.db",
+                "state_db_path": str(db_path),
                 "db_auto_migrate": True,
             }
             service = MigrationService(
-                db_url="sqlite+aiosqlite:////tmp/test-anvil.db",
+                db_url=f"sqlite+aiosqlite:///{db_path}",
                 alembic_ini_path="/fake/alembic.ini",
             )
             yield service
@@ -51,8 +52,9 @@ def svc(mock_alembic_cfg):
 class TestInit:
     """Verify MigrationService construction."""
 
-    def test_uses_provided_db_url(self, svc):
-        assert svc._db_url == "sqlite+aiosqlite:////tmp/test-anvil.db"
+    def test_uses_provided_db_url(self, svc, tmp_path):
+        db_path = tmp_path / "state.db"
+        assert svc._db_url == f"sqlite+aiosqlite:///{db_path}"
 
     @patch("anvil.db.migration.AlembicConfig")
     @patch("anvil.db.migration.get_config")
@@ -67,15 +69,16 @@ class TestInit:
         assert "sqlite+aiosqlite:////var/anvil/anvil-state.db" == service._db_url
 
     def test_build_config_sets_sqlalchemy_url_and_script_location(
-        self, svc, mock_alembic_cfg
+        self, svc, mock_alembic_cfg, tmp_path
     ):
+        db_path = tmp_path / "state.db"
         # _build_config is called once during __init__ (2 calls: url + script_location)
         # and again here (2 more calls) = 4 total
         svc._build_config("/fake/alembic.ini")
         assert mock_alembic_cfg.set_main_option.call_count == 4
         mock_alembic_cfg.set_main_option.assert_any_call(
             "sqlalchemy.url",
-            "sqlite+aiosqlite:////tmp/test-anvil.db",
+            f"sqlite+aiosqlite:///{db_path}",
         )
 
     def test_ensure_db_dir_creates_parent(self, svc, tmp_path: Path):
