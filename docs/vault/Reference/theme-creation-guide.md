@@ -5,7 +5,10 @@ tags:
   - domain/ui
   - type/reference
 title: Theme Creation Guide
+type: reference
 updated: '2026-06-20'
+aliases:
+  - Theme Creation Guide
 ---
 # Theme Creation Guide
 
@@ -138,6 +141,41 @@ Add the theme id to the `THEME_IDS` list (alphabetical order). The test automati
 - **Instability-led**: Gradient norm drives disruption. Examples: Tectonic, Storm Front.
 - **Spectrum/Audio**: Uses the opt-in WebAudio layer. Example: Resonance (only one).
 
+## Presence Tiers — Always-On vs Session-Gated
+
+A theme's `mapping()` runs **only while a training signal bus session is attached**
+(the manager short-circuits binding otherwise). So theme visuals fall into two tiers,
+and you must put each effect in the right place:
+
+1. **Session-gated (JS)** — sprites/effects that *respond* to `metrics` /
+   `milestone` / `complete` / `divergence`. Present only during/around a run. Built in
+   the JS module's `mapping()`. May inject DOM (see below).
+2. **Always-on (CSS)** — decoration that must exist regardless of run state (e.g. a
+   mascot). Must live in the CSS layer — the JS IIFE body should only `register()`.
+
+For the full rationale see [[Discoveries/theme-presence-tiers-css-vs-session-gated-js]].
+
+### JS DOM-sprite injection (session-gated tier)
+
+If `mapping()` injects DOM nodes (overlay sprites, particles), it MUST:
+
+- Append a single managed container (e.g. to `document.body`), `pointer-events:none`.
+- Use `requestAnimationFrame` for continuous motion and **compact** any node arrays
+  each frame (mark-removed-but-never-spliced is an unbounded leak iterated per frame).
+- Seed each node's `transform` at spawn (avoid a first-frame flash at `(0,0)`).
+- Gate spawning on `effectLevel` (`paused` → none; `legible` → none; `muted` /
+  reduced-motion → static, no rAF) — including inside burst/milestone handlers.
+- Tear down completely: cancel rAF + timers, unsubscribe, remove every node + the
+  container, drop all `data-*` attrs and private CSS vars.
+
+### Always-on CSS mascot (always-on tier)
+
+Render a persistent illustration as a `background-image` data-URI SVG on a dedicated
+pseudo-element (`.app-shell::after` is a safe, never-clipped, always-present anchor).
+The SVG can self-animate and self-gate reduced-motion internally. Encoding and the
+non-harmonic-period autonomous-motion trick are documented in
+[[Reference/css-data-uri-animated-svg-sprite]].
+
 ## Existing Themes (27 total as of 2026-06-20)
 
 | ID | Display | Signal | Modes |
@@ -171,4 +209,4 @@ Add the theme id to the `THEME_IDS` list (alphabetical order). The test automati
 | ash | Ash | loss | single |
 
 ---
-*See also: [[Decisions/ADR-031-behavioral-theme-engine]], [[Reference/theme-picker-grid-keyboard-nav]], [[Sessions/2026-06-20-nine-new-themes]], [[Sessions/2026-06-20-unicorn-theme-and-prism-vibrancy]]*
+*See also: [[Decisions/ADR-031-behavioral-theme-engine]], [[Reference/theme-picker-grid-keyboard-nav]], [[Reference/css-data-uri-animated-svg-sprite]], [[Discoveries/theme-presence-tiers-css-vs-session-gated-js]], [[Sessions/2026-06-20-nine-new-themes]], [[Sessions/2026-06-20-unicorn-theme-and-prism-vibrancy]], [[Sessions/2026-06-20-unicorn-mascot-flying-sprites]]*
