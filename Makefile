@@ -39,6 +39,13 @@ test-system: ## Full validation loop: reset → up → test → teardown
 	docker compose down -v; \
 	exit $$status
 
+test-browser: ## Browser smoke loop: reset → up → playwright tests → teardown
+	docker compose down -v; \
+	docker compose up -d --build --wait; \
+	uv run pytest tests/browser -v --no-cov; status=$$?; \
+	docker compose down -v; \
+	exit $$status
+
 setup-hooks: ## Enable conventional commit enforcement hook
 	@echo "Configuring git hooks path to .githooks/..."
 	git config core.hooksPath .githooks
