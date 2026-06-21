@@ -11,49 +11,42 @@ import pytest
 
 # Each primary route mapped to a landmark selector and expected text.
 # Selectors derived by reading the actual Jinja2 templates.
-PAGES: list[tuple[str, str, str, bool]] = [
-    ("/", "", "", False),
+PAGES: list[tuple[str, str, str]] = [
+    ("/", "", ""),
     (
         "/v1/datasets-page",
         "#tab-datasets .ds-flow-title",
         "Add Data",
-        True,  # KNOWN ISSUE: JS error "Cannot read properties of null"
     ),
     (
         "/v1/training-page",
         "[data-step='3'] .ds-flow-title",
         "Forge Your Model",
-        True,  # KNOWN ISSUE: 500 on /v1/corpora
     ),
     (
         "/v1/experiments-page",
         ".experiment-list .section-card__title",
         "Experiment",
-        False,
     ),
     (
         "/v1/models-page",
         ".section-card .section-card__title",
         "Model Registry",
-        False,
     ),
     (
         "/v1/inference-page",
         ".section-card__title",
         "Inference",
-        False,
     ),
     (
         "/v1/operations-page",
         ".section-card__title",
         "Operations",
-        False,
     ),
     (
         "/v1/learn",
         ".section-card__title",
         "Learning Path",
-        False,
     ),
 ]
 
@@ -65,7 +58,7 @@ class TestNavigationSmoke:
     TIMEOUT = 15_000  # 15 seconds
 
     @pytest.mark.parametrize(
-        "route,selector,expected_text,known_issue",
+        "route,selector,expected_text",
         PAGES,
         ids=[p[0] for p in PAGES],
     )
@@ -77,7 +70,6 @@ class TestNavigationSmoke:
         route: str,
         selector: str,
         expected_text: str,
-        known_issue: bool,
     ) -> None:
         """Navigate to *route* and assert it loads cleanly."""
         checker = assert_no_console_errors(page)
@@ -95,10 +87,6 @@ class TestNavigationSmoke:
                     state="visible", timeout=self.TIMEOUT
                 )
 
-        if known_issue:
-            pytest.xfail(
-                "Known pre-existing app issue (see navigation test comments)"
-            )
         checker.assert_no_errors()
 
     def test_nav_bar_present(self, page, base_url: str) -> None:

@@ -26,7 +26,6 @@ TRAIN_PAGE = "/v1/training-page"
 class TestTrainingSseWiring:
     """Smoke test: training page renders without errors."""
 
-    @pytest.mark.xfail(reason="Pre-existing app bug: 500 on /v1/corpora")
     def test_training_page_loads(
         self,
         page,
