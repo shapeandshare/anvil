@@ -28,7 +28,7 @@ Systematic remediation of 35 open OWASP Top 10 security findings in the anvil co
 | **Article I — Zero-Dependency Core** | ✅ PASS | All changes in `anvil/api/`, `anvil/services/`, `anvil/storage/`, `anvil/supervisor/` — core engine untouched |
 | **Article II — Educational Clarity** | ✅ PASS | No effect on progressive walkthrough files or teaching code |
 | **Article III — Seeded Reproducibility** | ✅ PASS | No changes to training determinism. Idempotency keys prevent duplicate runs |
-| **Article IV — TDD Mandatory** | ✅ PASS | Tests required for all new middleware, validation logic, config changes. Existing coverage threshold must hold |
+| **Article IV — TDD Mandatory** | ✅ PASS | **TDD is enforced via `t`-suffixed test tasks (e.g. T001t, T002t, T004t, T005t, T009t) that MUST be written and fail before their paired implementation task.** New security-critical code (auth, key store, CSRF, rate limiter, MLflow proxy, body-size limit, typed validation, ReDoS timeout) is covered test-first. Purely mechanical changes already exercised by the existing suite (SHA-pinning, `print()`→logging, `html=False`, dependency bound) verify via regression. Coverage must not drop below the ratcheting `fail_under` baseline (ADR-026). |
 | **Article V — Async-First** | ✅ PASS | All changes in async layers (FastAPI middleware, async route handlers) |
 | **Article VI — `__init__.py` Ownership** | ✅ PASS | No new packages/directories. All changes to existing files |
 | **Article VII — Layered Architecture** | ✅ PASS | Auth middleware at API layer; typed validation at route layer; logging at app lifespan. No DB primitives leak |

@@ -2,7 +2,7 @@
 
 **Input**: Design documents from `specs/017-owasp-remediation/`
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/
-**Tests**: Security remediation tasks are verified by existing test suite + manual security validation (see quickstart.md). New unit/integration tests are in-scope where needed for coverage compliance.
+**Tests (TDD — MANDATORY per Constitution Article IV)**: Every NEW module/behavior (auth middleware, API-key store, CSRF, rate limiter, MLflow proxy, request-body-size limit, typed validation, ReDoS timeout, path containment, TOCTOU fix, idempotency) MUST have tests written FIRST (Red → Green → Refactor). Test tasks carry a `t` suffix (e.g. `T002t`) and MUST be completed before their paired implementation task. Coverage MUST NOT drop below the ratcheting `fail_under` baseline (Article IV / ADR-026). Pure mechanical changes that the existing suite already exercises (SHA-pinning, `print()`→logging, `html=False`, dependency bound) verify via regression (`make test`) rather than new test-first tasks.
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
@@ -34,9 +34,17 @@ No setup tasks required.
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete. All three user stories depend on authentication being in place.
 
+### Tests First (TDD — write and confirm failing before implementation)
+
+- [ ] T001t [P] Tests for the API-key store in `tests/unit/test_api_key_store.py` — key generated via CSPRNG, constant-time validation accepts the right key and rejects wrong ones, key persists across restarts, key is NEVER present in any log output, `ANVIL_API_KEY` override is honored and popped from the environment (FR-026).
+- [ ] T002t [P] Tests for auth middleware in `tests/integration/test_auth_middleware.py` — unauthenticated API request → 401; valid `X-API-Key` → 200; valid session cookie on `/v1/*` → 200 (SSE cookie fallback, FR-025); unauthenticated page request → 303 to `/login`; `OPTIONS` preflight passes without auth (FR-029); exempt routes (`/v1/health`, `/static`, `/login`) pass.
+- [ ] T004t [P] Tests for login + CSRF + login rate limit in `tests/integration/test_login_csrf.py` — `POST /login` with valid key sets `HttpOnly; SameSite=Strict; Max-Age=86400` cookie; cookie-auth state-changing request without `X-CSRF-Token` → 403 (FR-027); 6th `POST /login` within a minute → 429 (FR-028).
+
+### Implementation for Foundational Phase
+
 - [ ] T001 Implement secure API key generation, persistence, and validation in `anvil/api/deps.py` (+ a key store module). Generate via `secrets.token_urlsafe(32)`; validate via `secrets.compare_digest` (constant-time, never `==`). **Persist the key to a `0600` state file or the app DB so it survives restarts — NEVER write it to log files (FR-026).** If `ANVIL_API_KEY` is set, read it once at startup then `os.environ.pop("ANVIL_API_KEY", None)`. On first generation, emit ONLY a prefix hint (first 8 chars) + recovery instructions to stderr. Add a `--show-api-key` CLI command in `anvil/cli.py` to reveal the full key on demand.
 - [ ] T002 Implement auth middleware in `anvil/api/app.py` — add `@app.middleware("http")`. **Order matters (FR-029): rate-limit → CORS → security-headers → auth.** Logic: (1) pass through `OPTIONS` (CORS preflight) without auth; (2) pass through exempt routes (`/login`, `/v1/health`, `/static/*`); (3) for `/v1/*` API routes accept EITHER a valid `X-API-Key` header OR a valid session cookie (cookie fallback is REQUIRED for browser SSE — FR-025); (4) for page routes require a valid session cookie, else redirect to `/login` (303). Distinguish API endpoints from page routes by a means other than the shared `/v1/` prefix (e.g. an explicit page-route set, or a sub-prefix) — see `contracts/auth-middleware.md`.
-- [ ] T003 [P] Implement security headers middleware in `anvil/api/app.py` — inject CSP (`default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; script-src 'self';`), HSTS (`max-age=31536000; includeSubDomains`), X-Frame-Options (`DENY`), X-Content-Type-Options (`nosniff`).
+- [ ] T003 Implement security headers middleware in `anvil/api/app.py` — inject CSP (`default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; script-src 'self';`), HSTS (`max-age=31536000; includeSubDomains`), X-Frame-Options (`DENY`), X-Content-Type-Options (`nosniff`). (NOT `[P]` — shares `app.py` with T002; batch together.)
 - [ ] T004 Create login page UI + CSRF — add `anvil/api/templates/login.html` (Jinja2), `anvil/api/static/css/login.css` (existing design tokens from `tokens.css`), `anvil/api/static/js/login.js` (POST `/login` with API key, sets `HttpOnly; SameSite=Strict; Max-Age=86400` session cookie, redirects home). Add `GET /login`, `POST /login`, `POST /logout`. **Issue a signed CSRF token on page render and validate `X-CSRF-Token` on cookie-authenticated state-changing requests (FR-027).** Apply a strict separate rate limit to `POST /login` (5/min/IP + failure delay) — login is NOT rate-limit-exempt (FR-028).
 - [ ] T004b Auth migration safety (FR-031) — update `tests/conftest.py` so the shared `httpx.AsyncClient` injects a test `X-API-Key` header (otherwise all ~10 HTTP integration test files break). Confirm the Docker/compose healthcheck targets the auth-exempt `/v1/health` (it does — verify). Confirm browser SSE works via the cookie path (FR-025).
 
@@ -48,7 +56,12 @@ No setup tasks required.
 
 **Goal**: Authentication on all routes, structured input validation on training config, restricted MLflow access — blocking the 4 CRITICAL and most dangerous HIGH-severity findings.
 
-**Independent Test**: Attempt `POST /services/restart-all` and `POST /training/start` without credentials — both MUST return 401. Then with valid API key — both MUST succeed. Verify training config with invalid fields returns 422. Verify MLflow starts with restricted hosts.
+**Independent Test**: Attempt `POST /services/restart-all` and `POST /training/start` without credentials — both MUST return 401. Then with valid API key — both MUST succeed. Verify training config with invalid fields returns 422. Verify MLflow is reachable ONLY through the authenticated `/v1/mlflow-proxy/` (loaded while authenticated → 200; unauthenticated → 401/redirect) and that port 5001 is NOT published to the host.
+
+### Tests First (TDD — write and confirm failing before implementation)
+
+- [ ] T005t [P] [US1] Tests for typed training config in `tests/integration/test_training_validation.py` — `POST /training/start` with unknown/invalid fields → 422 (FR-003, `extra="forbid"`); valid config → accepted.
+- [ ] T009t [P] [US1] Tests for the MLflow reverse proxy in `tests/integration/test_mlflow_proxy.py` — authenticated request to `/v1/mlflow-proxy/` returns 200 and assets resolve under the prefix; unauthenticated → 401/redirect; direct off-host `:5001` is not reachable (port unpublished). (ADR-034)
 
 ### Implementation for User Story 1
 
@@ -76,10 +89,11 @@ No setup tasks required.
 - [ ] T013 [P] [US2] Add `Field(max_length=...)`, `Field(ge=..., le=...)`, and `Field(pattern=...)` constraints to all existing Pydantic models in `anvil/api/v1/schemas.py` — all string fields need `max_length` (255-5000 depending on purpose), all int fields need `ge=1` where applicable, `LockBody.scope` and `LockBody.holder` need `min_length=1, max_length=255`.
 - [ ] T014 [US2] Create `sanitized_error()` helper utility in `anvil/api/v1/` and replace all `str(exc)` / `str(e)` patterns in `HTTPException(detail=str(exc))` with sanitized generic messages across: `anvil/api/v1/corpora.py` (4 instances), `anvil/api/v1/content.py` (9 instances), `anvil/api/v1/datasets.py` (7 instances), `anvil/api/v1/training.py` (6 instances), `anvil/api/v1/inference.py` (9 instances), `anvil/api/v1/eval.py` (1 instance), `anvil/api/v1/learning.py` (1 instance), `anvil/api/v1/experiments.py` (2 instances), `anvil/api/v1/eval_datasets.py` (3 instances). Log original exception server-side.
   > **Note**: T014 spans 41 instances across 9 files. For parallel execution, split into sub-tasks: T014a (corpora.py + content.py), T014b (datasets.py + training.py), T014c (inference.py + eval.py + remaining). All sub-tasks share the same `sanitized_error()` helper.
-- [ ] T015 [US2] Implement rate limiting middleware in `anvil/api/app.py` — custom sliding-window counter keyed by `(client_ip, route_prefix)`. Default 100 req/min per client, 20 burst. Exempt `/v1/health` and `/login`. Return 429 with `Retry-After` header when throttled. Configurable via `ANVIL_RATE_LIMIT` env var.
+- [ ] T015 [US2] Implement rate limiting middleware in `anvil/api/app.py` — custom sliding-window counter keyed by `(client_ip, route_prefix)`. Default 100 req/min per client, 20 burst. Exempt ONLY `/v1/health` and `/static`. **`/login` is NOT exempt (FR-028)** — it instead gets a STRICTER separate limit (5/min/IP + failure delay) per `contracts/security-config.md` §1, implemented alongside T004. Return 429 with `Retry-After` when throttled. Configurable via `ANVIL_RATE_LIMIT` env var.
 - [ ] T016 [P] [US2] Add file upload size limits — in `anvil/api/v1/datasets.py:260` check `UploadFile.size` against 100MB limit, in `anvil/api/v1/content.py:420` check against 50MB limit. Return 413 with clear message when exceeded.
+- [ ] T016b [US2] Add a global maximum request body size limit (FR-006) via middleware in `anvil/api/app.py` (e.g. reject requests whose `Content-Length`/streamed body exceeds `max_request_body_mb` from `contracts/security-config.md` §5, default 10MB) — returns 413. This is distinct from the per-file upload caps (T016); it protects all JSON endpoints from oversized-payload resource exhaustion. Paired test in `tests/integration/test_body_size_limit.py` (oversized JSON body → 413).
 - [ ] T017 [US2] Add ReDoS protection to user-supplied regex in `anvil/services/datasets/dataset_curation.py` (`regex_replace`, ~line 250-295, where `re.compile(pattern, flags)` runs). **Do NOT pass `timeout=` to `re.compile` — stdlib `re` has no such parameter (it raises `TypeError`).** Instead, execute the compiled pattern's `.sub()`/`.search()` under a stdlib wall-clock timeout (worker-thread + timed `join`, preferring `signal.SIGALRM` on Unix per `contracts/security-config.md` §4). Default 2s. On timeout, surface a `TimeoutError` that the route translates to HTTP 422 `"Pattern too complex or invalid"`. Log the pattern hash (not the pattern). Add a shared helper (e.g. `anvil/services/_shared/regex_timeout.py` or co-located) following the one-class-per-file rule. Confirm `corpora.py` `analyze_path` patterns are internal/gitignore (no user-supplied regex) — no timeout needed there.
-- [ ] T018 [P] [US2] Pin SonarCloud GitHub Action to SHA digest in `.github/workflows/ci.yml:125` — replace `SonarSource/sonarcloud-github-action@master` with `@<resolved-SHA256>`.
+- [ ] T018 [P] [US2] Pin third-party GitHub Actions to SHA digests across BOTH workflows (FR-011). In `.github/workflows/ci.yml:125` replace `SonarSource/sonarcloud-github-action@master` with `@<resolved-SHA256>`. Audit `.github/workflows/release.yml` for any floating-tag third-party action and pin it too; if release.yml contains no third-party action to pin, record that explicitly in the task notes (the original A08-001 cited `release.yml:125`).
 - [ ] T019 [US2] Document `AuthzContext` as local-mode no-op in `anvil/services/content/authz.py` — add docstring explaining this is a stub for future SaaS RBAC, all actions permitted in local mode. Add a startup log warning when running on non-localhost interface.
 
 **Checkpoint**: All HIGH-severity findings resolved. Endpoint hardening, rate limiting, CI/CD pins, and error sanitization in place.
@@ -149,10 +163,12 @@ No setup tasks required.
 
 ### Parallel Opportunities
 
-- Phase 2: T002 and T003 can run in parallel (app.py vs deps.py)
-- Phase 3: T005-T008 are all in different route files — fully parallel. T009 (supervisor) and T010 (training.py) are independent.
-- Phase 4: T013 (schemas.py), T016 (datasets + content), T018 (ci.yml) are independent files — parallel
-- Phase 5: T020 (app.py CORS), T021 (storage), T024 (Dockerfile), T026-T028 (print→logging), T030 (app.py html), T031 (app.py logging) — T020, T030, and T031 all edit `app.py`. Execute these sequentially or batch into one `app.py` pass to avoid repeated file re-reads.
+- Phase 2 tests: T001t / T002t / T004t are independent test files — fully parallel, write first.
+- Phase 2 impl: **T002 and T003 both edit `app.py` — NOT parallel; batch them.** T001 (deps.py + key store) is the parallel-safe one; T004 (templates/static) is independent of the middleware files.
+- Phase 3 tests: T005t / T009t are independent test files — parallel.
+- Phase 3 impl: T005-T008 are in different route files — fully parallel. T009 (MLflow proxy) now spans `mlflow_proxy.py` + `supervisor/services.py` + `config.py` + `compose.yaml` + `app.py` route registration; still independent of T010 (training.py) but no longer "supervisor-only".
+- Phase 4: T013 (schemas.py), T016 (datasets + content uploads), T016b (app.py body limit), T018 (workflows) are independent files — parallel. Note T016b touches `app.py`.
+- Phase 5: T020 (app.py CORS), T021 (storage), T024 (Dockerfile), T026-T028 (print→logging), T030 (app.py html), T031 (app.py logging), T031b (app.py CSP report) — **all the `app.py` editors (T020, T030, T031, T031b) must be batched into one `app.py` pass**, not run in parallel with each other.
 
 ---
 
