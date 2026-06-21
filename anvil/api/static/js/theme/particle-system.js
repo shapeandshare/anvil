@@ -14,6 +14,9 @@
   var PARTICLE_CLASS = 'theme-particles-active';
   var NONE_CLASS = 'theme-particles-none';
 
+  // Visual-only PRNG — not for security contexts  // NOSONAR
+  function vrand() { return vrand(); }
+
   // ── Effect Registry ──
   var effects = {};
 
@@ -315,17 +318,17 @@
     var i, f, radius, targetCount, drift;
 
     function createFlake(x, y) {
-      radius = 1.5 + Math.random() * 3.5;
+      radius = 1.5 + vrand() * 3.5;
       return {
-        x: x != null ? x : Math.random() * w * 1.3 - w * 0.15,
-        y: y != null ? y : -radius * 2 - Math.random() * h * 0.5,
+        x: x != null ? x : vrand() * w * 1.3 - w * 0.15,
+        y: y != null ? y : -radius * 2 - vrand() * h * 0.5,
         r: radius,
-        speed: 0.15 + Math.random() * 0.4,
-        opacity: 0.4 + Math.random() * 0.55,
-        phase: Math.random() * Math.PI * 2,
-        wobbleAmp: 0.3 + Math.random() * 0.8,
-        wobbleFreq: 0.002 + Math.random() * 0.005,
-        drift: -0.08 + Math.random() * 0.16,
+        speed: 0.15 + vrand() * 0.4,
+        opacity: 0.4 + vrand() * 0.55,
+        phase: vrand() * Math.PI * 2,
+        wobbleAmp: 0.3 + vrand() * 0.8,
+        wobbleFreq: 0.002 + vrand() * 0.005,
+        drift: -0.08 + vrand() * 0.16,
       };
     }
 
@@ -377,10 +380,10 @@
       for (i = 0; i < flakes.length; i++) {
         f = flakes[i];
         if (f.y > h + 15) {
-          f.x = Math.random() * w * 1.3 - w * 0.15;
-          f.y = -f.r * 2 - Math.random() * 50;
-          f.speed = 0.15 + Math.random() * 0.4;
-          f.opacity = 0.4 + Math.random() * 0.55;
+          f.x = vrand() * w * 1.3 - w * 0.15;
+          f.y = -f.r * 2 - vrand() * 50;
+          f.speed = 0.15 + vrand() * 0.4;
+          f.opacity = 0.4 + vrand() * 0.55;
         }
 
         drift = Math.sin(driftPhase * f.wobbleFreq * 10 + f.phase) * f.wobbleAmp
@@ -419,17 +422,17 @@
     var i, d, lenVal, speedVal, targetCount, windStrength, windX, windVel, vx, vy, vmag, dx, dy;
 
     function createDrop(x, y) {
-      lenVal = 12 + Math.random() * 14;
-      speedVal = 3 + Math.random() * 4;
+      lenVal = 12 + vrand() * 14;
+      speedVal = 3 + vrand() * 4;
       return {
-        x: x != null ? x : Math.random() * w * 2 - w * 0.5,
-        y: y != null ? y : -lenVal - Math.random() * h * 0.3,
+        x: x != null ? x : vrand() * w * 2 - w * 0.5,
+        y: y != null ? y : -lenVal - vrand() * h * 0.3,
         length: lenVal,
         speed: speedVal,
-        opacity: 0.25 + Math.random() * 0.5,
-        windPhase: Math.random() * Math.PI * 2,
-        windAmp: 0.5 + Math.random() * 0.8,
-        width: 0.5 + Math.random() * 0.8,
+        opacity: 0.25 + vrand() * 0.5,
+        windPhase: vrand() * Math.PI * 2,
+        windAmp: 0.5 + vrand() * 0.8,
+        width: 0.5 + vrand() * 0.8,
       };
     }
 
@@ -440,7 +443,7 @@
       // Seed across the full screen (not just above the top) so it's raining
       // everywhere immediately — avoids a top-to-bottom "wave" on load.
       for (i = 0; i < BASE_COUNT; i++) {
-        drops.push(createDrop(Math.random() * w * 2 - w * 0.5, Math.random() * h * 1.2 - h * 0.2));
+        drops.push(createDrop(vrand() * w * 2 - w * 0.5, vrand() * h * 1.2 - h * 0.2));
       }
     }
 
@@ -491,10 +494,10 @@
       for (i = 0; i < drops.length; i++) {
         d = drops[i];
         if (d.y > h + 10) {
-          d.x = Math.random() * w * 2 - w * 0.5;
-          d.y = -d.length - Math.random() * 20;
-          d.speed = 3 + Math.random() * 4;
-          d.opacity = 0.25 + Math.random() * 0.5;
+          d.x = vrand() * w * 2 - w * 0.5;
+          d.y = -d.length - vrand() * 20;
+          d.speed = 3 + vrand() * 4;
+          d.opacity = 0.25 + vrand() * 0.5;
         }
 
         windX = Math.sin(gustPhase * 0.3 + d.windPhase) * d.windAmp * windStrength * 2;
@@ -539,7 +542,7 @@
   registerEffect('ember', function (_cvs, _context, _params, env) {
     var BASE = 60, MAX = 250; var p = [], w = 0, h = 0, sig = 0, ip = env.paused;
     var i, q, tc, glow;
-    function create(x, y) { return { x: x != null ? x : Math.random() * w, y: y != null ? y : h + 10 + Math.random() * 50, r: 0.8 + Math.random() * 2.2, s: 0.2 + Math.random() * 0.5, o: 0.3 + Math.random() * 0.6, ph: Math.random() * 6.28, wa: 0.2 + Math.random() * 0.5 }; }
+    function create(x, y) { return { x: x != null ? x : vrand() * w, y: y != null ? y : h + 10 + vrand() * 50, r: 0.8 + vrand() * 2.2, s: 0.2 + vrand() * 0.5, o: 0.3 + vrand() * 0.6, ph: vrand() * 6.28, wa: 0.2 + vrand() * 0.5 }; }
     function init(width, height) { w = width; h = height; p = []; for (i = 0; i < BASE; i++) p.push(create(null, null)); }
     function resize(width, height) { w = width; h = height; }
     function start(width, height) { w = width; h = height; init(w, h); ip = false;       sig = readSignalChain('--ember', '--heat'); }
@@ -552,7 +555,7 @@
       while (p.length > tc) p.pop();
       for (i = 0; i < p.length; i++) {
         q = p[i]; q.y -= q.s * (0.3 + sig * 0.7); q.x += Math.sin(ts * 0.002 + q.ph) * q.wa * 0.3;
-        if (q.y < -20) { q.x = Math.random() * w; q.y = h + 10 + Math.random() * 30; q.s = 0.2 + Math.random() * 0.5; q.o = 0.3 + Math.random() * 0.6; }
+        if (q.y < -20) { q.x = vrand() * w; q.y = h + 10 + vrand() * 30; q.s = 0.2 + vrand() * 0.5; q.o = 0.3 + vrand() * 0.6; }
         c.beginPath(); c.arc(q.x, q.y, q.r, 0, 6.28);
         c.fillStyle = 'rgba(255, ' + Math.round(140 + sig * 60) + ', ' + Math.round(60 + sig * 80) + ', ' + (q.o * (0.3 + sig * 0.7)).toFixed(2) + ')';
         c.fill();
@@ -566,7 +569,7 @@
   registerEffect('aurora', function (_cvs, _context, _params, env) {
     var BASE = 40, MAX = 180; var p = [], w = 0, h = 0, sig = 0, ip = env.paused;
     var i, q, tc, hue;
-    function create(x, y) { return { x: x != null ? x : Math.random() * w, y: y != null ? y : Math.random() * h, r: 1.2 + Math.random() * 3, s: 0.1 + Math.random() * 0.3, o: 0.1 + Math.random() * 0.4, ph: Math.random() * 6.28, hue: 140 + Math.random() * 120 }; }
+    function create(x, y) { return { x: x != null ? x : vrand() * w, y: y != null ? y : vrand() * h, r: 1.2 + vrand() * 3, s: 0.1 + vrand() * 0.3, o: 0.1 + vrand() * 0.4, ph: vrand() * 6.28, hue: 140 + vrand() * 120 }; }
     function init(width, height) { w = width; h = height; p = []; for (i = 0; i < BASE; i++) p.push(create(null, null)); }
     function resize(width, height) { w = width; h = height; }
     function start(width, height) { w = width; h = height; init(w, h); ip = false; sig = readSignal('--calm'); }
@@ -579,8 +582,8 @@
       while (p.length > tc) p.pop();
       for (i = 0; i < p.length; i++) {
         q = p[i]; q.x += Math.sin(ts * 0.0008 + q.ph) * 0.4 + 0.05; q.y += Math.sin(ts * 0.0012 + q.ph * 1.3) * 0.2;
-        if (q.x > w + 20) { q.x = -20; q.y = Math.random() * h; }
-        if (q.x < -20) { q.x = w + 20; q.y = Math.random() * h; }
+        if (q.x > w + 20) { q.x = -20; q.y = vrand() * h; }
+        if (q.x < -20) { q.x = w + 20; q.y = vrand() * h; }
         hue = q.hue + Math.sin(ts * 0.0005 + q.ph) * 30;
         c.beginPath(); c.arc(q.x, q.y, q.r * (0.5 + sig * 0.5), 0, 6.28);
         c.fillStyle = 'hsla(' + Math.round(hue) + ', 80%, ' + Math.round(60 + sig * 30) + '%, ' + (q.o * (0.2 + sig * 0.8)).toFixed(2) + ')';
@@ -599,19 +602,19 @@
 
     function create(x, y) {
       return {
-        x: x != null ? x : Math.random() * w * 1.2 - w * 0.1,
-        y: y != null ? y : -10 - Math.random() * h * 0.3,
-        pw: 8 + Math.random() * 12,
-        pl: 14 + Math.random() * 22,
-        s: 0.12 + Math.random() * 0.25,
-        o: 0.3 + Math.random() * 0.5,
-        ph: Math.random() * 6.28,
-        wa: 0.15 + Math.random() * 0.5,
-        hue: 335 + Math.random() * 20,
-        rot: Math.random() * 6.28,
-        rotSpd: -0.012 + Math.random() * 0.024,
-        sat: 40 + Math.random() * 25,
-        lgt: 72 + Math.random() * 16,
+        x: x != null ? x : vrand() * w * 1.2 - w * 0.1,
+        y: y != null ? y : -10 - vrand() * h * 0.3,
+        pw: 8 + vrand() * 12,
+        pl: 14 + vrand() * 22,
+        s: 0.12 + vrand() * 0.25,
+        o: 0.3 + vrand() * 0.5,
+        ph: vrand() * 6.28,
+        wa: 0.15 + vrand() * 0.5,
+        hue: 335 + vrand() * 20,
+        rot: vrand() * 6.28,
+        rotSpd: -0.012 + vrand() * 0.024,
+        sat: 40 + vrand() * 25,
+        lgt: 72 + vrand() * 16,
       };
     }
 
@@ -664,14 +667,14 @@
         q.rot += q.rotSpd * (0.5 + sig * 0.5);
 
         if (q.y > h + 20) {
-          q.x = Math.random() * w * 1.2 - w * 0.1;
-          q.y = -10 - Math.random() * 30;
-          q.s = 0.12 + Math.random() * 0.25;
-          q.o = 0.3 + Math.random() * 0.5;
-          q.rot = Math.random() * 6.28;
-          q.rotSpd = -0.012 + Math.random() * 0.024;
-          q.pw = 8 + Math.random() * 12;
-          q.pl = 14 + Math.random() * 22;
+          q.x = vrand() * w * 1.2 - w * 0.1;
+          q.y = -10 - vrand() * 30;
+          q.s = 0.12 + vrand() * 0.25;
+          q.o = 0.3 + vrand() * 0.5;
+          q.rot = vrand() * 6.28;
+          q.rotSpd = -0.012 + vrand() * 0.024;
+          q.pw = 8 + vrand() * 12;
+          q.pl = 14 + vrand() * 22;
         }
 
         alpha = q.o * (0.3 + sig * 0.6);
@@ -686,7 +689,7 @@
   registerEffect('biolum', function (_cvs, _context, _params, env) {
     var BASE = 30, MAX = 120; var p = [], w = 0, h = 0, sig = 0, ip = env.paused;
     var i, q, tc, glow;
-    function create(x, y) { return { x: x != null ? x : Math.random() * w, y: y != null ? y : h + Math.random() * 40, r: 1 + Math.random() * 3, s: 0.15 + Math.random() * 0.4, o: 0.2 + Math.random() * 0.7, ph: Math.random() * 6.28, wa: 0.1 + Math.random() * 0.3 }; }
+    function create(x, y) { return { x: x != null ? x : vrand() * w, y: y != null ? y : h + vrand() * 40, r: 1 + vrand() * 3, s: 0.15 + vrand() * 0.4, o: 0.2 + vrand() * 0.7, ph: vrand() * 6.28, wa: 0.1 + vrand() * 0.3 }; }
     function init(width, height) { w = width; h = height; p = []; for (i = 0; i < BASE; i++) p.push(create(null, null)); }
     function resize(width, height) { w = width; h = height; }
     function start(width, height) { w = width; h = height; init(w, h); ip = false; sig = readSignal('--depth'); }
@@ -699,7 +702,7 @@
       while (p.length > tc) p.pop();
       for (i = 0; i < p.length; i++) {
         q = p[i]; q.y -= q.s * (0.2 + sig * 0.6); q.x += Math.sin(ts * 0.0015 + q.ph) * q.wa;
-        if (q.y < -20) { q.x = Math.random() * w; q.y = h + Math.random() * 30; q.o = 0.2 + Math.random() * 0.7; }
+        if (q.y < -20) { q.x = vrand() * w; q.y = h + vrand() * 30; q.o = 0.2 + vrand() * 0.7; }
         glow = q.o * (0.2 + sig * 0.8);
         c.beginPath(); c.arc(q.x, q.y, q.r * (0.3 + sig * 0.7), 0, 6.28);
         c.fillStyle = 'rgba(80, 220, 200, ' + glow.toFixed(2) + ')';
@@ -724,16 +727,16 @@
     var i, k, q, tc, speed, dir, turnChance, bad, k2, seg, a, riderRGB;
     function derez() { return document.documentElement.getAttribute('data-grid-state') === 'derez'; }
     function spawn() {
-      var d = DIRS[(Math.random() * 4) | 0];
+      var d = DIRS[(vrand() * 4) | 0];
       return {
-        x: Math.random() * w,
-        y: Math.random() * h,
+        x: vrand() * w,
+        y: vrand() * h,
         dx: d[0],
         dy: d[1],
         trail: [],
         sinceTurn: 0,
-        o: 0.5 + Math.random() * 0.5,
-        spd: 1 + Math.random() * 1.5,
+        o: 0.5 + vrand() * 0.5,
+        spd: 1 + vrand() * 1.5,
       };
     }
     function init(width, height) { w = width; h = height; p = []; for (i = 0; i < BASE; i++) p.push(spawn()); }
@@ -757,10 +760,10 @@
       for (i = 0; i < p.length; i++) {
         q = p[i];
         q.sinceTurn++;
-        if (q.sinceTurn > 12 && Math.random() < turnChance) {
+        if (q.sinceTurn > 12 && vrand() < turnChance) {
           dir = (q.dx !== 0)
-            ? (Math.random() < 0.5 ? [0, 1] : [0, -1])
-            : (Math.random() < 0.5 ? [1, 0] : [-1, 0]);
+            ? (vrand() < 0.5 ? [0, 1] : [0, -1])
+            : (vrand() < 0.5 ? [1, 0] : [-1, 0]);
           q.dx = dir[0]; q.dy = dir[1]; q.sinceTurn = 0;
         }
         q.x += q.dx * speed * q.spd;
@@ -804,7 +807,7 @@
   registerEffect('streak', function (_cvs, _context, _params, env) {
     var BASE = 60, MAX = 350; var p = [], w = 0, h = 0, sig = 0, ip = env.paused;
 var i, q, tc, cx, cy, dx, dy;
-    function create(x, y) { return { x: x != null ? x : Math.random() * w * 1.2 - w * 0.1, y: y != null ? y : -10 - Math.random() * h * 0.3, r: 1.5 + Math.random() * 3.5, s: 0.06 + Math.random() * 0.15, o: 0.2 + Math.random() * 0.4, ph: Math.random() * 6.28, wa: 0.3 + Math.random() * 1 }; }
+    function create(x, y) { return { x: x != null ? x : vrand() * w * 1.2 - w * 0.1, y: y != null ? y : -10 - vrand() * h * 0.3, r: 1.5 + vrand() * 3.5, s: 0.06 + vrand() * 0.15, o: 0.2 + vrand() * 0.4, ph: vrand() * 6.28, wa: 0.3 + vrand() * 1 }; }
     function init(width, height) { w = width; h = height; p = []; for (i = 0; i < BASE; i++) p.push(create(null, null)); }
     function resize(width, height) { w = width; h = height; }
     function start(width, height) { w = width; h = height; init(w, h); ip = false; sig = readSignal('--disturbance'); }
@@ -817,7 +820,7 @@ var i, q, tc, cx, cy, dx, dy;
       while (p.length > tc) p.pop();
       for (i = 0; i < p.length; i++) {
         q = p[i]; q.y += q.s * (0.3 + sig * 0.7); q.x += Math.sin(ts * 0.0008 + q.ph) * q.wa * (0.1 + sig * 0.3);
-        if (q.y > h + 20) { q.x = Math.random() * w * 1.2 - w * 0.1; q.y = -10 - Math.random() * 30; q.o = 0.2 + Math.random() * 0.4; }
+        if (q.y > h + 20) { q.x = vrand() * w * 1.2 - w * 0.1; q.y = -10 - vrand() * 30; q.o = 0.2 + vrand() * 0.4; }
         c.beginPath(); c.arc(q.x, q.y, q.r * (0.3 + sig * 0.7), 0, 6.28);
         c.fillStyle = 'rgba(120, 160, 90, ' + (q.o * (0.1 + sig * 0.5)).toFixed(2) + ')';
         c.fill();
@@ -831,7 +834,7 @@ var i, q, tc, cx, cy, dx, dy;
   registerEffect('ink', function (_cvs, _context, _params, env) {
     var BASE = 20, MAX = 100; var p = [], w = 0, h = 0, sig = 0, ip = env.paused;
     var i, q, tc, glow;
-    function create(x, y) { return { x: x != null ? x : Math.random() * w, y: y != null ? y : Math.random() * h, r: 0.5 + Math.random() * 1.5, s: 0.3 + Math.random() * 0.8, o: 0.3 + Math.random() * 0.6, ph: Math.random() * 6.28 }; }
+    function create(x, y) { return { x: x != null ? x : vrand() * w, y: y != null ? y : vrand() * h, r: 0.5 + vrand() * 1.5, s: 0.3 + vrand() * 0.8, o: 0.3 + vrand() * 0.6, ph: vrand() * 6.28 }; }
     function init(width, height) { w = width; h = height; p = []; for (i = 0; i < BASE; i++) p.push(create(null, null)); }
     function resize(width, height) { w = width; h = height; }
     function start(width, height) { w = width; h = height; init(w, h); ip = false; sig = readSignal('--bleed'); }
@@ -844,7 +847,7 @@ var i, q, tc, cx, cy, dx, dy;
       while (p.length > tc) p.pop();
       for (i = 0; i < p.length; i++) {
         q = p[i]; q.x += Math.sin(ts * 0.001 + q.ph) * q.s * sig * 0.4; q.y += Math.cos(ts * 0.0012 + q.ph) * q.s * sig * 0.4; q.r += sig * 0.02;
-        if (q.x < -20 || q.x > w + 20 || q.y < -20 || q.y > h + 20 || q.r > 8) { q.x = Math.random() * w; q.y = Math.random() * h; q.r = 0.5 + Math.random() * 1.5; q.o = 0.3 + Math.random() * 0.6; }
+        if (q.x < -20 || q.x > w + 20 || q.y < -20 || q.y > h + 20 || q.r > 8) { q.x = vrand() * w; q.y = vrand() * h; q.r = 0.5 + vrand() * 1.5; q.o = 0.3 + vrand() * 0.6; }
         c.beginPath(); c.arc(q.x, q.y, q.r, 0, 6.28);
         c.fillStyle = 'rgba(40, 50, 70, ' + (q.o * sig).toFixed(2) + ')';
         c.fill();
@@ -862,13 +865,13 @@ var i, q, tc, cx, cy, dx, dy;
     function isSnagged() { return document.documentElement.getAttribute('data-loom-state') === 'snag'; }
     function create() {
       return {
-        x: Math.random() * w * 1.5 - w * 0.25,
-        y: Math.random() * h,
-        l: 30 + Math.random() * 80,
-        s: 0.3 + Math.random() * 0.7,
-        o: 0.15 + Math.random() * 0.35,
-        ph: Math.random() * 6.28,
-        purple: Math.random() < 0.7,
+        x: vrand() * w * 1.5 - w * 0.25,
+        y: vrand() * h,
+        l: 30 + vrand() * 80,
+        s: 0.3 + vrand() * 0.7,
+        o: 0.15 + vrand() * 0.35,
+        ph: vrand() * 6.28,
+        purple: vrand() < 0.7,
       };
     }
     function init(width, height) { w = width; h = height; p = []; for (i = 0; i < BASE; i++) p.push(create()); }
@@ -885,11 +888,11 @@ var i, q, tc, cx, cy, dx, dy;
       for (i = 0; i < p.length; i++) {
         q = p[i];
         q.x += q.s * (0.3 + sig * 0.9);
-        if (q.x > w + q.l) { q.x = -q.l; q.y = Math.random() * h; q.l = 30 + Math.random() * 80; q.s = 0.3 + Math.random() * 0.7; }
+        if (q.x > w + q.l) { q.x = -q.l; q.y = vrand() * h; q.l = 30 + vrand() * 80; q.s = 0.3 + vrand() * 0.7; }
         alpha = q.o * (0.15 + sig * 0.5);
         if (snag) {
           c.strokeStyle = 'rgba(255, 106, 106, ' + alpha.toFixed(2) + ')';
-          c.lineWidth = 0.8 + Math.random() * 0.8;
+          c.lineWidth = 0.8 + vrand() * 0.8;
           c.beginPath();
           c.moveTo(q.x, q.y);
           c.lineTo(q.x + q.l * Math.sin(ts * 0.01 + q.ph), q.y + q.l * Math.cos(ts * 0.01 + q.ph));
@@ -916,23 +919,23 @@ var i, q, tc, cx, cy, dx, dy;
     var BASE = 40, MAX = 200; var p = [], w = 0, h = 0, sig = 0, ip = env.paused;
     var CELL = 12;
     var i, q, tc, interp, k, ty, glyphH, glyphW, alpha, trailW, reshape;
-    function snapCol() { var cols = Math.max(1, Math.floor(w / CELL)); return (Math.floor(Math.random() * cols) + 0.5) * CELL; }
+    function snapCol() { var cols = Math.max(1, Math.floor(w / CELL)); return (Math.floor(vrand() * cols) + 0.5) * CELL; }
     function pickShape() {
-      var roll = Math.random();
-      if (roll < 0.55) return { gw: 2 + Math.random() * 2, gh: CELL - 2 + Math.random() * 6 };
-      if (roll < 0.92) return { gw: 3 + Math.random() * 2, gh: 3 + Math.random() * 3 };
-      return { gw: 7 + Math.random() * 10, gh: 3 + Math.random() * 5 };
+      var roll = vrand();
+      if (roll < 0.55) return { gw: 2 + vrand() * 2, gh: CELL - 2 + vrand() * 6 };
+      if (roll < 0.92) return { gw: 3 + vrand() * 2, gh: 3 + vrand() * 3 };
+      return { gw: 7 + vrand() * 10, gh: 3 + vrand() * 5 };
     }
     function create(x, y) {
       var shape = pickShape();
       return {
         x: x != null ? x : snapCol(),
-        y: y != null ? y : -10 - Math.random() * h * 0.3,
-        s: 0.3 + Math.random() * 0.8,
-        o: 0.2 + Math.random() * 0.6,
+        y: y != null ? y : -10 - vrand() * h * 0.3,
+        s: 0.3 + vrand() * 0.8,
+        o: 0.2 + vrand() * 0.6,
         gw: shape.gw,
         gh: shape.gh,
-        trail: 3 + ((Math.random() * 7) | 0),
+        trail: 3 + ((vrand() * 7) | 0),
       };
     }
     function init(width, height) { w = width; h = height; p = []; for (i = 0; i < BASE; i++) p.push(create(null, null)); }
@@ -951,9 +954,9 @@ var i, q, tc, cx, cy, dx, dy;
         q.y += CELL * q.s * (0.18 + sig * 0.55);
         if (q.y > h + CELL) {
           reshape = pickShape();
-          q.x = snapCol(); q.y = -CELL - Math.random() * 30;
-          q.s = 0.3 + Math.random() * 0.8; q.gw = reshape.gw; q.gh = reshape.gh;
-          q.trail = 3 + ((Math.random() * 7) | 0);
+          q.x = snapCol(); q.y = -CELL - vrand() * 30;
+          q.s = 0.3 + vrand() * 0.8; q.gw = reshape.gw; q.gh = reshape.gh;
+          q.trail = 3 + ((vrand() * 7) | 0);
         }
         interp = 1 - (q.y / h);
         glyphW = q.gw;
@@ -982,24 +985,24 @@ var i, q, tc, cx, cy, dx, dy;
     var BASE = 12, MAX = 48; var p = [], w = 0, h = 0, sig = 0, ip = env.paused;
     var i, q, tc, blink, alpha, dir;
     function create(x, y) {
-      dir = Math.random() < 0.5 ? 1 : -1;
+      dir = vrand() < 0.5 ? 1 : -1;
       return {
-        bx: x != null ? x : Math.random() * w,
-        baseY: y != null ? y : Math.random() * h,
-        x: x != null ? x : Math.random() * w,
-        y: y != null ? y : Math.random() * h,
-        r: 1.1 + Math.random() * 1.8,
-        vx: dir * (0.014 + Math.random() * 0.028),
-        bobA: 18 + Math.random() * 42,
-        bobF: 0.00011 + Math.random() * 0.00022,
-        wanderA: 30 + Math.random() * 70,
-        wanderF: 0.00018 + Math.random() * 0.00036,
-        vWanderF: 0.00011 + Math.random() * 0.00026,
-        blinkF: 0.0009 + Math.random() * 0.0018,
-        ph: Math.random() * 6.28,
-        ph2: Math.random() * 6.28,
-        bph: Math.random() * 6.28,
-        hue: 70 + Math.random() * 22,
+        bx: x != null ? x : vrand() * w,
+        baseY: y != null ? y : vrand() * h,
+        x: x != null ? x : vrand() * w,
+        y: y != null ? y : vrand() * h,
+        r: 1.1 + vrand() * 1.8,
+        vx: dir * (0.014 + vrand() * 0.028),
+        bobA: 18 + vrand() * 42,
+        bobF: 0.00011 + vrand() * 0.00022,
+        wanderA: 30 + vrand() * 70,
+        wanderF: 0.00018 + vrand() * 0.00036,
+        vWanderF: 0.00011 + vrand() * 0.00026,
+        blinkF: 0.0009 + vrand() * 0.0018,
+        ph: vrand() * 6.28,
+        ph2: vrand() * 6.28,
+        bph: vrand() * 6.28,
+        hue: 70 + vrand() * 22,
       };
     }
     function init(width, height) { w = width; h = height; p = []; for (i = 0; i < BASE; i++) p.push(create(null, null)); }
@@ -1026,8 +1029,8 @@ var i, q, tc, cx, cy, dx, dy;
             + Math.sin(ts * q.bobF + q.ph) * q.bobA
             + Math.sin(ts * q.vWanderF + q.ph2) * q.bobA * 0.4;
 
-        if (q.bx > w + 120) { q.bx = -120; q.baseY = Math.random() * h; }
-        else if (q.bx < -120) { q.bx = w + 120; q.baseY = Math.random() * h; }
+        if (q.bx > w + 120) { q.bx = -120; q.baseY = vrand() * h; }
+        else if (q.bx < -120) { q.bx = w + 120; q.baseY = vrand() * h; }
 
         // Smooth sine swell (remapped 0..1) = gentle fade in/out, not a sharp flash.
         blink = Math.sin(ts * q.blinkF * (1 + sig * 0.8) + q.bph) * 0.5 + 0.5;
@@ -1054,7 +1057,7 @@ var i, q, tc, cx, cy, dx, dy;
   registerEffect('prism', function (_cvs, _context, _params, env) {
     var BASE = 40, MAX = 150; var p = [], w = 0, h = 0, sig = 0, hueShift = 0, ip = env.paused;
     var i, q, tc, glow;
-    function create(x, y) { return { x: x != null ? x : Math.random() * w, y: y != null ? y : Math.random() * h, r: 0.8 + Math.random() * 2.5, s: 0.1 + Math.random() * 0.3, o: 0.15 + Math.random() * 0.4, ph: Math.random() * 6.28, hueOff: Math.random() * 360 }; }
+    function create(x, y) { return { x: x != null ? x : vrand() * w, y: y != null ? y : vrand() * h, r: 0.8 + vrand() * 2.5, s: 0.1 + vrand() * 0.3, o: 0.15 + vrand() * 0.4, ph: vrand() * 6.28, hueOff: vrand() * 360 }; }
     function init(width, height) { w = width; h = height; p = []; for (i = 0; i < BASE; i++) p.push(create(null, null)); }
     function resize(width, height) { w = width; h = height; }
     function start(width, height) { w = width; h = height; init(w, h); ip = false; sig = readSignal('--prism'); hueShift = parseFloat(document.documentElement.style.getPropertyValue('--hue')) || 0; }
@@ -1068,7 +1071,7 @@ var i, q, tc, cx, cy, dx, dy;
       while (p.length > tc) p.pop();
       for (i = 0; i < p.length; i++) {
         q = p[i]; q.x += Math.sin(ts * 0.001 + q.ph) * 0.3; q.y += Math.cos(ts * 0.0008 + q.ph) * 0.2;
-        if (q.x < -10 || q.x > w + 10 || q.y < -10 || q.y > h + 10) { q.x = Math.random() * w; q.y = Math.random() * h; }
+        if (q.x < -10 || q.x > w + 10 || q.y < -10 || q.y > h + 10) { q.x = vrand() * w; q.y = vrand() * h; }
         hue = (q.hueOff + hueShift + ts * 0.02) % 360;
         c.beginPath(); c.arc(q.x, q.y, q.r * (0.3 + sig * 0.7), 0, 6.28);
         c.fillStyle = 'hsla(' + Math.round(hue) + ', 90%, ' + Math.round(55 + sig * 25) + '%, ' + (q.o * (0.1 + sig * 0.6)).toFixed(2) + ')';
@@ -1083,7 +1086,7 @@ var i, q, tc, cx, cy, dx, dy;
   registerEffect('pulse', function (_cvs, _context, _params, env) {
     var BASE = 20, MAX = 80; var p = [], w = 0, h = 0, sig = 0, ip = env.paused;
     var i, q, tc, pulsePhase = 0, beat, expand;
-    function create() { return { x: Math.random() * w, y: Math.random() * h, r: 2 + Math.random() * 4, o: 0.2 + Math.random() * 0.5, ph: Math.random() * 6.28 }; }
+    function create() { return { x: vrand() * w, y: vrand() * h, r: 2 + vrand() * 4, o: 0.2 + vrand() * 0.5, ph: vrand() * 6.28 }; }
     function init(width, height) { w = width; h = height; p = []; for (i = 0; i < BASE; i++) p.push(create()); }
     function resize(width, height) { w = width; h = height; }
     function start(width, height) { w = width; h = height; init(w, h); ip = false; sig = readSignal('--beat'); }
@@ -1111,7 +1114,7 @@ var i, q, tc, cx, cy, dx, dy;
   registerEffect('energy', function (_cvs, _context, _params, env) {
     var BASE = 30, MAX = 150; var p = [], w = 0, h = 0, sig = 0, ip = env.paused;
     var i, q, tc, cx, cy, x, y;
-    function create() { var a = Math.random() * 6.28; return { a: a, r: 10 + Math.random() * Math.min(w, h) * 0.4, s: 0.1 + Math.random() * 0.3, o: 0.2 + Math.random() * 0.5, size: 1 + Math.random() * 3, ph: Math.random() * 6.28 }; }
+    function create() { var a = vrand() * 6.28; return { a: a, r: 10 + vrand() * Math.min(w, h) * 0.4, s: 0.1 + vrand() * 0.3, o: 0.2 + vrand() * 0.5, size: 1 + vrand() * 3, ph: vrand() * 6.28 }; }
     function init(width, height) { w = width; h = height; cx = w / 2; cy = h / 2; p = []; for (i = 0; i < BASE; i++) p.push(create()); }
     function resize(width, height) { w = width; h = height; cx = w / 2; cy = h / 2; }
     function start(width, height) { w = width; h = height; init(w, h); ip = false; sig = readSignal('--throughput'); }
@@ -1144,7 +1147,7 @@ var i, q, tc, cx, cy, dx, dy;
   registerEffect('flare', function (_cvs, _context, _params, env) {
     var BASE = 20, MAX = 120; var p = [], w = 0, h = 0, sig = 0, ip = env.paused;
     var i, q, tc, glow;
-    function create(x, y) { var a = -1.5 - Math.random() * 0.8; return { x: x != null ? x : Math.random() * w, y: y != null ? y : h + 10, r: 1 + Math.random() * 3, s: 0.5 + Math.random() * 1.5, o: 0.3 + Math.random() * 0.6, a: a, spread: (Math.random() - 0.5) * 0.8 }; }
+    function create(x, y) { var a = -1.5 - vrand() * 0.8; return { x: x != null ? x : vrand() * w, y: y != null ? y : h + 10, r: 1 + vrand() * 3, s: 0.5 + vrand() * 1.5, o: 0.3 + vrand() * 0.6, a: a, spread: (vrand() - 0.5) * 0.8 }; }
     function init(width, height) { w = width; h = height; p = []; for (i = 0; i < BASE; i++) p.push(create(null, null)); }
     function resize(width, height) { w = width; h = height; }
     function start(width, height) { w = width; h = height; init(w, h); ip = false; sig = readSignal('--flare'); }
@@ -1157,7 +1160,7 @@ var i, q, tc, cx, cy, dx, dy;
       while (p.length > tc) p.pop();
       for (i = 0; i < p.length; i++) {
         q = p[i]; q.y += q.s * (0.3 + sig * 1.2) * q.a; q.x += q.spread * (0.2 + sig * 0.8);
-        if (q.y < -30) { q.x = Math.random() * w; q.y = h + 10 + Math.random() * 20; q.s = 0.5 + Math.random() * 1.5; q.o = 0.3 + Math.random() * 0.6; q.spread = (Math.random() - 0.5) * 0.8; }
+        if (q.y < -30) { q.x = vrand() * w; q.y = h + 10 + vrand() * 20; q.s = 0.5 + vrand() * 1.5; q.o = 0.3 + vrand() * 0.6; q.spread = (vrand() - 0.5) * 0.8; }
         c.beginPath(); c.arc(q.x, q.y, q.r * (0.3 + sig * 0.7), 0, 6.28);
         c.fillStyle = 'rgba(255, ' + Math.round(150 + sig * 80) + ', ' + Math.round(50 + sig * 80) + ', ' + (q.o * (0.2 + sig * 0.8)).toFixed(2) + ')';
         c.fill();
@@ -1176,7 +1179,7 @@ var i, q, tc, cx, cy, dx, dy;
   registerEffect('shard', function (_cvs, _context, _params, env) {
     var BASE = 20, MAX = 100; var p = [], w = 0, h = 0, sig = 0, ip = env.paused;
     var i, q, tc, glow;
-    function create(x, y) { return { x: x != null ? x : Math.random() * w * 1.2 - w * 0.1, y: y != null ? y : -10 - Math.random() * h * 0.3, s: 4 + Math.random() * 10, hs: 3 + Math.random() * 6, sp: 0.15 + Math.random() * 0.4, o: 0.2 + Math.random() * 0.5, ph: Math.random() * 6.28, hue: Math.random() * 360, rot: Math.random() * 6.28 }; }
+    function create(x, y) { return { x: x != null ? x : vrand() * w * 1.2 - w * 0.1, y: y != null ? y : -10 - vrand() * h * 0.3, s: 4 + vrand() * 10, hs: 3 + vrand() * 6, sp: 0.15 + vrand() * 0.4, o: 0.2 + vrand() * 0.5, ph: vrand() * 6.28, hue: vrand() * 360, rot: vrand() * 6.28 }; }
     function init(width, height) { w = width; h = height; p = []; for (i = 0; i < BASE; i++) p.push(create(null, null)); }
     function resize(width, height) { w = width; h = height; }
     function start(width, height) { w = width; h = height; init(w, h); ip = false; sig = readSignal('--lumin'); }
@@ -1189,7 +1192,7 @@ var i, q, tc, cx, cy, dx, dy;
       while (p.length > tc) p.pop();
       for (i = 0; i < p.length; i++) {
         q = p[i]; q.y += q.sp * (0.2 + sig * 0.6); q.x += Math.sin(ts * 0.001 + q.ph) * 0.3; q.rot += 0.01;
-        if (q.y > h + 20) { q.x = Math.random() * w * 1.2 - w * 0.1; q.y = -10 - Math.random() * 30; q.s = 4 + Math.random() * 10; q.o = 0.2 + Math.random() * 0.5; }
+        if (q.y > h + 20) { q.x = vrand() * w * 1.2 - w * 0.1; q.y = -10 - vrand() * 30; q.s = 4 + vrand() * 10; q.o = 0.2 + vrand() * 0.5; }
         c.save(); c.translate(q.x, q.y); c.rotate(q.rot);
         c.fillStyle = 'hsla(' + q.hue + ', 70%, ' + Math.round(45 + sig * 35) + '%, ' + (q.o * (0.1 + sig * 0.6)).toFixed(2) + ')';
         c.fillRect(-q.s / 2, -q.hs / 2, q.s, q.hs);
@@ -1204,7 +1207,7 @@ var i, q, tc, cx, cy, dx, dy;
   registerEffect('debris', function (_cvs, _context, _params, env) {
     var BASE = 15, MAX = 80; var p = [], w = 0, h = 0, sig = 0, ip = env.paused;
     var i, q, tc, glow;
-    function create(x, y) { return { x: x != null ? x : Math.random() * w, y: y != null ? y : h * 0.5 + Math.random() * h * 0.5, s: 2 + Math.random() * 5, o: 0.2 + Math.random() * 0.5, ph: Math.random() * 6.28, jx: (Math.random() - 0.5) * 2, jy: (Math.random() - 0.5) * 2 }; }
+    function create(x, y) { return { x: x != null ? x : vrand() * w, y: y != null ? y : h * 0.5 + vrand() * h * 0.5, s: 2 + vrand() * 5, o: 0.2 + vrand() * 0.5, ph: vrand() * 6.28, jx: (vrand() - 0.5) * 2, jy: (vrand() - 0.5) * 2 }; }
     function init(width, height) { w = width; h = height; p = []; for (i = 0; i < BASE; i++) p.push(create(null, null)); }
     function resize(width, height) { w = width; h = height; }
     function start(width, height) { w = width; h = height; init(w, h); ip = false; sig = readSignal('--tremor'); }
@@ -1218,8 +1221,8 @@ var i, q, tc, cx, cy, dx, dy;
       for (i = 0; i < p.length; i++) {
         q = p[i]; shake = Math.sin(ts * 0.005 + q.ph) * sig * 4;
         q.x += q.jx * sig * 0.2 + shake * 0.1; q.y += q.jy * sig * 0.2 + Math.cos(ts * 0.004 + q.ph) * sig * 2;
-        if (q.x < -10 || q.x > w + 10) { q.x = Math.random() * w; }
-        if (q.y > h + 10) { q.y = h * 0.5 + Math.random() * h * 0.4; }
+        if (q.x < -10 || q.x > w + 10) { q.x = vrand() * w; }
+        if (q.y > h + 10) { q.y = h * 0.5 + vrand() * h * 0.4; }
         c.fillStyle = 'rgba(140, 120, 100, ' + (q.o * sig).toFixed(2) + ')';
         c.fillRect(q.x - q.s / 2, q.y - q.s / 2, q.s, q.s);
       }
@@ -1232,7 +1235,7 @@ var i, q, tc, cx, cy, dx, dy;
   registerEffect('spray', function (_cvs, _context, _params, env) {
     var BASE = 30, MAX = 150; var p = [], w = 0, h = 0, sig = 0, ip = env.paused;
     var i, q, tc, glow;
-    function create(x, y) { return { x: x != null ? x : Math.random() * w, y: y != null ? y : h - 20 + Math.random() * 20, r: 0.5 + Math.random() * 2, s: 0.3 + Math.random() * 1, o: 0.2 + Math.random() * 0.5, a: -1.8 + Math.random() * -0.5, spread: (Math.random() - 0.5) * 0.6, ph: Math.random() * 6.28 }; }
+    function create(x, y) { return { x: x != null ? x : vrand() * w, y: y != null ? y : h - 20 + vrand() * 20, r: 0.5 + vrand() * 2, s: 0.3 + vrand() * 1, o: 0.2 + vrand() * 0.5, a: -1.8 + vrand() * -0.5, spread: (vrand() - 0.5) * 0.6, ph: vrand() * 6.28 }; }
     function init(width, height) { w = width; h = height; p = []; for (i = 0; i < BASE; i++) p.push(create(null, null)); }
     function resize(width, height) { w = width; h = height; }
     function start(width, height) { w = width; h = height; init(w, h); ip = false; sig = readSignal('--surge'); }
@@ -1245,7 +1248,7 @@ var i, q, tc, cx, cy, dx, dy;
       while (p.length > tc) p.pop();
       for (i = 0; i < p.length; i++) {
         q = p[i]; q.y += q.s * q.a * (0.3 + sig * 1); q.x += q.spread * sig + Math.sin(ts * 0.002 + q.ph) * 0.2;
-        if (q.y < -20) { q.x = Math.random() * w; q.y = h - 20 + Math.random() * 20; q.s = 0.3 + Math.random() * 1; q.spread = (Math.random() - 0.5) * 0.6; }
+        if (q.y < -20) { q.x = vrand() * w; q.y = h - 20 + vrand() * 20; q.s = 0.3 + vrand() * 1; q.spread = (vrand() - 0.5) * 0.6; }
         c.beginPath(); c.arc(q.x, q.y, q.r * (0.3 + sig * 0.7), 0, 6.28);
         c.fillStyle = 'rgba(180, 220, 240, ' + (q.o * sig).toFixed(2) + ')';
         c.fill();
@@ -1259,7 +1262,7 @@ var i, q, tc, cx, cy, dx, dy;
   registerEffect('bubble', function (_cvs, _context, _params, env) {
     var BASE = 10, MAX = 55; var p = [], w = 0, h = 0, sig = 0, ip = env.paused;
     var i, q, tc, swayHz, swayAmp, rad, alpha, rim;
-    function create(seed) { return { x: Math.random() * w, y: seed ? Math.random() * h : h + 10 + Math.random() * 40, r: 1.5 + Math.random() * 4.5, s: 0.25 + Math.random() * 0.55, o: 0.25 + Math.random() * 0.45, ph: Math.random() * 6.28, amp: 0.5 + Math.random() * 1.2, wob: 0.85 + Math.random() * 0.35 }; }
+    function create(seed) { return { x: vrand() * w, y: seed ? vrand() * h : h + 10 + vrand() * 40, r: 1.5 + vrand() * 4.5, s: 0.25 + vrand() * 0.55, o: 0.25 + vrand() * 0.45, ph: vrand() * 6.28, amp: 0.5 + vrand() * 1.2, wob: 0.85 + vrand() * 0.35 }; }
     function init(width, height) { w = width; h = height; p = []; for (i = 0; i < BASE; i++) p.push(create(true)); }
     function resize(width, height) { w = width; h = height; }
     function start(width, height) { w = width; h = height; init(w, h); ip = false; sig = readSignal('--surge'); }
@@ -1276,7 +1279,7 @@ var i, q, tc, cx, cy, dx, dy;
         q = p[i];
         q.y -= q.s * (0.18 + sig * 0.42);
         q.x += Math.sin(ts * swayHz + q.ph) * swayAmp * q.amp;
-        if (q.y < -20) { q.x = Math.random() * w; q.y = h + 10 + Math.random() * 40; q.r = 1.5 + Math.random() * 4.5; q.s = 0.25 + Math.random() * 0.55; q.o = 0.25 + Math.random() * 0.45; }
+        if (q.y < -20) { q.x = vrand() * w; q.y = h + 10 + vrand() * 40; q.r = 1.5 + vrand() * 4.5; q.s = 0.25 + vrand() * 0.55; q.o = 0.25 + vrand() * 0.45; }
         if (q.x < -10) q.x = w + 10; else if (q.x > w + 10) q.x = -10;
         rad = q.r * (q.wob + Math.sin(ts * 0.003 + q.ph) * 0.08);
         alpha = q.o * (0.45 + sig * 0.55);
@@ -1297,7 +1300,7 @@ var i, q, tc, cx, cy, dx, dy;
   registerEffect('spin', function (_cvs, _context, _params, env) {
     var BASE = 30, MAX = 100; var p = [], w = 0, h = 0, sig = 0, ip = env.paused;
     var i, q, tc, cx, cy, r, th;
-    function create() { var a = Math.random() * 6.28; return { a: a, r: 10 + Math.random() * 140, s: 0.5 + Math.random() * 1.5, o: 0.15 + Math.random() * 0.4, size: 1 + Math.random() * 2.5 }; }
+    function create() { var a = vrand() * 6.28; return { a: a, r: 10 + vrand() * 140, s: 0.5 + vrand() * 1.5, o: 0.15 + vrand() * 0.4, size: 1 + vrand() * 2.5 }; }
     function init(width, height) { w = width; h = height; cx = w / 2; cy = h / 2; p = []; for (i = 0; i < BASE; i++) p.push(create()); }
     function resize(width, height) { w = width; h = height; cx = w / 2; cy = h / 2; }
     function start(width, height) { w = width; h = height; init(w, h); ip = false; sig = readSignal('--wobble'); }
@@ -1329,18 +1332,18 @@ var i, q, tc, cx, cy, dx, dy;
     var i, q, tc, life, alpha, r, g, b, dx, dy, len, vmag, a, spd;
     var BAND_Y = 0.92;
     function create(x, y) {
-      var a = -Math.PI / 2 + (Math.random() - 0.5) * 2.0;
-      var spd = 4 + Math.random() * 8;
+      var a = -Math.PI / 2 + (vrand() - 0.5) * 2.0;
+      var spd = 4 + vrand() * 8;
       return {
-        x: x != null ? x : Math.random() * w,
-        y: y != null ? y : h * BAND_Y + Math.random() * h * 0.08,
+        x: x != null ? x : vrand() * w,
+        y: y != null ? y : h * BAND_Y + vrand() * h * 0.08,
         vx: Math.cos(a) * spd,
         vy: Math.sin(a) * spd,
-        life: 0.3 + Math.random() * 0.7,
-        maxLife: 0.3 + Math.random() * 0.7,
-        size: 2 + Math.random() * 4,
-        o: 0.5 + Math.random() * 0.5,
-        friction: 0.96 + Math.random() * 0.03,
+        life: 0.3 + vrand() * 0.7,
+        maxLife: 0.3 + vrand() * 0.7,
+        size: 2 + vrand() * 4,
+        o: 0.5 + vrand() * 0.5,
+        friction: 0.96 + vrand() * 0.03,
       };
     }
     function init(width, height) { w = width; h = height; p = []; for (i = 0; i < BASE; i++) p.push(create(null, null)); }
@@ -1362,17 +1365,17 @@ var i, q, tc, cx, cy, dx, dy;
         q.vy += 0.02;
         q.life -= 0.008 * (1 + sig * 0.5);
         if (q.life <= 0 || q.y > h + 10 || q.x < -20 || q.x > w + 20) {
-          a = -Math.PI / 2 + (Math.random() - 0.5) * 2.0;
-          spd = 4 + Math.random() * 8;
-          q.x = Math.random() * w;
-          q.y = h * BAND_Y + Math.random() * h * 0.08;
+          a = -Math.PI / 2 + (vrand() - 0.5) * 2.0;
+          spd = 4 + vrand() * 8;
+          q.x = vrand() * w;
+          q.y = h * BAND_Y + vrand() * h * 0.08;
           q.vx = Math.cos(a) * spd;
           q.vy = Math.sin(a) * spd;
-          q.life = 0.3 + Math.random() * 0.7;
+          q.life = 0.3 + vrand() * 0.7;
           q.maxLife = q.life;
-          q.size = 2 + Math.random() * 4;
-          q.o = 0.5 + Math.random() * 0.5;
-          q.friction = 0.96 + Math.random() * 0.03;
+          q.size = 2 + vrand() * 4;
+          q.o = 0.5 + vrand() * 0.5;
+          q.friction = 0.96 + vrand() * 0.03;
         }
         life = q.life / q.maxLife;
         alpha = q.o * life * (0.3 + sig * 0.7);
@@ -1383,7 +1386,7 @@ var i, q, tc, cx, cy, dx, dy;
         vmag = Math.sqrt(q.vx * q.vx + q.vy * q.vy) || 1;
         dx = (q.vx / vmag) * len;
         dy = (q.vy / vmag) * len;
-        c.beginPath(); c.moveTo(q.x, q.y); c.lineTo(q.x - dx + (Math.random() - 0.5) * 0.5, q.y - dy + (Math.random() - 0.5) * 0.5);
+        c.beginPath(); c.moveTo(q.x, q.y); c.lineTo(q.x - dx + (vrand() - 0.5) * 0.5, q.y - dy + (vrand() - 0.5) * 0.5);
         c.strokeStyle = 'rgba(' + r + ', ' + g + ', ' + b + ', ' + alpha.toFixed(2) + ')';
         c.lineWidth = 0.8 + life * 1.2; c.lineCap = 'round'; c.stroke();
         if (life > 0.3) { c.beginPath(); c.arc(q.x, q.y, 0.6 + life * 1.2, 0, 6.28); c.fillStyle = 'rgba(255, 255, 230, ' + (alpha * 0.5).toFixed(2) + ')'; c.fill(); }
@@ -1409,19 +1412,19 @@ var i, q, tc, cx, cy, dx, dy;
     ];
 
     function create(x, y) {
-      var colorIdx = (Math.random() * COLORS.length) | 0;
-      var wide = Math.random() < 0.4;
+      var colorIdx = (vrand() * COLORS.length) | 0;
+      var wide = vrand() < 0.4;
       return {
-        x: x != null ? x : Math.random() * w * 1.3 - w * 0.15,
-        y: y != null ? y : -10 - Math.random() * h * 0.3,
-        w: wide ? 4 + Math.random() * 8 : 2 + Math.random() * 4,
-        h: wide ? 2 + Math.random() * 3 : 3 + Math.random() * 6,
-        s: 0.3 + Math.random() * 0.8,
-        o: 0.4 + Math.random() * 0.5,
-        ph: Math.random() * 6.28,
-        rot: Math.random() * 6.28,
-        rotSpd: -0.03 + Math.random() * 0.06,
-        sway: 0.2 + Math.random() * 0.6,
+        x: x != null ? x : vrand() * w * 1.3 - w * 0.15,
+        y: y != null ? y : -10 - vrand() * h * 0.3,
+        w: wide ? 4 + vrand() * 8 : 2 + vrand() * 4,
+        h: wide ? 2 + vrand() * 3 : 3 + vrand() * 6,
+        s: 0.3 + vrand() * 0.8,
+        o: 0.4 + vrand() * 0.5,
+        ph: vrand() * 6.28,
+        rot: vrand() * 6.28,
+        rotSpd: -0.03 + vrand() * 0.06,
+        sway: 0.2 + vrand() * 0.6,
         color: COLORS[colorIdx],
       };
     }
@@ -1454,12 +1457,12 @@ var i, q, tc, cx, cy, dx, dy;
         q.rot += q.rotSpd * (0.5 + sig * 0.5);
 
         if (q.y > h + 20) {
-          q.x = Math.random() * w * 1.3 - w * 0.15;
-          q.y = -10 - Math.random() * 30;
-          q.s = 0.3 + Math.random() * 0.8;
-          q.o = 0.4 + Math.random() * 0.5;
-          q.rot = Math.random() * 6.28;
-          q.color = COLORS[(Math.random() * COLORS.length) | 0];
+          q.x = vrand() * w * 1.3 - w * 0.15;
+          q.y = -10 - vrand() * 30;
+          q.s = 0.3 + vrand() * 0.8;
+          q.o = 0.4 + vrand() * 0.5;
+          q.rot = vrand() * 6.28;
+          q.color = COLORS[(vrand() * COLORS.length) | 0];
         }
 
         c.save();
