@@ -12,17 +12,17 @@ from anvil.services.tracking.tracking import TrackingService
 
 @pytest.fixture(autouse=True)
 def reset_guard():
-    import anvil.services.tracking as mod
+    from anvil.services.tracking import tracking
 
-    mod._system_metrics_enabled = False
+    tracking._system_metrics_enabled = False
     yield
-    mod._system_metrics_enabled = False
+    tracking._system_metrics_enabled = False
 
 
 def _guard():
-    import anvil.services.tracking as mod
+    from anvil.services.tracking import tracking
 
-    return mod._system_metrics_enabled
+    return tracking._system_metrics_enabled
 
 
 class TestEnableSystemMetrics:

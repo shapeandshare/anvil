@@ -106,11 +106,11 @@ class TestStartTrainingPhases:
 
         with (
             patch(
-                "anvil.services.training.resolve_backend",
+                "anvil.services.training.training.resolve_backend",
                 return_value={"engine": "stdlib", "device": "cpu", "backend": "local"},
             ),
             patch(
-                "anvil.services.training.get_backend",
+                "anvil.services.training.training.get_backend",
                 return_value=fake_backend,
             ),
             patch.object(svc, "_load_docs", return_value=["doc1", "doc2"]),
@@ -142,11 +142,11 @@ class TestStartTrainingPhases:
 
         with (
             patch(
-                "anvil.services.training.resolve_backend",
+                "anvil.services.training.training.resolve_backend",
                 return_value={"engine": "stdlib", "device": "cpu", "backend": "local"},
             ),
             patch(
-                "anvil.services.training.get_backend",
+                "anvil.services.training.training.get_backend",
                 return_value=fake_backend,
             ),
             patch.object(svc, "_load_docs", return_value=["doc"]),
@@ -180,11 +180,11 @@ class TestStartTrainingPhases:
 
         with (
             patch(
-                "anvil.services.training.resolve_backend",
+                "anvil.services.training.training.resolve_backend",
                 return_value={"engine": "stdlib", "device": "cpu", "backend": "local"},
             ),
             patch(
-                "anvil.services.training.get_backend",
+                "anvil.services.training.training.get_backend",
                 return_value=fake_backend,
             ),
             patch.object(svc, "_load_docs", return_value=["doc"]),
@@ -214,11 +214,11 @@ class TestStartTrainingPhases:
 
         with (
             patch(
-                "anvil.services.training.resolve_backend",
+                "anvil.services.training.training.resolve_backend",
                 return_value={"engine": "torch", "device": "cuda", "backend": "modal"},
             ),
             patch(
-                "anvil.services.training.get_backend",
+                "anvil.services.training.training.get_backend",
                 return_value=fake_backend,
             ),
             patch.object(svc, "_load_docs", return_value=["doc"]),
@@ -255,11 +255,11 @@ class TestStartTrainingPhases:
 
         with (
             patch(
-                "anvil.services.training.resolve_backend",
+                "anvil.services.training.training.resolve_backend",
                 return_value={"engine": "stdlib", "device": "cpu", "backend": "local"},
             ),
             patch(
-                "anvil.services.training.get_backend",
+                "anvil.services.training.training.get_backend",
                 return_value=fake_backend,
             ),
             patch.object(svc, "_load_docs", return_value=["doc"]),
@@ -299,11 +299,11 @@ class TestStartTrainingPhases:
 
         with (
             patch(
-                "anvil.services.training.resolve_backend",
+                "anvil.services.training.training.resolve_backend",
                 return_value={"engine": "stdlib", "device": "cpu", "backend": "local"},
             ),
             patch(
-                "anvil.services.training.get_backend",
+                "anvil.services.training.training.get_backend",
                 return_value=fake_backend,
             ),
             patch.object(svc, "_load_docs", return_value=["doc"]),
@@ -340,11 +340,11 @@ class TestStartTrainingPhases:
 
         with (
             patch(
-                "anvil.services.training.resolve_backend",
+                "anvil.services.training.training.resolve_backend",
                 return_value={"engine": "stdlib", "device": "cpu", "backend": "local"},
             ),
             patch(
-                "anvil.services.training.get_backend",
+                "anvil.services.training.training.get_backend",
                 return_value=backend,
             ),
             patch.object(svc, "_load_docs", return_value=["doc"]),
@@ -383,11 +383,11 @@ class TestBackendSelection:
 
         with (
             patch(
-                "anvil.services.training.resolve_backend",
+                "anvil.services.training.training.resolve_backend",
                 return_value={"engine": "stdlib", "device": "cpu", "backend": "local"},
             ),
             patch(
-                "anvil.services.training.get_backend",
+                "anvil.services.training.training.get_backend",
                 return_value=backend,
             ) as mock_get,
             patch.object(svc, "_load_docs", return_value=["doc"]),
@@ -409,11 +409,11 @@ class TestBackendSelection:
 
         with (
             patch(
-                "anvil.services.training.resolve_backend",
+                "anvil.services.training.training.resolve_backend",
                 return_value={"engine": "torch", "device": "cuda", "backend": "modal"},
             ),
             patch(
-                "anvil.services.training.get_backend",
+                "anvil.services.training.training.get_backend",
                 return_value=backend,
             ) as mock_get,
             patch.object(svc, "_load_docs", return_value=["doc"]),
