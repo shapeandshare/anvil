@@ -48,6 +48,69 @@
   --glass-border:   rgba(208, 64, 176, 0.16);
 }
 
+/* ── Unicorn Overlay — floating sprites layer ── */
+.unicorn-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  overflow: hidden;
+}
+
+/* ── Unicorn Floater ── */
+.unicorn-floater {
+  position: absolute;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.unicorn-floater svg {
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.15));
+}
+
+/* ── Googly Eye Wiggles ── */
+.unicorn-pupil {
+  animation: unicorn-googly-wiggle 1.8s ease-in-out infinite alternate;
+}
+
+@keyframes unicorn-googly-wiggle {
+  0%   { transform: translate(0, 0); }
+  15%  { transform: translate(1.5px, -1px); }
+  30%  { transform: translate(-1px, 1.5px); }
+  45%  { transform: translate(2px, 0.5px); }
+  60%  { transform: translate(-1.5px, -1.5px); }
+  75%  { transform: translate(0.5px, 2px); }
+  90%  { transform: translate(-2px, 0px); }
+  100% { transform: translate(1px, -1.5px); }
+}
+
+/* ── Rainbow Flyby ── */
+.unicorn-rainbow {
+  position: absolute;
+  pointer-events: none;
+  will-change: transform;
+  animation: unicorn-flyby ease-out forwards;
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 10%, black 85%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, black 10%, black 85%, transparent 100%);
+}
+
+@keyframes unicorn-flyby {
+  0% {
+    transform: translateX(calc(100vw + 60px));
+    opacity: 0;
+  }
+  6% {
+    opacity: 0.85;
+  }
+  75% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateX(-300px);
+    opacity: 0;
+  }
+}
+
 /* Sparkle field — subtle star overlay driven by --twinkle */
 [data-skin="unicorn"] .app-main::before {
   content: "";
@@ -128,6 +191,17 @@
   opacity: 0;
 }
 
+[data-skin="unicorn"][data-unicorn-state="faded"] .unicorn-overlay {
+  opacity: 0.15;
+  filter: grayscale(1) brightness(0.5);
+  transition: opacity var(--dur-slow) var(--ease), filter var(--dur-slow) var(--ease);
+}
+
+@keyframes unicorn-fadeout {
+  0%   { opacity: 1; filter: grayscale(0); }
+  100% { opacity: 0.15; filter: grayscale(1) brightness(0.5); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   [data-skin="unicorn"] * {
     animation: none !important;
@@ -137,7 +211,10 @@
 
 @media (prefers-reduced-motion: reduce) {
   [data-skin="unicorn"] .app-main::before,
-  [data-skin="unicorn"] .app-main::after {
+  [data-skin="unicorn"] .app-main::after,
+  [data-skin="unicorn"] .unicorn-overlay,
+  [data-skin="unicorn"] .unicorn-floater,
+  [data-skin="unicorn"] .unicorn-rainbow {
     display: none;
   }
 }
