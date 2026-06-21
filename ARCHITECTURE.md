@@ -16,7 +16,7 @@ Repository → Service → AnvilWorkbench → Routes / CLI
 |---|---|---|
 | **Repository** | `anvil/db/repositories/` | DB access only. One repository per entity. Async SQLAlchemy queries. No business logic. |
 | **Service** | `anvil/services/<domain>/` | Business logic. Consumes repositories. One domain per sub-package. |
-| **God Class** | `anvil/cli.py` (`AnvilWorkbench`) | Single entry point exposing all services. Routes, CLI, and tests obtain services through it — never by directly instantiating a service. |
+| **God Class** | `anvil/workbench.py` (`AnvilWorkbench`) | Single entry point exposing all services. Routes, CLI, and tests obtain services through it — never by directly instantiating a service. |
 | **Routes** | `anvil/api/v1/` | FastAPI route handlers. Thin: extract params from request, call service, format response. No business logic. |
 | **CLI** | `anvil/cli.py` | Command-line entry points. Same layer as Routes — calls `AnvilWorkbench`. |
 

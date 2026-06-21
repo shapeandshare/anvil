@@ -1,5 +1,5 @@
 ---
-title: "ADR-025: Vault Health Subsumption into Anvil"
+title: "ADR-034: Vault Health Subsumption into Anvil"
 status: draft
 type: decision
 tags:
@@ -7,13 +7,13 @@ tags:
   - domain/governance
   - domain/tooling
 created: 2026-06-19
-updated: 2026-06-19
+updated: 2026-06-21
 related:
   - "[[Decisions/ADR-020-one-class-per-file|ADR-020]]"
   - "[[Decisions/ADR-022-domain-driven-package-decomposition|ADR-022]]"
   - "[[Decisions/ADR-023-responsible-data-governance|ADR-023]]"
 aliases:
-  - ADR-025
+  - ADR-034
   - Vault Health Subsumption
 source: agent
 code-refs:
@@ -23,7 +23,7 @@ code-refs:
   - shared/vault.mk
 ---
 
-# ADR-025: Vault Health Subsumption into Anvil
+# ADR-034: Vault Health Subsumption into Anvil
 
 ## Context
 

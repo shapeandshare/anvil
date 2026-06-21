@@ -9,6 +9,9 @@ tags:
 title: CSS Ambient Glow via color-mix + var(--accent)
 type: discovery
 updated: '2026-06-20'
+source: agent
+code-refs:
+  - anvil/api/static/css/themes/resonance.css
 ---
 # CSS Ambient Glow via `color-mix` + `var(--accent)`
 
