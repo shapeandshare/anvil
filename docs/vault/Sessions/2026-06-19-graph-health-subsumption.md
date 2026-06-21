@@ -40,7 +40,7 @@ Migrated all vault health CI scripts from `scripts/ci/` into a new `anvil/servic
 
 ## Decisions
 
-See `docs/vault/Decisions/ADR-025-vault-health-subsumption.md`
+See `docs/vault/Decisions/ADR-034-vault-health-subsumption.md`
 
 ## Session Artifacts
 
