@@ -15,7 +15,7 @@ from anvil.core.autograd import Value
 from anvil.core.engine import apply_rope, linear, matrix, precompute_rope, softmax
 
 # --- data ---
-docs = [l.strip() for l in open("input.txt") if l.strip()]
+docs = [l.strip() for l in open("examples/input.txt") if l.strip()]
 uchars = sorted(set("".join(docs)))
 V = len(uchars)
 BOS = V
