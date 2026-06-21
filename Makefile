@@ -50,11 +50,16 @@ test-browser: ## Browser smoke loop: reset → up → playwright tests → teard
 setup-browser: ## Install Playwright Chromium for local browser smoke tests (one-time)
 	uv run playwright install chromium
 
-setup-hooks: ## Enable conventional commit enforcement hook
+setup-hooks: ## Enable git hooks: conventional-commit enforcement + pre-commit lint/format/typecheck
 	@echo "Configuring git hooks path to .githooks/..."
 	git config core.hooksPath .githooks
-	@echo "Done. Hook will validate commit messages follow Conventional Commits format."
-	@echo "Types: feat, fix, perf, refactor, chore, docs, ci, test, style, build"
+	@echo ""
+	@echo "  Installed hooks:"
+	@echo "    commit-msg  — Validates commit messages follow Conventional Commits format"
+	@echo "    pre-commit  — Runs 'make pr-ready' (format → lint → typecheck) before each commit"
+	@echo ""
+	@echo "  To bypass pre-commit hook:  git commit --no-verify"
+	@echo "  To bypass commit-msg hook:  git commit --no-verify"
 
 clean: ## Wipe all runtime state and build artifacts for a fresh start
 	rm -f data/anvil-state.db mlruns/mlflow.db
@@ -63,3 +68,8 @@ clean: ## Wipe all runtime state and build artifacts for a fresh start
 	find . -type f -name '*.pyc' -delete 2>/dev/null || true
 	find . -type d -name '*.egg-info' -exec rm -rf {} + 2>/dev/null || true
 	@echo "Cleaned. Run 'make run' to rebuild from scratch."
+
+pr-ready: ## Format, lint, and typecheck — run before opening a PR
+	$(MAKE) format
+	$(MAKE) lint
+	$(MAKE) typecheck

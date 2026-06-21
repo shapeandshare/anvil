@@ -32,7 +32,6 @@ from .step_metrics import StepMetrics
 from .stop_requested import StopRequested
 from .throughput import ThroughputTracker, classify_divergence
 
-
 _TRAINING_QUEUE_MAXSIZE = 1024
 """int: Maximum number of events buffered per-run in the SSE event queue.
 
@@ -41,9 +40,7 @@ unbounded memory growth when the SSE consumer is slow or disconnected.
 """
 
 
-async def _enqueue_or_drop(
-    queue: asyncio.Queue, event: dict[str, object]
-) -> None:
+async def _enqueue_or_drop(queue: asyncio.Queue, event: dict[str, object]) -> None:
     """Put an event into the queue, silently dropping if the queue is full.
 
     Designed to be submitted via ``asyncio.run_coroutine_threadsafe`` from

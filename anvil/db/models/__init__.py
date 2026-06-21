@@ -13,22 +13,24 @@ representing a persistent entity in the anvil application database.
 # ``Base.metadata``. Without these imports, SQLAlchemy cannot resolve
 # foreign-key references (e.g. ``Sample.import_source_id → import_sources.id``)
 # or create tables via ``metadata.create_all()`` at test startup.
-from . import audit_event
-from . import content_blob
-from . import content_corpus
-from . import content_entry
-from . import content_import_job
-from . import content_ingest_session
-from . import content_lock
-from . import content_source
-from . import content_tag
-from . import content_version
-from . import content_version_run_ref
-from . import corpus
-from . import corpus_file
-from . import curation_operation
-from . import dataset
-from . import import_source
-from . import license_entry
-from . import sample
-from . import training_config
+from . import (
+    audit_event,
+    content_blob,
+    content_corpus,
+    content_entry,
+    content_import_job,
+    content_ingest_session,
+    content_lock,
+    content_source,
+    content_tag,
+    content_version,
+    content_version_run_ref,
+    corpus,
+    corpus_file,
+    curation_operation,
+    dataset,
+    import_source,
+    license_entry,
+    sample,
+    training_config,
+)

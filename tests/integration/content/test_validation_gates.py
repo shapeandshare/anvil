@@ -21,9 +21,7 @@ from anvil.db.models.content_corpus import ContentCorpus
 from anvil.db.models.content_source import ContentSource
 from anvil.db.repositories.content_blobs import ContentBlobRepository
 from anvil.db.repositories.content_corpora import ContentCorpusRepository
-from anvil.db.repositories.content_ingest_sessions import (
-    ContentIngestSessionRepository,
-)
+from anvil.db.repositories.content_ingest_sessions import ContentIngestSessionRepository
 from anvil.db.repositories.content_sources import ContentSourceRepository
 from anvil.db.repositories.content_versions import ContentVersionRepository
 from anvil.services.content.ingestion_service import IngestionService

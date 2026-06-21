@@ -96,9 +96,7 @@ async def test_perplexity(client):
     """
     td = tempfile.mkdtemp()
     try:
-        (Path(td) / "data.txt").write_text(
-            "hello world test corpus for perplexity\n"
-        )
+        (Path(td) / "data.txt").write_text("hello world test corpus for perplexity\n")
 
         # Create corpus
         r = await client.post(
@@ -129,9 +127,7 @@ async def test_perplexity(client):
             "/v1/training/start",
             json={**TINY_CONFIG, "dataset_id": ds_id},
         )
-        assert r.status_code == 200, (
-            f"Expected 200, got {r.status_code}: {r.text}"
-        )
+        assert r.status_code == 200, f"Expected 200, got {r.status_code}: {r.text}"
         body = r.json()
         assert body["status"] == "running"
         run_id = body["run_id"]
@@ -172,16 +168,14 @@ async def test_perplexity(client):
                 "text": "hello world test",
             },
         )
-        assert r.status_code == 200, (
-            f"Expected 200, got {r.status_code}: {r.text}"
-        )
+        assert r.status_code == 200, f"Expected 200, got {r.status_code}: {r.text}"
         result = r.json()
 
         # FR-008: perplexity must be finite
         perplexity = result["perplexity"]
-        assert math.isfinite(perplexity), (
-            f"Expected finite perplexity, got {perplexity}"
-        )
+        assert math.isfinite(
+            perplexity
+        ), f"Expected finite perplexity, got {perplexity}"
         assert "avg_loss" in result
         assert "num_positions" in result
         assert "vocab_size" in result

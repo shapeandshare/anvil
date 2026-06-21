@@ -43,7 +43,9 @@ async def test_create_corpus(svc):
 @pytest.mark.asyncio
 async def test_create_validates_strategy(svc):
     with pytest.raises(ValueError, match="(?i)chunkingstrategy"):
-        await svc.create(name="bad", root_path="/test/corpus", chunking_strategy="invalid")
+        await svc.create(
+            name="bad", root_path="/test/corpus", chunking_strategy="invalid"
+        )
 
 
 @pytest.mark.asyncio

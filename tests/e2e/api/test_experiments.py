@@ -268,9 +268,7 @@ async def test_experiment_artifacts(client):
         if eid is None or not mlflow_run_id:
             return  # no MLflow run available
 
-        r = await client.get(
-            f"/v1/experiments/{eid}/runs/{mlflow_run_id}/artifacts"
-        )
+        r = await client.get(f"/v1/experiments/{eid}/runs/{mlflow_run_id}/artifacts")
         # Degraded → 404 (experiment not found); full → 200
         assert r.status_code in (200, 404)
         if r.status_code == 200:

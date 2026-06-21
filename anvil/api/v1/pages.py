@@ -18,7 +18,6 @@ from fastapi.responses import HTMLResponse
 from ...api.deps import get_workbench
 from ...db.models.license_entry import LicenseEntry
 from ...workbench import AnvilWorkbench
-
 from .learning import LEARNING_ARC, _arc_context
 
 router = APIRouter()

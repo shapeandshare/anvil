@@ -266,7 +266,9 @@ class TestLogDatasetInput:
         )
 
         mock_session = AsyncMock()
-        with patch("anvil.services.tracking.mlflow_inputs.MlflowInputResolver") as resolver_cls:
+        with patch(
+            "anvil.services.tracking.mlflow_inputs.MlflowInputResolver"
+        ) as resolver_cls:
             mock_resolver = AsyncMock()
             resolver_cls.return_value = mock_resolver
             mock_resolver.resolve_dataset.return_value = (
@@ -302,7 +304,9 @@ class TestLogDatasetInput:
             run_name="fail-resolver", params={}, engine_backend="stdlib", device="cpu"
         )
 
-        with patch("anvil.services.tracking.mlflow_inputs.MlflowInputResolver") as resolver_cls:
+        with patch(
+            "anvil.services.tracking.mlflow_inputs.MlflowInputResolver"
+        ) as resolver_cls:
             mock_session = AsyncMock()
             mock_resolver = AsyncMock()
             resolver_cls.return_value = mock_resolver
@@ -322,7 +326,9 @@ class TestLogCorpusInput:
         )
 
         mock_session = AsyncMock()
-        with patch("anvil.services.tracking.mlflow_inputs.MlflowInputResolver") as resolver_cls:
+        with patch(
+            "anvil.services.tracking.mlflow_inputs.MlflowInputResolver"
+        ) as resolver_cls:
             mock_resolver = AsyncMock()
             resolver_cls.return_value = mock_resolver
             mock_resolver.resolve_corpus.return_value = (
@@ -360,7 +366,9 @@ class TestLogCorpusInput:
             run_name="fail-corpus", params={}, engine_backend="stdlib", device="cpu"
         )
 
-        with patch("anvil.services.tracking.mlflow_inputs.MlflowInputResolver") as resolver_cls:
+        with patch(
+            "anvil.services.tracking.mlflow_inputs.MlflowInputResolver"
+        ) as resolver_cls:
             mock_session = AsyncMock()
             mock_resolver = AsyncMock()
             resolver_cls.return_value = mock_resolver

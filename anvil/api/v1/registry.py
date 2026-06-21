@@ -13,7 +13,7 @@ Model IDs are resolved via convention-based naming (``dataset-<id>`` or
 """
 
 import asyncio
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException, Query
 from mlflow.tracking import MlflowClient

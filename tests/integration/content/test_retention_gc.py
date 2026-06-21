@@ -25,9 +25,7 @@ from anvil.db.models.content_tag import ContentTag
 from anvil.db.models.content_version_run_ref import VersionRunRef
 from anvil.db.repositories.content_blobs import ContentBlobRepository
 from anvil.db.repositories.content_corpora import ContentCorpusRepository
-from anvil.db.repositories.content_ingest_sessions import (
-    ContentIngestSessionRepository,
-)
+from anvil.db.repositories.content_ingest_sessions import ContentIngestSessionRepository
 from anvil.db.repositories.content_sources import ContentSourceRepository
 from anvil.db.repositories.content_versions import ContentVersionRepository
 from anvil.services.content.ingest_status import IngestStatus

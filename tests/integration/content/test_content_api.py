@@ -65,7 +65,9 @@ async def api(
     app.dependency_overrides[get_workbench] = _override_workbench
 
     transport = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url="https://test") as client:
+    async with httpx.AsyncClient(
+        transport=transport, base_url="https://test"
+    ) as client:
         yield client
 
     await engine.dispose()

@@ -69,6 +69,39 @@ jobs:
       - name: Run lint
         run: make lint
 
+  # ── Auto-format gate ──
+  format:
+    name: Auto-format
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: bump-scope-guard
+    if: needs.bump-scope-guard.outputs.scope != 'version-only'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@8d55fbecc275b1c35dbe060458839f8d30439ccf  # v3
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Setup environment
+        run: make setup
+      - name: Run auto-format
+        run: make format
+      - name: Commit formatting changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --exit-code; then
+            git commit -m "style: auto-format with black + isort [skip ci]"
+            git push
+          else
+            echo "No formatting changes needed."
+          fi
+
   # ── Type-check gate ──
   typecheck:
     name: Type Check
@@ -174,7 +207,7 @@ jobs:
     name: Gate Status
     runs-on: ubuntu-latest
     timeout-minutes: 3
-    needs: [bump-scope-guard, lint, typecheck, test, sonar-scan, vault-audit]
+    needs: [bump-scope-guard, format, lint, typecheck, test, sonar-scan, vault-audit]
     if: always()
     steps:
       - name: Summarize gate results
@@ -183,7 +216,7 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "| Gate | Status |" >> "$GITHUB_STEP_SUMMARY"
           echo "|------|--------|" >> "$GITHUB_STEP_SUMMARY"
-          for gate in bump-scope-guard lint typecheck test sonar-scan vault-audit; do
+          for gate in bump-scope-guard format lint typecheck test sonar-scan vault-audit; do
             STATUS="${{ needs[gate].result }}"
             echo "| $gate | $STATUS |" >> "$GITHUB_STEP_SUMMARY"
           done

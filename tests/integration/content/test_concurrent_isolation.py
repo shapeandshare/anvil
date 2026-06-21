@@ -23,9 +23,7 @@ from anvil.db.models.content_corpus import ContentCorpus
 from anvil.db.models.content_source import ContentSource
 from anvil.db.repositories.content_blobs import ContentBlobRepository
 from anvil.db.repositories.content_corpora import ContentCorpusRepository
-from anvil.db.repositories.content_ingest_sessions import (
-    ContentIngestSessionRepository,
-)
+from anvil.db.repositories.content_ingest_sessions import ContentIngestSessionRepository
 from anvil.db.repositories.content_sources import ContentSourceRepository
 from anvil.db.repositories.content_versions import ContentVersionRepository
 from anvil.services.content.accept_result import AcceptResult
@@ -38,7 +36,6 @@ from anvil.services.content.local_versioned_content_store import (
 from anvil.services.content.staged_entry import StagedEntry
 from anvil.services.content.validation_service import ValidationService
 from anvil.services.content.version_ref import VersionRef
-
 
 # ── Helpers (reuse pattern from test_real_store_e2e.py) ──────────────
 
