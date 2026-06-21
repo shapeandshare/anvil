@@ -8,7 +8,7 @@ import random
 
 random.seed(42)
 
-docs = [l.strip() for l in open("input.txt") if l.strip()]
+docs = [l.strip() for l in open("examples/input.txt") if l.strip()]
 uchars = sorted(set("".join(docs)))
 BOS = len(uchars)
 counts = {}
