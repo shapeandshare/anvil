@@ -171,6 +171,10 @@ class LocalVersionedContentStore(VersionedContentStore):
         digest, persists the blob to the content-addressed store, and
         writes a staging reference file.
 
+        **Isolation guarantee**: This method writes only to the
+        session-scoped staging area (``data/content/staging/<key>/``).
+        Canonical corpus state is never modified during staging.
+
         Parameters
         ----------
         session : IngestSessionRef
@@ -315,12 +319,15 @@ class LocalVersionedContentStore(VersionedContentStore):
         if not staged:
             raise ValueError(f"Session {session.session_id} has no staged content")
 
-        # Run validation gates (fail-closed).
-        report = await self._validation.validate(
-            staged,
-            content_db_session=self._db_session,
-            content_dir=str(self._content_dir),
-            corpus_slug=corpus_slug,
+        # Run validation gates (fail-closed, with 30-second timeout).
+        report = await asyncio.wait_for(
+            self._validation.validate(
+                staged,
+                content_db_session=self._db_session,
+                content_dir=str(self._content_dir),
+                corpus_slug=corpus_slug,
+            ),
+            timeout=30.0,
         )
         if not report.ok:
             raise ValueError(

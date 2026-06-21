@@ -18,6 +18,7 @@ from fastapi.responses import HTMLResponse
 from ...api.deps import get_workbench
 from ...db.models.license_entry import LicenseEntry
 from ...workbench import AnvilWorkbench
+
 from .learning import LEARNING_ARC, _arc_context
 
 router = APIRouter()
@@ -174,6 +175,26 @@ def _arc_context(key: str) -> dict:
     from .learning import _arc_context as _ctx
 
     return _ctx(key)
+
+
+@router.get("/content-page", response_class=HTMLResponse)
+async def content_page(request: Request):
+    """Render the content library management page.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming HTTP request.
+
+    Returns
+    -------
+    HTMLResponse
+        Rendered ``archetypes/content_library.html`` template.
+    """
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "archetypes/content_library.html",
+    )
 
 
 @router.get("/about", response_class=HTMLResponse)

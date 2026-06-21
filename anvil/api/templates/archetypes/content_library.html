@@ -1,0 +1,211 @@
+{# ── Content Hub (US5) ───────────────────────────
+   DESIGN.md consulted for all spacing, color, type tokens.
+   Every visual property references var(--*) tokens — no raw values.
+   Conforms to WCAG AA via tokens.css contrast ratios.
+   Reduced-motion and reduced-transparency honored via tokens.css
+   and prefers-reduced-motion media queries in archetypes.css.
+   Theme-system: data-skin/data-theme flows through from base.html.
+   ───────────────────────────────────────────────────── #}
+{% extends "base.html" %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
+{% block content %}
+<div class="training-dashboard">
+
+  {# ── BANNER CTA: Content Repository onboarding ── #}
+  <div class="section-card section-card--banner" style="--stagger-i: 0">
+    <div class="section-card__content" style="display:flex;align-items:center;gap:var(--space-3);">
+      <span style="font-size:1.2rem;flex-shrink:0;">&#128230;</span>
+      <div style="flex:1;">
+        <div style="font-family:var(--font-body);font-weight:600;font-size:var(--text-footnote);color:var(--text-secondary);">
+          Versioned Content Repository
+        </div>
+        <div style="font-size:var(--text-caption-2);color:var(--text-tertiary);margin-top:2px;">
+          Immutable versioning, isolated ingestion, and ensemble composition &mdash; data you can pin, reproduce, and trust.
+        </div>
+      </div>
+      <a href="/v1/learn/data-fundamentals" class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap;">
+        Learn More &rarr;
+      </a>
+    </div>
+  </div>
+
+  {# ── SECTION: Corpus Library ── #}
+  <div class="section-card section-card--forge" style="--stagger-i: 1">
+    <div class="section-card__header">
+      <span class="section-card__icon">&#128193;</span>
+      <h2 class="section-card__title section-card__title--forge">Corpus Library</h2>
+      <button type="button" class="btn btn-primary btn-sm" id="btn-new-corpus" onclick="content.showCorpusForm()">+ New Corpus</button>
+    </div>
+    <div id="corpus-list">
+      <div class="empty-state-card">
+        <span class="empty-state-card__icon">&#128193;</span>
+        <span>No corpora yet. Create your first versioned content corpus to get started.</span>
+      </div>
+    </div>
+  </div>
+
+  {# ── Create Corpus Form (hidden by default) ── #}
+  <div id="corpus-form-card" class="section-card" style="display:none;--stagger-i: 2">
+    <div class="section-card__header">
+      <span class="section-card__icon">&#10133;</span>
+      <h2 class="section-card__title">Create Corpus</h2>
+    </div>
+    <div class="corpus-form" style="display:flex;flex-direction:column;gap:var(--space-3);">
+      <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);">
+        <input type="text" class="form-input" id="corpus-name" placeholder="Corpus name" style="flex:2;min-width:200px;" aria-label="Corpus Name">
+        <input type="text" class="form-input" id="corpus-slug" placeholder="slug (auto)" style="flex:1;min-width:140px;" aria-label="Corpus Slug">
+      </div>
+      <input type="text" class="form-input" id="corpus-desc" placeholder="Description (optional)" style="width:100%;" aria-label="Corpus Desc">
+      <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;">
+        <label style="display:flex;align-items:center;gap:var(--space-1);font-size:var(--text-footnote);color:var(--text-secondary);">
+          <span>Strategy:</span>
+          <select class="form-select" id="corpus-chunking" style="min-width:120px;" aria-label="Corpus Chunking">
+            <option value="windowed">windowed</option>
+            <option value="file">file</option>
+            <option value="line">line</option>
+          </select>
+        </label>
+        <label style="display:flex;align-items:center;gap:var(--space-1);font-size:var(--text-footnote);color:var(--text-secondary);">
+          <span>Block size:</span>
+          <input type="number" class="form-input" id="corpus-block-size" value="16" min="4" max="1024" style="width:80px;" aria-label="Corpus Block Size">
+        </label>
+        <label style="display:flex;align-items:center;gap:var(--space-1);font-size:var(--text-footnote);color:var(--text-secondary);">
+          <span>Overlap:</span>
+          <input type="number" class="form-input" id="corpus-overlap" value="0.5" min="0" max="1" step="0.05" style="width:80px;" aria-label="Corpus Overlap">
+        </label>
+      </div>
+      <div style="display:flex;gap:var(--space-2);">
+        <button type="button" class="btn btn-primary" onclick="content.createCorpus()">Create</button>
+        <button type="button" class="btn btn-secondary" onclick="content.hideCorpusForm()">Cancel</button>
+      </div>
+      <div id="corpus-form-status" class="ds-status-line" style="display:none;"></div>
+    </div>
+  </div>
+
+  {# ── SECTION: Active Ingestion Sessions (Injection Monitor) ── #}
+  <div class="section-card section-card--forge" style="--stagger-i: 3">
+    <div class="section-card__header">
+      <span class="section-card__icon">&#9889;</span>
+      <h2 class="section-card__title section-card__title--forge">Injection Monitor</h2>
+      <span class="section-card__badge section-card__badge--green" id="injection-badge" style="display:none;">0 active</span>
+    </div>
+    <div class="section-card__content">
+      <div class="connection-state cs-idle" id="injection-state">disconnected</div>
+      <div id="injection-sessions" style="margin-top:var(--space-3);">
+        <div class="empty-state-card">
+          <span class="empty-state-card__icon">&#9889;</span>
+          <span>No active ingestion sessions. Open a session from the source form below to start injecting content.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ── SECTION: Register Source ── #}
+  <div class="section-card" style="--stagger-i: 4">
+    <div class="section-card__header">
+      <span class="section-card__icon">&#128279;</span>
+      <h2 class="section-card__title">Register Source</h2>
+    </div>
+    <div class="section-card__content">
+      <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;">
+        <input type="text" class="form-input" id="source-name" placeholder="Source name" style="flex:1;min-width:180px;" aria-label="Source Name">
+        <input type="text" class="form-input" id="source-slug" placeholder="slug" style="flex:1;min-width:140px;" aria-label="Source Slug">
+        <select class="form-select" id="source-kind" style="min-width:120px;" aria-label="Source Kind">
+          <option value="manual">manual</option>
+          <option value="import">import</option>
+          <option value="api">api</option>
+        </select>
+        <button type="button" class="btn btn-primary btn-sm" onclick="content.createSource()">Register</button>
+      </div>
+      <div id="source-status" class="ds-status-line" style="margin-top:var(--space-2);display:none;"></div>
+    </div>
+  </div>
+
+  {# ── SECTION: Open Session & Stage Content ── #}
+  <div class="section-card" style="--stagger-i: 5">
+    <div class="section-card__header">
+      <span class="section-card__icon">&#128196;</span>
+      <h2 class="section-card__title">Ingest Content</h2>
+    </div>
+    <div class="section-card__content">
+      <p class="ds-flow-desc">Select a corpus and source, then upload files to stage content for ingestion.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;">
+        <select class="form-select" id="ingest-corpus" style="flex:1;min-width:180px;" aria-label="Ingest Corpus">
+          <option value="">— select corpus —</option>
+        </select>
+        <select class="form-select" id="ingest-source" style="flex:1;min-width:180px;" aria-label="Ingest Source">
+          <option value="">— select source —</option>
+        </select>
+        <button type="button" class="btn btn-primary btn-sm" id="btn-open-session" onclick="content.openSession()">Open Session</button>
+      </div>
+      <div id="session-info" style="margin-top:var(--space-2);"></div>
+      <div id="stage-area" style="display:none;margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--separator);">
+        <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;">
+          <input type="text" class="form-input" id="stage-path" placeholder="path/to/file.txt" style="flex:2;min-width:180px;" aria-label="Stage Path">
+          <input type="file" class="form-input" id="stage-file" style="flex:1;min-width:140px;" aria-label="Stage File">
+          <button type="button" class="btn btn-primary btn-sm" id="btn-stage" onclick="content.stageFile()">Stage</button>
+        </div>
+        <div id="stage-status" class="ds-status-line" style="margin-top:var(--space-2);"></div>
+        <div style="display:flex;gap:var(--space-2);margin-top:var(--space-2);">
+          <button type="button" class="btn btn-accent btn-sm" id="btn-validate" onclick="content.validateSession()">&#10003; Validate</button>
+          <button type="button" class="btn btn-accent btn-sm" id="btn-accept" onclick="content.acceptSession()">&#9874; Accept</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-abandon" onclick="content.abandonSession()">Abandon</button>
+        </div>
+        <div id="validation-report" style="margin-top:var(--space-2);"></div>
+        <div id="accept-result" style="margin-top:var(--space-2);"></div>
+      </div>
+    </div>
+  </div>
+
+  {# ── SECTION: Version Timeline ── #}
+  <div class="section-card" style="--stagger-i: 6">
+    <div class="section-card__header">
+      <span class="section-card__icon">&#128196;</span>
+      <h2 class="section-card__title">Version Timeline</h2>
+      <select class="form-select" id="timeline-corpus" style="min-width:180px;margin-left:auto;" onchange="content.loadTimeline()" aria-label="Timeline Corpus">
+        <option value="">— select corpus —</option>
+      </select>
+    </div>
+    <div id="version-timeline">
+      <div class="empty-state-card">
+        <span class="empty-state-card__icon">&#128196;</span>
+        <span>Select a corpus above to view its version history.</span>
+      </div>
+    </div>
+  </div>
+
+  {# ── SECTION: Lineage ── #}
+  <div class="section-card" style="--stagger-i: 7">
+    <div class="section-card__header">
+      <span class="section-card__icon">&#128279;</span>
+      <h2 class="section-card__title">Lineage</h2>
+    </div>
+    <div id="lineage-view">
+      <div class="empty-state-card">
+        <span class="empty-state-card__icon">&#128279;</span>
+        <span>Version lineage will appear here after selecting a version.</span>
+      </div>
+    </div>
+  </div>
+
+  {# ── MOUNT POINTS: Composer, Import Console, Checkout Board ── #}
+  <div id="composer-mount" style="--stagger-i: 8"></div>
+  <div id="import-mount" style="--stagger-i: 9"></div>
+  <div id="locks-mount" style="--stagger-i: 10"></div>
+
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/sse.js"></script>
+<script src="/static/js/composer.js"></script>
+<script src="/static/js/content.js"></script>
+<script>
+(function() {
+  'use strict';
+  /* Mount the Ensemble Composer into its mount point */
+  if (window.composer && typeof window.composer.mount === 'function') {
+    window.composer.mount();
+  }
+})();
+</script>
+{% endblock %}

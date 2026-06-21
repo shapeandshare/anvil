@@ -472,6 +472,21 @@ class ValidationReportOut(BaseModel):
     problems: list[dict] = []
 
 
+class CompositionSpecItem(BaseModel):
+    """A single item in a composition specification.
+
+    Parameters
+    ----------
+    content_hash : str
+        SHA-256 hex digest of the content blob to include.
+    weight : float
+        Sampling weight for this entry in the composition.
+    """
+
+    content_hash: str
+    weight: float
+
+
 class FreezeVersionBody(BaseModel):
     """Request body for freezing a new corpus version.
 
@@ -481,10 +496,15 @@ class FreezeVersionBody(BaseModel):
         Optional version note. Defaults to ``None``.
     label : str | None, optional
         Optional human-readable label. Defaults to ``None``.
+    composition : list[CompositionSpecItem] | None, optional
+        Optional composition specification for creating a virtual
+        composition version. When present, creates a weighted
+        composition instead of a HEAD snapshot. Defaults to ``None``.
     """
 
     note: str | None = None
     label: str | None = None
+    composition: list[CompositionSpecItem] | None = None
 
 
 class TagBody(BaseModel):
@@ -551,3 +571,60 @@ class RevertBody(BaseModel):
     """
 
     to_version_id: int
+
+
+# ── Content Import (US6) schemas ──────────────────────────────────────
+
+
+class ImportStart(BaseModel):
+    """Request body for starting a declarative content import job.
+
+    Parameters
+    ----------
+    corpus_id : int
+        Primary key of the target corpus.
+    source : str
+        Source slug identifying the content origin.
+    config : dict
+        Job-specific configuration parameters.
+    """
+
+    corpus_id: int
+    source: str
+    config: dict
+
+
+class ImportJobOut(BaseModel):
+    """Import job as returned by the API.
+
+    Parameters
+    ----------
+    id : int
+        Primary key.
+    corpus_id : int
+        FK to the target corpus.
+    source_id : int
+        FK to the content source.
+    config_json : str
+        JSON-serialised job configuration.
+    status : str
+        Current job status from ``IngestStatus``.
+    session_id : int | None, optional
+        FK to the linked ingest session, if any.
+    message : str | None, optional
+        Optional status or error message.
+    started_at : datetime
+        Timestamp when the job was started.
+    finished_at : datetime | None, optional
+        Timestamp when the job finished.
+    """
+
+    id: int
+    corpus_id: int
+    source_id: int
+    config_json: str
+    status: str
+    session_id: int | None = None
+    message: str | None = None
+    started_at: datetime
+    finished_at: datetime | None = None

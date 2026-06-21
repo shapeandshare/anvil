@@ -13,7 +13,7 @@ Model IDs are resolved via convention-based naming (``dataset-<id>`` or
 """
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from fastapi import APIRouter, HTTPException, Query
 from mlflow.tracking import MlflowClient
@@ -150,9 +150,7 @@ def _fmt_ts(ts: int | None) -> str | None:
     if ts is None:
         return None
     try:
-        return datetime.fromtimestamp(ts / 1000, tz=timezone.utc).strftime(
-            "%Y-%m-%d %H:%M UTC"
-        )
+        return datetime.fromtimestamp(ts / 1000, tz=UTC).strftime("%Y-%m-%d %H:%M UTC")
     except (OSError, OverflowError, ValueError):
         return str(ts)
 

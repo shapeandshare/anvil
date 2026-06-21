@@ -30,9 +30,12 @@ if TYPE_CHECKING:
     from .db.repositories.content_versions import ContentVersionRepository
     from .db.repositories.corpora import CorpusRepository
     from .db.repositories.datasets import DatasetRepository
+    from .services.content.composition_service import CompositionService
     from .services.content.corpus_service import CorpusService as ContentCorpusService
+    from .services.content.import_service import ImportService
     from .services.content.ingestion_service import IngestionService
     from .services.content.lineage_service import LineageService
+    from .services.content.lock_service import LockService
     from .services.content.versioned_content_store import VersionedContentStore
     from .services.datasets.corpora import CorpusService
     from .services.datasets.dataset_curation import DatasetCurationService
@@ -85,10 +88,10 @@ class AnvilWorkbench:
         self._content_store: VersionedContentStore | None = None
         self._content_corpora: ContentCorpusService | None = None
         self._content_ingestion: IngestionService | None = None
-        self._content_composition: object | None = None  # will be CompositionService
+        self._content_composition: CompositionService | None = None
         self._content_lineage: LineageService | None = None
-        self._content_imports: object | None = None  # will be ImportService
-        self._content_locks: object | None = None  # will be LockService
+        self._content_imports: ImportService | None = None
+        self._content_locks: LockService | None = None
 
     # ── Stateless service accessors ─────────────────────────────────────
 
@@ -354,11 +357,23 @@ class AnvilWorkbench:
         return self._content_ingestion
 
     @property
-    def content_composition(self) -> object:  # will be CompositionService
-        """Lazily-initialised content composition service."""
+    def content_composition(self) -> CompositionService:
+        """Return the ``CompositionService`` wired to *session*.
+
+        Lazily initialised on first access.  Provides ``preview``
+        and ``freeze`` operations for weighted composition versions.
+        """
         if self._content_composition is None:
-            # Placeholder — implemented by a future US.
-            self._content_composition = object()
+            from .services.content.composition_service import (
+                CompositionService,
+            )
+
+            self._content_composition = CompositionService(
+                store=self.content_store,
+                version_repo=self.content_version_repo,
+                corpus_repo=self.content_corpus_repo,
+                db_session=self._session,
+            )
         return self._content_composition
 
     @property
@@ -376,19 +391,32 @@ class AnvilWorkbench:
         return self._content_lineage
 
     @property
-    def content_imports(self) -> object:  # will be ImportService
-        """Lazily-initialised content import service."""
+    def content_imports(self) -> ImportService:
+        """Lazily-initialised ``ImportService`` wired to *session*."""
         if self._content_imports is None:
-            # Placeholder — implemented by a future US.
-            self._content_imports = object()
+            from .services.content.import_service import ImportService
+
+            self._content_imports = ImportService(
+                import_job_repo=self.content_import_job_repo,
+                session_repo=self.content_ingest_session_repo,
+                source_repo=self.content_source_repo,
+                corpus_repo=self.content_corpus_repo,
+                content_store=self.content_store,
+                ingestion_service=self.content_ingestion,
+            )
         return self._content_imports
 
     @property
-    def content_locks(self) -> object:  # will be LockService
-        """Lazily-initialised content lock service."""
+    def content_locks(self) -> LockService:
+        """Lazily-initialised ``LockService`` wired to *session*.
+
+        Manages advisory checkout lock lifecycle (acquire, release,
+        list active) backed by the ``ContentLockRepository``.
+        """
         if self._content_locks is None:
-            # Placeholder — implemented by a future US.
-            self._content_locks = object()
+            from .services.content.lock_service import LockService
+
+            self._content_locks = LockService(self.content_lock_repo)
         return self._content_locks
 
     # ── Session lifecycle ───────────────────────────────────────────────

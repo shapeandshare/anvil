@@ -39,6 +39,14 @@ Non-obvious constraints, gaps, and conflicts discovered during agent sessions. E
 - [[Discoveries/global-particle-speed-via-sim-step-cadence|Global Particle Speed via Sim-Step Cadence Gating]] — Slowing *all* particle effects uniformly (idle + active) can't be done by scaling the `timestamp` alone, because per-frame position integration is delta-less. The fix is a single `SPEED_SCALE` knob that gates the simulation step on accumulated wall-clock time and feeds effects a scaled `simClock`; skipped frames don't clear the canvas, so there's no flicker.
 - [[Discoveries/multi-layer-radial-gradient-rain-failure|Multi-Layer Radial-Gradient Rain Effect Invisible on Pseudo-Elements]] — 40–49 `radial-gradient()` layers with soft edges on `.app-shell::before` produced no visible droplets, while the same pseudo-element renders a solid color fine. Probably a compositing limit or sub-pixel rendering issue.
 
+## Discoveries from this session
+
+- **Fake-based tests mask real integration bugs**: the original 61 US1 tests used an in-memory `FakeVersionedContentStore`, which passed instantly but hid ~16 real bugs (broken wiring, empty-version accept, ambiguous ORM relationships, unnamed migration constraints, greenlet expired-object crashes, missing commits). Three-layer testing (unit/fake, real store+service e2e, HTTP API) is now standard for the content repo.
+- **`asyncio.Lock` + `MissingGreenlet` pattern**: accessing ORM attributes after `commit()` expires them; sync-style lazy-load triggers `MissingGreenlet` in async contexts. Always capture plain ids/values before commit.
+- **Alembic + SQLite + unnamed constraints**: SQLite batch mode requires all constraints to have a name. Forward FKs in CREATE TABLE are tolerated by SQLite — no need for `batch_alter_table`.
+- **LakeFS OSS RBAC is enterprise-only**: fine-grained per-branch scoping and merge restrictions are not available in OSS LakeFS. Producer + management authz must be app-level regardless.
+- **`VersionedContentStore` as a substrate boundary**: separating versioned content operations from the blob-level `FileStore` prevents bounded-context confusion and enables swapping the local pure-Python impl for a future LakeFS-backed SaaS impl without touching services/routes.
+
 ## Related MOCs
 
 - [[Sessions/2026-06-10-implementation|Sessions]] — Full session logs

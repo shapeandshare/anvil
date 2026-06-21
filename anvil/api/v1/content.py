@@ -17,20 +17,27 @@ or raise ``HTTPException`` on error.
 
 from __future__ import annotations
 
+import asyncio
+import json
 import re
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 
+from starlette.responses import StreamingResponse
+
 from ...api.deps import get_workbench
 from ...workbench import AnvilWorkbench
 from .schemas import (
     AcceptOut,
+    CompositionSpecItem,
     ContentCorpusCreate,
     ContentCorpusOut,
     ContentVersionOut,
     FreezeVersionBody,
+    ImportJobOut,
+    ImportStart,
     LockBody,
     LockOut,
     RevertBody,
@@ -43,6 +50,11 @@ from .schemas import (
 router = APIRouter()
 """APIRouter: Content repository routes, mounted under
 ``/v1/content`` via the parent v1 router."""
+
+# Module-level SSE event queue for injection lifecycle events.
+# Pushed to by IngestionService.accept() and consumed by the
+# ``/content/stream/injection`` SSE endpoint.
+_injection_queue: asyncio.Queue[dict[str, str]] = asyncio.Queue()
 
 
 def _slugify(name: str) -> str:
@@ -509,6 +521,21 @@ async def accept_session(
         await workbench.session.rollback()
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
+    # Push SSE event for the injection stream.
+    _injection_queue.put_nowait(
+        {
+            "event": "accepted",
+            "data": json.dumps(
+                {
+                    "session_id": id,
+                    "version_id": result.version_id,
+                    "version_number": result.version_number,
+                    "entry_count": result.entry_count,
+                }
+            ),
+        }
+    )
+
     return {
         "data": AcceptOut(
             version_id=result.version_id,
@@ -603,14 +630,17 @@ async def freeze_version(
 ):
     """Freeze a new immutable version of a corpus.
 
-    Snapshots the current HEAD content into a new version record.
+    When ``body.composition`` is ``None``, snapshots the current HEAD
+    content into a new version record.  When *composition* is provided,
+    delegates to ``CompositionService.freeze()`` to create a weighted
+    composition version.
 
     Parameters
     ----------
     id : int
         The corpus primary key.
     body : FreezeVersionBody, optional
-        Optional note and label for the version.
+        Optional note, label, and composition specification.
     workbench : AnvilWorkbench
         Injected session-bound workbench.
 
@@ -622,15 +652,28 @@ async def freeze_version(
     Raises
     ------
     HTTPException
-        If the corpus is not found (404).
+        If the corpus is not found (404), or the composition spec
+        is invalid (422).
     """
     corpus = await workbench.content_corpus_repo.get(id)
     if corpus is None:
         raise HTTPException(status_code=404, detail="Corpus not found")
 
-    version = await workbench.content_store.freeze_version(
-        corpus_slug=corpus.slug,
-    )
+    if body is not None and body.composition is not None:
+        # Delegate to CompositionService for weighted composition.
+        spec = [
+            {"content_hash": item.content_hash, "weight": item.weight}
+            for item in body.composition
+        ]
+        try:
+            version = await workbench.content_composition.freeze(id, spec)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+    else:
+        version = await workbench.content_store.freeze_version(
+            corpus_slug=corpus.slug,
+        )
+
     await workbench.session.commit()
 
     return {
@@ -646,6 +689,89 @@ async def freeze_version(
         ).model_dump(),
         "error": None,
     }
+
+
+@router.post("/content/corpora/{id}/composition/preview")
+async def composition_preview(
+    id: int,
+    entries: list[CompositionSpecItem],
+    workbench: AnvilWorkbench = Depends(get_workbench),
+):
+    """Preview the token/byte contribution of a composition spec.
+
+    Accepts a list of ``CompositionSpecItem`` dicts and returns a
+    per-source breakdown of bytes and estimated tokens for the
+    proposed composition.
+
+    Parameters
+    ----------
+    id : int
+        The corpus primary key.
+    entries : list[CompositionSpecItem]
+        Composition specification entries.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
+
+    Returns
+    -------
+    dict
+        Preview data wrapped in ``{"data": ..., "error": None}``.
+
+    Raises
+    ------
+    HTTPException
+        If the corpus is not found (404).
+    """
+    corpus = await workbench.content_corpus_repo.get(id)
+    if corpus is None:
+        raise HTTPException(status_code=404, detail="Corpus not found")
+
+    spec = [
+        {"content_hash": item.content_hash, "weight": item.weight} for item in entries
+    ]
+    try:
+        result = await workbench.content_composition.preview(id, spec)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    return {"data": result, "error": None}
+
+
+@router.get("/content/stream/composition")
+async def stream_composition(
+    workbench: AnvilWorkbench = Depends(get_workbench),
+):
+    """SSE event stream for composition preview updates.
+
+    Placeholder endpoint (T073a) — clients connect and receive a
+    heartbeat keep-alive every 30 seconds.  Live preview updates
+    will be wired when the UI consumer is built (US5 T082a).
+
+    Parameters
+    ----------
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
+
+    Returns
+    -------
+    StreamingResponse
+        SSE stream with ``text/event-stream`` content type.
+    """
+
+    async def event_stream():
+        """Generator that yields SSE heartbeats every 30 seconds."""
+        while True:
+            await asyncio.sleep(30)
+            yield "event: heartbeat\ndata: {}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @router.post("/content/versions/{id}/tag")
@@ -746,6 +872,9 @@ async def get_version_lineage(
 ):
     """Get version lineage including sources and run refs.
 
+    Returns sources (from the ingestion session that created the
+    version) and MLflow run references (from ``VersionRunRef``).
+
     Parameters
     ----------
     id : int
@@ -756,7 +885,8 @@ async def get_version_lineage(
     Returns
     -------
     dict
-        Lineage data with ``run_refs`` and ``"error": None``.
+        Lineage data with ``sources``, ``run_refs``, and
+        ``"error": None``.
 
     Raises
     ------
@@ -769,9 +899,42 @@ async def get_version_lineage(
 
     run_refs = await workbench.content_version_repo.get_run_refs(id)
 
+    # Look up the source that produced this version via the
+    # accepted session.
+    session = await workbench.content_ingest_session_repo.get_by_accepted_version(id)
+    sources: list[dict] = []
+    if session is not None and session.source_id is not None:
+        source = await workbench.content_source_repo.get(session.source_id)
+        if source is not None:
+            sources.append(
+                {
+                    "id": source.id,
+                    "slug": source.slug,
+                    "name": source.name,
+                    "kind": source.kind,
+                }
+            )
+
+    # Also collect source slugs from entries that have a source_id.
+    entries = await workbench.content_version_repo.get_entries(id)
+    entry_source_ids = {e.source_id for e in entries if e.source_id is not None}
+    for src_id in entry_source_ids:
+        if src_id not in {s["id"] for s in sources}:
+            src = await workbench.content_source_repo.get(src_id)
+            if src is not None:
+                sources.append(
+                    {
+                        "id": src.id,
+                        "slug": src.slug,
+                        "name": src.name,
+                        "kind": src.kind,
+                    }
+                )
+
     return {
         "data": {
             "version_id": id,
+            "sources": sources,
             "run_refs": [
                 {
                     "mlflow_run_id": r.mlflow_run_id,
@@ -782,6 +945,51 @@ async def get_version_lineage(
         },
         "error": None,
     }
+
+
+# ── Injection SSE stream ────────────────────────────────────────────────
+
+
+@router.get("/content/stream/injection")
+async def injection_event_stream(
+    workbench: AnvilWorkbench = Depends(get_workbench),
+):
+    """SSE event stream for ingestion session lifecycle events.
+
+    Pushes real-time ``accepted`` events when an ingestion session is
+    accepted, with the ``session_id`` and ``version_id`` in the event
+    data.  A heartbeat is sent every 30 seconds to keep the connection
+    alive.
+
+    Parameters
+    ----------
+    workbench : AnvilWorkbench
+        Injected session-bound workbench (unused placeholder).
+
+    Returns
+    -------
+    StreamingResponse
+        SSE stream with ``text/event-stream`` content type.
+    """
+
+    async def event_stream():
+        """Generator that yields SSE events from ``_injection_queue``
+        or heartbeats every 30 seconds."""
+        while True:
+            try:
+                msg = await asyncio.wait_for(_injection_queue.get(), timeout=30)
+                yield f"event: {msg['event']}\ndata: {msg['data']}\n\n"
+            except TimeoutError:
+                yield "event: heartbeat\ndata: {}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 # ── Revert ───────────────────────────────────────────────────────────────
@@ -874,11 +1082,8 @@ async def acquire_lock(
     HTTPException
         If the lock cannot be acquired (409).
     """
-    from ...db.models.content_lock import CheckoutLock
-    from ...services.content.lock_state import LockState
-
     # Check for existing active lock on this scope
-    existing = await workbench.content_lock_repo.list_active()
+    existing = await workbench.content_locks.list_active()
     for lock in existing:
         if lock.scope == body.scope:
             raise HTTPException(
@@ -886,12 +1091,7 @@ async def acquire_lock(
                 detail=f"Lock already held on scope '{body.scope}' by '{lock.holder}'",
             )
 
-    new_lock = CheckoutLock(
-        scope=body.scope,
-        holder=body.holder,
-        state=LockState.HELD,
-    )
-    new_lock = await workbench.content_lock_repo.add(new_lock)
+    new_lock = await workbench.content_locks.acquire(body.scope, body.holder)
     await workbench.session.commit()
 
     return {
@@ -935,9 +1135,201 @@ async def release_lock(
     if lock is None:
         raise HTTPException(status_code=404, detail="Lock not found")
 
-    await workbench.content_lock_repo.release(id)
+    await workbench.content_locks.release(id)
     await workbench.session.commit()
     return {"data": {"status": "released"}, "error": None}
+
+
+@router.get("/content/locks")
+async def list_locks(
+    workbench: AnvilWorkbench = Depends(get_workbench),
+):
+    """List all active advisory content locks.
+
+    Parameters
+    ----------
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
+
+    Returns
+    -------
+    dict
+        List of ``LockOut`` dicts and ``"error": None``.
+    """
+    locks = await workbench.content_locks.list_active()
+    return {
+        "data": [
+            LockOut(
+                id=l.id,
+                scope=l.scope,
+                holder=l.holder,
+                state=l.state,
+                acquired_at=l.acquired_at,
+                released_at=l.released_at,
+            ).model_dump()
+            for l in locks
+        ],
+        "error": None,
+    }
+
+
+@router.get("/content/stream/locks")
+async def stream_locks(
+    workbench: AnvilWorkbench = Depends(get_workbench),
+):
+    """SSE event stream for lock lifecycle notifications.
+
+    Placeholder endpoint (US7) — clients connect and receive a
+    heartbeat keep-alive every 30 seconds.  Live lock acquire/release
+    events will be wired when the UI consumer is built.
+
+    Parameters
+    ----------
+    workbench : AnvilWorkbench
+        Injected session-bound workbench (unused placeholder).
+
+    Returns
+    -------
+    StreamingResponse
+        SSE stream with ``text/event-stream`` content type.
+    """
+
+    async def event_stream():
+        """Generator that yields SSE heartbeats every 30 seconds."""
+        while True:
+            await asyncio.sleep(30)
+            yield "event: heartbeat\ndata: {}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+# ── Import jobs (US6) ────────────────────────────────────────────────────
+
+
+@router.post("/content/imports")
+async def start_import(
+    body: ImportStart,
+    workbench: AnvilWorkbench = Depends(get_workbench),
+):
+    """Start a new declarative content import job.
+
+    Opens an ingestion session through the ``IngestionService`` on
+    behalf of the import job and persists a new ``ImportJob`` record.
+    The caller can later stage content through the job's linked
+    session, run validation gates, and accept or abandon the session.
+
+    Parameters
+    ----------
+    body : ImportStart
+        Import start parameters (``corpus_id``, ``source`` slug,
+        ``config`` dict).
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
+
+    Returns
+    -------
+    dict
+        ``ImportJobOut`` data wrapped in ``{"data": ..., "error": None}``.
+
+    Raises
+    ------
+    HTTPException
+        If the source or corpus is not found (404 / 422).
+    """
+    try:
+        job = await workbench.content_imports.start(
+            corpus_id=body.corpus_id,
+            source_slug=body.source,
+            config=body.config,
+        )
+        await workbench.session.commit()
+    except ValueError as exc:
+        await workbench.session.rollback()
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    return {
+        "data": _import_job_to_out(job).model_dump(),
+        "error": None,
+    }
+
+
+@router.get("/content/imports/{id}")
+async def get_import_job(
+    id: int,
+    workbench: AnvilWorkbench = Depends(get_workbench),
+):
+    """Get the current status of an import job.
+
+    Parameters
+    ----------
+    id : int
+        The import job primary key.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
+
+    Returns
+    -------
+    dict
+        ``ImportJobOut`` data wrapped in ``{"data": ..., "error": None}``.
+
+    Raises
+    ------
+    HTTPException
+        If the job is not found (404).
+    """
+    job = await workbench.content_imports.status(id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Import job not found")
+
+    return {
+        "data": _import_job_to_out(job).model_dump(),
+        "error": None,
+    }
+
+
+@router.get("/content/stream/import")
+async def stream_import(
+    workbench: AnvilWorkbench = Depends(get_workbench),
+):
+    """SSE event stream for import job progress updates.
+
+    Placeholder endpoint (US6) — clients connect and receive a
+    heartbeat keep-alive every 30 seconds.  Live import progress
+    events will be wired in a future US when the UI consumer is
+    built.
+
+    Parameters
+    ----------
+    workbench : AnvilWorkbench
+        Injected session-bound workbench (unused placeholder).
+
+    Returns
+    -------
+    StreamingResponse
+        SSE stream with ``text/event-stream`` content type.
+    """
+
+    async def event_stream():
+        """Generator that yields SSE heartbeats every 30 seconds."""
+        while True:
+            await asyncio.sleep(30)
+            yield "event: heartbeat\ndata: {}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────
@@ -996,4 +1388,31 @@ def _version_to_out(version) -> ContentVersionOut:
         total_bytes=version.total_bytes,
         tag=version.label,
         created_at=version.created_at,
+    )
+
+
+def _import_job_to_out(job) -> ImportJobOut:
+    """Convert an ``ImportJob`` ORM instance to an ``ImportJobOut``
+    schema.
+
+    Parameters
+    ----------
+    job : ImportJob
+        The ORM instance to convert.
+
+    Returns
+    -------
+    ImportJobOut
+        The API output schema.
+    """
+    return ImportJobOut(
+        id=job.id,
+        corpus_id=job.corpus_id,
+        source_id=job.source_id,
+        config_json=job.config_json,
+        status=job.status,
+        session_id=job.session_id,
+        message=job.message,
+        started_at=job.started_at,
+        finished_at=job.finished_at,
     )

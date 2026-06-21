@@ -308,3 +308,60 @@ class CorpusService:
         await self._db_session.flush()
         await self._db_session.refresh(tag)
         return tag
+
+    # ── Version diff ────────────────────────────────────────────────
+
+    async def version_diff(self, version_id: int) -> dict:
+        """Compute added/removed paths between a version and its
+        immediate predecessor.
+
+        Compares a version's entries against those of the prior version
+        (``version_number - 1`` in the same corpus) to produce a diff
+        of added and removed paths.  If this is the first version (no
+        prior), all entries are reported as added.
+
+        Parameters
+        ----------
+        version_id : int
+            Primary key of the version to diff.
+
+        Returns
+        -------
+        dict
+            A dict with keys:
+            - ``"added"``: list of paths present in this version but
+              absent from its predecessor.
+            - ``"removed"``: list of paths absent in this version but
+              present in its predecessor.
+            - ``"version_number"``: version number of the diffed version.
+            - ``"prior_version_number"``: version number of the prior
+              version, or ``None`` for the first version.
+        """
+        version = await self._version_repo.get(version_id)
+        if version is None:
+            raise ValueError(f"Version not found: {version_id}")
+
+        current_entries = await self._version_repo.get_entries(version_id)
+        current_paths = {e.path for e in current_entries}
+
+        # Find the prior version (same corpus, version_number - 1).
+        prior_version_number = None
+        prior_paths: set[str] = set()
+        if version.version_number > 1:
+            corpus_versions = await self._version_repo.list_by_corpus(version.corpus_id)
+            for v in corpus_versions:
+                if v.version_number == version.version_number - 1:
+                    prior_entries = await self._version_repo.get_entries(v.id)
+                    prior_paths = {e.path for e in prior_entries}
+                    prior_version_number = v.version_number
+                    break
+
+        added = sorted(current_paths - prior_paths)
+        removed = sorted(prior_paths - current_paths)
+
+        return {
+            "added": added,
+            "removed": removed,
+            "version_number": version.version_number,
+            "prior_version_number": prior_version_number,
+        }

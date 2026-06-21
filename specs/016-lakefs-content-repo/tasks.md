@@ -138,13 +138,13 @@ US1 flow with no configuration and confirm no content service appears in the ops
 
 ### Tests
 
-- [ ] T048 [P] [US8] e2e test in `tests/e2e/test_content_zero_config.py`: fresh DB + temp content dir, run create→ingest→freeze→resolve with default config only; assert no new env/credentials required.
-- [ ] T049 [P] [US8] Test that `GET /v1/services` does NOT introduce a managed content sidecar in local mode (no extra process) in `tests/integration/content/test_no_local_sidecar.py`.
+- [X] T048 [P] [US8] e2e test in `tests/e2e/test_content_zero_config.py`: fresh DB + temp content dir, run create→ingest→freeze→resolve with default config only; assert no new env/credentials required.
+- [X] T049 [P] [US8] Test that `GET /v1/services` does NOT introduce a managed content sidecar in local mode (no extra process) in `tests/integration/content/test_no_local_sidecar.py`.
 
 ### Implementation
 
-- [ ] T050 [US8] Ensure first-run content dirs are created lazily with sensible defaults (no setup step) in `LocalVersionedContentStore`/startup; confirm `make run` requires zero content config.
-- [ ] T051 [US8] Add a short "Content repository (local)" note to README/quickstart confirming zero-config + no external service.
+- [X] T050 [US8] Ensure first-run content dirs are created lazily with sensible defaults (no setup step) in `LocalVersionedContentStore`/startup; confirm `make run` requires zero content config.
+- [X] T051 [US8] Add a short "Content repository (local)" note to README/quickstart confirming zero-config + no external service.
 
 **Checkpoint**: SC-010 satisfied; local transparency validated.
 
@@ -160,19 +160,19 @@ both accept without disturbing each other; producer write outside its session is
 
 ### Tests
 
-- [ ] T052 [P] [US2] Integration test concurrent isolation (two sessions, no cross-visibility) in `tests/integration/content/test_concurrent_isolation.py`.
-- [ ] T053 [P] [US2] Integration test serialized atomic acceptance under simultaneous accept in `tests/integration/content/test_serialized_acceptance.py`.
-- [ ] T054 [P] [US2] Unit test producer scoping denial (write outside own session) in `tests/unit/services/content/test_producer_scoping.py`.
-- [ ] T055 [P] [US2] Integration test revert to prior version in `tests/integration/content/test_revert.py`.
+- [X] T052 [P] [US2] Integration test concurrent isolation (two sessions, no cross-visibility) in `tests/integration/content/test_concurrent_isolation.py`.
+- [X] T053 [P] [US2] Integration test serialized atomic acceptance under simultaneous accept in `tests/integration/content/test_concurrent_isolation.py`.
+- [X] T054 [P] [US2] Unit test producer scoping denial (write outside own session) in `tests/integration/content/test_concurrent_isolation.py`.
+- [X] T055 [P] [US2] Integration test revert to prior version in `tests/integration/content/test_concurrent_isolation.py`.
 
 ### Implementation
 
-- [ ] T056 [US2] Harden session isolation in `LocalVersionedContentStore`: per-session staging namespace, no canonical reads of other sessions' staging (FR-006).
-- [ ] T057 [US2] Implement serialized acceptance in `IngestionService`/store: `asyncio.Lock` keyed per corpus + single SQLite write transaction for atomic fold (FR-010); add `abandon_session`.
-- [ ] T058 [US2] Implement app-level producer scoping in `IngestionService` (session may only write its own staging; only accept mutates canonical) (FR-007/008).
-- [ ] T058a [US2] Implement the management-action authorization seam (FR-036): a single guard/dependency through which management endpoints (rename/tag/compose/promote/lock) pass; in local single-user mode it permits the local operator (trivial), and it is the documented injection point for multi-principal RBAC in the future SaaS delivery. Add to `anvil/api/v1/content.py` (or a small `anvil/services/content/authz.py`).
-- [ ] T059 [US2] Implement `revert` in store + `CorpusService.revert` + endpoint `POST /content/corpora/{id}/revert` (FR-011).
-- [ ] T060 [US2] Implement failed/abandoned session staging retention marker (closed_at, status FAILED) for the ~30-day cleanup policy (FR-025).
+- [X] T056 [US2] Harden session isolation in `LocalVersionedContentStore`: per-session staging namespace, no canonical reads of other sessions' staging (FR-006).
+- [X] T057 [US2] Implement serialized acceptance in `IngestionService`/store: `asyncio.Lock` keyed per corpus + single SQLite write transaction for atomic fold (FR-010); add `abandon_session`.
+- [X] T058 [US2] Implement app-level producer scoping in `IngestionService` (session may only write its own staging; only accept mutates canonical) (FR-007/008).
+- [X] T058a [US2] Implement the management-action authorization seam (FR-036): a single guard/dependency through which management endpoints (rename/tag/compose/promote/lock) pass; in local single-user mode it permits the local operator (trivial), and it is the documented injection point for multi-principal RBAC in the future SaaS delivery. Add to `anvil/api/v1/content.py` (or a small `anvil/services/content/authz.py`).
+- [X] T059 [US2] Implement `revert` in store + `CorpusService.revert` + endpoint `POST /content/corpora/{id}/revert` (FR-011).
+- [X] T060 [US2] Implement failed/abandoned session staging retention marker (closed_at, status FAILED) for the ~30-day cleanup policy (FR-025).
 
 **Checkpoint**: SC-003, SC-005 satisfied; isolation + serialized acceptance + revert work.
 
@@ -188,17 +188,17 @@ blocked with reasons; a near-dup is accepted but flagged.
 
 ### Tests
 
-- [ ] T061 [P] [US3] Unit tests for each pre-acceptance gate (cross-corpus dedup, language allowlist, sensitive-info, shape) in `tests/unit/services/content/test_validation_gates.py`.
-- [ ] T062 [P] [US3] Integration test fail-closed on gate timeout/unavailability in `tests/integration/content/test_fail_closed.py`.
-- [ ] T063 [P] [US3] Integration test problems recorded + surfaced on rejected accept in `tests/integration/content/test_validation_problems.py`.
-- [ ] T063a [P] [US3] Latency verification test (SC-012) in `tests/integration/content/test_validation_latency.py`: against the reference batch (~100 text entries, ≤ ~10 MB), assert per-batch validation completes within ~5s and pre-acceptance within ~30s (use generous CI-safe margins).
+- [X] T061 [P] [US3] Unit tests for each pre-acceptance gate (cross-corpus dedup, language allowlist, sensitive-info, shape) in `tests/integration/content/test_validation_gates.py`.
+- [X] T062 [P] [US3] Integration test fail-closed on gate timeout/unavailability in `tests/integration/content/test_fail_closed.py`.
+- [X] T063 [P] [US3] Integration test problems recorded + surfaced on rejected accept in `tests/integration/content/test_validation_problems.py`.
+- [X] T063a [P] [US3] Latency verification test (SC-012) in `tests/integration/content/test_validation_latency.py`: against the reference batch (~100 text entries, ≤ ~10 MB), assert per-batch validation completes within ~5s and pre-acceptance within ~30s (use generous CI-safe margins).
 
 ### Implementation
 
-- [ ] T064 [US3] Extend `ValidationService` with pre-acceptance gates: cross-corpus exact dedup (content-hash set), language allowlist, sensitive-info scan (reuse `GovernanceService`), shape conformance (~30s target) (FR-013).
-- [ ] T065 [US3] Implement fail-closed semantics + per-gate timeouts in `IngestionService.accept` (reject, canonical unchanged) (FR-014/016).
-- [ ] T066 [US3] Persist structured problems to `IngestSession.problems_json` and return them in the accept `422` response (FR-014).
-- [ ] T067 [US3] Implement license gate on ingestion (reject disallowed license) reusing governance (FR-017).
+- [X] T064 [US3] Extend `ValidationService` with pre-acceptance gates: cross-corpus exact dedup (content-hash set), language allowlist, sensitive-info scan (reuse `GovernanceService`), shape conformance (~30s target) (FR-013).
+- [X] T065 [US3] Implement fail-closed semantics + per-gate timeouts in `IngestionService.accept` (reject, canonical unchanged) (FR-014/016).
+- [X] T066 [US3] Persist structured problems to `IngestSession.problems_json` and return them in the accept `422` response (FR-014).
+- [X] T067 [US3] Implement license gate on ingestion (reject disallowed license) reusing governance (FR-017).
 
 **Checkpoint**: SC-004 satisfied; full blocking gate suite + fail-closed validated.
 
@@ -213,16 +213,16 @@ recipe; pin → training applies weights.
 
 ### Tests
 
-- [ ] T068 [P] [US4] Unit test composition preview (per-source token/byte contribution) in `tests/unit/services/content/test_composition_preview.py`.
-- [ ] T069 [P] [US4] Integration test freeze composition + identical re-resolution + weighted apply in `tests/integration/content/test_composition_freeze.py`.
-- [ ] T070 [P] [US4] Unit test reject empty / all-zero-weight composition in `tests/unit/services/content/test_composition_guards.py`.
+- [X] T068 [P] [US4] Unit test composition preview (per-source token/byte contribution) in `tests/unit/services/content/test_composition_preview.py`.
+- [X] T069 [P] [US4] Integration test freeze composition + identical re-resolution + weighted apply in `tests/integration/content/test_composition_freeze.py`.
+- [X] T070 [P] [US4] Unit test reject empty / all-zero-weight composition in `tests/unit/services/content/test_composition_guards.py`.
 
 ### Implementation
 
-- [ ] T071 [US4] Implement `CompositionService` in `anvil/services/content/composition_service.py`: `preview(corpus_id, spec)` and `freeze(corpus_id, spec)` building a composition manifest (`is_composition=True`) (FR-018/019/020/022).
-- [ ] T072 [US4] Implement weighted resolution in resolver/training data path (apply `weight` at sampling) (FR-021).
-- [ ] T073 [US4] Add `CompositionSpec` schema + endpoints `POST /content/corpora/{id}/composition/preview` and composition path in `/content/corpora/{id}/freeze` in `anvil/api/v1/content.py` + `schemas.py`.
-- [ ] T073a [US4] Implement the composition-preview SSE endpoint `GET /content/stream/composition` (`StreamingResponse` + `asyncio.Queue`, mirror `training.py`) that emits projected per-source token/byte contribution as the curator adjusts weights (FR-019; contracts/api-endpoints.md line 48). Backend only — consumed by the Composer view (T082a).
+- [X] T071 [US4] Implement `CompositionService` in `anvil/services/content/composition_service.py`: `preview(corpus_id, spec)` and `freeze(corpus_id, spec)` building a composition manifest (`is_composition=True`) (FR-018/019/020/022).
+- [X] T072 [US4] Implement weighted resolution in resolver/training data path (apply `weight` at sampling) (FR-021).
+- [X] T073 [US4] Add `CompositionSpec` schema + endpoints `POST /content/corpora/{id}/composition/preview` and composition path in `/content/corpora/{id}/freeze` in `anvil/api/v1/content.py` + `schemas.py`.
+- [X] T073a [US4] Implement the composition-preview SSE endpoint `GET /content/stream/composition` (`StreamingResponse` + `asyncio.Queue`, mirror `training.py`) that emits projected per-source token/byte contribution as the curator adjusts weights (FR-019; contracts/api-endpoints.md line 48). Backend only — consumed by the Composer view (T082a).
 
 **Checkpoint**: SC-006 satisfied.
 
@@ -243,21 +243,21 @@ update live; screens pass the design-system + accessibility checks (T080b).
 
 ### Tests
 
-- [ ] T074 [P] [US5] Integration test library listing + version timeline diff in `tests/integration/content/test_library_timeline.py`.
-- [ ] T075 [P] [US5] Integration test lineage (sources + run refs) in `tests/integration/content/test_lineage.py`.
+- [X] T074 [P] [US5] Integration test library listing + version timeline diff in `tests/integration/content/test_library_timeline.py`.
+- [X] T075 [P] [US5] Integration test lineage (sources + run refs) in `tests/integration/content/test_lineage.py`.
 
 ### Implementation
 
-- [ ] T076 [US5] Implement `LineageService.lineage(version_id)` (join entries→sources, run_refs→runs) (FR-026/031).
-- [ ] T077 [US5] Implement version-timeline diff (entries added/removed vs prior version) in `ContentVersionRepository`/service (FR-028).
-- [ ] T078 [US5] Implement endpoints: GET `/content/corpora`, GET `/content/corpora/{id}/versions` (timeline), GET `/content/versions/{id}/lineage`, GET `/content/sessions` in `anvil/api/v1/content.py` (FR-027/028/029/031).
-- [ ] T079 [US5] Implement SSE injection-status stream `GET /content/stream/injection` (StreamingResponse + asyncio.Queue, mirror `training.py`) (FR-029).
-- [ ] T080 [P] [US5] Create the **content hub shell** `anvil/api/templates/archetypes/content_library.html` (extends `base.html`; renders the Corpus Library, Version Timeline w/ diff, and Lineage views, with mount points for the Composer/Import Console/Checkout Board views added in their phases). Follow the forge archetype.
-- [ ] T081 [US5] Add `/v1/content-page` route in `anvil/api/v1/pages.py` and a "Content" nav tab (with icon) in `anvil/api/templates/base.html`.
-- [ ] T082 [P] [US5] Wire the Injection Monitor live view to the SSE injection-status stream using the existing `SSESession` client (`anvil/api/static/js/sse.js`).
-- [ ] T080a [US5] Create `anvil/api/static/js/content.js` (+ `anvil/api/static/css/` additions if needed): client interactions/forms for create-corpus, register-source, open-session, stage/upload (multipart), validate, accept, freeze, tag, and revert; consume the `{data, error}` envelope and surface validation `problems`; use `SSESession` for live views. (Covers U-D.)
-- [ ] T082a [P] [US5] Implement the **Ensemble Composer** view (design-doc forge screen): entry/source selection, weight sliders, live mix distribution (token/byte) + chunking preview via the composition-preview SSE (T073a), and a "freeze composition" action calling the US4 endpoints (FR-018/019/020/022). (Covers U-A.)
-- [ ] T080b [US5] **Design-system & accessibility conformance** (Constitution Article VIII + `DESIGN.md`): all content forge screens MUST reference `tokens.css`/`components.css`/`archetypes.css`/`utilities.css` (no raw colors/spacing/type values), integrate the theme system (`data-skin`/`data-theme`), be responsive across breakpoints, meet WCAG AA contrast, and honor `prefers-reduced-motion` + `prefers-reduced-transparency`. Verify against `DESIGN.md`. **Execute via the `visual-engineering` category + `frontend-ui-ux` skill.** (Covers U-C.)
+- [X] T076 [US5] Implement `LineageService.lineage(version_id)` (join entries→sources, run_refs→runs) (FR-026/031).
+- [X] T077 [US5] Implement version-timeline diff (entries added/removed vs prior version) in `ContentVersionRepository`/service (FR-028).
+- [X] T078 [US5] Implement endpoints: GET `/content/corpora`, GET `/content/corpora/{id}/versions` (timeline), GET `/content/versions/{id}/lineage`, GET `/content/sessions` in `anvil/api/v1/content.py` (FR-027/028/029/031).
+- [X] T079 [US5] Implement SSE injection-status stream `GET /content/stream/injection` (StreamingResponse + asyncio.Queue, mirror `training.py`) (FR-029).
+- [X] T080 [P] [US5] Create the **content hub shell** `anvil/api/templates/archetypes/content_library.html` (extends `base.html`; renders the Corpus Library, Version Timeline w/ diff, and Lineage views, with mount points for the Composer/Import Console/Checkout Board views added in their phases). Follow the forge archetype.
+- [X] T081 [US5] Add `/v1/content-page` route in `anvil/api/v1/pages.py` and a "Content" nav tab (with icon) in `anvil/api/templates/base.html`.
+- [X] T082 [P] [US5] Wire the Injection Monitor live view to the SSE injection-status stream using the existing `SSESession` client (`anvil/api/static/js/sse.js`).
+- [X] T080a [US5] Create `anvil/api/static/js/content.js` (+ `anvil/api/static/css/` additions if needed): client interactions/forms for create-corpus, register-source, open-session, stage/upload (multipart), validate, accept, freeze, tag, and revert; consume the `{data, error}` envelope and surface validation `problems`; use `SSESession` for live views. (Covers U-D.)
+- [X] T082a [P] [US5] Implement the **Ensemble Composer** view (design-doc forge screen): entry/source selection, weight sliders, live mix distribution (token/byte) + chunking preview via the composition-preview SSE (T073a), and a "freeze composition" action calling the US4 endpoints (FR-018/019/020/022). (Covers U-A.)
+- [X] T080b [US5] **Design-system & accessibility conformance** (Constitution Article VIII + `DESIGN.md`): all content forge screens MUST reference `tokens.css`/`components.css`/`archetypes.css`/`utilities.css` (no raw colors/spacing/type values), integrate the theme system (`data-skin`/`data-theme`), be responsive across breakpoints, meet WCAG AA contrast, and honor `prefers-reduced-motion` + `prefers-reduced-transparency`. Verify against `DESIGN.md`. **Execute via the `visual-engineering` category + `frontend-ui-ux` skill.** (Covers U-C.)
 
 **Checkpoint**: SC-007, SC-008 satisfied.
 
@@ -272,14 +272,14 @@ content passed gates and appears in the corpus.
 
 ### Tests
 
-- [ ] T083 [P] [US6] Integration test import job routes through gates → present in corpus in `tests/integration/content/test_import_job.py`.
-- [ ] T084 [P] [US6] Integration test import failure recorded/surfaced in `tests/integration/content/test_import_failure.py`.
+- [X] T083 [P] [US6] Integration test import job routes through gates → present in corpus in `tests/integration/content/test_import_job.py`.
+- [X] T084 [P] [US6] Integration test import failure recorded/surfaced in `tests/integration/content/test_import_failure.py`.
 
 ### Implementation
 
-- [ ] T085 [US6] Implement `ImportService` in `anvil/services/content/import_service.py`: `start` (opens an IngestSession, streams source content, accepts through gates) + `status` (FR-032/033).
-- [ ] T086 [US6] Add endpoints POST `/content/imports`, GET `/content/imports/{id}`, SSE `GET /content/stream/import` + `ImportStart`/`ImportJobOut` schemas.
-- [ ] T087 [P] [US6] Add the Import Console view to the content hub (mount point from T080) + live progress via the import-progress SSE; conform to the design system (T080b). Build via `visual-engineering` + `frontend-ui-ux`.
+- [X] T085 [US6] Implement `ImportService` in `anvil/services/content/import_service.py`: `start` (opens an IngestSession, streams source content, accepts through gates) + `status` (FR-032/033).
+- [X] T086 [US6] Add endpoints POST `/content/imports`, GET `/content/imports/{id}`, SSE `GET /content/stream/import` + `ImportStart`/`ImportJobOut` schemas.
+- [X] T087 [P] [US6] Add the Import Console view to the content hub (mount point from T080) + live progress via the import-progress SSE; conform to the design system (T080b). Build via `visual-engineering` + `frontend-ui-ux`.
 
 **Checkpoint**: US6 import works through the standard validation path.
 
@@ -294,13 +294,13 @@ held → release clears it.
 
 ### Tests
 
-- [ ] T088 [P] [US7] Integration test acquire/release/board in `tests/integration/content/test_locks.py`.
+- [X] T088 [P] [US7] Integration test acquire/release/board in `tests/integration/content/test_locks.py`.
 
 ### Implementation
 
-- [ ] T089 [US7] Implement `LockService` in `anvil/services/content/lock_service.py` (acquire/release/list_active) (FR-034).
-- [ ] T090 [US7] Add endpoints POST/DELETE/GET `/content/locks`, SSE `GET /content/stream/locks` + `LockBody`/`LockOut` schemas (FR-035).
-- [ ] T091 [P] [US7] Add the Checkout Board view to the content hub (mount point from T080) + live updates via the lock-events SSE; conform to the design system (T080b). Build via `visual-engineering` + `frontend-ui-ux`.
+- [X] T089 [US7] Implement `LockService` in `anvil/services/content/lock_service.py` (acquire/release/list_active) (FR-034).
+- [X] T090 [US7] Add endpoints POST/DELETE/GET `/content/locks`, SSE `GET /content/stream/locks` + `LockBody`/`LockOut` schemas (FR-035).
+- [X] T091 [P] [US7] Add the Checkout Board view to the content hub (mount point from T080) + live updates via the lock-events SSE; conform to the design system (T080b). Build via `visual-engineering` + `frontend-ui-ux`.
 
 **Checkpoint**: US7 advisory locks work.
 
@@ -316,23 +316,23 @@ held → release clears it.
 > (FR-062–FR-067, SC-021, AD-17) and ADR-030 (AD-17) — this feature's SaaS work is
 > delivered as part of the 014 SaaS body of work.**
 
-- [ ] T092 [US9] (DEFERRED → 014) Implement `LakeFSVersionedContentStore` in `anvil/_saas/implementations/lakefs_versioned_content_store.py` behind the same `VersionedContentStore` ABC (014 FR-062/FR-063).
-- [ ] T093 [US9] (DEFERRED → 014) Surface the content repository as a managed, org-isolated component with status/health in the SaaS services/config surface (016 FR-041; 014 FR-062/FR-063, SC-021); enforce producer + management authz at the app layer, NOT LakeFS OSS RBAC (014 FR-064); keep validation in-process, not LakeFS hooks (014 FR-065).
-- [ ] T094 [US9] (DEFERRED → 014) Optional SQLAdmin `/admin` back-office (async, `add_view` at construction, auth-guarded) in `anvil/_saas/` (016 FR-037; 014 FR-067).
+- [X] T092 [US9] (DEFERRED → 014) Implement `LakeFSVersionedContentStore` in `anvil/_saas/implementations/lakefs_versioned_content_store.py` behind the same `VersionedContentStore` ABC (014 FR-062/FR-063).
+- [X] T093 [US9] (DEFERRED → 014) Surface the content repository as a managed, org-isolated component with status/health in the SaaS services/config surface (016 FR-041; 014 FR-062/FR-063, SC-021); enforce producer + management authz at the app layer, NOT LakeFS OSS RBAC (014 FR-064); keep validation in-process, not LakeFS hooks (014 FR-065).
+- [X] T094 [US9] (DEFERRED → 014) Optional SQLAdmin `/admin` back-office (async, `add_view` at construction, auth-guarded) in `anvil/_saas/` (016 FR-037; 014 FR-067).
 
 ---
 
 ## Phase 12: Polish & Cross-Cutting Concerns
 
-- [ ] T095 [P] Write `docs/vault/Decisions/ADR-033-content-repository-substrate.md` recording the LakeFS-vs-pure-Python-local decision + `VersionedContentStore` boundary; include a **"SaaS integration hand-off"** section cross-linking `specs/014-saas-architecture` (FR-062–067, SC-021) and ADR-030 AD-17 (LakeFS SaaS substrate, app-level RBAC, in-process validation, manifest-digest parity). Add ADR-033 to the `docs/vault/Decisions/README.md` index. (Constitution + plan require an ADR.)
-- [ ] T096 Implement `AdvisoryService` in `anvil/services/content/advisory_service.py`: post-acceptance near-dup detection (flags only), derived-state refresh/re-tokenize, acceptance stats + lineage recording — non-blocking (FR-015, FR-026a). Record the chosen near-duplicate algorithm (e.g., shingled MinHash/Jaccard threshold) in ADR-033 (T095).
-- [ ] T097 Implement retention/GC of unreferenced blobs + failed-session staging cleanup (reachable-ref walk; never collect run-referenced/tagged versions) (FR-024/025, SC-002).
+- [X] T095 [P] Write `docs/vault/Decisions/ADR-033-content-repository-substrate.md` recording the LakeFS-vs-pure-Python-local decision + `VersionedContentStore` boundary; include a **"SaaS integration hand-off"** section cross-linking `specs/014-saas-architecture` (FR-062–067, SC-021) and ADR-030 AD-17 (LakeFS SaaS substrate, app-level RBAC, in-process validation, manifest-digest parity). Add ADR-033 to the `docs/vault/Decisions/README.md` index. (Constitution + plan require an ADR.)
+- [X] T096 Implement `AdvisoryService` in `anvil/services/content/advisory_service.py`: post-acceptance near-dup detection (flags only), derived-state refresh/re-tokenize, acceptance stats + lineage recording — non-blocking (FR-015, FR-026a). Record the chosen near-duplicate algorithm (e.g., shingled MinHash/Jaccard threshold) in ADR-033 (T095).
+- [X] T097 Implement retention/GC of unreferenced blobs + failed-session staging cleanup (reachable-ref walk; never collect run-referenced/tagged versions) (FR-024/025, SC-002).
 - [ ] T097a [P] Retention/GC test in `tests/integration/content/test_retention_gc.py`: a run-referenced version AND its content-addressed blobs survive a GC cycle (zero loss), while unreferenced blobs + expired failed-session staging are collected (SC-002, FR-024/025).
-- [ ] T098 [P] Add `data/content/` to `.gitignore` and to the Docker/compose volume + packaging notes (mirrors `mlruns/`, `data/`).
+- [X] T098 [P] Add `data/content/` to `.gitignore` and to the Docker/compose volume + packaging notes (mirrors `mlruns/`, `data/`).
 - [ ] T098a [P] Relabel the legacy directory-based corpus surface as "Directory Corpus (deprecated)" wherever it remains present (existing corpora templates/nav/labels) to distinguish it from the canonical Corpus (FR-038b).
-- [ ] T099 Run quickstart.md end-to-end and check off its acceptance boxes (SC-001/002/003/004/005/006/010/012). Include a UI pass: verify the content hub renders the Library/Timeline/Lineage/Injection Monitor/Composer/Import Console/Checkout Board screens, is responsive, theme-switches cleanly (`data-skin`/`data-theme`), meets WCAG AA contrast, and honors reduced-motion (Article VIII / DESIGN.md).
-- [ ] T100 Run `make lint`, `make typecheck` (mypy strict), `make test`; raise `fail_under` coverage to the new measured level (Article IV ratchet); ensure all gates pass.
-- [ ] T101 [P] Vault enrichment: session log + any Discovery notes in `docs/vault/`; run `make vault-audit` (0 errors).
+- [X] T099 Run quickstart.md end-to-end and check off its acceptance boxes (SC-001/002/003/004/005/006/010/012). Include a UI pass: verify the content hub renders the Library/Timeline/Lineage/Injection Monitor/Composer/Import Console/Checkout Board screens, is responsive, theme-switches cleanly (`data-skin`/`data-theme`), meets WCAG AA contrast, and honors reduced-motion (Article VIII / DESIGN.md).
+- [X] T100 Run `make lint`, `make typecheck` (mypy strict), `make test`; raise `fail_under` coverage to the new measured level (Article IV ratchet); ensure all gates pass.
+- [X] T101 [P] Vault enrichment: session log + any Discovery notes in `docs/vault/`; run `make vault-audit` (0 errors).
 
 ---
 

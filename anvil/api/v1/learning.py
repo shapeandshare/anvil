@@ -12,7 +12,6 @@ endpoints. Extracted from ``router.py`` as part of structural decomposition.
 """
 
 import random
-from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
