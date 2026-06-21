@@ -6,18 +6,36 @@
 ## Running Tests
 
 ```bash
-# Run full test suite (unit + e2e + integration)
-make test
+# Seed demo model (required once for inference tests, trains 400 steps):
+make test-e2e-seed
 
-# Run only e2e tests (no coverage overhead)
-make test-e2e
+# Run full API e2e suite (all 14 modules):
+make test-e2e-full
 
-# Run a single e2e module
+# Run stateless tests only (compute, health, pages, governance, datasets, corpora):
+python -m pytest tests/e2e/api/test_compute.py tests/e2e/api/test_health_ops.py tests/e2e/api/test_pages.py tests/e2e/api/test_governance.py tests/e2e/api/test_datasets.py tests/e2e/api/test_corpora.py -v
+
+# Run a single test module:
 python -m pytest tests/e2e/api/test_datasets.py -v
 
-# Run the lifecycle integration test
+# Run the lifecycle integration test:
 python -m pytest tests/e2e/api/test_lifecycle_journey.py -v -s
 ```
+
+**Note on the seed step**: `make test-e2e-seed` trains a tiny model (400 steps,
+~15–30s) and saves it to the filesystem paths that the inference service
+expects. This is needed because:
+- The demo model file at ``data/models/demo/model.json`` is not tracked in git
+  (blocked by ``data/*`` in ``.gitignore``)
+- The ``data/models/experiment_{id}.json`` artifact must match the experiment ID
+  that MLflow has registered (from prior ``make run`` warmup or test runs)
+- The seed script resolves the correct ID from MLflow automatically
+
+After seeding, inference tests pass without requiring ``make run`` or a
+live MLflow server. Training-dependent tests (``test_training_router``,
+``test_registry_api``, ``test_experiments``, ``test_eval``,
+``test_lifecycle_journey``, ``test_content``) may take longer (60+ seconds)
+due to training runs and SSE streaming.
 
 ## Adding Coverage for a New Endpoint
 
@@ -102,10 +120,10 @@ tests/e2e/api/
 ├── test_health_ops.py          # 8 endpoints
 ├── test_datasets.py            # ~20 endpoints
 ├── test_corpora.py             # ~9 endpoints
-├── test_training.py            # 6 endpoints + SSE
+├── test_training_router.py            # 6 endpoints + SSE
 ├── test_experiments.py         # ~9 endpoints
-├── test_registry.py            # 6 endpoints
-├── test_inference.py           # ~10 endpoints + sample
+├── test_registry_api.py            # 6 endpoints
+├── test_inference_api.py           # ~10 endpoints + sample
 ├── test_eval.py                # 3 endpoints
 ├── test_compute.py             # 1 endpoint
 ├── test_governance.py          # 5 endpoints

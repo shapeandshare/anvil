@@ -69,10 +69,10 @@ tests/e2e/api/
 ├── test_health_ops.py          # health, services mgmt, demo bootstrap
 ├── test_datasets.py            # full dataset CRUD + upload + curate + import + export + samples
 ├── test_corpora.py             # corpus CRUD + ingest + fork + files + path resolve/analyze
-├── test_training.py            # start/status/stream(SSE)/stop/configs + forward-pass graph
+├── test_training_router.py            # start/status/stream(SSE)/stop/configs + forward-pass graph
 ├── test_experiments.py         # list/compare/detail/metrics/mlflow/artifacts/download/delete
-├── test_registry.py           # register/list/detail/versions/delete
-├── test_inference.py          # tokenize/embeddings/attention/sampling/graphs/params
+├── test_registry_api.py           # register/list/detail/versions/delete
+├── test_inference_api.py          # tokenize/embeddings/attention/sampling/graphs/params
 ├── test_eval.py               # perplexity + eval-datasets CRUD
 ├── test_compute.py            # compute backends listing
 ├── test_governance.py         # audit/verify/report/licenses + takedown
@@ -81,7 +81,7 @@ tests/e2e/api/
 └── test_lifecycle_journey.py  # cross-router money-path integration test
 ```
 
-**Structure Decision**: Per-router domain modules under `tests/e2e/api/` mirroring the router files in `anvil/api/v1/`. The `learning` router (data routes `GET /inference/models`, `POST /inference/sample`; HTML lesson routes `/learn/*`) does not get its own file — its data routes are covered in `test_inference.py` and its HTML routes in `test_pages.py`, so 13 per-router files cover all 14 mounted routers. Shared factories + helpers in `conftest.py` at the same level. This is consistent with the existing `tests/e2e/test_endpoints.py` pattern and pytest's conftest discovery.
+**Structure Decision**: Per-router domain modules under `tests/e2e/api/` mirroring the router files in `anvil/api/v1/`. The `learning` router (data routes `GET /inference/models`, `POST /inference/sample`; HTML lesson routes `/learn/*`) does not get its own file — its data routes are covered in `test_inference_api.py` and its HTML routes in `test_pages.py`, so 13 per-router files cover all 14 mounted routers. Shared factories + helpers in `conftest.py` at the same level. This is consistent with the existing `tests/e2e/test_endpoints.py` pattern and pytest's conftest discovery.
 
 ## Complexity Tracking
 
