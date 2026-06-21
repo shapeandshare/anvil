@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Unit tests for CorpusService — CRUD and scanning operations.
 
 Tests the CorpusService methods: list, get, get_by_name, create,
@@ -11,8 +16,8 @@ from pathlib import Path
 import pytest
 
 from anvil.db.repositories.corpora import CorpusRepository
-from anvil.services.datasets.corpora import CorpusService
 from anvil.services.datasets.chunking_strategy import ChunkingStrategy
+from anvil.services.datasets.corpora import CorpusService
 
 
 @pytest.fixture
@@ -58,9 +63,7 @@ class TestCorpusService:
 
     async def test_delete(self, corpus_svc, tmp_path):
         """delete should remove a corpus by id."""
-        saved = await corpus_svc.create(
-            name="delete-me", root_path=str(tmp_path)
-        )
+        saved = await corpus_svc.create(name="delete-me", root_path=str(tmp_path))
         await corpus_svc.delete(saved.id)
         result = await corpus_svc.get(saved.id)
         assert result is None

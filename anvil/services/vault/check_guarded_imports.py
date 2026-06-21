@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Guarded-imports checker: flags TYPE_CHECKING-guarded symbols used in runtime code.
 
 Enforces the constitutional exception discipline (FR-022):
@@ -164,9 +169,7 @@ def _find_runtime_usages(
                 pass  # Without __future__, annotations ARE runtime — flag it
 
             # This is a real runtime usage
-            if sym in stripped and not (
-                in_annotation and has_future_annotations
-            ):
+            if sym in stripped and not (in_annotation and has_future_annotations):
                 issues.append(
                     GuardedImportIssue(
                         symbol=sym,
@@ -211,9 +214,7 @@ def scan_file(filepath: Path) -> ScanResult:
 
     if result.imports:
         guarded_symbols = {imp.symbol for imp in result.imports}
-        result.issues = _find_runtime_usages(
-            source, guarded_symbols, str(filepath)
-        )
+        result.issues = _find_runtime_usages(source, guarded_symbols, str(filepath))
 
     return result
 

@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Tests for GET /v1/compute/backends route."""
 
 from unittest.mock import patch
@@ -13,9 +18,24 @@ async def test_compute_backends_returns_json_array():
     """GET /v1/compute/backends returns a JSON array of backend dicts."""
     fake_backends = [
         {"value": "auto", "label": "Auto", "available": True, "reason": None},
-        {"value": "local-cpu", "label": "Local (CPU)", "available": True, "reason": None},
-        {"value": "local-gpu", "label": "Local (GPU)", "available": False, "reason": "No GPU detected"},
-        {"value": "modal", "label": "Modal (cloud GPU)", "available": False, "reason": "modal package not installed"},
+        {
+            "value": "local-cpu",
+            "label": "Local (CPU)",
+            "available": True,
+            "reason": None,
+        },
+        {
+            "value": "local-gpu",
+            "label": "Local (GPU)",
+            "available": False,
+            "reason": "No GPU detected",
+        },
+        {
+            "value": "modal",
+            "label": "Modal (cloud GPU)",
+            "available": False,
+            "reason": "modal package not installed",
+        },
     ]
     with patch("anvil.api.v1.compute.available_backends", return_value=fake_backends):
         transport = ASGITransport(app=app)
@@ -37,8 +57,18 @@ async def test_compute_backends_unavailable_include_reason():
     """Unavailable backends include a 'reason' field."""
     fake_backends = [
         {"value": "auto", "label": "Auto", "available": True, "reason": None},
-        {"value": "local-gpu", "label": "Local (GPU)", "available": False, "reason": "No GPU detected"},
-        {"value": "modal", "label": "Modal (cloud GPU)", "available": False, "reason": "modal package not installed"},
+        {
+            "value": "local-gpu",
+            "label": "Local (GPU)",
+            "available": False,
+            "reason": "No GPU detected",
+        },
+        {
+            "value": "modal",
+            "label": "Modal (cloud GPU)",
+            "available": False,
+            "reason": "modal package not installed",
+        },
     ]
     with patch("anvil.api.v1.compute.available_backends", return_value=fake_backends):
         transport = ASGITransport(app=app)

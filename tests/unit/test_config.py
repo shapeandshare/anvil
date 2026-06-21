@@ -1,10 +1,21 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Tests for anvil.config.get_config()."""
 
 import os
 
 import pytest
+
 from anvil import config as _cfg_mod
-from anvil.config import get_config, get_mlflow_browser_uri, get_mlflow_uri, set_resolved_mlflow_uri
+from anvil.config import (
+    get_config,
+    get_mlflow_browser_uri,
+    get_mlflow_uri,
+    set_resolved_mlflow_uri,
+)
 
 
 def test_mlflow_uri_defaults_to_http():

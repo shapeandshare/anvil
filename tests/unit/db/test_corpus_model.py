@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Tests for Corpus ORM model."""
 
 import pytest
@@ -39,8 +44,12 @@ class TestCorpusModel:
         assert c.include_patterns == '["*.py"]'
 
     def test_corpus_relationships(self):
-        c = Corpus(name="rel-test", root_path="/tmp",
-                    chunking_strategy="line", chunk_overlap=0.0)
+        c = Corpus(
+            name="rel-test",
+            root_path="/tmp",
+            chunking_strategy="line",
+            chunk_overlap=0.0,
+        )
         cf = CorpusFile(
             corpus=c,
             relative_path="src/main.py",

@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Unit tests for CLI functions, including db_main subcommands."""
 
 
@@ -6,7 +11,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from anvil.cli import db_main
-
 
 # ======================================================================
 # db_main argument parsing (T014, T015, T018)
@@ -25,9 +29,11 @@ def mock_migration_service():
         instance.upgrade = AsyncMock(return_value=(None, "abc123"))
         instance.downgrade = AsyncMock(return_value="def456")
         instance.current = AsyncMock(return_value="abc123")
-        instance.history = AsyncMock(return_value=[
-            {"revision": "abc123", "down_revision": "<base>", "message": "Initial"},
-        ])
+        instance.history = AsyncMock(
+            return_value=[
+                {"revision": "abc123", "down_revision": "<base>", "message": "Initial"},
+            ]
+        )
         instance.create_revision = AsyncMock(return_value="new456rev")
         instance.stamp = AsyncMock()
         mock_cls.return_value = instance
@@ -72,6 +78,7 @@ class TestDbMain:
     @patch("anvil.db.migration.MigrationService")
     def test_migration_error_exits_with_code_1(self, mock_cls: MagicMock):
         from anvil.db.migration_error import MigrationError
+
         instance = MagicMock()
         instance.upgrade = AsyncMock(side_effect=MigrationError("fail"))
         mock_cls.return_value = instance

@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """DemoBootstrapService — orchestrates importing bundled demo data into the database.
 
 This service walks ``data/demo/`` (bundled inside the ``anvil`` package),
@@ -28,13 +33,13 @@ from ...db.models.dataset import Dataset
 from ...db.repositories.corpora import CorpusRepository
 from ...db.repositories.datasets import DatasetRepository
 from ...db.repositories.licenses import LicenseRepository
-from .bootstrap_result import BootstrapResult
 from ..datasets.chunking_strategy import ChunkingStrategy
 from ..datasets.corpora import CorpusService
 from ..datasets.corpus_loader import CorpusLoader
 from ..datasets.dataset_import import DatasetImportService
 from ..datasets.datasets import DatasetService
 from ..governance.data_origin import DataOrigin
+from .bootstrap_result import BootstrapResult
 
 
 # Resolve the bundled demo data directory from the installed package,
@@ -54,10 +59,26 @@ DEFAULT_CORPUS_NAME = "Demo - medium/alice"
 # Chunking configuration per directory — determines how files are split into
 # training documents during corpus ingestion.
 _CORPUS_CONFIG: dict[str, dict] = {
-    "small/names": {"strategy": ChunkingStrategy.FILE, "block_size": 16, "overlap": 0.0},
-    "small/hello-world": {"strategy": ChunkingStrategy.FILE, "block_size": 16, "overlap": 0.0},
-    "medium/alice": {"strategy": ChunkingStrategy.WINDOWED, "block_size": 64, "overlap": 0.25},
-    "large/earnest": {"strategy": ChunkingStrategy.WINDOWED, "block_size": 128, "overlap": 0.25},
+    "small/names": {
+        "strategy": ChunkingStrategy.FILE,
+        "block_size": 16,
+        "overlap": 0.0,
+    },
+    "small/hello-world": {
+        "strategy": ChunkingStrategy.FILE,
+        "block_size": 16,
+        "overlap": 0.0,
+    },
+    "medium/alice": {
+        "strategy": ChunkingStrategy.WINDOWED,
+        "block_size": 64,
+        "overlap": 0.25,
+    },
+    "large/earnest": {
+        "strategy": ChunkingStrategy.WINDOWED,
+        "block_size": 128,
+        "overlap": 0.25,
+    },
 }
 
 

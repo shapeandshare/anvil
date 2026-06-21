@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Tests for DemoBootstrapService."""
 
 from pathlib import Path
@@ -6,7 +11,11 @@ import pytest
 
 from anvil.db.repositories.corpora import CorpusRepository
 from anvil.db.repositories.datasets import DatasetRepository
-from anvil.services.demo.demo_bootstrap import DEMO_DIR, DemoBootstrapService, DEFAULT_CORPUS_NAME
+from anvil.services.demo.demo_bootstrap import (
+    DEFAULT_CORPUS_NAME,
+    DEMO_DIR,
+    DemoBootstrapService,
+)
 
 pytestmark = pytest.mark.asyncio
 
@@ -42,8 +51,7 @@ def demo_dir(tmp_path: Path) -> Path:
     ds_dir = d / "medium"
     ds_dir.mkdir(parents=True)
     (ds_dir / "math-facts.txt").write_text(
-        "two plus two equals four\n"
-        "three times three equals nine\n"
+        "two plus two equals four\n" "three times three equals nine\n"
     )
     return d
 
@@ -204,7 +212,9 @@ async def test_guard_skips_when_bundled_data_exists(session, monkeypatch, demo_d
     assert result2.datasets_created == 0
 
 
-async def test_rebootstrap_returns_bootstrap_result_shape(session, monkeypatch, demo_dir):
+async def test_rebootstrap_returns_bootstrap_result_shape(
+    session, monkeypatch, demo_dir
+):
     """Verify the re-bootstrap endpoint returns BootstrapResult-shaped data.
 
     Tests the contract: POST /v1/demo/bootstrap returns corpora_created,

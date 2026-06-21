@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """ContentEntry ORM model — single entry within a version.
 
 Each entry represents an individual piece of content (e.g. a file,
@@ -16,9 +21,9 @@ from ..base import Base
 from ..timestamp_mixin import TimestampMixin
 
 if TYPE_CHECKING:
-    from .content_version import (
+    from .content_version import (  # TYPE_CHECKING-only: breaks ContentEntry↔ContentVersion cycle
         ContentVersion,
-    )  # TYPE_CHECKING-only: breaks ContentEntry↔ContentVersion cycle
+    )
 
 
 class ContentEntry(Base, TimestampMixin):

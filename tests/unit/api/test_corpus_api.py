@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Tests for corpus API endpoints."""
 
 import pytest
@@ -70,9 +75,11 @@ async def test_delete_corpus(client):
 @pytest.mark.asyncio
 async def test_ingest_corpus(client):
     import tempfile
+
     td = tempfile.mkdtemp()
     try:
         from pathlib import Path
+
         (Path(td) / "test.py").write_text("print('hello')\n")
         created = await client.post(
             "/v1/corpora",
@@ -86,15 +93,18 @@ async def test_ingest_corpus(client):
         assert data["document_count"] > 0
     finally:
         import shutil
+
         shutil.rmtree(td)
 
 
 @pytest.mark.asyncio
 async def test_list_corpus_files(client):
     import tempfile
+
     td = tempfile.mkdtemp()
     try:
         from pathlib import Path
+
         (Path(td) / "main.py").write_text("x=1\n")
         (Path(td) / "utils.py").write_text("y=2\n")
         created = await client.post(
@@ -109,12 +119,14 @@ async def test_list_corpus_files(client):
         assert len(files) == 2
     finally:
         import shutil
+
         shutil.rmtree(td)
 
 
 @pytest.mark.asyncio
 async def test_list_corpus_files_empty(client):
     import tempfile
+
     td = tempfile.mkdtemp()
     try:
         created = await client.post(
@@ -128,4 +140,5 @@ async def test_list_corpus_files_empty(client):
         assert r.json()["data"] == []
     finally:
         import shutil
+
         shutil.rmtree(td)

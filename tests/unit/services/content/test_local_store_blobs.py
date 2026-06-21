@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Unit tests for content-addressed blob storage operations.
 
 Tests the blob-store contract that ``LocalVersionedContentStore`` will
@@ -20,7 +25,6 @@ import pytest
 
 from anvil.services.content.manifest import ManifestEntry
 from anvil.services.content.staged_entry import StagedEntry
-
 
 # ── In-memory content-addressed blob store fixture ──────────────────
 

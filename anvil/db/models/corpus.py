@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Corpus ORM model for directory-based training corpora."""
 
 from __future__ import annotations
@@ -12,7 +17,9 @@ from ..base import Base
 from ..timestamp_mixin import TimestampMixin
 
 if TYPE_CHECKING:
-    from .corpus_file import CorpusFile  # TYPE_CHECKING-only: breaks Corpus<->CorpusFile ORM bidirectional-FK cycle
+    from .corpus_file import (  # TYPE_CHECKING-only: breaks Corpus<->CorpusFile ORM bidirectional-FK cycle
+        CorpusFile,
+    )
 
 
 class Corpus(Base, TimestampMixin):

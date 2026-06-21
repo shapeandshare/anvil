@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """End-to-end tests for learning content enrichment endpoints and widgets."""
 
 import pytest
@@ -98,7 +103,9 @@ async def test_model_params_demo_fallback(client):
 @pytest.mark.asyncio
 async def test_backward_graph_oov_skipped(client):
     """T054: FR-020 — OOV characters are silently skipped, endpoint returns 200."""
-    r = await client.post("/v1/inference/backward-graph", json={"text": "hello \U0001f60a world"})
+    r = await client.post(
+        "/v1/inference/backward-graph", json={"text": "hello \U0001f60a world"}
+    )
     assert r.status_code == 200
     data = r.json()
     assert "nodes" in data
@@ -108,7 +115,9 @@ async def test_backward_graph_oov_skipped(client):
 @pytest.mark.asyncio
 async def test_loss_breakdown_oov_skipped(client):
     """T054: FR-020 — OOV characters are silently skipped for loss-breakdown."""
-    r = await client.post("/v1/inference/loss-breakdown", json={"text": "hi \u2603 snow"})
+    r = await client.post(
+        "/v1/inference/loss-breakdown", json={"text": "hi \u2603 snow"}
+    )
     assert r.status_code == 200
     data = r.json()
     assert "tokens" in data

@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Tests for ModalBackend with injected FakeModalRunner factory."""
 
 
@@ -7,8 +12,8 @@ from unittest.mock import ANY, patch
 import pytest
 
 from anvil.services.compute.compute_backend_unavailable import ComputeBackendUnavailable
-from anvil.services.compute.modal_backend import ModalBackend
 from anvil.services.compute.compute_status import ComputeStatus
+from anvil.services.compute.modal_backend import ModalBackend
 from anvil.services.compute.result import ComputeResult
 
 
@@ -18,10 +23,12 @@ class FakeModalCall:
 
     object_id: str = "job_mock_001"
     _status: str = "running"
-    _result: dict = field(default_factory=lambda: {
-        "artifact_uris": {"model": "s3://bucket/model.safetensors"},
-        "mlflow_run_id": "mlflow_run_abc",
-    })
+    _result: dict = field(
+        default_factory=lambda: {
+            "artifact_uris": {"model": "s3://bucket/model.safetensors"},
+            "mlflow_run_id": "mlflow_run_abc",
+        }
+    )
     _error: str | None = None
     _cancelled: bool = False
 
@@ -103,7 +110,8 @@ class TestModalBackendRun:
             progress_calls.append((step, loss))
 
         result = await backend.run(
-            tiny_docs, tiny_config,
+            tiny_docs,
+            tiny_config,
             progress_callback=progress_cb,
             stop_check=lambda: False,
         )
@@ -127,7 +135,8 @@ class TestModalBackendRun:
         backend = ModalBackend(function_factory=lambda: runner)
 
         result = await backend.run(
-            tiny_docs, tiny_config,
+            tiny_docs,
+            tiny_config,
             progress_callback=lambda s, l: None,
             stop_check=lambda: False,
         )
@@ -147,7 +156,8 @@ class TestModalBackendRun:
         async def run_with_stop():
             nonlocal cancelled
             result = await backend.run(
-                tiny_docs, tiny_config,
+                tiny_docs,
+                tiny_config,
                 progress_callback=lambda s, l: None,
                 stop_check=lambda: True,  # Always stop
             )
@@ -155,7 +165,8 @@ class TestModalBackendRun:
 
         # With stop always True, the poll loop should cancel immediately
         result = await backend.run(
-            tiny_docs, tiny_config,
+            tiny_docs,
+            tiny_config,
             progress_callback=lambda s, l: None,
             stop_check=lambda: True,
         )
@@ -220,7 +231,8 @@ class TestModalBackendRun:
 
         with patch("asyncio.sleep", return_value=None):
             result = await backend2.run(
-                tiny_docs, tiny_config,
+                tiny_docs,
+                tiny_config,
                 progress_callback=progress_cb,
                 stop_check=lambda: False,
             )
@@ -245,26 +257,33 @@ class TestModalNoSecretsInPayload:
         backend = ModalBackend(function_factory=lambda: runner)
 
         result = await backend.run(
-            tiny_docs, tiny_config,
+            tiny_docs,
+            tiny_config,
             progress_callback=lambda s, l: None,
             stop_check=lambda: False,
         )
 
         # Check that no secret-like keys appear in the result
-        sensitive_keys = {"password", "secret", "token", "credential", "api_key", "auth"}
+        sensitive_keys = {
+            "password",
+            "secret",
+            "token",
+            "credential",
+            "api_key",
+            "auth",
+        }
         result_dict = {
-            k: v for k, v in result.__dict__.items()
-            if not k.startswith("_")
+            k: v for k, v in result.__dict__.items() if not k.startswith("_")
         }
         result_keys = set(str(k).lower() for k in result_dict.keys())
-        assert len(result_keys & sensitive_keys) == 0, (
-            f"Result contains sensitive keys: {result_keys & sensitive_keys}"
-        )
+        assert (
+            len(result_keys & sensitive_keys) == 0
+        ), f"Result contains sensitive keys: {result_keys & sensitive_keys}"
 
         # Check artifact URIs don't contain credentials
         for uri in result.artifact_uris.values():
             assert "://" in uri, f"URI missing scheme: {uri}"
             # No inline credentials in URIs (Modal handles auth)
-            assert "@" not in uri.replace("://", "___"), (
-                f"URI appears to contain inline credentials: {uri}"
-            )
+            assert "@" not in uri.replace(
+                "://", "___"
+            ), f"URI appears to contain inline credentials: {uri}"

@@ -1,13 +1,18 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Tests for CorpusRepository."""
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from anvil.db.base import Base
 from anvil.db.models.corpus import Corpus
 from anvil.db.models.corpus_file import CorpusFile
 from anvil.db.repositories.corpora import CorpusRepository
-from anvil.db.base import Base
-from anvil.db.session import async_engine, AsyncSessionLocal
+from anvil.db.session import AsyncSessionLocal, async_engine
 
 
 @pytest.fixture
@@ -21,9 +26,14 @@ async def db_session():
 @pytest.mark.asyncio
 async def test_add_and_get_corpus(db_session):
     repo = CorpusRepository(db_session)
-    c = Corpus(name="repo-test", root_path="/tmp",
-               chunking_strategy="line", chunk_overlap=0.0,
-               file_count=0, document_count=0)
+    c = Corpus(
+        name="repo-test",
+        root_path="/tmp",
+        chunking_strategy="line",
+        chunk_overlap=0.0,
+        file_count=0,
+        document_count=0,
+    )
     saved = await repo.add(c)
     assert saved.id is not None
     assert saved.name == "repo-test"
@@ -36,12 +46,22 @@ async def test_add_and_get_corpus(db_session):
 @pytest.mark.asyncio
 async def test_get_all_corpora(db_session):
     repo = CorpusRepository(db_session)
-    c1 = Corpus(name="c1", root_path="/a",
-                chunking_strategy="line", chunk_overlap=0.0,
-                file_count=0, document_count=0)
-    c2 = Corpus(name="c2", root_path="/b",
-                chunking_strategy="line", chunk_overlap=0.0,
-                file_count=0, document_count=0)
+    c1 = Corpus(
+        name="c1",
+        root_path="/a",
+        chunking_strategy="line",
+        chunk_overlap=0.0,
+        file_count=0,
+        document_count=0,
+    )
+    c2 = Corpus(
+        name="c2",
+        root_path="/b",
+        chunking_strategy="line",
+        chunk_overlap=0.0,
+        file_count=0,
+        document_count=0,
+    )
     await repo.add(c1)
     await repo.add(c2)
     all_c = await repo.get_all()
@@ -53,9 +73,14 @@ async def test_get_all_corpora(db_session):
 @pytest.mark.asyncio
 async def test_delete_corpus(db_session):
     repo = CorpusRepository(db_session)
-    c = Corpus(name="delete-me", root_path="/tmp",
-               chunking_strategy="line", chunk_overlap=0.0,
-               file_count=0, document_count=0)
+    c = Corpus(
+        name="delete-me",
+        root_path="/tmp",
+        chunking_strategy="line",
+        chunk_overlap=0.0,
+        file_count=0,
+        document_count=0,
+    )
     saved = await repo.add(c)
     cid = saved.id
     deleted = await repo.delete(cid)
@@ -66,9 +91,14 @@ async def test_delete_corpus(db_session):
 @pytest.mark.asyncio
 async def test_add_and_get_files(db_session):
     repo = CorpusRepository(db_session)
-    c = Corpus(name="files-test", root_path="/tmp",
-               chunking_strategy="line", chunk_overlap=0.0,
-               file_count=0, document_count=0)
+    c = Corpus(
+        name="files-test",
+        root_path="/tmp",
+        chunking_strategy="line",
+        chunk_overlap=0.0,
+        file_count=0,
+        document_count=0,
+    )
     saved = await repo.add(c)
     f = CorpusFile(corpus_id=saved.id, relative_path="a.py", language="Python")
     saved_f = await repo.add_file(f)
@@ -81,9 +111,14 @@ async def test_add_and_get_files(db_session):
 @pytest.mark.asyncio
 async def test_delete_files_for_corpus(db_session):
     repo = CorpusRepository(db_session)
-    c = Corpus(name="del-files", root_path="/tmp",
-               chunking_strategy="line", chunk_overlap=0.0,
-               file_count=0, document_count=0)
+    c = Corpus(
+        name="del-files",
+        root_path="/tmp",
+        chunking_strategy="line",
+        chunk_overlap=0.0,
+        file_count=0,
+        document_count=0,
+    )
     saved = await repo.add(c)
     await repo.add_file(CorpusFile(corpus_id=saved.id, relative_path="a.py"))
     await repo.add_file(CorpusFile(corpus_id=saved.id, relative_path="b.py"))

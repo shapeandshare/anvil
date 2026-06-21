@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Integration tests for dataset curation API."""
 
 import pytest
@@ -115,7 +120,10 @@ async def test_length_filter(client):
     d_id = create.json()["data"]["id"]
     await client.post(
         f"/v1/datasets/{d_id}/import",
-        json={"format": "txt", "text": "short\nlonger text here\na\nvery long text indeed\n"},
+        json={
+            "format": "txt",
+            "text": "short\nlonger text here\na\nvery long text indeed\n",
+        },
     )
     resp = await client.post(
         f"/v1/datasets/{d_id}/curate/filter",

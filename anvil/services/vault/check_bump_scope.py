@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Bump-scope guard: classifies a PR's changed files as version-only or full.
 
 This is a *classifier*, not an enforcer. It always exits 0. Branch
@@ -15,7 +20,6 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
-
 
 # Files that a version-only bump PR is permitted to touch.
 _VERSION_ONLY_PATHS = frozenset({"pyproject.toml", "CHANGELOG.md"})

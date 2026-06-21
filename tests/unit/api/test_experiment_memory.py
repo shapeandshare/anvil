@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Tests for per-run memory enrichment on the experiment detail endpoint."""
 
 import json
@@ -202,7 +207,9 @@ async def test_experiment_detail_surfaces_gpu_peaks_and_param_fallback(client):
 
     with (
         patch("anvil.api.v1.experiments.MlflowClient", _FakeMlflowClient),
-        patch.object(TrackingService, "get_experiment", side_effect=_fake_get_experiment),
+        patch.object(
+            TrackingService, "get_experiment", side_effect=_fake_get_experiment
+        ),
         patch.object(TrackingService, "get_safetensors_artifacts", _fake_artifacts),
     ):
         resp = await client.get(f"/v1/experiments/{exp_id}")

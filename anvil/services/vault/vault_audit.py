@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """VaultAuditService — mechanical audit of vault frontmatter and wikilinks.
 
 Migrated from ``scripts/ci/vault_audit.py``.
@@ -22,22 +27,42 @@ from ._types import Finding, MechanicalReport
 
 # Controlled vocabulary (mirrors docs/vault/_meta/tags.md)
 TYPE_VOCAB: set[str] = {
-    "type/principle", "type/design", "type/system", "type/reference",
-    "type/moc", "type/decision", "type/discovery", "type/session-log",
+    "type/principle",
+    "type/design",
+    "type/system",
+    "type/reference",
+    "type/moc",
+    "type/decision",
+    "type/discovery",
+    "type/session-log",
 }
 
 STATUS_VOCAB: set[str] = {
-    "status/draft", "status/wip", "status/reviewed", "status/canonical",
+    "status/draft",
+    "status/wip",
+    "status/reviewed",
+    "status/canonical",
     "status/superseded",
 }
 
 DOMAIN_VOCAB: set[str] = {
-    "domain/architecture", "domain/core", "domain/training",
-    "domain/inference", "domain/export", "domain/ui", "domain/database",
-    "domain/operations", "domain/mlops", "domain/tracking",
-    "domain/infrastructure", "domain/registry",
-    "domain/tooling", "domain/vault",
-    "domain/governance", "domain/mcp", "domain/content",
+    "domain/architecture",
+    "domain/core",
+    "domain/training",
+    "domain/inference",
+    "domain/export",
+    "domain/ui",
+    "domain/database",
+    "domain/operations",
+    "domain/mlops",
+    "domain/tracking",
+    "domain/infrastructure",
+    "domain/registry",
+    "domain/tooling",
+    "domain/vault",
+    "domain/governance",
+    "domain/mcp",
+    "domain/content",
 }
 
 KNOWN_TAG_PREFIXES: set[str] = {"type/", "status/", "domain/"}
@@ -138,8 +163,20 @@ def extract_wikilinks(text: str) -> list[str]:
         Wikilink targets (NFC-normalized).
     """
     _ATTACHMENT_EXTENSIONS: set[str] = {
-        ".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp",
-        ".pdf", ".mp3", ".mp4", ".ogg", ".wav", ".mov", ".avi",
+        ".svg",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif",
+        ".webp",
+        ".bmp",
+        ".pdf",
+        ".mp3",
+        ".mp4",
+        ".ogg",
+        ".wav",
+        ".mov",
+        ".avi",
     }
     clean_text = re.sub(r"```.*?```", "", text, flags=re.DOTALL)
     clean_text = re.sub(r"`[^`\n]+`", "", clean_text)
@@ -243,16 +280,28 @@ def validate_schema(
     findings: list[Finding] = []
 
     def _err(rule: str, msg: str, fixable: bool = False) -> None:
-        findings.append(Finding(
-            note_path=note_path_str, line=1, rule=rule,
-            message=msg, severity="ERROR", fixable=fixable,
-        ))
+        findings.append(
+            Finding(
+                note_path=note_path_str,
+                line=1,
+                rule=rule,
+                message=msg,
+                severity="ERROR",
+                fixable=fixable,
+            )
+        )
 
     def _warn(rule: str, msg: str, fixable: bool = False) -> None:
-        findings.append(Finding(
-            note_path=note_path_str, line=1, rule=rule,
-            message=msg, severity="WARN", fixable=fixable,
-        ))
+        findings.append(
+            Finding(
+                note_path=note_path_str,
+                line=1,
+                rule=rule,
+                message=msg,
+                severity="WARN",
+                fixable=fixable,
+            )
+        )
 
     if not fm:
         _warn("missing_frontmatter", "note has no frontmatter")
@@ -271,20 +320,24 @@ def validate_schema(
     has_bare_type = isinstance(bare_type, str) and bool(bare_type)
 
     if len(type_tags) == 0 and not has_bare_type:
-        _err("missing_type_tag",
-             "missing required type/* tag (and no bare type: field)")
+        _err(
+            "missing_type_tag", "missing required type/* tag (and no bare type: field)"
+        )
     elif len(type_tags) == 0 and has_bare_type:
         mapped = f"type/{bare_type}"
         if mapped not in TYPE_VOCAB:
-            _err("invalid_type_tag",
-                 f"invalid bare type field: {bare_type!r} "
-                 f"(not in controlled vocabulary)")
+            _err(
+                "invalid_type_tag",
+                f"invalid bare type field: {bare_type!r} "
+                f"(not in controlled vocabulary)",
+            )
     elif len(type_tags) > 1:
         _err("multiple_type_tags", f"multiple type/* tags: {type_tags}")
     elif type_tags[0] not in TYPE_VOCAB:
-        _err("invalid_type_tag",
-             f"invalid type tag: {type_tags[0]!r} "
-             f"(not in controlled vocabulary)")
+        _err(
+            "invalid_type_tag",
+            f"invalid type tag: {type_tags[0]!r} " f"(not in controlled vocabulary)",
+        )
 
     note_type = _resolve_note_type(fm)
 
@@ -306,17 +359,14 @@ def validate_schema(
         if "source" not in fm:
             _err("missing_source", "agent note missing 'source'")
         if note_type in GROUNDED_NOTE_TYPES and "code-refs" not in fm:
-            _err("missing_code_refs",
-                 "decision/discovery note missing 'code-refs'")
+            _err("missing_code_refs", "decision/discovery note missing 'code-refs'")
 
     created = fm.get("created")
     updated = fm.get("updated")
     if isinstance(created, str) and _parse_date_value(created) is None:
-        _err("invalid_date",
-             f"created date is not a valid ISO date: {created!r}")
+        _err("invalid_date", f"created date is not a valid ISO date: {created!r}")
     if isinstance(updated, str) and _parse_date_value(updated) is None:
-        _err("invalid_date",
-             f"updated date is not a valid ISO date: {updated!r}")
+        _err("invalid_date", f"updated date is not a valid ISO date: {updated!r}")
 
     return findings
 
@@ -359,13 +409,15 @@ class VaultAuditService:
         vault_root = self.vault_dir
 
         if not vault_root.exists():
-            report.add(Finding(
-                note_path=str(vault_root),
-                line=0,
-                rule="vault_not_found",
-                message=f"vault directory not found: {vault_root}",
-                severity="ERROR",
-            ))
+            report.add(
+                Finding(
+                    note_path=str(vault_root),
+                    line=0,
+                    rule="vault_not_found",
+                    message=f"vault directory not found: {vault_root}",
+                    severity="ERROR",
+                )
+            )
             return report
 
         all_md = sorted(vault_root.rglob("*.md"))
@@ -383,10 +435,7 @@ class VaultAuditService:
                 rel = md_path.relative_to(vault_root)
             except ValueError:
                 continue
-            if any(
-                part in {"_meta", ".obsidian", "addons"}
-                for part in rel.parts
-            ):
+            if any(part in {"_meta", ".obsidian", "addons"} for part in rel.parts):
                 continue
             filename_index.setdefault(md_path.stem, []).append(md_path)
             scannable.append((md_path, str(rel)))
@@ -400,30 +449,32 @@ class VaultAuditService:
             try:
                 content = md_path.read_text(encoding="utf-8")
             except OSError as e:
-                report.add(Finding(
-                    note_path=note_path_str,
-                    line=0,
-                    rule="read_error",
-                    message=f"cannot read file: {e}",
-                    severity="ERROR",
-                ))
+                report.add(
+                    Finding(
+                        note_path=note_path_str,
+                        line=0,
+                        rule="read_error",
+                        message=f"cannot read file: {e}",
+                        severity="ERROR",
+                    )
+                )
                 continue
 
             wikilinks = extract_wikilinks(content)
             for wl in wikilinks:
                 target_stem = wl.rsplit("/", 1)[-1] if "/" in wl else wl
                 if target_stem not in filename_index:
-                    report.add(Finding(
-                        note_path=note_path_str,
-                        line=0,
-                        rule="broken_wikilink",
-                        message=f"broken [[wikilink]]: target '{wl}' not found",
-                        severity="ERROR",
-                    ))
+                    report.add(
+                        Finding(
+                            note_path=note_path_str,
+                            line=0,
+                            rule="broken_wikilink",
+                            message=f"broken [[wikilink]]: target '{wl}' not found",
+                            severity="ERROR",
+                        )
+                    )
 
-        report.stats["notes_with_issues"] = (
-            len(report.errors) + len(report.warnings)
-        )
+        report.stats["notes_with_issues"] = len(report.errors) + len(report.warnings)
         return report
 
     def build_filename_index(self) -> dict[str, list[Path]]:

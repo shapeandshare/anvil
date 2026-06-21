@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Tests: MigrationService resolves paths from the installed package.
 
 These tests describe the DESIRED behavior after the packaging refactor:
@@ -24,8 +29,7 @@ def test_migration_service_uses_importlib_resources() -> None:
         " — was the relocation (T008) completed?"
     )
     assert "anvil" in str(ini_path.resolve()), (
-        "alembic.ini path must point inside the anvil package, "
-        "not the repo root"
+        "alembic.ini path must point inside the anvil package, " "not the repo root"
     )
 
 
@@ -43,9 +47,9 @@ def test_script_location_points_to_packaged_migrations() -> None:
     sl_path = Path(script_location)
     assert sl_path.exists(), f"script_location {script_location} does not exist"
     # Must point inside the anvil package
-    assert "anvil" in sl_path.parts, (
-        f"script_location {script_location} is outside the anvil package"
-    )
+    assert (
+        "anvil" in sl_path.parts
+    ), f"script_location {script_location} is outside the anvil package"
 
 
 def test_migrations_dir_contains_version_files() -> None:
@@ -88,9 +92,9 @@ def test_migration_service_does_not_use_cwd_alembic_ini() -> None:
     db_url = f"sqlite+aiosqlite:///{cfg['state_db_path']}"
     # Pretend CWD has no alembic.ini
     cwd_pyproject = Path.cwd() / "alembic.ini"
-    assert not cwd_pyproject.exists(), (
-        "Test precondition failed: alembic.ini in CWD would mask the test."
-    )
+    assert (
+        not cwd_pyproject.exists()
+    ), "Test precondition failed: alembic.ini in CWD would mask the test."
     svc = MigrationService(db_url=db_url)
     # If this raises FileNotFoundError, the code is still CWD-relative
     svc._build_config("dummy")  # should not look for dummy at CWD

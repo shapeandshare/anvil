@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """ContentCorpus ORM model — versioned content corpus.
 
 A named, versioned collection of training content. Each corpus tracks
@@ -20,9 +25,9 @@ from ..base import Base
 from ..timestamp_mixin import TimestampMixin
 
 if TYPE_CHECKING:
-    from .content_version import (
+    from .content_version import (  # TYPE_CHECKING-only: breaks ContentCorpus↔ContentVersion cycle
         ContentVersion,
-    )  # TYPE_CHECKING-only: breaks ContentCorpus↔ContentVersion cycle
+    )
 
 
 class ContentCorpus(Base, TimestampMixin):

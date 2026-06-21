@@ -17,8 +17,8 @@ down_revision: str | None = "001"
 branch_labels: str | None = None
 depends_on: str | None = None
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 
 def upgrade() -> None:

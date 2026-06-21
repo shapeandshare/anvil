@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Dataset curation service — deduplication, length filtering, regex replacement.
 
 Provides the ``DatasetCurationService`` class for curating dataset samples:
@@ -62,9 +67,7 @@ class DatasetCurationService:
         self._op_repo = CurationOperationRepository(session)
         self._dataset_repo = DatasetRepository(session)
 
-    async def deduplicate(
-        self, audit: AuditService | None = None
-    ) -> CurationResult:
+    async def deduplicate(self, audit: AuditService | None = None) -> CurationResult:
         """Remove duplicate samples by content hash.
 
         For each content hash with multiple occurrences, keeps the
@@ -245,7 +248,10 @@ class DatasetCurationService:
         )
 
     async def regex_replace(
-        self, pattern: str, replacement: str, case_sensitive: bool = True,
+        self,
+        pattern: str,
+        replacement: str,
+        case_sensitive: bool = True,
         audit: AuditService | None = None,
     ) -> dict:
         """Apply a regex substitution to all active sample texts.

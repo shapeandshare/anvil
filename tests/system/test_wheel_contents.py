@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Verify the built wheel contains all required resources and metadata.
 
 This is an artifact-inspection test: it opens the .whl with zipfile and
@@ -53,7 +58,11 @@ def test_wheel_contains_migration_versions() -> None:
 
     with zipfile.ZipFile(_wheel_path()) as zf:
         names = zf.namelist()
-    versions = [n for n in names if "anvil/_resources/migrations/versions/" in n and n.endswith(".py")]
+    versions = [
+        n
+        for n in names
+        if "anvil/_resources/migrations/versions/" in n and n.endswith(".py")
+    ]
     # Expect at least 1 version file (squashed 001_initial)
     assert len(versions) >= 1, (
         f"Expected at least 1 migration version file in wheel, found {len(versions)}. "
@@ -85,9 +94,9 @@ def test_wheel_contains_static_assets() -> None:
     with zipfile.ZipFile(_wheel_path()) as zf:
         names = zf.namelist()
     static = [n for n in names if "anvil/api/static/" in n]
-    assert len(static) >= 1, (
-        "Wheel missing API static assets. Check [tool.setuptools.package-data] for api/static/**/*"
-    )
+    assert (
+        len(static) >= 1
+    ), "Wheel missing API static assets. Check [tool.setuptools.package-data] for api/static/**/*"
 
 
 def test_wheel_contains_templates() -> None:
@@ -96,9 +105,9 @@ def test_wheel_contains_templates() -> None:
     with zipfile.ZipFile(_wheel_path()) as zf:
         names = zf.namelist()
     templates = [n for n in names if "anvil/api/templates/" in n]
-    assert len(templates) >= 1, (
-        "Wheel missing API templates. Check [tool.setuptools.package-data] for api/templates/**/*"
-    )
+    assert (
+        len(templates) >= 1
+    ), "Wheel missing API templates. Check [tool.setuptools.package-data] for api/templates/**/*"
 
 
 def test_wheel_metadata_lists_requires_python() -> None:
@@ -109,9 +118,9 @@ def test_wheel_metadata_lists_requires_python() -> None:
         meta = [n for n in names if n.endswith("METADATA") and "dist-info" in n]
         assert meta, "No METADATA file in wheel"
         text = zf.read(meta[0]).decode("utf-8")
-    assert "Requires-Python: >=3.11" in text, (
-        f"METADATA missing Requires-Python: >=3.11. Got:\n{text[:500]}"
-    )
+    assert (
+        "Requires-Python: >=3.11" in text
+    ), f"METADATA missing Requires-Python: >=3.11. Got:\n{text[:500]}"
 
 
 def test_wheel_metadata_lists_base_deps() -> None:
@@ -123,9 +132,9 @@ def test_wheel_metadata_lists_base_deps() -> None:
         assert meta, "No METADATA file in wheel"
         text = zf.read(meta[0]).decode("utf-8")
     for dep in ("fastapi", "uvicorn", "sqlalchemy", "alembic", "jinja2", "mlflow"):
-        assert dep in text, (
-            f"METADATA missing base dependency '{dep}'. Got:\n{text[:1000]}"
-        )
+        assert (
+            dep in text
+        ), f"METADATA missing base dependency '{dep}'. Got:\n{text[:1000]}"
 
 
 def test_wheel_metadata_does_not_require_torch() -> None:
@@ -139,7 +148,11 @@ def test_wheel_metadata_does_not_require_torch() -> None:
     # Torch is allowed as a gpu extra dependency, but NOT as a base dependency.
     # "Requires-Dist: torch>=2.0; extra == \"gpu\"" is fine.
     # "Requires-Dist: torch>=2.0" alone would be a problem.
-    base_lines = [l for l in text.splitlines() if l.startswith("Requires-Dist: torch") and "; extra" not in l]
+    base_lines = [
+        l
+        for l in text.splitlines()
+        if l.startswith("Requires-Dist: torch") and "; extra" not in l
+    ]
     assert not base_lines, (
         f"Torch is listed as a base (non-extra) dependency:\n{base_lines}"
         "It should only be in the [gpu] extra."

@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Markdown report renderer for vault graph health analysis."""
 
 from __future__ import annotations
@@ -392,19 +397,14 @@ def _render_action_items(
         count += 1
     if report.hygiene.non_conformant_tags:
         lines.append(
-            f"- 🏷️ Fix {len(report.hygiene.non_conformant_tags)} "
-            f"non-conformant tags"
+            f"- 🏷️ Fix {len(report.hygiene.non_conformant_tags)} " f"non-conformant tags"
         )
         count += 1
     if report.hygiene.phantom_links:
-        lines.append(
-            f"- 👻 Resolve {len(report.hygiene.phantom_links)} phantom links"
-        )
+        lines.append(f"- 👻 Resolve {len(report.hygiene.phantom_links)} phantom links")
         count += 1
     if report.temporal.stale_notes:
-        lines.append(
-            f"- 📅 Review {len(report.temporal.stale_notes)} stale notes"
-        )
+        lines.append(f"- 📅 Review {len(report.temporal.stale_notes)} stale notes")
         count += 1
     if report.topological.communities_needing_moc:
         lines.append(

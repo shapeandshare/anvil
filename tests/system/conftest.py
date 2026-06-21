@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """System test configuration for anvil pip-installed runtime validation.
 
 Provides httpx client fixture and docker compose exec helper.
@@ -27,13 +32,19 @@ def compose_dir() -> Path:
     return Path.cwd()
 
 
-def compose_exec(cmd: str, compose_dir: Path | None = None) -> subprocess.CompletedProcess:
+def compose_exec(
+    cmd: str, compose_dir: Path | None = None
+) -> subprocess.CompletedProcess:
     """Run a command inside the compose service and return the result."""
     workdir = compose_dir or Path.cwd()
     full_cmd = [
-        "docker", "compose",
-        "-f", str(workdir / COMPOSE_FILE),
-        "exec", "-T", COMPOSE_SERVICE,
+        "docker",
+        "compose",
+        "-f",
+        str(workdir / COMPOSE_FILE),
+        "exec",
+        "-T",
+        COMPOSE_SERVICE,
     ] + shlex.split(cmd)
     return subprocess.run(
         full_cmd,

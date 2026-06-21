@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Structural gap analysis for vault wikilink graph.
 
 Chain gaps — missing intermediate notes in transitive relationships.
@@ -165,10 +170,7 @@ def _find_potential_silos(
                 if node not in G:
                     continue
                 for neighbor in G.successors(node):
-                    if (
-                        neighbor in node_to_cluster
-                        and node_to_cluster[neighbor] == j
-                    ):
+                    if neighbor in node_to_cluster and node_to_cluster[neighbor] == j:
                         bridging_notes.add(node)
                         break
                 else:
@@ -184,10 +186,7 @@ def _find_potential_silos(
                 if node not in G:
                     continue
                 for neighbor in G.successors(node):
-                    if (
-                        neighbor in node_to_cluster
-                        and node_to_cluster[neighbor] == i
-                    ):
+                    if neighbor in node_to_cluster and node_to_cluster[neighbor] == i:
                         bridging_notes.add(node)
                         break
                 else:

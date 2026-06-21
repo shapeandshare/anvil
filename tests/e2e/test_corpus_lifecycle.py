@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """E2E test for corpus lifecycle — create, ingest, verify stats, delete."""
 
 import tempfile
@@ -55,4 +60,5 @@ async def test_corpus_lifecycle(client):
         assert r.status_code == 404
     finally:
         import shutil
+
         shutil.rmtree(td)

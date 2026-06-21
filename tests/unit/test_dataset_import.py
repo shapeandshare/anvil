@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Unit tests for DatasetImportService — parsing, preview, and import."""
 
 from __future__ import annotations
@@ -124,7 +129,9 @@ class TestCommitImport:
         store_root = tmp_path / "store"
         store_root.mkdir()
         store = LocalFileStore(str(store_root))
-        ds = Dataset(name="import-test", filename="import.txt", file_path=str(tmp_path / "i.txt"))
+        ds = Dataset(
+            name="import-test", filename="import.txt", file_path=str(tmp_path / "i.txt")
+        )
         in_memory_session.add(ds)
         await in_memory_session.flush()
         await in_memory_session.refresh(ds)
@@ -143,7 +150,9 @@ class TestCommitImport:
         """commit_import with no samples should not error."""
         from anvil.db.models.dataset import Dataset
 
-        ds = Dataset(name="empty-import", filename="empty.txt", file_path=str(tmp_path / "e.txt"))
+        ds = Dataset(
+            name="empty-import", filename="empty.txt", file_path=str(tmp_path / "e.txt")
+        )
         in_memory_session.add(ds)
         await in_memory_session.flush()
         await in_memory_session.refresh(ds)
@@ -156,7 +165,9 @@ class TestCommitImport:
         """preview_import should return parsed samples without persisting."""
         from anvil.db.models.dataset import Dataset
 
-        ds = Dataset(name="preview-ds", filename="prev.txt", file_path=str(tmp_path / "p.txt"))
+        ds = Dataset(
+            name="preview-ds", filename="prev.txt", file_path=str(tmp_path / "p.txt")
+        )
         in_memory_session.add(ds)
         await in_memory_session.flush()
         await in_memory_session.refresh(ds)

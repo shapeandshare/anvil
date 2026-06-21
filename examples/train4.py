@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """train4: Single transformer block with pre-RMSNorm, multi-head RoPE attention,
 and SwiGLU MLP. Full block:
   pre-attn RMSNorm → RoPE attention → residual
@@ -9,7 +14,14 @@ import random
 random.seed(42)
 
 from anvil.core.autograd import Value
-from anvil.core.engine import rmsnorm, softmax, linear, matrix, precompute_rope, apply_rope
+from anvil.core.engine import (
+    apply_rope,
+    linear,
+    matrix,
+    precompute_rope,
+    rmsnorm,
+    softmax,
+)
 
 # --- data ---
 docs = [l.strip() for l in open("input.txt") if l.strip()]
@@ -39,16 +51,30 @@ rms_1 = [Value(1.0) for _ in range(n_embd)]  # pre-attention norm scale
 rms_2 = [Value(1.0) for _ in range(n_embd)]  # pre-MLP norm scale
 lm_head = matrix(vocab_size, n_embd)
 
-all_mats = [wte, attn_wq, attn_wk, attn_wv, attn_wo, mlp_gate, mlp_up, mlp_down, lm_head]
-params: list[Value] = [p for mat in all_mats for row in mat for p in row] + rms_1 + rms_2
+all_mats = [
+    wte,
+    attn_wq,
+    attn_wk,
+    attn_wv,
+    attn_wo,
+    mlp_gate,
+    mlp_up,
+    mlp_down,
+    lm_head,
+]
+params: list[Value] = (
+    [p for mat in all_mats for row in mat for p in row] + rms_1 + rms_2
+)
 
 # Precompute RoPE tables (half-split, per-head dimension)
 cos_table, sin_table = precompute_rope(block_size, head_dim)
 
 
 def forward(
-    token_id: int, pos_id: int,
-    keys_cache: list[list[Value]], values_cache: list[list[Value]],
+    token_id: int,
+    pos_id: int,
+    keys_cache: list[list[Value]],
+    values_cache: list[list[Value]],
 ) -> list[Value]:
     """Full transformer block forward pass."""
     x = wte[token_id]
@@ -66,8 +92,12 @@ def forward(
     k_rotated: list[Value] = []
     for h in range(n_head):
         hs = h * head_dim
-        q_rotated.extend(apply_rope(q[hs:hs + head_dim], pos_id, cos_table, sin_table))
-        k_rotated.extend(apply_rope(k[hs:hs + head_dim], pos_id, cos_table, sin_table))
+        q_rotated.extend(
+            apply_rope(q[hs : hs + head_dim], pos_id, cos_table, sin_table)
+        )
+        k_rotated.extend(
+            apply_rope(k[hs : hs + head_dim], pos_id, cos_table, sin_table)
+        )
     q = q_rotated
     k = k_rotated
 
@@ -78,12 +108,12 @@ def forward(
     x_attn: list[Value] = []
     for h in range(n_head):
         hs = h * head_dim
-        q_h = q[hs:hs + head_dim]
-        k_h = [ki[hs:hs + head_dim] for ki in keys_cache]
-        v_h = [vi[hs:hs + head_dim] for vi in values_cache]
+        q_h = q[hs : hs + head_dim]
+        k_h = [ki[hs : hs + head_dim] for ki in keys_cache]
+        v_h = [vi[hs : hs + head_dim] for vi in values_cache]
 
         attn_logits = [
-            sum(q_h[j] * k_h[t][j] for j in range(head_dim)) / (head_dim ** 0.5)
+            sum(q_h[j] * k_h[t][j] for j in range(head_dim)) / (head_dim**0.5)
             for t in range(len(k_h))
         ]
         attn_weights = softmax(attn_logits)

@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Tests for TrackingService with injected fake client factory."""
 
 from dataclasses import dataclass, field
@@ -5,9 +10,8 @@ from datetime import datetime
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from mlflow.entities import Run
-
 import pytest
+from mlflow.entities import Run
 
 from anvil.config import get_config
 
@@ -262,9 +266,7 @@ class TestLogDatasetInput:
         )
 
         mock_session = AsyncMock()
-        with patch(
-            "anvil.services.mlflow_inputs.MlflowInputResolver"
-        ) as resolver_cls:
+        with patch("anvil.services.mlflow_inputs.MlflowInputResolver") as resolver_cls:
             mock_resolver = AsyncMock()
             resolver_cls.return_value = mock_resolver
             mock_resolver.resolve_dataset.return_value = (
@@ -300,9 +302,7 @@ class TestLogDatasetInput:
             run_name="fail-resolver", params={}, engine_backend="stdlib", device="cpu"
         )
 
-        with patch(
-            "anvil.services.mlflow_inputs.MlflowInputResolver"
-        ) as resolver_cls:
+        with patch("anvil.services.mlflow_inputs.MlflowInputResolver") as resolver_cls:
             mock_session = AsyncMock()
             mock_resolver = AsyncMock()
             resolver_cls.return_value = mock_resolver
@@ -322,9 +322,7 @@ class TestLogCorpusInput:
         )
 
         mock_session = AsyncMock()
-        with patch(
-            "anvil.services.mlflow_inputs.MlflowInputResolver"
-        ) as resolver_cls:
+        with patch("anvil.services.mlflow_inputs.MlflowInputResolver") as resolver_cls:
             mock_resolver = AsyncMock()
             resolver_cls.return_value = mock_resolver
             mock_resolver.resolve_corpus.return_value = (
@@ -362,9 +360,7 @@ class TestLogCorpusInput:
             run_name="fail-corpus", params={}, engine_backend="stdlib", device="cpu"
         )
 
-        with patch(
-            "anvil.services.mlflow_inputs.MlflowInputResolver"
-        ) as resolver_cls:
+        with patch("anvil.services.mlflow_inputs.MlflowInputResolver") as resolver_cls:
             mock_session = AsyncMock()
             mock_resolver = AsyncMock()
             resolver_cls.return_value = mock_resolver
@@ -472,9 +468,7 @@ class TestLogCorpusLifecycleEvent:
             tracking_uri="http://127.0.0.1:5000", client_factory=fake_client_factory
         )
         svc._degraded = True
-        run_id = await svc.log_corpus_lifecycle_event(
-            corpus_id=7, event_type="ingest"
-        )
+        run_id = await svc.log_corpus_lifecycle_event(corpus_id=7, event_type="ingest")
         assert run_id == ""
 
     @pytest.mark.asyncio
@@ -488,8 +482,6 @@ class TestLogCorpusLifecycleEvent:
         svc = TrackingService(
             tracking_uri="http://127.0.0.1:5000", client_factory=broken_factory
         )
-        run_id = await svc.log_corpus_lifecycle_event(
-            corpus_id=7, event_type="ingest"
-        )
+        run_id = await svc.log_corpus_lifecycle_event(corpus_id=7, event_type="ingest")
         assert run_id == ""
         assert svc.is_degraded

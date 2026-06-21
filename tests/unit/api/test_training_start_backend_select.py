@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Tests for training start with compute_backend selection."""
 
 from typing import Optional
@@ -19,6 +24,7 @@ class FakeMlflowClient:
 
     def get_experiment_by_name(self, name):
         from unittest.mock import MagicMock
+
         return MagicMock(experiment_id="exp_1")
 
     def create_experiment(self, name):
@@ -26,6 +32,7 @@ class FakeMlflowClient:
 
     def create_run(self, experiment_id, run_name=None, tags=None):
         from unittest.mock import MagicMock
+
         run_id = f"mlflow_{len(self.created_runs) + 1}"
         self.created_runs.append(run_id)
         return MagicMock(info=MagicMock(run_id=run_id))
@@ -55,6 +62,7 @@ async def setup_db():
 @pytest.fixture
 def fake_tracking():
     from anvil.services.tracking.tracking import TrackingService
+
     svc = TrackingService(
         tracking_uri="http://127.0.0.1:5000",
         client_factory=lambda uri: FakeMlflowClient(uri),
@@ -83,6 +91,7 @@ def _make_config(overrides: dict | None = None) -> dict:
 async def test_compute_backend_auto_accepts(fake_tracking):
     """compute_backend='auto' is accepted and produces a successful run."""
     from anvil.api.v1 import training as training_module
+
     orig_svc = training_module.tracking_svc
     training_module.tracking_svc = fake_tracking
 
@@ -103,6 +112,7 @@ async def test_compute_backend_auto_accepts(fake_tracking):
 async def test_compute_backend_local_cpu_accepts(fake_tracking):
     """compute_backend='local-cpu' is accepted and forces stdlib engine."""
     from anvil.api.v1 import training as training_module
+
     orig_svc = training_module.tracking_svc
     training_module.tracking_svc = fake_tracking
 
@@ -122,6 +132,7 @@ async def test_compute_backend_local_cpu_accepts(fake_tracking):
 async def test_compute_backend_local_gpu_falls_back_to_cpu(fake_tracking):
     """compute_backend='local-gpu' silently falls back to CPU if no GPU."""
     from anvil.api.v1 import training as training_module
+
     orig_svc = training_module.tracking_svc
     training_module.tracking_svc = fake_tracking
 
@@ -141,6 +152,7 @@ async def test_compute_backend_local_gpu_falls_back_to_cpu(fake_tracking):
 async def test_compute_backend_modal_unavailable_returns_error(fake_tracking):
     """compute_backend='modal' returns 422 error when Modal is not available."""
     from anvil.api.v1 import training as training_module
+
     orig_svc = training_module.tracking_svc
     training_module.tracking_svc = fake_tracking
 
@@ -161,6 +173,7 @@ async def test_compute_backend_modal_unavailable_returns_error(fake_tracking):
 async def test_compute_backend_unknown_returns_error(fake_tracking):
     """An unknown compute_backend value returns a 422 error."""
     from anvil.api.v1 import training as training_module
+
     orig_svc = training_module.tracking_svc
     training_module.tracking_svc = fake_tracking
 
@@ -180,6 +193,7 @@ async def test_compute_backend_unknown_returns_error(fake_tracking):
 async def test_compute_backend_defaults_to_auto(fake_tracking):
     """Omitting compute_backend defaults to 'auto' (backward compatible)."""
     from anvil.api.v1 import training as training_module
+
     orig_svc = training_module.tracking_svc
     training_module.tracking_svc = fake_tracking
 

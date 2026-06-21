@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Unit tests for GovernanceService, GateDecision, and ProvenanceView.
 
 Tests the acceptable-use gate (all rejection and acceptance paths),
@@ -16,7 +21,6 @@ from anvil.services.governance.data_origin import DataOrigin
 from anvil.services.governance.gate_decision import GateDecision
 from anvil.services.governance.governance_service import GovernanceService
 from anvil.services.governance.provenance_view import ProvenanceView
-
 
 # ── Fixtures ─────────────────────────────────────────────────────
 
@@ -243,7 +247,9 @@ class TestAssignProvenance:
         fields."""
         from anvil.db.models.dataset import Dataset
 
-        ds = Dataset(name="test-ds", filename="test.txt", file_path=str(tmp_path / "ds.txt"))
+        ds = Dataset(
+            name="test-ds", filename="test.txt", file_path=str(tmp_path / "ds.txt")
+        )
         in_memory_session.add(ds)
         await in_memory_session.flush()
         await in_memory_session.refresh(ds)
@@ -320,9 +326,7 @@ class TestGetProvenance:
             origin=DataOrigin.USER,
         )
 
-        result = await gov_svc.get_provenance(
-            target_type="dataset", target_id=ds.id
-        )
+        result = await gov_svc.get_provenance(target_type="dataset", target_id=ds.id)
         assert result.source_description == "ds source"
         assert result.origin == DataOrigin.USER
 
@@ -350,18 +354,14 @@ class TestGetProvenance:
             origin=DataOrigin.BUNDLED,
         )
 
-        result = await gov_svc.get_provenance(
-            target_type="corpus", target_id=c.id
-        )
+        result = await gov_svc.get_provenance(target_type="corpus", target_id=c.id)
         assert result.source_description == "corpus source"
         assert result.origin == DataOrigin.BUNDLED
 
     async def test_returns_empty_for_nonexistent(self, gov_svc):
         """get_provenance for a non-existent entity should return a view
         with all defaults."""
-        result = await gov_svc.get_provenance(
-            target_type="dataset", target_id=9999
-        )
+        result = await gov_svc.get_provenance(target_type="dataset", target_id=9999)
         assert result.source_description is None
         assert result.origin == DataOrigin.USER
 

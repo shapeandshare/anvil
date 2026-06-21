@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """train3: Single-head causal self-attention with half-split RoPE.
 No learned position embeddings — position is encoded via RoPE rotation angles.
 No MLP — this script focuses purely on attention."""
@@ -7,7 +12,7 @@ import random
 random.seed(42)
 
 from anvil.core.autograd import Value
-from anvil.core.engine import softmax, linear, matrix, precompute_rope, apply_rope
+from anvil.core.engine import apply_rope, linear, matrix, precompute_rope, softmax
 
 # --- data ---
 docs = [l.strip() for l in open("input.txt") if l.strip()]
@@ -45,8 +50,10 @@ for pos in range(4):
 
 
 def forward(
-    token_id: int, pos_id: int,
-    keys_cache: list[list[Value]], values_cache: list[list[Value]],
+    token_id: int,
+    pos_id: int,
+    keys_cache: list[list[Value]],
+    values_cache: list[list[Value]],
 ) -> list[Value]:
     """Token embed → QKV proj → RoPE on Q/K only → causal attn → output proj."""
     x = wte[token_id]  # token embedding only (no wpe — RoPE encodes position)
@@ -64,7 +71,7 @@ def forward(
     values_cache.append(v)
 
     # Causal self-attention: each position attends to itself and previous
-    d = n_embd ** 0.5
+    d = n_embd**0.5
     attn_logits = [
         sum(q[j] * keys_cache[t][j] for j in range(n_embd)) / d
         for t in range(len(keys_cache))
