@@ -170,7 +170,7 @@
   - Job runs on `ubuntu-latest`
   - Document in the ADR the promotion criteria: flip to `continue-on-error: false` and wire into `gate-status` only after ≥10 consecutive zero-flake CI runs
 - [x] T012 [P] Update `AGENTS.md` Active Technologies section with new `tests/browser/` and `pytest-playwright` dev dependency entry
-- [ ] T013 Run `make test-browser` 3 consecutive times to validate zero-flake stability (all smoke tests must pass each run)
+- [x] T013 Run `make test-browser` 3 consecutive times to validate zero-flake stability (all smoke tests must pass each run)
 - [x] T014 [P] Add session log to `docs/vault/Sessions/` documenting the ADR decision and SSE-chart-update assertion technique
 - [ ] T015 [P] Verify edge case: navigate to `/v1/datasets-page` with no datasets and assert empty state renders without error (no crash, no error-level console signals)
 
