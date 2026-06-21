@@ -272,14 +272,14 @@ content passed gates and appears in the corpus.
 
 ### Tests
 
-- [ ] T083 [P] [US6] Integration test import job routes through gates → present in corpus in `tests/integration/content/test_import_job.py`.
-- [ ] T084 [P] [US6] Integration test import failure recorded/surfaced in `tests/integration/content/test_import_failure.py`.
+- [X] T083 [P] [US6] Integration test import job routes through gates → present in corpus in `tests/integration/content/test_import_job.py`.
+- [X] T084 [P] [US6] Integration test import failure recorded/surfaced in `tests/integration/content/test_import_failure.py`.
 
 ### Implementation
 
-- [ ] T085 [US6] Implement `ImportService` in `anvil/services/content/import_service.py`: `start` (opens an IngestSession, streams source content, accepts through gates) + `status` (FR-032/033).
-- [ ] T086 [US6] Add endpoints POST `/content/imports`, GET `/content/imports/{id}`, SSE `GET /content/stream/import` + `ImportStart`/`ImportJobOut` schemas.
-- [ ] T087 [P] [US6] Add the Import Console view to the content hub (mount point from T080) + live progress via the import-progress SSE; conform to the design system (T080b). Build via `visual-engineering` + `frontend-ui-ux`.
+- [X] T085 [US6] Implement `ImportService` in `anvil/services/content/import_service.py`: `start` (opens an IngestSession, streams source content, accepts through gates) + `status` (FR-032/033).
+- [X] T086 [US6] Add endpoints POST `/content/imports`, GET `/content/imports/{id}`, SSE `GET /content/stream/import` + `ImportStart`/`ImportJobOut` schemas.
+- [X] T087 [P] [US6] Add the Import Console view to the content hub (mount point from T080) + live progress via the import-progress SSE; conform to the design system (T080b). Build via `visual-engineering` + `frontend-ui-ux`.
 
 **Checkpoint**: US6 import works through the standard validation path.
 

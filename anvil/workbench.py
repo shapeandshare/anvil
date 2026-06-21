@@ -27,6 +27,7 @@ if TYPE_CHECKING:
     from .db.repositories.datasets import DatasetRepository
     from .services.content.composition_service import CompositionService
     from .services.content.corpus_service import CorpusService as ContentCorpusService
+    from .services.content.import_service import ImportService
     from .services.content.ingestion_service import IngestionService
     from .services.content.lineage_service import LineageService
     from .services.content.versioned_content_store import VersionedContentStore
@@ -83,7 +84,7 @@ class AnvilWorkbench:
         self._content_ingestion: IngestionService | None = None
         self._content_composition: CompositionService | None = None
         self._content_lineage: LineageService | None = None
-        self._content_imports: object | None = None  # will be ImportService
+        self._content_imports: ImportService | None = None
         self._content_locks: object | None = None  # will be LockService
 
     # ── Stateless service accessors ─────────────────────────────────────
@@ -384,11 +385,19 @@ class AnvilWorkbench:
         return self._content_lineage
 
     @property
-    def content_imports(self) -> object:  # will be ImportService
-        """Lazily-initialised content import service."""
+    def content_imports(self) -> ImportService:
+        """Lazily-initialised ``ImportService`` wired to *session*."""
         if self._content_imports is None:
-            # Placeholder — implemented by a future US.
-            self._content_imports = object()
+            from .services.content.import_service import ImportService
+
+            self._content_imports = ImportService(
+                import_job_repo=self.content_import_job_repo,
+                session_repo=self.content_ingest_session_repo,
+                source_repo=self.content_source_repo,
+                corpus_repo=self.content_corpus_repo,
+                content_store=self.content_store,
+                ingestion_service=self.content_ingestion,
+            )
         return self._content_imports
 
     @property

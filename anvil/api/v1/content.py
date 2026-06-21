@@ -30,6 +30,8 @@ from .schemas import (
     ContentCorpusOut,
     ContentVersionOut,
     FreezeVersionBody,
+    ImportJobOut,
+    ImportStart,
     LockBody,
     LockOut,
     RevertBody,
@@ -1038,6 +1040,128 @@ async def release_lock(
     return {"data": {"status": "released"}, "error": None}
 
 
+# ── Import jobs (US6) ────────────────────────────────────────────────────
+
+
+@router.post("/content/imports")
+async def start_import(
+    body: ImportStart,
+    workbench: AnvilWorkbench = Depends(get_workbench),
+):
+    """Start a new declarative content import job.
+
+    Opens an ingestion session through the ``IngestionService`` on
+    behalf of the import job and persists a new ``ImportJob`` record.
+    The caller can later stage content through the job's linked
+    session, run validation gates, and accept or abandon the session.
+
+    Parameters
+    ----------
+    body : ImportStart
+        Import start parameters (``corpus_id``, ``source`` slug,
+        ``config`` dict).
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
+
+    Returns
+    -------
+    dict
+        ``ImportJobOut`` data wrapped in ``{"data": ..., "error": None}``.
+
+    Raises
+    ------
+    HTTPException
+        If the source or corpus is not found (404 / 422).
+    """
+    try:
+        job = await workbench.content_imports.start(
+            corpus_id=body.corpus_id,
+            source_slug=body.source,
+            config=body.config,
+        )
+        await workbench.session.commit()
+    except ValueError as exc:
+        await workbench.session.rollback()
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    return {
+        "data": _import_job_to_out(job).model_dump(),
+        "error": None,
+    }
+
+
+@router.get("/content/imports/{id}")
+async def get_import_job(
+    id: int,
+    workbench: AnvilWorkbench = Depends(get_workbench),
+):
+    """Get the current status of an import job.
+
+    Parameters
+    ----------
+    id : int
+        The import job primary key.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
+
+    Returns
+    -------
+    dict
+        ``ImportJobOut`` data wrapped in ``{"data": ..., "error": None}``.
+
+    Raises
+    ------
+    HTTPException
+        If the job is not found (404).
+    """
+    job = await workbench.content_imports.status(id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Import job not found")
+
+    return {
+        "data": _import_job_to_out(job).model_dump(),
+        "error": None,
+    }
+
+
+@router.get("/content/stream/import")
+async def stream_import(
+    workbench: AnvilWorkbench = Depends(get_workbench),
+):
+    """SSE event stream for import job progress updates.
+
+    Placeholder endpoint (US6) — clients connect and receive a
+    heartbeat keep-alive every 30 seconds.  Live import progress
+    events will be wired in a future US when the UI consumer is
+    built.
+
+    Parameters
+    ----------
+    workbench : AnvilWorkbench
+        Injected session-bound workbench (unused placeholder).
+
+    Returns
+    -------
+    StreamingResponse
+        SSE stream with ``text/event-stream`` content type.
+    """
+
+    async def event_stream():
+        """Generator that yields SSE heartbeats every 30 seconds."""
+        while True:
+            await asyncio.sleep(30)
+            yield "event: heartbeat\ndata: {}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
 # ── Helpers ──────────────────────────────────────────────────────────────
 
 
@@ -1094,4 +1218,31 @@ def _version_to_out(version) -> ContentVersionOut:
         total_bytes=version.total_bytes,
         tag=version.label,
         created_at=version.created_at,
+    )
+
+
+def _import_job_to_out(job) -> ImportJobOut:
+    """Convert an ``ImportJob`` ORM instance to an ``ImportJobOut``
+    schema.
+
+    Parameters
+    ----------
+    job : ImportJob
+        The ORM instance to convert.
+
+    Returns
+    -------
+    ImportJobOut
+        The API output schema.
+    """
+    return ImportJobOut(
+        id=job.id,
+        corpus_id=job.corpus_id,
+        source_id=job.source_id,
+        config_json=job.config_json,
+        status=job.status,
+        session_id=job.session_id,
+        message=job.message,
+        started_at=job.started_at,
+        finished_at=job.finished_at,
     )
