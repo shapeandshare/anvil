@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Demo model provider — provisions a tiny trained model for educational widgets.
 
 Provides the ``DemoModelProvider`` class which lazily trains or loads a

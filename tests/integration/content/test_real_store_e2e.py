@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """End-to-end tests against the REAL LocalVersionedContentStore + services.
 
 Unlike the contract tests (which use an in-memory fake), these exercise the

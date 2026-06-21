@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """File store abstraction for application data.
 
 All user-facing data (corpora, datasets, models, exports) flows through

@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """MLflow input resolvers — converts anvil datasets/corpora to MLflow dataset objects.
 
 Provides the ``MlflowInputResolver`` class that bridges anvil's dataset

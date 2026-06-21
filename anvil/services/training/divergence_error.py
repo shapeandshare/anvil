@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Training divergence exception — raised when loss becomes non-finite.
 
 Provides :class:`DivergenceError`, raised by ``TrainingService`` from the
