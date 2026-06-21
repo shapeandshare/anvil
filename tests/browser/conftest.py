@@ -105,7 +105,7 @@ def browser_context_args() -> dict:
 
 
 @pytest.fixture(autouse=True)
-def _configure_page(page):  # noqa: ANN001
+def _configure_page(page):
     page.set_default_timeout(PAGE_TIMEOUT)
 
 
@@ -167,7 +167,7 @@ def assert_no_console_errors():
             Warning-level signals are logged but do not fail.
             """
             assert not self._errors, (
-                f"Console/network errors detected:\n"
+                "Console/network errors detected:\n"
                 + "\n".join(self._errors)
             )
 

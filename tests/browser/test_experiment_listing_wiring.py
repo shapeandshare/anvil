@@ -81,7 +81,7 @@ class TestExperimentListingWiring:
         ).wait_for(state="visible", timeout=self.LISTING_TIMEOUT)
 
         # Verify a final loss value is rendered nearby.
-        row = page.locator(f"text='ui-smoke-test-run'").locator("..")
+        row = page.locator("text='ui-smoke-test-run'").locator("..")
         loss_cell = row.locator(
             "[class*='loss'], [class*='metric'], td:nth-child(2)"
         )
