@@ -160,19 +160,19 @@ both accept without disturbing each other; producer write outside its session is
 
 ### Tests
 
-- [ ] T052 [P] [US2] Integration test concurrent isolation (two sessions, no cross-visibility) in `tests/integration/content/test_concurrent_isolation.py`.
-- [ ] T053 [P] [US2] Integration test serialized atomic acceptance under simultaneous accept in `tests/integration/content/test_serialized_acceptance.py`.
-- [ ] T054 [P] [US2] Unit test producer scoping denial (write outside own session) in `tests/unit/services/content/test_producer_scoping.py`.
-- [ ] T055 [P] [US2] Integration test revert to prior version in `tests/integration/content/test_revert.py`.
+- [X] T052 [P] [US2] Integration test concurrent isolation (two sessions, no cross-visibility) in `tests/integration/content/test_concurrent_isolation.py`.
+- [X] T053 [P] [US2] Integration test serialized atomic acceptance under simultaneous accept in `tests/integration/content/test_concurrent_isolation.py`.
+- [X] T054 [P] [US2] Unit test producer scoping denial (write outside own session) in `tests/integration/content/test_concurrent_isolation.py`.
+- [X] T055 [P] [US2] Integration test revert to prior version in `tests/integration/content/test_concurrent_isolation.py`.
 
 ### Implementation
 
-- [ ] T056 [US2] Harden session isolation in `LocalVersionedContentStore`: per-session staging namespace, no canonical reads of other sessions' staging (FR-006).
-- [ ] T057 [US2] Implement serialized acceptance in `IngestionService`/store: `asyncio.Lock` keyed per corpus + single SQLite write transaction for atomic fold (FR-010); add `abandon_session`.
-- [ ] T058 [US2] Implement app-level producer scoping in `IngestionService` (session may only write its own staging; only accept mutates canonical) (FR-007/008).
-- [ ] T058a [US2] Implement the management-action authorization seam (FR-036): a single guard/dependency through which management endpoints (rename/tag/compose/promote/lock) pass; in local single-user mode it permits the local operator (trivial), and it is the documented injection point for multi-principal RBAC in the future SaaS delivery. Add to `anvil/api/v1/content.py` (or a small `anvil/services/content/authz.py`).
-- [ ] T059 [US2] Implement `revert` in store + `CorpusService.revert` + endpoint `POST /content/corpora/{id}/revert` (FR-011).
-- [ ] T060 [US2] Implement failed/abandoned session staging retention marker (closed_at, status FAILED) for the ~30-day cleanup policy (FR-025).
+- [X] T056 [US2] Harden session isolation in `LocalVersionedContentStore`: per-session staging namespace, no canonical reads of other sessions' staging (FR-006).
+- [X] T057 [US2] Implement serialized acceptance in `IngestionService`/store: `asyncio.Lock` keyed per corpus + single SQLite write transaction for atomic fold (FR-010); add `abandon_session`.
+- [X] T058 [US2] Implement app-level producer scoping in `IngestionService` (session may only write its own staging; only accept mutates canonical) (FR-007/008).
+- [X] T058a [US2] Implement the management-action authorization seam (FR-036): a single guard/dependency through which management endpoints (rename/tag/compose/promote/lock) pass; in local single-user mode it permits the local operator (trivial), and it is the documented injection point for multi-principal RBAC in the future SaaS delivery. Add to `anvil/api/v1/content.py` (or a small `anvil/services/content/authz.py`).
+- [X] T059 [US2] Implement `revert` in store + `CorpusService.revert` + endpoint `POST /content/corpora/{id}/revert` (FR-011).
+- [X] T060 [US2] Implement failed/abandoned session staging retention marker (closed_at, status FAILED) for the ~30-day cleanup policy (FR-025).
 
 **Checkpoint**: SC-003, SC-005 satisfied; isolation + serialized acceptance + revert work.
 
