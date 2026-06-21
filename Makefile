@@ -39,6 +39,17 @@ test-system: ## Full validation loop: reset → up → test → teardown
 	docker compose down -v; \
 	exit $$status
 
+test-browser: ## Browser smoke loop: reset → up → playwright tests → teardown
+	uv run playwright install chromium 2>/dev/null || true; \
+	docker compose down -v; \
+	docker compose up -d --build --wait; \
+	uv run pytest tests/browser -v --no-cov; status=$$?; \
+	docker compose down -v; \
+	exit $$status
+
+setup-browser: ## Install Playwright Chromium for local browser smoke tests (one-time)
+	uv run playwright install chromium
+
 setup-hooks: ## Enable conventional commit enforcement hook
 	@echo "Configuring git hooks path to .githooks/..."
 	git config core.hooksPath .githooks

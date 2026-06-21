@@ -10,6 +10,8 @@ deleting corpora. Corpora represent collections of files from a directory
 that are chunked into training documents.
 """
 
+from __future__ import annotations
+
 import json
 
 from ...db.models.corpus import Corpus

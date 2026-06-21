@@ -1531,21 +1531,10 @@
   });
 
   /* ════════════════════════════════════════════════════════════
-     Documentation toggle (collapsible)
+     Documentation toggle (collapsible) — disabled; #docs-toggle
+     element is not present in this template. The feature was
+     removed but the JS was left behind, causing a null ref error.
      ════════════════════════════════════════════════════════════ */
-
-  document.getElementById('docs-toggle').addEventListener('click', function() {
-    var content = document.getElementById('docs-content');
-    var chevron = document.getElementById('docs-chevron');
-    var isCollapsed = content.classList.toggle('collapsed');
-    chevron.classList.toggle('collapsed', isCollapsed);
-    /* When collapsed, reduce max-height to 0; when expanded, restore it */
-    if (isCollapsed) {
-      content.style.maxHeight = '0';
-    } else {
-      content.style.maxHeight = '1200px';
-    }
-  });
 
   /* ── Handle combined table inline edit (same classes as dataset-list) ── */
 
