@@ -86,6 +86,24 @@ def build_parser() -> argparse.ArgumentParser:
         help="Git repository root path (default: .)",
     )
 
+    # --- detect-increment ---
+    inc_p = sub.add_parser(
+        "detect-increment",
+        help="Classify merge commit for version increment type",
+    )
+
+    # --- check-version ---
+    cv_p = sub.add_parser(
+        "check-version",
+        help="Detect whether version changed since parent commit",
+    )
+
+    # --- build-notes ---
+    bn_p = sub.add_parser(
+        "build-notes",
+        help="Build release-notes.md from CHANGELOG and PR_BODY",
+    )
+
     return parser
 
 
@@ -108,6 +126,12 @@ def main(argv: list[str] | None = None) -> None:
         _cmd_check_guarded_imports(args)
     elif args.command == "check-bump-scope":
         _cmd_check_bump_scope(args)
+    elif args.command == "detect-increment":
+        _cmd_detect_increment(args)
+    elif args.command == "check-version":
+        _cmd_check_version(args)
+    elif args.command == "build-notes":
+        _cmd_build_notes(args)
     else:
         parser.print_help()
         sys.exit(1)
@@ -220,6 +244,27 @@ def _cmd_check_bump_scope(args: argparse.Namespace) -> None:
     from .check_bump_scope import main as bump_main
 
     bump_main()
+
+
+def _cmd_detect_increment(args: argparse.Namespace) -> None:
+    """Handle the ``detect-increment`` subcommand."""
+    from .detect_increment import main
+
+    main()
+
+
+def _cmd_check_version(args: argparse.Namespace) -> None:
+    """Handle the ``check-version`` subcommand."""
+    from .check_version import main
+
+    main()
+
+
+def _cmd_build_notes(args: argparse.Namespace) -> None:
+    """Handle the ``build-notes`` subcommand."""
+    from .build_notes import main
+
+    main()
 
 
 if __name__ == "__main__":

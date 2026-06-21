@@ -27,13 +27,21 @@ def test_gpt_save_load_roundtrip():
     assert loaded.block_size == model.block_size
     assert loaded.chars == uchars
 
-    # Verify state_dict values are identical
+    # Verify state_dict values are identical (handles both matrix and vector params)
     for k in model.state_dict:
-        for i, row in enumerate(model.state_dict[k]):
-            for j, val in enumerate(row):
+        mat = model.state_dict[k]
+        loaded_mat = loaded.state_dict[k]
+        if isinstance(mat[0], list):
+            for i, row in enumerate(mat):
+                for j, val in enumerate(row):
+                    assert (
+                        abs(val.data - loaded_mat[i][j].data) < 1e-12
+                    ), f"Mismatch at {k}[{i}][{j}]"
+        else:
+            for i, val in enumerate(mat):
                 assert (
-                    abs(val.data - loaded.state_dict[k][i][j].data) < 1e-12
-                ), f"Mismatch at {k}[{i}][{j}]"
+                    abs(val.data - loaded_mat[i].data) < 1e-12
+                ), f"Mismatch at {k}[{i}]"
 
 
 def test_gpt_load_returns_chars():
@@ -62,7 +70,11 @@ def test_gpt_load_without_chars():
             "block_size": model.block_size,
             "chars": None,
             "state_dict": {
-                k: [[p.data for p in row] for row in mat]
+                k: (
+                    [[p.data for p in row] for row in mat]
+                    if isinstance(mat[0], list)
+                    else [p.data for p in mat]
+                )
                 for k, mat in model.state_dict.items()
             },
         }

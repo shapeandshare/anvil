@@ -67,7 +67,7 @@ dev = [
     "pylint>=3.2,<4",
     "mypy>=1.10,<2",
     "pytest>=8.0,<9",
-    "pytest-asyncio>=0.24,<1",
+    "pytest-asyncio>=0.24,<2",
     "pytest-cov>=5.0,<6",
     "coverage>=7.0,<8",
     "commitizen>=3.0,<4",
@@ -159,6 +159,7 @@ ignore_errors = true  # TODO(ADR-0NN): narrow to specific error codes; blocked b
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
 addopts = "-v --cov=anvil --cov-report=term-missing --ignore=tests/system --ignore=tests/browser"
 

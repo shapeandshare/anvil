@@ -8,6 +8,7 @@ tags:
   - domain/ui
   - type/session-log
 title: Glacier Blizzard to Frostbite Refinement — 2026-06-20
+type: session-log
 updated: '2026-06-20'
 ---
 # Glacier Blizzard to Frostbite — 2026-06-20

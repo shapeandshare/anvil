@@ -41,6 +41,7 @@ Non-obvious constraints, gaps, and conflicts discovered during agent sessions. E
 - [[Discoveries/particle-effect-strict-mode-undeclared-glow|Particle Effect Strict-Mode Undeclared Variable (`glow`)]] — Strict mode in `particle-system.js` threw `ReferenceError: glow is not defined` because the `energy` effect's `var` declaration omitted `glow`, even though it was assigned and used in the render loop. Sibling effect `biolum` had it correct.
 
 - [[Discoveries/sonarcloud-mcp-env-passthrough|SonarCloud MCP Docker Env Passthrough Bug]] — The `sonarcloud` MCP in `opencode.json` used Docker env passthrough (`-e VARNAME` without `=VALUE`), which failed because the vars weren't in the shell environment. Fixed by inlining the project constants matching `shared/sonar.mk`.
+- [[Discoveries/github-token-ci-trigger-restriction|GITHUB_TOKEN CI Trigger Restriction]] — PRs opened by `GITHUB_TOKEN` do not trigger CI checks under branch protection, forcing a fine-grained PAT (`BUMP_PAT`) for auto-merge release workflows. A non-obvious GitHub platform constraint.
 
 ## Discoveries from this session
 

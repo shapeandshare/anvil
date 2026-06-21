@@ -1,11 +1,23 @@
 ---
+aliases:
+  - TOCTOU asyncio.Lock
+  - Bootstrap lock race condition
+source: agent
+code-refs:
+  - anvil/api/v1/health_ops.py
 created: '2026-06-21T00:00:00.000Z'
+source: agent
 tags:
   - type/discovery
   - domain/architecture
 title: TOCTOU Race on asyncio.Lock Check-Before-Acquire
 type: discovery
+aliases:
+  - TOCTOU Race on asyncio.Lock Check-Before-Acquire
+  - asyncio.Lock check-before-acquire race
 updated: '2026-06-21T00:00:00.000Z'
+code-refs:
+  - anvil/api/v1/health_ops.py
 ---
 # TOCTOU Race on asyncio.Lock Check-Before-Acquire
 

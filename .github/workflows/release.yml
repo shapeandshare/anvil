@@ -60,67 +60,15 @@ jobs:
         with:
           fetch-depth: 2
 
+      - name: Install anvil
+        run: pip install .
+
       - name: Compare version and determine bump type
         id: check
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
         run: |
-          set -euo pipefail
-
-          # Extract version from pyproject.toml (PEP 621 format)
-          CURRENT=$(grep '^version =' pyproject.toml \
-            | sed 's/version = "\(.*\)"/\1/')
-
-          PREV=$(git show HEAD^:pyproject.toml 2>/dev/null \
-            | grep '^version =' \
-            | sed 's/version = "\(.*\)"/\1/' \
-            || echo "none")
-
-          echo "Version in this commit : ${CURRENT}"
-          echo "Version in parent commit: ${PREV}"
-
-          # On workflow_dispatch: always release
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "Manual dispatch — bypassing version-change guard."
-            echo "version_changed=true" >> "$GITHUB_OUTPUT"
-            echo "increment=PATCH" >> "$GITHUB_OUTPUT"
-            echo "version=${CURRENT}" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # If version was manually bumped, skip bump and go straight to release
-          if [ "${CURRENT}" != "${PREV}" ]; then
-            echo "Version was manually bumped from ${PREV} to ${CURRENT}."
-            echo "Skipping automatic bump — proceeding to tag and release."
-            echo "version_changed=true" >> "$GITHUB_OUTPUT"
-            echo "increment=SKIP" >> "$GITHUB_OUTPUT"
-            echo "version=${CURRENT}" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # Version not changed — determine bump type from merge commit message
-          MERGE_MSG=$(git log -1 --format=%B)
-          INCREMENT="NONE"
-
-          if echo "${MERGE_MSG}" | grep -qi "BREAKING CHANGE"; then
-            INCREMENT="MAJOR"
-          elif echo "${MERGE_MSG}" | grep -q "^feat"; then
-            INCREMENT="MINOR"
-          elif echo "${MERGE_MSG}" | grep -q "^fix"; then
-            INCREMENT="PATCH"
-          elif echo "${MERGE_MSG}" | grep -qE "^(perf|refactor|chore|docs|ci|test|style|build)"; then
-            INCREMENT="NONE"
-          fi
-
-          echo "Merge commit message: ${MERGE_MSG}"
-          echo "Detected increment: ${INCREMENT}"
-
-          echo "version=${CURRENT}" >> "$GITHUB_OUTPUT"
-          echo "increment=${INCREMENT}" >> "$GITHUB_OUTPUT"
-
-          if [ "${INCREMENT}" != "NONE" ]; then
-            echo "version_changed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "version_changed=false" >> "$GITHUB_OUTPUT"
-          fi
+          anvil-vault detect-increment >> "$GITHUB_OUTPUT"
 
   # ---------------------------------------------------------------------------
   # Job 2 -- Bump version, create changelog, open auto-merge PR, tag and release
@@ -144,9 +92,9 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install commitizen
+      - name: Install commitizen and anvil
         run: |
-          pip install "commitizen>=3.0,<4"
+          pip install "commitizen>=3.0,<4" .
 
       - name: Determine bump increment
         id: increment
@@ -276,39 +224,16 @@ jobs:
       - name: Build release notes
         id: release-notes
         if: steps.preflight.outputs.skip != 'true'
+        env:
+          PR_BODY: ${{ steps.pr-description.outputs.pr_body }}
         run: |
           set -euo pipefail
 
-          # Read version from pyproject.toml (works whether bumped or manually set)
+          anvil-vault build-notes
+
           VERSION=$(grep '^version =' pyproject.toml \
             | sed 's/version = "\(.*\)"/\1/')
 
-          {
-            echo "## anvil v${VERSION}"
-            echo ""
-          } > release-notes.md
-
-          # Extract changelog entry for this version
-          if [ -f CHANGELOG.md ]; then
-            CHANGELOG_ENTRY=$(awk "/^## v${VERSION}/,/^## v/" CHANGELOG.md \
-              | grep -v "^## v${VERSION}\|^## v" \
-              | sed '/^---$/d' || true)
-            if [ -n "${CHANGELOG_ENTRY}" ]; then
-              echo "" >> release-notes.md
-              echo "### Changelog" >> release-notes.md
-              echo "${CHANGELOG_ENTRY}" >> release-notes.md
-            fi
-          fi
-
-          # Append PR description if available (T018 — Phase 4)
-          PR_BODY="${{ steps.pr-description.outputs.pr_body }}"
-          if [ -n "${PR_BODY}" ]; then
-            echo "" >> release-notes.md
-            echo "### Release Notes" >> release-notes.md
-            echo "${PR_BODY}" >> release-notes.md
-          fi
-
-          # Handle idempotent re-run: check if tag already exists (T015)
           TAG="v${VERSION}"
           if git tag --list "${TAG}" | grep -q "${TAG}"; then
             echo "Tag ${TAG} already exists — idempotent re-run detected."
