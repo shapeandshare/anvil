@@ -1,0 +1,174 @@
+/* Copyright © 2026 Josh Burt
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+[data-skin="grid"] {
+  --bg:             #02060c;
+  --surface:        #061018;
+  --surface-2:      #0a1a26;
+  --grouped-bg:     #010409;
+  --separator:      #123246;
+  --text:           #d6f4ff;
+  --text-secondary: #9fd4ea;
+  --text-tertiary:  #5f93ab;
+  --text-bright:    #f0fdff;
+
+  --accent:         #2de2ff;
+  --accent-green:   #4ff0c8;
+  --accent-red:     #ff6f4f;
+  --accent-orange:  #ff9f1c;
+  --accent-yellow:  #ffd45c;
+  --accent-purple:  #8ab4ff;
+  --accent-cyan:    #2de2ff;
+
+  --glass-bg:       rgba(6, 16, 24, 0.86);
+  --glass-border:   rgba(45, 226, 255, 0.22);
+
+  --grid-rgb: 45, 226, 255;
+  --beam-rgb: 255, 159, 28;
+
+  --focus: 0.4;
+  --ghost: 0.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="grid"] * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+[data-skin="grid"] .app-shell {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(120% 70% at 50% 0%, rgba(var(--grid-rgb), 0.1), transparent 60%),
+    radial-gradient(140% 60% at 50% 100%, rgba(var(--beam-rgb), 0.08), transparent 55%),
+    linear-gradient(180deg, #02060c 0%, #03101a 48%, #02080f 52%, #010509 100%);
+}
+
+[data-skin="grid"] .app-main::before {
+  content: "";
+  position: fixed;
+  left: -50%;
+  right: -50%;
+  bottom: 0;
+  height: 60vh;
+  pointer-events: none;
+  z-index: 0;
+  opacity: calc(0.4 + var(--focus, 0.4) * 0.5);
+  background-image:
+    repeating-linear-gradient(
+      to right,
+      transparent 0,
+      transparent 78px,
+      rgba(var(--grid-rgb), 0.6) 80px,
+      transparent 82px,
+      transparent 160px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 38px,
+      rgba(var(--grid-rgb), 0.5) 40px,
+      transparent 42px,
+      transparent 80px
+    );
+  -webkit-mask-image: linear-gradient(to bottom, transparent 22%, #000 58%, #000 100%);
+  mask-image: linear-gradient(to bottom, transparent 22%, #000 58%, #000 100%);
+  transform: perspective(60vh) rotateX(58deg);
+  transform-origin: bottom center;
+  backface-visibility: hidden;
+  will-change: background-position;
+  animation: grid-floor 2.4s linear infinite;
+  transition: opacity var(--dur-slow) var(--ease);
+}
+
+@keyframes grid-floor {
+  from { background-position: 0 0, 0 0; }
+  to   { background-position: 0 0, 0 80px; }
+}
+
+[data-skin="grid"] .app-main::after {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 2px;
+  pointer-events: none;
+  z-index: 0;
+  top: 40vh;
+  opacity: calc(0.3 + var(--focus, 0.4) * 0.6);
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(var(--grid-rgb), 0.9) 35%,
+    rgba(255, 255, 255, 0.95) 50%,
+    rgba(var(--grid-rgb), 0.9) 65%,
+    transparent
+  );
+  box-shadow: 0 0 18px rgba(var(--grid-rgb), 0.7);
+  animation: grid-horizon 4s ease-in-out infinite;
+}
+
+@keyframes grid-horizon {
+  0%, 100% { opacity: calc(0.3 + var(--focus, 0.4) * 0.6); }
+  50%      { opacity: calc(0.45 + var(--focus, 0.4) * 0.55); }
+}
+
+[data-skin="grid"] .card,
+[data-skin="grid"] .panel {
+  border: 1px solid rgba(var(--grid-rgb), 0.28);
+  box-shadow:
+    0 0 0 1px rgba(var(--grid-rgb), 0.08),
+    0 0 calc(8px + var(--focus, 0.4) * 14px) rgba(var(--grid-rgb), calc(0.12 + var(--focus, 0.4) * 0.25));
+}
+
+[data-skin="grid"] h1,
+[data-skin="grid"] h2 {
+  color: var(--text-bright);
+  text-shadow: 0 0 calc(6px + var(--focus, 0.4) * 12px) rgba(var(--grid-rgb), calc(0.4 + var(--focus, 0.4) * 0.5));
+}
+
+[data-skin="grid"][data-grid-state="derez"] .app-main::before {
+  opacity: 0.85;
+  background-image:
+    repeating-linear-gradient(
+      to right,
+      transparent 0,
+      transparent 78px,
+      rgba(var(--beam-rgb), 0.75) 80px,
+      transparent 82px,
+      transparent 160px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 38px,
+      rgba(var(--beam-rgb), 0.6) 40px,
+      transparent 42px,
+      transparent 80px
+    );
+  animation: grid-derez 0.5s steps(4) infinite;
+}
+
+[data-skin="grid"][data-grid-state="derez"] .app-main::after {
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(var(--beam-rgb), 0.95) 50%,
+    transparent
+  );
+  box-shadow: 0 0 18px rgba(var(--beam-rgb), 0.8);
+}
+
+@keyframes grid-derez {
+  0%, 100% { transform: perspective(60vh) rotateX(58deg) translateX(0); }
+  33%      { transform: perspective(60vh) rotateX(58deg) translateX(-5px); }
+  66%      { transform: perspective(60vh) rotateX(58deg) translateX(4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="grid"] .app-main::before,
+  [data-skin="grid"] .app-main::after { animation: none !important; }
+}
