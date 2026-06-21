@@ -1,6 +1,6 @@
 # anvil — Agent Guidelines
 
-**Last updated**: 2026-06-21 (testing-guide consolidation in AGENTS.md)
+**Last updated**: 2026-06-21 (scripts-python-over-bash + package-module-migration, testing-guide consolidation in AGENTS.md)
 
 ## Project Overview
 
@@ -156,6 +156,43 @@ Coverage is reported via `pytest --cov=anvil --cov-report=term-missing`. Current
     - Enum values are the single source of truth — never duplicate the string literal elsewhere. Import and use the enum member.
     - When a function or method accepts an enum value, type the parameter with the enum class, not `str`.
     - At boundaries (DB reads, API input, config files) where callers pass raw strings, the boundary method should accept ``str | MyEnum`` and convert via ``isinstance(x, str): x = MyEnum(x)``. Internal methods stay strictly typed with the enum.
+
+12. **Python over Bash for scripts** — Any new CI or utility script SHOULD be
+    written in Python, not bash. Python is testable, type-checkable, and
+    consistent with the rest of the codebase. Shell scripts are reserved for
+    bootstrap/early-setup scenarios where the Python runtime is not guaranteed
+    (e.g., Makefile helpers that must run before the venv exists). Scripts in
+    ``scripts/ci/`` and ``scripts/release/`` use snake_case filenames, the
+    ``if __name__ == "__main__":`` pattern, and stdlib-only dependencies.
+
+    **Beyond "Python over bash"** — business logic for CI tooling MUST live in
+    importable package modules under ``anvil/``, exposed via CLI entry points
+    (``anvil-vault``), NOT as standalone scripts with duplicated code. The
+    ``scripts/`` directory holds only **thin wrapper scripts** that delegate to
+    ``anvil-vault`` via ``subprocess``. This makes the logic testable via
+    ``pytest``, type-checkable via ``mypy --strict``, and avoids duplicating
+    ``_read_version()`` / ``_parent_version()`` across files.
+
+    Rationale: the 015-graph-health-subsumption spec established this pattern
+    (FR-004: CI gate logic belongs in the package), and the version-utils
+    refactor (2026-06-21) confirmed that standalone scripts inevitably
+    duplicate shared helpers. Every CI job that calls ``anvil-vault`` must
+    ``pip install .`` (or ``make setup``) first — this is acceptable overhead
+    for correctness and maintainability.
+
+    Correct:
+    ```python
+    # scripts/ci/check_version.py — thin wrapper
+    def main() -> None:
+        subprocess.run(["anvil-vault", "check-version"])
+    ```
+
+    Incorrect:
+    ```python
+    # scripts/ci/check_version.py — duplicated logic
+    def _read_version(): ...  # same as 3 other files
+    def main(): ...
+    ```
 
     Correct:
     ```python

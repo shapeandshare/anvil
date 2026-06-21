@@ -41,27 +41,13 @@ jobs:
         with:
           fetch-depth: 2
 
+      - name: Install anvil
+        run: pip install .
+
       - name: Check if version was bumped
         id: check
         run: |
-          set -euo pipefail
-
-          CURRENT=$(grep '^version =' pyproject.toml \
-            | sed 's/version = "\(.*\)"/\1/')
-
-          PREV=$(git show HEAD^:pyproject.toml 2>/dev/null \
-            | grep '^version =' \
-            | sed 's/version = "\(.*\)"/\1/' \
-            || echo "none")
-
-          echo "version_current=${CURRENT}" >> "$GITHUB_OUTPUT"
-          echo "version_prev=${PREV}"       >> "$GITHUB_OUTPUT"
-
-          if [ "${CURRENT}" = "${PREV}" ]; then
-            echo "needs_bump=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "needs_bump=false" >> "$GITHUB_OUTPUT"
-          fi
+          anvil-vault check-version >> "$GITHUB_OUTPUT"
 
       - name: Preflight BUMP_PAT check
         if: steps.check.outputs.needs_bump == 'true'

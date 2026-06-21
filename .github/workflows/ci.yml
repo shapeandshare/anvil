@@ -35,10 +35,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
+      - name: Install anvil
+        run: |
+          pip install .
       - name: Classify change scope
         id: classify
         run: |
-          python scripts/ci/check_bump_scope.py > scope_output.txt
+          anvil-vault check-bump-scope > scope_output.txt
           cat scope_output.txt
           SCOPE=$(grep "^BUMP_SCOPE=" scope_output.txt | cut -d= -f2)
           echo "scope=${SCOPE}" >> "$GITHUB_OUTPUT"
