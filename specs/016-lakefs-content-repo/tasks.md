@@ -324,15 +324,15 @@ held → release clears it.
 
 ## Phase 12: Polish & Cross-Cutting Concerns
 
-- [ ] T095 [P] Write `docs/vault/Decisions/ADR-033-content-repository-substrate.md` recording the LakeFS-vs-pure-Python-local decision + `VersionedContentStore` boundary; include a **"SaaS integration hand-off"** section cross-linking `specs/014-saas-architecture` (FR-062–067, SC-021) and ADR-030 AD-17 (LakeFS SaaS substrate, app-level RBAC, in-process validation, manifest-digest parity). Add ADR-033 to the `docs/vault/Decisions/README.md` index. (Constitution + plan require an ADR.)
-- [ ] T096 Implement `AdvisoryService` in `anvil/services/content/advisory_service.py`: post-acceptance near-dup detection (flags only), derived-state refresh/re-tokenize, acceptance stats + lineage recording — non-blocking (FR-015, FR-026a). Record the chosen near-duplicate algorithm (e.g., shingled MinHash/Jaccard threshold) in ADR-033 (T095).
-- [ ] T097 Implement retention/GC of unreferenced blobs + failed-session staging cleanup (reachable-ref walk; never collect run-referenced/tagged versions) (FR-024/025, SC-002).
-- [ ] T097a [P] Retention/GC test in `tests/integration/content/test_retention_gc.py`: a run-referenced version AND its content-addressed blobs survive a GC cycle (zero loss), while unreferenced blobs + expired failed-session staging are collected (SC-002, FR-024/025).
-- [ ] T098 [P] Add `data/content/` to `.gitignore` and to the Docker/compose volume + packaging notes (mirrors `mlruns/`, `data/`).
-- [ ] T098a [P] Relabel the legacy directory-based corpus surface as "Directory Corpus (deprecated)" wherever it remains present (existing corpora templates/nav/labels) to distinguish it from the canonical Corpus (FR-038b).
-- [ ] T099 Run quickstart.md end-to-end and check off its acceptance boxes (SC-001/002/003/004/005/006/010/012). Include a UI pass: verify the content hub renders the Library/Timeline/Lineage/Injection Monitor/Composer/Import Console/Checkout Board screens, is responsive, theme-switches cleanly (`data-skin`/`data-theme`), meets WCAG AA contrast, and honors reduced-motion (Article VIII / DESIGN.md).
-- [ ] T100 Run `make lint`, `make typecheck` (mypy strict), `make test`; raise `fail_under` coverage to the new measured level (Article IV ratchet); ensure all gates pass.
-- [ ] T101 [P] Vault enrichment: session log + any Discovery notes in `docs/vault/`; run `make vault-audit` (0 errors).
+- [X] T095 [P] Write `docs/vault/Decisions/ADR-033-content-repository-substrate.md` recording the LakeFS-vs-pure-Python-local decision + `VersionedContentStore` boundary; include a **"SaaS integration hand-off"** section cross-linking `specs/014-saas-architecture` (FR-062–067, SC-021) and ADR-030 AD-17 (LakeFS SaaS substrate, app-level RBAC, in-process validation, manifest-digest parity). Add ADR-033 to the `docs/vault/Decisions/README.md` index. (Constitution + plan require an ADR.)
+- [X] T096 Implement `AdvisoryService` in `anvil/services/content/advisory_service.py`: post-acceptance near-dup detection (flags only), derived-state refresh/re-tokenize, acceptance stats + lineage recording — non-blocking (FR-015, FR-026a). Record the chosen near-duplicate algorithm (e.g., shingled MinHash/Jaccard threshold) in ADR-033 (T095).
+- [X] T097 Implement retention/GC of unreferenced blobs + failed-session staging cleanup (reachable-ref walk; never collect run-referenced/tagged versions) (FR-024/025, SC-002).
+- [X] T097a [P] Retention/GC test in `tests/integration/content/test_retention_gc.py`: a run-referenced version AND its content-addressed blobs survive a GC cycle (zero loss), while unreferenced blobs + expired failed-session staging are collected (SC-002, FR-024/025).
+- [X] T098 [P] Add `data/content/` to `.gitignore` and to the Docker/compose volume + packaging notes (mirrors `mlruns/`, `data/`).
+- [X] T098a [P] Relabel the legacy directory-based corpus surface as "Directory Corpus (deprecated)" wherever it remains present (existing corpora templates/nav/labels) to distinguish it from the canonical Corpus (FR-038b).
+- [X] T099 Run quickstart.md end-to-end and check off its acceptance boxes (SC-001/002/003/004/005/006/010/012). Include a UI pass: verify the content hub renders the Library/Timeline/Lineage/Injection Monitor/Composer/Import Console/Checkout Board screens, is responsive, theme-switches cleanly (`data-skin`/`data-theme`), meets WCAG AA contrast, and honors reduced-motion (Article VIII / DESIGN.md).
+- [X] T100 Run `make lint`, `make typecheck` (mypy strict), `make test`; raise `fail_under` coverage to the new measured level (Article IV ratchet); ensure all gates pass.
+- [X] T101 [P] Vault enrichment: session log + any Discovery notes in `docs/vault/`; run `make vault-audit` (0 errors).
 
 ---
 
