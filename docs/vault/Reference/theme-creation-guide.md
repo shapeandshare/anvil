@@ -144,7 +144,7 @@ Add the theme id to the `THEME_IDS` list (alphabetical order). The test automati
 ## Presence Tiers — Always-On vs Session-Gated
 
 A theme's `mapping()` runs **only while a training signal bus session is attached**
-(the manager short-circuits binding otherwise). So theme visuals fall into two tiers,
+(the manager short-circuits binding otherwise). So theme visuals fall into three tiers,
 and you must put each effect in the right place:
 
 1. **Session-gated (JS)** — sprites/effects that *respond* to `metrics` /
@@ -152,8 +152,23 @@ and you must put each effect in the right place:
    the JS module's `mapping()`. May inject DOM (see below).
 2. **Always-on (CSS)** — decoration that must exist regardless of run state (e.g. a
    mascot). Must live in the CSS layer — the JS IIFE body should only `register()`.
+3. **Always-on (canvas particles)** — the `particleConfig` effect from
+   `particle-system.js`. Runs on every page via an idle-signal baseline and intensifies
+   once training drives the signal vars. See the Canvas particle layer section below.
 
-For the full rationale see [[Discoveries/theme-presence-tiers-css-vs-session-gated-js]].
+For the full rationale see [[Discoveries/theme-presence-tiers-css-vs-session-gated-js]]
+and [[Discoveries/particle-canvas-always-on-idle-baseline]].
+
+### Canvas particle effects (a third visual layer)
+
+Beyond CSS pseudo-element ambience and DOM-sprite injection, a theme can opt into the
+shared **canvas particle system** by setting `particleConfig: { type: '<effect>' }` in
+its `register()` call (e.g. Tide uses `bubble`). The effect itself is a factory
+registered in `anvil/api/static/js/theme/particle-system.js` that reads the same private
+CSS variable the theme's `mapping()` publishes (Tide's `bubble` reads `--surge`), so the
+canvas motion stays in lockstep with the CSS animations driven by that variable. The full
+authoring contract — effect skeleton, the `readSignal` idle-baseline behavior, and the
+density/speed tuning knobs — is documented in [[Reference/particle-effect-authoring]].
 
 ### JS DOM-sprite injection (session-gated tier)
 
@@ -176,6 +191,33 @@ The SVG can self-animate and self-gate reduced-motion internally. Encoding and t
 non-harmonic-period autonomous-motion trick are documented in
 [[Reference/css-data-uri-animated-svg-sprite]].
 
+### Canvas particle layer (always-on, idle baseline)
+
+`anvil/api/static/js/theme/particle-system.js` provides a `<canvas>` overlay of
+registered effects (`rain`, `snow`, `ember`, `aurora`, …). A theme opts in by giving its
+registration a `particleConfig: { type: '<effect>', params: {} }`; omitting it (or
+`type: 'css'`) means the theme has no canvas particles (the `default` theme falls back to
+the CSS `.ambient-particles` sparks, scoped to `[data-skin="default"]`). This is a
+**third presence tier**, distinct from the session-gated `mapping()` and from always-on
+CSS pseudo-elements:
+
+- The canvas layer is **always on** (every page), not training-gated. The manager
+  applies it on theme selection; do not re-apply it on `bindSession` (that rebuilds the
+  canvas and causes a "wave").
+- Effects scale count/opacity by a theme-private signal var. Because that var is only
+  written by the (session-gated) `mapping()`, effects read it through `readSignal(name)`
+  / `readSignalChain(primary, fallback)`, which return an **idle baseline**
+  (`IDLE_SIGNAL`) only when the var is *unset*. A var set to `"0"` during training still
+  wins — so do not collapse this to `parseFloat(...) || 0`. Route only *intensity* vars
+  through these helpers, never a hue/rotation var.
+- The canvas is `position: fixed; z-index: 0` — behind `.app-main` (which isolates its
+  own stacking context) but above the `.app-shell` background. Any static sibling that
+  must stay legible above it (the `.nav-bar`) needs its own positive stacking context.
+- Seed an effect's *initial* population across the full viewport, not off-screen, so it
+  looks steady on first paint instead of filling in as a wave.
+
+Full rationale: [[Discoveries/particle-canvas-always-on-idle-baseline]].
+
 ## Existing Themes (27 total as of 2026-06-20)
 
 | ID | Display | Signal | Modes |
@@ -192,21 +234,21 @@ non-harmonic-period autonomous-motion trick are documented in
 | reactor | Reactor | TPS/loss | single |
 | hyperspace | Hyperspace | TPS/loss | single |
 | mainframe | Mainframe | TPS | light/dark |
-| hologram | Hologram | loss | single |
+| grid | Grid | loss | single |
 | stormfront | Storm Front | grad_norm/loss | light/dark |
 | emberdrift | Ember Drift | loss/TPS | single |
 | resonance | Resonance | grad_norm/loss (+ audio) | light/dark |
 | inkwash | Inkwash | loss | light/dark |
-| stainedglass | Stained Glass | loss/milestone | single |
+| arcade | Arcade | loss/milestone | light/dark |
 | pulse | Pulse | TPS | light/dark |
 | solarflare | Solar Flare | grad_norm | single |
 | deepsea | Deep Sea | loss | light/dark |
 | static | Static | loss volatility | single |
-| vinyl | Vinyl | TPS | light/dark |
+| vinyl | Vinyl | TPS + loss | light/dark |
 | echo | Echo | grad_norm + milestone | single |
 | prism | Prism | loss/milestone | light/dark |
 | loom | Loom | TPS | light/dark |
 | ash | Ash | loss | single |
 
 ---
-*See also: [[Decisions/ADR-031-behavioral-theme-engine]], [[Reference/theme-picker-grid-keyboard-nav]], [[Reference/css-data-uri-animated-svg-sprite]], [[Discoveries/theme-presence-tiers-css-vs-session-gated-js]], [[Sessions/2026-06-20-nine-new-themes]], [[Sessions/2026-06-20-unicorn-theme-and-prism-vibrancy]], [[Sessions/2026-06-20-unicorn-mascot-flying-sprites]]*
+*See also: [[Decisions/ADR-031-behavioral-theme-engine]], [[Reference/theme-picker-grid-keyboard-nav]], [[Reference/css-data-uri-animated-svg-sprite]], [[Reference/particle-effect-authoring]], [[Discoveries/theme-presence-tiers-css-vs-session-gated-js]], [[Discoveries/css-perspective-grid-floor-subpixel-flicker]], [[Sessions/2026-06-20-nine-new-themes]], [[Sessions/2026-06-20-unicorn-theme-and-prism-vibrancy]], [[Sessions/2026-06-20-unicorn-mascot-flying-sprites]], [[Sessions/2026-06-20-grid-theme-and-flicker-fix]]*

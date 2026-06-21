@@ -1,3 +1,8 @@
+// Copyright © 2026 Josh Burt
+//
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
 (function () {
   'use strict';
 
@@ -24,20 +29,31 @@
       setVar('--bleed', legible ? '0' : clamp01(1 - clarity).toFixed(3));
     }
 
+    function applyRain(loss) {
+      setVar('--rain', clamp01(loss / L0).toFixed(3));
+    }
+
     applyClarity(0.4);
+    // Constant gentle drizzle; loss drives it heavier
+    applyRain(0.4);
 
     unsubs.push(bus.on('metrics', function (m) {
       if (!m || paused) return;
       if (typeof m.loss === 'number' && isFinite(m.loss)) {
         applyClarity(clamp01(1 - m.loss / L0));
+        applyRain(m.loss);
       }
     }));
-    unsubs.push(bus.on('divergence', function () { applyClarity(0); }));
+    unsubs.push(bus.on('divergence', function () {
+      applyClarity(0);
+      setVar('--rain', '1');
+    }));
 
     return function teardown() {
       unsubs.forEach(function (u) { u(); });
       root.style.removeProperty('--clarity');
       root.style.removeProperty('--bleed');
+      root.style.removeProperty('--rain');
     };
   }
 

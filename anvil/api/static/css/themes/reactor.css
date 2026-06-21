@@ -1,3 +1,9 @@
+/* Copyright © 2026 Josh Burt
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 [data-skin="reactor"] {
   --bg:             #060b0e;
   --surface:        #0c161b;

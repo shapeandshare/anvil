@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Topological analysis for vault wikilink graph.
 
 PageRank authority, betweenness centrality bridges,
@@ -39,18 +44,14 @@ def compute_topological(
     # --- PageRank authority ---
     if G.number_of_nodes() > 0:
         pagerank_scores = nx.pagerank(G, alpha=0.85)
-        sorted_pr = sorted(
-            pagerank_scores.items(), key=lambda x: x[1], reverse=True
-        )
+        sorted_pr = sorted(pagerank_scores.items(), key=lambda x: x[1], reverse=True)
         top_n = max(1, int(len(sorted_pr) * 0.05))
         metrics.pagerank_top = sorted_pr[:top_n]
 
     # --- Betweenness centrality bridges ---
     if G.number_of_nodes() > 0:
         betweenness_scores = nx.betweenness_centrality(G)
-        sorted_bc = sorted(
-            betweenness_scores.items(), key=lambda x: x[1], reverse=True
-        )
+        sorted_bc = sorted(betweenness_scores.items(), key=lambda x: x[1], reverse=True)
         top_n = max(1, int(len(sorted_bc) * 0.10))
         high_betweenness: list[tuple[str, float]] = []
         for stem, score in sorted_bc:

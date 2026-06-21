@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Unit tests for DatasetCurationService."""
 
 import json
@@ -9,7 +14,9 @@ from anvil.services.datasets.metrics_result import MetricsResult
 class TestMetrics:
     def test_metrics_empty(self):
         result = MetricsResult(
-            sample_count=0, total_chars=0, estimated_tokens=0,
+            sample_count=0,
+            total_chars=0,
+            estimated_tokens=0,
             vocabulary_size=0,
             length_distribution={"min": 0, "max": 0, "mean": 0, "median": 0},
             duplicate_count=0,
@@ -50,6 +57,7 @@ class TestCurationService:
     def test_serialization_roundtrip(self):
         """Verify curation result can be serialized to JSON."""
         from anvil.services.datasets.curation_result import CurationResult
+
         result = CurationResult(
             operation_id=1,
             samples_removed=10,

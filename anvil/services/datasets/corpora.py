@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Corpus management service — CRUD and ingestion orchestration for corpora.
 
 Provides business logic for creating, forking, ingesting, listing, and
@@ -7,10 +12,10 @@ that are chunked into training documents.
 
 import json
 
-from .chunking_strategy import ChunkingStrategy
 from ...db.models.corpus import Corpus
 from ...db.models.corpus_file import CorpusFile
 from ...db.repositories.corpora import CorpusRepository
+from .chunking_strategy import ChunkingStrategy
 from .corpus_loader import CorpusLoader
 
 

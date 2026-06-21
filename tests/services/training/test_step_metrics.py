@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Tests for per-step metrics, divergence detection, and throughput.
 
 Covers the neutral signal-instrumentation value objects and the rolling
@@ -12,10 +17,7 @@ from anvil.core.step_observation import CoreStepObservation
 from anvil.services.training.divergence_error import DivergenceError
 from anvil.services.training.divergence_reason import DivergenceReason
 from anvil.services.training.step_metrics import StepMetrics
-from anvil.services.training.throughput import (
-    ThroughputTracker,
-    classify_divergence,
-)
+from anvil.services.training.throughput import ThroughputTracker, classify_divergence
 
 
 def test_step_metrics_accepts_nullable_signal_fields():
@@ -26,9 +28,7 @@ def test_step_metrics_accepts_nullable_signal_fields():
 
 def test_step_metrics_forbids_theme_specific_extras():
     with pytest.raises(ValidationError):
-        StepMetrics(
-            step=1, loss=2.5, device="cpu", elapsed_sec=1.0, disturbance=0.9
-        )
+        StepMetrics(step=1, loss=2.5, device="cpu", elapsed_sec=1.0, disturbance=0.9)
 
 
 def test_core_step_observation_carries_tokens_and_optional_grad_norm():

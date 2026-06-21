@@ -10,6 +10,7 @@ related:
   - '[[Reference/theme-creation-guide]]'
   - '[[Reference/css-data-uri-animated-svg-sprite]]'
   - '[[Sessions/2026-06-20-unicorn-mascot-flying-sprites]]'
+  - '[[Sessions/2026-06-20-unicorn-cloud-particles]]'
 session: 2026-06-20-unicorn-mascot-flying-sprites
 source: agent
 summary: >-
@@ -41,16 +42,23 @@ before training starts. This is easy to miss because the theme's CSS layer (toke
 pseudo-element ambience) loads unconditionally via `ensureLayer`, so the theme still
 *looks* applied; only the dynamic behavior is dormant.
 
-This splits theme visuals into two presence tiers:
+This splits theme visuals into three presence tiers:
 
-1. **Session-gated (JS)** — sprites/effects driven by `metrics` / `milestone` /
-   `complete` / `divergence`. Present only during/around a run. This is the correct
-   home for anything that should *respond* to training.
+1. **Session-gated (JS, via `mapping()`)** — sprites/effects driven by `metrics` /
+   `milestone` / `complete` / `divergence`. Present only during/around a run. This is
+   the correct home for anything that should *respond* to training.
 2. **Always-on (CSS)** — decoration that must exist regardless of run state. Must be
    implemented in the CSS layer (token blocks, `.app-main` ambient pseudo-elements,
-   or a dedicated `.app-shell::after` mascot). The IIFE registration body runs at
-   load, but it should only `register()` — it must not start always-on visuals,
-   because that would run for every theme/page even when the skin is not selected.
+   or a dedicated `.app-shell::after` mascot).
+3. **Always-on (JS, via IIFE + MutationObserver)** — dynamic DOM sprites that run
+   without a training session. The theme's IIFE self-installs a `MutationObserver` on
+   `<html>` watching `data-skin`. When the theme is active, it injects sprites through
+   its own overlay; when inactive, it tears them down. This tier was demonstrated by
+   the Unicorn theme's ambient cloud system (see
+   [[Sessions/2026-06-20-unicorn-cloud-particles]]) — a separate `.unicorn-ambient`
+   overlay at z-index 4 (below the session overlay at z-index 5) that spawns drifting
+   SVG clouds continuously, independent of any training run. The observer also checks
+   the initial attribute so it activates on page load if the theme was persisted.
 
 The Unicorn theme demonstrated both: signal-driven floating unicorns + flying
 rainbows live in `unicorn.js` (session-gated), while an always-present prancing
@@ -70,3 +78,4 @@ and is not clipped by its `overflow`.
 - `anvil/api/static/css/themes/unicorn.css` — always-on `.app-shell::after` mascot
 - [[Reference/theme-creation-guide]]
 - [[Sessions/2026-06-20-unicorn-mascot-flying-sprites]]
+- [[Discoveries/signal-gated-decorations-invisible-at-rest]] — the inverse design choice: a theme that deliberately keeps its primary furniture session-gated (Vinyl tape deck)

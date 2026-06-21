@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """ImportJob ORM model — declarative import configuration.
 
 An import job declares a configuration for pulling content from an

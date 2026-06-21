@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Tests for connectivity module — orphans, dead ends, density, bidirectionals."""
 
 from __future__ import annotations
@@ -34,8 +39,7 @@ class TestConnectivity:
         metrics = _run_connectivity(test_vault_dir)
         # ValidNote <-> AnotherNote should be reciprocal
         reciprocal_found = any(
-            u == "ValidNote" or v == "ValidNote"
-            for u, v in metrics.missing_reciprocals
+            u == "ValidNote" or v == "ValidNote" for u, v in metrics.missing_reciprocals
         )
         # Either it's already reciprocal or reported as missing
         assert isinstance(reciprocal_found, bool)

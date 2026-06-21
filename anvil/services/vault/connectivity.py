@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Connectivity metrics for vault wikilink graph analysis.
 
 FR-001-FR-008: inbound/outbound counts, orphan/dead-end detection,

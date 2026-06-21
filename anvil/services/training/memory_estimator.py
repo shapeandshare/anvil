@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Memory estimation for model training — pre-flight compute ceiling check.
 
 Estimates GPU (or system) memory needed for a given model configuration
@@ -289,7 +294,10 @@ def estimate_training_memory(
         device_backend = gpu_info.backend
         device_name = gpu_info.device_name
 
-        if gpu_info.backend == DeviceType.CUDA and gpu_info.memory_available_gb is not None:
+        if (
+            gpu_info.backend == DeviceType.CUDA
+            and gpu_info.memory_available_gb is not None
+        ):
             available = int(gpu_info.memory_available_gb * (1024**3))
         elif gpu_info.memory_total_gb is not None:
             # MPS: use total system memory as ceiling

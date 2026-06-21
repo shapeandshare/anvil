@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Governance service — acceptable-use gate, license catalog & provenance.
 
 Implements the data-entry gate (declaration/affirmation-only, no
@@ -192,8 +197,8 @@ class GovernanceService:
             Parent dataset/corpus id when this data is derived.
         """
         # Import here to avoid circular type dependency.
-        from ...db.models.dataset import Dataset
         from ...db.models.corpus import Corpus
+        from ...db.models.dataset import Dataset
 
         if isinstance(entity, Dataset):
             entity.source_description = source_description
@@ -231,8 +236,8 @@ class GovernanceService:
             The provenance data, or a view with all fields ``None``
             if the entity is not found or has no provenance.
         """
-        from ...db.models.dataset import Dataset
         from ...db.models.corpus import Corpus
+        from ...db.models.dataset import Dataset
 
         entity: Dataset | Corpus | None = None
 
@@ -286,6 +291,9 @@ class GovernanceService:
 
         entry = await self._license_repo.get_by_identifier(license_identifier)
         if entry is None:
-            return False, f"License '{license_identifier}' is not in the approved catalog."
+            return (
+                False,
+                f"License '{license_identifier}' is not in the approved catalog.",
+            )
 
         return True, None

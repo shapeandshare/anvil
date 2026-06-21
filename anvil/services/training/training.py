@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Training orchestration service — manages training lifecycle and SSE events.
 
 Provides the ``TrainingService`` class for coordinating training runs:
@@ -15,11 +20,11 @@ from collections.abc import Awaitable, Callable
 from ..compute import local_stdlib_backend  # noqa: F401 — registers local-stdlib
 from ..compute import local_torch_backend  # noqa: F401 — registers local-torch
 from ..compute import modal_backend  # noqa: F401 — registers modal
-from ..compute.registry import get_backend
-from ..compute.resolve import resolve_backend
 
 # ── compute backend framework ──────────────────────────────────────────
 from ..compute.compute_backend_result import ComputeBackendResult
+from ..compute.registry import get_backend
+from ..compute.resolve import resolve_backend
 from ..compute.result import ComputeResult
 from ..compute.training_engine import TrainingEngine
 from .divergence_error import DivergenceError
@@ -247,8 +252,8 @@ class TrainingService:
             return self._load_docs_from_version(content_version_id)
 
         if dataset_id is not None:
-            from ...db.session import AsyncSessionLocal
             from ...db.repositories.corpora import CorpusRepository
+            from ...db.session import AsyncSessionLocal
             from ..datasets.corpora import CorpusService
             from ..datasets.corpus_loader import CorpusLoader
 
@@ -307,9 +312,7 @@ class TrainingService:
         RuntimeError
             If the version cannot be resolved.
         """
-        from ...db.repositories.content_versions import (
-            ContentVersionRepository,
-        )
+        from ...db.repositories.content_versions import ContentVersionRepository
         from ...db.session import AsyncSessionLocal
 
         async def _load():
@@ -342,14 +345,11 @@ class TrainingService:
                 block_size = chunk_cfg.get("block_size", 16)
                 overlap = chunk_cfg.get("chunk_overlap", 0.5)
 
-                from ..datasets.chunking_strategy import ChunkingStrategy
-                from ..chunking.window_chunker import (
-                    FixedSizeWindowChunker,
-                )
+                from ..chunking.base import Chunker
                 from ..chunking.file_chunker import FileAsDocChunker
                 from ..chunking.line_chunker import LineAsDocChunker
-
-                from ..chunking.base import Chunker
+                from ..chunking.window_chunker import FixedSizeWindowChunker
+                from ..datasets.chunking_strategy import ChunkingStrategy
 
                 chunker: Chunker
                 if strategy == ChunkingStrategy.FILE:

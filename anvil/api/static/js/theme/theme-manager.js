@@ -1,3 +1,8 @@
+// Copyright © 2026 Josh Burt
+//
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
 (function () {
   'use strict';
 
@@ -53,6 +58,7 @@
 
   function ensureLayer(cssLayer) {
     var link = document.getElementById(LAYER_LINK_ID);
+    var v;
     if (!cssLayer) {
       if (link) link.parentNode.removeChild(link);
       return;
@@ -63,6 +69,8 @@
       link.rel = 'stylesheet';
       document.head.appendChild(link);
     }
+    v = window.ANVIL_VERSION ? '?v=' + window.ANVIL_VERSION : '';
+    cssLayer = cssLayer + v;
     if (link.getAttribute('href') !== cssLayer) link.setAttribute('href', cssLayer);
   }
 
@@ -116,13 +124,9 @@ function teardownMapping() {
     if (persist) writePref(theme.id, resolved);
     bindMapping(theme);
 
-    // Apply particle effects: only show canvas particles when a training session is active
+    // Particles render on every page; idle at base intensity, intensifying once a training session drives the signal vars.
     if (ps) {
-      if (bus && bus.session()) {
-        ps.apply(theme, null, false);
-      } else {
-        ps.apply(theme, null, true);
-      }
+      ps.apply(theme, null, false);
     }
 
     updateToggleState(theme);
@@ -411,10 +415,9 @@ function teardownMapping() {
     if (!bus) return;
     bus.attach(session);
     teardownSignalMapping();
+    // Only (re)bind the mapping — particles already run from the initial apply().
+    // Re-applying here would rebuild the canvas, causing a second wave on load.
     bindMapping(registry.get(current().themeId) || registry.get(registry.defaultId));
-    if (ps) {
-      ps.apply(registry.get(current().themeId) || registry.get(registry.defaultId));
-    }
   }
 
   function onStorage(e) {

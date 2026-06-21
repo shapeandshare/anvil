@@ -1,3 +1,8 @@
+// Copyright © 2026 Josh Burt
+//
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
 (function () {
   'use strict';
 
@@ -8,7 +13,7 @@
     return x < 0 ? 0 : x > 1 ? 1 : x;
   }
 
-  function hologramMapping(bus, effectLevel) {
+  function gridMapping(bus, effectLevel) {
     var root = document.documentElement;
     var legible = !!(effectLevel && effectLevel.legible);
     var paused = effectLevel && effectLevel.level === 'paused';
@@ -31,23 +36,28 @@
       }
     }));
     unsubs.push(bus.on('divergence', function () {
-      if (!legible) setVar('--ghost', '1');
+      root.setAttribute('data-grid-state', 'derez');
+    }));
+    unsubs.push(bus.on('complete', function () {
+      setVar('--focus', '1');
+      setVar('--ghost', '0');
     }));
 
     return function teardown() {
       unsubs.forEach(function (u) { u(); });
+      root.removeAttribute('data-grid-state');
       root.style.removeProperty('--focus');
       root.style.removeProperty('--ghost');
     };
   }
 
   window.ThemeRegistry.register({
-    id: 'hologram',
-    displayName: 'Hologram',
-    previewHint: 'Loss blurs the projection',
+    id: 'grid',
+    displayName: 'Grid',
+    previewHint: 'Light-ribbons race the grid',
     modes: ['single'],
-    cssLayer: '/static/css/themes/hologram.css',
-    mapping: hologramMapping,
-    particleConfig: { type: 'glitch' },
+    cssLayer: '/static/css/themes/grid.css',
+    mapping: gridMapping,
+    particleConfig: { type: 'ribbon' },
   });
 })();

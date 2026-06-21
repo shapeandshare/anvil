@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Per-step training observation emitted by the core engines.
 
 Defines :class:`CoreStepObservation`, a zero-dependency stdlib value object

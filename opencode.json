@@ -10,6 +10,25 @@
         "docs/vault"
       ],
       "enabled": true
+    },
+    "sonarcloud": {
+      "type": "local",
+      "command": [
+        "docker",
+        "run",
+        "--init",
+        "--pull=always",
+        "-i",
+        "--rm",
+        "-e",
+        "SONARQUBE_TOKEN",
+        "-e",
+        "SONARQUBE_ORG",
+        "-e",
+        "SONARQUBE_PROJECT_KEY",
+        "mcp/sonarqube"
+      ],
+      "enabled": true
     }
   },
   "lsp": {

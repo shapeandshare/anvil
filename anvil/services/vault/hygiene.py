@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Semantic hygiene analysis for vault wikilink graph.
 
 Tag conformity vs controlled vocabulary, near-duplicate tags,
@@ -16,21 +21,42 @@ from ._types import HygieneMetrics, NoteMetadata
 
 # Controlled vocabulary constants (mirrors docs/vault/_meta/tags.md)
 TYPE_VOCAB: set[str] = {
-    "type/principle", "type/design", "type/system", "type/reference",
-    "type/moc", "type/decision", "type/discovery", "type/session-log",
+    "type/principle",
+    "type/design",
+    "type/system",
+    "type/reference",
+    "type/moc",
+    "type/decision",
+    "type/discovery",
+    "type/session-log",
 }
 
 STATUS_VOCAB: set[str] = {
-    "status/draft", "status/wip", "status/reviewed", "status/canonical",
+    "status/draft",
+    "status/wip",
+    "status/reviewed",
+    "status/canonical",
     "status/superseded",
 }
 
 DOMAIN_VOCAB: set[str] = {
-    "domain/architecture", "domain/core", "domain/training",
-    "domain/inference", "domain/export", "domain/ui", "domain/database",
-    "domain/operations", "domain/mlops", "domain/tracking",
-    "domain/infrastructure", "domain/registry", "domain/tooling",
-    "domain/vault", "domain/governance", "domain/mcp", "domain/content",
+    "domain/architecture",
+    "domain/core",
+    "domain/training",
+    "domain/inference",
+    "domain/export",
+    "domain/ui",
+    "domain/database",
+    "domain/operations",
+    "domain/mlops",
+    "domain/tracking",
+    "domain/infrastructure",
+    "domain/registry",
+    "domain/tooling",
+    "domain/vault",
+    "domain/governance",
+    "domain/mcp",
+    "domain/content",
 }
 
 
@@ -275,7 +301,12 @@ def _is_valid_date(value: Any) -> bool:
     if not isinstance(value, str):
         return False
     val = value.strip().strip("'\"")
-    for fmt in ("%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%S.%fZ", "%Y-%m-%dT%H:%M:%SZ"):
+    for fmt in (
+        "%Y-%m-%d",
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%dT%H:%M:%S.%fZ",
+        "%Y-%m-%dT%H:%M:%SZ",
+    ):
         try:
             datetime.strptime(val, fmt)
             return True
@@ -315,7 +346,7 @@ def _find_over_linking(
 
         fm_match = re.match(r"^---\s*\n.*?\n---\s*\n", content, re.DOTALL)
         if fm_match:
-            content = content[fm_match.end():]
+            content = content[fm_match.end() :]
 
         sections = re.split(r"^(##+ .+)$", content, flags=re.MULTILINE)
         current_section = "root"

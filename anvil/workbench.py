@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Session-bound AnvilWorkbench — the God Class (Constitution Article VII).
 
 Wraps all anvil services in a single entry point.  DB-backed services

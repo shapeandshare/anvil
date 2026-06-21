@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Repository for the Sample entity.
 
 Provides data access for ``Sample`` persistence using the async
@@ -228,7 +233,7 @@ class SampleRepository:
         """
         result = await self._session.execute(
             select(func.count()).where(
-Sample.dataset_id == dataset_id, Sample.is_removed.is_(False)
+                Sample.dataset_id == dataset_id, Sample.is_removed.is_(False)
             )
         )
         return result.scalar() or 0

@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Model registry API for registering, listing, and managing trained models.
 
 Provides FastAPI routes for interacting with the MLflow Model Registry:

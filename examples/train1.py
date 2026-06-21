@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """train1: 2-layer MLP (input -> hidden+ReLU -> output).
 Manual numerical gradients (finite differences) and analytic gradients (chain rule).
 Verify they match within 1e-4, then train with SGD on character prediction."""
@@ -59,9 +64,7 @@ def loss_fn(probs: list[float], target: int) -> float:
 
 
 # --- analytic gradients (chain rule by hand) ---
-def analytic_backward(
-    probs: list[float], target: int, cache: tuple
-) -> tuple:
+def analytic_backward(probs: list[float], target: int, cache: tuple) -> tuple:
     """Return (dW1, db1, dW2, db2) computed analytically."""
     x_onehot, z1, h, z2 = cache
 
@@ -95,9 +98,7 @@ def analytic_backward(
 
 
 # --- numerical gradients (finite differences) ---
-def numerical_grad(
-    x_idx: int, target: int, eps: float = 1e-5
-) -> tuple:
+def numerical_grad(x_idx: int, target: int, eps: float = 1e-5) -> tuple:
     """Return (dW1, db1, dW2, db2) via two-sided finite differences."""
     dW1 = [[0.0] * V for _ in range(H)]
     db1 = [0.0] * H

@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Result type for audit-chain integrity verification.
 
 Returned by :meth:`AuditService.verify_chain` after recomputing

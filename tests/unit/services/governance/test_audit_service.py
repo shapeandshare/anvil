@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Unit tests for the hash-chained AuditService.
 
 Tests the core chain integrity properties: genesis entry format,
@@ -15,12 +20,12 @@ import pytest
 from sqlalchemy import text
 
 from anvil.db.repositories.audit_events import AuditEventRepository
+from anvil.services.governance.audit_outcome import AuditOutcome
 from anvil.services.governance.audit_service import (
-    AuditService,
     GENESIS_PREV_HASH,
+    AuditService,
     _compute_entry_hash,
 )
-from anvil.services.governance.audit_outcome import AuditOutcome
 
 
 @pytest.fixture

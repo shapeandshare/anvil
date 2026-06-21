@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """End-to-end tests for auto database schema management.
 
 Tests use a real SQLite file in a temporary directory and actual Alembic
@@ -75,6 +80,7 @@ async def test_strict_ensure_migrated_raises_without_migration(tmp_db: str):
     """US2: ensure_migrated with ANVIL_DB_AUTO_MIGRATE=false fails if not migrated."""
     # Clear get_config() lru_cache so MonkeyPatch env var takes effect
     from anvil.config import get_config
+
     get_config.cache_clear()
 
     with pytest.MonkeyPatch.context() as mp:

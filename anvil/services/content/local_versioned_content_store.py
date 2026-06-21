@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Pure-Python, content-addressed local store implementing VersionedContentStore.
 
 ``LocalVersionedContentStore`` is the local-mode (no external service)

@@ -1,3 +1,9 @@
+/* Copyright © 2026 Josh Burt
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 [data-skin="tide"] {
   --bg:             #04101c;
   --surface:        #0a1d31;
@@ -73,19 +79,21 @@
   height: calc(8vh + var(--level, 0.4) * 42vh);
   pointer-events: none;
   z-index: 1;
-  opacity: calc(0.2 + var(--surge, 0) * 0.6);
-  background: repeating-linear-gradient(
-    115deg,
-    transparent 0 28px,
-    rgba(76, 199, 230, 0.12) 28px 32px
-  );
-  background-size: 200% 100%;
-  animation: tide-swell calc(14s - var(--surge, 0) * 9s) linear infinite;
+  opacity: calc(0.35 + var(--surge, 0) * 0.5);
+  background:
+    radial-gradient(140% 80% at 20% 100%, rgba(120, 220, 240, 0.16), transparent 60%),
+    radial-gradient(120% 70% at 70% 100%, rgba(76, 199, 230, 0.14), transparent 55%),
+    radial-gradient(160% 90% at 45% 100%, rgba(56, 217, 176, 0.10), transparent 65%);
+  background-repeat: no-repeat;
+  background-size: 60% 100%, 50% 100%, 75% 100%;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 45%);
+  mask-image: linear-gradient(180deg, transparent 0%, #000 45%);
+  animation: tide-swell calc(20s - var(--surge, 0) * 11s) ease-in-out infinite alternate;
 }
 
 @keyframes tide-swell {
-  from { background-position: 0 0; }
-  to   { background-position: 200% 0; }
+  from { background-position: 0% 100%, 100% 100%, 30% 100%; }
+  to   { background-position: 100% 100%, 0% 100%, 70% 100%; }
 }
 
 [data-skin="tide"][data-tide-state="riptide"] .app-main::after {

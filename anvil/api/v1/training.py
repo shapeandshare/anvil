@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Training control endpoints for v1 API.
 
 Provides routes for starting, stopping, and streaming training runs, as well
@@ -19,10 +24,10 @@ from ...gpu import detect_gpu
 from ...services.compute.compute_backend_unavailable import ComputeBackendUnavailable
 from ...services.compute.resolve import resolve_backend
 from ...services.compute.training_engine import TrainingEngine
-from ...services.training.memory_estimator import estimate_training_memory
 from ...services.tracking.mps_metrics_collector import MPSMetricsCollector
 from ...services.tracking.mps_sampler_thread import MPSSamplerThread
 from ...services.tracking.tracking import TrackingService
+from ...services.training.memory_estimator import estimate_training_memory
 from ...services.training.training import TrainingService
 
 logger = logging.getLogger(__name__)
@@ -290,12 +295,8 @@ async def start_training(config: dict):
     if mlflow_run_id and content_version_id is not None:
         async with AsyncSessionLocal() as sess:
             try:
-                from ...db.repositories.content_versions import (
-                    ContentVersionRepository,
-                )
-                from ...services.content.lineage_service import (
-                    LineageService,
-                )
+                from ...db.repositories.content_versions import ContentVersionRepository
+                from ...services.content.lineage_service import LineageService
 
                 ver_repo = ContentVersionRepository(sess)
                 lineage = LineageService(ver_repo)

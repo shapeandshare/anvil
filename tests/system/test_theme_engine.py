@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """System tests for the behavioral theme engine.
 
 These tests run against a running container deployed via docker compose.
@@ -11,7 +16,6 @@ import re
 
 import httpx
 import pytest
-
 from conftest import compose_exec
 
 THEME_IDS = [
@@ -27,12 +31,12 @@ THEME_IDS = [
     "reactor",
     "hyperspace",
     "mainframe",
-    "hologram",
+    "grid",
     "stormfront",
     "emberdrift",
     "resonance",
     "inkwash",
-    "stainedglass",
+    "arcade",
     "ash",
     "deepsea",
     "echo",
@@ -55,20 +59,21 @@ THEME_REGISTRATIONS = [f"/static/js/themes/{t}.js" for t in THEME_IDS]
 THEME_CSS_LAYERS = [t for t in THEME_IDS if t != "default"]
 
 
-
 class TestThemeAssets:
     """ST-T1: All theme engine JS and CSS assets resolve."""
 
-    ALL_ASSETS = THEME_SCRIPTS + THEME_REGISTRATIONS + [
-        f"/static/css/themes/{t}.css" for t in THEME_CSS_LAYERS
-    ]
+    ALL_ASSETS = (
+        THEME_SCRIPTS
+        + THEME_REGISTRATIONS
+        + [f"/static/css/themes/{t}.css" for t in THEME_CSS_LAYERS]
+    )
 
     @pytest.mark.parametrize("path", ALL_ASSETS)
     def test_theme_assets_resolve(self, client: httpx.Client, path: str) -> None:
         resp = client.get(path)
-        assert resp.status_code == 200, (
-            f"Theme asset {path} returned {resp.status_code}"
-        )
+        assert (
+            resp.status_code == 200
+        ), f"Theme asset {path} returned {resp.status_code}"
 
 
 class TestThemePageIntegration:
@@ -80,14 +85,18 @@ class TestThemePageIntegration:
         html = resp.text
         assert "data-skin" in html, "FOUC script missing data-skin attribute setter"
         assert "data-theme" in html, "FOUC script missing data-theme attribute setter"
-        assert 'theme-layer-css' in html, "FOUC script missing theme-layer-css link injection"
+        assert (
+            "theme-layer-css" in html
+        ), "FOUC script missing theme-layer-css link injection"
 
     def test_theme_engine_scripts_load(self, client: httpx.Client) -> None:
         resp = client.get("/")
         assert resp.status_code == 200
         html = resp.text
         for script in THEME_SCRIPTS:
-            assert script in html, f"Theme engine script {script} not referenced in page"
+            assert (
+                script in html
+            ), f"Theme engine script {script} not referenced in page"
 
     def test_theme_registrations_included(self, client: httpx.Client) -> None:
         resp = client.get("/")
@@ -116,7 +125,9 @@ class TestThemePageIntegration:
         resp = client.get("/")
         assert resp.status_code == 200
         html = resp.text
-        assert "theme-reduce-effects" in html, "Reduce effects control missing from picker"
+        assert (
+            "theme-reduce-effects" in html
+        ), "Reduce effects control missing from picker"
         assert "theme-audio-optin" in html, "Audio opt-in control missing from picker"
 
 
@@ -130,15 +141,21 @@ class TestPickerKeyboardNavigation:
     def test_manager_implements_arrow_navigation(self, client: httpx.Client) -> None:
         js = client.get("/static/js/theme/theme-manager.js").text
         for token in ("ArrowRight", "ArrowLeft", "ArrowUp", "ArrowDown"):
-            assert token in js, f"theme-manager.js missing arrow-key handler for {token}"
+            assert (
+                token in js
+            ), f"theme-manager.js missing arrow-key handler for {token}"
         assert "Enter" in js, "theme-manager.js missing Enter-to-commit handling"
         assert "Escape" in js, "theme-manager.js missing Escape-to-cancel handling"
 
-    def test_manager_has_live_preview_without_persist(self, client: httpx.Client) -> None:
+    def test_manager_has_live_preview_without_persist(
+        self, client: httpx.Client
+    ) -> None:
         js = client.get("/static/js/theme/theme-manager.js").text
         assert "previewApply" in js, "theme-manager.js missing live-preview function"
         assert "persist: false" in js, "preview must apply without persisting"
-        assert "commitSelection" in js, "theme-manager.js missing commit-on-Enter function"
+        assert (
+            "commitSelection" in js
+        ), "theme-manager.js missing commit-on-Enter function"
 
     def test_manager_builds_scrollable_grid(self, client: httpx.Client) -> None:
         js = client.get("/static/js/theme/theme-manager.js").text
@@ -156,6 +173,6 @@ class TestThemeCssFiles:
         result = compose_exec(
             f"test -f /anvil/api/static/css/themes/{theme}.css && echo FOUND"
         )
-        assert result.returncode == 0 and "FOUND" in result.stdout, (
-            f"Theme CSS {theme}.css not found in container"
-        )
+        assert (
+            result.returncode == 0 and "FOUND" in result.stdout
+        ), f"Theme CSS {theme}.css not found in container"

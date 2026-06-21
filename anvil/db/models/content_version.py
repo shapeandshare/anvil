@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """ContentVersion ORM model — immutable version snapshot.
 
 Each version represents an immutable snapshot of a corpus's content
@@ -17,9 +22,9 @@ from ..timestamp_mixin import TimestampMixin
 
 if TYPE_CHECKING:
     from .content_corpus import ContentCorpus  # TYPE_CHECKING-only: breaks cycle
-    from .content_entry import (
+    from .content_entry import (  # TYPE_CHECKING-only: breaks ContentVersion↔ContentEntry cycle
         ContentEntry,
-    )  # TYPE_CHECKING-only: breaks ContentVersion↔ContentEntry cycle
+    )
 
 
 class ContentVersion(Base, TimestampMixin):

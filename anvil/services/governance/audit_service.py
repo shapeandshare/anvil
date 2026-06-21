@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Hash-chained, tamper-evident audit trail service.
 
 Records every consequential lifecycle action in a verifiable,
@@ -16,13 +21,12 @@ import json
 from collections.abc import Sequence
 from datetime import datetime, timezone
 
+from ...db.models.audit_event import AuditEvent
+from ...db.repositories.audit_events import AuditEventRepository
 from .audit_action import AuditAction
 from .audit_outcome import AuditOutcome
 from .audit_target_type import AuditTargetType
 from .chain_verify_result import ChainVerifyResult
-
-from ...db.models.audit_event import AuditEvent
-from ...db.repositories.audit_events import AuditEventRepository
 
 
 def _canonical_json(obj: dict) -> str:
@@ -220,9 +224,9 @@ class AuditService:
                 outcome=entry.outcome,
                 reason=entry.reason,
                 params_json=entry.params_json,
-                event_timestamp=entry.event_timestamp.isoformat()
-                if entry.event_timestamp
-                else "",
+                event_timestamp=(
+                    entry.event_timestamp.isoformat() if entry.event_timestamp else ""
+                ),
                 prev_hash=entry.prev_hash,
             )
             if recomputed != entry.entry_hash:

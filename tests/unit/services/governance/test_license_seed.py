@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Unit tests for the license catalog seed data.
 
 Verifies that the seed set contains the correct broad OSI/CC set,
@@ -49,7 +54,11 @@ def test_attribution_required_licenses():
 
 def test_attribution_not_required_by_default():
     """Most licenses should not require attribution."""
-    attrib_not_required = [e for e in SEED if not e._requires_attribution and not e._is_own_content_sentinel]
+    attrib_not_required = [
+        e
+        for e in SEED
+        if not e._requires_attribution and not e._is_own_content_sentinel
+    ]
     assert len(attrib_not_required) >= 6
 
 

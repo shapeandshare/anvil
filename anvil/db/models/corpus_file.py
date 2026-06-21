@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """CorpusFile ORM model for individual files within an ingested corpus."""
 
 from __future__ import annotations
@@ -9,7 +14,9 @@ from sqlalchemy import DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 if TYPE_CHECKING:
-    from .corpus import Corpus  # TYPE_CHECKING-only: breaks CorpusFile<->Corpus ORM bidirectional-FK cycle
+    from .corpus import (
+        Corpus,
+    )  # TYPE_CHECKING-only: breaks CorpusFile<->Corpus ORM bidirectional-FK cycle
 
 from ..base import Base
 from ..timestamp_mixin import TimestampMixin

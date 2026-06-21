@@ -103,6 +103,23 @@ Two notable points within (not departing from) this ADR:
   opt-in user gesture, gated by the effect-level resolver, torn down on switch.
   This remains opt-in and theme-owned; the engine/contract are unchanged.
 
+### Addendum (2026-06-20) — Canvas particles made always-on
+
+The `particle-system.js` canvas layer was originally gated to active training runs
+(CSS-only particles otherwise), which left every static page without theme particles
+while an unrelated always-on CSS spark layer dominated. Per
+[[Sessions/2026-06-20-particle-system-always-on-and-rain-overhaul]] the canvas layer is
+now **always-on**: it renders the moment a theme is selected (an idle-signal baseline
+keeps it visible at rest) and still intensifies once SSE metrics drive the signal vars.
+This is a user-visible behavior change (particles without a run) but is consistent with
+this ADR's model — the signal mapping remains session-gated; only the canvas
+*presentation* became unconditional. The layer sits behind content (`z-index:0`), the
+nav was lifted above it, and a load-time "double wave" was removed by not re-applying
+particles on `bindSession`. The `default` theme keeps the lightweight CSS sparks,
+now scoped to `[data-skin="default"]`. Full rationale and the idle-baseline /
+layering / wave-avoidance constraints:
+[[Discoveries/particle-canvas-always-on-idle-baseline]].
+
 ## Compliance
 
 - Article I: `core/` stays stdlib-only (`CoreStepObservation` is a `NamedTuple`;

@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Tests for CorpusLoader — directory walk, pattern filtering, chunk orchestration."""
 
 import tempfile
@@ -7,8 +12,8 @@ import pytest
 
 from anvil.services.datasets.corpus_loader import (
     CorpusLoader,
-    detect_language,
     _build_spec,
+    detect_language,
 )
 
 
@@ -87,9 +92,7 @@ class TestCorpusLoaderIntegration:
 
     def test_exclude_patterns(self, sample_dir):
         loader = CorpusLoader(block_size=16)
-        result = loader.ingest(
-            sample_dir, exclude_patterns=["utils.py"]
-        )
+        result = loader.ingest(sample_dir, exclude_patterns=["utils.py"])
         paths = {f["relative_path"] for f in result.files}
         assert "main.py" in paths
         assert "utils.py" not in paths
@@ -132,6 +135,7 @@ class TestCorpusLoaderIntegration:
             assert len(result2.files) == 0
         finally:
             import shutil
+
             shutil.rmtree(td)
 
     def test_max_files_limit(self, sample_dir):

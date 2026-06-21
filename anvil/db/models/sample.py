@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Sample ORM model for individual training samples within a dataset.
 
 This module defines the ``Sample`` model, which represents a single

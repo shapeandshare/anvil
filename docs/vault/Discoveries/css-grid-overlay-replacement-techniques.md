@@ -5,7 +5,7 @@ aliases:
 created: '2026-06-20T00:00:00.000Z'
 source: agent
 code-refs:
-  - anvil/api/static/css/themes/stainedglass.css
+  - anvil/api/static/css/themes/stainedglass.css (replaced by arcade.css in 80s-party pivot)
   - anvil/api/static/css/themes/hologram.css
 tags:
   - type/discovery
