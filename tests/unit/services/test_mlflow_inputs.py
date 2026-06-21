@@ -50,7 +50,7 @@ class TestResolveDataset:
         mock_ds.name = "test-ds"
         mock_ds.file_path = str(file)
 
-        with patch("anvil.services.mlflow_inputs.DatasetRepository") as repo_cls:
+        with patch("anvil.services.tracking.mlflow_inputs.DatasetRepository") as repo_cls:
             repo = repo_cls.return_value
             repo.get = AsyncMock(return_value=mock_ds)
 
@@ -73,7 +73,7 @@ class TestResolveDataset:
         mock_ds.name = "val-ds"
         mock_ds.file_path = str(file)
 
-        with patch("anvil.services.mlflow_inputs.DatasetRepository") as repo_cls:
+        with patch("anvil.services.tracking.mlflow_inputs.DatasetRepository") as repo_cls:
             repo = repo_cls.return_value
             repo.get = AsyncMock(return_value=mock_ds)
 
@@ -86,7 +86,7 @@ class TestResolveDataset:
         from anvil.services.tracking.mlflow_inputs import MlflowInputResolver
 
         mock_session = AsyncMock()
-        with patch("anvil.services.mlflow_inputs.DatasetRepository") as repo_cls:
+        with patch("anvil.services.tracking.mlflow_inputs.DatasetRepository") as repo_cls:
             repo = repo_cls.return_value
             repo.get = AsyncMock(return_value=None)
 
@@ -111,7 +111,7 @@ class TestResolveCorpus:
         mock_corpus.name = "test-corpus"
         mock_corpus.root_path = str(root)
 
-        with patch("anvil.services.mlflow_inputs.CorpusRepository") as repo_cls:
+        with patch("anvil.services.tracking.mlflow_inputs.CorpusRepository") as repo_cls:
             repo = repo_cls.return_value
             repo.get = AsyncMock(return_value=mock_corpus)
 
@@ -139,7 +139,7 @@ class TestResolveCorpus:
         mock_corpus.name = "empty"
         mock_corpus.root_path = str(root)
 
-        with patch("anvil.services.mlflow_inputs.CorpusRepository") as repo_cls:
+        with patch("anvil.services.tracking.mlflow_inputs.CorpusRepository") as repo_cls:
             repo = repo_cls.return_value
             repo.get = AsyncMock(return_value=mock_corpus)
 
@@ -154,7 +154,7 @@ class TestResolveCorpus:
         from anvil.services.tracking.mlflow_inputs import MlflowInputResolver
 
         mock_session = AsyncMock()
-        with patch("anvil.services.mlflow_inputs.CorpusRepository") as repo_cls:
+        with patch("anvil.services.tracking.mlflow_inputs.CorpusRepository") as repo_cls:
             repo = repo_cls.return_value
             repo.get = AsyncMock(return_value=None)
 
@@ -167,7 +167,7 @@ class TestFR024NoCustomCorpusAbstraction:
     def test_no_custom_corpus_store_class_defined(self):
         import inspect
 
-        import anvil.services.mlflow_inputs as mod
+        import anvil.services.tracking.mlflow_inputs as mod
 
         for name, obj in inspect.getmembers(mod):
             if inspect.isclass(obj):
