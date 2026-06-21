@@ -1,7 +1,7 @@
 # Vault health tooling — mechanical audit + graph health analysis
 #
-# Delegates to the ``anvil-vault`` CLI. Legacy ``scripts/ci/`` scripts are
-# retained as thin wrappers during the transition period.
+# Delegates to the ``anvil-vault`` CLI. Legacy ``scripts/ci/`` thin wrappers
+# have been removed; all logic lives in the package.
 #
 # See docs/vault/Systems/Vault Health.md.
 
