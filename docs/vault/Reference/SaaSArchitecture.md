@@ -31,7 +31,7 @@ source: agent
 
 ## Overview
 
-anvil operates in three distinct modes, each targeting a different user persona. All three share the same codebase — the `anvil` pip package — and the same business logic layer. Differences are confined to infrastructure implementations behind four abstraction interfaces.
+anvil operates in three distinct modes, each targeting a different user persona. All three share the same codebase — the `anvil` pip package — and the same business logic layer. Differences are confined to infrastructure implementations behind a set of abstraction interfaces (`FileStore`, `EventBus`, `JobQueue`, `ComputeBackend`, `LogsReader`, and `VersionedContentStore` — the latter is the versioned content repository from spec 016: pure-Python content-addressed locally, LakeFS-backed in SaaS; see AD-17).
 
 > For granular, full-fidelity per-subsystem diagrams (C4 levels, network, ERD, auth sequences, compute, orchestration, reconciler, deploy flows, CI/CD, observability, MLflow proxy, multi-cluster, HA — 38 diagrams), see [[SaaSSystemDiagrams]]. For security, perimeter, egress, tenant/access boundaries, DFDs, per-user-story flows, and cluster-admin authority (39 diagrams), see [[SaaSSecurityAndFlowDiagrams]].
 
@@ -657,7 +657,21 @@ anvil-ml-{env}/
 │       ├── config.json
 │       ├── tokenizer.json
 │       └── metrics/
+
+anvil-content-{env}/                # LakeFS storage namespace (versioned content repo, spec 016 / AD-17)
+└── {org_id}/                        # org-isolated; LakeFS repo(s) back the canonical Corpus
+    └── <lakefs-managed objects>     # content-addressed blobs + commit/version metadata
 ```
+
+> **Content repository (AD-17)**: The versioned content repository (spec 016) is served
+> by `LakeFSVersionedContentStore` over the `anvil-content-{env}` bucket as the LakeFS
+> storage namespace; corpus/version/entry metadata lives in PostgreSQL. Content is
+> org-isolated (`org_id`); the externally-pinned reproducibility ref is the content-
+> addressed **manifest digest** (identical to local mode). Validation, isolation, and
+> serialized acceptance run **in-process** (not LakeFS hooks); producer + management
+> authorization is enforced at the app layer (per-branch RBAC is enterprise-only in
+> LakeFS OSS). In **local mode** there is no LakeFS and no `anvil-content` bucket — the
+> content store is pure-Python over `data/content/` on the filesystem.
 
 ### Secrets Manager Structure
 

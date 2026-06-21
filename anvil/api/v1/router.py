@@ -13,6 +13,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 
 from anvil.api.v1.compute import router as compute_router
+from anvil.api.v1.content import router as content_router
 from anvil.api.v1.corpora import router as corpora_router
 from anvil.api.v1.governance import router as governance_router
 from anvil.api.v1.datasets import router as datasets_router
@@ -40,6 +41,7 @@ router.include_router(governance_router)
 router.include_router(health_ops_router)
 router.include_router(pages_router)
 router.include_router(learning_router)
+router.include_router(content_router)
 
 MODELS_DIR = Path("data/models")
 """Path: Directory where trained model artifacts are stored on disk."""

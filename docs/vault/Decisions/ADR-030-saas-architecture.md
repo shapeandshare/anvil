@@ -66,7 +66,7 @@ Three sub-patterns for different iteration speeds:
 
 ### Abstraction Layer
 
-Four interfaces enable mode-agnostic business logic:
+Six interfaces enable mode-agnostic business logic:
 
 | Interface | Local Implementation | SaaS Implementation |
 |-----------|---------------------|---------------------|
@@ -74,6 +74,8 @@ Four interfaces enable mode-agnostic business logic:
 | `EventBus` | `InProcessEventBus` (asyncio.Queue) | `RedisEventBus` (redis.asyncio pub/sub) |
 | `JobQueue` | `InProcessJobQueue` (immediate create_task) | `BatchJobQueue` (boto3 batch.submit_job) |
 | `ComputeBackend` | `LocalStdlibBackend` / `LocalTorchBackend` | `BatchComputeBackend` (wraps JobQueue) |
+| `LogsReader` | `LocalLogsReader` (disk files) | `CloudWatchLogsReader` (boto3 logs) |
+| `VersionedContentStore` | `LocalVersionedContentStore` (pure-Python, content-addressed) | `LakeFSVersionedContentStore` (LakeFS over S3) |
 
 SaaS code lives in `anvil/_saas/` and is **never imported in local mode** -- no `boto3`, `redis-py`, or Cognito SDKs added to the base pip package. They are optional extras via `pip install anvil[aws]`.
 
@@ -105,7 +107,7 @@ SaaS code lives in `anvil/_saas/` and is **never imported in local mode** -- no 
 - **Batch job state consistency** -- resolved by AD-4: PostgreSQL is the source of truth via append-only `job_events`; a reconciler repairs stuck jobs. Redis is delivery-only.
 - **CloudFront cache invalidation** -- static assets served through CloudFront need invalidation on deploy. Mitigation: versioned asset filenames or deploy-time invalidation.
 
-## Architecture Decisions (Canonical: AD-1 .. AD-16)
+## Architecture Decisions (Canonical: AD-1 .. AD-17)
 
 The detailed, binding decisions resolving the pre-implementation review live in `specs/014-saas-architecture/spec.md` and supersede any summary here:
 
@@ -127,6 +129,7 @@ The detailed, binding decisions resolving the pre-implementation review live in 
 | AD-14 | Two-tier admin: `is_cluster_admin` flag is read-wide, write-narrow -- cross-org read + fixed cluster-op action matrix, but tenant-data writes still gated by org role (FR-034-FR-038b). Local mode is implicit admin, no auth |
 | AD-15 | Multi-cluster CLI: `~/.anvil/clusters.json` registry (with `region`, `api_version`), `anvil remote cluster *` commands, `GET /v1/version` negotiation (FR-014a/c) |
 | AD-16 | Production posture: single-region multi-AZ HA (RDS Multi-AZ + PITR, Redis Multi-AZ failover, S3 versioning), backup/DR with destroy-time final snapshot + `deploy restore`, secret-rotation dual-key window, reconciler operating parameters, `job_events` retention (FR-043a, FR-044a, FR-045q-s, FR-058-061) |
+| AD-17 | Content repository substrate: `VersionedContentStore` interface; local = pure-Python content-addressed (no dep); SaaS = LakeFS over org-scoped S3; validation/isolation/acceptance stay in-process (NOT LakeFS hooks); per-branch RBAC is enterprise-only so producer + management authz are enforced app-side (org/team/role + mgmt-authz seam); content-addressed manifest digest is the externally-pinned reproducibility ref in both modes (FR-016, FR-062-067; spec 016) |
 
 **Key clarification (AD-14)**: the cluster-admin elevation is NOT a blanket bypass. It widens the read scoping predicate (cross-org visibility) and grants a fixed cluster-operation matrix (suspend orgs, cancel jobs, manage cluster admins, view health/logs), but destructive tenant-data mutation in a foreign org still requires an explicit org role there. This resolved a blocking authority conflict in the spec review (FR-037 vs FR-038a).
 
