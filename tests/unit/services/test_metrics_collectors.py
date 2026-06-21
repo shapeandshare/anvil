@@ -35,13 +35,13 @@ def fake_platform():
 
 
 def _svc_and_mock_run():
-    import anvil.services.mps_metrics_collector as mc
+    from anvil.services.tracking import mps_metrics_collector as mc
 
     return mc
 
 
 def _sampler_mod():
-    import anvil.services.mps_sampler_thread as st
+    from anvil.services.tracking import mps_sampler_thread as st
 
     return st
 

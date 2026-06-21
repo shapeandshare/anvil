@@ -51,7 +51,7 @@ session notes.
 - Added `aliases:` / `source:` to ~45 agent notes (decisions, discoveries,
   session logs) that predated the schema requirement.
 - Fixed 3 stale `related:` wikilinks in
-  `Decisions/ADR-025-vault-health-subsumption.md` (bare `[[ADR-013]]` etc. →
+  `Decisions/ADR-034-vault-health-subsumption.md` (bare `[[ADR-013]]` etc. →
   full path-qualified links to existing ADRs).
 - Linked the new discovery note from `Discoveries/Discoveries.md`.
 

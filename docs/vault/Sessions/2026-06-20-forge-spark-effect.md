@@ -1,12 +1,19 @@
 ---
+aliases:
+  - Forge Spark Effect
+  - Metal-Struck Sparks
+source: agent
 created: '2026-06-20'
 status: draft
+source: agent
+aliases:
+  - Forge Spark Effect — Metal-Struck Sparks Replace Ember Glow
 tags:
-  - type/session
+  - type/session-log
   - domain/ui
   - status/draft
 title: Forge Spark Effect — Metal-Struck Sparks Replace Ember Glow
-type: session
+type: session-log
 updated: '2026-06-20'
 code-refs:
   - anvil/api/static/js/theme/particle-system.js

@@ -58,7 +58,7 @@ class TestLocalStdlibBackend:
         result = await stdlib_backend.run(
             tiny_docs,
             tiny_config,
-            progress_callback=lambda s, l: None,
+            progress_callback=lambda s, l, **kwargs: None,
             stop_check=lambda: False,
         )
 
@@ -85,7 +85,7 @@ class TestLocalStdlibBackend:
         """progress_callback is invoked at least once during training."""
         calls: list[tuple[int, float]] = []
 
-        def cb(step: int, loss: float) -> None:
+        def cb(step: int, loss: float, **kwargs: object) -> None:
             calls.append((step, loss))
 
         await stdlib_backend.run(
@@ -104,7 +104,7 @@ class TestLocalStdlibBackend:
         stop_after = 1
         call_count = 0
 
-        def cb(step: int, loss: float) -> None:
+        def cb(step: int, loss: float, **kwargs: object) -> None:
             nonlocal call_count
             call_count = step + 1
 

@@ -1,6 +1,9 @@
 ---
 title: Particle Effect Strict-Mode Undeclared Variable (glow)
 type: discovery
+aliases:
+  - Particle Effect Strict-Mode Undeclared Variable (glow)
+  - Strict-Mode Undeclared glow Variable
 tags:
   - type/discovery
   - domain/ui
@@ -8,6 +11,9 @@ tags:
 created: '2026-06-21'
 updated: '2026-06-21'
 source: agent
+aliases:
+  - Undeclared glow variable
+  - Particle Effect Strict-Mode glow
 code-refs:
   - anvil/api/static/js/theme/particle-system.js
 related:

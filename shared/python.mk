@@ -7,7 +7,7 @@ PYTHON := $(VENV_BIN)/python3
 
 # Auto-detect GPU platform: outputs ",gpu" on Apple Silicon or NVIDIA Linux,
 # empty string otherwise. Used to conditionally include GPU extras.
-GPU_EXTRA := $(shell ./scripts/detect-gpu-platform.sh)
+GPU_EXTRA := $(shell ./scripts/dev/detect-gpu-platform.sh)
 
 # Convert GPU_EXTRA (pip-style ",gpu") to uv-style flag
 GPU_EXTRA_UV := $(if $(GPU_EXTRA),--extra gpu,)

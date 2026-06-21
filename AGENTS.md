@@ -1,6 +1,6 @@
 # anvil — Agent Guidelines
 
-**Last updated**: 2026-06-21 (sonarcloud-tooling + content-repository-016-mvp)
+**Last updated**: 2026-06-21 (sonarcloud-tooling + content-repository-016-mvp; scripts-python-over-bash + package-module-migration, testing-guide consolidation; OWASP remediation spec 017 + ADRs 035/036; whole-API e2e test suite 017)
 
 ## Project Overview
 
@@ -64,6 +64,44 @@ anvil/          # Python package (implicit namespace)
 └── supervisor/    # Process manager
 ```
 
+### Testing
+
+Test suites live under `tests/` — unit tests in `tests/unit/`, e2e HTTP tests in `tests/e2e/`. The `client` fixture (defined in `tests/conftest.py`) provides an `httpx.AsyncClient` connected to the FastAPI app with a clean in-memory SQLite database per test session.
+
+| Test file | What it tests |
+|-----------|---------------|
+| `tests/unit/core/test_engine.py` | Autograd (Value backward + operations), Tokenizer (encode/decode roundtrip), LlamaModel param count, training loop (loss decreases) |
+| `tests/e2e/test_setup.py` | Package imports resolve (`import anvil`, `import anvil.core.engine`) |
+| `tests/e2e/test_endpoints.py` | HTTP API endpoints return 200 with correct JSON |
+
+**Writing tests:**
+
+Unit test pattern — create `tests/unit/<module>/test_<name>.py`:
+```python
+"""Unit tests for <module name>."""
+
+
+def test_<behavior>():
+    result = <function>()
+    assert result == <expected>
+```
+
+e2e HTTP test pattern — add to `tests/e2e/test_<name>.py`:
+```python
+"""e2e tests for <endpoint>."""
+
+import pytest
+
+
+@pytest.mark.asyncio
+async def test_<endpoint>(client):
+    r = await client.get("/v1/<endpoint>")
+    assert r.status_code == 200
+    assert "<key>" in r.json()
+```
+
+Coverage is reported via `pytest --cov=anvil --cov-report=term-missing`. Current coverage: ~41% (TDD mandate targets 100%).
+
 ## Agent Behavioral Principles
 
 1. **Constitution First** — Read `.specify/memory/constitution.md` before writing any code. All work must comply.
@@ -118,6 +156,43 @@ anvil/          # Python package (implicit namespace)
     - Enum values are the single source of truth — never duplicate the string literal elsewhere. Import and use the enum member.
     - When a function or method accepts an enum value, type the parameter with the enum class, not `str`.
     - At boundaries (DB reads, API input, config files) where callers pass raw strings, the boundary method should accept ``str | MyEnum`` and convert via ``isinstance(x, str): x = MyEnum(x)``. Internal methods stay strictly typed with the enum.
+
+12. **Python over Bash for scripts** — Any new CI or utility script SHOULD be
+    written in Python, not bash. Python is testable, type-checkable, and
+    consistent with the rest of the codebase. Shell scripts are reserved for
+    bootstrap/early-setup scenarios where the Python runtime is not guaranteed
+    (e.g., Makefile helpers that must run before the venv exists). Scripts in
+    ``scripts/ci/`` and ``scripts/release/`` use snake_case filenames, the
+    ``if __name__ == "__main__":`` pattern, and stdlib-only dependencies.
+
+    **Beyond "Python over bash"** — business logic for CI tooling MUST live in
+    importable package modules under ``anvil/``, exposed via CLI entry points
+    (``anvil-vault``), NOT as standalone scripts with duplicated code. The
+    ``scripts/`` directory holds only **thin wrapper scripts** that delegate to
+    ``anvil-vault`` via ``subprocess``. This makes the logic testable via
+    ``pytest``, type-checkable via ``mypy --strict``, and avoids duplicating
+    ``_read_version()`` / ``_parent_version()`` across files.
+
+    Rationale: the 015-graph-health-subsumption spec established this pattern
+    (FR-004: CI gate logic belongs in the package), and the version-utils
+    refactor (2026-06-21) confirmed that standalone scripts inevitably
+    duplicate shared helpers. Every CI job that calls ``anvil-vault`` must
+    ``pip install .`` (or ``make setup``) first — this is acceptable overhead
+    for correctness and maintainability.
+
+    Correct:
+    ```python
+    # scripts/ci/check_version.py — thin wrapper
+    def main() -> None:
+        subprocess.run(["anvil-vault", "check-version"])
+    ```
+
+    Incorrect:
+    ```python
+    # scripts/ci/check_version.py — duplicated logic
+    def _read_version(): ...  # same as 3 other files
+    def main(): ...
+    ```
 
     Correct:
     ```python
@@ -258,6 +333,7 @@ SomeException
 - One-line docstrings are acceptable ONLY for trivial properties or obvious getters.
 - If a method/function returns `None` and has no side effects worth documenting, omit `Returns`.
 - Use `` ``backticks`` `` for parameter names, types, and code references within prose.
+<<<<<<< HEAD
 
 ## Active Technologies
 - Python 3.11+ + Existing project deps (FastAPI, SQLAlchemy, aiofiles) + `pathspec` (lightweight gitignore pattern matching, pure Python, no binary deps) (002-directory-corpus-ingestion)
@@ -332,3 +408,4 @@ SomeException
 - banner-cta-pattern: Added `.section-card--banner` CSS class (gradient bg, no shadow, compact padding) and deployed CTA cross-reference banners across 6 operational pages — Datasets → Data Fundamentals, Training → Training Loop, Playground → Sampling, Models → Export, Experiments → Loss, Operations → Cloud Compute. See `docs/vault/Discoveries/learning-lesson-cta-banner-pattern.md`.
 - unicorn-mascot-flying-sprites: Made the **Unicorn** theme pop in two presence tiers. (1) *Session-gated JS* — rewrote `anvil/api/static/js/themes/unicorn.js` to inject a managed `document.body` overlay (`pointer-events:none`, the first theme to do live DOM sprite injection) with inline-SVG floating unicorns (googly wiggling eyes) and 6-band rainbows flying across, driven by loss/throughput/milestone/divergence; rAF loop now compacts node arrays each frame (fixed an unbounded leak), seeds transforms at spawn (no `(0,0)` flash), and `burst()` gates on `reducedMotion`; teardown leaves zero trace. (2) *Always-on CSS* — added `[data-skin="unicorn"] .app-shell::after`, a side-profile prancing unicorn as a `background-image` data-URI SVG that trails a rainbow from its rear and flies across the viewport re-entering at a new height each pass (composed `left` 14s / `top` 17s / `transform` 1.1s; the non-harmonic X/Y periods give the "different spot" loop with no JS). Discovered that a theme's `mapping()` only binds while a signal-bus session is attached, so always-on decoration MUST be CSS, not the JS module. Data-URI SVG encoding (`%23` for `#`, `%25` for every `%`) + in-SVG `prefers-reduced-motion` self-gating. No engine/registration/`base.html`/test changes (Unicorn was already wired). See `docs/vault/Reference/css-data-uri-animated-svg-sprite.md`, `docs/vault/Discoveries/theme-presence-tiers-css-vs-session-gated-js.md`, and `docs/vault/Sessions/2026-06-20-unicorn-mascot-flying-sprites.md`. **Follow-up**: the always-on `.app-shell::after` prancing mascot was subsequently removed at user request (to be re-added later); the session-gated JS sprite overlay, sparkle field, and theme registration remain. Implementation preserved in git history.
 - content-repository-016-mvp: Implemented the US1 MVP of the versioned **Content Repository** (spec 016, ADR-033) — reproducibility-by-reference end-to-end (create corpus → register source → open isolated ingest session → stage → per-batch validate → accept/atomic-fold → freeze immutable version → pin in a training run via `content_version_id` → re-resolve byte-identically). **Local mode is pure-Python and content-addressed** (no LakeFS, no new runtime dependency, no managed sidecar): blobs at `data/content/blobs/<aa>/<sha256>`, session-scoped staging, canonical HEAD, and an `asyncio.Lock`-serialized atomic acceptance — all behind the `VersionedContentStore` ABC so a future SaaS `LakeFSVersionedContentStore` slots in unchanged (014/AD-17). Added 10 ORM models + reversible migration `002_add_content_repository`, 7 repositories, the `VersionedContentStore` interface + `LocalVersionedContentStore`, `ValidationService`/`CorpusService`/`IngestionService`/`LineageService`, a 21-endpoint `/v1/content` router, workbench accessors (with `content_dir` now read from config), and training-data resolution via the existing chunkers. The reproducibility anchor is a content-addressed **manifest digest** (sha256 of canonical-JSON sorted entries). Three test layers: unit (digest/blob/VCS contract via a fake), real store+service e2e, and HTTP-API integration (ASGI, no lifespan) — 69 tests. A critical QA pass found/fixed ~16 real integration bugs the fake-only tests had masked (broken workbench wiring + store constructor, empty-version accept, ambiguous ORM relationship, unnamed-constraint migration failure, async expired-object/lazy-load greenlet errors, missing endpoint commits, a revert unique-constraint violation, and `create`/`stage` endpoint signature mismatches). See `specs/016-lakefs-content-repo/` and `docs/vault/Decisions/ADR-033-content-repository-substrate.md`.
+- whole-api-e2e-suite: Added comprehensive e2e test suite covering all 14 API routers (~100 test functions across 14 test modules). Fixed pre-existing `NoReferencedTableError` (models/__init__.py was bare — added imports for all 19 ORM models). Added inference model filesystem fallback for demo model resolution without MLflow. Added `make test-e2e-seed` and `make test-e2e-full` targets. See `specs/017-api-e2e-suite/` and `docs/vault/Sessions/2026-06-21-api-e2e-suite.md`.
