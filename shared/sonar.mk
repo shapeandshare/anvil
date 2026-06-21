@@ -37,9 +37,10 @@ sonar-check-env: ## Verify SONAR_TOKEN is set
 
 .PHONY: sonar-check-env-mcp
 sonar-check-env-mcp:
-	@test -n "$(SONARQUBE_TOKEN)" || { \
-		echo "ERROR: SONARQUBE_TOKEN not set."; \
-		echo "Set: export SONARQUBE_TOKEN=$${SONAR_TOKEN}"; \
+	@test -n "$(SONARQUBE_TOKEN)" -o -n "$(SONAR_TOKEN)" || { \
+		echo "ERROR: neither SONARQUBE_TOKEN nor SONAR_TOKEN is set."; \
+		echo "Set one of: export SONAR_TOKEN=squ_xxxxx"; \
+		echo "          export SONARQUBE_TOKEN=squ_xxxxx"; \
 		exit 1; \
 	}
 
@@ -98,6 +99,7 @@ MCP_SONAR_IMAGE := mcp/sonarqube
 
 .PHONY: sonar-mcp
 sonar-mcp: sonar-check-env-mcp ## Start SonarCloud MCP server (Docker, foreground, Ctrl+C to stop)
+	@export SONARQUBE_TOKEN=$${SONARQUBE_TOKEN:-$$SONAR_TOKEN}; \
 	docker run --init --pull=always -i --rm \
 		-e SONARQUBE_TOKEN \
 		-e SONARQUBE_ORG=$(SONAR_ORG) \
