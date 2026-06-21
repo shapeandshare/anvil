@@ -34,6 +34,14 @@ Non-obvious constraints, gaps, and conflicts discovered during agent sessions. E
 - [[Discoveries/css-grid-overlay-replacement-techniques|CSS Techniques for Replacing Rigid Grid Overlays in Behavioral Themes]] — Two techniques: multi-angle gradient came for irregular organic shapes (CSS-only, no SVG) and SVG data-URI hex grid for geometric wireframes. Covers tile math, URL encoding, and edge cases.
 - [[Discoveries/tab-switched-wizard-to-section-cards|Tab-Switched Wizard to Section Cards Pattern]] — Replacing tab-switched wizards with always-visible numbered `ds-flow-section` cards: template structure, step coloring convention, JS removal checklist, and why it works.
 
+## Discoveries from this session
+
+- **Fake-based tests mask real integration bugs**: the original 61 US1 tests used an in-memory `FakeVersionedContentStore`, which passed instantly but hid ~16 real bugs (broken wiring, empty-version accept, ambiguous ORM relationships, unnamed migration constraints, greenlet expired-object crashes, missing commits). Three-layer testing (unit/fake, real store+service e2e, HTTP API) is now standard for the content repo.
+- **`asyncio.Lock` + `MissingGreenlet` pattern**: accessing ORM attributes after `commit()` expires them; sync-style lazy-load triggers `MissingGreenlet` in async contexts. Always capture plain ids/values before commit.
+- **Alembic + SQLite + unnamed constraints**: SQLite batch mode requires all constraints to have a name. Forward FKs in CREATE TABLE are tolerated by SQLite — no need for `batch_alter_table`.
+- **LakeFS OSS RBAC is enterprise-only**: fine-grained per-branch scoping and merge restrictions are not available in OSS LakeFS. Producer + management authz must be app-level regardless.
+- **`VersionedContentStore` as a substrate boundary**: separating versioned content operations from the blob-level `FileStore` prevents bounded-context confusion and enables swapping the local pure-Python impl for a future LakeFS-backed SaaS impl without touching services/routes.
+
 ## Related MOCs
 
 - [[Sessions/2026-06-10-implementation|Sessions]] — Full session logs
