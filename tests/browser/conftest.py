@@ -45,9 +45,7 @@ def _wait_for_health(url: str, retries: int, interval: int) -> None:
     ) from last_exc
 
 
-def _mlflow_experiments_ready(
-    mlflow_url: str, retries: int, interval: int
-) -> None:
+def _mlflow_experiments_ready(mlflow_url: str, retries: int, interval: int) -> None:
     """Poll the MLflow experiments endpoint until it responds.
 
     The MLflow sidecar starts independently of the web server. Tests that
@@ -56,9 +54,7 @@ def _mlflow_experiments_ready(
     last_exc: Exception | None = None
     for attempt in range(1, retries + 1):
         try:
-            resp = httpx.get(
-                f"{mlflow_url}/experiments/list", timeout=5
-            )
+            resp = httpx.get(f"{mlflow_url}/experiments/list", timeout=5)
             if resp.status_code == 200:
                 return
         except Exception as exc:
@@ -80,9 +76,7 @@ def _readiness_check() -> None:
 def _mlflow_ready() -> None:
     """No-op: MLflow readiness is best verified by polling the UI."""
     return
-    _mlflow_experiments_ready(
-        MLFLOW_API_URL, READINESS_RETRIES, READINESS_INTERVAL
-    )
+    _mlflow_experiments_ready(MLFLOW_API_URL, READINESS_RETRIES, READINESS_INTERVAL)
 
 
 # ---------------------------------------------------------------------------
@@ -163,18 +157,15 @@ def assert_no_console_errors():
             status = response.status
             if 400 <= status < 600:
                 url = response.url
-                self._errors.append(
-                    f"FAILED_RESOURCE: {status} {url}"
-                )
+                self._errors.append(f"FAILED_RESOURCE: {status} {url}")
 
         def assert_no_errors(self):
             """Assert zero error-level signals were captured.
 
             Warning-level signals are logged but do not fail.
             """
-            assert not self._errors, (
-                "Console/network errors detected:\n"
-                + "\n".join(self._errors)
+            assert not self._errors, "Console/network errors detected:\n" + "\n".join(
+                self._errors
             )
 
         @property

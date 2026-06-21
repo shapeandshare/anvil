@@ -109,9 +109,9 @@ async def test_inference_forward_graph(client):
     with expected node schema, and an ``edges`` list.
     """
     response = await client.get("/v1/inference/forward-graph")
-    assert response.status_code == 200, (
-        f"Expected 200, got {response.status_code}: {response.text}"
-    )
+    assert (
+        response.status_code == 200
+    ), f"Expected 200, got {response.status_code}: {response.text}"
 
     data = response.json()
     assert "model" in data
@@ -234,17 +234,15 @@ async def test_inference_sample(client):
             "version": 1,
         },
     )
-    assert response.status_code == 200, (
-        f"Expected 200, got {response.status_code}: {response.text}"
-    )
+    assert (
+        response.status_code == 200
+    ), f"Expected 200, got {response.status_code}: {response.text}"
 
     data = response.json()
     assert "samples" in data
     assert isinstance(data["samples"], list)
     assert len(data["samples"]) > 0
-    assert len(data["samples"][0]) > 0, (
-        "Expected non-empty generated text per FR-008"
-    )
+    assert len(data["samples"][0]) > 0, "Expected non-empty generated text per FR-008"
 
 
 @pytest.mark.asyncio
@@ -254,6 +252,7 @@ async def test_inference_sample_unknown_model(client):
         "/v1/inference/sample",
         json={"prompt": "hello", "model_id": 99999, "version": 1},
     )
-    assert response.status_code in (404, 422), (
-        f"Expected 404 or 422, got {response.status_code}: {response.text}"
-    )
+    assert response.status_code in (
+        404,
+        422,
+    ), f"Expected 404 or 422, got {response.status_code}: {response.text}"

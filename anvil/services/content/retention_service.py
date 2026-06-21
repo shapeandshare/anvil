@@ -27,9 +27,7 @@ from ...db.models.content_tag import ContentTag
 from ...db.models.content_version_run_ref import VersionRunRef
 from ...db.repositories.content_blobs import ContentBlobRepository
 from ...db.repositories.content_corpora import ContentCorpusRepository
-from ...db.repositories.content_ingest_sessions import (
-    ContentIngestSessionRepository,
-)
+from ...db.repositories.content_ingest_sessions import ContentIngestSessionRepository
 from ...db.repositories.content_versions import ContentVersionRepository
 from .ingest_status import IngestStatus
 

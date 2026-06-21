@@ -364,9 +364,7 @@ class AnvilWorkbench:
         and ``freeze`` operations for weighted composition versions.
         """
         if self._content_composition is None:
-            from .services.content.composition_service import (
-                CompositionService,
-            )
+            from .services.content.composition_service import CompositionService
 
             self._content_composition = CompositionService(
                 store=self.content_store,

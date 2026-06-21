@@ -76,23 +76,21 @@ async def _train_and_register(client) -> dict:
                 "chunking_strategy": "line",
             },
         )
-        assert r.status_code == 200, (
-            f"POST /v1/corpora: {r.status_code}: {r.text}"
-        )
+        assert r.status_code == 200, f"POST /v1/corpora: {r.status_code}: {r.text}"
         cid = r.json()["data"]["id"]
 
         r = await client.post(f"/v1/corpora/{cid}/ingest")
-        assert r.status_code == 200, (
-            f"POST /v1/corpora/{cid}/ingest: {r.status_code}: {r.text}"
-        )
+        assert (
+            r.status_code == 200
+        ), f"POST /v1/corpora/{cid}/ingest: {r.status_code}: {r.text}"
 
         r = await client.post(
             "/v1/datasets/from-corpus",
             json={"corpus_id": cid, "name": "reg-ds"},
         )
-        assert r.status_code == 200, (
-            f"POST /v1/datasets/from-corpus: {r.status_code}: {r.text}"
-        )
+        assert (
+            r.status_code == 200
+        ), f"POST /v1/datasets/from-corpus: {r.status_code}: {r.text}"
         ds_id = r.json()["data"]["id"]
 
         r = await client.post(
@@ -108,9 +106,9 @@ async def _train_and_register(client) -> dict:
                 "compute_backend": "local-stdlib",
             },
         )
-        assert r.status_code == 200, (
-            f"POST /v1/training/start: {r.status_code}: {r.text}"
-        )
+        assert (
+            r.status_code == 200
+        ), f"POST /v1/training/start: {r.status_code}: {r.text}"
         start_data = r.json()
         run_id = start_data["run_id"]
         experiment_id = start_data["experiment_id"]
@@ -122,9 +120,9 @@ async def _train_and_register(client) -> dict:
             "/v1/registry/models",
             json={"experiment_id": experiment_id},
         )
-        assert r.status_code == 201, (
-            f"POST /v1/registry/models: {r.status_code}: {r.text}"
-        )
+        assert (
+            r.status_code == 201
+        ), f"POST /v1/registry/models: {r.status_code}: {r.text}"
         return r.json()
     finally:
         import shutil
@@ -149,9 +147,7 @@ async def test_list_models(client):
     model_name = reg_data["name"]
 
     r = await client.get("/v1/registry/models")
-    assert r.status_code == 200, (
-        f"GET /v1/registry/models: {r.status_code}: {r.text}"
-    )
+    assert r.status_code == 200, f"GET /v1/registry/models: {r.status_code}: {r.text}"
     data = r.json()
     assert isinstance(data, dict)
     models = data.get("models", [])
@@ -159,9 +155,7 @@ async def test_list_models(client):
     assert len(models) >= 1
 
     names = [m["name"] for m in models]
-    assert model_name in names, (
-        f"Expected model '{model_name}' in list, got {names}"
-    )
+    assert model_name in names, f"Expected model '{model_name}' in list, got {names}"
 
 
 @pytest.mark.asyncio
@@ -171,9 +165,9 @@ async def test_get_model_detail(client):
     model_name = reg_data["name"]
 
     r = await client.get(f"/v1/registry/models/{model_name}")
-    assert r.status_code == 200, (
-        f"GET /v1/registry/models/{model_name}: {r.status_code}: {r.text}"
-    )
+    assert (
+        r.status_code == 200
+    ), f"GET /v1/registry/models/{model_name}: {r.status_code}: {r.text}"
     detail = r.json()
     assert isinstance(detail, dict)
     assert detail.get("name") == model_name
@@ -227,9 +221,9 @@ async def test_delete_model(client):
     model_name = reg_data["name"]
 
     r = await client.delete(f"/v1/registry/models/{model_name}")
-    assert r.status_code == 200, (
-        f"DELETE /v1/registry/models/{model_name}: {r.status_code}: {r.text}"
-    )
+    assert (
+        r.status_code == 200
+    ), f"DELETE /v1/registry/models/{model_name}: {r.status_code}: {r.text}"
     result = r.json()
     assert isinstance(result, dict)
     assert "message" in result
@@ -245,24 +239,24 @@ async def test_delete_model(client):
 async def test_registry_404(client):
     """Verify 404 for nonexistent model and 400 for bad experiment_id."""
     r = await client.get("/v1/registry/models/nonexistent-model-name")
-    assert r.status_code == 404, (
-        f"Expected 404 for nonexistent model, got {r.status_code}: {r.text}"
-    )
+    assert (
+        r.status_code == 404
+    ), f"Expected 404 for nonexistent model, got {r.status_code}: {r.text}"
 
     r = await client.get("/v1/registry/models/99999")
-    assert r.status_code == 404, (
-        f"Expected 404 for nonexistent model ID, got {r.status_code}: {r.text}"
-    )
+    assert (
+        r.status_code == 404
+    ), f"Expected 404 for nonexistent model ID, got {r.status_code}: {r.text}"
 
     r = await client.post(
         "/v1/registry/models",
         json={"experiment_id": 99999},
     )
-    assert r.status_code == 400, (
-        f"Expected 400 for bad experiment_id, got {r.status_code}: {r.text}"
-    )
+    assert (
+        r.status_code == 400
+    ), f"Expected 400 for bad experiment_id, got {r.status_code}: {r.text}"
 
     r = await client.post("/v1/registry/models", json={})
-    assert r.status_code == 400, (
-        f"Expected 400 for missing experiment_id, got {r.status_code}: {r.text}"
-    )
+    assert (
+        r.status_code == 400
+    ), f"Expected 400 for missing experiment_id, got {r.status_code}: {r.text}"

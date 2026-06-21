@@ -57,7 +57,9 @@ def tiny_corpus_bytes() -> bytes:
     return CORPUS_SEED_TEXT.encode("utf-8")
 
 
-async def make_corpus(client: AsyncClient, tmp_path: Path | None = None) -> dict[str, Any]:
+async def make_corpus(
+    client: AsyncClient, tmp_path: Path | None = None
+) -> dict[str, Any]:
     """Create and ingest a tiny corpus.
 
     Parameters
@@ -85,15 +87,15 @@ async def make_corpus(client: AsyncClient, tmp_path: Path | None = None) -> dict
             "chunking_strategy": "line",
         },
     )
-    assert r.status_code == 200, (
-        f"POST /v1/corpora: expected 200, got {r.status_code}: {r.text}"
-    )
+    assert (
+        r.status_code == 200
+    ), f"POST /v1/corpora: expected 200, got {r.status_code}: {r.text}"
     cid = r.json()["data"]["id"]
 
     r = await client.post(f"/v1/corpora/{cid}/ingest")
-    assert r.status_code == 200, (
-        f"POST /v1/corpora/{cid}/ingest: expected 200, got {r.status_code}: {r.text}"
-    )
+    assert (
+        r.status_code == 200
+    ), f"POST /v1/corpora/{cid}/ingest: expected 200, got {r.status_code}: {r.text}"
     return r.json()["data"]
 
 
@@ -126,9 +128,9 @@ async def make_dataset(
             "/v1/datasets",
             json={"name": "e2e-test-dataset"},
         )
-    assert r.status_code == 200, (
-        f"POST /v1/datasets: expected 200, got {r.status_code}: {r.text}"
-    )
+    assert (
+        r.status_code == 200
+    ), f"POST /v1/datasets: expected 200, got {r.status_code}: {r.text}"
     return r.json()["data"]
 
 
@@ -162,9 +164,9 @@ async def poll_until_terminal(
     terminal_states = {"completed", "failed"}
     while asyncio.get_event_loop().time() < deadline:
         r = await client.get(f"/v1/training/{run_id}/status")
-        assert r.status_code == 200, (
-            f"GET /v1/training/{run_id}/status: expected 200, got {r.status_code}"
-        )
+        assert (
+            r.status_code == 200
+        ), f"GET /v1/training/{run_id}/status: expected 200, got {r.status_code}"
         data = r.json().get("data", {})
         status = data.get("status", "")
         if status in terminal_states:
@@ -208,9 +210,9 @@ async def read_sse_events(
     current_event: str | None = None
 
     async with client.stream("GET", url) as response:
-        assert response.status_code == 200, (
-            f"GET {url}: expected 200, got {response.status_code}"
-        )
+        assert (
+            response.status_code == 200
+        ), f"GET {url}: expected 200, got {response.status_code}"
         async for line in response.aiter_lines():
             if asyncio.get_event_loop().time() >= deadline:
                 raise TimeoutError(
@@ -256,9 +258,9 @@ async def make_trained_run(client: AsyncClient) -> dict[str, Any]:
             "/v1/training/start",
             json={**TINY_TRAINING_CONFIG, "dataset_id": dataset["id"]},
         )
-        assert r.status_code == 200, (
-            f"POST /v1/training/start: expected 200, got {r.status_code}: {r.text}"
-        )
+        assert (
+            r.status_code == 200
+        ), f"POST /v1/training/start: expected 200, got {r.status_code}: {r.text}"
         start_data = r.json()["data"]
         run_id = start_data["run_id"]
         experiment_id = start_data.get("experiment_id")
@@ -269,9 +271,7 @@ async def make_trained_run(client: AsyncClient) -> dict[str, Any]:
         detail = r.json().get("data", {})
         final_loss = detail.get("final_loss", None)
         if final_loss is not None:
-            assert math.isfinite(final_loss), (
-                f"Expected finite loss, got {final_loss}"
-            )
+            assert math.isfinite(final_loss), f"Expected finite loss, got {final_loss}"
 
         return {
             "run_id": run_id,
@@ -281,6 +281,7 @@ async def make_trained_run(client: AsyncClient) -> dict[str, Any]:
         }
     finally:
         import shutil
+
         shutil.rmtree(td, ignore_errors=True)
 
 
@@ -305,9 +306,9 @@ async def make_registered_model(client: AsyncClient) -> dict[str, Any]:
         "/v1/registry/models",
         json={"run_id": run["run_id"]},
     )
-    assert r.status_code == 201, (
-        f"POST /v1/registry/models: expected 201, got {r.status_code}: {r.text}"
-    )
+    assert (
+        r.status_code == 201
+    ), f"POST /v1/registry/models: expected 201, got {r.status_code}: {r.text}"
     data = r.json()["data"]["model"]
     return {
         "model_id": data["id"],
@@ -329,15 +330,15 @@ async def make_eval_dataset(client: AsyncClient) -> dict[str, Any]:
         Eval dataset metadata with key ``name``.
     """
     r = await client.post("/v1/eval-datasets", json={"name": "e2e-test-eval"})
-    assert r.status_code == 200, (
-        f"POST /v1/eval-datasets: expected 200, got {r.status_code}: {r.text}"
-    )
+    assert (
+        r.status_code == 200
+    ), f"POST /v1/eval-datasets: expected 200, got {r.status_code}: {r.text}"
     name = r.json()["data"]["name"]
     r = await client.post(
         f"/v1/eval-datasets/{name}/records",
         json={"records": [{"text": "test input"}]},
     )
-    assert r.status_code == 200, (
-        f"POST /v1/eval-datasets/{name}/records: expected 200, got {r.status_code}: {r.text}"
-    )
+    assert (
+        r.status_code == 200
+    ), f"POST /v1/eval-datasets/{name}/records: expected 200, got {r.status_code}: {r.text}"
     return {"name": name}

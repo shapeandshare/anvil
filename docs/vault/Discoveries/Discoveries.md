@@ -44,6 +44,9 @@ Non-obvious constraints, gaps, and conflicts discovered during agent sessions. E
 - [[Discoveries/github-token-ci-trigger-restriction|GITHUB_TOKEN CI Trigger Restriction]] — PRs opened by `GITHUB_TOKEN` do not trigger CI checks under branch protection, forcing a fine-grained PAT (`BUMP_PAT`) for auto-merge release workflows. A non-obvious GitHub platform constraint.
 
 ## Discoveries from this session
+- [[Discoveries/pre-commit-and-pr-ready-tooling-pattern|Pre-commit and pr-ready Tooling Pattern]] — `make format` and `make typecheck` were documented stubs with no recipes (silent no-ops), and the CI `typecheck` gate was passing without running mypy. The `pr-ready` target and pre-commit hook close the gap between local dev and CI enforcement.
+
+## Discoveries from this session
 
 - **Fake-based tests mask real integration bugs**: the original 61 US1 tests used an in-memory `FakeVersionedContentStore`, which passed instantly but hid ~16 real bugs (broken wiring, empty-version accept, ambiguous ORM relationships, unnamed migration constraints, greenlet expired-object crashes, missing commits). Three-layer testing (unit/fake, real store+service e2e, HTTP API) is now standard for the content repo.
 - **`asyncio.Lock` + `MissingGreenlet` pattern**: accessing ORM attributes after `commit()` expires them; sync-style lazy-load triggers `MissingGreenlet` in async contexts. Always capture plain ids/values before commit.

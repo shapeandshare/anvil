@@ -83,9 +83,7 @@ class TestNavigationSmoke:
                     state="visible", timeout=self.TIMEOUT
                 )
             else:
-                landmark.first.wait_for(
-                    state="visible", timeout=self.TIMEOUT
-                )
+                landmark.first.wait_for(state="visible", timeout=self.TIMEOUT)
 
         checker.assert_no_errors()
 
@@ -96,9 +94,7 @@ class TestNavigationSmoke:
         nav = page.locator("nav, [role='navigation'], .nav-bar, .navbar")
         nav.first.wait_for(state="visible", timeout=self.TIMEOUT)
 
-    def test_nav_link_navigates(
-        self, page, base_url: str
-    ) -> None:
+    def test_nav_link_navigates(self, page, base_url: str) -> None:
         """Click a nav link and verify the target page loads."""
         page.goto(f"{base_url}/v1/datasets-page")
         page.wait_for_load_state("networkidle")

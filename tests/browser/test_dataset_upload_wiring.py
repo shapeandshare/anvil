@@ -24,9 +24,7 @@ class TestDatasetUploadWiring:
         page.goto(f"{base_url}/v1/datasets-page")
         page.wait_for_load_state("networkidle")
 
-        with tempfile.NamedTemporaryFile(
-            suffix=".txt", mode="w", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(suffix=".txt", mode="w", delete=False) as f:
             f.write("hello world this is smoke test content")
             tmp_path = f.name
 
@@ -55,9 +53,7 @@ class TestDatasetUploadWiring:
         page.goto(f"{base_url}/v1/datasets-page")
         page.wait_for_load_state("networkidle")
 
-        with tempfile.NamedTemporaryFile(
-            suffix=".txt", mode="w", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(suffix=".txt", mode="w", delete=False) as f:
             f.write("test content for console error check")
             tmp_path = f.name
 

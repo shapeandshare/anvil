@@ -1,0 +1,29 @@
+#!/bin/sh
+# Anvil pre-commit hook: run format + lint + typecheck on staged changes
+#
+# Runs `make pr-ready` (format → lint → typecheck) before every commit.
+# Fails the commit if any check fails, preventing non-conformant code
+# from entering the repository.
+#
+# Installed by `make setup-hooks` which sets `core.hooksPath = .githooks/`.
+#
+# To bypass (e.g. WIP commits on feature branches):
+#   git commit --no-verify -m "message"
+
+echo ""
+echo "  ▸ Pre-commit checks (make pr-ready)..."
+echo "  ▸ To bypass: git commit --no-verify"
+
+make pr-ready
+exit_code=$?
+
+if [ $exit_code -ne 0 ]; then
+  echo ""
+  echo "  ✗ Pre-commit checks FAILED."
+  echo "  ✗ Fix the issues above, then stage your fixes and commit again."
+  echo "  ✗ To bypass: git commit --no-verify"
+  exit 1
+fi
+
+echo ""
+echo "  ✓ Pre-commit checks passed."

@@ -24,7 +24,6 @@ from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
-
 from starlette.responses import StreamingResponse
 
 from ...api.deps import get_workbench
