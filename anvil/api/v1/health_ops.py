@@ -33,7 +33,9 @@ _start_time: float = time.time()
 """float: Unix timestamp (epoch seconds) when the server process started."""
 
 _bootstrap_lock: asyncio.Lock = asyncio.Lock()
-"""asyncio.Lock: Server-side concurrency guard for POST /v1/demo/bootstrap."""
+"""asyncio.Lock: Serializes concurrent bootstrap operations."""
+_bootstrap_in_progress: bool = False
+"""bool: True while a bootstrap is actively running — drives HTTP 409."""
 
 
 @router.post("/demo/bootstrap")
@@ -43,7 +45,7 @@ async def rebootstrap_demo(
     """Re-bootstrap all demo data into the database.
 
     Idempotent — existing entities are skipped, not duplicated.
-    Protected by a server-side ``asyncio.Lock`` (FR-009) that returns
+    Protected by a server-side ``asyncio.Lock`` that returns
     HTTP 409 if a bootstrap is already in progress.
 
     Parameters
@@ -57,14 +59,19 @@ async def rebootstrap_demo(
         BootstrapResult fields (corpora_created, datasets_created,
         corpora_skipped, datasets_skipped, errors, total_time_ms).
     """
-    if not _bootstrap_lock.locked():
+    global _bootstrap_in_progress
+    if _bootstrap_in_progress:
+        raise HTTPException(
+            status_code=409,
+            detail={"status": "busy", "message": "Bootstrap already in progress"},
+        )
+    _bootstrap_in_progress = True
+    try:
         async with _bootstrap_lock:
             result = await workbench.demo.bootstrap_all()
             return result.model_dump()
-    raise HTTPException(
-        status_code=409,
-        detail={"status": "busy", "message": "Bootstrap already in progress"},
-    )
+    finally:
+        _bootstrap_in_progress = False
 
 
 @router.get("/health")
