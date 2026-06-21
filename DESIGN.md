@@ -264,7 +264,8 @@ Text sizing is handled by the fluid `--text-*` tokens (see Typography), not by b
 ### Ambient background
 Every page (via `base.css`) has:
 - A **radial gradient** on `.app-shell`: `radial-gradient(ellipse 1200px 700px at 50% 5%, color-mix(in srgb, var(--accent-orange) 12%, transparent), transparent)` — a subtle orange glow that spans the full viewport. It lives on the shell (not `.app-main`) so the background reads as one continuous surface **around the floating nav box** and behind the content, rather than starting below the nav.
-- **Floating ambient particles** in `.ambient-particles`: fixed-position, pointer-events-none ember-like circles that float upward from random positions across the viewport. 20 particles with varied delays and speeds (`--s: 6-12s`, `--d: 0-12s`). Warm variants glow with a yellow box-shadow. These are always present on every page.
+
+> Historical note: earlier revisions also rendered a hardcoded `.ambient-particles` layer in `base.html` — 20 orange/yellow ember-like dots that floated upward on every page regardless of theme. This was removed: the per-theme particle system (canvas-based, driven by `theme-manager.js` + `particle-system.js`) now renders on every page instead, so each theme's own particles (rain, snow, embers, etc.) are the ambient layer. They idle at base intensity and intensify when a training session drives the theme's signal vars.
 
 ## Elevation & Depth
 
