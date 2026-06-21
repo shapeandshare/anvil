@@ -7,7 +7,7 @@ created: '2026-06-21'
 updated: '2026-06-21'
 aliases:
   - Header-Based API Versioning
-  - ADR-035
+  - ADR-036
 related:
   - '[[Decisions/ADR-032-greenfield-legacy-removal]]'
   - '[[Decisions/ADR-030-saas-architecture]]'
@@ -22,7 +22,7 @@ tags:
   - status/draft
 ---
 
-# ADR-035: Header-Based API Versioning and URL Path De-Versioning
+# ADR-036: Header-Based API Versioning and URL Path De-Versioning
 
 ## Status
 
@@ -46,7 +46,7 @@ That premise does not hold for anvil:
   API *endpoints* and server-rendered *pages* both live under `/v1/`. This
   collision actively harmed the security remediation (spec 017): the auth
   middleware could not classify "API vs page" by prefix, because both share
-  `/v1/` (see ADR-034 / spec 017 auth-middleware contract).
+  `/v1/` (see ADR-035 / spec 017 auth-middleware contract).
 - URL-embedded versions are the least flexible versioning scheme: they force a
   full path migration for any version bump and leak a version into every link,
   bookmark, template, and client.
@@ -79,7 +79,7 @@ layer** (consistent with ADR-032).
 4. **No compatibility surface.** No `/v1/*` → new-path redirects, no dual
    registration, no deprecation window. All internal callers (templates, static
    JS `fetch`/`EventSource` URLs, tests, CLI references, the Docker healthcheck,
-   the MLflow proxy route from ADR-034) are updated in the same change.
+   the MLflow proxy route from ADR-035) are updated in the same change.
 
 This decision is scoped to a **separate feature/spec (`018-header-api-versioning`)**
 and is intentionally NOT bundled into the OWASP remediation (spec 017), because
@@ -121,6 +121,6 @@ layout.
   that the old `/v1/health` returns 404 (no compat alias).
 - A version-negotiation test asserts the optional version header is parsed and
   an unknown version yields a clear 400.
-- The spec 017 auth middleware and the ADR-034 MLflow proxy route reference the
+- The spec 017 auth middleware and the ADR-035 MLflow proxy route reference the
   new (non-`/v1/`) paths after 018 lands; before 018, they use the page-route
   registry.

@@ -71,7 +71,7 @@ anvil/
 │   │   ├── corpora.py            # dict→Pydantic, path traversal fix, str(exc)
 │   │   ├── content.py            # dict→Pydantic, file size limits, TOCTOU fix, str(exc)
 │   │   ├── inference.py          # dict→Pydantic
-│   │   ├── mlflow_proxy.py       # Authenticated MLflow reverse proxy /v1/mlflow-proxy/ (new, ADR-034)
+│   │   ├── mlflow_proxy.py       # Authenticated MLflow reverse proxy /v1/mlflow-proxy/ (new, ADR-035)
 │   │   ├── health_ops.py         # Bare /v1/health (public) + /v1/health/detailed (authed) split
 │   │   ├── schemas.py            # Field constraints (max_length, range)
 │   │   └── ...                   # Other route files with dict→Pydantic
@@ -88,7 +88,7 @@ anvil/
 │   │   └── local_versioned_content_store.py  # Path containment fix
 │   └── inference/demo_model_provider.py  # print()→logging
 ├── storage/local.py             # Path containment check after resolve
-├── supervisor/services.py       # MLflow: loopback bind + --static-prefix + health_check() (ADR-034)
+├── supervisor/services.py       # MLflow: loopback bind + --static-prefix + health_check() (ADR-035)
 ├── config.py                    # get_mlflow_browser_uri → proxy URL; ANVIL_MLFLOW_INTERNAL_URI
 ├── cli.py                       # print()→logging; --show-api-key command; logging setup moved to lifespan
 
@@ -107,13 +107,13 @@ This plan was revised after an adversarial spec review. Key changes and their cr
 
 - **C-1 (ReDoS)**: `re.compile` has no `timeout=`; use a stdlib execution-timeout helper. FR-008 + `contracts/security-config.md` §4 updated.
 - **C-2 (SSE auth)**: browser `EventSource` can't send `X-API-Key`; auth middleware accepts header OR session cookie for `/v1/*`. FR-025 + `contracts/auth-middleware.md` updated, with greppable `SECURITY-FUTURE(C-2/FR-025)` markers required in code/docs/diagrams.
-- **C-3 (versioning)**: `/v1/` URL versioning is a footgun (API/page collision) — split to a **separate feature (spec `018-header-api-versioning`) and ADR-035**. Spec 017 auth uses an explicit page-route registry so it works before/after 018.
+- **C-3 (versioning)**: `/v1/` URL versioning is a footgun (API/page collision) — split to a **separate feature (spec `018-header-api-versioning`) and ADR-036**. Spec 017 auth uses an explicit page-route registry so it works before/after 018.
 - **C-4 (key in logs)**: key never written to logs; prefix-hint only + `--show-api-key`; env var popped after read. FR-026 + data-model + quickstart updated.
-- **C-5 (MLflow)**: naive `--allowed-hosts` change is breaking + insufficient → **authenticated reverse proxy (ADR-034)**, unifying local mode with the SaaS FR-057 pattern; port 5001 unpublished. FR-004 + T009 updated; SaaS spec 014 cross-referenced.
+- **C-5 (MLflow)**: naive `--allowed-hosts` change is breaking + insufficient → **authenticated reverse proxy (ADR-035)**, unifying local mode with the SaaS FR-057 pattern; port 5001 unpublished. FR-004 + T009 updated; SaaS spec 014 cross-referenced.
 - **HIGH findings**: CSRF token (FR-027), login rate-limit (FR-028), CORS-preflight/middleware-order (FR-029), full `except:pass` triage (FR-030), auth migration safety for tests/healthcheck (FR-031), version-disclosure split (FR-021/T012).
 
 **Constitution re-check after revisions**: still all PASS. The MLflow proxy uses existing `httpx` (no new dep, Article I/lean-deps intact). New modules follow one-class-per-file (Article + ADR-020) and DDD placement (Article X). Auth/CSRF/SSE remain in the API layer (Article VII).
 
 ## Complexity Tracking
 
-*No constitutional violations — Complexity Tracking not required. Note: the MLflow reverse proxy adds surface area but introduces no new dependency and is the only correct way to satisfy FR-004 (documented in ADR-034).*
+*No constitutional violations — Complexity Tracking not required. Note: the MLflow reverse proxy adds surface area but introduces no new dependency and is the only correct way to satisfy FR-004 (documented in ADR-035).*

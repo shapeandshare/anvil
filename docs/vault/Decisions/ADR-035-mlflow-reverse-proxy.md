@@ -7,7 +7,7 @@ created: '2026-06-21'
 updated: '2026-06-21'
 aliases:
   - MLflow Reverse Proxy
-  - ADR-034
+  - ADR-035
 related:
   - '[[Decisions/ADR-030-saas-architecture]]'
   - '[[Decisions/ADR-012-mlflow-browser-url-from-request-host]]'
@@ -28,7 +28,7 @@ tags:
   - status/draft
 ---
 
-# ADR-034: MLflow Reverse Proxy — Authenticated, Port-Closed Access in Local and SaaS
+# ADR-035: MLflow Reverse Proxy — Authenticated, Port-Closed Access in Local and SaaS
 
 ## Status
 
@@ -81,7 +81,7 @@ Adopt a **single, mode-aware MLflow reverse proxy** as the sole browser path to
 MLflow in **both local and SaaS** modes. This unifies the SaaS FR-057 design and
 the local OWASP remediation behind one pattern.
 
-1. **In-process FastAPI proxy route** `/v1/mlflow-proxy/{path:path}` (until ADR-035
+1. **In-process FastAPI proxy route** `/v1/mlflow-proxy/{path:path}` (until ADR-036
    de-versions URLs, then `/mlflow-proxy/...`) implemented with `httpx.AsyncClient`:
    - Subject to the same auth middleware as the rest of the app (session cookie
      for browser, `X-API-Key` for programmatic).

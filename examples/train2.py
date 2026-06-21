@@ -14,7 +14,7 @@ from anvil.core.autograd import Value
 from anvil.core.engine import linear, matrix, rmsnorm, softmax
 
 # --- data: next-character prediction on names dataset ---
-docs = [l.strip() for l in open("input.txt") if l.strip()]
+docs = [l.strip() for l in open("examples/input.txt") if l.strip()]
 uchars = sorted(set("".join(docs)))
 V = len(uchars)
 BOS = V

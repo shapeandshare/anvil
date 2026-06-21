@@ -10,8 +10,12 @@ Validates the neutral per-step ``metrics`` payload (including ``grad_norm`` and
 the ``milestone`` cadence marker (feature 015-theme-engine, US2). These drive
 the ``TrainingService`` progress closure and event stream directly to avoid the
 database fixtures unrelated to this contract.
+
+Also validates backpressure safety: the per-run SSE queue is bounded and
+``_enqueue_or_drop`` silently drops events when the queue is full.
 """
 
+import asyncio
 import json
 from unittest.mock import patch
 
@@ -22,12 +26,16 @@ from anvil.services.training.step_metrics import StepMetrics
 
 
 class _SyncQueue:
-    """Collecting queue double whose ``put`` coroutine runs synchronously."""
+    """Collecting queue double whose ``put`` and ``put_nowait`` methods
+    run synchronously — no event loop needed."""
 
     def __init__(self) -> None:
         self.items: list[dict] = []
 
     async def put(self, item: dict) -> None:
+        self.items.append(item)
+
+    def put_nowait(self, item: dict) -> None:
         self.items.append(item)
 
 
@@ -149,3 +157,45 @@ def test_diverged_run_status_is_tracked():
     assert svc.is_diverged(123) is False
     svc._diverged_runs.add(123)
     assert svc.is_diverged(123) is True
+
+
+@pytest.mark.asyncio
+async def test_reserve_run_creates_bounded_queue():
+    """Verify the training SSE queue is bounded to prevent OOM.
+
+    ``reserve_run`` creates ``asyncio.Queue(maxsize=1024)`` so a slow or
+    disconnected SSE consumer cannot cause unbounded memory growth.
+    """
+    from anvil.services.training.training import (
+        _TRAINING_QUEUE_MAXSIZE,
+        TrainingService,
+    )
+
+    svc = TrainingService()
+    run_id = svc.reserve_run()
+    q = svc.get_queue(run_id)
+    assert q is not None
+    assert q.maxsize == _TRAINING_QUEUE_MAXSIZE
+
+
+@pytest.mark.asyncio
+async def test_enqueue_or_drop_drops_when_queue_full():
+    """Verify ``_enqueue_or_drop`` silently drops events when the queue is full.
+
+    Once the queue reaches its maxsize, further events are dropped
+    rather than blocking the producer (backpressure safety).
+    """
+    from anvil.services.training.training import _enqueue_or_drop
+
+    q: asyncio.Queue = asyncio.Queue(maxsize=1)
+    assert q.maxsize == 1
+
+    # First put should succeed
+    await _enqueue_or_drop(q, {"event": "metrics", "data": "first"})
+    assert q.qsize() == 1
+
+    # Queue is full — second put should be silently dropped
+    await _enqueue_or_drop(q, {"event": "metrics", "data": "second"})
+    assert q.qsize() == 1  # Still 1 — second was dropped
+    item = q.get_nowait()
+    assert item["data"] == "first"

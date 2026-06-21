@@ -1,4 +1,8 @@
 ---
+aliases:
+  - Thread Model Review
+  - Concurrency Audit
+source: agent
 created: '2026-06-21T00:00:00.000Z'
 source: agent
 aliases:
@@ -50,6 +54,32 @@ Conducted a comprehensive thread model review of the entire `anvil/` codebase ac
 - **Strongest**: Process lifecycle management (SIGTERM→SIGKILL with timeout), MPSSamplerThread loop cleanup pattern
 - **Weakest**: Unbounded queues (2× P0), incomplete FastAPI lifespan shutdown, `asyncio.get_event_loop()` vs `get_running_loop()` (24+ occurrences of deprecated pattern)
 
+## Fixes Applied (Same Session)
+
+PR #120 (merged `dc8992c` to main):
+
+| TMR | Severity | Fix |
+|-----|----------|-----|
+| TMR-001 | P0 | Training SSE queue: `maxsize=1024` + `_enqueue_or_drop` helper with `QueueFull` handling |
+| TMR-002 | P0 | Content injection queue: `maxsize=128` + `try/except asyncio.QueueFull` |
+| TMR-019 | P1 | Bootstrap lock: replaced TOCTOU `.locked()` check with `_bootstrap_in_progress` flag + `try/finally` |
+| TMR-005 | P1 | **False positive** — `mps_thread.stop()` correctly called in `on_complete` callback |
+
+### Tests Added
+- `test_reserve_run_creates_bounded_queue` — verifies `maxsize=1024`
+- `test_enqueue_or_drop_drops_when_queue_full` — validates silent drop on overflow
+- `test_rebootstrap_lock_rejects_concurrent` — verifies 409 on concurrent bootstrap
+
+### Tracker Status
+- 2 P0 → **0 P0** (both fixed)
+- 3 P0/P1 findings → **0 open** (fixed or false_positive)
+- Tracker: `docs/thread-model-tracker.csv` updated
+
 ## Files Changed
 - `docs/thread-model-review-2026-06-21.md` (new — structured report)
 - `docs/thread-model-tracker.csv` (new — running CSV tracker)
+- `anvil/services/training/training.py` (TMR-001 fix)
+- `anvil/api/v1/content.py` (TMR-002 fix)
+- `anvil/api/v1/health_ops.py` (TMR-019 fix)
+- `tests/api/test_training_sse_signals.py` (tests for TMR-001)
+- `tests/test_bootstrap.py` (test for TMR-019)

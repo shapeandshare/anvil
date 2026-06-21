@@ -10,7 +10,7 @@ aliases:
   - ADR-032
 related:
   - '[[Decisions/ADR-024-auto-db-migration]]'
-  - '[[Decisions/ADR-025-vault-health-subsumption]]'
+  - '[[Decisions/ADR-034-vault-health-subsumption]]'
   - '[[Sessions/2026-06-20-legacy-backcompat-removal]]'
 code-refs:
   - anvil/_resources/migrations/versions/001_initial.py

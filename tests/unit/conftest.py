@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncGenerator
 
-import pytest
+import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from anvil.db.base import Base
@@ -36,7 +36,7 @@ from anvil.db.models import (  # noqa: F401  # isort: skip
 )
 
 
-@pytest.fixture
+@pytest_asyncio.fixture(loop_scope="function")
 async def in_memory_session() -> AsyncGenerator[AsyncSession, None]:
     """Provide an ``AsyncSession`` backed by a fresh in-memory SQLite DB.
 

@@ -50,3 +50,6 @@ migrations/versions/*.pyc
 
 # Vault audit reports (auto-generated)
 docs/vault/_meta/audit/
+
+# Sisyphus agent working directory
+.sisyphus/

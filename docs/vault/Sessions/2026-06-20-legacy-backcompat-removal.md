@@ -63,7 +63,7 @@ in [[Decisions/ADR-032-greenfield-legacy-removal]].
   `anvil/_resources/migrations/scripts/migrate_to_mlflow_primary.py` (one-shot,
   targets dropped tables), and the `scripts/ci/` wrappers
   `check_guarded_imports.py`, `check_adr_unique.py`, `vault_audit.py`
-  (superseded by the `anvil-vault` CLI, see [[Decisions/ADR-025-vault-health-subsumption]]).
+  (superseded by the `anvil-vault` CLI, see [[Decisions/ADR-034-vault-health-subsumption]]).
 - Removed the `experiment_1.json` filesystem fallback from
   `anvil/services/inference/inference.py` and `demo_model_provider.py`.
 

@@ -1,4 +1,8 @@
 ---
+aliases:
+  - Forge Spark Effect
+  - Metal-Struck Sparks
+source: agent
 created: '2026-06-20'
 status: draft
 source: agent

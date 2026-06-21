@@ -16,7 +16,7 @@ from anvil.core.engine import train
 from anvil.services.training.export import SafetensorsExportService
 
 # --- data ---
-docs = [l.strip() for l in open("input.txt") if l.strip()]
+docs = [l.strip() for l in open("examples/input.txt") if l.strip()]
 uchars = sorted(set("".join(docs)))
 BOS = len(uchars)
 vocab_size = len(uchars) + 1

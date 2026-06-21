@@ -11,6 +11,9 @@ tags:
 created: '2026-06-21'
 updated: '2026-06-21'
 source: agent
+aliases:
+  - Undeclared glow variable
+  - Particle Effect Strict-Mode glow
 code-refs:
   - anvil/api/static/js/theme/particle-system.js
 related:

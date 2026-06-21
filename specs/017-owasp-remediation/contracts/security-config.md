@@ -196,7 +196,7 @@ IDEMPOTENCY_TTL_HOURS = 1
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `ANVIL_API_KEY` | *(auto-generated)* | Override the auto-generated API key. Read once at startup, then popped from `os.environ` (FR-026). Never written to logs. |
-| `ANVIL_MLFLOW_INTERNAL_URI` | `http://127.0.0.1:5001` | Upstream MLflow target for the authenticated reverse proxy (ADR-034). Loopback locally; Cloud Map DNS in SaaS. |
+| `ANVIL_MLFLOW_INTERNAL_URI` | `http://127.0.0.1:5001` | Upstream MLflow target for the authenticated reverse proxy (ADR-035). Loopback locally; Cloud Map DNS in SaaS. |
 | `ANVIL_RATE_LIMIT` | *(none — uses defaults)* | JSON config for rate limiting |
 | `ANVIL_RATE_LIMIT_DISABLE` | `false` | Disable rate limiting entirely |
 | `ANVIL_CORS_ORIGINS` | *(none — CORS disabled)* | Comma-separated origins for CORS allowlist |

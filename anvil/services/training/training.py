@@ -33,6 +33,36 @@ from .stop_requested import StopRequested
 from .throughput import ThroughputTracker, classify_divergence
 
 
+_TRAINING_QUEUE_MAXSIZE = 1024
+"""int: Maximum number of events buffered per-run in the SSE event queue.
+
+When the queue is full, new events are silently dropped to prevent
+unbounded memory growth when the SSE consumer is slow or disconnected.
+"""
+
+
+async def _enqueue_or_drop(
+    queue: asyncio.Queue, event: dict[str, object]
+) -> None:
+    """Put an event into the queue, silently dropping if the queue is full.
+
+    Designed to be submitted via ``asyncio.run_coroutine_threadsafe`` from
+    a worker thread.  Runs on the event loop thread where ``put_nowait``
+    is safe to call.
+
+    Parameters
+    ----------
+    queue : asyncio.Queue
+        The target SSE event queue.
+    event : dict
+        The event payload to enqueue.
+    """
+    try:
+        queue.put_nowait(event)
+    except asyncio.QueueFull:
+        pass
+
+
 class TrainingService:
     """Orchestrates training runs: doc loading, backend dispatch, SSE streaming.
 
@@ -120,11 +150,12 @@ class TrainingService:
             reason = classify_divergence(loss)
             if reason is not None:
                 asyncio.run_coroutine_threadsafe(
-                    queue.put(
+                    _enqueue_or_drop(
+                        queue,
                         {
                             "event": "divergence",
                             "data": json.dumps({"step": step, "reason": reason.value}),
-                        }
+                        },
                     ),
                     loop,
                 )
@@ -143,14 +174,17 @@ class TrainingService:
                 tokens_per_sec=tracker.tokens_per_sec,
             )
             asyncio.run_coroutine_threadsafe(
-                queue.put({"event": "metrics", "data": metrics.model_dump_json()}),
+                _enqueue_or_drop(
+                    queue, {"event": "metrics", "data": metrics.model_dump_json()}
+                ),
                 loop,
             )
 
             if step > 0 and step % milestone_every == 0:
                 asyncio.run_coroutine_threadsafe(
-                    queue.put(
-                        {"event": "milestone", "data": json.dumps({"step": step})}
+                    _enqueue_or_drop(
+                        queue,
+                        {"event": "milestone", "data": json.dumps({"step": step})},
                     ),
                     loop,
                 )
@@ -390,7 +424,7 @@ class TrainingService:
         """
         run_id = self._running
         self._running += 1
-        self._queues[run_id] = asyncio.Queue()
+        self._queues[run_id] = asyncio.Queue(maxsize=_TRAINING_QUEUE_MAXSIZE)
         self._stop_events[run_id] = threading.Event()
         return run_id
 
@@ -521,7 +555,8 @@ class TrainingService:
         # ── remote: emit submitted event before launching ─────────────
         if backend_name == ComputeBackendResult.MODAL:
             asyncio.run_coroutine_threadsafe(
-                queue.put(
+                _enqueue_or_drop(
+                    queue,
                     {
                         "event": "submitted",
                         "data": json.dumps(
@@ -530,7 +565,7 @@ class TrainingService:
                                 "device": device,
                             }
                         ),
-                    }
+                    },
                 ),
                 loop,
             )
