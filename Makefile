@@ -40,6 +40,7 @@ test-system: ## Full validation loop: reset → up → test → teardown
 	exit $$status
 
 test-browser: ## Browser smoke loop: reset → up → playwright tests → teardown
+	uv run playwright install chromium 2>/dev/null || true; \
 	docker compose down -v; \
 	docker compose up -d --build --wait; \
 	uv run pytest tests/browser -v --no-cov; status=$$?; \

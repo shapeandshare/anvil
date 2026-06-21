@@ -4,11 +4,7 @@
 
 - `make setup` completed (Python venv + dependencies installed)
 - Docker installed and running (compose lifecycle brings up the app)
-- Playwright Chromium installed once:
-
-```bash
-uv run playwright install chromium
-```
+- Playwright Chromium (auto-installed by `make test-browser` on first run if missing)
 
 ## Running the Smoke Tests
 
@@ -17,7 +13,8 @@ make test-browser
 ```
 
 This single command executes the full loop:
-1. `docker compose down -v` — reset any previous state
+1. `uv run playwright install chromium` — auto-install Chromium if missing (idempotent)
+2. `docker compose down -v` — reset any previous state
 2. `docker compose up -d --build --wait` — build and start the app stack
 3. `pytest tests/browser -v --no-cov` — run the smoke test suite
 4. `docker compose down -v` — teardown

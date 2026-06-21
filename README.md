@@ -354,7 +354,7 @@ docker run -p 8080:8080 -p 5001:5001 -v anvil-workspace:/workspace anvil
 | **bash** | Pre-installed on macOS / Linux |
 | **uv** | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
 | **NVIDIA driver + `nvidia-smi`** *(optional)* | Linux only — required for CUDA GPU acceleration & auto-detection |
-| **Playwright Chromium** *(optional — for browser smoke tests)* | macOS / Linux: `uv run playwright install chromium` after `make setup`. CI installs automatically. |
+| **Playwright Chromium** *(optional — for browser smoke tests)* | Auto-installed by `make test-browser` on first run. CI installs automatically. |
 
 <br>
 
@@ -375,7 +375,7 @@ docker run -p 8080:8080 -p 5001:5001 -v anvil-workspace:/workspace anvil
 | `make format` | Auto-format (black + isort) |
 | `make typecheck` | Run mypy/pyright |
 | `make test-system` | Full loop: build wheel → container → system tests → teardown |
-| `make test-browser` | Full loop: reset → up → Playwright browser smoke tests → teardown (requires `uv run playwright install chromium` once) |
+| `make test-browser` | Full loop: reset → up → Playwright browser smoke tests → teardown (auto-installs Chromium if missing) |
 | `make compose-up` | Build + start the container stack locally |
 
 <br>
@@ -392,7 +392,7 @@ docker run -p 8080:8080 -p 5001:5001 -v anvil-workspace:/workspace anvil
 | `Alembic migration fails` | Stale or corrupted database | `rm -f data/anvil-state.db`, then restart (auto-creates fresh DB) |
 | GPU not detected (Linux) | NVIDIA driver missing, or `nvidia-smi` not on `PATH` | Install the NVIDIA driver; verify `nvidia-smi` runs, then `make setup-gpu` |
 | Web UI slow on first load | Bootstrapping demo datasets | Normal — only on the first `make run` after `make setup` |
-| `make test-browser`: `Browser not found` | Playwright Chromium not installed | `uv run playwright install chromium` (one-time setup) |
+| `make test-browser`: `Browser not found` | Playwright Chromium not installed | `uv run playwright install chromium` (one-time setup) — though `make test-browser` now auto-installs this; check network connectivity |
 | `make test-browser`: `ModuleNotFoundError: playwright` | `pytest-playwright` not installed | Run `make setup` / `uv sync` to install dev deps |
 
 <br>
