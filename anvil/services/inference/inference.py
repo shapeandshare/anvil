@@ -177,7 +177,7 @@ class InferenceService:
         tracking_svc = TrackingService()
         models = await tracking_svc.list_registered_models()
         model_name: str | None = None
-        candidates = {f"dataset-{model_id}", f"corpus-{model_id}"}
+        candidates = {f"dataset-{model_id}", f"corpus-{model_id}", "demo"}
         for m in models:
             if m.get("name") in candidates:
                 model_name = m["name"]
@@ -251,6 +251,24 @@ class InferenceService:
                 if mid is not None:
                     self._default_id = mid
                     return mid
+
+        # Filesystem fallback: scan for any experiment_<N>.json artifact that
+        # the warmup pipeline or seed script may have created.
+        from pathlib import Path
+
+        models_dir = Path("data/models")
+        fallback = models_dir / "experiment_1.json"
+        if not fallback.exists() and models_dir.is_dir():
+            candidates = sorted(models_dir.glob("experiment_*.json"))
+            if candidates:
+                fallback = candidates[0]
+        if fallback.exists():
+            try:
+                model_id = int(fallback.stem.split("_")[1])
+            except (IndexError, ValueError):
+                model_id = 1
+            self._default_id = model_id
+            return model_id
 
         raise ValueError("No models available. Train or bootstrap a model first.")
 
