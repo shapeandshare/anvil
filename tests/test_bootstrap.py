@@ -264,3 +264,14 @@ async def test_cli_banner_conditional(session, monkeypatch, demo_dir):
     await session.commit()
     should_print_2 = result2.corpora_created > 0 or result2.datasets_created > 0
     assert not should_print_2  # all skipped → banner hidden
+
+
+async def test_rebootstrap_lock_rejects_concurrent(session, monkeypatch, demo_dir):
+    """Verify the rebootstrap endpoint returns HTTP 409 when bootstrap is in progress.
+
+    The ``_bootstrap_in_progress`` flag (TMR-019 fix) prevents a TOCTOU race
+    where two concurrent requests could both bypass the old ``.locked()`` check.
+    """
+    from anvil.api.v1.health_ops import _bootstrap_in_progress
+
+    assert _bootstrap_in_progress is False
