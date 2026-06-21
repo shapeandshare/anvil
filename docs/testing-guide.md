@@ -217,7 +217,7 @@ Run with coverage to see gaps:
 make test   # Runs pytest with --cov=anvil --cov-report=term-missing
 ```
 
-Current coverage: ~41% (improvement needed — tests are minimal; the TDD mandate targets 100%)
+Current coverage is tracked via the ratcheting baseline (`fail_under` in `pyproject.toml`). Coverage must meet or exceed the `fail_under` threshold. See ADR-026 for the ratcheting strategy.
 
 ---
 
