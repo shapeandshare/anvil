@@ -1,3 +1,8 @@
+// Copyright © 2026 Josh Burt
+//
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
 (function () {
   'use strict';
 
@@ -9,6 +14,9 @@
   var RAINBOW_LIFETIME = 6500;
   var SPAWN_BASE_MS = 2800;
   var RAINBOW_BASE_MS = 3500;
+  var MAX_CLOUDS = 8;
+  var CLOUD_LIFETIME = 40000;
+  var CLOUD_SPAWN_MS = 3000;
 
   function clamp01(x) {
     if (!isFinite(x)) return 0;
@@ -229,6 +237,99 @@
     return svg;
   }
 
+  /* ── SVG Cloud Factory ── */
+  function createCloudSVG(size, hue) {
+    var ns = 'http://www.w3.org/2000/svg';
+    var svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', '0 0 200 80');
+    svg.setAttribute('width', String(size));
+    svg.setAttribute('height', String(size * 0.4));
+    svg.style.overflow = 'visible';
+    svg.setAttribute('aria-hidden', 'true');
+
+    var hueBase = typeof hue === 'number' ? Math.round(hue % 360) : 260;
+    var lightness = 84 + Math.round(rand(0, 12));
+    var sat = 10;
+    var baseColor = 'hsla(' + hueBase + ', ' + sat + '%, ' + lightness + '%, 1)';
+    var shadowColor = 'hsla(' + hueBase + ', ' + sat + '%, ' + (lightness - 25) + '%, 0.3)';
+
+    // Shadows / depth puffs (darker, behind)
+    var backPuffs = [
+      { cx: 50, cy: 46, r: 18 },
+      { cx: 80, cy: 40, r: 22 },
+      { cx: 120, cy: 38, r: 24 },
+      { cx: 150, cy: 44, r: 18 }
+    ];
+
+    var frontPuffs = [
+      { cx: 40, cy: 50, r: 16 },
+      { cx: 65, cy: 48, r: 22 },
+      { cx: 95, cy: 42, r: 28 },
+      { cx: 130, cy: 46, r: 20 },
+      { cx: 160, cy: 52, r: 14 }
+    ];
+
+    // Slight randomization so each cloud is unique
+    function jitter(arr, jx, jy, jr) {
+      return arr.map(function (c) {
+        return {
+          cx: c.cx + rand(-jx, jx),
+          cy: c.cy + rand(-jy, jy),
+          r: c.r + rand(-jr, jr)
+        };
+      });
+    }
+    backPuffs = jitter(backPuffs, 4, 3, 3);
+    frontPuffs = jitter(frontPuffs, 4, 3, 3);
+
+    // Bottom filler rect
+    function el(name, attrs) {
+      var e = document.createElementNS(ns, name);
+      if (attrs) {
+        Object.keys(attrs).forEach(function (k) { e.setAttribute(k, attrs[k]); });
+      }
+      return e;
+    }
+
+    var defs = document.createElementNS(ns, 'defs');
+    var filter = document.createElementNS(ns, 'filter');
+    filter.setAttribute('id', 'cglow-' + String(Date.now()) + '-' + randInt(0, 9999));
+    var blur = document.createElementNS(ns, 'feGaussianBlur');
+    blur.setAttribute('stdDeviation', '1.5');
+    blur.setAttribute('result', 'blur');
+    filter.appendChild(blur);
+    defs.appendChild(filter);
+    svg.appendChild(defs);
+
+    var filterId = filter.getAttribute('id');
+    var g = el('g', { filter: 'url(#' + filterId + ')' });
+
+    // Back-shadow puffs
+    backPuffs.forEach(function (c) {
+      g.appendChild(el('circle', {
+        cx: String(c.cx), cy: String(c.cy), r: String(c.r),
+        fill: shadowColor
+      }));
+    });
+
+    // Bottom filler
+    g.appendChild(el('rect', {
+      x: '30', y: '44', width: '145', height: '20', rx: '10',
+      fill: baseColor
+    }));
+
+    // Front puffs
+    frontPuffs.forEach(function (c) {
+      g.appendChild(el('circle', {
+        cx: String(c.cx), cy: String(c.cy), r: String(c.r),
+        fill: baseColor
+      }));
+    });
+
+    svg.appendChild(g);
+    return svg;
+  }
+
   /* ── Mapping Function ── */
   function unicornMapping(bus, effectLevel) {
     var root = document.documentElement;
@@ -241,9 +342,11 @@
     var overlay = null;
     var unicornNodes = [];   // { el, x, y, dx, dy, phase, wobbleFreq, wobbleAmp, born, removed }
     var rainbowNodes = [];   // { el, born, removed }
+    var cloudNodes = [];     // { el, x, y, dx, dy, born, removed }
     var rAFid = null;
     var spawnTimer = null;
     var rainbowTimer = null;
+    var cloudTimer = null;
     var burstTimers = [];
     var hue = 0;
     var burstTimer = null;
@@ -359,6 +462,58 @@
       });
     }
 
+    /* ── Cloud Spawn ── */
+    function spawnCloud() {
+      if (diverged || !overlay || reducedMotion) return;
+      var count = overlay.querySelectorAll('.unicorn-cloud').length;
+      if (count >= MAX_CLOUDS) return;
+
+      var vw = window.innerWidth;
+      var vh = window.innerHeight;
+      var size = rand(160, 320);
+      var hueOff = Math.round(rand(240, 300)); // Stay in purple/pink range with variation
+
+      var svgEl = createCloudSVG(size, hueOff);
+
+      var wrapper = document.createElement('div');
+      wrapper.className = 'unicorn-cloud';
+      wrapper.setAttribute('aria-hidden', 'true');
+      wrapper.style.width = String(size) + 'px';
+      wrapper.style.height = String(size * 0.4) + 'px';
+
+      // Vertical band: low to mid-sky
+      var y = rand(vh * 0.02, vh * 0.55);
+      var x = rand(vw * 0.1, vw * 0.9);
+
+      wrapper.style.left = '0px';
+      wrapper.style.top = '0px';
+      wrapper.style.transform = 'translate3d(' + x.toFixed(1) + 'px, ' + y.toFixed(1) + 'px, 0)';
+
+      // Random drift speed (very slow)
+      var dx = rand(-0.035, -0.008);
+      var dy = rand(-0.005, 0.005);
+
+      wrapper.appendChild(svgEl);
+      overlay.appendChild(wrapper);
+
+      // Fade in after a brief moment
+      setTimeout(function () {
+        if (wrapper.parentNode) {
+          wrapper.classList.add('visible');
+        }
+      }, 50);
+
+      cloudNodes.push({
+        el: wrapper,
+        x: x,
+        y: y,
+        dx: dx,
+        dy: dy,
+        born: Date.now(),
+        removed: false
+      });
+    }
+
     /* ── Burst ── */
     function burst(count, rainbowCount) {
       if (diverged || legible || paused || reducedMotion) return;
@@ -420,6 +575,22 @@
         aliveRainbows.push(r);
       });
       rainbowNodes = aliveRainbows;
+
+      // Animate clouds
+      var aliveClouds = [];
+      cloudNodes.forEach(function (c) {
+        if (c.removed) return;
+        if (now - c.born > CLOUD_LIFETIME) {
+          if (c.el.parentNode) c.el.parentNode.removeChild(c.el);
+          c.removed = true;
+          return;
+        }
+        c.x += c.dx * dt;
+        c.y += c.dy * dt;
+        c.el.style.transform = 'translate3d(' + c.x.toFixed(1) + 'px, ' + c.y.toFixed(1) + 'px, 0)';
+        aliveClouds.push(c);
+      });
+      cloudNodes = aliveClouds;
     }
 
     function startAnimation() {
@@ -460,11 +631,23 @@
           spawnRainbow(false);
         }
       }, RAINBOW_BASE_MS);
+
+      cloudTimer = setInterval(function () {
+        if (diverged || legible || paused || reducedMotion) return;
+        ensureOverlay();
+        var count = 1;
+        if (magic > 0.6) count = rand(1, 2);
+        var ci;
+        for (ci = 0; ci < count; ci++) {
+          spawnCloud();
+        }
+      }, CLOUD_SPAWN_MS);
     }
 
     function stopSpawnTimers() {
       if (spawnTimer) { clearInterval(spawnTimer); spawnTimer = null; }
       if (rainbowTimer) { clearInterval(rainbowTimer); rainbowTimer = null; }
+      if (cloudTimer) { clearInterval(cloudTimer); cloudTimer = null; }
     }
 
     /* ── Cleanup helpers used before overlay removal ── */
@@ -479,6 +662,11 @@
         r.removed = true;
       });
       rainbowNodes = [];
+      cloudNodes.forEach(function (c) {
+        if (!c.removed && c.el.parentNode) c.el.parentNode.removeChild(c.el);
+        c.removed = true;
+      });
+      cloudNodes = [];
     }
 
     /* ── Initialize ── */
@@ -489,12 +677,20 @@
         for (ii = 0; ii < 3; ii++) {
           spawnUnicorn(false);
         }
+        // Spawn initial clouds
+        for (ii = 0; ii < 2; ii++) {
+          spawnCloud();
+        }
         startAnimation();
         startSpawnTimers();
       } else {
         // reduced/muted: spawn static unicorns (no animation)
         for (ii = 0; ii < 3; ii++) {
           spawnUnicorn(false);
+        }
+        // Spawn static clouds
+        for (ii = 0; ii < 2; ii++) {
+          spawnCloud();
         }
         // Position them statically
         unicornNodes.forEach(function (u) {
@@ -572,4 +768,108 @@
     mapping: unicornMapping,
     particleConfig: { type: 'css' },
   });
+
+  /* ── Ambient Cloud System (runs without training session) ── */
+  (function initAmbient() {
+    var ambientOverlay = null;
+    var ambientClouds = [];
+    var ambientRAF = null;
+    var AMP_MAX_AMBIENT = 4;
+
+    function startAmbient() {
+      if (ambientOverlay) return;
+      ambientOverlay = document.createElement('div');
+      ambientOverlay.className = 'unicorn-ambient';
+      ambientOverlay.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(ambientOverlay);
+      var i;
+      for (i = 0; i < 3; i++) {
+        spawnAmbientCloud();
+      }
+      ambientRAF = requestAnimationFrame(ambientAnimate);
+    }
+
+    function stopAmbient() {
+      if (ambientRAF) { cancelAnimationFrame(ambientRAF); ambientRAF = null; }
+      ambientClouds.forEach(function (c) {
+        if (c.el && c.el.parentNode) c.el.parentNode.removeChild(c.el);
+      });
+      ambientClouds = [];
+      if (ambientOverlay && ambientOverlay.parentNode) ambientOverlay.parentNode.removeChild(ambientOverlay);
+      ambientOverlay = null;
+    }
+
+    function spawnAmbientCloud() {
+      if (!ambientOverlay) return;
+      var cnt = ambientOverlay.querySelectorAll('.unicorn-ambient-cloud').length;
+      if (cnt >= AMP_MAX_AMBIENT) return;
+      var size = rand(100, 180);
+      var svgEl = createCloudSVG(size, Math.round(rand(240, 300)));
+      var wrapper = document.createElement('div');
+      wrapper.className = 'unicorn-ambient-cloud';
+      wrapper.setAttribute('aria-hidden', 'true');
+      wrapper.style.width = String(size) + 'px';
+      wrapper.style.height = String(size * 0.4) + 'px';
+      wrapper.style.position = 'absolute';
+      wrapper.style.pointerEvents = 'none';
+      wrapper.style.left = '0px';
+      wrapper.style.top = '0px';
+      var vw = window.innerWidth;
+      var vh = window.innerHeight;
+      var y = rand(vh * 0.03, vh * 0.45);
+      var x = rand(-size * 0.3, vw + size * 0.2);
+      wrapper.style.transform = 'translate3d(' + x.toFixed(1) + 'px, ' + y.toFixed(1) + 'px, 0)';
+      // Slow fade in
+      wrapper.style.opacity = '0';
+      wrapper.style.transition = 'opacity 3s ease-out';
+      wrapper.appendChild(svgEl);
+      ambientOverlay.appendChild(wrapper);
+      // Trigger fade in
+      requestAnimationFrame(function () { wrapper.style.opacity = String(rand(0.25, 0.50)); });
+      ambientClouds.push({
+        el: wrapper,
+        x: x,
+        y: y,
+        dx: rand(-0.012, -0.003),
+        dy: rand(-0.003, 0.003),
+        opacity: rand(0.25, 0.50)
+      });
+    }
+
+    var ambientLast = 0;
+    function ambientAnimate(ts) {
+      ambientRAF = requestAnimationFrame(ambientAnimate);
+      if (!ambientLast) { ambientLast = ts; return; }
+      var dt = Math.min(ts - ambientLast, 80);
+      ambientLast = ts;
+      var dead = [];
+      ambientClouds.forEach(function (c) {
+        c.x += c.dx * dt;
+        c.y += c.dy * dt;
+        c.el.style.transform = 'translate3d(' + c.x.toFixed(1) + 'px, ' + c.y.toFixed(1) + 'px, 0)';
+        // Respawn when drifted too far off-screen left
+        if (c.x < -c.el.offsetWidth * 2) {
+          c.el.parentNode.removeChild(c.el);
+          dead.push(c);
+        }
+      });
+      ambientClouds = ambientClouds.filter(function (c) { return dead.indexOf(c) === -1; });
+      // Replenish
+      var cnt = ambientOverlay ? ambientOverlay.querySelectorAll('.unicorn-ambient-cloud').length : 0;
+      var ii;
+      for (ii = cnt; ii < 3; ii++) {
+        spawnAmbientCloud();
+      }
+    }
+
+    var ambientObserver = new MutationObserver(function () {
+      var isUnicorn = document.documentElement.getAttribute('data-skin') === 'unicorn';
+      if (isUnicorn) startAmbient();
+      else stopAmbient();
+    });
+    ambientObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-skin'] });
+    if (document.documentElement.getAttribute('data-skin') === 'unicorn') {
+      startAmbient();
+    }
+  })();
 })();

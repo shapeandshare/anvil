@@ -1,3 +1,8 @@
+// Copyright © 2026 Josh Burt
+//
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
 (function () {
   'use strict';
 
@@ -12,6 +17,7 @@
     var root = document.documentElement;
     var paused = effectLevel && effectLevel.level === 'paused';
     var unsubs = [];
+    var charge;
 
     function setVar(name, value) {
       root.style.setProperty(name, value);
@@ -23,7 +29,8 @@
     unsubs.push(bus.on('metrics', function (m) {
       if (!m || paused) return;
       if (m.grad_norm != null && isFinite(m.grad_norm)) {
-        setVar('--charge', clamp01(m.grad_norm).toFixed(3));
+        charge = clamp01(m.grad_norm);
+        setVar('--charge', charge.toFixed(3));
       }
       if (typeof m.loss === 'number' && isFinite(m.loss)) {
         setVar('--clearing', clamp01(1 - m.loss / L0).toFixed(3));

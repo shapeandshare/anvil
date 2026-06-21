@@ -1,3 +1,8 @@
+// Copyright © 2026 Josh Burt
+//
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
 (function () {
   'use strict';
 
@@ -59,10 +64,10 @@
   window.ThemeRegistry.register({
     id: 'forge',
     displayName: 'Forge',
-    previewHint: 'Loss as cooling metal',
+    previewHint: 'Sparks flying from the anvil',
     modes: ['dark'],
     cssLayer: '/static/css/themes/forge.css',
     mapping: forgeMapping,
-    particleConfig: { type: 'ember' },
+    particleConfig: { type: 'spark' },
   });
 })();
