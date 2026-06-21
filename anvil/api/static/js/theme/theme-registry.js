@@ -22,6 +22,7 @@
       modes: Array.isArray(theme.modes) && theme.modes.length ? theme.modes : ['dark'],
       cssLayer: theme.cssLayer || null,
       mapping: typeof theme.mapping === 'function' ? theme.mapping : null,
+      particleConfig: theme.particleConfig || { type: 'css', params: {} },
     };
   }
 
