@@ -25,87 +25,21 @@
   </div>
 </div>
 
-{# ── SECTION CARD #1: DOCUMENTATION (collapsible) ───── #}
-<div class="section-card" style="--stagger-i: 0">
-  <div class="section-card__header section-card__header--clickable" id="docs-toggle">
-    <span class="section-card__icon">&#128218;</span>
-    <h2 class="section-card__title">Understanding Datasets &amp; Corpora</h2>
-    <span class="output-toggle-icon collapsed" id="docs-chevron">&#9660;</span>
-  </div>
-
-  <div class="section-card__content-collapsible collapsed" id="docs-content" style="max-height:0;">
-
-    <div class="section-card__content" style="margin-bottom:var(--space-3);">
-      anvil provides two mechanisms for sourcing training data. Each feeds into training but serves a distinct purpose. The pipeline below shows how they relate.
-    </div>
-
-    {# ── Visual Pipeline Diagram ── #}
-    <div class="ds-flow-diagram">
-
-      {# ── Dataset Path ── #}
-      <div class="ds-flow-diagram-path ds-flow-diagram-path--dataset">
-        <div class="ds-flow-diagram-node">
-          <span class="ds-flow-diagram-node--badge ds-flow-diagram-node--badge">Dataset</span>
-          <div class="ds-flow-diagram-node--title">Upload or Create</div>
-          <div class="ds-flow-diagram-node--sub">Upload .txt files or create empty datasets &mdash; each line = one sample</div>
-        </div>
-        <div class="ds-flow-diagram-arrow">&#9660;</div>
-        <div class="ds-flow-diagram-node">
-          <div class="ds-flow-diagram-node--title">Curate &amp; Edit</div>
-          <div class="ds-flow-diagram-node--sub">Dedup, filter by length, regex-replace, inline edit, export</div>
-        </div>
+{# ── BANNER CTA: Data Fundamentals learning lesson ── #}
+<div class="section-card section-card--banner" style="--stagger-i: 0">
+  <div class="section-card__content" style="display:flex;align-items:center;gap:var(--space-3);">
+    <span style="font-size:1.2rem;flex-shrink:0;">&#128218;</span>
+    <div style="flex:1;">
+      <div style="font-family:var(--font-body);font-weight:600;font-size:var(--text-footnote);color:var(--text-secondary);">
+        Understanding Datasets &amp; Corpora
       </div>
-
-      {# ── Corpus Path ── #}
-      <div class="ds-flow-diagram-path ds-flow-diagram-path--corpus">
-        <div class="ds-flow-diagram-node">
-          <span class="ds-flow-diagram-node--badge ds-flow-diagram-node--badge">Corpus</span>
-          <div class="ds-flow-diagram-node--title">Scan a Directory</div>
-          <div class="ds-flow-diagram-node--sub">Point at any folder, apply glob filters, auto-detect chunking</div>
-        </div>
-        <div class="ds-flow-diagram-arrow">&#9660;</div>
-        <div class="ds-flow-diagram-node">
-          <div class="ds-flow-diagram-node--title">Auto-Chunk Files</div>
-          <div class="ds-flow-diagram-node--sub">Windowed, file-as-doc, or line-by-line &mdash; read-only from source</div>
-        </div>
-        <div class="ds-flow-diagram-arrow">&#9660;</div>
-        <div class="ds-flow-diagram-node">
-          <div class="ds-flow-diagram-node--title">Import as Dataset</div>
-          <div class="ds-flow-diagram-node--sub">Re-chunk with custom parameters, then curate like any dataset</div>
-        </div>
-      </div>
-
-      {# ── Converge → Training ── #}
-      <div class="ds-flow-diagram-converge">
-        <div class="ds-flow-diagram-arrow">&#9660;</div>
-        <div class="ds-flow-diagram-node ds-flow-diagram-node--target">
-          <div class="ds-flow-diagram-node--title">&#9878;&#65039; Training Engine</div>
-          <div class="ds-flow-diagram-node--sub">Pick a Dataset or a Corpus as your data source &mdash; both work</div>
-        </div>
-      </div>
-
-    </div>
-
-    {# ── Compact Quick Reference ── #}
-    <div class="ds-flow-mini-help">
-      <div class="ds-flow-mini-help-item">
-        <strong>Use Datasets when</strong>
-        You have curated text you want to edit, filter, or deduplicate. Fine-tuning data, evaluation sets &mdash; small to medium collections.
-      </div>
-      <div class="ds-flow-mini-help-item">
-        <strong>Use Corpora when</strong>
-        You want to scan existing code repos, documentation trees, or large directory structures and auto-chunk them optimally.
-      </div>
-      <div class="ds-flow-mini-help-item">
-        <strong>Combine both</strong>
-        Scan with a corpus for discovery, then import into a dataset for curation &mdash; get the best of both worlds.
-      </div>
-      <div class="ds-flow-mini-help-item">
-        <strong>Pro tip</strong>
-        Start with step 1 (Add Data), then work through. The <b>All Data</b> table shows everything at a glance.
+      <div style="font-size:var(--text-caption-2);color:var(--text-tertiary);margin-top:2px;">
+        How data flows into training &mdash; now in the interactive learning arc.
       </div>
     </div>
-
+    <a href="/v1/learn/data-fundamentals" class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap;">
+      Learn More &rarr;
+    </a>
   </div>
 </div>
 
