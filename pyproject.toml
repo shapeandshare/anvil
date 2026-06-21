@@ -71,6 +71,7 @@ dev = [
     "pytest-cov>=5.0,<6",
     "coverage>=7.0,<8",
     "commitizen>=3.0,<4",
+    "pytest-playwright>=0.5,<1",
 ]
 
 [project.scripts]
@@ -159,11 +160,11 @@ ignore_errors = true  # TODO(ADR-0NN): narrow to specific error codes; blocked b
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-addopts = "-v --cov=anvil --cov-report=term-missing --ignore=tests/system"
+addopts = "-v --cov=anvil --cov-report=term-missing --ignore=tests/system --ignore=tests/browser"
 
 [tool.coverage.run]
 source = ["anvil"]
-omit = ["tests/*", "anvil/_resources/migrations/*", "tests/system/*"]
+omit = ["tests/*", "anvil/_resources/migrations/*", "tests/system/*", "tests/browser/*"]
 
 [tool.coverage.report]
 fail_under = 23
