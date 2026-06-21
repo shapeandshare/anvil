@@ -166,6 +166,10 @@ class LocalVersionedContentStore(VersionedContentStore):
         digest, persists the blob to the content-addressed store, and
         writes a staging reference file.
 
+        **Isolation guarantee**: This method writes only to the
+        session-scoped staging area (``data/content/staging/<key>/``).
+        Canonical corpus state is never modified during staging.
+
         Parameters
         ----------
         session : IngestSessionRef

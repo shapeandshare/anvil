@@ -116,6 +116,39 @@ class IngestionService:
             status=IngestStatus.OPEN,
         )
 
+    async def _assert_session_scope(
+        self,
+        session_id: int,
+        caller_identity: str | None = None,
+    ) -> None:
+        """Assert that the caller is scoped to the given session.
+
+        This is the authorization injection seam for multi-principal
+        RBAC (FR-036) in the future SaaS delivery.  In local single-user
+        mode, any local operator owns all sessions, so the guard passes
+        trivially after verifying the session exists.
+
+        Parameters
+        ----------
+        session_id : int
+            Primary key of the target session.
+        caller_identity : str or None
+            Caller identity string (e.g. user ID, API key owner).
+            ``None`` in local mode — ignored; reserved for SaaS
+            org/team/role checks.
+
+        Raises
+        ------
+        ValueError
+            If the session does not exist.
+        """
+        db_session = await self._session_repo.get(session_id)
+        if db_session is None:
+            raise ValueError(f"Session not found: {session_id}")
+
+        # Local single-user mode: any local user is trivially scoped.
+        # Future SaaS: inject org/team/role check against caller_identity.
+
     async def stage(
         self,
         session_id: int,
@@ -127,6 +160,11 @@ class IngestionService:
         Delegates blob storage and staging reference creation to the
         content store, then increments the ``staged_entry_count`` on
         the session's DB record.
+
+        **Isolation guarantee**: This method writes only to the
+        session-scoped staging area (identified by the session's
+        ``staging_key``).  Canonical corpus state is never modified
+        during staging (only :meth:`accept` mutates canonical).
 
         Parameters
         ----------
@@ -140,13 +178,16 @@ class IngestionService:
         Returns
         -------
         StagedEntry
-            Metadata for the staged blob.
+            Metadata for the staged blob, including its content hash
+            and size.
 
         Raises
         ------
         ValueError
             If the session is not found or not in ``OPEN`` status.
         """
+        await self._assert_session_scope(session_id)
+
         db_session = await self._session_repo.get(session_id)
         if db_session is None:
             raise ValueError(f"Session not found: {session_id}")
