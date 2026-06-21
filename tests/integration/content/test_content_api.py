@@ -117,6 +117,60 @@ async def test_full_http_reproducibility_flow(api: httpx.AsyncClient) -> None:
     assert versions[0]["manifest_digest"] == accept["manifest_digest"]
 
 
+async def _ingest_one(
+    api: httpx.AsyncClient, corpus_id: int, path: str, data: bytes
+) -> dict:
+    """Open a session, stage one file, validate, and accept; return the accept payload."""
+    sid = (
+        await api.post(
+            "/v1/content/sessions",
+            json={"corpus_id": corpus_id, "source": "manual"},
+        )
+    ).json()["data"]["id"]
+    await api.post(
+        f"/v1/content/sessions/{sid}/stage",
+        params={"path": path},
+        files={"file": (path, data, "text/plain")},
+    )
+    await api.post(f"/v1/content/sessions/{sid}/validate")
+    r = await api.post(f"/v1/content/sessions/{sid}/accept")
+    assert r.status_code == 200, r.text
+    return r.json()["data"]
+
+
+@pytest.mark.asyncio
+async def test_http_tag_and_revert(api: httpx.AsyncClient) -> None:
+    """Tagging a version and reverting a corpus work over HTTP (FR-023/FR-011)."""
+    corpus_id = (
+        await api.post("/v1/content/corpora", json={"name": "Reverttest"})
+    ).json()["data"]["id"]
+    await api.post(
+        "/v1/content/sources",
+        json={"slug": "manual", "name": "Manual", "kind": "manual"},
+    )
+
+    a1 = await _ingest_one(api, corpus_id, "a.txt", b"alpha")
+    await _ingest_one(api, corpus_id, "b.txt", b"beta")
+
+    r = await api.post(
+        f"/v1/content/versions/{a1['version_id']}/tag", json={"name": "v1-stable"}
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["data"]["tag"] == "v1-stable"
+
+    r = await api.post(
+        f"/v1/content/corpora/{corpus_id}/revert",
+        json={"to_version_id": a1["version_id"]},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["data"]["status"] == "reverted"
+
+    versions = (await api.get(f"/v1/content/corpora/{corpus_id}/versions")).json()[
+        "data"
+    ]
+    assert len(versions) == 3
+
+
 @pytest.mark.asyncio
 async def test_http_corpus_listing_and_404(api: httpx.AsyncClient) -> None:
     """Listing returns created corpora; unknown corpus yields 404."""

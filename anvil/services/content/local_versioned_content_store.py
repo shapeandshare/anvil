@@ -637,15 +637,13 @@ class LocalVersionedContentStore(VersionedContentStore):
         corpus = await self._corpus_repo.get_by_slug(corpus_slug)
         if corpus is None:
             raise ValueError(f"Corpus not found: {corpus_slug}")
+        corpus_pk = corpus.id
 
-        # Build a composition from the target manifest's entries.
         composition = manifest.entries
 
-        # Freeze a new version with those entries (records the revert).
         ref = await self.freeze_version(corpus_slug, composition=composition)
 
-        # Point current_version to the new snapshot.
-        await self._corpus_repo.set_current_version(corpus.id, ref.version_id)
+        await self._corpus_repo.set_current_version(corpus_pk, ref.version_id)
         await self._db_session.commit()
 
     # ── Internal helpers ────────────────────────────────────────────

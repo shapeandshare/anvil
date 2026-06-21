@@ -139,6 +139,43 @@ async def test_real_reproducibility_after_second_accept(
 
 
 @pytest.mark.asyncio
+async def test_real_revert_creates_new_head_from_prior_version(
+    content_db: AsyncSession, content_dir: Path
+) -> None:
+    """FR-011/SC-009: revert freezes a new HEAD from a prior version's entries."""
+    ingestion, store, corpus, source = await _build(content_db, content_dir)
+    corpus_id, source_id, corpus_slug = corpus.id, source.id, corpus.slug
+
+    from anvil.services.content.version_ref import VersionRef
+
+    ref1 = await ingestion.open_session(corpus_id, source_id)
+    await ingestion.stage(ref1.session_id, "a.txt", _stream(b"alpha"))
+    r1 = await ingestion.accept(ref1.session_id)
+    v1 = VersionRef(
+        manifest_digest=r1.manifest_digest,
+        version_id=r1.version_id,
+        version_number=r1.version_number,
+        label=None,
+    )
+
+    ref2 = await ingestion.open_session(corpus_id, source_id)
+    await ingestion.stage(ref2.session_id, "b.txt", _stream(b"beta"))
+    await ingestion.accept(ref2.session_id)
+
+    await store.revert(corpus_slug, v1)
+
+    versions = await store._version_repo.list_by_corpus(corpus_id)
+    assert len(versions) == 3, "revert must record a new version, not mutate history"
+
+    reverted = await content_db.get(type(corpus), corpus_id)
+    head_entries = await store._version_repo.get_entries(reverted.current_version_id)
+    assert {e.path for e in head_entries} == {"a.txt"}
+
+    m1 = await store.resolve(v1)
+    assert {e.path for e in m1.entries} == {"a.txt"}
+
+
+@pytest.mark.asyncio
 async def test_real_validation_rejects_binary(
     content_db: AsyncSession, content_dir: Path
 ) -> None:

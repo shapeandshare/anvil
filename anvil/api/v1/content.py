@@ -825,48 +825,18 @@ async def revert_corpus(
             detail="Target version does not belong to this corpus",
         )
 
-    # Create a new version that is a copy of the target
-    existing = await workbench.content_version_repo.list_by_corpus(id)
-    next_version = max((v.version_number for v in existing), default=0) + 1
-
-    from ...db.models.content_entry import ContentEntry
-    from ...db.models.content_version import ContentVersion
-
-    new_version = ContentVersion(
-        corpus_id=id,
-        version_number=next_version,
-        manifest_digest=target.manifest_digest,
-        label=f"revert-to-v{target.version_number}",
-        note=f"Reverted from version {target.version_number}",
-        entry_count=target.entry_count,
-        total_bytes=target.total_bytes,
-    )
-    new_version = await workbench.content_version_repo.add(new_version)
-
-    # Copy entries
-    target_entries = await workbench.content_version_repo.get_entries(
-        body.to_version_id
-    )
-    for te in target_entries:
-        ce = ContentEntry(
-            version_id=new_version.id,
-            path=te.path,
-            content_hash=te.content_hash,
-            size_bytes=te.size_bytes,
-        )
-        await workbench.content_version_repo.add_entry(ce)
-
-    await workbench.content_corpus_repo.set_current_version(id, new_version.id)
-
-    new_version_id = new_version.id
-    await workbench.session.commit()
+    target_version_number = target.version_number
+    try:
+        ref = await workbench.content_corpora.revert(id, body.to_version_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     return {
         "data": {
             "status": "reverted",
-            "new_version_id": new_version_id,
-            "version_number": next_version,
-            "reverted_to_version": body.to_version_id,
+            "new_version_id": ref.version_id,
+            "version_number": ref.version_number,
+            "reverted_to_version": target_version_number,
         },
         "error": None,
     }
