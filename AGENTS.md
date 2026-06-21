@@ -1,6 +1,6 @@
 # anvil — Agent Guidelines
 
-**Last updated**: 2026-06-20 (sonarcloud-tooling + content-repository-016-mvp)
+**Last updated**: 2026-06-21 (sonarcloud-tooling + content-repository-016-mvp)
 
 ## Project Overview
 
@@ -307,6 +307,8 @@ SomeException
 - SQLite via async SQLAlchemy (`data/anvil-state.db`) — demo entities use `origin="bundled"` (opencode/crisp-rocket)
 - Python 3.11+ + FastAPI, async SQLAlchemy + aiosqlite, Alembic, Jinja2, MLflow (016-lakefs-content-repo)
 - SQLite (`data/anvil-state.db`) for metadata; content-addressed blobs on the filesystem via `LocalFileStore` (`data/content/`); LakeFS reserved for SaaS mode (016-lakefs-content-repo)
+- Python 3.11+ (existing, `requires-python = ">=3.11"`) + FastAPI, async SQLAlchemy, Pydantic v2, Jinja2, uvicorn, Alembic (all existing — zero new runtime dependencies) (feature/017-owasp-remediation)
+- SQLite via async SQLAlchemy (`data/anvil-state.db`); local filesystem via `LocalFileStore`; MLflow SQLite (`mlruns/mlflow.db`) (feature/017-owasp-remediation)
 
 ## Recent Changes
 - 002-directory-corpus-ingestion: Added Python 3.11+ + Existing project deps (FastAPI, SQLAlchemy, aiofiles) + `pathspec` (lightweight gitignore pattern matching, pure Python, no binary deps)
