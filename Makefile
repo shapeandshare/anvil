@@ -46,6 +46,9 @@ test-browser: ## Browser smoke loop: reset → up → playwright tests → teard
 	docker compose down -v; \
 	exit $$status
 
+setup-browser: ## Install Playwright Chromium for local browser smoke tests (one-time)
+	uv run playwright install chromium
+
 setup-hooks: ## Enable conventional commit enforcement hook
 	@echo "Configuring git hooks path to .githooks/..."
 	git config core.hooksPath .githooks
