@@ -52,14 +52,14 @@
     </div>
     <div class="corpus-form" style="display:flex;flex-direction:column;gap:var(--space-3);">
       <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);">
-        <input type="text" class="form-input" id="corpus-name" placeholder="Corpus name" style="flex:2;min-width:200px;">
-        <input type="text" class="form-input" id="corpus-slug" placeholder="slug (auto)" style="flex:1;min-width:140px;">
+        <input type="text" class="form-input" id="corpus-name" placeholder="Corpus name" style="flex:2;min-width:200px;" aria-label="Corpus Name">
+        <input type="text" class="form-input" id="corpus-slug" placeholder="slug (auto)" style="flex:1;min-width:140px;" aria-label="Corpus Slug">
       </div>
-      <input type="text" class="form-input" id="corpus-desc" placeholder="Description (optional)" style="width:100%;">
+      <input type="text" class="form-input" id="corpus-desc" placeholder="Description (optional)" style="width:100%;" aria-label="Corpus Desc">
       <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;">
         <label style="display:flex;align-items:center;gap:var(--space-1);font-size:var(--text-footnote);color:var(--text-secondary);">
           <span>Strategy:</span>
-          <select class="form-select" id="corpus-chunking" style="min-width:120px;">
+          <select class="form-select" id="corpus-chunking" style="min-width:120px;" aria-label="Corpus Chunking">
             <option value="windowed">windowed</option>
             <option value="file">file</option>
             <option value="line">line</option>
@@ -67,11 +67,11 @@
         </label>
         <label style="display:flex;align-items:center;gap:var(--space-1);font-size:var(--text-footnote);color:var(--text-secondary);">
           <span>Block size:</span>
-          <input type="number" class="form-input" id="corpus-block-size" value="16" min="4" max="1024" style="width:80px;">
+          <input type="number" class="form-input" id="corpus-block-size" value="16" min="4" max="1024" style="width:80px;" aria-label="Corpus Block Size">
         </label>
         <label style="display:flex;align-items:center;gap:var(--space-1);font-size:var(--text-footnote);color:var(--text-secondary);">
           <span>Overlap:</span>
-          <input type="number" class="form-input" id="corpus-overlap" value="0.5" min="0" max="1" step="0.05" style="width:80px;">
+          <input type="number" class="form-input" id="corpus-overlap" value="0.5" min="0" max="1" step="0.05" style="width:80px;" aria-label="Corpus Overlap">
         </label>
       </div>
       <div style="display:flex;gap:var(--space-2);">
@@ -108,9 +108,9 @@
     </div>
     <div class="section-card__content">
       <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;">
-        <input type="text" class="form-input" id="source-name" placeholder="Source name" style="flex:1;min-width:180px;">
-        <input type="text" class="form-input" id="source-slug" placeholder="slug" style="flex:1;min-width:140px;">
-        <select class="form-select" id="source-kind" style="min-width:120px;">
+        <input type="text" class="form-input" id="source-name" placeholder="Source name" style="flex:1;min-width:180px;" aria-label="Source Name">
+        <input type="text" class="form-input" id="source-slug" placeholder="slug" style="flex:1;min-width:140px;" aria-label="Source Slug">
+        <select class="form-select" id="source-kind" style="min-width:120px;" aria-label="Source Kind">
           <option value="manual">manual</option>
           <option value="import">import</option>
           <option value="api">api</option>
@@ -130,10 +130,10 @@
     <div class="section-card__content">
       <p class="ds-flow-desc">Select a corpus and source, then upload files to stage content for ingestion.</p>
       <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;">
-        <select class="form-select" id="ingest-corpus" style="flex:1;min-width:180px;">
+        <select class="form-select" id="ingest-corpus" style="flex:1;min-width:180px;" aria-label="Ingest Corpus">
           <option value="">— select corpus —</option>
         </select>
-        <select class="form-select" id="ingest-source" style="flex:1;min-width:180px;">
+        <select class="form-select" id="ingest-source" style="flex:1;min-width:180px;" aria-label="Ingest Source">
           <option value="">— select source —</option>
         </select>
         <button type="button" class="btn btn-primary btn-sm" id="btn-open-session" onclick="content.openSession()">Open Session</button>
@@ -141,8 +141,8 @@
       <div id="session-info" style="margin-top:var(--space-2);"></div>
       <div id="stage-area" style="display:none;margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--separator);">
         <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;">
-          <input type="text" class="form-input" id="stage-path" placeholder="path/to/file.txt" style="flex:2;min-width:180px;">
-          <input type="file" class="form-input" id="stage-file" style="flex:1;min-width:140px;">
+          <input type="text" class="form-input" id="stage-path" placeholder="path/to/file.txt" style="flex:2;min-width:180px;" aria-label="Stage Path">
+          <input type="file" class="form-input" id="stage-file" style="flex:1;min-width:140px;" aria-label="Stage File">
           <button type="button" class="btn btn-primary btn-sm" id="btn-stage" onclick="content.stageFile()">Stage</button>
         </div>
         <div id="stage-status" class="ds-status-line" style="margin-top:var(--space-2);"></div>
@@ -162,7 +162,7 @@
     <div class="section-card__header">
       <span class="section-card__icon">&#128196;</span>
       <h2 class="section-card__title">Version Timeline</h2>
-      <select class="form-select" id="timeline-corpus" style="min-width:180px;margin-left:auto;" onchange="content.loadTimeline()">
+      <select class="form-select" id="timeline-corpus" style="min-width:180px;margin-left:auto;" onchange="content.loadTimeline()" aria-label="Timeline Corpus">
         <option value="">— select corpus —</option>
       </select>
     </div>
