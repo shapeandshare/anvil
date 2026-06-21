@@ -39,6 +39,8 @@ Non-obvious constraints, gaps, and conflicts discovered during agent sessions. E
 - [[Discoveries/global-particle-speed-via-sim-step-cadence|Global Particle Speed via Sim-Step Cadence Gating]] — Slowing *all* particle effects uniformly (idle + active) can't be done by scaling the `timestamp` alone, because per-frame position integration is delta-less. The fix is a single `SPEED_SCALE` knob that gates the simulation step on accumulated wall-clock time and feeds effects a scaled `simClock`; skipped frames don't clear the canvas, so there's no flicker.
 - [[Discoveries/multi-layer-radial-gradient-rain-failure|Multi-Layer Radial-Gradient Rain Effect Invisible on Pseudo-Elements]] — 40–49 `radial-gradient()` layers with soft edges on `.app-shell::before` produced no visible droplets, while the same pseudo-element renders a solid color fine. Probably a compositing limit or sub-pixel rendering issue.
 
+- [[Discoveries/sonarcloud-mcp-env-passthrough|SonarCloud MCP Docker Env Passthrough Bug]] — The `sonarcloud` MCP in `opencode.json` used Docker env passthrough (`-e VARNAME` without `=VALUE`), which failed because the vars weren't in the shell environment. Fixed by inlining the project constants matching `shared/sonar.mk`.
+
 ## Discoveries from this session
 
 - **Fake-based tests mask real integration bugs**: the original 61 US1 tests used an in-memory `FakeVersionedContentStore`, which passed instantly but hid ~16 real bugs (broken wiring, empty-version accept, ambiguous ORM relationships, unnamed migration constraints, greenlet expired-object crashes, missing commits). Three-layer testing (unit/fake, real store+service e2e, HTTP API) is now standard for the content repo.

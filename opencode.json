@@ -16,7 +16,7 @@
       "command": [
         "sh",
         "-c",
-        "export SONARQUBE_TOKEN=\"${SONARQUBE_TOKEN:-${SONAR_TOKEN:?SONAR_TOKEN or SONARQUBE_TOKEN must be set}}\" && exec docker run --init --pull=always -i --rm -e SONARQUBE_TOKEN -e SONARQUBE_ORG -e SONARQUBE_PROJECT_KEY mcp/sonarqube"
+        "export SONARQUBE_TOKEN=\"${SONARQUBE_TOKEN:-${SONAR_TOKEN:?SONAR_TOKEN or SONARQUBE_TOKEN must be set}}\" && exec docker run --init --pull=always -i --rm -e SONARQUBE_TOKEN -e SONARQUBE_ORG=shapeandshare -e SONARQUBE_PROJECT_KEY=shapeandshare_anvil mcp/sonarqube"
       ],
       "enabled": true
     }
