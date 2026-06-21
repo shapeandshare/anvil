@@ -1,30 +1,36 @@
+/* Copyright © 2026 Josh Burt
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 [data-skin="ash"] {
   --bg:             #0e0c0a;
   --surface:        #1a1612;
   --surface-2:      #241e18;
   --grouped-bg:     #0c0a08;
   --separator:      #3a3228;
-  --text:           #ece0d4;
-  --text-secondary: #cec0b0;
-  --text-tertiary:  #908070;
-  --text-bright:    #fff8ee;
+  --text:           #e0d8ce;
+  --text-secondary: #c0b5a8;
+  --text-tertiary:  #807568;
+  --text-bright:    #f0e8de;
 
-  --accent:         #e07840;
+  --accent:         #a09080;
   --accent-green:   #5cc48a;
   --accent-red:     #ff604a;
-  --accent-orange:  #e07840;
-  --accent-yellow:  #e0b05a;
+  --accent-orange:  #b08858;
+  --accent-yellow:  #b8a080;
   --accent-purple:  #b090d8;
   --accent-cyan:    #60bcc8;
 
   --glass-bg:       rgba(26, 22, 18, 0.85);
-  --glass-border:   rgba(224, 120, 64, 0.14);
+  --glass-border:   rgba(160, 144, 128, 0.14);
 
   --shadow-sm:      0 1px 2px rgba(0, 0, 0, 0.5);
   --shadow-md:      0 2px 10px rgba(0, 0, 0, 0.5);
   --shadow-lg:      0 8px 28px rgba(0, 0, 0, 0.6);
 
-  --ember: 0.6;
+  --ash: 0.3;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -34,66 +40,130 @@
   }
 }
 
+/* ── Ash haze rolling in from the top ── */
 [data-skin="ash"] .app-main::before {
   content: "";
   position: fixed;
-  inset: 0;
+  inset: 0 0 auto 0;
+  height: 55vh;
   pointer-events: none;
   z-index: 0;
-  background:
-    radial-gradient(
-      ellipse 60% 30% at 50% 85%,
-      rgba(224, 120, 64, calc(0.02 + var(--ember, 0.6) * 0.25)),
-      transparent 60%
-    ),
-    radial-gradient(
-      ellipse 40% 20% at 30% 70%,
-      rgba(224, 180, 90, calc(0.01 + var(--ember, 0.6) * 0.12)),
-      transparent 50%
-    );
-  transition: background var(--dur-slow) var(--ease);
+  opacity: calc(0.18 + var(--ash, 0.3) * 0.55);
+  background: linear-gradient(
+    180deg,
+    rgba(58, 50, 40, 0.55) 0%,
+    rgba(46, 40, 32, 0.22) 35%,
+    transparent 100%
+  );
+  transition: opacity var(--dur-slow) var(--ease);
 }
 
+/*
+ * Parallax soot field. Four depth bands share one element via the
+ * multi-background-position trick: a single `soot-fall` keyframe scrolls
+ * each background layer by its own tile height, so near bands fall faster
+ * than far bands over the same duration — producing genuine depth parallax.
+ * The four comment labels below mark which background entries belong to
+ * which band; their order MUST stay aligned with `background-size` and the
+ * `soot-fall` `to` position list.
+ */
 [data-skin="ash"] .app-main::after {
   content: "";
   position: fixed;
-  inset: 0;
+  inset: -10% -10% -10% -10%;
   pointer-events: none;
   z-index: 1;
-  opacity: calc(0.02 + var(--ember, 0.6) * 0.10);
+  opacity: calc(0.55 + var(--ash, 0.3) * 0.45);
   background-image:
-    radial-gradient(1.5px 1.5px at 20% 30%, rgba(224, 120, 64, 0.6)),
-    radial-gradient(1px 1px at 45% 55%, rgba(224, 120, 64, 0.4)),
-    radial-gradient(1.5px 1.5px at 70% 40%, rgba(224, 120, 64, 0.5)),
-    radial-gradient(1px 1px at 85% 65%, rgba(224, 180, 90, 0.3)),
-    radial-gradient(1.5px 1.5px at 10% 75%, rgba(224, 120, 64, 0.4)),
-    radial-gradient(1px 1px at 55% 20%, rgba(224, 180, 90, 0.3));
-  background-size: 300% 300%;
-  animation: ash-drift calc(35s - var(--ember, 0.6) * 25s) linear infinite;
+    /* NEAR — large, bright, sharp flecks (tile 300px) */
+    radial-gradient(3px   at 15% 20%, rgba(224, 210, 192, 0.90), transparent),
+    radial-gradient(2.5px at 64% 45%, rgba(232, 220, 202, 0.80), transparent),
+    radial-gradient(3.5px at 40% 74%, rgba(214, 198, 178, 0.85), transparent),
+    radial-gradient(2.5px at 88% 88%, rgba(226, 212, 194, 0.78), transparent),
+    /* MID — medium grey soot (tile 190px) */
+    radial-gradient(2px   at 25% 14%, rgba(178, 162, 142, 0.68), transparent),
+    radial-gradient(1.5px at 71% 34%, rgba(186, 170, 150, 0.58), transparent),
+    radial-gradient(2px   at 10% 55%, rgba(172, 156, 138, 0.62), transparent),
+    radial-gradient(1.5px at 50% 70%, rgba(182, 166, 146, 0.54), transparent),
+    radial-gradient(2px   at 85% 90%, rgba(176, 160, 140, 0.60), transparent),
+    /* FAR — small, dim specks (tile 110px) */
+    radial-gradient(1.5px at 20% 25%, rgba(138, 124, 108, 0.48), transparent),
+    radial-gradient(1px   at 60% 40%, rgba(146, 132, 116, 0.42), transparent),
+    radial-gradient(1.5px at 35% 64%, rgba(132, 118, 104, 0.46), transparent),
+    radial-gradient(1px   at 80% 80%, rgba(142, 128, 112, 0.40), transparent),
+    radial-gradient(1px   at 50% 10%, rgba(138, 124, 108, 0.44), transparent),
+    /* DUST — faintest grain in the deep background (tile 70px) */
+    radial-gradient(1px   at 28% 30%, rgba(108, 98, 86, 0.34), transparent),
+    radial-gradient(0.8px at 66% 18%, rgba(116, 104, 92, 0.30), transparent),
+    radial-gradient(1px   at 44% 72%, rgba(104, 94, 82, 0.32), transparent),
+    radial-gradient(0.8px at 82% 58%, rgba(112, 100, 88, 0.28), transparent),
+    radial-gradient(1px   at 12% 88%, rgba(108, 98, 86, 0.30), transparent);
+  background-size:
+    300px 300px, 300px 300px, 300px 300px, 300px 300px,
+    190px 190px, 190px 190px, 190px 190px, 190px 190px, 190px 190px,
+    110px 110px, 110px 110px, 110px 110px, 110px 110px, 110px 110px,
+    70px 70px, 70px 70px, 70px 70px, 70px 70px, 70px 70px;
+  background-repeat: repeat;
+  animation:
+    soot-fall calc(7s + (1 - var(--ash, 0.3)) * 13s) linear infinite,
+    soot-sway 11s ease-in-out infinite;
+  transition: opacity var(--dur-slow) var(--ease);
 }
 
-@keyframes ash-drift {
-  from { background-position: 0 0; }
-  to   { background-position: 100% 100%; }
+@keyframes soot-fall {
+  to {
+    background-position:
+      0 300px, 0 300px, 0 300px, 0 300px,
+      0 190px, 0 190px, 0 190px, 0 190px, 0 190px,
+      0 110px, 0 110px, 0 110px, 0 110px, 0 110px,
+      0 70px, 0 70px, 0 70px, 0 70px, 0 70px;
+  }
 }
 
-[data-skin="ash"][data-ash-state="smoke"] .app-main::before {
-  background:
-    radial-gradient(
-      ellipse 60% 30% at 50% 85%,
-      rgba(160, 140, 120, 0.20),
-      transparent 60%
-    );
+@keyframes soot-sway {
+  0%, 100% { transform: translateX(-12px); }
+  50%      { transform: translateX(12px); }
 }
 
-[data-skin="ash"][data-ash-state="smoke"] .app-main::after {
-  opacity: 0.20;
+/* ── Divergence: heavy ashfall — brighter, bigger, faster ── */
+[data-skin="ash"][data-ash-state="ashfall"] .app-main::before {
+  opacity: 0.8;
+  background: linear-gradient(
+    180deg,
+    rgba(40, 34, 26, 0.85) 0%,
+    rgba(64, 54, 44, 0.40) 35%,
+    transparent 100%
+  );
+}
+
+[data-skin="ash"][data-ash-state="ashfall"] .app-main::after {
+  opacity: 1;
   background-image:
-    radial-gradient(2px 2px at 20% 30%, rgba(160, 140, 120, 0.4)),
-    radial-gradient(2px 2px at 45% 55%, rgba(140, 120, 100, 0.3)),
-    radial-gradient(2px 2px at 70% 40%, rgba(160, 140, 120, 0.3));
+    radial-gradient(4px   at 15% 20%, rgba(238, 224, 206, 0.95), transparent),
+    radial-gradient(3.5px at 64% 45%, rgba(244, 232, 214, 0.88), transparent),
+    radial-gradient(4.5px at 40% 74%, rgba(228, 212, 192, 0.92), transparent),
+    radial-gradient(3.5px at 88% 88%, rgba(240, 226, 208, 0.85), transparent),
+    radial-gradient(3px   at 25% 14%, rgba(198, 182, 162, 0.78), transparent),
+    radial-gradient(2.5px at 71% 34%, rgba(206, 190, 170, 0.68), transparent),
+    radial-gradient(3px   at 10% 55%, rgba(192, 176, 156, 0.72), transparent),
+    radial-gradient(2.5px at 50% 70%, rgba(202, 186, 166, 0.64), transparent),
+    radial-gradient(3px   at 85% 90%, rgba(196, 180, 160, 0.70), transparent),
+    radial-gradient(2px   at 20% 25%, rgba(168, 152, 134, 0.58), transparent),
+    radial-gradient(1.5px at 60% 40%, rgba(176, 160, 142, 0.52), transparent),
+    radial-gradient(2px   at 35% 64%, rgba(162, 146, 130, 0.56), transparent),
+    radial-gradient(1.5px at 80% 80%, rgba(172, 156, 138, 0.50), transparent),
+    radial-gradient(1.5px at 50% 10%, rgba(168, 152, 134, 0.54), transparent),
+    radial-gradient(1.5px at 28% 30%, rgba(138, 124, 110, 0.44), transparent),
+    radial-gradient(1px   at 66% 18%, rgba(146, 132, 118, 0.40), transparent),
+    radial-gradient(1.5px at 44% 72%, rgba(134, 120, 106, 0.42), transparent),
+    radial-gradient(1px   at 82% 58%, rgba(142, 128, 114, 0.38), transparent),
+    radial-gradient(1.5px at 12% 88%, rgba(138, 124, 110, 0.40), transparent);
+  animation:
+    soot-fall 4s linear infinite,
+    soot-sway 7s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
   [data-skin="ash"] .app-main::after { display: none; }
+  [data-skin="ash"] .app-main::before { display: none; }
 }

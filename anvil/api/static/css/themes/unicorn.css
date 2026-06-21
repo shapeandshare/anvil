@@ -1,3 +1,9 @@
+/* Copyright © 2026 Josh Burt
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 [data-skin="unicorn"] {
   --bg:             #0d0618;
   --surface:        #1a0f2e;
@@ -111,6 +117,43 @@
   }
 }
 
+/* ── Cloud Particles ── */
+.unicorn-cloud,
+.unicorn-ambient-cloud {
+  position: absolute;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.unicorn-cloud {
+  opacity: 0;
+  transition: opacity 1.2s ease-out;
+}
+
+.unicorn-cloud.visible {
+  opacity: calc(0.25 + var(--magic, 0.3) * 0.50);
+}
+
+.unicorn-cloud svg,
+.unicorn-ambient-cloud svg {
+  filter: drop-shadow(0 4px 12px rgba(200, 180, 255, 0.15));
+  transition: filter var(--dur-slow) var(--ease);
+}
+
+/* ── Ambient Overlay — always-on backdrop layer ── */
+.unicorn-ambient {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+  overflow: hidden;
+}
+
+@keyframes unicorn-cloud-fade {
+  0%   { opacity: 0; }
+  100% { opacity: calc(0.25 + var(--magic, 0.3) * 0.50); }
+}
+
 /* Sparkle field — subtle star overlay driven by --twinkle */
 [data-skin="unicorn"] .app-main::before {
   content: "";
@@ -214,7 +257,9 @@
   [data-skin="unicorn"] .app-main::after,
   [data-skin="unicorn"] .unicorn-overlay,
   [data-skin="unicorn"] .unicorn-floater,
-  [data-skin="unicorn"] .unicorn-rainbow {
+  [data-skin="unicorn"] .unicorn-rainbow,
+  [data-skin="unicorn"] .unicorn-cloud,
+  [data-skin="unicorn"] .unicorn-ambient {
     display: none;
   }
 }

@@ -1,3 +1,9 @@
+/* Copyright © 2026 Josh Burt
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 [data-skin="inkwash"] {
   --bg:             #f4f1ea;
   --surface:        #fffdf8;
@@ -22,6 +28,7 @@
 
   --clarity: 0.4;
   --bleed: 0.6;
+  --rain: 0;
 }
 
 [data-skin="inkwash"][data-theme="dark"] {
@@ -49,6 +56,28 @@
     animation: none !important;
     transition: none !important;
   }
+}
+
+[data-skin="inkwash"] .app-shell::before {
+  display: block;
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+  background-image:
+    radial-gradient(5px 10px at 20% 20%, rgba(31,28,23,0.8), transparent),
+    radial-gradient(4px 8px at 50% 30%, rgba(31,28,23,0.7), transparent),
+    radial-gradient(6px 12px at 80% 50%, rgba(31,28,23,0.9), transparent),
+    radial-gradient(3px 6px at 30% 70%, rgba(31,28,23,0.6), transparent),
+    radial-gradient(5px 10px at 70% 80%, rgba(31,28,23,0.8), transparent);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+@keyframes ink-rain-fall {
+  from { background-position: 0 0; }
+  to   { background-position: 0 -240px; }
 }
 
 [data-skin="inkwash"] .app-main::after {
