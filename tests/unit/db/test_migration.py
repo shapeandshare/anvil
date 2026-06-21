@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Tests for MigrationService."""
 
 
@@ -8,7 +13,6 @@ import pytest
 
 from anvil.db.migration import MigrationService
 from anvil.db.migration_error import MigrationError
-
 
 # ------------------------------------------------------------------
 # Fixtures
@@ -24,16 +28,17 @@ def mock_alembic_cfg():
 
 
 @pytest.fixture
-def svc(mock_alembic_cfg):
+def svc(mock_alembic_cfg, tmp_path):
     """Build a MigrationService with a mocked Alembic config."""
+    db_path = tmp_path / "state.db"
     with patch("anvil.db.migration.AlembicConfig", return_value=mock_alembic_cfg):
         with patch("anvil.db.migration.get_config") as mock_get_config:
             mock_get_config.return_value = {
-                "state_db_path": "/tmp/test-anvil.db",
+                "state_db_path": str(db_path),
                 "db_auto_migrate": True,
             }
             service = MigrationService(
-                db_url="sqlite+aiosqlite:////tmp/test-anvil.db",
+                db_url=f"sqlite+aiosqlite:///{db_path}",
                 alembic_ini_path="/fake/alembic.ini",
             )
             yield service
@@ -47,8 +52,9 @@ def svc(mock_alembic_cfg):
 class TestInit:
     """Verify MigrationService construction."""
 
-    def test_uses_provided_db_url(self, svc):
-        assert svc._db_url == "sqlite+aiosqlite:////tmp/test-anvil.db"
+    def test_uses_provided_db_url(self, svc, tmp_path):
+        db_path = tmp_path / "state.db"
+        assert svc._db_url == f"sqlite+aiosqlite:///{db_path}"
 
     @patch("anvil.db.migration.AlembicConfig")
     @patch("anvil.db.migration.get_config")
@@ -62,14 +68,17 @@ class TestInit:
         service = MigrationService()
         assert "sqlite+aiosqlite:////var/anvil/anvil-state.db" == service._db_url
 
-    def test_build_config_sets_sqlalchemy_url_and_script_location(self, svc, mock_alembic_cfg):
+    def test_build_config_sets_sqlalchemy_url_and_script_location(
+        self, svc, mock_alembic_cfg, tmp_path
+    ):
+        db_path = tmp_path / "state.db"
         # _build_config is called once during __init__ (2 calls: url + script_location)
         # and again here (2 more calls) = 4 total
         svc._build_config("/fake/alembic.ini")
         assert mock_alembic_cfg.set_main_option.call_count == 4
         mock_alembic_cfg.set_main_option.assert_any_call(
             "sqlalchemy.url",
-            "sqlite+aiosqlite:////tmp/test-anvil.db",
+            f"sqlite+aiosqlite:///{db_path}",
         )
 
     def test_ensure_db_dir_creates_parent(self, svc, tmp_path: Path):
@@ -135,7 +144,9 @@ class TestVerifySchema:
         svc: MigrationService,
     ):
         mock_current.return_value = "abc123def"
-        mock_script_dir_cls.from_config.return_value.get_current_head.return_value = "abc123def"
+        mock_script_dir_cls.from_config.return_value.get_current_head.return_value = (
+            "abc123def"
+        )
         await svc.verify_schema()  # should not raise
 
     @patch("alembic.script.ScriptDirectory")
@@ -147,7 +158,9 @@ class TestVerifySchema:
         svc: MigrationService,
     ):
         mock_current.return_value = "xyz789abc"
-        mock_script_dir_cls.from_config.return_value.get_current_head.return_value = "abc123def"
+        mock_script_dir_cls.from_config.return_value.get_current_head.return_value = (
+            "abc123def"
+        )
         with pytest.raises(MigrationError, match="AHEAD"):
             await svc.verify_schema()
 
@@ -162,7 +175,9 @@ class TestVerifySchema:
         # DB is behind: current_rev exists, head_rev exists, but current is NOT
         # an ancestor of head (i.e. get_revision(current) returns None = unknown revision)
         mock_current.return_value = "abc123def"
-        mock_script_dir_cls.from_config.return_value.get_current_head.return_value = "xyz789abc"
+        mock_script_dir_cls.from_config.return_value.get_current_head.return_value = (
+            "xyz789abc"
+        )
         mock_script_dir_cls.from_config.return_value.get_revision.side_effect = (
             lambda r: None  # current rev is not known to script = behind
         )
@@ -200,7 +215,10 @@ class TestHistory:
         rev2.down_revision = "abc123"
         rev2.doc = "Add tables"
 
-        mock_script_dir_cls.from_config.return_value.walk_revisions.return_value = [rev2, rev1]
+        mock_script_dir_cls.from_config.return_value.walk_revisions.return_value = [
+            rev2,
+            rev1,
+        ]
 
         result = await svc.history()
         assert len(result) == 2
@@ -267,7 +285,9 @@ class TestCreateRevision:
         mock_revision: MagicMock,
         svc: MigrationService,
     ):
-        mock_script_dir_cls.from_config.return_value.get_current_head.return_value = "new123rev"
+        mock_script_dir_cls.from_config.return_value.get_current_head.return_value = (
+            "new123rev"
+        )
         result = await svc.create_revision("add table")
         assert result == "new123rev"
         mock_revision.assert_called_once()

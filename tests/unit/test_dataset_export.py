@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Unit tests for DatasetExportService — TXT, CSV, JSONL export formats."""
 
 from __future__ import annotations
@@ -52,7 +57,11 @@ class TestExportService:
         store_root = tmp_path_factory.mktemp("store_root")
         store = LocalFileStore(str(store_root))
 
-        ds = Dataset(name="export-test", filename="export.txt", file_path=str(store_root / "data.txt"))
+        ds = Dataset(
+            name="export-test",
+            filename="export.txt",
+            file_path=str(store_root / "data.txt"),
+        )
         in_memory_session.add(ds)
         await in_memory_session.flush()
         await in_memory_session.refresh(ds)
@@ -73,7 +82,9 @@ class TestExportService:
         lines = [line async for line in svc.export_txt()]
         assert "hello export" in lines[0]
 
-    async def test_export_csv_includes_header(self, tmp_path_factory, in_memory_session):
+    async def test_export_csv_includes_header(
+        self, tmp_path_factory, in_memory_session
+    ):
         """export_csv should include a header row and data rows."""
         from anvil.db.models.dataset import Dataset
         from anvil.db.models.sample import Sample
@@ -82,7 +93,9 @@ class TestExportService:
         store_root = tmp_path_factory.mktemp("csv_root")
         store = LocalFileStore(str(store_root))
 
-        ds = Dataset(name="csv-test", filename="csv.txt", file_path=str(store_root / "csv.txt"))
+        ds = Dataset(
+            name="csv-test", filename="csv.txt", file_path=str(store_root / "csv.txt")
+        )
         in_memory_session.add(ds)
         await in_memory_session.flush()
         await in_memory_session.refresh(ds)
@@ -113,7 +126,11 @@ class TestExportService:
         store_root = tmp_path_factory.mktemp("jsonl_root")
         store = LocalFileStore(str(store_root))
 
-        ds = Dataset(name="jsonl-test", filename="jsonl.txt", file_path=str(store_root / "jsonl.txt"))
+        ds = Dataset(
+            name="jsonl-test",
+            filename="jsonl.txt",
+            file_path=str(store_root / "jsonl.txt"),
+        )
         in_memory_session.add(ds)
         await in_memory_session.flush()
         await in_memory_session.refresh(ds)
@@ -141,7 +158,9 @@ class TestExportService:
         from anvil.db.models.dataset import Dataset
 
         store_root = tmp_path_factory.mktemp("empty")
-        ds = Dataset(name="empty", filename="empty.txt", file_path=str(store_root / "empty.txt"))
+        ds = Dataset(
+            name="empty", filename="empty.txt", file_path=str(store_root / "empty.txt")
+        )
         in_memory_session.add(ds)
         await in_memory_session.commit()
 

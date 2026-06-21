@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Unit tests for the core training engine."""
 
 import math
@@ -58,7 +63,9 @@ def test_optimizer_state_callback():
     captured = []
 
     def cb(step, m, v, grads):
-        captured.append({"step": step, "m_len": len(m), "v_len": len(v), "grads_len": len(grads)})
+        captured.append(
+            {"step": step, "m_len": len(m), "v_len": len(v), "grads_len": len(grads)}
+        )
 
     from anvil.core.engine import train as t
 
@@ -157,7 +164,11 @@ def test_swiglu_forward():
         abs(p.grad) > 0
         for key in model.state_dict
         if "mlp" in key
-        for row in (model.state_dict[key] if isinstance(model.state_dict[key][0], list) else [model.state_dict[key]])
+        for row in (
+            model.state_dict[key]
+            if isinstance(model.state_dict[key][0], list)
+            else [model.state_dict[key]]
+        )
         for p in (row if isinstance(row, list) else [row])
     )
 

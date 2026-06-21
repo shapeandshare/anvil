@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Tests for tracking URI consistency across API modules.
 
 Phase 4 User Story 2 — Consistent tracking destination + CLI parity.

@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Tests for refactored TrainingService using compute backends.
 
 Tests the phase transitions:
@@ -7,7 +12,6 @@ Tests the phase transitions:
 4. Call backend.run()
 5. Call on_complete(result, config)
 """
-
 
 
 import asyncio
@@ -100,14 +104,16 @@ class TestStartTrainingPhases:
         """Phase 2-4: resolve_backend, get_backend, then run() on it."""
         fake_backend = FakeBackend(result=fake_result_local)
 
-        with patch(
-            "anvil.services.training.resolve_backend",
-            return_value={"engine": "stdlib", "device": "cpu", "backend": "local"},
-        ), patch(
-            "anvil.services.training.get_backend",
-            return_value=fake_backend,
-        ), patch.object(
-            svc, "_load_docs", return_value=["doc1", "doc2"]
+        with (
+            patch(
+                "anvil.services.training.resolve_backend",
+                return_value={"engine": "stdlib", "device": "cpu", "backend": "local"},
+            ),
+            patch(
+                "anvil.services.training.get_backend",
+                return_value=fake_backend,
+            ),
+            patch.object(svc, "_load_docs", return_value=["doc1", "doc2"]),
         ):
             on_complete = AsyncMock()
             run_id = await svc.start_training(
@@ -128,18 +134,22 @@ class TestStartTrainingPhases:
         assert result.uchars == list("xyz")
         assert result.backend == "local"
 
-    async def test_on_complete_receives_single_result_param(self, svc, fake_result_local):
+    async def test_on_complete_receives_single_result_param(
+        self, svc, fake_result_local
+    ):
         """Verify on_complete signature: (result, config) instead of (model, config, ...)."""
         fake_backend = FakeBackend(result=fake_result_local)
 
-        with patch(
-            "anvil.services.training.resolve_backend",
-            return_value={"engine": "stdlib", "device": "cpu", "backend": "local"},
-        ), patch(
-            "anvil.services.training.get_backend",
-            return_value=fake_backend,
-        ), patch.object(
-            svc, "_load_docs", return_value=["doc"]
+        with (
+            patch(
+                "anvil.services.training.resolve_backend",
+                return_value={"engine": "stdlib", "device": "cpu", "backend": "local"},
+            ),
+            patch(
+                "anvil.services.training.get_backend",
+                return_value=fake_backend,
+            ),
+            patch.object(svc, "_load_docs", return_value=["doc"]),
         ):
             captured: list = []
 
@@ -168,16 +178,21 @@ class TestStartTrainingPhases:
             collected.append(msg)
             return original_put(q, msg)
 
-        with patch(
-            "anvil.services.training.resolve_backend",
-            return_value={"engine": "stdlib", "device": "cpu", "backend": "local"},
-        ), patch(
-            "anvil.services.training.get_backend",
-            return_value=fake_backend,
-        ), patch.object(
-            svc, "_load_docs", return_value=["doc"]
-        ), patch.object(
-            asyncio.Queue, "put", _tracking_put,
+        with (
+            patch(
+                "anvil.services.training.resolve_backend",
+                return_value={"engine": "stdlib", "device": "cpu", "backend": "local"},
+            ),
+            patch(
+                "anvil.services.training.get_backend",
+                return_value=fake_backend,
+            ),
+            patch.object(svc, "_load_docs", return_value=["doc"]),
+            patch.object(
+                asyncio.Queue,
+                "put",
+                _tracking_put,
+            ),
         ):
             await svc.start_training(
                 {"compute_backend": "local-cpu", "num_steps": 2},
@@ -197,16 +212,21 @@ class TestStartTrainingPhases:
             collected.append(msg)
             return original_put(q, msg)
 
-        with patch(
-            "anvil.services.training.resolve_backend",
-            return_value={"engine": "torch", "device": "cuda", "backend": "modal"},
-        ), patch(
-            "anvil.services.training.get_backend",
-            return_value=fake_backend,
-        ), patch.object(
-            svc, "_load_docs", return_value=["doc"]
-        ), patch.object(
-            asyncio.Queue, "put", _tracking_put,
+        with (
+            patch(
+                "anvil.services.training.resolve_backend",
+                return_value={"engine": "torch", "device": "cuda", "backend": "modal"},
+            ),
+            patch(
+                "anvil.services.training.get_backend",
+                return_value=fake_backend,
+            ),
+            patch.object(svc, "_load_docs", return_value=["doc"]),
+            patch.object(
+                asyncio.Queue,
+                "put",
+                _tracking_put,
+            ),
         ):
             await svc.start_training(
                 {"compute_backend": "modal", "num_steps": 2},
@@ -220,7 +240,9 @@ class TestStartTrainingPhases:
         complete_idx = event_names.index("complete")
         assert submitted_idx < complete_idx
 
-    async def test_complete_event_contains_final_loss_and_samples(self, svc, fake_result_local):
+    async def test_complete_event_contains_final_loss_and_samples(
+        self, svc, fake_result_local
+    ):
         """The complete SSE event includes final_loss, samples, device."""
         fake_backend = FakeBackend(result=fake_result_local)
 
@@ -231,16 +253,21 @@ class TestStartTrainingPhases:
             collected.append(msg)
             return original_put(q, msg)
 
-        with patch(
-            "anvil.services.training.resolve_backend",
-            return_value={"engine": "stdlib", "device": "cpu", "backend": "local"},
-        ), patch(
-            "anvil.services.training.get_backend",
-            return_value=fake_backend,
-        ), patch.object(
-            svc, "_load_docs", return_value=["doc"]
-        ), patch.object(
-            asyncio.Queue, "put", _tracking_put,
+        with (
+            patch(
+                "anvil.services.training.resolve_backend",
+                return_value={"engine": "stdlib", "device": "cpu", "backend": "local"},
+            ),
+            patch(
+                "anvil.services.training.get_backend",
+                return_value=fake_backend,
+            ),
+            patch.object(svc, "_load_docs", return_value=["doc"]),
+            patch.object(
+                asyncio.Queue,
+                "put",
+                _tracking_put,
+            ),
         ):
             await svc.start_training(
                 {"compute_backend": "local-cpu", "num_steps": 2},
@@ -257,7 +284,9 @@ class TestStartTrainingPhases:
         assert complete_data["samples"] == ["gen_sample"]
         assert "device" in complete_data
 
-    async def test_local_backend_sets_device_in_complete_event(self, svc, fake_result_local):
+    async def test_local_backend_sets_device_in_complete_event(
+        self, svc, fake_result_local
+    ):
         """Complete event for local backend includes device info from resolved config."""
         fake_backend = FakeBackend(result=fake_result_local)
 
@@ -268,16 +297,21 @@ class TestStartTrainingPhases:
             collected.append(msg)
             return original_put(q, msg)
 
-        with patch(
-            "anvil.services.training.resolve_backend",
-            return_value={"engine": "stdlib", "device": "cpu", "backend": "local"},
-        ), patch(
-            "anvil.services.training.get_backend",
-            return_value=fake_backend,
-        ), patch.object(
-            svc, "_load_docs", return_value=["doc"]
-        ), patch.object(
-            asyncio.Queue, "put", _tracking_put,
+        with (
+            patch(
+                "anvil.services.training.resolve_backend",
+                return_value={"engine": "stdlib", "device": "cpu", "backend": "local"},
+            ),
+            patch(
+                "anvil.services.training.get_backend",
+                return_value=fake_backend,
+            ),
+            patch.object(svc, "_load_docs", return_value=["doc"]),
+            patch.object(
+                asyncio.Queue,
+                "put",
+                _tracking_put,
+            ),
         ):
             await svc.start_training(
                 {"compute_backend": "local-cpu", "num_steps": 2},
@@ -294,6 +328,7 @@ class TestStartTrainingPhases:
 
     async def test_stop_requested_still_works(self, svc):
         """StopRequested exception is still propagated from progress callback."""
+
         # The FakeBackend must call progress_callback for the stop check to trigger
         class StopSensitiveBackend(FakeBackend):
             async def run(self, docs, config, *, progress_callback, stop_check):
@@ -303,14 +338,16 @@ class TestStartTrainingPhases:
 
         backend = StopSensitiveBackend(result=FakeComputeResult(final_loss=0.5))
 
-        with patch(
-            "anvil.services.training.resolve_backend",
-            return_value={"engine": "stdlib", "device": "cpu", "backend": "local"},
-        ), patch(
-            "anvil.services.training.get_backend",
-            return_value=backend,
-        ), patch.object(
-            svc, "_load_docs", return_value=["doc"]
+        with (
+            patch(
+                "anvil.services.training.resolve_backend",
+                return_value={"engine": "stdlib", "device": "cpu", "backend": "local"},
+            ),
+            patch(
+                "anvil.services.training.get_backend",
+                return_value=backend,
+            ),
+            patch.object(svc, "_load_docs", return_value=["doc"]),
         ):
             run_id = svc.reserve_run()
             # Signal stop before starting
@@ -344,14 +381,16 @@ class TestBackendSelection:
         """Config with compute_backend='local-cpu' selects stdlib backend."""
         backend = FakeBackend()
 
-        with patch(
-            "anvil.services.training.resolve_backend",
-            return_value={"engine": "stdlib", "device": "cpu", "backend": "local"},
-        ), patch(
-            "anvil.services.training.get_backend",
-            return_value=backend,
-        ) as mock_get, patch.object(
-            svc, "_load_docs", return_value=["doc"]
+        with (
+            patch(
+                "anvil.services.training.resolve_backend",
+                return_value={"engine": "stdlib", "device": "cpu", "backend": "local"},
+            ),
+            patch(
+                "anvil.services.training.get_backend",
+                return_value=backend,
+            ) as mock_get,
+            patch.object(svc, "_load_docs", return_value=["doc"]),
         ):
             await svc.start_training(
                 {"compute_backend": "local-cpu", "num_steps": 1},
@@ -368,14 +407,16 @@ class TestBackendSelection:
         """Config with compute_backend='modal' selects modal backend."""
         backend = FakeBackend()
 
-        with patch(
-            "anvil.services.training.resolve_backend",
-            return_value={"engine": "torch", "device": "cuda", "backend": "modal"},
-        ), patch(
-            "anvil.services.training.get_backend",
-            return_value=backend,
-        ) as mock_get, patch.object(
-            svc, "_load_docs", return_value=["doc"]
+        with (
+            patch(
+                "anvil.services.training.resolve_backend",
+                return_value={"engine": "torch", "device": "cuda", "backend": "modal"},
+            ),
+            patch(
+                "anvil.services.training.get_backend",
+                return_value=backend,
+            ) as mock_get,
+            patch.object(svc, "_load_docs", return_value=["doc"]),
         ):
             await svc.start_training(
                 {"compute_backend": "modal", "num_steps": 1},

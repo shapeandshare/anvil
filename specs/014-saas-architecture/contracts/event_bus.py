@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Event bus abstraction for real-time training metrics.
 
 Decouples compute pods (producers) from web server SSE handlers
@@ -24,9 +29,7 @@ class EventBus(ABC):
         """
 
     @abstractmethod
-    async def subscribe(
-        self, channel: str
-    ) -> AsyncIterator[dict[str, Any]]:
+    async def subscribe(self, channel: str) -> AsyncIterator[dict[str, Any]]:
         """Subscribe to events on *channel*, yielding them as they arrive.
 
         The generator MUST clean up (unsubscribe) on exit or cancellation.

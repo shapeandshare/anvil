@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Unit tests for supervisor module — PID helpers and ProcessSupervisor.
 
 Tests write_pid, read_pid, kill_pid_file, and the full
@@ -20,7 +25,6 @@ from anvil.supervisor.supervisor import (
     read_pid,
     write_pid,
 )
-
 
 # --
 # PID file helpers
@@ -140,12 +144,17 @@ class TestProcessSupervisor:
     def test_start_creates_log_file(self):
         """start should create a log file for the process output."""
         import sys
+
         with tempfile.TemporaryDirectory() as tmp:
             sv = ProcessSupervisor(log_dir=tmp)
-            sv.start("logger", [
-                sys.executable, "-c",
-                "import sys; print('hello', flush=True); sys.stdout.flush()",
-            ])
+            sv.start(
+                "logger",
+                [
+                    sys.executable,
+                    "-c",
+                    "import sys; print('hello', flush=True); sys.stdout.flush()",
+                ],
+            )
             # Wait for the quick process to finish and flush output.
             proc = sv._processes.get("logger")
             if proc is not None:

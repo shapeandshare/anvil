@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Manifest value types and canonical-digest helper.
 
 A ``Manifest`` is a versioned snapshot of a corpus's entries at a point

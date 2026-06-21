@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """train5: Full Llama architecture using the multi-layer LlamaModel and Adam.
 Demonstrates training loop via train() and safetensors export via
 SafetensorsExportService."""

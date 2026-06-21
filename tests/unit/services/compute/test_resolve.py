@@ -1,10 +1,14 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Tests for backend resolution (D4 fallback logic)."""
 
 
 import pytest
 
 from anvil.services.compute.compute_backend_unavailable import ComputeBackendUnavailable
-
 
 # We test resolve_backend by patching its internal helpers
 

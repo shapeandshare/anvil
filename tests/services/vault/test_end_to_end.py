@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """End-to-end tests — compare legacy script output with new CLI."""
 
 from __future__ import annotations

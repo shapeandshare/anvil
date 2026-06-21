@@ -5,7 +5,7 @@ tags:
   - type/moc
   - domain/vault
 created: 2026-06-18T00:00:00.000Z
-updated: '2026-06-20T19:00:00.000Z'
+updated: '2026-06-21T04:07:13.000Z'
 aliases:
   - Discoveries
 ---
@@ -33,6 +33,11 @@ Non-obvious constraints, gaps, and conflicts discovered during agent sessions. E
 - [[Discoveries/release-workflow-git-identity-and-cz-commit|Release Workflow Git Identity and cz bump Commit Ownership]] — `cz bump` creates a commit, so git identity must be configured first and the bump-PR step must amend (not re-add) the commit `cz bump` already made.
 - [[Discoveries/css-grid-overlay-replacement-techniques|CSS Techniques for Replacing Rigid Grid Overlays in Behavioral Themes]] — Two techniques: multi-angle gradient came for irregular organic shapes (CSS-only, no SVG) and SVG data-URI hex grid for geometric wireframes. Covers tile math, URL encoding, and edge cases.
 - [[Discoveries/tab-switched-wizard-to-section-cards|Tab-Switched Wizard to Section Cards Pattern]] — Replacing tab-switched wizards with always-visible numbered `ds-flow-section` cards: template structure, step coloring convention, JS removal checklist, and why it works.
+- [[Discoveries/canvas-particle-amplitude-vs-frequency-perceived-speed|Canvas Particle: Amplitude vs Frequency Perceived-Speed Trap]] — Raising particle wander amplitude to "meander more" made them look *faster*; the oscillation was being accumulated into position as a velocity. Fixed by modeling motion as a slow base drift plus a bounded positional sway, decoupling path width (amplitude) from speed (frequency).
+- [[Discoveries/css-multi-background-position-parallax|CSS Multi-Background-Position Parallax]] — A single pseudo-element renders a multi-band parallax particle field by animating each `background-position` list entry by its own tile height in one keyframe. Also the dark-on-dark contrast trap (author soot *light*, contrast in per-dot alpha) and the unregistered-`particleConfig.type` silent fallback to CSS.
+- [[Discoveries/signal-gated-decorations-invisible-at-rest|Signal-Gated Decorations Are Invisible at Rest]] — A theme that builds its primary furniture inside the session-gated `mapping()` (DOM-injected sprites/gauges) shows almost nothing at rest; only the always-on CSS tier is visible before a run. The Vinyl tape-deck reels/VU meters are session-gated by design — evaluate themes both with and without an active run.
+- [[Discoveries/global-particle-speed-via-sim-step-cadence|Global Particle Speed via Sim-Step Cadence Gating]] — Slowing *all* particle effects uniformly (idle + active) can't be done by scaling the `timestamp` alone, because per-frame position integration is delta-less. The fix is a single `SPEED_SCALE` knob that gates the simulation step on accumulated wall-clock time and feeds effects a scaled `simClock`; skipped frames don't clear the canvas, so there's no flicker.
+- [[Discoveries/multi-layer-radial-gradient-rain-failure|Multi-Layer Radial-Gradient Rain Effect Invisible on Pseudo-Elements]] — 40–49 `radial-gradient()` layers with soft edges on `.app-shell::before` produced no visible droplets, while the same pseudo-element renders a solid color fine. Probably a compositing limit or sub-pixel rendering issue.
 
 ## Related MOCs
 

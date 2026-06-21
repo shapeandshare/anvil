@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Seed data for the approved-license catalog.
 
 Contains the initial broad OSI/Creative-Commons set that powers

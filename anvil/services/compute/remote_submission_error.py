@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Exception for remote job submission failures.
 
 Raised when a remote compute job cannot be submitted due to authentication,

@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Ingestion session reference value type.
 
 An ``IngestSessionRef`` identifies an active ingestion session within a

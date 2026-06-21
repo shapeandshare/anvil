@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """AuditEvent ORM model — hash-chained event log.
 
 Records every consequential lifecycle action in a verifiable,
@@ -60,7 +65,9 @@ class AuditEvent(Base, TimestampMixin):
     __tablename__ = "audit_events"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    sequence: Mapped[int] = mapped_column(Integer, unique=True, nullable=False, index=True)
+    sequence: Mapped[int] = mapped_column(
+        Integer, unique=True, nullable=False, index=True
+    )
     action_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     target_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     target_id: Mapped[str | None] = mapped_column(String(100), nullable=True)

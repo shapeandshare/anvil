@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Contract tests for VersionedContentStore guarantees VCS-1 and VCS-2.
 
 Tests two foundational contract guarantees (from
@@ -32,7 +37,6 @@ from anvil.services.content.staged_entry import StagedEntry
 from anvil.services.content.validation_report import ValidationReport
 from anvil.services.content.version_ref import VersionRef
 from anvil.services.content.versioned_content_store import VersionedContentStore
-
 
 # ── In-memory fake implementation ────────────────────────────────
 

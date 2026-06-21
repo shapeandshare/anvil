@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Dataset management endpoints for v1 API.
 
 Provides CRUD, import, export, curation, and cloning operations for training
@@ -189,7 +194,9 @@ async def create_dataset(
     """
     if not body.name.strip():
         raise HTTPException(status_code=422, detail="Dataset name must not be empty")
-    dataset = await workbench.datasets.create_dataset(body.name.strip(), body.description)
+    dataset = await workbench.datasets.create_dataset(
+        body.name.strip(), body.description
+    )
     return {"data": _serialize(dataset), "error": None}
 
 
@@ -220,7 +227,9 @@ async def update_dataset(
     HTTPException
         If the dataset is not found (404).
     """
-    d = await workbench.datasets.update_dataset(id, name=body.name, description=body.description)
+    d = await workbench.datasets.update_dataset(
+        id, name=body.name, description=body.description
+    )
     if d is None:
         raise HTTPException(status_code=404, detail="Dataset not found")
     return {"data": _serialize(d), "error": None}

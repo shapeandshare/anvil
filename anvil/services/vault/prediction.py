@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Link prediction ensemble for vault graph health report.
 
 Ranks missing reciprocal links by a weighted ensemble of structural
@@ -104,7 +109,7 @@ def compute_tfidf(
             stem_text[stem] = ""
             continue
         fm_match = re.match(r"^---\s*\n.*?\n---\s*\n", content, re.DOTALL)
-        body = content[fm_match.end():] if fm_match else content
+        body = content[fm_match.end() :] if fm_match else content
         stem_text[stem] = body.strip()
 
     if not stem_text:
@@ -288,7 +293,7 @@ def save_state(state_root: Path, state: dict[str, Any]) -> None:
 
 def filter_by_state(
     scored: list[ScoredPair],
-state: dict[str, Any] | None = None,
+    state: dict[str, Any] | None = None,
     current_scores: dict[tuple[str, str], float] | None = None,
 ) -> list[ScoredPair]:
     """Filter scored pairs against persisted state.
@@ -460,8 +465,7 @@ def apply_fix(
                 if lines[i].strip().startswith("related:") and not inserted:
                     i += 1
                     while i < len(lines) and (
-                        lines[i].strip() == ""
-                        or lines[i].startswith(("  ", "- "))
+                        lines[i].strip() == "" or lines[i].startswith(("  ", "- "))
                     ):
                         if lines[i].strip():
                             if not inserted:

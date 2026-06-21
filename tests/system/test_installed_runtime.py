@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """System tests for anvil pip-installed runtime.
 
 These tests run against a running container deployed via docker compose.
@@ -11,7 +16,6 @@ import re
 
 import httpx
 import pytest
-
 from conftest import compose_exec
 
 # =============================================================================
@@ -80,9 +84,9 @@ class TestPageAssets:
         assert urls, f"No /static/... references found on page {path}"
         for url in set(urls):
             asset_resp = client.get(url)
-            assert asset_resp.status_code == 200, (
-                f"Asset {url} referenced on {path} returned {asset_resp.status_code}"
-            )
+            assert (
+                asset_resp.status_code == 200
+            ), f"Asset {url} referenced on {path} returned {asset_resp.status_code}"
 
 
 class TestDemoContent:
@@ -114,9 +118,9 @@ class TestDatabaseCli:
         assert result.returncode == 0, f"anvil-db current failed:\n{result.stderr}"
         # After first-run migrations, this should NOT be <base>
         assert result.stdout.strip(), "anvil-db current returned empty revision"
-        assert result.stdout.strip() != "<base>", (
-            "Database is at base revision — migrations may not have run"
-        )
+        assert (
+            result.stdout.strip() != "<base>"
+        ), "Database is at base revision — migrations may not have run"
 
 
 class TestCorpusCli:
@@ -125,9 +129,9 @@ class TestCorpusCli:
     def test_anvil_corpus_list(self) -> None:
         result = compose_exec("anvil-corpus list")
         assert result.returncode == 0, f"anvil-corpus list failed:\n{result.stderr}"
-        assert "Demo" in result.stdout or len(result.stdout.strip()) > 0, (
-            "anvil-corpus list returned no output"
-        )
+        assert (
+            "Demo" in result.stdout or len(result.stdout.strip()) > 0
+        ), "anvil-corpus list returned no output"
 
 
 class TestBootstrapCli:
@@ -135,12 +139,12 @@ class TestBootstrapCli:
 
     def test_bootstrap_dry_run_finds_demo(self) -> None:
         result = compose_exec("anvil-bootstrap-datasets --dry-run")
-        assert result.returncode == 0, (
-            f"anvil-bootstrap-datasets --dry-run failed:\n{result.stderr}"
-        )
-        assert "Would create" in result.stdout, (
-            f"Dry-run output missing 'Would create'. Got:\n{result.stdout}"
-        )
+        assert (
+            result.returncode == 0
+        ), f"anvil-bootstrap-datasets --dry-run failed:\n{result.stderr}"
+        assert (
+            "Would create" in result.stdout
+        ), f"Dry-run output missing 'Would create'. Got:\n{result.stdout}"
 
 
 class TestTrainCli:

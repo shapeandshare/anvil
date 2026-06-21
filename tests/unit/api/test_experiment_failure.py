@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 import asyncio
 from unittest.mock import AsyncMock, patch
 
@@ -113,7 +118,9 @@ async def test_training_exception_triggers_fail_run(
             assert len(_fake_tracking._finish_run_calls) == 0
 
             assert _fake_tracking._client is not None
-            assert _fake_tracking._client.terminated.get(data["mlflow_run_id"]) == "FAILED"
+            assert (
+                _fake_tracking._client.terminated.get(data["mlflow_run_id"]) == "FAILED"
+            )
     finally:
         training_module.tracking_svc = orig_tracking_svc
         training_module.svc.start_training = orig_start_training
@@ -178,11 +185,17 @@ async def test_download_artifact_not_found(client: AsyncClient):
         return None
 
     with (
-        patch.object(TrackingService, "get_experiment", side_effect=_fake_get_experiment),
         patch.object(
-            TrackingService, "get_safetensors_artifacts", return_value={
-                "available": False, "files": [], "error": None,
-            }
+            TrackingService, "get_experiment", side_effect=_fake_get_experiment
+        ),
+        patch.object(
+            TrackingService,
+            "get_safetensors_artifacts",
+            return_value={
+                "available": False,
+                "files": [],
+                "error": None,
+            },
         ),
     ):
         response = await client.get(
@@ -212,7 +225,9 @@ async def test_list_artifacts_run_id_mismatch(client: AsyncClient):
             }
         return None
 
-    with patch.object(TrackingService, "get_experiment", side_effect=_fake_get_experiment):
+    with patch.object(
+        TrackingService, "get_experiment", side_effect=_fake_get_experiment
+    ):
         response = await client.get(
             f"/v1/experiments/{exp_id}/runs/wrong_run_id/artifacts"
         )

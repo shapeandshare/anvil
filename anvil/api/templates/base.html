@@ -1,3 +1,10 @@
+<!--
+  ~ Copyright © 2026 Josh Burt
+  ~
+  ~ This source code is licensed under the MIT license found in the
+  ~ LICENSE file in the root directory of this source tree.
+-->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,13 +19,14 @@
 <link rel="stylesheet" href="/static/css/components.css">
 <link rel="stylesheet" href="/static/css/code.css">
 <script>
+window.ANVIL_VERSION = '{{ version }}';
 (function () {
   var raw = null;
   var parsed = null;
   var themeId = 'default';
   var mode = 'dark';
   var root = document.documentElement;
-  var link;
+  var link, v;
   try { raw = localStorage.getItem('theme'); } catch (e) { raw = null; }
   if (raw === 'light' || raw === 'dark') {
     mode = raw;
@@ -34,10 +42,11 @@
   root.setAttribute('data-skin', themeId);
   root.setAttribute('data-theme', mode);
   if (themeId !== 'default') {
+    v = window.ANVIL_VERSION ? '?v=' + window.ANVIL_VERSION : '';
     link = document.createElement('link');
     link.rel = 'stylesheet';
     link.id = 'theme-layer-css';
-    link.href = '/static/css/themes/' + themeId + '.css';
+    link.href = '/static/css/themes/' + themeId + '.css' + v;
     document.head.appendChild(link);
   }
 })();
@@ -106,15 +115,15 @@
 <script src="/static/js/themes/bloom.js"></script>
 <script src="/static/js/themes/tectonic.js"></script>
 <script src="/static/js/themes/glacier.js"></script>
+<script src="/static/js/themes/grid.js"></script>
 <script src="/static/js/themes/reactor.js"></script>
 <script src="/static/js/themes/hyperspace.js"></script>
 <script src="/static/js/themes/mainframe.js"></script>
-<script src="/static/js/themes/hologram.js"></script>
 <script src="/static/js/themes/stormfront.js"></script>
 <script src="/static/js/themes/emberdrift.js"></script>
 <script src="/static/js/themes/resonance.js"></script>
 <script src="/static/js/themes/inkwash.js"></script>
-<script src="/static/js/themes/stainedglass.js"></script>
+<script src="/static/js/themes/arcade.js"></script>
 <script src="/static/js/themes/ash.js"></script>
 <script src="/static/js/themes/deepsea.js"></script>
 <script src="/static/js/themes/echo.js"></script>

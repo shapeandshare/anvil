@@ -1,3 +1,9 @@
+/* Copyright © 2026 Josh Burt
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 [data-skin="static"] {
   --bg:             #0c0c0e;
   --surface:        #161618;
@@ -30,6 +36,70 @@
   }
 }
 
+[data-skin="static"] .app-main::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
+  opacity: calc(0.01 + var(--snow, 0) * 0.15);
+  background-image:
+    radial-gradient(2px 2px at 8%  22%, rgba(143, 196, 255, 0.9), transparent),
+    radial-gradient(1px 1px at 30% 65%, rgba(200, 224, 255, 0.8), transparent),
+    radial-gradient(1.5px 1.5px at 52% 38%, rgba(143, 196, 255, 0.7), transparent),
+    radial-gradient(2px 2px at 75% 80%, rgba(180, 215, 255, 0.9), transparent),
+    radial-gradient(1px 1px at 90% 12%, rgba(143, 196, 255, 0.6), transparent),
+    radial-gradient(1.5px 1.5px at 42% 88%, rgba(200, 224, 255, 0.8), transparent),
+    radial-gradient(1px 1px at 5%  52%, rgba(180, 215, 255, 0.7), transparent),
+    radial-gradient(1.5px 1.5px at 62% 5%, rgba(143, 196, 255, 0.6), transparent),
+    radial-gradient(2px 2px at 18% 45%, rgba(200, 224, 255, 0.85), transparent),
+    radial-gradient(1px 1px at 85% 35%, rgba(180, 215, 255, 0.6), transparent),
+    radial-gradient(1.5px 1.5px at 68% 55%, rgba(220, 240, 255, 0.7), transparent),
+    radial-gradient(1px 1px at 48% 15%, rgba(143, 196, 255, 0.65), transparent),
+    radial-gradient(2px 2px at 35% 42%, rgba(200, 224, 255, 0.8), transparent),
+    radial-gradient(1px 1px at 12% 78%, rgba(180, 215, 255, 0.6), transparent),
+    radial-gradient(1.5px 1.5px at 95% 62%, rgba(220, 240, 255, 0.75), transparent);
+  background-size: 300% 300%;
+  animation: static-sparks 6s ease-in-out infinite;
+  transition: opacity var(--dur-slow) var(--ease);
+}
+
+@keyframes static-sparks {
+  0%, 100% {
+    background-position: 0% 0%;
+    opacity: calc(0.01 + var(--snow, 0) * 0.12);
+  }
+  20% {
+    background-position: 40% 25%;
+    opacity: calc(0.03 + var(--snow, 0) * 0.18);
+  }
+  40% {
+    background-position: 80% 50%;
+    opacity: calc(0.01 + var(--snow, 0) * 0.08);
+  }
+  60% {
+    background-position: 50% 80%;
+    opacity: calc(0.04 + var(--snow, 0) * 0.20);
+  }
+  80% {
+    background-position: 20% 10%;
+    opacity: calc(0.02 + var(--snow, 0) * 0.14);
+  }
+}
+
+[data-skin="static"][data-static-state="snowstorm"] .app-main::before {
+  opacity: 0.25;
+  animation: static-storm-sparks 0.6s steps(4) infinite;
+}
+
+@keyframes static-storm-sparks {
+  0%   { background-position: 0% 0%;   opacity: 0.20; }
+  25%  { background-position: 60% 30%; opacity: 0.30; }
+  50%  { background-position: 25% 75%; opacity: 0.10; }
+  75%  { background-position: 80% 20%; opacity: 0.25; }
+  100% { background-position: 40% 60%; opacity: 0.15; }
+}
+
 [data-skin="static"] .app-main::after {
   content: "";
   position: fixed;
@@ -54,5 +124,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-skin="static"] .app-main::after { display: none; }
+  [data-skin="static"] .app-main::before { display: none; }
+  [data-skin="static"] .app-main::after  { display: none; }
 }

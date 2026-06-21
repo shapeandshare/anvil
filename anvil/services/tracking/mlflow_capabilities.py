@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """MLflow tracking capabilities detection — probes a tracking URI for features.
 
 Provides ``detect_capabilities()`` to determine whether the configured

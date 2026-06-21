@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """GraphHealthRunner — vault wikilink graph analysis orchestrator.
 
 Migrated from ``scripts/ci/graph_health/__init__.py``.
@@ -67,6 +72,7 @@ class GraphHealthRunner:
     def scan_all_notes(self) -> None:
         """Read all vault .md files and extract metadata + wikilinks."""
         import unicodedata
+
         import yaml  # type: ignore[import-untyped]
 
         all_md = sorted(self.vault_root.rglob("*.md"))
@@ -203,15 +209,9 @@ class GraphHealthRunner:
         -------
         GraphHealthReport
         """
-        from . import (
-            connectivity,
-            hygiene,
-            prediction as pred_mod,
-            scoring,
-            structural,
-            temporal,
-            topology,
-        )
+        from . import connectivity, hygiene
+        from . import prediction as pred_mod
+        from . import scoring, structural, temporal, topology
 
         report = GraphHealthReport()
         report.notes_scanned = len(self.notes)

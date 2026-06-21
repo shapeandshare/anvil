@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Directory walker and document chunker for training corpora.
 
 Provides the ``CorpusLoader`` class which walks a directory tree,
@@ -10,11 +15,11 @@ from pathlib import Path
 from pathspec import PathSpec
 from pathspec.patterns.gitwildmatch import GitWildMatchPattern
 
-from .chunking_strategy import ChunkingStrategy
 from ..chunking.base import Chunker
 from ..chunking.file_chunker import FileAsDocChunker
 from ..chunking.line_chunker import LineAsDocChunker
 from ..chunking.window_chunker import FixedSizeWindowChunker
+from .chunking_strategy import ChunkingStrategy
 from .corpus_load_result import CorpusLoadResult
 from .corpus_scan_result import CorpusScanResult
 

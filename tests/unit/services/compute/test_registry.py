@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Tests for compute backend registry."""
 
 
@@ -17,11 +22,12 @@ class _FakeBackend:
     async def run(self, docs, config, *, progress_callback, stop_check):
         from anvil.services.compute.compute_status import ComputeStatus
         from anvil.services.compute.result import ComputeResult
+
         return ComputeResult(status=ComputeStatus.COMPLETED)
 
 
 def test_register_and_get():
-    from anvil.services.compute.registry import register, get_backend
+    from anvil.services.compute.registry import get_backend, register
 
     register("test-fake", lambda: _FakeBackend("test-fake"))
     backend = get_backend("test-fake")
@@ -37,10 +43,12 @@ def test_get_unknown_raises():
 
 
 def test_available_backends():
-    from anvil.services.compute.registry import register, available_backends
+    from anvil.services.compute.registry import available_backends, register
 
     register("test-available", lambda: _FakeBackend("test-available", available=True))
-    register("test-unavailable", lambda: _FakeBackend("test-unavailable", available=False))
+    register(
+        "test-unavailable", lambda: _FakeBackend("test-unavailable", available=False)
+    )
 
     backends = available_backends()
     avail = {b["value"]: b["available"] for b in backends}
@@ -49,7 +57,7 @@ def test_available_backends():
 
 
 def test_available_backends_handles_factory_failure():
-    from anvil.services.compute.registry import register, available_backends
+    from anvil.services.compute.registry import available_backends, register
 
     def _failing():
         raise RuntimeError("fail")
@@ -62,16 +70,21 @@ def test_available_backends_handles_factory_failure():
 
 
 def test_get_passes_deps():
-    from anvil.services.compute.registry import register, get_backend
+    from anvil.services.compute.registry import get_backend, register
 
     class _DepFake:
         name = "dep-fake"
+
         def __init__(self, **kwargs):
             self.kwargs = kwargs
-        def is_available(self): return True
+
+        def is_available(self):
+            return True
+
         async def run(self, docs, config, *, progress_callback, stop_check):
             from anvil.services.compute.compute_status import ComputeStatus
             from anvil.services.compute.result import ComputeResult
+
             return ComputeResult(status=ComputeStatus.COMPLETED)
 
     register("dep-fake", lambda **kw: _DepFake(**kw))

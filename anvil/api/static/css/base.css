@@ -1,3 +1,9 @@
+/* Copyright © 2026 Josh Burt
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 /* ── Reset ── */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -48,6 +54,8 @@ a:hover { text-decoration: underline; }
   background: var(--surface);
   border: var(--border-width) solid var(--glass-border);
   border-radius: var(--radius-lg);
+  position: relative;
+  z-index: 1;
 }
 
 .nav-bar__tabs {
@@ -269,13 +277,19 @@ a:hover { text-decoration: underline; }
   isolation: isolate;
 }
 
-/* ── Ambient Background Particles ── */
+/* ── Ambient Background Particles (default theme only) ── */
+/* Other themes use the canvas particle system; default keeps these CSS sparks. */
 .ambient-particles {
   position: fixed;
   inset: 0;
   pointer-events: none;
   overflow: hidden;
   z-index: 0;
+  display: none;
+}
+
+[data-skin="default"] .ambient-particles {
+  display: block;
 }
 
 .ambient-p {

@@ -1,7 +1,11 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Test that no legacy status vocabulary remains in Python source files."""
 
 from pathlib import Path
-
 
 # Allow-listed files that use "completed" / "pending" as part of the new
 # ComputeStatus enum (see anvil/services/compute/result.py).

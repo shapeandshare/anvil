@@ -1,6 +1,6 @@
 # anvil — Agent Guidelines
 
-**Last updated**: 2026-06-20 (data-fundamentals-lesson + banner-cta-pattern + theme-gallery-expansion + ui-layout-overhaul + nine-new-themes + unicorn-theme + prism-vibrancy + unicorn-mascot-flying-sprites + content-repository-016-mvp)
+**Last updated**: 2026-06-20 (sonarcloud-tooling + content-repository-016-mvp)
 
 ## Project Overview
 
@@ -33,6 +33,13 @@ The design system is implemented via CSS custom properties in `anvil/api/static/
 | `make vault-audit-apply` | Run vault audit with safe auto-fixes |
 | `make vault-audit-diff` | Preview audit auto-fixes (no changes) |
 | `make vault-audit-fast` | Mechanical audit only (skip graph-health) |
+| `make sonar-scan` | Run SonarCloud analysis (`brew install sonar-scanner` + `SONAR_TOKEN` req.) |
+| `make sonar-scan-docker` | Run SonarCloud analysis via Docker (no local install) |
+| `make sonar-status` | Fetch quality gate status from SonarCloud API |
+| `make sonar-issues` | Fetch open bugs/vulnerabilities/code smells |
+| `make sonar-measures` | Fetch quality metrics (coverage, duplications, ratings) |
+| `make sonar-mcp` | Start SonarCloud MCP server for OpenCode/Claude integration (Docker) |
+| `make sonar-full` | Run tests with coverage + SonarCloud analysis |
 
 ### Project Structure
 

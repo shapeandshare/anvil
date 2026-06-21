@@ -1,9 +1,14 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Unit tests for LlamaModel.load and forward_introspect."""
 
 import json
 import tempfile
 
-from anvil.core.engine import LlamaModel, train, softmax
+from anvil.core.engine import LlamaModel, softmax, train
 
 
 def test_gpt_save_load_roundtrip():
@@ -122,9 +127,9 @@ def test_forward_introspect_attention_row_sums():
                 row = weights[li][hi][qi]
                 assert len(row) == qi + 1  # key positions (non-causal, full prefix)
                 row_sum = sum(row)
-                assert abs(row_sum - 1.0) < 1e-5, (
-                    f"Layer {li} head {hi} query {qi} sum={row_sum}"
-                )
+                assert (
+                    abs(row_sum - 1.0) < 1e-5
+                ), f"Layer {li} head {hi} query {qi} sum={row_sum}"
 
 
 def test_forward_introspect_logits_valid():

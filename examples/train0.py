@@ -1,5 +1,11 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """train0: Bigram count table — no neural net, no gradients."""
 import random
+
 random.seed(42)
 
 docs = [l.strip() for l in open("input.txt") if l.strip()]

@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Repository for the CurationOperation entity.
 
 Provides data access for ``CurationOperation`` persistence using the

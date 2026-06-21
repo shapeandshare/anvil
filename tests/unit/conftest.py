@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """pytest fixtures for unit tests — in-memory database sessions.
 
 Provides the ``in_memory_session`` fixture used by all repository and
@@ -12,11 +17,9 @@ from __future__ import annotations
 from collections.abc import AsyncGenerator
 
 import pytest
-from sqlalchemy.ext.asyncio import (
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
+from anvil.db.base import Base
 
 # Import all model modules so their tables register with Base.metadata.
 # Each sub-module must be explicitly imported (models/__init__.py is bare).
@@ -31,7 +34,6 @@ from anvil.db.models import (  # noqa: F401  # isort: skip
     sample,
     training_config,
 )
-from anvil.db.base import Base
 
 
 @pytest.fixture

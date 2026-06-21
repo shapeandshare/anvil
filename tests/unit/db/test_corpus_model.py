@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Tests for Corpus ORM model."""
 
 import pytest
@@ -10,14 +15,14 @@ class TestCorpusModel:
     def test_corpus_defaults(self):
         c = Corpus(
             name="test-corpus",
-            root_path="/tmp/test",
+            root_path="/test/corpus/root",
             chunking_strategy="windowed",
             chunk_overlap=0.5,
             file_count=0,
             document_count=0,
         )
         assert c.name == "test-corpus"
-        assert c.root_path == "/tmp/test"
+        assert c.root_path == "/test/corpus/root"
         assert c.chunking_strategy == "windowed"
         assert c.chunk_overlap == 0.5
         assert c.file_count == 0
@@ -29,7 +34,7 @@ class TestCorpusModel:
     def test_corpus_custom_values(self):
         c = Corpus(
             name="custom",
-            root_path="/tmp",
+            root_path="/test/corpus",
             chunking_strategy="line",
             chunk_overlap=0.0,
             include_patterns='["*.py"]',
@@ -39,8 +44,12 @@ class TestCorpusModel:
         assert c.include_patterns == '["*.py"]'
 
     def test_corpus_relationships(self):
-        c = Corpus(name="rel-test", root_path="/tmp",
-                    chunking_strategy="line", chunk_overlap=0.0)
+        c = Corpus(
+            name="rel-test",
+            root_path="/test/corpus",
+            chunking_strategy="line",
+            chunk_overlap=0.0,
+        )
         cf = CorpusFile(
             corpus=c,
             relative_path="src/main.py",

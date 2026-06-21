@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """ADR uniqueness checker: detects duplicate ADR-0NN identifiers.
 
 Enforces FR-011: every recorded architecture decision MUST have a unique
@@ -16,7 +21,6 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-
 # Match ADR-0NN-*.md files.
 _ADR_PATTERN = re.compile(r"(.+\.md)$")
 
@@ -29,7 +33,9 @@ class ADRIssue:
     message: str
 
 
-def _extract_adr_numbers(files: set[Path]) -> tuple[dict[str, list[Path]], list[ADRIssue]]:
+def _extract_adr_numbers(
+    files: set[Path],
+) -> tuple[dict[str, list[Path]], list[ADRIssue]]:
     """Extract ADR identifiers from a set of file paths.
 
     Parameters
@@ -84,9 +90,7 @@ def _extract_adr_numbers(files: set[Path]) -> tuple[dict[str, list[Path]], list[
     return numbers, issues
 
 
-def _find_duplicates(
-    numbers: dict[str, list[Path]]
-) -> list[ADRIssue]:
+def _find_duplicates(numbers: dict[str, list[Path]]) -> list[ADRIssue]:
     """Find duplicate ADR identifiers.
 
     Parameters
@@ -101,8 +105,7 @@ def _find_duplicates(
     issues: list[ADRIssue] = []
     for adr_id, files in numbers.items():
         if len(files) > 1:
-            files_str = ", ".join(str(f.relative_to(f.parents[2]))
-                                  for f in files)
+            files_str = ", ".join(str(f.relative_to(f.parents[2])) for f in files)
             issues.append(
                 ADRIssue(
                     str(files[0]),
@@ -138,12 +141,7 @@ def _validate_adrs(decisions_dir: Path) -> list[ADRIssue]:
 
 def main() -> None:
     """CLI entry point."""
-    decisions_dir = Path(
-        os.environ.get(
-            "ANVIL_DECISIONS_DIR",
-            "docs/vault/Decisions"
-        )
-    )
+    decisions_dir = Path(os.environ.get("ANVIL_DECISIONS_DIR", "docs/vault/Decisions"))
 
     issues = _validate_adrs(decisions_dir)
 

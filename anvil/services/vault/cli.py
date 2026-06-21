@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """CLI entry points for vault health subcommands.
 
 Provides the ``anvil-vault`` console script with subcommands for vault
@@ -27,7 +32,9 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command")
 
     # --- audit ---
-    audit_p = sub.add_parser("audit", help="Run full vault audit (mechanical + graph health)")
+    audit_p = sub.add_parser(
+        "audit", help="Run full vault audit (mechanical + graph health)"
+    )
     audit_p.add_argument(
         "--vault-dir",
         default="docs/vault",

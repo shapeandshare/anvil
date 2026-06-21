@@ -6,12 +6,12 @@ tags:
   - domain/ui
   - status/draft
 created: '2026-06-19'
-updated: '2026-06-19'
+updated: '2026-06-20'
 aliases:
   - Static CSS No Cache Busting
   - CSS Cache Busting Gap
 source: agent
-session: 2026-06-19-theme-picker-transparency-recheck
+session: 2026-06-20-hyperspace-theme-warp-effects
 summary: >-
   Static CSS/JS <link>/<script> tags in base.html have no version query string
   and StaticFiles is mounted with default caching, so shipped CSS fixes can
@@ -22,6 +22,7 @@ code-refs:
   - anvil/api/app.py
 related:
   - '[[Discoveries/playground-css-class-mismatch]]'
+status: reviewed
 ---
 All stylesheet and theme-layer asset references are version-less:
 
@@ -35,12 +36,15 @@ A CSS-only fix that is correct in source can appear to have no effect in the bro
 
 Concrete instance: the theme-picker transparency bug was fixed in commit `e68da70` (glass `--glass-bg` + `backdrop-filter` → solid `var(--surface)`), yet the transparent-panel symptom was reported again afterward. The source was already correct; the most probable cause was a stale cached `base.css`. See [[Sessions/2026-06-19-theme-picker-transparency-recheck]].
 
-## Remediation options (not yet applied)
+## Remediation (applied 2026-06-20)
 
-1. Append a cache-busting query string keyed on app version / build hash to every static asset href (e.g. `/static/css/base.css?v={{ app_version }}`), including the JS-built theme-layer link.
-2. Configure `StaticFiles` (or a middleware) to send short-lived / revalidating `Cache-Control` headers for CSS/JS during the current single-page-reload UX.
+**Option 1 was implemented** — version query parameter threaded into both the inline theme-loader script and the JS `ensureLayer()` function:
 
-Option 1 is the standard fix and the least surprising; it requires threading the version into the Jinja2 context and into the inline theme-loader script in `base.html`.
+- `anvil/api/templates/base.html` — Inline script now sets `window.ANVIL_VERSION = '{{ version }}'` on page load and appends `?v=` to the theme-layer `<link>` href.
+- `anvil/api/static/js/theme/theme-manager.js` — `ensureLayer()` now checks `window.ANVIL_VERSION` and appends it as a cache-busting query param when setting the CSS `<link>` href.
+- `base.css` already had `?v={{ version }}`; the gap was the dynamically loaded theme CSS.
+
+See [[Sessions/2026-06-20-hyperspace-theme-warp-effects]].
 
 ## References
 

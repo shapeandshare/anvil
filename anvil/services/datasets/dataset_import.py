@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Dataset import service — parses and imports text into datasets.
 
 Provides the ``DatasetImportService`` class for parsing text in various
@@ -185,7 +190,9 @@ class DatasetImportService:
                 s.length for s in samples
             )
             dataset.curation_version = (dataset.curation_version or 0) + 1
-            dataset.status = DatasetStatus.READY if after_count > 0 else DatasetStatus.EMPTY
+            dataset.status = (
+                DatasetStatus.READY if after_count > 0 else DatasetStatus.EMPTY
+            )
             await self._dataset_repo.update(dataset)
 
             preview = [
@@ -203,7 +210,9 @@ class DatasetImportService:
             )
         except Exception:
             await self._session.rollback()
-            dataset.status = DatasetStatus.READY if dataset.sample_count > 0 else DatasetStatus.EMPTY
+            dataset.status = (
+                DatasetStatus.READY if dataset.sample_count > 0 else DatasetStatus.EMPTY
+            )
             await self._dataset_repo.update(dataset)
             raise
 
@@ -313,7 +322,9 @@ class DatasetImportService:
                 s.length for s in samples
             )
             dataset.curation_version = (dataset.curation_version or 0) + 1
-            dataset.status = DatasetStatus.READY if after_count > 0 else DatasetStatus.EMPTY
+            dataset.status = (
+                DatasetStatus.READY if after_count > 0 else DatasetStatus.EMPTY
+            )
             await self._dataset_repo.update(dataset)
 
             preview = [
@@ -331,7 +342,9 @@ class DatasetImportService:
             )
         except Exception:
             await self._session.rollback()
-            dataset.status = DatasetStatus.READY if dataset.sample_count > 0 else DatasetStatus.EMPTY
+            dataset.status = (
+                DatasetStatus.READY if dataset.sample_count > 0 else DatasetStatus.EMPTY
+            )
             await self._dataset_repo.update(dataset)
             raise
 

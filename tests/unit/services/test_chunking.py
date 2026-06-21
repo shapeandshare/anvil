@@ -1,8 +1,13 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Tests for chunking strategies."""
 
+from anvil.services.chunking.file_chunker import FileAsDocChunker
 from anvil.services.chunking.line_chunker import LineAsDocChunker
 from anvil.services.chunking.window_chunker import FixedSizeWindowChunker
-from anvil.services.chunking.file_chunker import FileAsDocChunker
 
 
 class TestLineAsDocChunker:
@@ -51,6 +56,7 @@ class TestFixedSizeWindowChunker:
 
     def test_invalid_overlap_raises(self):
         import pytest
+
         with pytest.raises(ValueError):
             FixedSizeWindowChunker(block_size=4, overlap=1.0)
         with pytest.raises(ValueError):
@@ -58,6 +64,7 @@ class TestFixedSizeWindowChunker:
 
     def test_invalid_block_size_raises(self):
         import pytest
+
         with pytest.raises(ValueError):
             FixedSizeWindowChunker(block_size=0)
 

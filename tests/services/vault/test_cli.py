@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Tests for CLI — anvil-vault subcommands."""
 
 from __future__ import annotations
@@ -27,9 +32,7 @@ class TestCLIParser:
 
     def test_audit_flags(self) -> None:
         parser = build_parser()
-        args = parser.parse_args(
-            ["audit", "--apply", "--skip-graph-health"]
-        )
+        args = parser.parse_args(["audit", "--apply", "--skip-graph-health"])
         assert args.apply is True
         assert args.skip_graph_health is True
 

@@ -9,7 +9,7 @@ description = "Train and experiment with small LLMs from scratch"
 requires-python = ">=3.11"
 license = "MIT"
 authors = [
-    {name = "anvil contributors"},
+    {name = "Josh Burt", email = "josh@shapeandshare.com"},
 ]
 
 dependencies = [

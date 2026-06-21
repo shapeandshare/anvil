@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Inference service — connects educational widgets to real model data.
 
 Follows layer discipline: services consume repositories, routes call services.
@@ -247,9 +252,7 @@ class InferenceService:
                     self._default_id = mid
                     return mid
 
-        raise ValueError(
-            "No models available. Train or bootstrap a model first."
-        )
+        raise ValueError("No models available. Train or bootstrap a model first.")
 
     def tokenize(self, text: str, loaded: LoadedModel) -> dict[str, Any]:
         """Tokenise text and return token metadata.

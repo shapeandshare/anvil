@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """FastAPI web application factory.
 
 Creates and configures the FastAPI application instance with static file
@@ -131,7 +136,9 @@ async def lifespan(app: FastAPI):
     try:
         import threading
 
-        from ..services.inference.demo_model_provider import warmup_demo_via_system_pipeline
+        from ..services.inference.demo_model_provider import (
+            warmup_demo_via_system_pipeline,
+        )
 
         threading.Thread(
             target=warmup_demo_via_system_pipeline,

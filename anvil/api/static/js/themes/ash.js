@@ -1,3 +1,8 @@
+// Copyright © 2026 Josh Burt
+//
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
 (function () {
   'use strict';
 
@@ -17,33 +22,34 @@
       root.style.setProperty(name, value);
     }
 
-    setVar('--ember', '0.6');
+    setVar('--ash', '0.3');
 
     unsubs.push(bus.on('metrics', function (m) {
       if (!m || paused) return;
       if (typeof m.loss === 'number' && isFinite(m.loss)) {
-        setVar('--ember', clamp01(1 - m.loss / L0).toFixed(3));
+        // High loss = heavy soot fall
+        setVar('--ash', clamp01(m.loss / L0).toFixed(3));
       }
     }));
     unsubs.push(bus.on('divergence', function () {
-      setVar('--ember', '1');
-      root.setAttribute('data-ash-state', 'smoke');
+      setVar('--ash', '1');
+      root.setAttribute('data-ash-state', 'ashfall');
     }));
 
     return function teardown() {
       unsubs.forEach(function (u) { u(); });
       root.removeAttribute('data-ash-state');
-      root.style.removeProperty('--ember');
+      root.style.removeProperty('--ash');
     };
   }
 
   window.ThemeRegistry.register({
     id: 'ash',
     displayName: 'Ash',
-    previewHint: 'Loss as cooling embers',
+    previewHint: 'Loss as falling black soot — training gone wrong',
     modes: ['single'],
     cssLayer: '/static/css/themes/ash.css',
     mapping: ashMapping,
-    particleConfig: { type: 'ember' },
+    particleConfig: { type: 'css' },
   });
 })();

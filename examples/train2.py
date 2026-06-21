@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """train2: RMSNorm with learned weights — normalization and backprop through it.
 Uses Adam optimizer. Introduces rmsnorm() and a learned scale parameter rms_1."""
 
@@ -6,7 +11,7 @@ import random
 random.seed(42)
 
 from anvil.core.autograd import Value
-from anvil.core.engine import rmsnorm, softmax, linear, matrix
+from anvil.core.engine import linear, matrix, rmsnorm, softmax
 
 # --- data: next-character prediction on names dataset ---
 docs = [l.strip() for l in open("input.txt") if l.strip()]
@@ -67,10 +72,10 @@ for step in range(200):
         lr_t = lr * (1 - step / 200)
         for j, p in enumerate(params):
             m[j] = 0.85 * m[j] + (1 - 0.85) * p.grad
-            v[j] = 0.99 * v[j] + (1 - 0.99) * p.grad ** 2
+            v[j] = 0.99 * v[j] + (1 - 0.99) * p.grad**2
             m_hat = m[j] / (1 - 0.85 ** (step + 1))
             v_hat = v[j] / (1 - 0.99 ** (step + 1))
-            p.data -= lr_t * m_hat / (v_hat ** 0.5 + 1e-8)
+            p.data -= lr_t * m_hat / (v_hat**0.5 + 1e-8)
             p.grad = 0.0
 
     avg_loss = total_loss / len(X)

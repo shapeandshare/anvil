@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Unit tests for compute_manifest_digest canonical digest stability.
 
 Tests the four core properties of the manifest digest function:

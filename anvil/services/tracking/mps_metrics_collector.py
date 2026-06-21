@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """MPS metrics collector — Apple Silicon GPU utilisation and memory sampling.
 
 Provides the ``MPSMetricsCollector`` class for querying Apple Silicon GPU
