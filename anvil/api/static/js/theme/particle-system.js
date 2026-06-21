@@ -1116,7 +1116,7 @@ var i, q, tc, cx, cy, dx, dy;
   // Driven by --throughput (Reactor theme).
   registerEffect('energy', function (_cvs, _context, _params, env) {
     var BASE = 30, MAX = 150; var p = [], w = 0, h = 0, sig = 0, ip = env.paused;
-    var i, q, tc, cx, cy, x, y;
+    var i, q, tc, cx, cy, x, y, glow;
     function create() { var a = vrand() * 6.28; return { a: a, r: 10 + vrand() * Math.min(w, h) * 0.4, s: 0.1 + vrand() * 0.3, o: 0.2 + vrand() * 0.5, size: 1 + vrand() * 3, ph: vrand() * 6.28 }; }
     function init(width, height) { w = width; h = height; cx = w / 2; cy = h / 2; p = []; for (i = 0; i < BASE; i++) p.push(create()); }
     function resize(width, height) { w = width; h = height; cx = w / 2; cy = h / 2; }
