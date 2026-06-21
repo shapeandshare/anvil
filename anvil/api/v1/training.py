@@ -564,6 +564,16 @@ async def start_training(config: dict):
                 progress_callback_override=mlflow_progress_callback,
             )
         except Exception as exc:
+            # Notify the SSE client about the failure before cleaning up,
+            # so the stream doesn't hang with heartbeats forever.
+            q = svc.get_queue(run_id)
+            if q is not None:
+                await q.put(
+                    {
+                        "event": "error",
+                        "data": json.dumps({"message": str(exc)}),
+                    }
+                )
             await tracking_svc.fail_run(mlflow_run_id, reason=str(exc))
             if mlflow_run_id:
                 await tracking_svc.set_tag(mlflow_run_id, "anvil.status", "failed")
