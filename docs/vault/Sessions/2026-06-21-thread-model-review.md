@@ -1,5 +1,8 @@
 ---
 created: '2026-06-21T00:00:00.000Z'
+source: agent
+aliases:
+  - Thread Model Review — Full Codebase Scan
 tags:
   - type/session-log
   - domain/architecture
