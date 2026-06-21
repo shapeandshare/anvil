@@ -1,6 +1,6 @@
 # anvil — Agent Guidelines
 
-**Last updated**: 2026-06-20 (sonarcloud-tooling + content-repository-016-mvp)
+**Last updated**: 2026-06-21 (sonarcloud-tooling + content-repository-016-mvp)
 
 ## Project Overview
 
@@ -307,6 +307,8 @@ SomeException
 - SQLite via async SQLAlchemy (`data/anvil-state.db`) — demo entities use `origin="bundled"` (opencode/crisp-rocket)
 - Python 3.11+ + FastAPI, async SQLAlchemy + aiosqlite, Alembic, Jinja2, MLflow (016-lakefs-content-repo)
 - SQLite (`data/anvil-state.db`) for metadata; content-addressed blobs on the filesystem via `LocalFileStore` (`data/content/`); LakeFS reserved for SaaS mode (016-lakefs-content-repo)
+- Python 3.11+ + `pytest-playwright>=0.5,<1` (dev-only, added to `[project.optional-dependencies].dev`) (017-playwright-ui-smoke)
+- N/A — tests are behavioral; seeded test data is ephemeral (017-playwright-ui-smoke)
 
 ## Recent Changes
 - 002-directory-corpus-ingestion: Added Python 3.11+ + Existing project deps (FastAPI, SQLAlchemy, aiofiles) + `pathspec` (lightweight gitignore pattern matching, pure Python, no binary deps)
