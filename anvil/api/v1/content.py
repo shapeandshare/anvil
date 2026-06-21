@@ -54,7 +54,13 @@ router = APIRouter()
 # Module-level SSE event queue for injection lifecycle events.
 # Pushed to by IngestionService.accept() and consumed by the
 # ``/content/stream/injection`` SSE endpoint.
-_injection_queue: asyncio.Queue[dict[str, str]] = asyncio.Queue()
+_injection_queue: asyncio.Queue[dict[str, str]] = asyncio.Queue(maxsize=128)
+"""asyncio.Queue: SSE event queue for injection lifecycle events.
+
+Bounded at 128 entries to prevent unbounded memory growth when the SSE
+consumer is disconnected or slow.  When full, new events are silently
+dropped — injection events are low-frequency and loss-tolerant.
+"""
 
 
 def _slugify(name: str) -> str:
@@ -522,19 +528,23 @@ async def accept_session(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     # Push SSE event for the injection stream.
-    _injection_queue.put_nowait(
-        {
-            "event": "accepted",
-            "data": json.dumps(
-                {
-                    "session_id": id,
-                    "version_id": result.version_id,
-                    "version_number": result.version_number,
-                    "entry_count": result.entry_count,
-                }
-            ),
-        }
-    )
+    # Silently drop if the queue is full (consumer disconnected).
+    try:
+        _injection_queue.put_nowait(
+            {
+                "event": "accepted",
+                "data": json.dumps(
+                    {
+                        "session_id": id,
+                        "version_id": result.version_id,
+                        "version_number": result.version_number,
+                        "entry_count": result.entry_count,
+                    }
+                ),
+            }
+        )
+    except asyncio.QueueFull:
+        pass
 
     return {
         "data": AcceptOut(
