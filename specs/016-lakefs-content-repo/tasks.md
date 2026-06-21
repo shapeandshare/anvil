@@ -243,21 +243,21 @@ update live; screens pass the design-system + accessibility checks (T080b).
 
 ### Tests
 
-- [ ] T074 [P] [US5] Integration test library listing + version timeline diff in `tests/integration/content/test_library_timeline.py`.
-- [ ] T075 [P] [US5] Integration test lineage (sources + run refs) in `tests/integration/content/test_lineage.py`.
+- [X] T074 [P] [US5] Integration test library listing + version timeline diff in `tests/integration/content/test_library_timeline.py`.
+- [X] T075 [P] [US5] Integration test lineage (sources + run refs) in `tests/integration/content/test_lineage.py`.
 
 ### Implementation
 
-- [ ] T076 [US5] Implement `LineageService.lineage(version_id)` (join entries→sources, run_refs→runs) (FR-026/031).
-- [ ] T077 [US5] Implement version-timeline diff (entries added/removed vs prior version) in `ContentVersionRepository`/service (FR-028).
-- [ ] T078 [US5] Implement endpoints: GET `/content/corpora`, GET `/content/corpora/{id}/versions` (timeline), GET `/content/versions/{id}/lineage`, GET `/content/sessions` in `anvil/api/v1/content.py` (FR-027/028/029/031).
-- [ ] T079 [US5] Implement SSE injection-status stream `GET /content/stream/injection` (StreamingResponse + asyncio.Queue, mirror `training.py`) (FR-029).
-- [ ] T080 [P] [US5] Create the **content hub shell** `anvil/api/templates/archetypes/content_library.html` (extends `base.html`; renders the Corpus Library, Version Timeline w/ diff, and Lineage views, with mount points for the Composer/Import Console/Checkout Board views added in their phases). Follow the forge archetype.
-- [ ] T081 [US5] Add `/v1/content-page` route in `anvil/api/v1/pages.py` and a "Content" nav tab (with icon) in `anvil/api/templates/base.html`.
-- [ ] T082 [P] [US5] Wire the Injection Monitor live view to the SSE injection-status stream using the existing `SSESession` client (`anvil/api/static/js/sse.js`).
-- [ ] T080a [US5] Create `anvil/api/static/js/content.js` (+ `anvil/api/static/css/` additions if needed): client interactions/forms for create-corpus, register-source, open-session, stage/upload (multipart), validate, accept, freeze, tag, and revert; consume the `{data, error}` envelope and surface validation `problems`; use `SSESession` for live views. (Covers U-D.)
-- [ ] T082a [P] [US5] Implement the **Ensemble Composer** view (design-doc forge screen): entry/source selection, weight sliders, live mix distribution (token/byte) + chunking preview via the composition-preview SSE (T073a), and a "freeze composition" action calling the US4 endpoints (FR-018/019/020/022). (Covers U-A.)
-- [ ] T080b [US5] **Design-system & accessibility conformance** (Constitution Article VIII + `DESIGN.md`): all content forge screens MUST reference `tokens.css`/`components.css`/`archetypes.css`/`utilities.css` (no raw colors/spacing/type values), integrate the theme system (`data-skin`/`data-theme`), be responsive across breakpoints, meet WCAG AA contrast, and honor `prefers-reduced-motion` + `prefers-reduced-transparency`. Verify against `DESIGN.md`. **Execute via the `visual-engineering` category + `frontend-ui-ux` skill.** (Covers U-C.)
+- [X] T076 [US5] Implement `LineageService.lineage(version_id)` (join entries→sources, run_refs→runs) (FR-026/031).
+- [X] T077 [US5] Implement version-timeline diff (entries added/removed vs prior version) in `ContentVersionRepository`/service (FR-028).
+- [X] T078 [US5] Implement endpoints: GET `/content/corpora`, GET `/content/corpora/{id}/versions` (timeline), GET `/content/versions/{id}/lineage`, GET `/content/sessions` in `anvil/api/v1/content.py` (FR-027/028/029/031).
+- [X] T079 [US5] Implement SSE injection-status stream `GET /content/stream/injection` (StreamingResponse + asyncio.Queue, mirror `training.py`) (FR-029).
+- [X] T080 [P] [US5] Create the **content hub shell** `anvil/api/templates/archetypes/content_library.html` (extends `base.html`; renders the Corpus Library, Version Timeline w/ diff, and Lineage views, with mount points for the Composer/Import Console/Checkout Board views added in their phases). Follow the forge archetype.
+- [X] T081 [US5] Add `/v1/content-page` route in `anvil/api/v1/pages.py` and a "Content" nav tab (with icon) in `anvil/api/templates/base.html`.
+- [X] T082 [P] [US5] Wire the Injection Monitor live view to the SSE injection-status stream using the existing `SSESession` client (`anvil/api/static/js/sse.js`).
+- [X] T080a [US5] Create `anvil/api/static/js/content.js` (+ `anvil/api/static/css/` additions if needed): client interactions/forms for create-corpus, register-source, open-session, stage/upload (multipart), validate, accept, freeze, tag, and revert; consume the `{data, error}` envelope and surface validation `problems`; use `SSESession` for live views. (Covers U-D.)
+- [X] T082a [P] [US5] Implement the **Ensemble Composer** view (design-doc forge screen): entry/source selection, weight sliders, live mix distribution (token/byte) + chunking preview via the composition-preview SSE (T073a), and a "freeze composition" action calling the US4 endpoints (FR-018/019/020/022). (Covers U-A.)
+- [X] T080b [US5] **Design-system & accessibility conformance** (Constitution Article VIII + `DESIGN.md`): all content forge screens MUST reference `tokens.css`/`components.css`/`archetypes.css`/`utilities.css` (no raw colors/spacing/type values), integrate the theme system (`data-skin`/`data-theme`), be responsive across breakpoints, meet WCAG AA contrast, and honor `prefers-reduced-motion` + `prefers-reduced-transparency`. Verify against `DESIGN.md`. **Execute via the `visual-engineering` category + `frontend-ui-ux` skill.** (Covers U-C.)
 
 **Checkpoint**: SC-007, SC-008 satisfied.
 

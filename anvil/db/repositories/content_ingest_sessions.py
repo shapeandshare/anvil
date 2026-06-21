@@ -132,6 +132,33 @@ class ContentIngestSessionRepository:
         )
         return result.scalars().all()
 
+    async def get_by_accepted_version(
+        self, version_id: int
+    ) -> IngestSession | None:
+        """Retrieve the ingest session that accepted a given version.
+
+        Looks up the ``IngestSession`` whose ``accepted_version_id``
+        matches *version_id*.  Returns ``None`` if no such session
+        exists (e.g. for compositions or frozen versions created
+        outside an ingestion flow).
+
+        Parameters
+        ----------
+        version_id : int
+            Primary key of the ``ContentVersion`` that was accepted.
+
+        Returns
+        -------
+        IngestSession or None
+            The matching ``IngestSession``, or ``None``.
+        """
+        result = await self._session.execute(
+            select(IngestSession).where(
+                IngestSession.accepted_version_id == version_id
+            )
+        )
+        return result.scalar_one_or_none()
+
     async def list_active(self) -> Sequence[IngestSession]:
         """List all currently active ingest sessions (status not
         ``ACCEPTED`` or ``FAILED``).

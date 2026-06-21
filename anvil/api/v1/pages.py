@@ -172,6 +172,26 @@ def _arc_context(key: str) -> dict:
     return _ctx(key)
 
 
+@router.get("/content-page", response_class=HTMLResponse)
+async def content_page(request: Request):
+    """Render the content library management page.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming HTTP request.
+
+    Returns
+    -------
+    HTMLResponse
+        Rendered ``archetypes/content_library.html`` template.
+    """
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "archetypes/content_library.html",
+    )
+
+
 @router.get("/about", response_class=HTMLResponse)
 async def about_page(
     request: Request,

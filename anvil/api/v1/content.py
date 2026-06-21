@@ -13,6 +13,7 @@ or raise ``HTTPException`` on error.
 from __future__ import annotations
 
 import asyncio
+import json
 import re
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime
@@ -44,6 +45,11 @@ from .schemas import (
 router = APIRouter()
 """APIRouter: Content repository routes, mounted under
 ``/v1/content`` via the parent v1 router."""
+
+# Module-level SSE event queue for injection lifecycle events.
+# Pushed to by IngestionService.accept() and consumed by the
+# ``/content/stream/injection`` SSE endpoint.
+_injection_queue: asyncio.Queue[dict[str, str]] = asyncio.Queue()
 
 
 def _slugify(name: str) -> str:
@@ -510,6 +516,21 @@ async def accept_session(
         await workbench.session.rollback()
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
+    # Push SSE event for the injection stream.
+    _injection_queue.put_nowait(
+        {
+            "event": "accepted",
+            "data": json.dumps(
+                {
+                    "session_id": id,
+                    "version_id": result.version_id,
+                    "version_number": result.version_number,
+                    "entry_count": result.entry_count,
+                }
+            ),
+        }
+    )
+
     return {
         "data": AcceptOut(
             version_id=result.version_id,
@@ -846,6 +867,9 @@ async def get_version_lineage(
 ):
     """Get version lineage including sources and run refs.
 
+    Returns sources (from the ingestion session that created the
+    version) and MLflow run references (from ``VersionRunRef``).
+
     Parameters
     ----------
     id : int
@@ -856,7 +880,8 @@ async def get_version_lineage(
     Returns
     -------
     dict
-        Lineage data with ``run_refs`` and ``"error": None``.
+        Lineage data with ``sources``, ``run_refs``, and
+        ``"error": None``.
 
     Raises
     ------
@@ -869,9 +894,42 @@ async def get_version_lineage(
 
     run_refs = await workbench.content_version_repo.get_run_refs(id)
 
+    # Look up the source that produced this version via the
+    # accepted session.
+    session = await workbench.content_ingest_session_repo.get_by_accepted_version(id)
+    sources: list[dict] = []
+    if session is not None and session.source_id is not None:
+        source = await workbench.content_source_repo.get(session.source_id)
+        if source is not None:
+            sources.append(
+                {
+                    "id": source.id,
+                    "slug": source.slug,
+                    "name": source.name,
+                    "kind": source.kind,
+                }
+            )
+
+    # Also collect source slugs from entries that have a source_id.
+    entries = await workbench.content_version_repo.get_entries(id)
+    entry_source_ids = {e.source_id for e in entries if e.source_id is not None}
+    for src_id in entry_source_ids:
+        if src_id not in {s["id"] for s in sources}:
+            src = await workbench.content_source_repo.get(src_id)
+            if src is not None:
+                sources.append(
+                    {
+                        "id": src.id,
+                        "slug": src.slug,
+                        "name": src.name,
+                        "kind": src.kind,
+                    }
+                )
+
     return {
         "data": {
             "version_id": id,
+            "sources": sources,
             "run_refs": [
                 {
                     "mlflow_run_id": r.mlflow_run_id,
@@ -882,6 +940,51 @@ async def get_version_lineage(
         },
         "error": None,
     }
+
+
+# ── Injection SSE stream ────────────────────────────────────────────────
+
+
+@router.get("/content/stream/injection")
+async def injection_event_stream(
+    workbench: AnvilWorkbench = Depends(get_workbench),
+):
+    """SSE event stream for ingestion session lifecycle events.
+
+    Pushes real-time ``accepted`` events when an ingestion session is
+    accepted, with the ``session_id`` and ``version_id`` in the event
+    data.  A heartbeat is sent every 30 seconds to keep the connection
+    alive.
+
+    Parameters
+    ----------
+    workbench : AnvilWorkbench
+        Injected session-bound workbench (unused placeholder).
+
+    Returns
+    -------
+    StreamingResponse
+        SSE stream with ``text/event-stream`` content type.
+    """
+
+    async def event_stream():
+        """Generator that yields SSE events from ``_injection_queue``
+        or heartbeats every 30 seconds."""
+        while True:
+            try:
+                msg = await asyncio.wait_for(_injection_queue.get(), timeout=30)
+                yield f"event: {msg['event']}\ndata: {msg['data']}\n\n"
+            except TimeoutError:
+                yield "event: heartbeat\ndata: {}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 # ── Revert ───────────────────────────────────────────────────────────────

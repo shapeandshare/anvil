@@ -145,9 +145,7 @@ def _fmt_ts(ts: int | None) -> str | None:
     if ts is None:
         return None
     try:
-        return datetime.fromtimestamp(ts / 1000, tz=UTC).strftime(
-            "%Y-%m-%d %H:%M UTC"
-        )
+        return datetime.fromtimestamp(ts / 1000, tz=UTC).strftime("%Y-%m-%d %H:%M UTC")
     except (OSError, OverflowError, ValueError):
         return str(ts)
 
