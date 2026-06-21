@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """HTML page rendering routes for the v1 API.
 
 Provides Jinja2-based page rendering for all UI pages (training dashboard,
@@ -13,7 +18,6 @@ from fastapi.responses import HTMLResponse
 from ...api.deps import get_workbench
 from ...db.models.license_entry import LicenseEntry
 from ...workbench import AnvilWorkbench
-
 from .learning import LEARNING_ARC, _arc_context
 
 router = APIRouter()

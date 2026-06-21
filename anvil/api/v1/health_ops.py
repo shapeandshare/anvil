@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Health check and service management routes for the v1 API.
 
 Provides system health monitoring and lifecycle management for
@@ -11,10 +16,10 @@ import signal
 import subprocess
 import time
 from pathlib import Path
+from typing import Annotated
 
 import psutil
 from fastapi import APIRouter, Depends, HTTPException, Request
-from typing import Annotated
 
 from anvil import __version__ as anvil_version
 from anvil.api.deps import get_workbench

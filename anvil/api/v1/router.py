@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Versioned API v1 router.
 
 Thin aggregator that includes all sub-routers (training, experiments,
@@ -15,11 +20,11 @@ from fastapi.responses import HTMLResponse
 from anvil.api.v1.compute import router as compute_router
 from anvil.api.v1.content import router as content_router
 from anvil.api.v1.corpora import router as corpora_router
-from anvil.api.v1.governance import router as governance_router
 from anvil.api.v1.datasets import router as datasets_router
 from anvil.api.v1.eval import router as eval_router
 from anvil.api.v1.eval_datasets import router as eval_datasets_router
 from anvil.api.v1.experiments import router as experiments_router
+from anvil.api.v1.governance import router as governance_router
 from anvil.api.v1.health_ops import router as health_ops_router
 from anvil.api.v1.inference import router as inference_router
 from anvil.api.v1.learning import router as learning_router

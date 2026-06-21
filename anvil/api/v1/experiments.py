@@ -1,3 +1,8 @@
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """Experiment tracking and management API endpoints.
 
 This module provides FastAPI routes for listing, comparing, retrieving,
@@ -16,8 +21,8 @@ from mlflow.tracking import MlflowClient
 
 from ...config import get_config, get_mlflow_browser_uri
 from ...core.engine import LlamaModel
-from ...services.training.memory_estimator import estimate_training_memory
 from ...services.tracking.tracking import TrackingService
+from ...services.training.memory_estimator import estimate_training_memory
 
 router = APIRouter()
 
