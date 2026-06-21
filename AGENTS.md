@@ -1,6 +1,6 @@
 # anvil — Agent Guidelines
 
-**Last updated**: 2026-06-20 (sonarcloud-tooling + content-repository-016-mvp)
+**Last updated**: 2026-06-21 (testing-guide consolidation in AGENTS.md)
 
 ## Project Overview
 
@@ -63,6 +63,44 @@ anvil/          # Python package (implicit namespace)
 ├── storage/       # FileStore abstraction
 └── supervisor/    # Process manager
 ```
+
+### Testing
+
+Test suites live under `tests/` — unit tests in `tests/unit/`, e2e HTTP tests in `tests/e2e/`. The `client` fixture (defined in `tests/conftest.py`) provides an `httpx.AsyncClient` connected to the FastAPI app with a clean in-memory SQLite database per test session.
+
+| Test file | What it tests |
+|-----------|---------------|
+| `tests/unit/core/test_engine.py` | Autograd (Value backward + operations), Tokenizer (encode/decode roundtrip), LlamaModel param count, training loop (loss decreases) |
+| `tests/e2e/test_setup.py` | Package imports resolve (`import anvil`, `import anvil.core.engine`) |
+| `tests/e2e/test_endpoints.py` | HTTP API endpoints return 200 with correct JSON |
+
+**Writing tests:**
+
+Unit test pattern — create `tests/unit/<module>/test_<name>.py`:
+```python
+"""Unit tests for <module name>."""
+
+
+def test_<behavior>():
+    result = <function>()
+    assert result == <expected>
+```
+
+e2e HTTP test pattern — add to `tests/e2e/test_<name>.py`:
+```python
+"""e2e tests for <endpoint>."""
+
+import pytest
+
+
+@pytest.mark.asyncio
+async def test_<endpoint>(client):
+    r = await client.get("/v1/<endpoint>")
+    assert r.status_code == 200
+    assert "<key>" in r.json()
+```
+
+Coverage is reported via `pytest --cov=anvil --cov-report=term-missing`. Current coverage: ~41% (TDD mandate targets 100%).
 
 ## Agent Behavioral Principles
 
