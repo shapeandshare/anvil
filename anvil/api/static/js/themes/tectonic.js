@@ -62,5 +62,6 @@
     modes: ['light', 'dark'],
     cssLayer: '/static/css/themes/tectonic.css',
     mapping: tectonicMapping,
+    particleConfig: { type: 'debris' },
   });
 })();

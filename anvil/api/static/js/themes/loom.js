@@ -44,5 +44,6 @@
     modes: ['light', 'dark'],
     cssLayer: '/static/css/themes/loom.css',
     mapping: loomMapping,
+    particleConfig: { type: 'thread' },
   });
 })();

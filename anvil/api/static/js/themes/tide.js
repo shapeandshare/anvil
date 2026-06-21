@@ -49,5 +49,6 @@
     modes: ['light', 'dark'],
     cssLayer: '/static/css/themes/tide.css',
     mapping: tideMapping,
+    particleConfig: { type: 'spray' },
   });
 })();

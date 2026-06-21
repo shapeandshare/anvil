@@ -36,9 +36,10 @@
   window.ThemeRegistry.register({
     id: 'glacier',
     displayName: 'Glacier',
-    previewHint: 'Convergence crystallizes the ice',
+    previewHint: 'Convergence crystallizes the ice, freeze brings the snow',
     modes: ['light', 'dark'],
     cssLayer: '/static/css/themes/glacier.css',
     mapping: glacierMapping,
+    particleConfig: { type: 'snow', params: {} },
   });
 })();

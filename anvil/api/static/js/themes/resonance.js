@@ -116,5 +116,6 @@
     modes: ['light', 'dark'],
     cssLayer: '/static/css/themes/resonance.css',
     mapping: resonanceMapping,
+    particleConfig: { type: 'css' },
   });
 })();

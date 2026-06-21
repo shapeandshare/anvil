@@ -60,5 +60,6 @@
     modes: ['light', 'dark'],
     cssLayer: '/static/css/themes/deepsea.css',
     mapping: deepSeaMapping,
+    particleConfig: { type: 'biolum' },
   });
 })();

@@ -70,5 +70,6 @@
     modes: ['light', 'dark'],
     cssLayer: '/static/css/themes/prism.css',
     mapping: prismMapping,
+    particleConfig: { type: 'prism' },
   });
 })();

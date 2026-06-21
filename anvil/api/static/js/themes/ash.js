@@ -44,5 +44,6 @@
     modes: ['single'],
     cssLayer: '/static/css/themes/ash.css',
     mapping: ashMapping,
+    particleConfig: { type: 'ember' },
   });
 })();

@@ -58,5 +58,6 @@
     modes: ['single'],
     cssLayer: '/static/css/themes/oldgrowth.css',
     mapping: oldGrowthMapping,
+    particleConfig: { type: 'leaf' },
   });
 })();

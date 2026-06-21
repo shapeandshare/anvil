@@ -48,5 +48,6 @@
     modes: ['light', 'dark'],
     cssLayer: '/static/css/themes/inkwash.css',
     mapping: inkwashMapping,
+    particleConfig: { type: 'ink' },
   });
 })();
