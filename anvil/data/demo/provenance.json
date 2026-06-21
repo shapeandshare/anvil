@@ -9,7 +9,7 @@
     "license": "Generated/Original",
     "attribution": ""
   },
-  "presidents.txt": {
+  "small/presidents": {
     "source": "US State of the Union addresses (Project Gutenberg #5010)",
     "license": "Public Domain",
     "attribution": ""
@@ -19,7 +19,7 @@
     "license": "Public Domain",
     "attribution": ""
   },
-  "medium/math-facts.txt": {
+  "medium/math-facts": {
     "source": "Hand-crafted mathematical facts",
     "license": "Generated/Original",
     "attribution": ""
