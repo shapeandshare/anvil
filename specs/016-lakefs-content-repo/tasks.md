@@ -294,13 +294,13 @@ held → release clears it.
 
 ### Tests
 
-- [ ] T088 [P] [US7] Integration test acquire/release/board in `tests/integration/content/test_locks.py`.
+- [X] T088 [P] [US7] Integration test acquire/release/board in `tests/integration/content/test_locks.py`.
 
 ### Implementation
 
-- [ ] T089 [US7] Implement `LockService` in `anvil/services/content/lock_service.py` (acquire/release/list_active) (FR-034).
-- [ ] T090 [US7] Add endpoints POST/DELETE/GET `/content/locks`, SSE `GET /content/stream/locks` + `LockBody`/`LockOut` schemas (FR-035).
-- [ ] T091 [P] [US7] Add the Checkout Board view to the content hub (mount point from T080) + live updates via the lock-events SSE; conform to the design system (T080b). Build via `visual-engineering` + `frontend-ui-ux`.
+- [X] T089 [US7] Implement `LockService` in `anvil/services/content/lock_service.py` (acquire/release/list_active) (FR-034).
+- [X] T090 [US7] Add endpoints POST/DELETE/GET `/content/locks`, SSE `GET /content/stream/locks` + `LockBody`/`LockOut` schemas (FR-035).
+- [X] T091 [P] [US7] Add the Checkout Board view to the content hub (mount point from T080) + live updates via the lock-events SSE; conform to the design system (T080b). Build via `visual-engineering` + `frontend-ui-ux`.
 
 **Checkpoint**: US7 advisory locks work.
 

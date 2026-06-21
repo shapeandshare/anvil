@@ -974,11 +974,8 @@ async def acquire_lock(
     HTTPException
         If the lock cannot be acquired (409).
     """
-    from ...db.models.content_lock import CheckoutLock
-    from ...services.content.lock_state import LockState
-
     # Check for existing active lock on this scope
-    existing = await workbench.content_lock_repo.list_active()
+    existing = await workbench.content_locks.list_active()
     for lock in existing:
         if lock.scope == body.scope:
             raise HTTPException(
@@ -986,12 +983,7 @@ async def acquire_lock(
                 detail=f"Lock already held on scope '{body.scope}' by '{lock.holder}'",
             )
 
-    new_lock = CheckoutLock(
-        scope=body.scope,
-        holder=body.holder,
-        state=LockState.HELD,
-    )
-    new_lock = await workbench.content_lock_repo.add(new_lock)
+    new_lock = await workbench.content_locks.acquire(body.scope, body.holder)
     await workbench.session.commit()
 
     return {
@@ -1035,9 +1027,79 @@ async def release_lock(
     if lock is None:
         raise HTTPException(status_code=404, detail="Lock not found")
 
-    await workbench.content_lock_repo.release(id)
+    await workbench.content_locks.release(id)
     await workbench.session.commit()
     return {"data": {"status": "released"}, "error": None}
+
+
+@router.get("/content/locks")
+async def list_locks(
+    workbench: AnvilWorkbench = Depends(get_workbench),
+):
+    """List all active advisory content locks.
+
+    Parameters
+    ----------
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
+
+    Returns
+    -------
+    dict
+        List of ``LockOut`` dicts and ``"error": None``.
+    """
+    locks = await workbench.content_locks.list_active()
+    return {
+        "data": [
+            LockOut(
+                id=l.id,
+                scope=l.scope,
+                holder=l.holder,
+                state=l.state,
+                acquired_at=l.acquired_at,
+                released_at=l.released_at,
+            ).model_dump()
+            for l in locks
+        ],
+        "error": None,
+    }
+
+
+@router.get("/content/stream/locks")
+async def stream_locks(
+    workbench: AnvilWorkbench = Depends(get_workbench),
+):
+    """SSE event stream for lock lifecycle notifications.
+
+    Placeholder endpoint (US7) — clients connect and receive a
+    heartbeat keep-alive every 30 seconds.  Live lock acquire/release
+    events will be wired when the UI consumer is built.
+
+    Parameters
+    ----------
+    workbench : AnvilWorkbench
+        Injected session-bound workbench (unused placeholder).
+
+    Returns
+    -------
+    StreamingResponse
+        SSE stream with ``text/event-stream`` content type.
+    """
+
+    async def event_stream():
+        """Generator that yields SSE heartbeats every 30 seconds."""
+        while True:
+            await asyncio.sleep(30)
+            yield "event: heartbeat\ndata: {}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 # ── Import jobs (US6) ────────────────────────────────────────────────────

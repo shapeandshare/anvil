@@ -30,6 +30,7 @@ if TYPE_CHECKING:
     from .services.content.import_service import ImportService
     from .services.content.ingestion_service import IngestionService
     from .services.content.lineage_service import LineageService
+    from .services.content.lock_service import LockService
     from .services.content.versioned_content_store import VersionedContentStore
     from .services.datasets.corpora import CorpusService
     from .services.datasets.dataset_curation import DatasetCurationService
@@ -85,7 +86,7 @@ class AnvilWorkbench:
         self._content_composition: CompositionService | None = None
         self._content_lineage: LineageService | None = None
         self._content_imports: ImportService | None = None
-        self._content_locks: object | None = None  # will be LockService
+        self._content_locks: LockService | None = None
 
     # ── Stateless service accessors ─────────────────────────────────────
 
@@ -401,11 +402,16 @@ class AnvilWorkbench:
         return self._content_imports
 
     @property
-    def content_locks(self) -> object:  # will be LockService
-        """Lazily-initialised content lock service."""
+    def content_locks(self) -> LockService:
+        """Lazily-initialised ``LockService`` wired to *session*.
+
+        Manages advisory checkout lock lifecycle (acquire, release,
+        list active) backed by the ``ContentLockRepository``.
+        """
         if self._content_locks is None:
-            # Placeholder — implemented by a future US.
-            self._content_locks = object()
+            from .services.content.lock_service import LockService
+
+            self._content_locks = LockService(self.content_lock_repo)
         return self._content_locks
 
     # ── Session lifecycle ───────────────────────────────────────────────
