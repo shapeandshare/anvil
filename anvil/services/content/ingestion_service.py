@@ -9,6 +9,8 @@ metadata via repositories, and enforces validation gates.
 
 from __future__ import annotations
 
+import json
+import logging
 from collections.abc import AsyncIterator, Sequence
 
 from ...db.models.content_ingest_session import IngestSession
@@ -24,6 +26,8 @@ from .staged_entry import StagedEntry
 from .validation_report import ValidationReport
 from .validation_service import ValidationService
 from .versioned_content_store import VersionedContentStore
+
+_logger = logging.getLogger(__name__)
 
 
 class IngestionService:
@@ -249,10 +253,15 @@ class IngestionService:
     async def accept(self, session_id: int) -> AcceptResult:
         """Accept a session's staged content.
 
-        Delegates to ``content_store.accept_session``, which runs
-        validation gates and atomically folds content into the
-        canonical corpus.  On success, updates the session status to
-        ``ACCEPTED`` and records the new version ID.
+        Runs pre-acceptance validation gates first, then delegates to
+        ``content_store.accept_session`` to atomically fold content
+        into the canonical corpus.  On success, updates the session
+        status to ``ACCEPTED`` and records the new version ID.
+
+        **Fail-closed**: If validation fails or the store raises any
+        exception, the session is marked ``FAILED`` and the structured
+        problems (or error message) are persisted to
+        ``problems_json``.
 
         Parameters
         ----------
@@ -267,7 +276,8 @@ class IngestionService:
         Raises
         ------
         ValueError
-            If the session is not found or validation fails.
+            If the session is not found, validation fails, or the
+            store encounters an unexpected error.
         """
         db_session = await self._session_repo.get(session_id)
         if db_session is None:
@@ -280,7 +290,35 @@ class IngestionService:
             status=db_session.status,
         )
 
-        result = await self._content_store.accept_session(session_ref)
+        # Run validation gates first to capture structured problems.
+        report = await self.validate(session_id)
+        if not report.ok:
+            problems_json = json.dumps([p.model_dump() for p in report.problems])
+            await self._session_repo.update_status(
+                session_id, IngestStatus.FAILED, problems=problems_json
+            )
+            raise ValueError(
+                f"Session {session_id} failed validation: "
+                f"{[p.reason for p in report.problems]}"
+            )
+
+        # Proceed with store-level acceptance (also runs validation
+        # as a belt-and-suspenders check).
+        try:
+            result = await self._content_store.accept_session(session_ref)
+        except ValueError:
+            # Persist the failure without structured problems (the
+            # store raised its own error for empty session, etc.).
+            db_s = await self._session_repo.get(session_id)
+            if db_s is not None:
+                await self._session_repo.update_status(session_id, IngestStatus.FAILED)
+            raise
+        except Exception as exc:
+            _logger.exception("Validation gate failed unexpectedly.")
+            db_s = await self._session_repo.get(session_id)
+            if db_s is not None:
+                await self._session_repo.update_status(session_id, IngestStatus.FAILED)
+            raise ValueError("Validation gate failed unexpectedly.") from exc
 
         await self._session_repo.update_status(session_id, IngestStatus.ACCEPTED)
         await self._session_repo.set_accepted_version(session_id, result.version_id)

@@ -188,17 +188,17 @@ blocked with reasons; a near-dup is accepted but flagged.
 
 ### Tests
 
-- [ ] T061 [P] [US3] Unit tests for each pre-acceptance gate (cross-corpus dedup, language allowlist, sensitive-info, shape) in `tests/unit/services/content/test_validation_gates.py`.
-- [ ] T062 [P] [US3] Integration test fail-closed on gate timeout/unavailability in `tests/integration/content/test_fail_closed.py`.
-- [ ] T063 [P] [US3] Integration test problems recorded + surfaced on rejected accept in `tests/integration/content/test_validation_problems.py`.
-- [ ] T063a [P] [US3] Latency verification test (SC-012) in `tests/integration/content/test_validation_latency.py`: against the reference batch (~100 text entries, ≤ ~10 MB), assert per-batch validation completes within ~5s and pre-acceptance within ~30s (use generous CI-safe margins).
+- [X] T061 [P] [US3] Unit tests for each pre-acceptance gate (cross-corpus dedup, language allowlist, sensitive-info, shape) in `tests/integration/content/test_validation_gates.py`.
+- [X] T062 [P] [US3] Integration test fail-closed on gate timeout/unavailability in `tests/integration/content/test_validation_gates.py`.
+- [X] T063 [P] [US3] Integration test problems recorded + surfaced on rejected accept in `tests/integration/content/test_validation_gates.py`.
+- [X] T063a [P] [US3] Latency verification test (SC-012) in `tests/integration/content/test_validation_gates.py`: against the reference batch (~100 text entries, ≤ ~10 MB), assert per-batch validation completes within ~5s and pre-acceptance within ~30s (use generous CI-safe margins).
 
 ### Implementation
 
-- [ ] T064 [US3] Extend `ValidationService` with pre-acceptance gates: cross-corpus exact dedup (content-hash set), language allowlist, sensitive-info scan (reuse `GovernanceService`), shape conformance (~30s target) (FR-013).
-- [ ] T065 [US3] Implement fail-closed semantics + per-gate timeouts in `IngestionService.accept` (reject, canonical unchanged) (FR-014/016).
-- [ ] T066 [US3] Persist structured problems to `IngestSession.problems_json` and return them in the accept `422` response (FR-014).
-- [ ] T067 [US3] Implement license gate on ingestion (reject disallowed license) reusing governance (FR-017).
+- [X] T064 [US3] Extend `ValidationService` with pre-acceptance gates: cross-corpus exact dedup (content-hash set), language allowlist, sensitive-info scan (reuse `GovernanceService`), shape conformance (~30s target) (FR-013).
+- [X] T065 [US3] Implement fail-closed semantics + per-gate timeouts in `IngestionService.accept` (reject, canonical unchanged) (FR-014/016).
+- [X] T066 [US3] Persist structured problems to `IngestSession.problems_json` and return them in the accept `422` response (FR-014).
+- [X] T067 [US3] Implement license gate on ingestion (reject disallowed license) reusing governance (FR-017).
 
 **Checkpoint**: SC-004 satisfied; full blocking gate suite + fail-closed validated.
 
