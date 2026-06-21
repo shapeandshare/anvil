@@ -5,16 +5,32 @@
 
 """Display diff between progressive training stages."""
 import sys
+from pathlib import Path
 
 
-def show_diff(file_a, file_b):
-    with open(file_a) as f:
-        a_lines = f.readlines()
-    with open(file_b) as f:
-        b_lines = f.readlines()
+def show_diff(file_a: str, file_b: str) -> None:
+    """Print a line-by-line diff of two files.
+
+    Parameters
+    ----------
+    file_a : str
+        Path to the first (older) file.
+    file_b : str
+        Path to the second (newer) file.
+    """
+    a_path = Path(file_a).resolve(strict=True)
+    b_path = Path(file_b).resolve(strict=True)
+    if not a_path.is_file():
+        print(f"Error: not a file: {a_path}")
+        return
+    if not b_path.is_file():
+        print(f"Error: not a file: {b_path}")
+        return
+    a_lines = a_path.read_text().splitlines(keepends=True)
+    b_lines = b_path.read_text().splitlines(keepends=True)
     for i, (la, lb) in enumerate(zip(a_lines, b_lines)):
         if la != lb:
-            print(f"Line {i+1}:")
+            print(f"Line {i + 1}:")
             print(f"  - {la.rstrip()}")
             print(f"  + {lb.rstrip()}")
 

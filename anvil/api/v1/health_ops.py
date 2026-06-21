@@ -147,23 +147,33 @@ _ALLOWED_SERVICE_NAMES: frozenset[str] = frozenset({"web", "mlflow"})
 """Set of allowed service name values for log and management endpoints."""
 
 
-def _validate_service_name(name: str) -> None:
-    """Validate that a service name is allowed and contains no path traversal.
+def _validate_service_name(name: str) -> str:
+    """Validate and return a safe log-file stem for a service name.
+
+    Strips directory components (defense-in-depth) and checks against the
+    allowlist. Returns the basename so callers can safely construct paths.
 
     Parameters
     ----------
     name : str
         Service name to validate.
 
+    Returns
+    -------
+    str
+        The safe basename (e.g. ``"web"`` or ``"mlflow"``).
+
     Raises
     ------
     HTTPException
         If the name is unknown or contains path traversal characters.
     """
-    if "/" in name or "\\" in name or ".." in name:
+    safe = os.path.basename(name)
+    if safe != name or "/" in name or "\\" in name or ".." in name:
         raise HTTPException(status_code=400, detail=f"Invalid service name: {name}")
-    if name not in _ALLOWED_SERVICE_NAMES:
+    if safe not in _ALLOWED_SERVICE_NAMES:
         raise HTTPException(status_code=404, detail=f"Unknown service: {name}")
+    return safe
 
 
 @router.get("/services/logs/{name}")
@@ -182,8 +192,8 @@ async def get_service_logs(name: str, lines: int = 50):
     dict
         ``logs`` list of log line strings.
     """
-    _validate_service_name(name)
-    log_file = Path("logs") / f"{name}.log"
+    safe_name = _validate_service_name(name)
+    log_file = Path("logs") / f"{safe_name}.log"
     if not log_file.exists():
         return {"logs": []}
     content = log_file.read_text().splitlines()
@@ -231,8 +241,8 @@ async def clear_service_logs(name: str):
     dict
         ``status`` set to ``"cleared"`` or ``"no_logs"``.
     """
-    _validate_service_name(name)
-    log_file = Path("logs") / f"{name}.log"
+    safe_name = _validate_service_name(name)
+    log_file = Path("logs") / f"{safe_name}.log"
     if log_file.exists():
         log_file.write_text("")
         return {"status": "cleared"}
