@@ -41,5 +41,6 @@ This index lists all ADRs in this repository. ADRs document significant architec
 | ADR-034 | Vault Health Subsumption into Anvil | Draft | 2026-06-21 |
 | ADR-035 | MLflow Reverse Proxy -- Authenticated, Port-Closed Access in Local and SaaS | Proposed | 2026-06-21 |
 | ADR-036 | Header-Based API Versioning and URL Path De-Versioning | Proposed | 2026-06-21 |
+| ADR-037 | Unified Single-Origin Interface and Working Local TLS | Proposed | 2026-06-21 |
 
 **Status**: Draft → Reviewed → Canonical (human-only). See `_meta/tags.md` for lifecycle.
