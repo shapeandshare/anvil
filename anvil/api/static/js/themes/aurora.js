@@ -46,5 +46,6 @@
     modes: ['light', 'dark'],
     cssLayer: '/static/css/themes/aurora.css',
     mapping: auroraMapping,
+    particleConfig: { type: 'aurora' },
   });
 })();

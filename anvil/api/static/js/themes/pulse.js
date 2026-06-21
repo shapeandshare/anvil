@@ -43,5 +43,6 @@
     modes: ['light', 'dark'],
     cssLayer: '/static/css/themes/pulse.css',
     mapping: pulseMapping,
+    particleConfig: { type: 'pulse' },
   });
 })();

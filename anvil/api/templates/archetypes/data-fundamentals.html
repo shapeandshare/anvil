@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
+{% block content %}
+<div class="concept-lesson">
+
+  {# ── Lesson Header + Arc Navigation ── #}
+  <div class="concept-lesson-header">
+    <h1 class="concept-lesson-title">{{ arc[current_index].title }} <span class="lesson-count">&mdash; Lesson {{ current_index + 1 }} of {{ arc|length }}</span></h1>
+    <nav class="learn-arc-nav" aria-label="Lesson navigation">
+      <div class="learn-arc-links">
+        <a href="/v1/learn" class="btn btn-secondary">&larr; Back to Learning Index</a>
+        {% if next %}
+        <a href="{{ next.path }}" class="btn btn-secondary">{{ next.title }} &rarr;</a>
+        {% endif %}
+      </div>
+    </nav>
+  </div>
+
+  {# ── Pipeline Diagram Hero ── #}
+  <div class="df-hero">
+    <div class="df-hero-intro">
+      anvil provides two mechanisms for sourcing training data. Each feeds into training but serves a distinct purpose. The pipeline below shows how they relate.
+    </div>
+
+    <div class="ds-flow-diagram">
+      {# Dataset Path #}
+      <div class="ds-flow-diagram-path ds-flow-diagram-path--dataset">
+        <div class="ds-flow-diagram-node">
+          <span class="ds-flow-diagram-node--badge">Dataset</span>
+          <div class="ds-flow-diagram-node--title">Upload or Create</div>
+          <div class="ds-flow-diagram-node--sub">Upload .txt files or create empty datasets &mdash; each line = one sample</div>
+        </div>
+        <div class="ds-flow-diagram-arrow">&#9660;</div>
+        <div class="ds-flow-diagram-node">
+          <div class="ds-flow-diagram-node--title">Curate &amp; Edit</div>
+          <div class="ds-flow-diagram-node--sub">Dedup, filter by length, regex-replace, inline edit, export</div>
+        </div>
+      </div>
+
+      {# Corpus Path #}
+      <div class="ds-flow-diagram-path ds-flow-diagram-path--corpus">
+        <div class="ds-flow-diagram-node">
+          <span class="ds-flow-diagram-node--badge">Corpus</span>
+          <div class="ds-flow-diagram-node--title">Scan a Directory</div>
+          <div class="ds-flow-diagram-node--sub">Point at any folder, apply glob filters, auto-detect chunking</div>
+        </div>
+        <div class="ds-flow-diagram-arrow">&#9660;</div>
+        <div class="ds-flow-diagram-node">
+          <div class="ds-flow-diagram-node--title">Auto-Chunk Files</div>
+          <div class="ds-flow-diagram-node--sub">Windowed, file-as-doc, or line-by-line &mdash; read-only from source</div>
+        </div>
+        <div class="ds-flow-diagram-arrow">&#9660;</div>
+        <div class="ds-flow-diagram-node">
+          <div class="ds-flow-diagram-node--title">Import as Dataset</div>
+          <div class="ds-flow-diagram-node--sub">Re-chunk with custom parameters, then curate like any dataset</div>
+        </div>
+      </div>
+
+      {# Converge Training #}
+      <div class="ds-flow-diagram-converge">
+        <div class="ds-flow-diagram-arrow">&#9660;</div>
+        <div class="ds-flow-diagram-node ds-flow-diagram-node--target">
+          <div class="ds-flow-diagram-node--title">&#9878;&#65039; Training Engine</div>
+          <div class="ds-flow-diagram-node--sub">Pick a Dataset or a Corpus as your data source &mdash; both work</div>
+        </div>
+      </div>
+    </div>
+
+    {# Quick Reference #}
+    <div class="ds-flow-mini-help">
+      <div class="ds-flow-mini-help-item">
+        <strong>Use Datasets when</strong>
+        You have curated text you want to edit, filter, or deduplicate. Fine-tuning data, evaluation sets &mdash; small to medium collections.
+      </div>
+      <div class="ds-flow-mini-help-item">
+        <strong>Use Corpora when</strong>
+        You want to scan existing code repos, documentation trees, or large directory structures and auto-chunk them optimally.
+      </div>
+      <div class="ds-flow-mini-help-item">
+        <strong>Combine both</strong>
+        Scan with a corpus for discovery, then import into a dataset for curation &mdash; get the best of both worlds.
+      </div>
+      <div class="ds-flow-mini-help-item">
+        <strong>Pro tip</strong>
+        Start with the <b>Add Data</b> tab on the datasets page, then work through. The <b>All Data</b> table shows everything at a glance.
+      </div>
+    </div>
+  </div>
+
+  {# ── Carousel Steps ── #}
+  <div class="concept-carousel" id="concept-carousel">
+    <div class="carousel-track" id="carousel-track">
+      {% for step in steps %}
+      <div class="carousel-slide" data-slide="{{ loop.index0 }}" data-step-key="{{ step.key }}">
+        <div class="carousel-slide-content">
+          <p class="slide-step-label">Step {{ loop.index }} of {{ steps|length }}</p>
+          <h2>{{ step.title }}</h2>
+          <p>{{ step.body | safe }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# ── Bottom navigation ── #}
+  <div class="carousel-foot">
+    <div class="carousel-nav">
+      <button type="button" class="carousel-btn carousel-prev" aria-label="Previous step">&larr; Back</button>
+      <div class="carousel-dots" id="carousel-dots">
+        {% for step in steps %}
+        <button type="button" class="carousel-dot{% if loop.first %} active{% endif %}" data-slide="{{ loop.index0 }}" aria-label="Go to step {{ loop.index }}"></button>
+        {% endfor %}
+      </div>
+      <button type="button" class="carousel-btn carousel-next" aria-label="Next step">Next &rarr;</button>
+    </div>
+    <div class="carousel-progress">
+      <span class="carousel-pos" id="carousel-pos">1</span>
+      <span class="carousel-pos-total">/ {{ steps|length }}</span>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function() {
+  /* ── Carousel ── */
+  var track = document.getElementById('carousel-track');
+  var dots = document.getElementById('carousel-dots');
+  var posEl = document.getElementById('carousel-pos');
+  var prevBtn = document.querySelector('.carousel-prev');
+  var nextBtn = document.querySelector('.carousel-next');
+  var totalSlides = track ? track.children.length : 0;
+  var current = 0;
+  var touchStartX = 0;
+  var touchStartY = 0;
+  var carouselEl = document.getElementById('concept-carousel');
+
+  function goTo(idx) {
+    if (idx < 0) idx = 0;
+    if (idx >= totalSlides) idx = totalSlides - 1;
+    current = idx;
+    track.style.transform = 'translateX(-' + idx * 100 + '%)';
+    if (dots) {
+      Array.from(dots.children).forEach(function(dot, i) {
+        dot.classList.toggle('active', i === idx);
+      });
+    }
+    if (posEl) posEl.textContent = idx + 1;
+    var slide = track.children[idx];
+    var stepKey = slide ? slide.getAttribute('data-step-key') : null;
+    document.dispatchEvent(new CustomEvent('concept:stepchange', { detail: { stepKey: stepKey, index: idx } }));
+  }
+
+  if (dots) {
+    dots.addEventListener('click', function(e) {
+      var dot = e.target.closest('.carousel-dot');
+      if (dot) {
+        goTo(parseInt(dot.getAttribute('data-slide'), 10));
+      }
+    });
+  }
+
+  if (prevBtn) prevBtn.addEventListener('click', function() { goTo(current - 1); });
+  if (nextBtn) nextBtn.addEventListener('click', function() { goTo(current + 1); });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowLeft') { goTo(current - 1); e.preventDefault(); }
+    else if (e.key === 'ArrowRight') { goTo(current + 1); e.preventDefault(); }
+  });
+
+  if (carouselEl) {
+    carouselEl.addEventListener('touchstart', function(e) {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+    carouselEl.addEventListener('touchend', function(e) {
+      var dx = e.changedTouches[0].clientX - touchStartX;
+      var dy = e.changedTouches[0].clientY - touchStartY;
+      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+        if (dx < 0) goTo(current + 1); else goTo(current - 1);
+      }
+    }, { passive: true });
+  }
+
+  if (totalSlides > 0) goTo(0);
+})();
+</script>
+{% endblock %}
+{% block didyouknow_banner %}
+<div id="didyouknow-banner" class="didyouknow">
+  <span class="didyouknow__icon" aria-hidden="true">&#9670;</span>
+  <div>
+    <div class="didyouknow__label">&#9670; Did You Know?</div>
+    <span id="didyouknow-text"></span>
+  </div>
+  <button type="button" class="didyouknow__dismiss" aria-label="Dismiss">&#10005;</button>
+</div>
+{% endblock %}

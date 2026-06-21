@@ -46,5 +46,6 @@
     modes: ['single'],
     cssLayer: '/static/css/themes/emberdrift.css',
     mapping: emberMapping,
+    particleConfig: { type: 'ember' },
   });
 })();

@@ -754,6 +754,13 @@
   animation: card-entrance 0.5s var(--spring-quick) calc(0.15s + var(--stagger-i, 0) * 0.08s) both;
 }
 
+/* Subtle gradient banner variant — thinner, no shadow, for CTA cross-references */
+.section-card--banner {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 6%, var(--surface)), var(--surface) 70%);
+  box-shadow: none;
+  padding: var(--space-3) var(--space-4);
+}
+
 .section-card + .section-card {
   margin-top: 0;
 }
@@ -1306,6 +1313,13 @@ margin-bottom: var(--space-2);
 .ds-flow-section[data-step="3"] .ds-flow-bubble {
   background: var(--accent-green);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-green) 25%, transparent);
+}
+
+/* Forge variant for train page step 3 */
+.ds-flow-section[data-step="3"] .ds-flow-bubble--forge {
+  background: linear-gradient(135deg, var(--accent-orange), color-mix(in srgb, var(--accent-orange) 70%, var(--accent-yellow)));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent-orange) 35%, transparent);
+  font-size: 0.85rem;
 }
 
 .ds-flow-label {

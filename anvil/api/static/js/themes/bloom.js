@@ -69,5 +69,6 @@
     modes: ['light', 'dark'],
     cssLayer: '/static/css/themes/bloom.css',
     mapping: bloomMapping,
+    particleConfig: { type: 'petal' },
   });
 })();

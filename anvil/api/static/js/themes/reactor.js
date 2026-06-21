@@ -49,5 +49,6 @@
     modes: ['single'],
     cssLayer: '/static/css/themes/reactor.css',
     mapping: reactorMapping,
+    particleConfig: { type: 'energy' },
   });
 })();

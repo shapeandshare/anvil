@@ -59,5 +59,6 @@
     modes: ['single'],
     cssLayer: '/static/css/themes/hyperspace.css',
     mapping: hyperspaceMapping,
+    particleConfig: { type: 'streak' },
   });
 })();

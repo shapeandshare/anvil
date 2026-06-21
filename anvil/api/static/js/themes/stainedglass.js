@@ -53,5 +53,6 @@
     modes: ['single'],
     cssLayer: '/static/css/themes/stainedglass.css',
     mapping: stainedGlassMapping,
+    particleConfig: { type: 'shard' },
   });
 })();

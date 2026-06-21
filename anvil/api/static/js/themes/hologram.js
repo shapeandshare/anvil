@@ -48,5 +48,6 @@
     modes: ['single'],
     cssLayer: '/static/css/themes/hologram.css',
     mapping: hologramMapping,
+    particleConfig: { type: 'glitch' },
   });
 })();

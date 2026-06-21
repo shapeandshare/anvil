@@ -7,6 +7,8 @@ tags:
 created: '2026-06-20'
 updated: '2026-06-20'
 source: agent
+aliases:
+  - 'Session: Graph Canvas Node Left-Edge Clipping Fix'
 ---
 # Session: Graph Canvas Node Left-Edge Clipping Fix
 

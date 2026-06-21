@@ -7,6 +7,8 @@ tags:
 title: 'Session: Page-Intro Visual Container & Training Page Intro Placement'
 type: session-log
 updated: '2026-06-20T00:00:00.000Z'
+aliases:
+  - 'Session: Page-Intro Visual Container'
 ---
 # Session: Page-Intro Visual Container & Training Page Intro Placement
 

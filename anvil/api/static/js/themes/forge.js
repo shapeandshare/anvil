@@ -63,5 +63,6 @@
     modes: ['dark'],
     cssLayer: '/static/css/themes/forge.css',
     mapping: forgeMapping,
+    particleConfig: { type: 'ember' },
   });
 })();
