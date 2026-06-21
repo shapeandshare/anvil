@@ -304,11 +304,13 @@ class AnvilWorkbench:
         for a future SaaS-backed ``VersionedContentStore``.
         """
         if self._content_store is None:
+            from .config import get_config
             from .services.content.local_versioned_content_store import (
                 LocalVersionedContentStore,
             )
 
             self._content_store = LocalVersionedContentStore(
+                content_dir=get_config()["content_dir"],
                 db_session=self._session,
             )
         return self._content_store

@@ -12,8 +12,8 @@ or raise ``HTTPException`` on error.
 
 from __future__ import annotations
 
-import json
-import uuid
+import re
+from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
@@ -38,6 +38,12 @@ from .schemas import (
 router = APIRouter()
 """APIRouter: Content repository routes, mounted under
 ``/v1/content`` via the parent v1 router."""
+
+
+def _slugify(name: str) -> str:
+    """Derive a URL-safe slug from a corpus name."""
+    slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+    return slug or "corpus"
 
 
 # ── Corpora ──────────────────────────────────────────────────────────────
@@ -70,19 +76,21 @@ async def create_corpus(
     HTTPException
         If validation fails (422).
     """
+    slug = body.slug or _slugify(body.name)
     try:
         corpus = await workbench.content_corpora.create(
             name=body.name,
-            slug=body.slug,
+            slug=slug,
             description=body.description,
             chunking_strategy=body.chunking_strategy,
             block_size=body.block_size,
             chunk_overlap=body.chunk_overlap,
-            declared_source=body.declared_source,
-            license=body.license,
-            attribution=body.attribution,
+            source_description=body.declared_source,
+            attribution_text=body.attribution,
         )
+        await workbench.session.commit()
     except ValueError as exc:
+        await workbench.session.rollback()
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return {
         "data": _corpus_to_out(corpus).model_dump(),
@@ -173,6 +181,7 @@ async def delete_corpus(
     deleted = await workbench.content_corpus_repo.delete(id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Corpus not found")
+    await workbench.session.commit()
     return {"data": {"status": "deleted"}, "error": None}
 
 
@@ -239,7 +248,9 @@ async def create_source(
             kind=body.get("kind", "manual"),
         )
         source = await workbench.content_source_repo.add(source)
+        await workbench.session.commit()
     except (ValueError, KeyError) as exc:
+        await workbench.session.rollback()
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return {
         "data": {
@@ -322,18 +333,14 @@ async def open_session(
     if source is None:
         raise HTTPException(status_code=404, detail=f"Source '{body.source}' not found")
 
-    from ...db.models.content_ingest_session import IngestSession
-    from ...services.content.ingest_status import IngestStatus
+    await workbench.content_store.ensure_corpus(corpus.slug)
+    try:
+        ref = await workbench.content_ingestion.open_session(corpus.id, source.id)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    await workbench.session.commit()
 
-    staging_key = f"{body.corpus_id}/{uuid.uuid4().hex}"
-    session = IngestSession(
-        corpus_id=body.corpus_id,
-        source_id=source.id,
-        staging_key=staging_key,
-        status=IngestStatus.OPEN,
-    )
-    session = await workbench.content_ingest_session_repo.add(session)
-
+    session = await workbench.content_ingest_session_repo.get(ref.session_id)
     return {
         "data": SessionOut(
             id=session.id,
@@ -393,34 +400,19 @@ async def stage_file(
             detail=f"Session is not open (status: {session.status})",
         )
 
-    import hashlib
-
     content = await file.read()
-    content_hash = hashlib.sha256(content).hexdigest()
 
-    from ...db.models.content_blob import ContentBlob
+    async def _stream() -> AsyncIterator[bytes]:
+        yield content
 
-    blob = ContentBlob(
-        content_hash=content_hash,
-        size_bytes=len(content),
-    )
-    await workbench.content_blob_repo.upsert(blob)
-
-    from sqlalchemy import update
-
-    from ...db.models.content_ingest_session import IngestSession
-
-    await workbench._session.execute(
-        update(IngestSession)
-        .where(IngestSession.id == id)
-        .values(staged_entry_count=IngestSession.staged_entry_count + 1)
-    )
+    staged = await workbench.content_ingestion.stage(id, path, _stream())
+    await workbench.session.commit()
 
     return {
         "data": {
-            "path": path,
-            "content_hash": content_hash,
-            "size_bytes": len(content),
+            "path": staged.path,
+            "content_hash": staged.content_hash,
+            "size_bytes": staged.size_bytes,
         },
         "error": None,
     }
@@ -454,34 +446,14 @@ async def validate_session(
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    from ...services.content.ingest_status import IngestStatus
-
-    await workbench.content_ingest_session_repo.update_status(
-        id, IngestStatus.VALIDATING
-    )
-
-    # Basic validation — stage size and blob existence checks.
-    # Full entry-level validation requires ContentStagedEntryRepository
-    # (T039), which is being built in parallel.
-    problems: list[dict] = []
-    if session.staged_entry_count == 0:
-        problems.append(
-            {
-                "gate_name": "no_content",
-                "entry_path": None,
-                "reason": "No entries staged in this session",
-                "severity": "error",
-            }
-        )
-
-    ok = all(p.get("severity") != "error" for p in problems)
-    status = IngestStatus.OPEN if ok else IngestStatus.FAILED
-    await workbench.content_ingest_session_repo.update_status(
-        id, status, problems=json.dumps(problems) if problems else None
-    )
+    report = await workbench.content_ingestion.validate(id)
+    await workbench.session.commit()
 
     return {
-        "data": ValidationReportOut(ok=ok, problems=problems).model_dump(),
+        "data": ValidationReportOut(
+            ok=report.ok,
+            problems=[p.model_dump() for p in report.problems],
+        ).model_dump(),
         "error": None,
     }
 
@@ -577,6 +549,7 @@ async def abandon_session(
     from ...services.content.ingest_status import IngestStatus
 
     await workbench.content_ingest_session_repo.update_status(id, IngestStatus.FAILED)
+    await workbench.session.commit()
     return {"data": {"status": "abandoned"}, "error": None}
 
 
@@ -701,10 +674,16 @@ async def tag_version(
     if version is None:
         raise HTTPException(status_code=404, detail="Version not found")
 
-    version.label = body.name
+    try:
+        await workbench.content_corpora.tag(id, body.name)
+        await workbench.session.commit()
+    except ValueError as exc:
+        await workbench.session.rollback()
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
     return {
         "data": {
-            "id": version.id,
+            "id": id,
             "tag": body.name,
         },
         "error": None,
@@ -879,10 +858,13 @@ async def revert_corpus(
 
     await workbench.content_corpus_repo.set_current_version(id, new_version.id)
 
+    new_version_id = new_version.id
+    await workbench.session.commit()
+
     return {
         "data": {
             "status": "reverted",
-            "new_version_id": new_version.id,
+            "new_version_id": new_version_id,
             "version_number": next_version,
             "reverted_to_version": body.to_version_id,
         },
@@ -935,6 +917,7 @@ async def acquire_lock(
         state=LockState.HELD,
     )
     new_lock = await workbench.content_lock_repo.add(new_lock)
+    await workbench.session.commit()
 
     return {
         "data": LockOut(
@@ -978,6 +961,7 @@ async def release_lock(
         raise HTTPException(status_code=404, detail="Lock not found")
 
     await workbench.content_lock_repo.release(id)
+    await workbench.session.commit()
     return {"data": {"status": "released"}, "error": None}
 
 
