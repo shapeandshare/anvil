@@ -1,4 +1,8 @@
 ---
+aliases:
+  - Thread Model Review
+  - Concurrency Audit
+source: agent
 created: '2026-06-21T00:00:00.000Z'
 tags:
   - type/session-log
