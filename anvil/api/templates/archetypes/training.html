@@ -28,6 +28,51 @@
     </div>
   </div>
 
+  {# ── Training Pipeline Node Workflow ── #}
+  <div class="section-card" style="--stagger-i: 0">
+    <div class="ds-flow-diagram" style="border:none;padding:0;margin:0;">
+
+      {# Data Node #}
+      <div class="ds-flow-diagram-path" style="grid-template-rows:none;">
+        <div class="ds-flow-diagram-node" style="border-left-color:var(--accent-orange);">
+          <span class="ds-flow-diagram-node--badge" style="background:var(--accent-orange);color:#000;">1</span>
+          <div class="ds-flow-diagram-node--title">Select Data Source</div>
+          <div class="ds-flow-diagram-node--sub">Choose a corpus or dataset &mdash; the model learns from text character patterns</div>
+        </div>
+        <div class="ds-flow-diagram-arrow">&#9660;</div>
+        <div class="ds-flow-diagram-node" style="border-left-color:var(--accent-orange);">
+          <div class="ds-flow-diagram-node--title">Review Data Context</div>
+          <div class="ds-flow-diagram-node--sub">See file counts, chunk strategy, sample count &mdash; verify before training</div>
+        </div>
+      </div>
+
+      {# Config Node #}
+      <div class="ds-flow-diagram-path" style="grid-template-rows:none;">
+        <div class="ds-flow-diagram-node" style="border-left-color:var(--accent);">
+          <span class="ds-flow-diagram-node--badge" style="background:var(--accent);color:#fff;">2</span>
+          <div class="ds-flow-diagram-node--title">Configure &amp; Auto-Tune</div>
+          <div class="ds-flow-diagram-node--sub">Tune n_embd, n_layer, n_head, block_size &mdash; or let anvil pick defaults</div>
+        </div>
+        <div class="ds-flow-diagram-arrow">&#9660;</div>
+        <div class="ds-flow-diagram-node" style="border-left-color:var(--accent);">
+          <div class="ds-flow-diagram-node--title">Review Memory Estimate</div>
+          <div class="ds-flow-diagram-node--sub">Real-time GPU memory bar, parameter count, and OOM warnings</div>
+        </div>
+      </div>
+
+      {# Converge: Train + Results #}
+      <div class="ds-flow-diagram-converge" style="border-top-color:var(--separator);">
+        <div class="ds-flow-diagram-arrow">&#9660;</div>
+        <div class="ds-flow-diagram-node ds-flow-diagram-node--target" style="max-width:340px;">
+          <span class="ds-flow-diagram-node--badge" style="background:var(--accent-green);color:#000;margin-bottom:var(--space-1);">&#9874; 3</span>
+          <div class="ds-flow-diagram-node--title">Forge + Watch</div>
+          <div class="ds-flow-diagram-node--sub">Start training, stream live loss curve over SSE, monitor metrics &mdash; then export safetensors</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <div class="training-runs section-card" id="runs-panel" style="display:none;--stagger-i: 0">
     <div class="section-card__header"><span class="section-card__icon">&#9654;</span><h2 class="section-card__title">Active Training Runs</h2></div>
     <div id="runs-list"></div>
