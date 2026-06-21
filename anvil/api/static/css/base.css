@@ -218,6 +218,38 @@ a:hover { text-decoration: underline; }
   cursor: pointer;
 }
 
+.theme-picker__particles {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.theme-picker__particles-label {
+  font-size: var(--text-caption-1);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.theme-picker__select {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-1) var(--space-2);
+  background: var(--surface-2);
+  border: var(--border-width) solid var(--separator);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--text-caption-1);
+  cursor: pointer;
+  outline: none;
+  appearance: auto;
+}
+
+.theme-picker__select:focus {
+  border-color: var(--accent);
+}
+
 .theme-icon {
   width: 20px;
   height: 20px;

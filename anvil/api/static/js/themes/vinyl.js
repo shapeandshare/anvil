@@ -63,5 +63,6 @@
     modes: ['light', 'dark'],
     cssLayer: '/static/css/themes/vinyl.css',
     mapping: vinylMapping,
+    particleConfig: { type: 'spin' },
   });
 })();

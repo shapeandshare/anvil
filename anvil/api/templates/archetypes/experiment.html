@@ -1,7 +1,25 @@
 {% extends "base.html" %}
 {% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
 {% block content %}
-<div class="experiment-list section-card" style="--stagger-i: 0">
+{# ── BANNER CTA: Loss / Training Loop learning lesson ── #}
+<div class="section-card section-card--banner" style="--stagger-i: 0">
+  <div class="section-card__content" style="display:flex;align-items:center;gap:var(--space-3);">
+    <span style="font-size:1.2rem;flex-shrink:0;">&#128200;</span>
+    <div style="flex:1;">
+      <div style="font-family:var(--font-body);font-weight:600;font-size:var(--text-footnote);color:var(--text-secondary);">
+        How Loss Curves Work
+      </div>
+      <div style="font-size:var(--text-caption-2);color:var(--text-tertiary);margin-top:2px;">
+        Cross-entropy loss and what the numbers mean &mdash; now in the interactive learning arc.
+      </div>
+    </div>
+    <a href="/v1/learn/loss" class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap;">
+      Learn More &rarr;
+    </a>
+  </div>
+</div>
+
+<div class="experiment-list section-card" style="--stagger-i: 1">
   <div class="page-intro">Every training run you start gets recorded here. Compare loss curves side by side, inspect model artifacts, and register your best models to the registry. Loss below 0.5 means the model is doing better than random &mdash; try to beat your personal best!</div>
   <div class="section-card__header"><span class="section-card__icon">&#128214;</span><h2 class="section-card__title">Experiment History &mdash; Track Every Training Run</h2></div>
   <div id="experiment-empty" class="loading-indicator" style="display:block;">

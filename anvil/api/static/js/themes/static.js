@@ -63,5 +63,6 @@
     modes: ['single'],
     cssLayer: '/static/css/themes/static.css',
     mapping: staticMapping,
+    particleConfig: { type: 'css' },
   });
 })();

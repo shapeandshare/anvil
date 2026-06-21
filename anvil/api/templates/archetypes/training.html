@@ -2,147 +2,160 @@
 {% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
 {% block content %}
 <div class="training-dashboard">
+
+  {# ── BANNER CTA: Training Loop learning lesson ── #}
+  <div class="section-card section-card--banner" style="--stagger-i: 0">
+    <div class="section-card__content" style="display:flex;align-items:center;gap:var(--space-3);">
+      <span style="font-size:1.2rem;flex-shrink:0;">&#9881;</span>
+      <div style="flex:1;">
+        <div style="font-family:var(--font-body);font-weight:600;font-size:var(--text-footnote);color:var(--text-secondary);">
+          How Training Works
+        </div>
+        <div style="font-size:var(--text-caption-2);color:var(--text-tertiary);margin-top:2px;">
+          The training loop, loss curves, and optimizer &mdash; now in the interactive learning arc.
+        </div>
+      </div>
+      <a href="/v1/learn/training-loop" class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap;">
+        Learn More &rarr;
+      </a>
+    </div>
+  </div>
+
   <div class="training-runs section-card" id="runs-panel" style="display:none;--stagger-i: 0">
     <div class="section-card__header"><span class="section-card__icon">&#9654;</span><h2 class="section-card__title">Active Training Runs</h2></div>
     <div id="runs-list"></div>
   </div>
 
-  <div class="training-data-source section-card training-wizard" style="--stagger-i: 1">
-    <div class="section-card__header">
-      <span class="section-card__icon">&#9881;</span>
-      <h2 class="section-card__title">Training Setup</h2>
-    </div>
-    <p class="section-card__content" style="margin-bottom:var(--space-4);">This is where you configure and train a character-level transformer model from scratch. Select your data source, tune the architecture, then watch it learn in real time through live loss curves and streaming output. Every parameter below changes how the model learns — hover the ⓘ icons to learn what each one does.</p>
-
-    <div class="wizard-steps" id="wizard-steps">
-      <button type="button" class="wizard-step wizard-step--active" data-step="1" data-tab="data">
-        <div class="wizard-step-bubble"><span>1</span></div>
-        <span class="wizard-step-label">Data</span>
-      </button>
-      <div class="wizard-step-connector" id="conn-1"></div>
-      <button type="button" class="wizard-step" data-step="2" data-tab="config">
-        <div class="wizard-step-bubble"><span>2</span></div>
-        <span class="wizard-step-label">Configure</span>
-      </button>
-      <div class="wizard-step-connector" id="conn-2"></div>
-      <button type="button" class="wizard-step wizard-step--train" data-step="3" id="wizard-step-train">
-        <div class="wizard-step-bubble"><span>▶</span></div>
-        <span class="wizard-step-label">Train</span>
-      </button>
-    </div>
-
-    <div class="wizard-tabs" id="wizard-tabs">
-      <button type="button" class="wizard-tab wizard-tab--active" data-tab="data">Select Data</button>
-      <button type="button" class="wizard-tab" data-tab="config">Configure &amp; Auto-Tune</button>
-    </div>
-
-    <div class="wizard-panel wizard-panel--active" id="panel-data">
-      <div class="wizard-panel-header">
-        <span class="wizard-panel-badge">1</span>
-        <span class="wizard-panel-title">Select Data Source</span>
-      </div>
-      <div class="ds-selectors">
-        <div class="ds-field">
-          <label class="ds-label" for="corpus_id">Corpus</label>
-          <select class="ds-select" id="corpus_id">
-            <option value="">input.txt (default)</option>
-          </select>
-        </div>
-        <div class="ds-field">
-          <label class="ds-label" for="dataset_id">Dataset</label>
-          <select class="ds-select" id="dataset_id">
-            <option value="">— none —</option>
-          </select>
-        </div>
-      </div>
-      <span id="data-conflict-warn" class="ds-warn" style="display:none;">&#9888; Both corpus and dataset selected — dataset takes priority, corpus will be ignored.</span>
-      <span id="empty-data-warn" class="ds-warn" style="display:none;">&#9888; No data source selected — training will use the default demo corpus.</span>
-      <div id="data-context" class="ds-card">
-        <div class="ds-card-empty">Select a corpus or dataset above.</div>
-      </div>
-      <div id="model-stats" class="ds-card">
-        <div class="ds-card-empty">Model stats will appear here.</div>
+  <!-- ── Section 1: Select Data ── -->
+  <div class="section-card ds-flow-section" data-step="1" style="--stagger-i: 1">
+    <div class="ds-flow-header">
+      <span class="ds-flow-bubble">1</span>
+      <div>
+        <div class="ds-flow-label">Step 1</div>
+        <div class="ds-flow-title">Select Data Source</div>
       </div>
     </div>
-
-    <div class="wizard-panel" id="panel-config">
-      <div class="wizard-panel-header">
-        <span class="wizard-panel-badge">2</span>
-        <span class="wizard-panel-title">Configure &amp; Auto-Tune</span>
+    <p class="ds-flow-desc">Choose the data your model will learn from. Select a corpus or dataset below — the model will train on character-level patterns extracted from your text.</p>
+    <div class="ds-selectors">
+      <div class="ds-field">
+        <label class="ds-label" for="corpus_id">Corpus</label>
+        <select class="ds-select" id="corpus_id">
+          <option value="">input.txt (default)</option>
+        </select>
       </div>
-      <div class="config-grid">
-        <div class="param-block">
-          <div class="param-label-row"><label class="param-label">n_embd</label>
-          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">The width of each layer's representation. Wider = more capacity to learn patterns, but more parameters and slower training. Powers of 2 are standard (16, 32, 64, 128).</span></span></div>
-          <input type="number" id="n_embd" value="16" min="4" max="256">
-          <p class="param-desc">Embedding size — powers of 2 (16, 32, 64…). Must be divisible by <code>n_head</code>.</p>
-        </div>
-        <div class="param-block">
-          <div class="param-label-row"><label class="param-label">n_layer</label>
-          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How many transformer blocks stack on top of each other. Deeper = more hierarchical pattern discovery. 1-2 layers learn simple patterns, 4+ can learn complex structure.</span></span></div>
-          <input type="number" id="n_layer" value="1" min="1" max="12">
-          <p class="param-desc">Transformer depth — 1–2 for simple patterns, 4+ for complex structure.</p>
-        </div>
-        <div class="param-block">
-          <div class="param-label-row"><label class="param-label">n_head</label>
-          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How many parallel attention computations happen at each layer. Each head can focus on different relationships. Must divide n_embd evenly.</span></span></div>
-          <input type="number" id="n_head" value="4" min="1" max="16">
-          <p class="param-desc">Attention heads — must divide <code>n_embd</code> evenly (e.g. 64 &amp; 4 works).</p>
-          <span id="attn-geom-warn" class="ds-warn" style="display:none;"></span>
-        </div>
-        <div class="param-block">
-          <div class="param-label-row"><label class="param-label">block_size</label>
-          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How many characters the model can 'see' at once when predicting the next character. Larger context = more coherent output but slower training.</span></span></div>
-          <input type="number" id="block_size" value="16" min="8" max="1024">
-          <p class="param-desc">Context window in characters — match to your corpus chunk size.</p>
-          <span id="bs-mismatch-warn" class="ds-warn" style="display:none;">&#9888; block_size exceeds corpus chunk size — only chunks up to the corpus block_size will be used per step. Increase corpus chunk size or lower training block_size.</span>
-        </div>
-        <div class="param-block">
-          <div class="param-label-row"><label class="param-label">num_steps</label>
-          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How many gradient updates the model performs. More steps = lower loss, but diminishing returns. Start with 1000 and increase if loss is still falling.</span></span></div>
-          <input type="number" id="num_steps" value="1000" min="10" max="100000">
-          <p class="param-desc">Training steps — more = lower loss. Start with 1000.</p>
-        </div>
-        <div class="param-block">
-          <div class="param-label-row"><label class="param-label">learning_rate</label>
-          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How big each weight update is. Too high = loss bounces around. Too low = barely learns. 0.01 is a good starting point for this model scale.</span></span></div>
-          <input type="number" id="learning_rate" value="0.01" step="0.001" min="0.0001" max="1">
-          <p class="param-desc">Step size — 0.01 safe start. Drop if loss oscillates or spikes.</p>
-        </div>
-        <div class="param-block">
-          <div class="param-label-row"><label class="param-label">temperature</label>
-          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">Controls randomness in generation. 0 = always picks the most likely next character (boring but safe). 1.0+ = more creative but may produce gibberish.</span></span></div>
-          <input type="number" id="temperature" value="0.5" step="0.1" min="0" max="2">
-          <p class="param-desc">Creativity — 0.1-0.3 predictable, 0.5-0.7 creative, 1.0+ chaos.</p><span class="fun-label fun-label--cool" style="margin-left:var(--space-1)">cool &amp; precise</span> <span class="fun-label fun-label--warm">creative spark</span> <span class="fun-label fun-label--hot">chaos mode</span>
-        </div>
-        <div class="param-block">
-          <div class="param-label-row"><label class="param-label">Compute Backend</label>
-          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">Where training runs. Auto picks the best available. Local CPU uses pure Python (stdlib). Local GPU uses PyTorch (CUDA/MPS). Modal runs on cloud GPUs — requires the modal package.</span></span></div>
-          <div class="device-toggle">
-            <select id="compute_backend" onchange="window.updateModelStats()" style="width:100%;padding:6px 8px;border-radius:var(--radius-sm,6px);border:1px solid var(--border,#38383a);background:var(--surface,#1c1c1e);color:var(--text,#fff);font-size:0.8rem;font-family:var(--font-body,sans-serif);">
-              <option value="auto">Auto</option>
-              <option value="local-cpu">Local (CPU)</option>
-              <option value="local-gpu">Local (GPU)</option>
-              <option value="modal">Modal (cloud GPU)</option>
-            </select>
-            <p class="param-desc" id="gpu-status">Checking compute backends...</p>
-          </div>
-        </div>
+      <div class="ds-field">
+        <label class="ds-label" for="dataset_id">Dataset</label>
+        <select class="ds-select" id="dataset_id">
+          <option value="">— none —</option>
+        </select>
       </div>
-
-      <div id="config-mem-estimate" class="config-mem-estimate"></div>
-      <span id="oom-warn" class="ds-warn oom-warn" style="display:none;"></span>
-
-      <div class="config-actions">
-        <button type="button" class="btn btn-accent" id="autotune-btn">✨ Auto-Tune</button>
-        <button type="button" class="btn btn--forge btn-pulse" id="start-btn">Start Training</button>
-        <button type="button" class="btn btn-secondary" id="stop-btn" disabled>Stop</button>
-      </div>
-      <p class="autotune-feedback" id="autotune-feedback"></p>
+    </div>
+    <span id="data-conflict-warn" class="ds-warn" style="display:none;">&#9888; Both corpus and dataset selected — dataset takes priority, corpus will be ignored.</span>
+    <span id="empty-data-warn" class="ds-warn" style="display:none;">&#9888; No data source selected — training will use the default demo corpus.</span>
+    <div id="data-context" class="ds-card">
+      <div class="ds-card-empty">Select a corpus or dataset above.</div>
+    </div>
+    <div id="model-stats" class="ds-card">
+      <div class="ds-card-empty">Model stats will appear here.</div>
     </div>
   </div>
 
-  <div class="training-chart section-card" style="--stagger-i: 2">
+  <!-- ── Section 2: Configure ── -->
+  <div class="section-card ds-flow-section" data-step="2" style="--stagger-i: 2">
+    <div class="ds-flow-header">
+      <span class="ds-flow-bubble">2</span>
+      <div>
+        <div class="ds-flow-label">Step 2</div>
+        <div class="ds-flow-title">Configure &amp; Auto-Tune</div>
+      </div>
+    </div>
+    <p class="ds-flow-desc">Tune the model architecture. Change any parameter below — the model stats card above updates in real time. Click <strong>Auto-Tune</strong> to let anvil pick sensible defaults for your data.</p>
+    <div class="config-grid">
+      <div class="param-block">
+        <div class="param-label-row"><label class="param-label">n_embd</label>
+        <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">The width of each layer's representation. Wider = more capacity to learn patterns, but more parameters and slower training. Powers of 2 are standard (16, 32, 64, 128).</span></span></div>
+        <input type="number" id="n_embd" value="16" min="4" max="256">
+        <p class="param-desc">Embedding size — powers of 2 (16, 32, 64…). Must be divisible by <code>n_head</code>.</p>
+      </div>
+      <div class="param-block">
+        <div class="param-label-row"><label class="param-label">n_layer</label>
+        <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How many transformer blocks stack on top of each other. Deeper = more hierarchical pattern discovery. 1-2 layers learn simple patterns, 4+ can learn complex structure.</span></span></div>
+        <input type="number" id="n_layer" value="1" min="1" max="12">
+        <p class="param-desc">Transformer depth — 1–2 for simple patterns, 4+ for complex structure.</p>
+      </div>
+      <div class="param-block">
+        <div class="param-label-row"><label class="param-label">n_head</label>
+        <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How many parallel attention computations happen at each layer. Each head can focus on different relationships. Must divide n_embd evenly.</span></span></div>
+        <input type="number" id="n_head" value="4" min="1" max="16">
+        <p class="param-desc">Attention heads — must divide <code>n_embd</code> evenly (e.g. 64 &amp; 4 works).</p>
+        <span id="attn-geom-warn" class="ds-warn" style="display:none;"></span>
+      </div>
+      <div class="param-block">
+        <div class="param-label-row"><label class="param-label">block_size</label>
+        <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How many characters the model can 'see' at once when predicting the next character. Larger context = more coherent output but slower training.</span></span></div>
+        <input type="number" id="block_size" value="16" min="8" max="1024">
+        <p class="param-desc">Context window in characters — match to your corpus chunk size.</p>
+        <span id="bs-mismatch-warn" class="ds-warn" style="display:none;">&#9888; block_size exceeds corpus chunk size — only chunks up to the corpus block_size will be used per step. Increase corpus chunk size or lower training block_size.</span>
+      </div>
+      <div class="param-block">
+        <div class="param-label-row"><label class="param-label">num_steps</label>
+        <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How many gradient updates the model performs. More steps = lower loss, but diminishing returns. Start with 1000 and increase if loss is still falling.</span></span></div>
+        <input type="number" id="num_steps" value="1000" min="10" max="100000">
+        <p class="param-desc">Training steps — more = lower loss. Start with 1000.</p>
+      </div>
+      <div class="param-block">
+        <div class="param-label-row"><label class="param-label">learning_rate</label>
+        <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How big each weight update is. Too high = loss bounces around. Too low = barely learns. 0.01 is a good starting point for this model scale.</span></span></div>
+        <input type="number" id="learning_rate" value="0.01" step="0.001" min="0.0001" max="1">
+        <p class="param-desc">Step size — 0.01 safe start. Drop if loss oscillates or spikes.</p>
+      </div>
+      <div class="param-block">
+        <div class="param-label-row"><label class="param-label">temperature</label>
+        <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">Controls randomness in generation. 0 = always picks the most likely next character (boring but safe). 1.0+ = more creative but may produce gibberish.</span></span></div>
+        <input type="number" id="temperature" value="0.5" step="0.1" min="0" max="2">
+        <p class="param-desc">Creativity — 0.1-0.3 predictable, 0.5-0.7 creative, 1.0+ chaos.</p><span class="fun-label fun-label--cool" style="margin-left:var(--space-1)">cool &amp; precise</span> <span class="fun-label fun-label--warm">creative spark</span> <span class="fun-label fun-label--hot">chaos mode</span>
+      </div>
+      <div class="param-block">
+        <div class="param-label-row"><label class="param-label">Compute Backend</label>
+        <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">Where training runs. Auto picks the best available. Local CPU uses pure Python (stdlib). Local GPU uses PyTorch (CUDA/MPS). Modal runs on cloud GPUs — requires the modal package.</span></span></div>
+        <div class="device-toggle">
+          <select id="compute_backend" onchange="window.updateModelStats()" style="width:100%;padding:6px 8px;border-radius:var(--radius-sm,6px);border:1px solid var(--border,#38383a);background:var(--surface,#1c1c1e);color:var(--text,#fff);font-size:0.8rem;font-family:var(--font-body,sans-serif);">
+            <option value="auto">Auto</option>
+            <option value="local-cpu">Local (CPU)</option>
+            <option value="local-gpu">Local (GPU)</option>
+            <option value="modal">Modal (cloud GPU)</option>
+          </select>
+          <p class="param-desc" id="gpu-status">Checking compute backends...</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="config-mem-estimate" class="config-mem-estimate"></div>
+    <span id="oom-warn" class="ds-warn oom-warn" style="display:none;"></span>
+
+    <div class="config-actions">
+      <button type="button" class="btn btn-accent" id="autotune-btn">✨ Auto-Tune</button>
+    </div>
+    <p class="autotune-feedback" id="autotune-feedback"></p>
+  </div>
+
+  <!-- ── Section 3: Train ── -->
+  <div class="section-card ds-flow-section" data-step="3" style="--stagger-i: 3">
+    <div class="ds-flow-header">
+      <span class="ds-flow-bubble ds-flow-bubble--forge">&#9874;</span>
+      <div>
+        <div class="ds-flow-label">Step 3</div>
+        <div class="ds-flow-title">Forge Your Model</div>
+      </div>
+    </div>
+    <p class="ds-flow-desc">Ready to train? Review your configuration in the model stats card above, then click <strong>Start Training</strong> to begin. Watch the loss curve and metrics update in real time below.</p>
+    <div class="config-actions">
+      <button type="button" class="btn btn--forge btn-pulse" id="start-btn">Start Training</button>
+      <button type="button" class="btn btn-secondary" id="stop-btn" disabled>Stop</button>
+    </div>
+  </div>
+
+  <div class="training-chart section-card" style="--stagger-i: 4">
     <div class="section-card__header"><span class="section-card__icon">&#128200;</span><h2 class="section-card__title">Loss Curve</h2></div>
     <div class="connection-state" id="connection-state">idle</div>
     <div id="training-phase" class="phase-label" style="display:none;"></div>
@@ -151,7 +164,7 @@
     </div>
   </div>
 
-  <div class="training-metrics section-card" style="--stagger-i: 3">
+  <div class="training-metrics section-card" style="--stagger-i: 5">
     <div class="section-card__header"><span class="section-card__icon">&#128202;</span><h2 class="section-card__title">Metrics</h2></div>
     <div class="metrics-grid">
       <div class="metric"><span class="metric-label">Step</span><span class="metric-value" id="metric-step">—</span></div>
@@ -166,7 +179,7 @@
     </div>
   </div>
 
-  <div class="training-output section-card" style="--stagger-i: 4">
+  <div class="training-output section-card" style="--stagger-i: 6">
     <div class="section-card__header section-card__header--clickable" id="output-header" role="button" tabindex="0" aria-expanded="false" aria-controls="output-body">
       <span class="section-card__icon">&#128228;</span>
       <h2 class="section-card__title">Output</h2>
@@ -252,41 +265,6 @@
     stopBtn.disabled = (state !== 'streaming' && state !== 'connecting');
     loadingEl.style.display = (state === 'streaming' || state === 'connecting') ? 'block' : 'none';
     updateOutputIndicator(state);
-  }
-
-  /* ── Wizard Tab Switching ── */
-  function switchWizardTab(tab) {
-    var panels = document.querySelectorAll('.wizard-panel');
-    var tabs = document.querySelectorAll('.wizard-tab');
-    var steps = document.querySelectorAll('.wizard-step');
-
-    panels.forEach(function(p) { p.classList.remove('wizard-panel--active'); });
-    tabs.forEach(function(t) { t.classList.remove('wizard-tab--active'); });
-    steps.forEach(function(s) { s.classList.remove('wizard-step--active', 'wizard-step--completed'); });
-
-    /* Activate target tab */
-    var activePanel = document.getElementById('panel-' + tab);
-    var activeTab = document.querySelector('.wizard-tab[data-tab="' + tab + '"]');
-    if (activePanel) activePanel.classList.add('wizard-panel--active');
-    if (activeTab) activeTab.classList.add('wizard-tab--active');
-
-    /* Update step states */
-    var stepMap = { data: 1, config: 2 };
-    var stepNum = stepMap[tab];
-    if (stepNum) {
-      steps.forEach(function(s) {
-        var n = parseInt(s.getAttribute('data-step'));
-        if (n === stepNum) s.classList.add('wizard-step--active');
-        else if (n < stepNum) {
-          s.classList.add('wizard-step--completed');
-        }
-      });
-      /* Fill connectors before active step */
-      var conns = document.querySelectorAll('.wizard-step-connector');
-      conns.forEach(function(c, i) {
-        c.classList.toggle('wizard-step-connector--filled', i < stepNum - 1);
-      });
-    }
   }
 
   var _lastMilestone = null;
@@ -1255,26 +1233,6 @@ var gpuToggle = document.getElementById('compute_backend');
 
   startBtn.addEventListener('click', window.showTrainConfirmModal);
   stopBtn.addEventListener('click', stopTraining);
-
-  /* ── Wizard tab clicks ── */
-  document.querySelectorAll('.wizard-tab').forEach(function(tab) {
-    tab.addEventListener('click', function() {
-      switchWizardTab(this.getAttribute('data-tab'));
-    });
-  });
-
-  /* ── Wizard step clicks (steps 1 & 2 switch tabs, step 3 triggers train) ── */
-  document.querySelectorAll('.wizard-step[data-step]').forEach(function(step) {
-    step.addEventListener('click', function() {
-      var s = this.getAttribute('data-step');
-      var tab = this.getAttribute('data-tab');
-      if (tab) {
-        switchWizardTab(tab);
-      } else if (s === '3' && !startBtn.disabled) {
-        window.showTrainConfirmModal();
-      }
-    });
-  });
 
   /* ── Output collapsible toggle ── */
   function toggleOutput() {

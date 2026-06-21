@@ -49,5 +49,6 @@
     modes: ['light', 'dark'],
     cssLayer: '/static/css/themes/stormfront.css',
     mapping: stormMapping,
+    particleConfig: { type: 'rain', params: {} },
   });
 })();

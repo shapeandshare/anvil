@@ -9,6 +9,7 @@
 
   var activeTeardown = null;
   var bus = window.SignalBus ? window.SignalBus.create() : null;
+  var ps = window.ParticleSystem;
 
   // Picker keyboard-navigation / live-preview state.
   var pickerItems = [];   // theme buttons, in registry order
@@ -65,7 +66,17 @@
     if (link.getAttribute('href') !== cssLayer) link.setAttribute('href', cssLayer);
   }
 
-  function teardownMapping() {
+function teardownMapping() {
+    if (typeof activeTeardown === 'function') {
+      try { activeTeardown(); } catch (e) { console.warn('[theme] mapping teardown failed', e); }
+    }
+    activeTeardown = null;
+    if (ps) {
+      try { ps.stopEffect(); } catch (e) { console.warn('[theme] particle teardown failed', e); }
+    }
+  }
+
+  function teardownSignalMapping() {
     if (typeof activeTeardown === 'function') {
       try { activeTeardown(); } catch (e) { console.warn('[theme] mapping teardown failed', e); }
     }
@@ -73,7 +84,6 @@
   }
 
   function bindMapping(theme) {
-    teardownMapping();
     if (!theme.mapping || !bus || !bus.session()) return;
     var snap = window.EffectLevel ? window.EffectLevel.snapshot() : {};
     try {
@@ -105,6 +115,15 @@
     ensureLayer(theme.cssLayer);
     if (persist) writePref(theme.id, resolved);
     bindMapping(theme);
+
+    // Apply particle effects: only show canvas particles when a training session is active
+    if (ps) {
+      if (bus && bus.session()) {
+        ps.apply(theme, null, false);
+      } else {
+        ps.apply(theme, null, true);
+      }
+    }
 
     updateToggleState(theme);
     updatePickerUI(theme.id);
@@ -162,6 +181,13 @@
     html += '<div class="theme-picker__controls">' +
       '<label class="theme-picker__toggle"><input type="checkbox" id="theme-reduce-effects"> Reduce effects</label>' +
       '<label class="theme-picker__toggle"><input type="checkbox" id="theme-audio-optin"> Enable theme audio</label>' +
+      '<div class="theme-picker__particles">' +
+      '<label for="theme-particle-select" class="theme-picker__particles-label">Particles</label>' +
+      '<select id="theme-particle-select" class="theme-picker__select">' +
+      '<option value="default">Default</option>' +
+      '<option value="none">None</option>' +
+      '</select>' +
+      '</div>' +
       '</div>';
     menu.innerHTML = html;
 
@@ -282,6 +308,51 @@
         if (window.EffectLevel) window.EffectLevel.setAudioOptIn(audio.checked);
       });
     }
+    wireParticleSelect();
+  }
+
+  function wireParticleSelect() {
+    var select = document.getElementById('theme-particle-select');
+    if (!select) return;
+    var ps_effects, si, opt, saved, val, cur;
+    if (ps) {
+      ps_effects = ps.getEffects();
+      for (si = 0; si < ps_effects.length; si++) {
+        if (ps_effects[si] !== 'css') {
+          opt = document.createElement('option');
+          opt.value = ps_effects[si];
+          opt.textContent = ps_effects[si].charAt(0).toUpperCase() + ps_effects[si].slice(1);
+          select.appendChild(opt);
+        }
+      }
+    }
+    if (ps) {
+      saved = ps.readPref();
+      if (saved === 'none') select.value = 'none';
+      else if (saved && saved !== 'default') {
+        for (si = 0; si < select.options.length; si++) {
+          if (select.options[si].value === saved) {
+            select.value = saved;
+            break;
+          }
+        }
+      } else {
+        select.value = 'default';
+      }
+    }
+    select.addEventListener('change', function () {
+      val = select.value;
+      if (ps) {
+        if (val === 'default') {
+          ps.writePref(null);
+          try { localStorage.removeItem('theme:particle'); } catch (e) {}
+        } else {
+          ps.writePref(val);
+        }
+        cur = current();
+        apply(cur.themeId, cur.mode, { persist: true });
+      }
+    });
   }
 
   function readFlag(key) {
@@ -339,7 +410,11 @@
   function bindSession(session) {
     if (!bus) return;
     bus.attach(session);
+    teardownSignalMapping();
     bindMapping(registry.get(current().themeId) || registry.get(registry.defaultId));
+    if (ps) {
+      ps.apply(registry.get(current().themeId) || registry.get(registry.defaultId));
+    }
   }
 
   function onStorage(e) {
@@ -354,7 +429,10 @@
   function reapplyEffectLevel() {
     var cur = current();
     var theme = registry.get(cur.themeId);
-    if (theme && theme.mapping) bindMapping(theme);
+    if (theme && theme.mapping) {
+      teardownSignalMapping();
+      bindMapping(theme);
+    }
   }
 
   function init() {

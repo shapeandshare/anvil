@@ -16,7 +16,78 @@ from anvil.core.engine import softmax
 
 router = APIRouter()
 
+DATA_FUNDAMENTALS_STEPS = [
+    {
+        "key": "what-are-datasets-and-corpora",
+        "title": "Two Ways to Source Data",
+        "body": (
+            "anvil provides two mechanisms for getting text into the training engine. "
+            "<b>Datasets</b> are curated collections you upload or create directly &mdash; "
+            "each line becomes one training sample. <b>Corpora</b> are read-only views over "
+            "directory structures that auto-chunk files. Both feed into training, but "
+            "they serve different workflows. The diagram above shows the full pipeline."
+        ),
+    },
+    {
+        "key": "dataset-path",
+        "title": "The Dataset Path",
+        "body": (
+            "Datasets start from text you own: upload <code>.txt</code> files or create "
+            "empty datasets to fill later. Each line becomes one training sample. "
+            "Once loaded, you can curate &mdash; deduplicate, filter by length, apply "
+            "regex replacements, or inline-edit samples. Datasets are your primary tool "
+            "for fine-tuning data, evaluation sets, and small-to-medium collections you "
+            "want full control over."
+        ),
+    },
+    {
+        "key": "corpus-path",
+        "title": "The Corpus Path",
+        "body": (
+            "Corpora are <b>read-only</b> views of directory structures. Point at any "
+            "folder, apply glob filters (e.g. <code>**/*.py</code>), and anvil auto-detects "
+            "optimal chunking: windowed for prose, file-as-doc for structured files, or "
+            "line-by-line for tabular data. Files stay in place &mdash; the corpus is "
+            "metadata over the filesystem. Once chunked, you import the corpus contents "
+            "into a dataset for downstream curation."
+        ),
+    },
+    {
+        "key": "convergence-training",
+        "title": "Convergence: Into Training",
+        "body": (
+            "Both paths converge on the training engine. You can pick a Dataset or a Corpus "
+            "as your data source &mdash; both work. The key difference: datasets give you "
+            "full ownership (edit, filter, export), while corpora give you auto-discovery "
+            "over large directory trees. The fastest workflow: scan with a corpus for "
+            "discovery, then import into a dataset for curation."
+        ),
+    },
+    {
+        "key": "when-to-use-what",
+        "title": "When to Use What",
+        "body": (
+            '<b>Use Datasets when</b> you have curated text you want to edit, filter, '
+            "or deduplicate &mdash; fine-tuning data, evaluation sets, small to medium "
+            "collections.<br><br>"
+            '<b>Use Corpora when</b> you want to scan existing code repos, documentation '
+            "trees, or large directory structures and auto-chunk them optimally.<br><br>"
+            '<b>Combine both</b> &mdash; scan with a corpus for discovery, then import '
+            "into a dataset for curation. Get the best of both worlds.<br><br>"
+            '<b>Pro tip</b> &mdash; head to the <a href="/v1/datasets-page" '
+            'class="action-link">Datasets page</a> and start with Add Data. '
+            "The <b>All Data</b> table shows everything at a glance."
+        ),
+    },
+]
+
 LEARNING_ARC = [
+    {
+        "key": "data-fundamentals",
+        "title": "Data Fundamentals",
+        "path": "/v1/learn/data-fundamentals",
+        "desc": "How datasets and corpora feed training data into the engine &mdash; and when to use each.",
+    },
     {
         "key": "tokenization",
         "title": "Tokenization",
@@ -110,6 +181,12 @@ LEARNING_ARC = [
 ]
 
 LEARNING_ARC_LESSONS = [
+    {
+        "key": "data-fundamentals",
+        "title": "Data Fundamentals",
+        "path": "/v1/learn/data-fundamentals",
+        "desc": "How datasets and corpora feed training data into the engine &mdash; and when to use each.",
+    },
     {
         "key": "tokenization",
         "title": "Tokenization",
@@ -1096,6 +1173,16 @@ async def learn_index(request: Request):
         "archetypes/learn-index.html",
         {"lessons": LEARNING_ARC_LESSONS,
          "additional": LEARNING_ARC_ADDITIONAL},
+    )
+
+
+@router.get("/learn/data-fundamentals", response_class=HTMLResponse)
+async def data_fundamentals_page(request: Request):
+    """Render the data fundamentals walkthrough with pipeline diagram and steps."""
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "archetypes/data-fundamentals.html",
+        {"steps": DATA_FUNDAMENTALS_STEPS, **_arc_context("data-fundamentals")},
     )
 
 

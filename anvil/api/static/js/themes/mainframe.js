@@ -43,5 +43,6 @@
     modes: ['light', 'dark'],
     cssLayer: '/static/css/themes/mainframe.css',
     mapping: mainframeMapping,
+    particleConfig: { type: 'matrix' },
   });
 })();

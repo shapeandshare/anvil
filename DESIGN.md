@@ -349,10 +349,11 @@ iOS-style system buttons with forge variants:
 
 **Plain/Tertiary**: Text-only or tinted with no fill. For least prominent actions.
 
-### Section Cards (Forge/Accent variants)
+### Section Cards (Forge/Accent/Banner variants)
 Cards used in content sections below the hero, with optional left accent border:
 - `section-card--forge`: 3px orange left border
 - `section-card--accent`: 3px blue left border
+- `section-card--banner`: Subtle gradient background, no shadow, reduced padding. Used for CTA cross-references between operational pages and learning lessons. See `Discoveries/learning-lesson-cta-banner-pattern.md`.
 - Title variant `section-card__title--forge`: gradient text (orange→yellow)
 
 ### Grouped List (iOS)

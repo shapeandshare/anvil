@@ -42,5 +42,6 @@
     modes: ['single'],
     cssLayer: '/static/css/themes/solarflare.css',
     mapping: solarFlareMapping,
+    particleConfig: { type: 'flare' },
   });
 })();

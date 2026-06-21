@@ -1,11 +1,15 @@
 ---
 created: '2026-06-20'
 status: draft
+source: agent
 tags:
   - domain/ui
   - type/session-log
 title: Unicorn Theme + Prism Vibrancy — 2026-06-20
+type: session-log
 updated: '2026-06-20'
+aliases:
+  - Unicorn Theme + Prism Vibrancy
 ---
 # Unicorn Theme + Prism Vibrancy
 
