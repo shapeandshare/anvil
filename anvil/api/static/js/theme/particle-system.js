@@ -14,8 +14,11 @@
   var PARTICLE_CLASS = 'theme-particles-active';
   var NONE_CLASS = 'theme-particles-none';
 
-  // Visual-only PRNG — not for security contexts  // NOSONAR
-  function vrand() { return vrand(); }
+  function vrand() {
+    var arr = new Uint32Array(1);
+    crypto.getRandomValues(arr);
+    return arr[0] / 4294967296;
+  }
 
   // ── Effect Registry ──
   var effects = {};
