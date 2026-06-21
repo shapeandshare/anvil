@@ -25,10 +25,10 @@
 
 **Purpose**: ADR, dependency registration, and test harness scaffolding
 
-- [ ] T001 Write ADR at `docs/vault/Decisions/ADR-034-playwright-ui-smoke-harness.md` capturing Playwright rationale, scope boundary, coverage exclusion, CI isolation, Chromium-only v1, the **v1 non-blocking CI decision** (and the ≥10-run zero-flake promotion criteria), and the rationale (mirrors `tests/system` being kept out of the blocking path)
-- [ ] T002 [P] Add `pytest-playwright>=0.5,<1` to `pyproject.toml` under `[project.optional-dependencies].dev`
-- [ ] T003 [P] Extend pytest `addopts` with `--ignore=tests/browser` and extend `[tool.coverage.run].omit` with `"tests/browser/*"` in `pyproject.toml`
-- [ ] T004 [P] Add `test-browser` target to `Makefile` (mirror `test-system`: compose down -v → up -d --build --wait → pytest tests/browser -v --no-cov → compose down -v)
+- [x] T001 Write ADR at `docs/vault/Decisions/ADR-034-playwright-ui-smoke-harness.md` capturing Playwright rationale, scope boundary, coverage exclusion, CI isolation, Chromium-only v1, the **v1 non-blocking CI decision** (and the ≥10-run zero-flake promotion criteria), and the rationale (mirrors `tests/system` being kept out of the blocking path)
+- [x] T002 [P] Add `pytest-playwright>=0.5,<1` to `pyproject.toml` under `[project.optional-dependencies].dev`
+- [x] T003 [P] Extend pytest `addopts` with `--ignore=tests/browser` and extend `[tool.coverage.run].omit` with `"tests/browser/*"` in `pyproject.toml`
+- [x] T004 [P] Add `test-browser` target to `Makefile` (mirror `test-system`: compose down -v → up -d --build --wait → pytest tests/browser -v --no-cov → compose down -v)
 
 **Checkpoint**: Setup complete — ADR committed, dependency available, Makefile target ready
 
@@ -40,7 +40,7 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T005 Create `tests/browser/conftest.py` with:
+- [x] T005 Create `tests/browser/conftest.py` with:
   - Session-scoped compose readiness wait (polls `GET /v1/health` at `http://localhost:8080`)
   - An MLflow-sidecar readiness check (or experiment-listing readiness probe) used by run-history tests — readiness covers all backing services a test depends on, not just the web server (FR-013)
   - `page` fixture configured for Chromium headless, 15s default timeout
@@ -60,7 +60,7 @@
 
 ### Implementation for User Story 1
 
-- [ ] T006 [US1] Implement `tests/browser/test_navigation_smoke.py`:
+- [x] T006 [US1] Implement `tests/browser/test_navigation_smoke.py`:
   - For each primary route (Dashboard, Datasets, Training, Experiments, Models, Inference, Operations, Learn):
     - `page.goto(url)`
     - Assert a known landmark element is visible (selectors derived by reading actual Jinja2 templates)
@@ -82,7 +82,7 @@
 
 ### Implementation for User Story 3
 
-- [ ] T007 [P] [US3] Implement `tests/browser/test_dataset_upload_wiring.py`:
+- [x] T007 [P] [US3] Implement `tests/browser/test_dataset_upload_wiring.py`:
   - Navigate to `/v1/datasets-page`
   - Create a small temp `.txt` file with sample content
   - Use `locator.set_input_files()` on the page's real upload control
@@ -102,7 +102,7 @@
 
 ### Implementation for User Story 2
 
-- [ ] T008 [US2] Implement `tests/browser/test_training_sse_wiring.py`:
+- [x] T008 [US2] Implement `tests/browser/test_training_sse_wiring.py`:
   - Seed a dataset via API using the `dataset_seed` fixture from conftest
   - Navigate to `/v1/training-page`
   - Select the seeded dataset from the dataset selector
@@ -125,7 +125,7 @@
 
 ### Implementation for User Story 4
 
-- [ ] T009 [US4] Implement `tests/browser/test_experiment_listing_wiring.py`:
+- [x] T009 [US4] Implement `tests/browser/test_experiment_listing_wiring.py`:
   - Ensure a completed training run exists (reuse the US2 run or seed a completed run via API)
   - Wait on the conftest MLflow/experiment-listing readiness probe before asserting — the run is surfaced by the tracking sidecar, which starts independently of the web server (C3/FR-008)
   - Navigate to `/v1/experiments-page`
@@ -146,7 +146,7 @@
 
 ### Implementation for User Story 5
 
-- [ ] T010 [US5] Implement `tests/browser/test_inference_wiring.py`:
+- [x] T010 [US5] Implement `tests/browser/test_inference_wiring.py`:
   - Obtain an **inference-capable** model via the `model_seed` fixture (generation-ready checkpoint, not a metadata-only record — M1/FR-009). If API seeding cannot produce one, reuse a tiny model trained during the suite
   - Navigate to `/v1/inference-page`
   - Select the model from the model selector
@@ -163,15 +163,15 @@
 
 **Purpose**: CI integration, validation, and documentation
 
-- [ ] T011 [P] Add Linux-only browser test CI job to `.github/workflows/ci.yml`:
+- [x] T011 [P] Add Linux-only browser test CI job to `.github/workflows/ci.yml`:
   - Steps: checkout → setup uv → `make setup` → `uv run playwright install --with-deps chromium` → `make test-browser`
   - **NON-blocking for v1** (`continue-on-error: true`) — mirrors the existing heavy `tests/system` suite being kept out of the blocking CI path. Do NOT add to the `gate-status` job's `needs:` list / gate loop for v1 (a flaky heavy job must not stall all merges)
   - Gated behind `if: needs.bump-scope-guard.outputs.scope != 'version-only'`
   - Job runs on `ubuntu-latest`
   - Document in the ADR the promotion criteria: flip to `continue-on-error: false` and wire into `gate-status` only after ≥10 consecutive zero-flake CI runs
-- [ ] T012 [P] Update `AGENTS.md` Active Technologies section with new `tests/browser/` and `pytest-playwright` dev dependency entry
+- [x] T012 [P] Update `AGENTS.md` Active Technologies section with new `tests/browser/` and `pytest-playwright` dev dependency entry
 - [ ] T013 Run `make test-browser` 3 consecutive times to validate zero-flake stability (all smoke tests must pass each run)
-- [ ] T014 [P] Add session log to `docs/vault/Sessions/` documenting the ADR decision and SSE-chart-update assertion technique
+- [x] T014 [P] Add session log to `docs/vault/Sessions/` documenting the ADR decision and SSE-chart-update assertion technique
 - [ ] T015 [P] Verify edge case: navigate to `/v1/datasets-page` with no datasets and assert empty state renders without error (no crash, no error-level console signals)
 
 **Checkpoint**: All smoke tests green across 3 consecutive runs; non-blocking CI job wired; vault enriched
