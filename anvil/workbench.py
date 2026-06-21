@@ -16,8 +16,21 @@ from typing import TYPE_CHECKING
 from sqlalchemy.ext.asyncio import AsyncSession
 
 if TYPE_CHECKING:
+    from .db.repositories.content_blobs import ContentBlobRepository
+    from .db.repositories.content_corpora import ContentCorpusRepository
+    from .db.repositories.content_import_jobs import ContentImportJobRepository
+    from .db.repositories.content_ingest_sessions import (
+        ContentIngestSessionRepository,
+    )
+    from .db.repositories.content_locks import ContentLockRepository
+    from .db.repositories.content_sources import ContentSourceRepository
+    from .db.repositories.content_versions import ContentVersionRepository
     from .db.repositories.corpora import CorpusRepository
     from .db.repositories.datasets import DatasetRepository
+    from .services.content.lineage_service import LineageService
+    from .services.content.versioned_content_store import (
+        VersionedContentStore,
+    )
     from .services.datasets.corpora import CorpusService
     from .services.datasets.dataset_curation import DatasetCurationService
     from .services.datasets.dataset_export import DatasetExportService
@@ -58,6 +71,23 @@ class AnvilWorkbench:
         self._store: LocalFileStore | None = None
         self._audit: AuditService | None = None
         self._governance: GovernanceService | None = None
+        # Content repository lazy references.
+        self._content_corpus_repo: ContentCorpusRepository | None = None
+        self._content_source_repo: ContentSourceRepository | None = None
+        self._content_version_repo: ContentVersionRepository | None = None
+        self._content_ingest_session_repo: (
+            ContentIngestSessionRepository | None
+        ) = None
+        self._content_blob_repo: ContentBlobRepository | None = None
+        self._content_import_job_repo: ContentImportJobRepository | None = None
+        self._content_lock_repo: ContentLockRepository | None = None
+        self._content_store: VersionedContentStore | None = None
+        self._content_corpora: object | None = None  # will be CorpusService
+        self._content_ingestion: object | None = None  # will be IngestionService
+        self._content_composition: object | None = None  # will be CompositionService
+        self._content_lineage: object | None = None  # will be LineageService
+        self._content_imports: object | None = None  # will be ImportService
+        self._content_locks: object | None = None  # will be LockService
 
     # ── Stateless service accessors ─────────────────────────────────────
 
@@ -183,6 +213,182 @@ class AnvilWorkbench:
                 self.audit,
             )
         return self._governance
+
+    # ── Content repository accessors ────────────────────────────────────
+
+    @property
+    def content_corpus_repo(self) -> ContentCorpusRepository:
+        """Lazily-initialised ``ContentCorpusRepository`` bound to
+        *session*."""
+        if self._content_corpus_repo is None:
+            from .db.repositories.content_corpora import (
+                ContentCorpusRepository,
+            )
+
+            self._content_corpus_repo = ContentCorpusRepository(
+                self._session
+            )
+        return self._content_corpus_repo
+
+    @property
+    def content_source_repo(self) -> ContentSourceRepository:
+        """Lazily-initialised ``ContentSourceRepository`` bound to
+        *session*."""
+        if self._content_source_repo is None:
+            from .db.repositories.content_sources import (
+                ContentSourceRepository,
+            )
+
+            self._content_source_repo = ContentSourceRepository(
+                self._session
+            )
+        return self._content_source_repo
+
+    @property
+    def content_version_repo(self) -> ContentVersionRepository:
+        """Lazily-initialised ``ContentVersionRepository`` bound to
+        *session*."""
+        if self._content_version_repo is None:
+            from .db.repositories.content_versions import (
+                ContentVersionRepository,
+            )
+
+            self._content_version_repo = ContentVersionRepository(
+                self._session
+            )
+        return self._content_version_repo
+
+    @property
+    def content_ingest_session_repo(
+        self,
+    ) -> ContentIngestSessionRepository:
+        """Lazily-initialised ``ContentIngestSessionRepository`` bound
+        to *session*."""
+        if self._content_ingest_session_repo is None:
+            from .db.repositories.content_ingest_sessions import (
+                ContentIngestSessionRepository,
+            )
+
+            self._content_ingest_session_repo = (
+                ContentIngestSessionRepository(self._session)
+            )
+        return self._content_ingest_session_repo
+
+    @property
+    def content_blob_repo(self) -> ContentBlobRepository:
+        """Lazily-initialised ``ContentBlobRepository`` bound to
+        *session*."""
+        if self._content_blob_repo is None:
+            from .db.repositories.content_blobs import (
+                ContentBlobRepository,
+            )
+
+            self._content_blob_repo = ContentBlobRepository(self._session)
+        return self._content_blob_repo
+
+    @property
+    def content_import_job_repo(self) -> ContentImportJobRepository:
+        """Lazily-initialised ``ContentImportJobRepository`` bound to
+        *session*."""
+        if self._content_import_job_repo is None:
+            from .db.repositories.content_import_jobs import (
+                ContentImportJobRepository,
+            )
+
+            self._content_import_job_repo = ContentImportJobRepository(
+                self._session
+            )
+        return self._content_import_job_repo
+
+    @property
+    def content_lock_repo(self) -> ContentLockRepository:
+        """Lazily-initialised ``ContentLockRepository`` bound to
+        *session*."""
+        if self._content_lock_repo is None:
+            from .db.repositories.content_locks import (
+                ContentLockRepository,
+            )
+
+            self._content_lock_repo = ContentLockRepository(self._session)
+        return self._content_lock_repo
+
+    @property
+    def content_store(self) -> VersionedContentStore:
+        """Lazily-initialised ``LocalVersionedContentStore`` bound to
+        *session*.
+
+        Returns the local implementation; this is the injection seam
+        for a future SaaS-backed ``VersionedContentStore``.
+        """
+        if self._content_store is None:
+            from .services.content.local_versioned_content_store import (
+                LocalVersionedContentStore,
+            )
+
+            self._content_store = LocalVersionedContentStore(
+                self.content_corpus_repo,
+                self.content_version_repo,
+                self.content_blob_repo,
+            )
+        return self._content_store
+
+    @property
+    def content_corpora(self) -> object:  # will be CorpusService
+        """Lazily-initialised ``CorpusService`` wired to *session*."""
+        if self._content_corpora is None:
+            from .services.content.corpus_service import CorpusService
+
+            # The CorpusService will be created by T041.
+            self._content_corpora = object()
+        return self._content_corpora
+
+    @property
+    def content_ingestion(self) -> object:  # will be IngestionService
+        """Lazily-initialised content ingestion service."""
+        if self._content_ingestion is None:
+            # Placeholder — implemented by T042.
+            self._content_ingestion = object()
+        return self._content_ingestion
+
+    @property
+    def content_composition(self) -> object:  # will be CompositionService
+        """Lazily-initialised content composition service."""
+        if self._content_composition is None:
+            # Placeholder — implemented by a future US.
+            self._content_composition = object()
+        return self._content_composition
+
+    @property
+    def content_lineage(self) -> LineageService:
+        """Return the ``LineageService`` backed by the content version
+        repository.
+
+        Tracks provenance links between MLflow training runs and content
+        version snapshots.  Lazily-initialised on first access.
+        """
+        if self._content_lineage is None:
+            from .services.content.lineage_service import LineageService
+
+            self._content_lineage = LineageService(
+                self.content_version_repo
+            )
+        return self._content_lineage
+
+    @property
+    def content_imports(self) -> object:  # will be ImportService
+        """Lazily-initialised content import service."""
+        if self._content_imports is None:
+            # Placeholder — implemented by a future US.
+            self._content_imports = object()
+        return self._content_imports
+
+    @property
+    def content_locks(self) -> object:  # will be LockService
+        """Lazily-initialised content lock service."""
+        if self._content_locks is None:
+            # Placeholder — implemented by a future US.
+            self._content_locks = object()
+        return self._content_locks
 
     # ── Session lifecycle ───────────────────────────────────────────────
 

@@ -212,19 +212,27 @@ class TrainingService:
         return meta.get("experiment_id") if meta else None
 
     def _load_docs(
-        self, corpus_id: int | None = None, dataset_id: int | None = None
+        self,
+        corpus_id: int | None = None,
+        dataset_id: int | None = None,
+        content_version_id: int | None = None,
     ) -> list[str]:
-        """Load training documents from a corpus or dataset.
+        """Load training documents from a corpus, dataset, or content
+        version.
 
-        Falls back to the default demo corpus when neither
-        ``corpus_id`` nor ``dataset_id`` is provided.
+        Falls back to the default demo corpus when none of the three
+        identifiers is provided.
 
         Parameters
         ----------
         corpus_id : int, optional
-            Corpus ID to load from.
+            Legacy corpus ID to load from.
         dataset_id : int, optional
             Dataset ID to load from.
+        content_version_id : int, optional
+            Versioned content repository version ID. When provided,
+            resolves the manifest from the content-addressed store
+            and streams entries for chunking.
 
         Returns
         -------
@@ -234,8 +242,12 @@ class TrainingService:
         Raises
         ------
         RuntimeError
-            If no data source is available.
+            If no data source is available or the version cannot be
+            resolved.
         """
+        if content_version_id is not None:
+            return self._load_docs_from_version(content_version_id)
+
         if dataset_id is not None:
             from ...db.session import AsyncSessionLocal
             from ...db.repositories.corpora import CorpusRepository
@@ -273,6 +285,108 @@ class TrainingService:
                 return await svc.load_docs(corpus.id)
 
         return asyncio.run(_load_default())
+
+    def _load_docs_from_version(
+        self, content_version_id: int
+    ) -> list[str]:
+        """Load training documents from a versioned content repository
+        version.
+
+        Resolves the version manifest via the content store, opens each
+        content-addressed blob, and chunks the text using the default
+        windowed chunking strategy.
+
+        Parameters
+        ----------
+        content_version_id : int
+            Primary key of the ``ContentVersion`` to load from.
+
+        Returns
+        -------
+        list[str]
+            Chunked document texts.
+
+        Raises
+        ------
+        RuntimeError
+            If the version cannot be resolved.
+        """
+        from ...db.repositories.content_versions import (
+            ContentVersionRepository,
+        )
+        from ...db.session import AsyncSessionLocal
+
+        async def _load():
+            async with AsyncSessionLocal() as session:
+                ver_repo = ContentVersionRepository(session)
+                version = await ver_repo.get(content_version_id)
+                if version is None:
+                    raise RuntimeError(
+                        f"Content version {content_version_id} not found"
+                    )
+                entries = await ver_repo.get_entries(content_version_id)
+
+                from ...services.content.local_versioned_content_store import (
+                    LocalVersionedContentStore,
+                )
+                from ...db.repositories.content_corpora import (
+                    ContentCorpusRepository,
+                )
+                from ...db.repositories.content_blobs import (
+                    ContentBlobRepository,
+                )
+
+                corpus_repo = ContentCorpusRepository(session)
+                blob_repo = ContentBlobRepository(session)
+                store = LocalVersionedContentStore(
+                    corpus_repo, ver_repo, blob_repo
+                )
+
+                # Resolve manifest for chunking config
+                from ...services.content.version_ref import VersionRef
+
+                version_ref = VersionRef(
+                    manifest_digest=version.manifest_digest,
+                    version_id=version.id,
+                    version_number=version.version_number,
+                    label=version.label,
+                )
+                manifest = await store.resolve(version_ref)
+                chunk_cfg = manifest.chunk_cfg or {}
+                strategy = chunk_cfg.get("strategy", "windowed")
+                block_size = chunk_cfg.get("block_size", 16)
+                overlap = chunk_cfg.get("chunk_overlap", 0.5)
+
+                from ..datasets.chunking_strategy import ChunkingStrategy
+                from ..chunking.window_chunker import (
+                    FixedSizeWindowChunker,
+                )
+                from ..chunking.file_chunker import FileAsDocChunker
+                from ..chunking.line_chunker import LineAsDocChunker
+
+                if strategy == ChunkingStrategy.WINDOWED:
+                    chunker = FixedSizeWindowChunker(
+                        block_size, overlap
+                    )
+                elif strategy == ChunkingStrategy.FILE:
+                    chunker = FileAsDocChunker()
+                elif strategy == ChunkingStrategy.LINE:
+                    chunker = LineAsDocChunker()
+                else:
+                    chunker = FixedSizeWindowChunker(16, 0.5)
+
+                all_chunks: list[str] = []
+                for entry in entries:
+                    blob_bytes = b""
+                    async for chunk in store.open_blob(
+                        entry.content_hash
+                    ):
+                        blob_bytes += chunk
+                    text = blob_bytes.decode("utf-8")
+                    all_chunks.extend(chunker.chunk(text))
+                return all_chunks
+
+        return asyncio.run(_load())
 
     def reserve_run(self) -> int:
         """Atomically reserve a new run ID and initialise its queues.
@@ -369,7 +483,14 @@ class TrainingService:
         loop = asyncio.get_event_loop()
         corpus_id = config.get("corpus_id")
         dataset_id = config.get("dataset_id")
-        docs = await loop.run_in_executor(None, self._load_docs, corpus_id, dataset_id)
+        content_version_id = config.get("content_version_id")
+        docs = await loop.run_in_executor(
+            None,
+            self._load_docs,
+            corpus_id,
+            dataset_id,
+            content_version_id,
+        )
 
         # ── resolve backend ───────────────────────────────────────────
         resolved = resolve_backend(config)

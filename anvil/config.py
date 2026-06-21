@@ -171,4 +171,5 @@ def get_config():
         in ("true", "1", "yes"),
         "storage_backend": os.getenv("ANVIL_STORAGE_BACKEND", "local"),
         "device": os.getenv("ANVIL_DEVICE", ""),
+        "content_dir": os.getenv("ANVIL_CONTENT_DIR", "data/content"),
     }

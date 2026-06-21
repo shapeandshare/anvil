@@ -103,6 +103,7 @@ async def start_training(config: dict):
     compute_backend = config.get("compute_backend", "auto")
     dataset_id = config.get("dataset_id")
     corpus_id = config.get("corpus_id")
+    content_version_id = config.get("content_version_id")
 
     try:
         resolved = resolve_backend({"compute_backend": compute_backend})
@@ -163,6 +164,7 @@ async def start_training(config: dict):
         "compute_backend": compute_backend,
         "corpus_id": corpus_id,
         "dataset_id": dataset_id,
+        "content_version_id": content_version_id,
     }
 
     hyperparams["gpu_available"] = str(gpu_info.available)
@@ -281,6 +283,75 @@ async def start_training(config: dict):
                             "anvil.corpus.language_map",
                             corpus.language_map,
                         )
+            except Exception:
+                pass
+
+    # Phase US1-1: content version reproducibility (T046)
+    if mlflow_run_id and content_version_id is not None:
+        async with AsyncSessionLocal() as sess:
+            try:
+                from ...db.repositories.content_versions import (
+                    ContentVersionRepository,
+                )
+                from ...services.content.lineage_service import (
+                    LineageService,
+                )
+
+                ver_repo = ContentVersionRepository(sess)
+                lineage = LineageService(ver_repo)
+                version = await ver_repo.get(int(content_version_id))
+                if version:
+                    # Log manifest digest as MLflow tags/params
+                    await tracking_svc.set_tag(
+                        mlflow_run_id,
+                        "anvil.content_version_id",
+                        str(content_version_id),
+                    )
+                    await tracking_svc.set_tag(
+                        mlflow_run_id,
+                        "anvil.content_manifest_digest",
+                        version.manifest_digest,
+                    )
+
+                    # Attach corpus_manifest.json as MLflow artifact
+                    client = tracking_svc._client
+                    if client:
+                        import json as _json
+
+                        def _log_manifest():
+                            import tempfile as _tf
+
+                            with _tf.NamedTemporaryFile(
+                                mode="w", suffix=".json", delete=False
+                            ) as f:
+                                _json.dump(
+                                    {
+                                        "version_id": version.id,
+                                        "version_number": version.version_number,
+                                        "manifest_digest": version.manifest_digest,
+                                        "label": version.label,
+                                        "entry_count": version.entry_count,
+                                        "total_bytes": version.total_bytes,
+                                    },
+                                    f,
+                                )
+                                fpath = f.name
+                            client.log_artifact(mlflow_run_id, fpath)
+                            import os as _os
+
+                            _os.unlink(fpath)
+
+                        await asyncio.get_event_loop().run_in_executor(
+                            None, _log_manifest
+                        )
+
+                    # Record lineage link
+                    await lineage.record_run_ref(
+                        version_id=version.id,
+                        mlflow_run_id=mlflow_run_id,
+                        corpus_ref=f"corpus:{version.corpus_id}",
+                    )
+                    await sess.commit()
             except Exception:
                 pass
 
