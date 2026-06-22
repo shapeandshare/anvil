@@ -19,7 +19,7 @@ source: agent
 
 # SaaS Security, Boundary & Flow Diagrams
 
-Security-, boundary-, and flow-focused diagrams complementing [[SaaSSystemDiagrams]]. Aligned with Architecture Decisions **AD-1..AD-16** in `specs/014-saas-architecture/spec.md`.
+Security-, boundary-, and flow-focused diagrams complementing [[SaaSSystemDiagrams]]. Aligned with Architecture Decisions **AD-1..AD-16** in `specs/016-saas-architecture/spec.md`.
 
 > [!NOTE]
 > **Updated 2026-06-19**: Part H adds the cluster-admin read-wide/write-narrow diagram and local-mode contrast (AD-14). Observability data-flow and secret-rotation diagrams are covered in [[SaaSSystemDiagrams]] Part G and [[Decisions/ADR-030-saas-architecture|ADR-030]]; remaining Part A–G flow diagrams reflect AD-1..AD-11 and are supplemented by the new entries. See [[2026-06-19-saas-spec-hardening|the hardening session log]].
@@ -948,5 +948,5 @@ flowchart LR
 
 - [[SaaSSystemDiagrams]] — structural, data, auth, compute, deploy, observability, proxy, multi-cluster, HA (38 diagrams)
 - [[SaaSArchitecture]] — narrative overview + feature matrix
-- `specs/014-saas-architecture/spec.md` — AD-1..AD-16, acceptance gates
-- `specs/014-saas-architecture/data-model.md` — schema source
+- `specs/016-saas-architecture/spec.md` — AD-1..AD-16, acceptance gates
+- `specs/016-saas-architecture/data-model.md` — schema source

@@ -12,7 +12,7 @@
 - **Auto-bump safety-net** (`.github/workflows/auto-bump.yml`): Separate workflow triggered on `anvil/**` file changes. Detects un-versioned source code pushes and auto-opens a patch-bump PR with changelog entry.
 - **Secrets docs** (`docs/secrets.md`): Step-by-step BUMP_PAT creation and configuration guide.
 - **Makefile target** (`setup-hooks`): Convenience target to configure `core.hooksPath` for the commit-msg hook.
-- **Full Spec Kit artifacts**: spec, plan, research, data model, contracts, quickstart, tasks (31 tasks), and quality checklist — all at `specs/007-automated-semver-release/`.
+- **Full Spec Kit artifacts**: spec, plan, research, data model, contracts, quickstart, tasks (31 tasks), and quality checklist — all at `specs/010-automated-semver-release/`.
 
 ## Key decisions
 
@@ -41,4 +41,4 @@
 - `.github/workflows/auto-bump.yml` (new — 147 lines)
 - `docs/secrets.md` (new — BUMP_PAT guide)
 - `AGENTS.md` (updated — new technologies)
-- `specs/007-automated-semver-release/` (20 artifacts across 7 phases)
+- `specs/010-automated-semver-release/` (20 artifacts across 7 phases)

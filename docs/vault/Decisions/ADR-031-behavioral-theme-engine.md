@@ -28,7 +28,7 @@ proposed
 ## Context
 
 The anvil web UI supported exactly two appearances (dark/light) selected by a
-single toggle that swapped color tokens. Feature `015-theme-engine` requires
+single toggle that swapped color tokens. Feature `018-theme-engine` requires
 *behavioral* themes — named presentation systems that change palette,
 typography, motion, layered effects, and the **semantic mapping between live
 training state and what the user sees** (e.g. "Forge" rendering loss as cooling
@@ -130,4 +130,4 @@ layering / wave-avoidance constraints:
   (`tests/system/test_theme_engine.py`) for the JS engine.
 - Article V/VII: threading unchanged; run-status reconciled through the service.
 - Verified by `make lint`, `make typecheck`, `make test`, and the SC-001…SC-012
-  QA matrix in `specs/015-theme-engine/quickstart.md`.
+  QA matrix in `specs/018-theme-engine/quickstart.md`.

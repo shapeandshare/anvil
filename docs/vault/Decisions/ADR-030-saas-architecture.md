@@ -13,7 +13,7 @@ aliases:
 status: status/draft
 source: agent
 code-refs:
-  - specs/014-saas-architecture/spec.md
+  - specs/016-saas-architecture/spec.md
   - docs/vault/Reference/SaaSArchitecture.md
   - docs/vault/Reference/SaaSSystemDiagrams.md
 ---
@@ -109,7 +109,7 @@ SaaS code lives in `anvil/_saas/` and is **never imported in local mode** -- no 
 
 ## Architecture Decisions (Canonical: AD-1 .. AD-17)
 
-The detailed, binding decisions resolving the pre-implementation review live in `specs/014-saas-architecture/spec.md` and supersede any summary here:
+The detailed, binding decisions resolving the pre-implementation review live in `specs/016-saas-architecture/spec.md` and supersede any summary here:
 
 | AD | Decision |
 |----|----------|
