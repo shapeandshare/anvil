@@ -551,9 +551,8 @@ class TrainingService:
 
         # ── remote: emit submitted event before launching ─────────────
         if backend_name == ComputeBackendResult.MODAL:
-            asyncio.run_coroutine_threadsafe(
-                _enqueue_or_drop(
-                    queue,
+            try:
+                queue.put_nowait(
                     {
                         "event": "submitted",
                         "data": json.dumps(
@@ -562,10 +561,10 @@ class TrainingService:
                                 "device": device,
                             }
                         ),
-                    },
-                ),
-                loop,
-            )
+                    }
+                )
+            except asyncio.QueueFull:
+                pass
 
         try:
             result = await backend.run(
