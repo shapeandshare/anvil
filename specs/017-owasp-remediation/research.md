@@ -21,10 +21,10 @@
 - Custom ASGI middleware: More flexible but harder to test and maintain. Use FastAPI middleware instead.
 
 **Key findings**:
-- 18+ endpoints use `body: dict` (untyped) — `training.py`, `corpora.py`, `inference.py`, `registry.py`, `eval.py`, `eval_datasets.py`
-- 48 `str(exc)` instances in HTTPException details across 15 files
-- 97 `except Exception: pass` patterns across 27 files (mostly in tracking/MLflow calls)
-- `--allowed-hosts "*"` at `supervisor/services.py:142-143`
+- 18 endpoints use `body: dict` (untyped) across 8 files (verified against current HEAD): `corpora.py` (4), `inference.py` (7), `eval_datasets.py` (2), `registry.py` (1), `eval.py` (1), `learning.py` (1), `content.py` (1), `datasets.py` (1). NOTE: `training.py` `POST /training/start` uses `config: dict` (also untyped — covered by T005), and `learning.py`/`content.py`/`datasets.py` were missed in the original audit (now covered by T008b).
+- ~34 `str(exc)`/`str(e)` instances in HTTPException details across 8 files (verified against current HEAD post-merge: content.py 9, inference.py 9, datasets.py 7, corpora.py 4, training.py 2, eval.py 1, learning.py 1, experiments.py 1 f-string; eval_datasets.py 0). The earlier "48 across 15 files" estimate was from an older tree and is superseded — see T014 for the authoritative line list.
+- 97 `except Exception: pass` patterns across 27 files (mostly in tracking/MLflow calls) — order-of-magnitude estimate; T029 triages the full set discovered at implementation time.
+- `--host 0.0.0.0` at `supervisor/services.py:136-137` and `--allowed-hosts "*"` at `supervisor/services.py:142-143` (within `start()`, lines 115-149)
 
 ---
 
@@ -35,19 +35,19 @@
 **Decision**: Pin Docker images and CI/CD actions to SHA256 digests. Add field constraints to existing Pydantic models rather than creating new ones.
 
 **Rationale**:
-- Docker: `FROM python:3.11-slim` (lines 11, 30) — both builder and runtime stages use floating tags
-- CI/CD: `SonarSource/sonarcloud-github-action@master` in `ci.yml:125` — `@master` is a floating tag
+- Docker: `FROM python:3.11-slim` (lines 11, 30) — both builder and runtime stages use floating tags (verified)
+- CI/CD: `SonarSource/sonarcloud-github-action@master` in `ci.yml:128` (verified post-merge; was cited as :125) — `@master` is a floating tag. `release.yml` has no floating-tag third-party action.
 - Pydantic: 28+ models in `schemas.py` — most lack `Field(max_length=...)`, `Field(ge=..., le=...)` constraints
-- Path containment: `storage/local.py:55` `_resolve()` has no `is_relative_to()` check
+- Path containment: `storage/local.py:55` `_resolve()` does `(self.base_path / path).resolve()` with no `is_relative_to()` check (verified); `staging_area / path` at `local_versioned_content_store.py:214` has no `..` validation (verified)
+- torch: `pyproject.toml:54` — `torch>=2.0` needs `<3` upper bound (verified line 54, not 55)
 
 **Key findings**:
 - Docker: 2 stages both need SHA pinning
 - CI/CD: Only `ci.yml` has SonarCloud — `release.yml` does not
 - Pydantic: Models exist for most endpoints but lack field-level constraints
 - upload: `datasets.py:260` and `content.py:420` use `UploadFile` with no size check
-- TOCTOU: `content.py:1085-1094` — check-then-act for lock acquisition
-- print(): 75 instances — key ones in `app.py:57,135`, `cli.py:403-823`, `demo_model_provider.py:268`
-- torch: `pyproject.toml:55` — `torch>=2.0` needs `<3` upper bound
+- TOCTOU: `content.py` `acquire_lock` at lines 1071-1117 (check at ~1096-1102, acquire at ~1104; verified post-merge — was cited as 1085-1094) — check-then-act for lock acquisition. `CheckoutLock` model (`anvil/db/models/content_lock.py`) has NO `UNIQUE(scope)` constraint.
+- print(): ~39 in `cli.py` (403-823) + `app.py:57,135` + `demo_model_provider.py:268` (verified post-merge)
 
 ---
 

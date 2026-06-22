@@ -41,9 +41,19 @@
 | `requests_per_minute` | `int` | `100` | Max requests per client per minute |
 | `burst_size` | `int` | `20` | Max burst requests before throttling kicks in |
 | `enabled` | `bool` | `true` | Master toggle |
-| `exempt_routes` | `list[str]` | `["/v1/health", "/login", "/static"]` | Routes not subject to rate limiting |
+| `exempt_routes` | `list[str]` | `["/v1/health", "/static"]` | Routes not subject to general rate limiting (see §Login Rate Limit for /login) |
 
 **Configuration source**: `ANVIL_RATE_LIMIT` env var overrides defaults (JSON string) or config module constant.
+
+### Login Rate Limit (separate, stricter, FR-028)
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `login_attempts_per_minute` | `int` | `5` | Max POST /login attempts per client IP per minute |
+| `failure_delay_ms` | `int` | `1000` | Fixed delay after each failed login attempt |
+
+The login endpoint has its own strict rate limit independent of the general API rate limit.
+`POST /login` is NOT exempt from the general rate limit — it is governed by this separate, stricter policy.
 
 ---
 

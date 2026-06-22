@@ -99,6 +99,7 @@ EXEMPT_PREFIXES = {"/static"}
 - Client JS reads the meta tag and sends it as `X-CSRF-Token` on all `fetch()` POST/PUT/DELETE/PATCH calls.
 - `verify_csrf()` recomputes the HMAC and compares with `secrets.compare_digest`.
 - **Header (`X-API-Key`) authenticated requests are exempt** from CSRF — they cannot be driven by ambient browser credentials, so CSRF does not apply.
+- **⚠️ MLflow reverse-proxy CSRF exemption (interaction with FR-004/ADR-035).** The embedded MLflow SPA runs under `/v1/mlflow-proxy/` and is authenticated by the anvil session cookie in the browser, but it issues its OWN state-changing AJAX calls (`POST/PATCH/DELETE /v1/mlflow-proxy/ajax-api/2.0/mlflow/...`) that do NOT carry anvil's `X-CSRF-Token`. If the CSRF check applied to the proxy prefix, the MLflow UI would break with 403 the moment auth is enabled. Therefore the `/v1/mlflow-proxy/*` prefix MUST be EXEMPT from the anvil CSRF synchronizer-token check. This is acceptable because: (a) the proxy is same-origin under the app, (b) `SameSite=Strict` on the session cookie already blocks cross-site POSTs to the proxy, and (c) MLflow is a read-mostly experiment viewer with no destructive anvil-data operations. The implementation MUST add the `/v1/mlflow-proxy` prefix to the CSRF-exempt set and leave a `# SECURITY(FR-027/FR-004): MLflow proxy CSRF-exempt — relies on SameSite=Strict` marker. The MLflow proxy test (T009t) MUST cover a state-changing MLflow AJAX call succeeding through the proxy.
 
 ## Edge Cases
 
@@ -109,6 +110,7 @@ EXEMPT_PREFIXES = {"/static"}
 | Invalid API key format (too short, non-URL-safe) | 401 `{"detail": "Authentication required"}` (do not echo the reason in detail) |
 | Missing both API key and session cookie | Page/HTML request: 303 → `/login`. API request: 401 |
 | Cookie-auth POST without CSRF token | 403 `{"detail": "CSRF token invalid or missing"}` (FR-027) |
+| Cookie-auth POST to `/v1/mlflow-proxy/*` without CSRF token | **Allowed** — proxy prefix is CSRF-exempt (relies on `SameSite=Strict`); otherwise MLflow UI breaks (FR-027 × FR-004) |
 | Expired session cookie | Redirect to `/login` (page) or 401 (API) |
 | API key in query string | Not supported. 400 |
 | `POST /login` brute force | Strict per-IP rate limit (5/min) + failure delay (FR-028) |
