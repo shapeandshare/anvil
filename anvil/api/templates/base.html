@@ -10,6 +10,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="csp-nonce" content="{{ request.state.csp_nonce }}">
 <title>anvil</title>
 <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
@@ -18,7 +19,7 @@
 <link rel="stylesheet" href="/static/css/utilities.css">
 <link rel="stylesheet" href="/static/css/components.css">
 <link rel="stylesheet" href="/static/css/code.css">
-<script>
+<script nonce="{{ request.state.csp_nonce }}">
 window.ANVIL_VERSION = '{{ version }}';
 (function () {
   var raw = null;

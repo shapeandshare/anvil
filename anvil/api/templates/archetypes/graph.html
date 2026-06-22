@@ -64,7 +64,7 @@
 {% endblock %}
 {% block scripts %}
 <script src="/static/js/graph-view.js"></script>
-<script>
+<script nonce="{{ request.state.csp_nonce }}">
 (function() {
   'use strict';
 

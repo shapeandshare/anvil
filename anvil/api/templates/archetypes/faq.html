@@ -293,7 +293,7 @@ with a custom Value autograd graph — this is the default.
 </div>
 {% endblock %}
 {% block scripts %}
-<script>
+<script nonce="{{ request.state.csp_nonce }}">
 function toggleFaq(el) {
   var answer = el.querySelector('.faq-answer');
   var toggle = el.querySelector('.faq-toggle');
