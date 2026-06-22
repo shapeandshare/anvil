@@ -5,7 +5,7 @@ tags:
   - type/moc
   - domain/vault
 created: 2026-06-18T00:00:00.000Z
-updated: '2026-06-21T04:07:13.000Z'
+updated: '2026-06-21T18:00:00.000Z'
 aliases:
   - Discoveries
 ---
@@ -46,13 +46,11 @@ Non-obvious constraints, gaps, and conflicts discovered during agent sessions. E
 ## Discoveries from this session
 - [[Discoveries/pre-commit-and-pr-ready-tooling-pattern|Pre-commit and pr-ready Tooling Pattern]] — `make format` and `make typecheck` were documented stubs with no recipes (silent no-ops), and the CI `typecheck` gate was passing without running mypy. The `pr-ready` target and pre-commit hook close the gap between local dev and CI enforcement.
 
-## Discoveries from this session
+## Discoveries from this session (2026-06-21 — UX rules integration)
 
-- **Fake-based tests mask real integration bugs**: the original 61 US1 tests used an in-memory `FakeVersionedContentStore`, which passed instantly but hid ~16 real bugs (broken wiring, empty-version accept, ambiguous ORM relationships, unnamed migration constraints, greenlet expired-object crashes, missing commits). Three-layer testing (unit/fake, real store+service e2e, HTTP API) is now standard for the content repo.
-- **`asyncio.Lock` + `MissingGreenlet` pattern**: accessing ORM attributes after `commit()` expires them; sync-style lazy-load triggers `MissingGreenlet` in async contexts. Always capture plain ids/values before commit.
-- **Alembic + SQLite + unnamed constraints**: SQLite batch mode requires all constraints to have a name. Forward FKs in CREATE TABLE are tolerated by SQLite — no need for `batch_alter_table`.
-- **LakeFS OSS RBAC is enterprise-only**: fine-grained per-branch scoping and merge restrictions are not available in OSS LakeFS. Producer + management authz must be app-level regardless.
-- **`VersionedContentStore` as a substrate boundary**: separating versioned content operations from the blob-level `FileStore` prevents bounded-context confusion and enables swapping the local pure-Python impl for a future LakeFS-backed SaaS impl without touching services/routes.
+- **UX linter FILES default silently empty without `origin/main`**: `shared/ux.mk` uses `git diff --name-only --diff-filter=ACMR origin/main...` to auto-detect changed files. If `origin/main` doesn't exist (detached HEAD, shallow clone, no remote), this silently returns empty — `make ux-lint` passes with zero files checked. Always pass `FILES=` explicitly when the remote baseline is uncertain. ([[Decisions/ADR-038-ux-rules-integration|ADR-038]])
+- **Makefile PYTHON variable must be used in included mk files**: `shared/ux.mk` used bare `python`, which isn't on `PATH` in this environment — the `$(PYTHON)` variable (`.venv/bin/python3`) from `shared/python.mk` is required. Include-order matters: `python.mk` must precede `ux.mk` in the root Makefile's include list. ([[Decisions/ADR-038-ux-rules-integration|ADR-038]])
+- **Pre-existing S4 violations baseline**: Running `make ux-lint` on all 35 templates for the first time surfaced 17 S4 violations (2 unaudited `|safe`, 15 `<div>` click handlers in FAQ/glossary templates). These existed before the gate and represent a remediation backlog, not new regressions. ([[Sessions/2026-06-21-ux-rules-integration-completion|session log]])
 
 ## Related MOCs
 

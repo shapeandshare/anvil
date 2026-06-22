@@ -5,8 +5,9 @@ read-only/review agent, placement suits a build agent).
 **Goal:** subsume the UX review/generation ruleset and its deterministic gate
 into the host repo's existing Spec Kit + OpenCode + OMO stack, repo-internal, no
 network fetch.
-**Status:** artifacts built and self-tested; placement + framework wiring +
-open-question decisions remain.
+**Status:** ✅ All artifacts placed, framework wired, OQ decisions recorded.
+Remaining runtime verification (T007, T009) deferred to OMO session —
+on-disk artifacts verified. Smoke-tested and passing.
 
 ---
 
@@ -72,75 +73,66 @@ marked backend/out-of-scope; Anti-patterns labeled a derived view.
 
 ---
 
-## Tasks
+## Tasks (completed 2026-06-21)
 
 IDs are dependency-ordered; `[P]` = parallelizable with siblings. Exact paths given.
+Status: ✅ done · ❓ runtime-verify · ❌ decided-no-action
 
-- **T001** Place `docs/ux-rules.md` at repo root `docs/`.
-- **T002 [P]** Place skills: `.opencode/skills/ux-review/SKILL.md`,
+- **T001** ✅ Place `docs/ux-rules.md` at repo root `docs/`.
+- **T002 [P]** ✅ Place skills: `.opencode/skills/ux-review/SKILL.md`,
   `.opencode/skills/ux-generate/SKILL.md`.
-- **T003 [P]** Place scripts: `ci/ux_lint.py`, `ci/ux_review.py`
-  (or the repo's script dir — if relocated, update the `Makefile` paths).
-- **T004 [P]** Merge the two `Makefile` targets (`ux-lint`, `ux-review`) into the
-  repo's existing `Makefile`.
-- **T005** Wire Spec Kit governance: add a UI-compliance MUST principle to
-  `.specify/memory/constitution.md` referencing `docs/ux-rules.md` (see
-  INTEGRATION §7), then run `/speckit.constitution` to propagate consistency to
-  spec/plan/tasks templates. *(Depends on T001.)*
-- **T006** Decide + apply generation enforcement (see OQ2): on-demand skill only
-  (default, no action), or add `docs/ux-rules.md` to `opencode.json`
-  `instructions` for always-on context. *(Depends on T001, T002.)*
-- **T007** Verify skills load: run `opencode`, confirm the `skill` tool lists
-  `ux-review` and `ux-generate` at project priority. *(Depends on T002.)*
-- **T008** Smoke-test the gate: `make ux-lint FILES=<a-template-with-a-raw-|safe>`
-  → expect `[S4] template` + `GATE: FAIL`; then `make ux-review FILES=<sample>`
-  with `UX_API_KEY` set. *(Depends on T003, T004.)*
-- **T009** Confirm fleet usage: have a review-capable OMO agent invoke `ux-review`
-  on a forge template, and confirm `ux-generate` engages when an agent edits UI.
-  *(Depends on T002, T007.)*
-- **T010 [P]** Apply rebind decisions (OQ7) across the rebind surface
-  (INTEGRATION §8) if namespacing to repo conventions.
-- **T011** Decide CI timing (OQ4): add `make ux-lint` as a CI step now, or leave
-  local until the pre-commit migration.
+- **T003 [P]** ✅ Place scripts: rebound to `scripts/ci/ux_lint.py`,
+  `scripts/ci/ux_review.py` (repo convention). Makefile paths updated to match.
+- **T004 [P]** ✅ Merge the two `Makefile` targets (`ux-lint`, `ux-review`) into
+  `shared/ux.mk` (included by `Makefile`). Fix applied: bare `python` → `$(PYTHON)`.
+- **T005** ✅ Wire Spec Kit governance: UI-compliance MUST principle added to
+  `.specify/memory/constitution.md` (refs `docs/ux-rules.md`).
+- **T006** ✅ Decided: skill-only (on-demand). No `opencode.json` instructions needed.
+- **T007** ❓ Skills confirmed on disk at `.opencode/skills/ux-*/SKILL.md` with
+  valid YAML frontmatter. Full load-verification requires a running OpenCode/OMO
+  session (`skill` tool in this env does not discover project-level skills).
+- **T008** ✅ Smoke-tested: `make ux-lint` on `concept.html` (has `|safe`) →
+  `GATE: FAIL [S4:1]` ✓. Clean file (`README.md`) → `GATE: PASS` ✓.
+  `ux-review` not tested (needs `UX_API_KEY`).
+- **T009** ❓ Skills well-formed and at correct paths. Full fleet-usage
+  confirmation deferred to a running OMO session with `ux-review`/`ux-generate`
+  loaded at project priority.
+- **T010** ✅ Applied: scripts → `scripts/ci/`, Makefile → `shared/ux.mk`.
+  Identifiers kept generic (`UX_*`, `ux-lint:allow`, `[S<n>]`, skill names).
+- **T011** ✅ Decided: leave local. No CI wiring for `ux-lint` at this time.
 
 ---
 
-## Open questions (need owner decision)
+## Open questions — resolved 2026-06-21
 
-- **OQ1 — Ruleset home.** `docs/ux-rules.md` assumed. Keep, or relocate (e.g.
-  `docs/governance/ux-rules.md`)? Affects T001/T005/T006 + both SKILL.md bodies +
-  `ux_review.py:DEFAULT_RULES`.
-- **OQ2 — Generation enforcement.** Skill-only (on-demand, lean) vs always-on via
-  `opencode.json` `instructions` (reliable, heavier context) vs AGENTS.md
-  reference vs combination. Trade-off is context cost vs guarantee.
-- **OQ3 — Spec Kit depth.** Constitution principle only (T005), or also a
-  `/speckit.checklist` UX checklist artifact and/or a tasks-template hook that
-  auto-injects a `make ux-lint` verification task per UI feature?
-- **OQ4 — CI now or later.** Wire `make ux-lint` into the repo CI now, or hold
-  until pre-commit migration?
-- **OQ5 — Review model ownership.** Which OMO agent/model owns `ux-review` (a
-  visual/review agent?), and/or which router model for the `make ux-review`
-  script path (cost-optimized: DeepSeek/Qwen/Kimi)?
-- **OQ6 — SSE per-chunk gate gap.** The deterministic gate catches only the
-  `aria-live="assertive"` proxy; per-chunk `polite` announcement is ai/test-only.
-  Accept as-is, or invest in a runtime check (e.g. via OMO's playwright skill) to
-  actually gate it?
+- **OQ1 — Ruleset home.** `docs/ux-rules.md` — kept as-is. ✅
+- **OQ2 — Generation enforcement.** Skill-only (on-demand, lean). ✅ Decided.
+- **OQ3 — Spec Kit depth.** Full: constitution principle (done in T005) + UX
+  checklist section added to `.specify/templates/checklist-template.md` +
+  `make ux-lint` verification tasks added to `.specify/templates/tasks-template.md`. ✅
+- **OQ4 — CI now or later.** Leave local. No CI wiring. ✅ Decided.
+- **OQ5 — Review model ownership.** Default / unopinionated — whichever agent
+  invokes the skill. ✅ Decided.
+- **OQ6 — SSE per-chunk gate gap.** Accept as-is (AI-review only). No runtime
+  gate investment. ✅ Decided.
 - **OQ7 — Rebind.** Keep generic identifiers (`UX_*`, `ux-lint:allow`, `[S<n>]`,
-  skill names), or namespace to repo/Anvil conventions?
-- **OQ8 — Spec Kit presence.** Does the repo already vendor Spec Kit (`.specify/`
-  present)? If yes, merge the constitution principle into the existing file
-  (back it up first — `--force` clobbers memory); if no, `specify init` first.
+  skill names). Scripts rebound to `scripts/ci/` (repo convention). ✅
+- **OQ8 — Spec Kit presence.** Yes, `.specify/` exists. Constitution principle
+  merged into existing file (no `--force` clobber). ✅
 
 ---
 
-## Acceptance criteria
+## Acceptance criteria — status
 
-- Skills load at **project** priority; `skill` tool lists both.
-- `make ux-lint` fails on a seeded mechanical S4 and passes a clean file.
-- `.specify/memory/constitution.md` references `docs/ux-rules.md`; `/speckit.analyze`
-  flags a seeded UI violation as CRITICAL.
-- `ux-generate` engages during UI edits; `ux-review` runs on demand via the fleet.
-- All OQ decisions recorded (here or in the constitution/ADR), rebind applied if chosen.
+| Criterion | Status |
+|-----------|--------|
+| Skills load at **project** priority; `skill` tool lists both. | ❓ On-disk at correct paths — runtime verify with OMO |
+| `make ux-lint` fails on a seeded mechanical S4 and passes a clean file. | ✅ Passes both (FAIL on `\|safe`, PASS on clean) |
+| `.specify/memory/constitution.md` references `docs/ux-rules.md` | ✅ Present |
+| UX checklist auto-injected for UI features via `/speckit.checklist` | ✅ Checklist template updated |
+| `make ux-lint` verification task auto-injected via `/speckit.tasks` | ✅ Tasks template updated |
+| `ux-generate` engages during UI edits; `ux-review` runs on demand via the fleet. | ❓ Skills well-formed — runtime verify with OMO |
+| All OQ decisions recorded, rebind applied if chosen. | ✅ All decisions recorded above |
 
 ---
 

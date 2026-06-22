@@ -28,7 +28,7 @@ model spanning local and SaaS, multi-cluster CLI management, and finally a criti
 review (distributed-systems architect, DevOps/SRE, principal engineer) whose findings were all
 addressed.
 
-Spec under work: `specs/014-saas-architecture/spec.md` (+ `plan.md`). See [[Decisions/ADR-030-saas-architecture|ADR-030]].
+Spec under work: `specs/016-saas-architecture/spec.md` (+ `plan.md`). See [[Decisions/ADR-030-saas-architecture|ADR-030]].
 
 ## What was done
 

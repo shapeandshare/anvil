@@ -200,7 +200,7 @@
 <script src="/static/js/sse.js"></script>
 <script src="/static/js/composer.js"></script>
 <script src="/static/js/content.js"></script>
-<script>
+<script nonce="{{ request.state.csp_nonce }}">
 (function() {
   'use strict';
   /* Mount the Ensemble Composer into its mount point */

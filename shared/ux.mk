@@ -11,7 +11,7 @@ FILES ?= $(shell git diff --name-only --diff-filter=ACMR origin/main... 2>/dev/n
 .PHONY: ux-lint ux-review
 
 ux-lint: ## Run deterministic UX lint (mechanical S4 gate)
-	@python scripts/ci/ux_lint.py $(FILES)
+	@$(PYTHON) scripts/ci/ux_lint.py $(FILES)
 
 ux-review: ## Run AI UX review (requires UX_API_KEY; set UX_API_KEY env var)
-	@python scripts/ci/ux_review.py $(FILES)
+	@$(PYTHON) scripts/ci/ux_review.py $(FILES)

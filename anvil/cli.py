@@ -5,12 +5,14 @@
 
 """CLI entry points and AnvilWorkbench god class.
 
-Defines the command-line interface for anvil — ``anvil serve``,
+Defines the command-line interface for anvil — ``anvil``,
 ``anvil train``, ``anvil corpus``, ``anvil stop``,
 ``anvil bootstrap-datasets``, and ``anvil db``.
 
 Public Functions
 ----------------
+main
+    Top-level ``anvil`` entry point (intercepts flags, then serves).
 serve
     Start the web server.
 train
@@ -152,6 +154,25 @@ def _load_docs(corpus_id: int | None = None) -> list[str]:
             return await svc.load_docs(corpus.id)
 
     return asyncio.run(_load_default())
+
+
+def main() -> None:
+    """Top-level entry point for the ``anvil`` command.
+
+    Intercepts top-level flags (``--show-api-key``, ``--version``)
+    before falling through to :func:`serve`.  This avoids starting
+    uvicorn (and binding the port) when the user only wants a quick
+    informational query.
+    """
+    if "--show-api-key" in sys.argv:
+        show_api_key()
+        return
+    if "--version" in sys.argv:
+        from . import __version__
+
+        print(__version__)
+        return
+    serve()
 
 
 def serve():

@@ -337,19 +337,19 @@ SomeException
 - Use `` ``backticks`` `` for parameter names, types, and code references within prose.
 
 ## Active Technologies
-- Python 3.11+ (existing repo convention) + Stdlib only — `ux_lint.py` (re/ sys/ os/), `ux_review.py` (stdlib + urllib for OpenAI-compatible API calls) (feature/020-ux-rules-integration)
-- N/A — flat files on disk (feature/020-ux-rules-integration)
-- OpenCode skills: `ux-review` (audit UI), `ux-generate` (generate compliant UI) at `.opencode/skills/` (feature/020-ux-rules-integration)
+- Python 3.11+ (existing repo convention) + Stdlib only — `ux_lint.py` (re/ sys/ os/), `ux_review.py` (stdlib + urllib for OpenAI-compatible API calls) (025-ux-rules-integration)
+- N/A — flat files on disk (025-ux-rules-integration)
+- OpenCode skills: `ux-review` (audit UI), `ux-generate` (generate compliant UI) at `.opencode/skills/` (025-ux-rules-integration)
 
 ## Recent Changes
-- feature/020-ux-rules-integration: Added Python 3.11+ (existing repo convention) + Stdlib only — `ux_lint.py` (re/ sys/ os/), `ux_review.py` (stdlib + urllib for OpenAI-compatible API calls)
-- feature/020-ux-rules-integration: Added OpenCode skills `ux-review` and `ux-generate` for UI compliance; UX ruleset at `docs/ux-rules.md`
+- 025-ux-rules-integration: Added Python 3.11+ (existing repo convention) + Stdlib only — `ux_lint.py` (re/ sys/ os/), `ux_review.py` (stdlib + urllib for OpenAI-compatible API calls)
+- 025-ux-rules-integration: Added OpenCode skills `ux-review` and `ux-generate` for UI compliance; UX ruleset at `docs/ux-rules.md`
 
 ## Active Technologies
-- Python 3.11+ (existing repo convention) + Stdlib only — `ux_lint.py` (re/ sys/ os/), `ux_review.py` (stdlib + urllib for OpenAI-compatible API calls) (feature/020-ux-rules-integration)
-- N/A — flat files on disk (feature/020-ux-rules-integration)
-- OpenCode skills: `ux-review` (audit UI), `ux-generate` (generate compliant UI) at `.opencode/skills/` (feature/020-ux-rules-integration)
+- Python 3.11+ (existing repo convention) + Stdlib only — `ux_lint.py` (re/ sys/ os/), `ux_review.py` (stdlib + urllib for OpenAI-compatible API calls) (025-ux-rules-integration)
+- N/A — flat files on disk (025-ux-rules-integration)
+- OpenCode skills: `ux-review` (audit UI), `ux-generate` (generate compliant UI) at `.opencode/skills/` (025-ux-rules-integration)
 
 ## Recent Changes
-- feature/020-ux-rules-integration: Added Python 3.11+ (existing repo convention) + Stdlib only — `ux_lint.py` (re/ sys/ os/), `ux_review.py` (stdlib + urllib for OpenAI-compatible API calls)
-- feature/020-ux-rules-integration: Added OpenCode skills `ux-review` and `ux-generate` for UI compliance; UX ruleset at `docs/ux-rules.md`
+- 025-ux-rules-integration: Added Python 3.11+ (existing repo convention) + Stdlib only — `ux_lint.py` (re/ sys/ os/), `ux_review.py` (stdlib + urllib for OpenAI-compatible API calls)
+- 025-ux-rules-integration: Added OpenCode skills `ux-review` and `ux-generate` for UI compliance; UX ruleset at `docs/ux-rules.md`

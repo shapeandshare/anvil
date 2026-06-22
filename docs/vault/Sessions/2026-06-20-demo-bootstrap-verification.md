@@ -50,7 +50,7 @@ Traced the full demo bootstrap chain to confirm first-run guard and manual re-tr
 
 Already up to date:
 - Line 3: `Last updated: 2026-06-19`
-- Line 311: `014-demo-data-bootstrap` entry documents the first-run guard, ops endpoint, and CLI banner conditional
+- Line 311: `015-demo-data-bootstrap` entry documents the first-run guard, ops endpoint, and CLI banner conditional
 - No update needed
 
 ## Key findings

@@ -4,7 +4,7 @@ Tests T061–T063a covering pre-acceptance validation gates, fail-closed
 behaviour when the validation service is unavailable, problem recording
 on rejected acceptance, and latency compliance (SC-012).
 
-See ``specs/016-lakefs-content-repo/`` for the full specification.
+See ``specs/019-lakefs-content-repo/`` for the full specification.
 """
 
 from __future__ import annotations
