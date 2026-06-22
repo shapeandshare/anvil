@@ -34,6 +34,7 @@ def _get_mlflow_model_id() -> int | None:
     """
     try:
         from mlflow.tracking import MlflowClient
+
         client = MlflowClient("http://127.0.0.1:5001")
         models = client.search_registered_models()
         for m in models:
@@ -61,6 +62,7 @@ def _get_tracking_service_id() -> int | None:
     """
     try:
         from anvil.services.tracking.tracking import TrackingService
+
         svc = TrackingService()
         models = asyncio.run(svc.list_registered_models())
         for m in models:

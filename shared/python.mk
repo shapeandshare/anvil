@@ -37,4 +37,11 @@ lint: $(VENV_DIR)/activate ## Run ruff, black --check, isort --check, pylint, an
 build: ## Build a PEP 517 wheel via uv (fall back to python -m build)
 	uv build --wheel --out-dir dist . 2>/dev/null || python3 -m build --wheel --outdir dist .
 
+format: $(VENV_DIR)/activate ## Auto-format with black and isort
+	$(PYTHON) -m black .
+	$(PYTHON) -m isort .
+
+typecheck: $(VENV_DIR)/activate ## Run mypy strict type checking
+	$(PYTHON) -m mypy anvil/
+
 .PHONY: install build lint format typecheck clean

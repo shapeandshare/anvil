@@ -41,6 +41,7 @@ Open this vault in [Obsidian](https://obsidian.md) for graph navigation.
 | **Training Pipeline** | [[Reference/TrainingDataFlow|Training Render Loop]] · [[Reference/MlflowIntegration|MLflow Tracking]] · [[Reference/ProgressiveWalkthroughs|train0→train5 Progression]] |
 | **MLflow Lineage** | [[Decisions/ADR-016-mlflow-primary-lineage|ADR-016: MLflow as Primary Lineage Source of Truth]] |
 | **Model Export** | [[Reference/SafetensorsExport|Safetensors & HF Interop]] |
+| **Tooling & CI** | [[Reference/linting-and-testing-tooling|Linting, Formatting, and Testing Tooling]] · [[Decisions/ADR-028-ci-merge-gate-enforcement|ADR-028: CI Merge Gate Enforcement]] · [[Sessions/2026-06-21-linting-testing-hooks-tooling|Tooling Session Log]] |
 | **Infrastructure** | [[Decisions/ADR-024-auto-db-migration|ADR-024: Auto DB Schema]] · [[Decisions/ADR-018-packaging-resource-relocation|ADR-018: Packaging Resources Inside Wheel]] · [[Sessions/2026-06-18-auto-db-schema|Auto DB Schema Session]] · [[Sessions/2026-06-18-pip-installable-package|Pip-Installable Package Session]] |
 | **SaaS Architecture** | [[Reference/SaaSArchitecture|SaaS Three-Mode Overview]] · [[Reference/SaaSSystemDiagrams|System Diagrams (38)]] · [[Reference/SaaSSecurityAndFlowDiagrams|Security & Boundary Diagrams (39)]] · [[Decisions/ADR-030-saas-architecture|ADR-030: SaaS Architecture]] |
 | **Data Management** | [[Reference/ContentManagementLandscape|CMS & Python Ecosystem vs. anvil Data Layer]] · [[Reference/TrainingDataFlow|Training Render Loop]] |

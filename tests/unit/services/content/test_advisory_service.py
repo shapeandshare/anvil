@@ -22,9 +22,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from anvil.db.repositories.content_blobs import ContentBlobRepository
-from anvil.db.repositories.content_ingest_sessions import (
-    ContentIngestSessionRepository,
-)
+from anvil.db.repositories.content_ingest_sessions import ContentIngestSessionRepository
 from anvil.db.repositories.content_versions import ContentVersionRepository
 from anvil.services.content.advisory_service import AdvisoryService
 
@@ -117,9 +115,7 @@ class TestDetectNearDuplicates:
         service._version_repo.get_entries = AsyncMock(return_value=[entry])
 
         scalar_result = MagicMock()
-        scalar_result.scalars.return_value.all = MagicMock(
-            return_value=[dup_entry]
-        )
+        scalar_result.scalars.return_value.all = MagicMock(return_value=[dup_entry])
         service._db_session.execute = AsyncMock(return_value=scalar_result)
 
         result = await service.detect_near_duplicates(1)
@@ -165,9 +161,7 @@ class TestDetectNearDuplicates:
         )
 
         scalar_result = MagicMock()
-        scalar_result.scalars.return_value.all = MagicMock(
-            return_value=[dup_entry]
-        )
+        scalar_result.scalars.return_value.all = MagicMock(return_value=[dup_entry])
         service._db_session.execute = AsyncMock(return_value=scalar_result)
 
         result = await service.detect_near_duplicates(1)
@@ -264,9 +258,7 @@ class TestRecordAcceptanceStats:
         entry2.size_bytes = 200
 
         service._version_repo.get = AsyncMock(return_value=version)
-        service._version_repo.get_entries = AsyncMock(
-            return_value=[entry1, entry2]
-        )
+        service._version_repo.get_entries = AsyncMock(return_value=[entry1, entry2])
 
         # Prevent actual filesystem writes.
         mock_path_instance = MagicMock()

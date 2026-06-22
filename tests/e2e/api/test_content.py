@@ -32,9 +32,9 @@ async def test_content_create_corpus(client):
         "/v1/content/corpora",
         json={"name": "e2e-content-corpus"},
     )
-    assert r.status_code == 200, (
-        f"POST /v1/content/corpora: expected 200, got {r.status_code}: {r.text}"
-    )
+    assert (
+        r.status_code == 200
+    ), f"POST /v1/content/corpora: expected 200, got {r.status_code}: {r.text}"
     body = r.json()
     assert body["error"] is None
     assert body["data"]["id"] is not None
@@ -54,9 +54,9 @@ async def test_content_get_corpus(client):
 
     # Get single
     r = await client.get(f"/v1/content/corpora/{corpus_id}")
-    assert r.status_code == 200, (
-        f"GET /v1/content/corpora/{corpus_id}: expected 200, got {r.status_code}"
-    )
+    assert (
+        r.status_code == 200
+    ), f"GET /v1/content/corpora/{corpus_id}: expected 200, got {r.status_code}"
     body = r.json()
     assert body["error"] is None
     assert body["data"]["id"] == corpus_id
@@ -69,9 +69,7 @@ async def test_content_get_corpus(client):
     assert body["error"] is None
     assert isinstance(body["data"], list)
     ids = [c["id"] for c in body["data"]]
-    assert corpus_id in ids, (
-        f"Expected corpus {corpus_id} in list, got {ids}"
-    )
+    assert corpus_id in ids, f"Expected corpus {corpus_id} in list, got {ids}"
 
 
 @pytest.mark.asyncio
@@ -87,9 +85,9 @@ async def test_content_delete_corpus(client):
 
     # Delete
     r = await client.delete(f"/v1/content/corpora/{corpus_id}")
-    assert r.status_code == 200, (
-        f"DELETE /v1/content/corpora/{corpus_id}: expected 200, got {r.status_code}"
-    )
+    assert (
+        r.status_code == 200
+    ), f"DELETE /v1/content/corpora/{corpus_id}: expected 200, got {r.status_code}"
     body = r.json()
     assert body["error"] is None
     assert body["data"]["status"] == "deleted"
@@ -184,18 +182,16 @@ async def test_content_full_lifecycle(client):
 
     # 8. Get the frozen version
     r = await client.get(f"/v1/content/versions/{version_id}")
-    assert r.status_code == 200, (
-        f"Failed to get version {version_id}: {r.text}"
-    )
+    assert r.status_code == 200, f"Failed to get version {version_id}: {r.text}"
     version_detail = r.json()
     assert version_detail["error"] is None
     assert version_detail["data"]["id"] == version_id
 
     # 9. Get version lineage
     r = await client.get(f"/v1/content/versions/{version_id}/lineage")
-    assert r.status_code == 200, (
-        f"Failed to get lineage for version {version_id}: {r.text}"
-    )
+    assert (
+        r.status_code == 200
+    ), f"Failed to get lineage for version {version_id}: {r.text}"
     lineage = r.json()
     assert lineage["error"] is None
     assert lineage["data"]["version_id"] == version_id
@@ -255,9 +251,7 @@ async def test_content_tag(client):
         f"/v1/content/versions/{version_id}/tag",
         json={"name": "v1.0"},
     )
-    assert r.status_code == 200, (
-        f"Failed to tag version {version_id}: {r.text}"
-    )
+    assert r.status_code == 200, f"Failed to tag version {version_id}: {r.text}"
     tag_body = r.json()
     assert tag_body["error"] is None
     assert tag_body["data"]["id"] == version_id
@@ -291,9 +285,7 @@ async def test_content_locks(client):
     assert list_body["error"] is None
     assert isinstance(list_body["data"], list)
     lock_ids = [lk["id"] for lk in list_body["data"]]
-    assert lock_id in lock_ids, (
-        f"Expected lock {lock_id} in list, got {lock_ids}"
-    )
+    assert lock_id in lock_ids, f"Expected lock {lock_id} in list, got {lock_ids}"
 
     # Release the lock
     r = await client.post(f"/v1/content/locks/{lock_id}/release")
@@ -354,9 +346,7 @@ async def test_content_imports(client):
 
     # Get single import job
     r = await client.get(f"/v1/content/imports/{import_id}")
-    assert r.status_code == 200, (
-        f"Failed to get import {import_id}: {r.text}"
-    )
+    assert r.status_code == 200, f"Failed to get import {import_id}: {r.text}"
     get_body = r.json()
     assert get_body["error"] is None
     assert get_body["data"]["id"] == import_id
@@ -369,12 +359,9 @@ async def test_content_sse_stream(client):
     The composition stream sends heartbeat events every 30 s; just
     verify the endpoint responds with 200.
     """
-    async with client.stream(
-        "GET", "/v1/content/stream/composition"
-    ) as response:
+    async with client.stream("GET", "/v1/content/stream/composition") as response:
         assert response.status_code == 200, (
-            "Expected 200 from composition SSE stream, "
-            f"got {response.status_code}"
+            "Expected 200 from composition SSE stream, " f"got {response.status_code}"
         )
 
 
@@ -383,12 +370,12 @@ async def test_content_errors(client):
     """Verify error responses for invalid content requests."""
     # POST with missing required name → 422
     r = await client.post("/v1/content/corpora", json={})
-    assert r.status_code == 422, (
-        f"Expected 422 for missing name, got {r.status_code}: {r.text}"
-    )
+    assert (
+        r.status_code == 422
+    ), f"Expected 422 for missing name, got {r.status_code}: {r.text}"
 
     # GET non-existent corpus → 404
     r = await client.get("/v1/content/corpora/99999")
-    assert r.status_code == 404, (
-        f"Expected 404 for non-existent corpus, got {r.status_code}: {r.text}"
-    )
+    assert (
+        r.status_code == 404
+    ), f"Expected 404 for non-existent corpus, got {r.status_code}: {r.text}"
