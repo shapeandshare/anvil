@@ -43,7 +43,7 @@ Every concept here scales up directly to real models. Train in seconds, then ope
 <br>
 
 <p align="center">
-  <img src="docs/assets/stats.svg" alt="By the numbers: 0 core deps, 8 UI pages, 100% typed, 3 Llama primitives, MIT licensed" width="100%">
+  <img src="docs/assets/stats.svg" alt="By the numbers: 0 core deps, 9 UI pages, 100% typed, 3 Llama primitives, MIT licensed" width="100%">
 </p>
 
 <br>

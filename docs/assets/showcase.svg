@@ -1,32 +1,32 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 820" width="100%" height="100%">
   <defs>
-    <!-- Forge gradient: warm orange to bright yellow -->
-    <linearGradient id="forge-grad" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#ff9500"/>
-      <stop offset="100%" stop-color="#ffcc00"/>
+    <!-- iOS blue accent gradient (loss curve area fill) -->
+    <linearGradient id="area-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#007aff" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#007aff" stop-opacity="0.0"/>
     </linearGradient>
 
-    <!-- Loss-area gradient: orange fading to transparent (bottom→top) -->
-    <linearGradient id="loss-grad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#ff9500" stop-opacity="0.30"/>
-      <stop offset="100%" stop-color="#ff9500" stop-opacity="0.0"/>
+    <!-- Forge gradient: warm orange (step 3 bubble only) -->
+    <linearGradient id="forge-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ff9500"/>
+      <stop offset="100%" stop-color="#ff9500" stop-opacity="0.85"/>
     </linearGradient>
 
     <!-- Chart glow behind the curve -->
     <radialGradient id="chart-glow" cx="50%" cy="40%" r="60%">
-      <stop offset="0%" stop-color="#ff9500" stop-opacity="0.08"/>
-      <stop offset="100%" stop-color="#ff9500" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#007aff" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#007aff" stop-opacity="0"/>
     </radialGradient>
 
-    <!-- Window background gradient: subtle depth -->
+    <!-- Window background -->
     <radialGradient id="win-glow" cx="50%" cy="20%" r="80%" fx="50%" fy="10%">
       <stop offset="0%" stop-color="#0c0c0d"/>
       <stop offset="100%" stop-color="#000000"/>
     </radialGradient>
 
-    <!-- Dot grid pattern for subtle texture -->
+    <!-- Subtle dot-grid texture -->
     <pattern id="dot-grid" width="24" height="24" patternUnits="userSpaceOnUse">
-      <circle cx="12" cy="12" r="0.6" fill="#ffffff" fill-opacity="0.025"/>
+      <circle cx="12" cy="12" r="0.6" fill="#ffffff" fill-opacity="0.020"/>
     </pattern>
   </defs>
 
@@ -43,11 +43,8 @@
   <!-- TITLE BAR (44px)                                                  -->
   <!-- ================================================================ -->
 
-  <!-- Title bar background -->
   <rect x="0" y="0" width="1280" height="44" fill="#1c1c1e" rx="0"/>
-  <!-- Clip top corners since window has rx=16 -->
   <rect x="0" y="0" width="1280" height="44" rx="16" fill="none" stroke="none"/>
-  <!-- Bottom hairline -->
   <line x1="0" y1="44" x2="1280" y2="44" stroke="#ffffff" stroke-opacity="0.06" stroke-width="0.5"/>
 
   <!-- Traffic-light dots -->
@@ -55,14 +52,10 @@
   <circle cx="42" cy="22" r="6" fill="#febc2e"/>
   <circle cx="62" cy="22" r="6" fill="#28c840"/>
 
-  <!-- Close/minimize/zoom symbols (subtle, visible inside dots) -->
   <g opacity="0.4" stroke="#1c1c1e" stroke-width="1.2" stroke-linecap="round">
-    <!-- Close: × -->
     <line x1="19.5" y1="19.5" x2="24.5" y2="24.5"/>
     <line x1="24.5" y1="19.5" x2="19.5" y2="24.5"/>
-    <!-- Minimize: − -->
     <line x1="38.5" y1="22.5" x2="45.5" y2="22.5"/>
-    <!-- Zoom: + -->
     <line x1="59.5" y1="22.5" x2="64.5" y2="22.5"/>
     <line x1="62" y1="20" x2="62" y2="25"/>
   </g>
@@ -72,214 +65,298 @@
   <text x="640" y="27" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11" fill="#8e8e93" text-anchor="middle">localhost:8080</text>
 
   <!-- ================================================================ -->
-  <!-- GLASS NAV BAR (52px)                                              -->
+  <!-- GLASS NAV BAR (52px) — 9 tabs + theme toggle                      -->
   <!-- ================================================================ -->
 
   <rect x="0" y="44" width="1280" height="52" fill="#1c1c1e" fill-opacity="0.92"/>
-  <!-- Bottom hairline -->
   <line x1="0" y1="96" x2="1280" y2="96" stroke="#ffffff" stroke-opacity="0.06" stroke-width="0.5"/>
 
-  <!-- Nav icons + labels — 7 tabs, 90px apart, centered x=120..720 -->
-  <!-- Each tab: icon at y=70, label at y=90, centered on tab_x -->
-
-  <!-- 1. Home -->
-  <g transform="translate(120,0)">
-    <path d="M-6-4L0-10l6 6v6h-12z" fill="none" stroke="#8e8e93" stroke-width="1.5" stroke-linejoin="round"/>
-    <text x="0" y="92" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="11" fill="#8e8e93" text-anchor="middle">Home</text>
+  <!-- Nav tabs: ~90px spacing, starting at x=60, distributed across 800px -->
+  <!-- Tab 1: Anvil (/) -->
+  <g transform="translate(100,68)">
+    <path d="M-6-2C-4-6 0-8 4-6L8-2 6 4 2 8-2 8-6 4Z" fill="none" stroke="#8e8e93" stroke-width="1.5" stroke-linejoin="round"/>
+    <circle cx="1" cy="1" r="1.5" fill="#8e8e93"/>
+    <text x="0" y="20" font-family="-apple-system, BlinkMacSystemFont, system-ui, sans-serif" font-size="10" fill="#8e8e93" text-anchor="middle">Anvil</text>
   </g>
 
-  <!-- 2. Data -->
-  <g transform="translate(210,0)">
-    <ellipse cx="0" cy="-3" rx="6" ry="2" fill="#8e8e93"/>
-    <path d="M-6-3v7a6 2 0 0 0 12 0v-7" fill="none" stroke="#8e8e93" stroke-width="1.5"/>
-    <text x="0" y="92" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="11" fill="#8e8e93" text-anchor="middle">Data</text>
+  <!-- Tab 2: Data -->
+  <g transform="translate(195,68)">
+    <path d="M-6-4h12v10h-12z" fill="none" stroke="#8e8e93" stroke-width="1.5" stroke-linejoin="round"/>
+    <line x1="-6" y1="-2" x2="-2" y2="-2" stroke="#8e8e93" stroke-width="1.5" stroke-linecap="round"/>
+    <text x="0" y="20" font-family="-apple-system, BlinkMacSystemFont, system-ui, sans-serif" font-size="10" fill="#8e8e93" text-anchor="middle">Data</text>
   </g>
 
-  <!-- 3. Train (ACTIVE — orange) -->
-  <g transform="translate(300,0)">
-    <!-- Active indicator dot above icon -->
-    <circle cx="0" cy="-13" r="3" fill="#ff9500"/>
-    <path d="M-6-5L0-9l6 4v8l-6 4-6-4v-8z" fill="none" stroke="#ff9500" stroke-width="1.5" stroke-linejoin="round"/>
-    <path d="M-6-1l6 4 6-4" fill="none" stroke="#ff9500" stroke-width="1.5" stroke-linejoin="round"/>
-    <text x="0" y="92" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="11" font-weight="600" fill="#ff9500" text-anchor="middle">Train</text>
+  <!-- Tab 3: Train (ACTIVE — iOS blue) -->
+  <g transform="translate(290,68)">
+    <circle cx="0" cy="-10" r="3" fill="#007aff"/>
+    <path d="M-6-3C-4 0-2 2 0 6 2 2 4 0 6-3" fill="none" stroke="#007aff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M-6-3L0-7 6-3" fill="none" stroke="#007aff" stroke-width="1.5" stroke-linejoin="round"/>
+    <text x="0" y="20" font-family="-apple-system, BlinkMacSystemFont, system-ui, sans-serif" font-size="10" font-weight="600" fill="#007aff" text-anchor="middle">Train</text>
   </g>
 
-  <!-- 4. Runs -->
-  <g transform="translate(390,0)">
-    <circle cx="0" cy="-2" r="5" fill="none" stroke="#8e8e93" stroke-width="1.5"/>
-    <path d="M-2-5v5l3 3" fill="none" stroke="#8e8e93" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <text x="0" y="92" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="11" fill="#8e8e93" text-anchor="middle">Runs</text>
+  <!-- Tab 4: Exps -->
+  <g transform="translate(385,68)">
+    <path d="M-4-6L4-6 4-3 2-3 2 2C2 5 0 7-3 7-5 7-6 5-6 3L-4 3-4 4" fill="none" stroke="#8e8e93" stroke-width="1.5" stroke-linejoin="round"/>
+    <circle cx="-3" cy="3" r="1.5" fill="#8e8e93"/>
+    <text x="0" y="20" font-family="-apple-system, BlinkMacSystemFont, system-ui, sans-serif" font-size="10" fill="#8e8e93" text-anchor="middle">Exps</text>
   </g>
 
-  <!-- 5. Models -->
-  <g transform="translate(480,0)">
-    <rect x="-6" y="-8" width="12" height="6" rx="1" fill="#8e8e93" fill-opacity="0.3"/>
-    <rect x="-5" y="-1" width="10" height="6" rx="1" fill="#8e8e93" fill-opacity="0.5"/>
-    <rect x="-4" y="6" width="8" height="5" rx="1" fill="#8e8e93" fill-opacity="0.7"/>
-    <text x="0" y="92" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="11" fill="#8e8e93" text-anchor="middle">Models</text>
+  <!-- Tab 5: Models -->
+  <g transform="translate(480,68)">
+    <ellipse cx="0" cy="-4" rx="5" ry="3" fill="none" stroke="#8e8e93" stroke-width="1.5"/>
+    <path d="M-4-1C-4 2-2 5 0 5 2 5 4 2 4-1" fill="none" stroke="#8e8e93" stroke-width="1.5"/>
+    <text x="0" y="20" font-family="-apple-system, BlinkMacSystemFont, system-ui, sans-serif" font-size="10" fill="#8e8e93" text-anchor="middle">Models</text>
   </g>
 
-  <!-- 6. Play -->
-  <g transform="translate(570,0)">
-    <path d="M-5-6l10 6-10 6z" fill="none" stroke="#8e8e93" stroke-width="1.5" stroke-linejoin="round"/>
-    <text x="0" y="92" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="11" fill="#8e8e93" text-anchor="middle">Play</text>
+  <!-- Tab 6: Play -->
+  <g transform="translate(575,68)">
+    <polygon points="-5,-5 6,1 -5,7" fill="none" stroke="#8e8e93" stroke-width="1.5" stroke-linejoin="round"/>
+    <text x="0" y="20" font-family="-apple-system, BlinkMacSystemFont, system-ui, sans-serif" font-size="10" fill="#8e8e93" text-anchor="middle">Play</text>
   </g>
 
-  <!-- 7. Learn -->
-  <g transform="translate(660,0)">
-    <rect x="-6" y="-7" width="12" height="14" rx="1.5" fill="none" stroke="#8e8e93" stroke-width="1.5"/>
-    <line x1="0" y1="-7" x2="0" y2="7" stroke="#8e8e93" stroke-width="1.5"/>
-    <text x="0" y="92" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="11" fill="#8e8e93" text-anchor="middle">Learn</text>
+  <!-- Tab 7: Learn -->
+  <g transform="translate(670,68)">
+    <rect x="-5" y="-5" width="10" height="12" rx="1.5" fill="none" stroke="#8e8e93" stroke-width="1.5"/>
+    <line x1="0" y1="-5" x2="0" y2="7" stroke="#8e8e93" stroke-width="1.2"/>
+    <text x="0" y="20" font-family="-apple-system, BlinkMacSystemFont, system-ui, sans-serif" font-size="10" fill="#8e8e93" text-anchor="middle">Learn</text>
+  </g>
+
+  <!-- Tab 8: Ops -->
+  <g transform="translate(765,68)">
+    <circle cx="0" cy="1" r="4" fill="none" stroke="#8e8e93" stroke-width="1.5"/>
+    <path d="M-1-6L0-3 1-6" fill="none" stroke="#8e8e93" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M-1-6L0-3 1-6" transform="rotate(45)" fill="none" stroke="#8e8e93" stroke-width="1.2" stroke-linecap="round"/>
+    <text x="0" y="20" font-family="-apple-system, BlinkMacSystemFont, system-ui, sans-serif" font-size="10" fill="#8e8e93" text-anchor="middle">Ops</text>
+  </g>
+
+  <!-- Tab 9: About -->
+  <g transform="translate(860,68)">
+    <circle cx="0" cy="1" r="6" fill="none" stroke="#8e8e93" stroke-width="1.5"/>
+    <line x1="0" y1="0" x2="0" y2="4" stroke="#8e8e93" stroke-width="1.5" stroke-linecap="round"/>
+    <circle cx="0" cy="-2.5" r="1" fill="#8e8e93"/>
+    <text x="0" y="20" font-family="-apple-system, BlinkMacSystemFont, system-ui, sans-serif" font-size="10" fill="#8e8e93" text-anchor="middle">About</text>
+  </g>
+
+  <!-- Theme toggle (right edge) -->
+  <g transform="translate(1220,68)">
+    <rect x="-12" y="-10" width="24" height="20" rx="6" fill="#2c2c2e"/>
+    <circle cx="-2" cy="0" r="4" fill="none" stroke="#007aff" stroke-width="1.2"/>
+    <path d="M2-2L3-3M2 2L3 3M6 0H7M2 0H3" stroke="#007aff" stroke-width="1" stroke-linecap="round"/>
   </g>
 
   <!-- ================================================================ -->
-  <!-- MAIN CONTENT (y=96+)                                             -->
+  <!-- PAGE CONTENT (y=96+) — Grouped Background                         -->
   <!-- ================================================================ -->
 
-  <!-- = SECTION HEADER = -->
-  <text x="60" y="140" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="28" font-weight="700" fill="#ffffff">Training</text>
-
-  <!-- Green "● running" pill -->
-  <rect x="196" y="112" width="86" height="24" rx="12" fill="#34c759" fill-opacity="0.15"/>
-  <text x="239" y="129" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="600" fill="#34c759" text-anchor="middle">● running</text>
+  <rect x="0" y="96" width="1280" height="724" fill="#0c0c0d"/>
 
   <!-- ================================================================ -->
-  <!-- LOSS CURVE CHART CARD (x=40, y=160, w=800, h=340)               -->
+  <!-- WIZARD STEPS (centered, ~y=118–172)                               -->
   <!-- ================================================================ -->
 
-  <rect x="40" y="160" width="800" height="340" rx="12" fill="#1c1c1e"/>
-  <rect x="40" y="160" width="800" height="340" rx="12" fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="0.5"/>
+  <text x="40" y="130" font-family="-apple-system, BlinkMacSystemFont, system-ui, sans-serif" font-size="24" font-weight="700" fill="#ffffff">Training</text>
 
-  <!-- Chart card header -->
-  <text x="60" y="192" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="15" font-weight="600" fill="#ffffff">Training Loss</text>
-  <circle cx="778" cy="186" r="4" fill="#34c759"/>
-  <text x="788" y="190" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11" fill="#8e8e93">streaming</text>
+  <!-- Wizard steps row centered at y=156 -->
+  <g transform="translate(0, 156)">
+    <!-- Step 1: Data (completed — green checkmark) -->
+    <g transform="translate(545,0)">
+      <circle cx="0" cy="0" r="16" fill="#34c759"/>
+      <path d="M-5-1L-1 3 6-4" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="0" y="24" font-family="-apple-system, BlinkMacSystemFont, system-ui, sans-serif" font-size="10" font-weight="600" fill="#34c759" text-anchor="middle" text-transform="uppercase">Data</text>
+    </g>
 
-  <!-- Chart card separator -->
-  <line x1="56" y1="205" x2="824" y2="205" stroke="#38383a" stroke-width="1"/>
+    <!-- Connector 1 (filled) -->
+    <line x1="577" y1="0" x2="609" y2="0" stroke="#007aff" stroke-width="2" stroke-linecap="round"/>
+
+    <!-- Step 2: Configure (completed — green checkmark) -->
+    <g transform="translate(625,0)">
+      <circle cx="0" cy="0" r="16" fill="#34c759"/>
+      <path d="M-5-1L-1 3 6-4" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="0" y="24" font-family="-apple-system, BlinkMacSystemFont, system-ui, sans-serif" font-size="10" font-weight="600" fill="#34c759" text-anchor="middle" text-transform="uppercase">Configure</text>
+    </g>
+
+    <!-- Connector 2 (filled, since step 3 is active) -->
+    <line x1="657" y1="0" x2="689" y2="0" stroke="#007aff" stroke-width="2" stroke-linecap="round"/>
+
+    <!-- Step 3: Forge (active — orange glow) -->
+    <g transform="translate(705,0)">
+      <circle cx="0" cy="0" r="18" fill="#ff9500"/>
+      <circle cx="0" cy="0" r="18" fill="none" stroke="#ff9500" stroke-opacity="0.3" stroke-width="6"/>
+      <text x="0" y="5" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">⚒</text>
+      <text x="0" y="26" font-family="-apple-system, BlinkMacSystemFont, system-ui, sans-serif" font-size="10" font-weight="700" fill="#ff9500" text-anchor="middle" text-transform="uppercase">Forge</text>
+    </g>
+  </g>
+
+  <!-- Divider hairline after wizard -->
+  <line x1="40" y1="196" x2="1240" y2="196" stroke="#38383a" stroke-width="0.5"/>
+
+  <!-- ================================================================ -->
+  <!-- LOSS CURVE CARD (left side)                                       -->
+  <!-- ================================================================ -->
+
+  <rect x="40" y="212" width="780" height="310" rx="20" fill="#1c1c1e"/>
+  <rect x="40" y="212" width="780" height="310" rx="20" fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="0.5"/>
+
+  <!-- Card header -->
+  <text x="60" y="244" font-family="-apple-system, BlinkMacSystemFont, system-ui, sans-serif" font-size="15" font-weight="600" fill="#ffffff">Loss Curve</text>
+  <circle cx="724" cy="237" r="4" fill="#34c759"/>
+  <text x="734" y="241" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11" fill="#8e8e93">streaming</text>
+
+  <line x1="56" y1="258" x2="804" y2="258" stroke="#38383a" stroke-width="1"/>
 
   <!-- Chart glow -->
-  <ellipse cx="445" cy="350" rx="360" ry="140" fill="url(#chart-glow)"/>
+  <ellipse cx="440" cy="380" rx="350" ry="120" fill="url(#chart-glow)"/>
 
-  <!-- Chart plot area: x=90..820, y=215..480 -->
-  <!-- Y axis gridlines -->
+  <!-- Chart plot area: x=100..780, y=270..492 -->
+  <!-- Y axis: 0.0 to 2.4, 4 gridlines -->
   <g stroke="#38383a" stroke-width="0.5" stroke-dasharray="4,4">
-    <line x1="90" y1="215" x2="820" y2="215"/>
-    <line x1="90" y1="303" x2="820" y2="303"/>
-    <line x1="90" y1="392" x2="820" y2="392"/>
-    <line x1="90" y1="480" x2="820" y2="480"/>
+    <line x1="100" y1="270" x2="780" y2="270"/>
+    <line x1="100" y1="344" x2="780" y2="344"/>
+    <line x1="100" y1="418" x2="780" y2="418"/>
+    <line x1="100" y1="492" x2="780" y2="492"/>
   </g>
 
-  <!-- Y axis labels (mono, right-aligned) -->
+  <!-- Y axis labels -->
   <g font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11" fill="#8e8e93" text-anchor="end">
-    <text x="82" y="219">2.4</text>
-    <text x="82" y="307">1.6</text>
-    <text x="82" y="396">0.8</text>
-    <text x="82" y="484">0.0</text>
+    <text x="92" y="274">2.4</text>
+    <text x="92" y="348">1.6</text>
+    <text x="92" y="422">0.8</text>
+    <text x="92" y="496">0.0</text>
   </g>
 
   <!-- Y axis title -->
-  <text x="52" y="360" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="10" fill="#8e8e93" transform="rotate(-90 52 360)" text-anchor="middle">loss</text>
+  <text x="56" y="390" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="10" fill="#8e8e93" transform="rotate(-90 56 390)" text-anchor="middle">loss</text>
 
-  <!-- X axis labels (mono, centered) -->
+  <!-- X axis labels -->
   <g font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11" fill="#8e8e93" text-anchor="middle">
-    <text x="90" y="498">0</text>
-    <text x="272.5" y="498">250</text>
-    <text x="455" y="498">500</text>
-    <text x="637.5" y="498">750</text>
-    <text x="820" y="498">1000</text>
+    <text x="100" y="508">0</text>
+    <text x="270" y="508">250</text>
+    <text x="440" y="508">500</text>
+    <text x="610" y="508">750</text>
+    <text x="780" y="508">1000</text>
   </g>
 
   <!-- X axis title -->
-  <text x="455" y="516" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="10" fill="#8e8e93" text-anchor="middle">steps</text>
+  <text x="440" y="524" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="10" fill="#8e8e93" text-anchor="middle">steps</text>
 
-  <!-- Loss curve area fill (same path as curve, closed to baseline) -->
-  <path d="M 90 215 C 120 230, 150 298, 200 325 C 228 344, 258 378, 310 380 C 340 385, 370 402, 410 408 C 438 412, 460 423, 500 422 C 530 420, 555 434, 590 432 C 620 430, 650 440, 690 438 C 720 436, 760 443, 820 442 L 820 480 L 90 480 Z" fill="url(#loss-grad)"/>
+  <!-- Loss curve — area fill -->
+  <!-- Y range: 270 (loss 2.4) to 492 (loss 0.0). Steps: 0@x=100 to 1000@x=780 -->
+  <!-- Steps scaling: x = 100 + (step/1000)*680. So step 742 ≈ x = 100 + 0.742*680 = 605 -->
+  <!-- Loss scaling: y = 492 - (loss/2.4)*222. So loss 2.0 → y=307, loss 1.5 → y=353, loss 1.0 → y=399, loss 0.8312 → y=415 -->
+  <path d="M 100 270
+           C 110 290, 130 330, 170 350
+           C 220 375, 270 395, 320 406
+           C 370 414, 420 420, 470 425
+           C 520 429, 560 432, 605 434
+           L 780 434
+           L 780 492 L 100 492 Z"
+        fill="url(#area-grad)"/>
 
-  <!-- Loss curve stroke -->
-  <path d="M 90 215 C 120 230, 150 298, 200 325 C 228 344, 258 378, 310 380 C 340 385, 370 402, 410 408 C 438 412, 460 423, 500 422 C 530 420, 555 434, 590 432 C 620 430, 650 440, 690 438 C 720 436, 760 443, 820 442" fill="none" stroke="url(#forge-grad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Loss curve - stroke (iOS blue #007aff, matching chart.js which reads accent var) -->
+  <path d="M 100 270
+           C 110 290, 130 330, 170 350
+           C 220 375, 270 395, 320 406
+           C 370 414, 420 420, 470 425
+           C 520 429, 560 432, 605 434
+           L 780 434"
+        fill="none" stroke="#007aff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
 
-  <!-- Current step indicator — vertical dashed line at step 742 ≈ x=620 -->
-  <line x1="635" y1="215" x2="635" y2="480" stroke="#ff9500" stroke-width="1.5" stroke-dasharray="3,3"/>
-  <circle cx="635" cy="436" r="5" fill="#ff9500"/>
-
-  <!-- ================================================================ -->
-  <!-- METRIC STAT CARDS (right of chart, stacked)                      -->
-  <!-- ================================================================ -->
-
-  <!-- Card 1: Step Progress -->
-  <rect x="860" y="160" width="380" height="100" rx="12" fill="#1c1c1e"/>
-  <rect x="860" y="160" width="380" height="100" rx="12" fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="0.5"/>
-  <!-- Orange accent bar -->
-  <rect x="876" y="175" width="32" height="3" rx="1.5" fill="url(#forge-grad)"/>
-  <text x="876" y="195" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="12" fill="#8e8e93">Step Progress</text>
-  <text x="876" y="240" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="34" font-weight="600" fill="#ffffff">742</text>
-  <text x="964" y="240" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="16" fill="#8e8e93">/ 1000</text>
-  <!-- Mini progress bar -->
-  <rect x="876" y="249" width="348" height="3" rx="1.5" fill="#38383a"/>
-  <rect x="876" y="249" width="258" height="3" rx="1.5" fill="url(#forge-grad)"/>
-
-  <!-- Card 2: Training Loss -->
-  <rect x="860" y="276" width="380" height="100" rx="12" fill="#1c1c1e"/>
-  <rect x="860" y="276" width="380" height="100" rx="12" fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="0.5"/>
-  <rect x="876" y="291" width="32" height="3" rx="1.5" fill="url(#forge-grad)"/>
-  <text x="876" y="311" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="12" fill="#8e8e93">Training Loss</text>
-  <text x="876" y="356" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="34" font-weight="600" fill="#ffffff">0.83</text>
-  <!-- Mini sparkline (tiny descending curve) -->
-  <path d="M1040 346 C1050 346, 1060 344, 1070 342 C1080 340, 1090 336, 1100 332 C1110 330, 1120 328, 1130 326 C1140 326, 1150 325, 1160 324 C1170 324, 1180 323, 1190 323 C1200 323, 1210 322, 1220 322" fill="none" stroke="#34c759" stroke-width="1.5" stroke-linecap="round"/>
-  <text x="876" y="371" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="11" fill="#8e8e93">Cross-entropy — trending down</text>
-  <circle cx="1220" cy="322" r="2.5" fill="#34c759"/>
-
-  <!-- Card 3: Compute Device -->
-  <rect x="860" y="392" width="380" height="100" rx="12" fill="#1c1c1e"/>
-  <rect x="860" y="392" width="380" height="100" rx="12" fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="0.5"/>
-  <rect x="876" y="407" width="32" height="3" rx="1.5" fill="url(#forge-grad)"/>
-  <text x="876" y="427" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="12" fill="#8e8e93">Compute Device</text>
-  <text x="876" y="472" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="34" font-weight="600" fill="#ffffff">MPS</text>
-  <text x="964" y="472" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="14" fill="#8e8e93">Apple M3 Pro</text>
-  <!-- Tiny chip icon -->
-  <rect x="1170" y="454" width="50" height="26" rx="4" fill="none" stroke="#38383a" stroke-width="1"/>
-  <rect x="1174" y="458" width="16" height="18" rx="2" fill="#ff9500" fill-opacity="0.2"/>
-  <text x="1196" y="472" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="9" fill="#8e8e93">GPU</text>
+  <!-- Current step indicator at step 742 ≈ x=605 -->
+  <line x1="605" y1="270" x2="605" y2="492" stroke="#007aff" stroke-width="1.5" stroke-dasharray="3,3"/>
+  <circle cx="605" cy="434" r="5" fill="#007aff"/>
+  <circle cx="605" cy="434" r="9" fill="none" stroke="#007aff" stroke-opacity="0.3" stroke-width="2"/>
 
   <!-- ================================================================ -->
-  <!-- SAMPLE OUTPUT CARD (x=40, y=520, w=1200, h=230)                 -->
+  <!-- METRICS CARD (right of chart)                                     -->
   <!-- ================================================================ -->
 
-  <rect x="40" y="520" width="1200" height="230" rx="12" fill="#1c1c1e"/>
-  <rect x="40" y="520" width="1200" height="230" rx="12" fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="0.5"/>
+  <rect x="840" y="212" width="400" height="310" rx="20" fill="#1c1c1e"/>
+  <rect x="840" y="212" width="400" height="310" rx="20" fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="0.5"/>
 
   <!-- Card header -->
-  <text x="60" y="552" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="15" font-weight="600" fill="#ffffff">Sample Output</text>
+  <text x="860" y="244" font-family="-apple-system, BlinkMacSystemFont, system-ui, sans-serif" font-size="15" font-weight="600" fill="#ffffff">Metrics</text>
 
-  <!-- Terminal-style text box mimic -->
-  <rect x="56" y="564" width="1168" height="170" rx="8" fill="#000000" fill-opacity="0.4"/>
-  <rect x="56" y="564" width="1168" height="170" rx="8" fill="none" stroke="#38383a" stroke-width="0.5"/>
+  <line x1="856" y1="258" x2="1224" y2="258" stroke="#38383a" stroke-width="1"/>
 
-  <!-- Generate text lines (mono, dim) -->
-  <g font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="14" fill="#c7c7cc">
-    <text x="76" y="592">the king of the north spoke softly to the</text>
-    <text x="76" y="616">assembled lords, his voice carrying through</text>
-    <text x="76" y="640">the great hall with an authority that commanded</text>
-    <text x="76" y="664">silence. the flames in the hearth flickered</text>
+  <!-- Metrics list (6 items, matching the real updateMetrics() function) -->
+  <!-- Each metric: label left, value right, on surface-2 background -->
+
+  <g transform="translate(860, 278)">
+    <!-- Metric 1: Step -->
+    <rect x="0" y="0" width="360" height="36" rx="13" fill="#2c2c2e"/>
+    <text x="12" y="23" font-family="-apple-system, BlinkMacSystemFont, system-ui, sans-serif" font-size="12" fill="#8e8e93">Step</text>
+    <text x="348" y="23" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" font-weight="600" fill="#ffffff" text-anchor="end">742 / 1000</text>
+
+    <!-- Metric 2: Loss -->
+    <rect x="0" y="44" width="360" height="36" rx="13" fill="#2c2c2e"/>
+    <text x="12" y="67" font-family="-apple-system, BlinkMacSystemFont, system-ui, sans-serif" font-size="12" fill="#8e8e93">Loss</text>
+    <text x="348" y="67" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" font-weight="600" fill="#ffffff" text-anchor="end">0.8312</text>
+
+    <!-- Metric 3: Device -->
+    <rect x="0" y="88" width="360" height="36" rx="13" fill="#2c2c2e"/>
+    <text x="12" y="111" font-family="-apple-system, BlinkMacSystemFont, system-ui, sans-serif" font-size="12" fill="#8e8e93">Device</text>
+    <text x="348" y="111" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" font-weight="600" fill="#ffffff" text-anchor="end">MPS</text>
+
+    <!-- Metric 4: Throughput -->
+    <rect x="0" y="132" width="360" height="36" rx="13" fill="#2c2c2e"/>
+    <text x="12" y="155" font-family="-apple-system, BlinkMacSystemFont, system-ui, sans-serif" font-size="12" fill="#8e8e93">Throughput</text>
+    <text x="348" y="155" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" font-weight="600" fill="#ffffff" text-anchor="end">18.4 st/s</text>
+
+    <!-- Metric 5: Elapsed -->
+    <rect x="0" y="176" width="360" height="36" rx="13" fill="#2c2c2e"/>
+    <text x="12" y="199" font-family="-apple-system, BlinkMacSystemFont, system-ui, sans-serif" font-size="12" fill="#8e8e93">Elapsed</text>
+    <text x="348" y="199" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" font-weight="600" fill="#ffffff" text-anchor="end">1m 02s</text>
+
+    <!-- Metric 6: ETA -->
+    <rect x="0" y="220" width="360" height="36" rx="13" fill="#2c2c2e"/>
+    <text x="12" y="243" font-family="-apple-system, BlinkMacSystemFont, system-ui, sans-serif" font-size="12" fill="#8e8e93">ETA</text>
+    <text x="348" y="243" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" font-weight="600" fill="#ffffff" text-anchor="end">21s</text>
   </g>
 
-  <!-- Blinking cursor (static orange caret) -->
-  <rect x="541" y="647" width="7" height="16" rx="1.5" fill="#ff9500"/>
+  <!-- ================================================================ -->
+  <!-- OUTPUT CARD (full width below chart)                              -->
+  <!-- ================================================================ -->
 
-  <!-- Temperature / sampling info at bottom-right of card -->
-  <g font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="10" fill="#8e8e93" text-anchor="end">
-    <text x="1218" y="734">temp 0.5 · ctx 64 · top-k 40</text>
+  <rect x="40" y="542" width="1200" height="210" rx="20" fill="#1c1c1e"/>
+  <rect x="40" y="542" width="1200" height="210" rx="20" fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="0.5"/>
+
+  <!-- Card header with collapsible caret -->
+  <text x="60" y="574" font-family="-apple-system, BlinkMacSystemFont, system-ui, sans-serif" font-size="15" font-weight="600" fill="#ffffff">Output</text>
+  <!-- Output indicator dot (green, pulsing) -->
+  <circle cx="256" cy="568" r="4" fill="#34c759"/>
+  <circle cx="256" cy="568" r="6" fill="none" stroke="#34c759" stroke-opacity="0.4" stroke-width="1.5"/>
+  <!-- Toggle chevron -->
+  <text x="280" y="576" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="10" fill="#8e8e93">▼</text>
+
+  <line x1="56" y1="590" x2="1224" y2="590" stroke="#38383a" stroke-width="1"/>
+
+  <!-- Output text area (mono, dark inset) -->
+  <rect x="56" y="600" width="1168" height="136" rx="13" fill="#000000" fill-opacity="0.4"/>
+  <rect x="56" y="600" width="1168" height="136" rx="13" fill="none" stroke="#38383a" stroke-width="0.5"/>
+
+  <!-- Sample generated text lines -->
+  <g font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="13" fill="#c7c7cc">
+    <text x="76" y="624">the king of the north spoke softly to the</text>
+    <text x="76" y="646">assembled lords, his voice carrying through</text>
+    <text x="76" y="668">the great hall with an authority that commanded</text>
+    <text x="76" y="690">silence. the flames in the hearth flickered</text>
+    <text x="76" y="712">and spat as the gathered crowd waited for the</text>
   </g>
+
+  <!-- Blinking cursor (iOS blue) -->
+  <rect x="478" y="698" width="7" height="15" rx="1.5" fill="#007aff"/>
+
+  <!-- Status footer line inside output -->
+  <text x="76" y="730" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="10" fill="#34c759">step    742 | loss 0.8312</text>
 
   <!-- ================================================================ -->
   <!-- BOTTOM STATUS BAR (subtle)                                       -->
   <!-- ================================================================ -->
 
-  <line x1="60" y1="790" x2="1220" y2="790" stroke="#ffffff" stroke-opacity="0.04" stroke-width="0.5"/>
+  <line x1="40" y1="782" x2="1240" y2="782" stroke="#ffffff" stroke-opacity="0.04" stroke-width="0.5"/>
   <g font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="10" fill="#8e8e93">
-    <text x="60" y="806">● anvil engine v1.0 · 2.3M params · ~18 tok/s</text>
-    <text x="1220" y="806" text-anchor="end">forge release · MIT license</text>
+    <text x="60" y="800">● anvil engine · 2.3M params · ~18 tok/s</text>
+    <text x="1220" y="800" text-anchor="end">MIT license</text>
   </g>
 
 </svg>
