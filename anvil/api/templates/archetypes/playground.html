@@ -28,6 +28,7 @@
       </a>
     </div>
   </div>
+  {% include "partials/related-lessons.html" %}
 
   <div class="section-card" style="--stagger-i: 1">
     <div class="section-card__header">
@@ -65,7 +66,7 @@
           <span class="example-prompt" data-prompt="Once upon a time">Once upon a time</span>
           <span class="example-prompt" data-prompt="The meaning of">The meaning of</span> <span class="example-prompt" data-prompt="The secret to">The secret to</span>
         </div>
-        <div style="margin-top:var(--space-2);display:flex;gap:var(--space-2);align-items:center;"><span class="fun-label fun-label--cool">0.1-0.3 &mdash; precise</span><span class="fun-label fun-label--warm">0.5-0.7 &mdash; creative</span><span class="fun-label fun-label--hot">1.0+ &mdash; chaos</span></div>
+        <div style="margin-top:var(--space-2);display:flex;gap:var(--space-2);align-items:center;"><span class="fun-label fun-label--cool">0.1-0.3 &mdash; precise</span><span class="fun-label fun-label--warm">0.5-0.7 &mdash; creative</span><span class="fun-label fun-label--hot">1.0+ &mdash; chaos</span><a href="/v1/learn/sampling#temperature" class="action-link type-caption-2" style="margin-left:auto;white-space:nowrap;">how temperature works &rarr;</a></div>
         <div class="inference-actions">
           <button class="btn btn-primary" id="generate-btn">Generate</button>
           <span class="text-muted type-callout" id="inference-status"></span>
