@@ -15,7 +15,7 @@ source: agent
 code-refs:
   - anvil/services/demo/demo_bootstrap.py
   - tests/test_bootstrap.py
-  - specs/015-demo-data-bootstrap/spec.md
+  - docs/vault/Specs/015 Demo Data Bootstrap/spec.md
 ---
 # Provenance Manifest Mocking in Tests
 
@@ -47,5 +47,5 @@ The lookup strips `.txt` suffix before matching keys: `key = rel.removesuffix(".
 
 ## Related
 
-- Spec: `specs/015-demo-data-bootstrap/spec.md`
+- Spec: `docs/vault/Specs/015 Demo Data Bootstrap/spec.md`
 - Implementation: `tests/test_bootstrap.py::_svc_with_provenance`

@@ -25,6 +25,10 @@ docs/vault/
 ├── Systems/             # Implemented subsystems and tooling
 │   ├── Vault Health.md  # Audit & graph health tooling
 │   └── Vault Structure.md # This file
+├── Code/                # Code-architecture notes (modules, classes, conventions)
+│   └── Code.md          # MOC
+├── Specs/               # Specification notes tracking feature spec status
+│   └── Specs.md         # MOC
 ├── Decisions/           # Architecture Decision Records (ADRs)
 │   ├── ADR-NNN-*.md     # Individual ADRs
 │   └── ADR-template.md  # Template for new ADRs
@@ -52,6 +56,8 @@ docs/vault/
 | Session | `YYYY-MM-DD-description.md` | `2026-06-14-llama-engine-evolution.md` |
 | Reference | `CamelCase.md` | `ArchitectureOverview.md` |
 | System | `Title Case.md` | `Vault Health.md` |
+| Code | `Title Case.md` | `Repository Pattern.md` |
+| Spec | `NNN Spec Name.md` | `015 Demo Data Bootstrap.md` |
 | Discovery | `Title Case.md` | `(alphanumeric with spaces).md` |
 
 ## Frontmatter Conventions
