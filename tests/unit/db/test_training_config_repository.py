@@ -22,7 +22,8 @@ class TestTrainingConfigRepository:
 
     async def test_add_and_get(self, in_memory_session):
         """Adding a config and retrieving it by id should return the same
-        record with a generated primary key."""
+        record with a generated primary key.
+        """
         repo = TrainingConfigRepository(in_memory_session)
         config = TrainingConfig(name="test-config", n_layer=2, n_embd=32, n_head=4)
         saved = await repo.add(config)
@@ -64,7 +65,8 @@ class TestTrainingConfigRepository:
 
     async def test_delete(self, in_memory_session):
         """Deleting a config should remove it and subsequent get returns
-        None."""
+        None.
+        """
         repo = TrainingConfigRepository(in_memory_session)
         config = TrainingConfig(name="delete-me")
         saved = await repo.add(config)

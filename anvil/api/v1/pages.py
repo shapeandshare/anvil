@@ -65,7 +65,11 @@ async def experiments_page(request: Request):
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/experiment.html",
-        {"related_lessons": related_lessons("loss", "training-loop", "adam")},
+        {
+            "related_lessons": related_lessons(
+                "loss", "training-loop", "adam", "experiment-tracking"
+            )
+        },
     )
 
 
@@ -118,7 +122,7 @@ async def datasets_page(
         {
             "licenses": licenses,
             "related_lessons": related_lessons(
-                "data-fundamentals", "tokenization", "embeddings"
+                "data-fundamentals", "tokenization", "chunking", "governance"
             ),
         },
     )
@@ -141,7 +145,11 @@ async def operations_page(request: Request):
     return request.app.state.templates.TemplateResponse(
         request,
         "operations.html",
-        {"related_lessons": related_lessons("cloud-compute", "faq", "glossary")},
+        {
+            "related_lessons": related_lessons(
+                "cloud-compute", "memory-divergence", "faq", "glossary"
+            )
+        },
     )
 
 
@@ -212,7 +220,7 @@ async def content_page(request: Request):
         "archetypes/content_library.html",
         {
             "related_lessons": related_lessons(
-                "data-fundamentals", "tokenization", "faq", "glossary"
+                "data-fundamentals", "content-versioning", "governance", "chunking"
             )
         },
     )

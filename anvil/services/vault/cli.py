@@ -87,19 +87,19 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     # --- detect-increment ---
-    inc_p = sub.add_parser(
+    sub.add_parser(
         "detect-increment",
         help="Classify merge commit for version increment type",
     )
 
     # --- check-version ---
-    cv_p = sub.add_parser(
+    sub.add_parser(
         "check-version",
         help="Detect whether version changed since parent commit",
     )
 
     # --- build-notes ---
-    bn_p = sub.add_parser(
+    sub.add_parser(
         "build-notes",
         help="Build release-notes.md from CHANGELOG and PR_BODY",
     )

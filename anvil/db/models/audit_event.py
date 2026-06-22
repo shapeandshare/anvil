@@ -6,7 +6,7 @@
 """AuditEvent ORM model — hash-chained event log.
 
 Records every consequential lifecycle action in a verifiable,
-append-only hash chain (FR-008–FR-013, FR-023). Each entry stores
+append-only hash chain (FR-008-FR-013, FR-023). Each entry stores
 the SHA-256 hash of the prior entry so that any insertion,
 alteration, or deletion is detectable.
 """

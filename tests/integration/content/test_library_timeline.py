@@ -76,7 +76,8 @@ async def api(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> AsyncIterator[httpx.AsyncClient]:
     """Yield an HTTP client bound to the content router on a temp DB +
-    content dir."""
+    content dir.
+    """
     monkeypatch.setenv("ANVIL_CONTENT_DIR", str(tmp_path / "content"))
     get_config.cache_clear()
 
@@ -143,7 +144,8 @@ async def test_version_timeline_returns_versions_in_order(
     api: httpx.AsyncClient,
 ) -> None:
     """Version timeline shows versions with correct numbers/entry counts
-    in order."""
+    in order.
+    """
     r = await api.post("/v1/content/corpora", json={"name": "Timeline Corpus"})
     assert r.status_code == 200, r.text
     corpus_id = r.json()["data"]["id"]
@@ -180,7 +182,8 @@ async def test_version_timeline_returns_versions_in_order(
 @pytest.mark.asyncio
 async def test_version_timeline_entry_counts(api: httpx.AsyncClient) -> None:
     """Entry count in version timeline matches the number of staged
-    files."""
+    files.
+    """
     r = await api.post("/v1/content/corpora", json={"name": "Multi File Corpus"})
     assert r.status_code == 200, r.text
     corpus_id = r.json()["data"]["id"]

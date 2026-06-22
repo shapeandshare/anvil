@@ -38,7 +38,8 @@ async def api(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> AsyncIterator[httpx.AsyncClient]:
     """Yield an HTTP client bound to the content router on a temp DB +
-    content dir."""
+    content dir.
+    """
     monkeypatch.setenv("ANVIL_CONTENT_DIR", str(tmp_path / "content"))
     _db_path = tmp_path / "lineage.db"
     get_config.cache_clear()

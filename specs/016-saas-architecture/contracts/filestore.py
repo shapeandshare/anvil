@@ -10,7 +10,6 @@ this interface. Local mode writes to disk; SaaS mode writes to S3.
 """
 
 from abc import ABC, abstractmethod
-from typing import AsyncIterator
 
 
 class FileStore(ABC):

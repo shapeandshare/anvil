@@ -23,7 +23,7 @@ from anvil.db.base import Base
 
 # Import all model modules so their tables register with Base.metadata.
 # Each sub-module must be explicitly imported (models/__init__.py is bare).
-from anvil.db.models import (  # noqa: F401  # isort: skip
+from anvil.db.models import (  # isort: skip
     audit_event,
     corpus,
     corpus_file,

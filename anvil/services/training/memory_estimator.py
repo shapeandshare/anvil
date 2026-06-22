@@ -13,7 +13,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from ...gpu import GpuInfo, detect_gpu
+from ...gpu import GpuInfo
 from .._shared.device_type import DeviceType
 
 # Bytes per float32 parameter.

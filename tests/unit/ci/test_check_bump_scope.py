@@ -90,7 +90,8 @@ class TestValidateBumpScope:
 
     def test_source_change_exits_zero_but_flags(self, tmp_path: Path) -> None:
         """A source-touching change should exit 0 (the guard always passes;
-        it's a classifier, not an enforcer — enforcement is branch protection."""
+        it's a classifier, not an enforcer — enforcement is branch protection.
+        """
         repo = tmp_path / "repo"
         repo.mkdir()
         _validate_bump_scope({"anvil/cli.py"}, str(repo))

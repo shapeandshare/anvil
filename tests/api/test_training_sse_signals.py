@@ -27,7 +27,8 @@ from anvil.services.training.step_metrics import StepMetrics
 
 class _SyncQueue:
     """Collecting queue double whose ``put`` and ``put_nowait`` methods
-    run synchronously — no event loop needed."""
+    run synchronously — no event loop needed.
+    """
 
     def __init__(self) -> None:
         self.items: list[dict] = []

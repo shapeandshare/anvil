@@ -10,7 +10,8 @@ Extends the existing ``ComputeBackend`` pattern from
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from .event_bus import EventBus
 from .job_queue import TrainingJob
