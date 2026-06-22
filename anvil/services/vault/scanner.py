@@ -17,6 +17,7 @@ from typing import Any
 from ._types import GraphHealthReport, NoteMetadata
 
 EXCLUDED_DIRS = {"_meta", ".obsidian", "addons"}
+EXEMPT_TYPES: set[str] = {"type/spec"}
 
 
 def should_exclude(path: Path, vault_root: Path) -> bool:
@@ -41,6 +42,100 @@ def should_exclude(path: Path, vault_root: Path) -> bool:
     return any(part in EXCLUDED_DIRS for part in rel.parts)
 
 
+def _is_scaffold_path(path: Path, vault_root: Path) -> bool:
+    """Check if a path is a scaffold subdir under Specs/.
+
+    Parameters
+    ----------
+    path : Path
+        File path to check.
+    vault_root : Path
+        Root of the vault.
+
+    Returns
+    -------
+    bool
+        True if the path is under Specs/*/checklists/ or Specs/*/contracts/.
+    """
+    SCAFFOLD_SUBDIRS = {"checklists", "contracts"}
+    try:
+        rel = path.relative_to(vault_root)
+    except ValueError:
+        return False
+    parts = rel.parts
+    try:
+        specs_idx = parts.index("Specs")
+    except ValueError:
+        return False
+    if len(parts) < specs_idx + 4:
+        return False
+    return parts[specs_idx + 2] in SCAFFOLD_SUBDIRS
+
+
+def _is_spec_subfile(path: Path, vault_root: Path) -> bool:
+    """Check if a path is a spec subfile (not the root note).
+
+    Parameters
+    ----------
+    path : Path
+        File path to check.
+    vault_root : Path
+        Root of the vault.
+
+    Returns
+    -------
+    bool
+        True if the note is under Specs/NNN Title/ and its filename
+        does not match ``<spec-dir>.md``, and it is not under a
+        scaffold subdir.
+    """
+    SCAFFOLD_SUBDIRS = {"checklists", "contracts"}
+    try:
+        rel = path.relative_to(vault_root)
+    except ValueError:
+        return False
+    parts = rel.parts
+    try:
+        specs_idx = parts.index("Specs")
+    except ValueError:
+        return False
+    if specs_idx + 2 >= len(parts):
+        return False
+    # Scaffold subdir files are not spec subfiles
+    if specs_idx + 3 < len(parts) and parts[specs_idx + 2] in SCAFFOLD_SUBDIRS:
+        return False
+    spec_dir = parts[specs_idx + 1]
+    main_note = f"{spec_dir}.md"
+    return parts[-1] != main_note
+
+
+def is_exempt(meta: NoteMetadata, vault_root: Path) -> bool:
+    """Check if a note is exempt from orphan/dead-end/sink analysis.
+
+    Exempt notes are those under scaffold subdirs (``Specs/*/checklists/``,
+    ``Specs/*/contracts/``) or spec subfiles (under ``Specs/NNN Title/``
+    but not the root note). They are added to the graph so wikilinks
+    resolve, but their connectivity is not counted.
+
+    Parameters
+    ----------
+    meta : NoteMetadata
+        Note metadata to check.
+    vault_root : Path
+        Root of the vault.
+
+    Returns
+    -------
+    bool
+        True if the note should be exempt.
+    """
+    if _is_scaffold_path(meta.path, vault_root):
+        return True
+    if _is_spec_subfile(meta.path, vault_root):
+        return True
+    return False
+
+
 class GraphHealthRunner:
     """Entry point for graph health analysis of a vault.
 
@@ -56,6 +151,7 @@ class GraphHealthRunner:
         self.vault_root = vault_root
         self.repo_root = repo_root
         self.notes: dict[str, NoteMetadata] = {}
+        self.excluded_stems: set[str] = set()
         self.graph: Any = None
         self._filename_index: dict[str, list[Path]] | None = None
 
@@ -135,6 +231,14 @@ class GraphHealthRunner:
                 last_modified=last_mod,
                 outbound_stems=outbound_stems,
             )
+
+        # Identify exempt notes (scaffold files, spec subfiles) and store
+        # their stems so downstream connectivity/topology can exclude them
+        # from orphan/dead-end/sink counts.
+        self.excluded_stems = set()
+        for stem, meta in self.notes.items():
+            if is_exempt(meta, self.vault_root):
+                self.excluded_stems.add(stem)
 
     @staticmethod
     def _parse_date(val: Any) -> date | None:
@@ -219,7 +323,11 @@ class GraphHealthRunner:
         if self.graph is None or len(self.graph.nodes) == 0:
             return report
 
-        report.connectivity = connectivity.compute_connectivity(self.graph, self.notes)
+        report.connectivity = connectivity.compute_connectivity(
+            self.graph,
+            self.notes,
+            excluded_stems=self.excluded_stems,
+        )
         report.topological = topology.compute_topological(self.graph, self.notes)
         report.hygiene = hygiene.compute_hygiene(
             self.notes, self.vault_root, self._filename_index

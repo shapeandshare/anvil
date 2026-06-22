@@ -11,7 +11,8 @@ from pathlib import Path
 
 import pytest
 
-from anvil.services.vault.scanner import GraphHealthRunner, should_exclude
+from anvil.services.vault._types import NoteMetadata
+from anvil.services.vault.scanner import GraphHealthRunner, is_exempt, should_exclude
 
 
 class TestShouldExclude:
@@ -26,6 +27,62 @@ class TestShouldExclude:
         vault_root = Path("/vault")
         path = Path("/vault/Notes/ValidNote.md")
         assert should_exclude(path, vault_root) is False
+
+
+class TestIsExempt:
+    """Tests for ``is_exempt``."""
+
+    def test_spec_subfile_is_exempt(self) -> None:
+        vault_root = Path("/vault")
+        path = Path("/vault/Specs/015 Demo/015 Demo - plan.md")
+        meta = NoteMetadata(
+            path=path,
+            stem="015 Demo - plan",
+            frontmatter={"title": "Plan", "type": "spec", "tags": ["type/spec"]},
+            title="Plan",
+            note_type="spec",
+            tags=["type/spec"],
+        )
+        assert is_exempt(meta, vault_root) is True
+
+    def test_scaffold_file_is_exempt(self) -> None:
+        vault_root = Path("/vault")
+        path = Path("/vault/Specs/015 Demo/checklists/requirements.md")
+        meta = NoteMetadata(
+            path=path,
+            stem="requirements",
+        )
+        assert is_exempt(meta, vault_root) is True
+
+    def test_normal_note_not_exempt(self) -> None:
+        vault_root = Path("/vault")
+        path = Path("/vault/Notes/ValidNote.md")
+        meta = NoteMetadata(
+            path=path,
+            stem="ValidNote",
+            frontmatter={
+                "title": "Valid",
+                "type": "decision",
+                "tags": ["type/decision"],
+            },
+            title="Valid",
+            note_type="decision",
+            tags=["type/decision"],
+        )
+        assert is_exempt(meta, vault_root) is False
+
+    def test_root_spec_note_not_exempt(self) -> None:
+        vault_root = Path("/vault")
+        path = Path("/vault/Specs/015 Demo/015 Demo.md")
+        meta = NoteMetadata(
+            path=path,
+            stem="015 Demo",
+            frontmatter={"title": "015 Demo", "type": "spec", "tags": ["type/spec"]},
+            title="015 Demo",
+            note_type="spec",
+            tags=["type/spec"],
+        )
+        assert is_exempt(meta, vault_root) is False
 
 
 class TestGraphHealthRunner:
