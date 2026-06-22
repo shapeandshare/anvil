@@ -199,7 +199,7 @@
       })
       .then(function(html) {
         if (html === null) return;
-        var doc, newMain, currentMain, head, href, clone, afterCore, ns, i, j, link, s, tab, attr;
+        var doc, newMain, currentMain, head, href, clone, afterCore, ns, i, j, k, link, s, tab, attr;
 
         doc = new DOMParser().parseFromString(html, 'text/html');
 
@@ -233,22 +233,53 @@
         });
 
         /* 4. Execute scripts from {% block scripts %} (after core.js) */
-        afterCore = false;
-        doc.querySelectorAll('script').forEach(function(s) {
-          if (!afterCore) {
+        var seenCore = false;
+        var externScripts = [];
+        var inlinScripts = [];
+
+        doc.querySelectorAll('script').forEach(function (s) {
+          if (!seenCore) {
             if (s.getAttribute('src') === '/static/js/core.js') {
-              afterCore = true;
+              seenCore = true;
             }
             return;
           }
-          ns = document.createElement('script');
-          for (j = 0; j < s.attributes.length; j++) {
-            attr = s.attributes[j];
-            ns.setAttribute(attr.name, attr.value);
+          if (s.getAttribute('src')) {
+            externScripts.push(s);
+          } else {
+            inlinScripts.push(s);
           }
-          ns.textContent = s.textContent;
-          document.body.appendChild(ns);
         });
+
+        /* Load all external scripts in parallel, then execute inline scripts */
+        var loadedCount = 0;
+        var totalExt = externScripts.length;
+
+        function _flushInlines() {
+          loadedCount++;
+          if (loadedCount >= totalExt) {
+            for (k = 0; k < inlinScripts.length; k++) {
+              ns = document.createElement('script');
+              ns.textContent = inlinScripts[k].textContent;
+              document.body.appendChild(ns);
+            }
+          }
+        }
+
+        if (totalExt === 0) {
+          _flushInlines();
+        } else {
+          externScripts.forEach(function (s) {
+            var ns = document.createElement('script');
+            for (j = 0; j < s.attributes.length; j++) {
+              attr = s.attributes[j];
+              ns.setAttribute(attr.name, attr.value);
+            }
+            ns.onload = _flushInlines;
+            ns.onerror = _flushInlines; /* don't block on load failure */
+            document.body.appendChild(ns);
+          });
+        }
 
         /* 5. Update browser history */
         if (updateHistory) {
