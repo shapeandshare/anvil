@@ -180,7 +180,7 @@ a:hover { text-decoration: underline; }
 }
 
 .theme-picker__item:focus-visible {
-  outline: none;
+  outline: none; /* ux-lint:allow focus-visible uses border-color below */
   border-color: var(--accent);
   background: var(--surface-2);
 }
@@ -250,7 +250,7 @@ a:hover { text-decoration: underline; }
   font-family: var(--font-body);
   font-size: var(--text-caption-1);
   cursor: pointer;
-  outline: none;
+  outline: none; /* ux-lint:allow focus styled via ._btn:focus-visible elsewhere */
   appearance: auto;
 }
 

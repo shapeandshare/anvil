@@ -86,6 +86,7 @@ Package boundaries SHALL follow domain (bounded context) boundaries. Sub-packagi
 - Lean dependencies; new deps justified in an ADR/plan; optional/heavy deps (e.g. GPU) go in `[project.optional-dependencies]`.
 - Significant decisions recorded as ADRs in `docs/vault/Decisions/`; vault enriched per session.
 - Pydantic `BaseModel` MUST be used for all structured data/value-object classes over `dataclasses.dataclass`. Existing `@dataclass` usages are grandfathered until touched for other reasons, but all NEW code MUST use `BaseModel`.
+- **UI compliance (MUST)** — All UI, template, and CSS work MUST comply with `docs/ux-rules.md`. S4/S3 findings block; resolve them, never dilute the rule.
 - **One class per file** — Every Python source file MUST contain exactly one class definition. Utility constants, functions, enums, and module-level helpers are permitted in the same file as the primary class only when they are inseparable from that class's interface. Exception and error classes that are tightly coupled may share a file with their primary class. Enforcement is at merge review — any reintroduced multi-class file without explicit exception approval is reject-worthy.
 
 ## Development Workflow & Quality Gates
