@@ -42,6 +42,8 @@ from anvil.services.governance.audit_outcome import AuditOutcome
 from anvil.services.tracking.tracking import TrackingService
 from anvil.workbench import AnvilWorkbench
 
+from .learning import related_lessons
+
 router = APIRouter()
 tracking_svc = TrackingService()
 
@@ -79,7 +81,12 @@ async def curate_dataset_page(
     return request.app.state.templates.TemplateResponse(
         request,
         "dataset_curation.html",
-        {"dataset": _serialize(dataset)},
+        {
+            "dataset": _serialize(dataset),
+            "related_lessons": related_lessons(
+                "tokenization", "loss", "data-fundamentals"
+            ),
+        },
     )
 
 

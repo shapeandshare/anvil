@@ -91,11 +91,20 @@ async def test_content_page(client):
 
 @pytest.mark.asyncio
 async def test_about_page(client):
-    """GET /v1/about renders the about page."""
+    """GET /v1/about renders the about page with version and all sections."""
+    from anvil import __version__
+
     r = await client.get("/v1/about")
     assert r.status_code == 200
     assert "text/html" in r.headers["content-type"]
     assert "About anvil" in r.text
+    assert f"v{__version__}" in r.text
+    assert "MIT License" in r.text
+    assert "Technology Stack" in r.text
+    assert "Architecture Overview" in r.text
+    assert "Governance" in r.text
+    assert "Resources" in r.text
+    assert "Version" in r.text
 
 
 @pytest.mark.asyncio

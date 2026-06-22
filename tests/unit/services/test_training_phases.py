@@ -63,6 +63,9 @@ class FakeBackend:
         self.last_config = config
         self.last_progress_callback = progress_callback
         self.last_stop_check = stop_check
+        # Yield to event loop so run_coroutine_threadsafe-scheduled
+        # events (e.g. "submitted") are processed before we return.
+        await asyncio.sleep(0)
         return self._result
 
 
@@ -207,10 +210,15 @@ class TestStartTrainingPhases:
 
         collected: list[dict] = []
         original_put = asyncio.Queue.put
+        original_put_nowait = asyncio.Queue.put_nowait
 
         def _tracking_put(q, msg):
             collected.append(msg)
             return original_put(q, msg)
+
+        def _tracking_put_nowait(q, msg):
+            collected.append(msg)
+            return original_put_nowait(q, msg)
 
         with (
             patch(
@@ -226,6 +234,11 @@ class TestStartTrainingPhases:
                 asyncio.Queue,
                 "put",
                 _tracking_put,
+            ),
+            patch.object(
+                asyncio.Queue,
+                "put_nowait",
+                _tracking_put_nowait,
             ),
         ):
             await svc.start_training(

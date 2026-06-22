@@ -44,6 +44,7 @@ class TestPrimaryPages:
 
     PAGES = [
         "/",
+        "/v1/about",
         "/v1/training-page",
         "/v1/datasets-page",
         "/v1/experiments-page",
@@ -59,11 +60,81 @@ class TestPrimaryPages:
         assert resp.status_code == 200, f"Page {path} returned {resp.status_code}"
 
 
+class TestTrainingPageContent:
+    """ST-T1..ST-T3: Training page pipeline tabs and banner CTA content."""
+
+    TRAINING_PAGE = "/v1/training-page"
+
+    def test_wizard_steps_present(self, client: httpx.Client) -> None:
+        resp = client.get(self.TRAINING_PAGE)
+        assert resp.status_code == 200
+        html = resp.text
+        assert 'class="wizard-steps"' in html, "Missing wizard-steps container"
+        assert 'data-tab="tab-data"' in html, "Missing Data step"
+        assert 'data-tab="tab-configure"' in html, "Missing Configure step"
+        assert 'data-tab="tab-forge"' in html, "Missing Forge step"
+        assert "wizard-step-connector" in html, "Missing step connectors"
+
+    def test_wizard_tabs_present(self, client: httpx.Client) -> None:
+        resp = client.get(self.TRAINING_PAGE)
+        assert resp.status_code == 200
+        html = resp.text
+        assert 'class="wizard-tabs"' in html, "Missing wizard-tabs container"
+        assert ">Data<" in html, "Missing Data tab button"
+        assert ">Configure<" in html, "Missing Configure tab button"
+        assert ">Forge<" in html, "Missing Forge tab button"
+
+    def test_banner_cta_present(self, client: httpx.Client) -> None:
+        resp = client.get(self.TRAINING_PAGE)
+        assert resp.status_code == 200
+        html = resp.text
+        assert "section-card--banner" in html, "Missing banner CTA"
+        assert "How Training Works" in html, "Missing banner heading"
+        assert "/v1/learn/training-loop" in html, "Missing training loop link"
+
+
+class TestAboutPageContent:
+    """ST-AB1..ST-AB5: About page sections render correctly."""
+
+    ABOUT_PAGE = "/v1/about"
+
+    def test_about_heading_present(self, client: httpx.Client) -> None:
+        resp = client.get(self.ABOUT_PAGE)
+        assert resp.status_code == 200
+        assert "About anvil" in resp.text
+
+    def test_version_rendered(self, client: httpx.Client) -> None:
+        resp = client.get(self.ABOUT_PAGE)
+        assert resp.status_code == 200
+        html = resp.text
+        assert "Version" in html
+        assert "MIT License" in html
+
+    def test_section_headings_present(self, client: httpx.Client) -> None:
+        resp = client.get(self.ABOUT_PAGE)
+        assert resp.status_code == 200
+        html = resp.text
+        assert "Technology Stack" in html
+        assert "Architecture Overview" in html
+        assert "Governance" in html
+        assert "Resources" in html
+
+    def test_resources_links_present(self, client: httpx.Client) -> None:
+        resp = client.get(self.ABOUT_PAGE)
+        assert resp.status_code == 200
+        html = resp.text
+        assert "/v1/acceptable-use" in html
+        assert "/v1/datasets-page" in html
+        assert "/v1/learn" in html
+        assert "/v1/operations-page" in html
+
+
 class TestPageAssets:
     """ST-A1: Each primary page has resolvable static assets (SC-006)."""
 
     PAGES = [
         "/",
+        "/v1/about",
         "/v1/training-page",
         "/v1/datasets-page",
         "/v1/experiments-page",

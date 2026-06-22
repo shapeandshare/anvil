@@ -18,7 +18,7 @@ from fastapi.responses import HTMLResponse
 from ...api.deps import get_workbench
 from ...db.models.license_entry import LicenseEntry
 from ...workbench import AnvilWorkbench
-from .learning import LEARNING_ARC, _arc_context
+from .learning import related_lessons
 
 router = APIRouter()
 
@@ -40,6 +40,11 @@ async def training_page(request: Request):
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/training.html",
+        {
+            "related_lessons": related_lessons(
+                "parameters", "architecture", "autograd", "adam", "attention"
+            )
+        },
     )
 
 
@@ -60,6 +65,7 @@ async def experiments_page(request: Request):
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/experiment.html",
+        {"related_lessons": related_lessons("loss", "training-loop", "adam")},
     )
 
 
@@ -109,7 +115,12 @@ async def datasets_page(
     return request.app.state.templates.TemplateResponse(
         request,
         "datasets.html",
-        {"licenses": licenses},
+        {
+            "licenses": licenses,
+            "related_lessons": related_lessons(
+                "data-fundamentals", "tokenization", "embeddings"
+            ),
+        },
     )
 
 
@@ -130,6 +141,7 @@ async def operations_page(request: Request):
     return request.app.state.templates.TemplateResponse(
         request,
         "operations.html",
+        {"related_lessons": related_lessons("cloud-compute", "faq", "glossary")},
     )
 
 
@@ -150,6 +162,11 @@ async def inference_page(request: Request):
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/playground.html",
+        {
+            "related_lessons": related_lessons(
+                "sampling", "attention", "embeddings", "graph"
+            )
+        },
     )
 
 
@@ -193,6 +210,11 @@ async def content_page(request: Request):
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/content_library.html",
+        {
+            "related_lessons": related_lessons(
+                "data-fundamentals", "tokenization", "faq", "glossary"
+            )
+        },
     )
 
 
