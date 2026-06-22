@@ -51,7 +51,7 @@ anvil = [
 
 [project.optional-dependencies]
 gpu = [
-    "torch>=2.0",
+    "torch>=2.0,<3",
     "nvidia-ml-py>=12,<13",
 ]
 compute = [
@@ -82,6 +82,7 @@ anvil-stop = "anvil.cli:stop"
 anvil-bootstrap-datasets = "anvil.cli:bootstrap_datasets_main"
 anvil-db = "anvil.cli:db_main"
 anvil-vault = "anvil.services.vault.cli:main"
+anvil-show-api-key = "anvil.cli:show_api_key"
 
 [tool.ruff]
 target-version = "py311"

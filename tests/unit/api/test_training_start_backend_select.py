@@ -12,6 +12,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from anvil.api.app import app
+from anvil.api.deps import get_api_key_store
 from anvil.db.base import Base
 from anvil.db.session import async_engine
 from anvil.services.compute.compute_backend_unavailable import ComputeBackendUnavailable
@@ -98,7 +99,11 @@ async def test_compute_backend_auto_accepts(fake_tracking):
     config = _make_config({"compute_backend": "auto"})
     transport = ASGITransport(app=app)
     try:
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
+        async with AsyncClient(
+            transport=transport,
+            base_url="https://test",
+            headers={"X-API-Key": get_api_key_store().key or ""},
+        ) as client:
             response = await client.post("/v1/training/start", json=config)
             assert response.status_code == 200
             data = response.json()
@@ -119,7 +124,11 @@ async def test_compute_backend_local_cpu_accepts(fake_tracking):
     config = _make_config({"compute_backend": "local-cpu"})
     transport = ASGITransport(app=app)
     try:
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
+        async with AsyncClient(
+            transport=transport,
+            base_url="https://test",
+            headers={"X-API-Key": get_api_key_store().key or ""},
+        ) as client:
             response = await client.post("/v1/training/start", json=config)
             assert response.status_code == 200
             data = response.json()
@@ -139,7 +148,11 @@ async def test_compute_backend_local_gpu_falls_back_to_cpu(fake_tracking):
     config = _make_config({"compute_backend": "local-gpu"})
     transport = ASGITransport(app=app)
     try:
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
+        async with AsyncClient(
+            transport=transport,
+            base_url="https://test",
+            headers={"X-API-Key": get_api_key_store().key or ""},
+        ) as client:
             response = await client.post("/v1/training/start", json=config)
             assert response.status_code == 200
             data = response.json()
@@ -159,7 +172,11 @@ async def test_compute_backend_modal_unavailable_returns_error(fake_tracking):
     config = _make_config({"compute_backend": "modal"})
     transport = ASGITransport(app=app)
     try:
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
+        async with AsyncClient(
+            transport=transport,
+            base_url="https://test",
+            headers={"X-API-Key": get_api_key_store().key or ""},
+        ) as client:
             response = await client.post("/v1/training/start", json=config)
             assert response.status_code == 422
             data = response.json()
@@ -180,7 +197,11 @@ async def test_compute_backend_unknown_returns_error(fake_tracking):
     config = _make_config({"compute_backend": "nonexistent-backend"})
     transport = ASGITransport(app=app)
     try:
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
+        async with AsyncClient(
+            transport=transport,
+            base_url="https://test",
+            headers={"X-API-Key": get_api_key_store().key or ""},
+        ) as client:
             response = await client.post("/v1/training/start", json=config)
             assert response.status_code == 422
             data = response.json()
@@ -200,7 +221,11 @@ async def test_compute_backend_defaults_to_auto(fake_tracking):
     config = _make_config({})  # no compute_backend, defaults to auto
     transport = ASGITransport(app=app)
     try:
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
+        async with AsyncClient(
+            transport=transport,
+            base_url="https://test",
+            headers={"X-API-Key": get_api_key_store().key or ""},
+        ) as client:
             response = await client.post("/v1/training/start", json=config)
             assert response.status_code == 200
             data = response.json()

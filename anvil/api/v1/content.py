@@ -34,6 +34,7 @@ from .schemas import (
     ContentCorpusCreate,
     ContentCorpusOut,
     ContentVersionOut,
+    CreateSourceBody,
     FreezeVersionBody,
     ImportJobOut,
     ImportStart,
@@ -238,16 +239,15 @@ async def list_corpus_versions(
 
 @router.post("/content/sources")
 async def create_source(
-    body: dict,
+    body: CreateSourceBody,
     workbench: AnvilWorkbench = Depends(get_workbench),
 ):
     """Create a new content source.
 
     Parameters
     ----------
-    body : dict
-        Request body with ``slug`` (str), ``name`` (str), and
-        optional ``kind`` (str).
+    body : CreateSourceBody
+        Request body with ``slug``, ``name``, and optional ``kind``.
     workbench : AnvilWorkbench
         Injected session-bound workbench.
 
@@ -265,9 +265,9 @@ async def create_source(
 
     try:
         source = ContentSource(
-            slug=body["slug"],
-            name=body["name"],
-            kind=body.get("kind", "manual"),
+            slug=body.slug,
+            name=body.name,
+            kind=body.kind,
         )
         source = await workbench.content_source_repo.add(source)
         await workbench.session.commit()

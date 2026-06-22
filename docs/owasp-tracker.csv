@@ -1,33 +1,33 @@
 finding_id,category,severity,status,file_line,title,first_seen,last_confirmed,resolved_date,notes
-A01-001,A01,CRITICAL,open,"anvil/api/v1/health_ops.py:203","No auth on POST /services/restart-all",2026-06-21,2026-06-21,,Unauthenticated MLflow restart
-A01-002,A01,CRITICAL,open,"anvil/api/v1/health_ops.py:252-364","5 service-management endpoints with no auth (start/stop/restart/kill-port)",2026-06-21,2026-06-21,,Endpoints: start, stop, restart, kill-port, clear-logs
-A07-001,A07,CRITICAL,open,"anvil/ entire API","No authentication on ANY endpoint",2026-06-21,2026-06-21,,Whole API unauthenticated; server binds to 0.0.0.0
-A04-001,A04,CRITICAL,open,"anvil/api/v1/training.py:47","POST /training/start accepts raw dict config (no validation)",2026-06-21,2026-06-21,,18 field values from unstructured JSON
-A04-002,A04,HIGH,open,"Multiple v1/ route files","18+ endpoints accept body: dict instead of typed Pydantic models",2026-06-21,2026-06-21,,corpora.py, inference.py, eval_datasets.py, registry.py, etc.
-A04-003,A04,HIGH,open,"anvil/api/v1/schemas.py:28-268","Pydantic models missing max_length, pattern, and range constraints",2026-06-21,2026-06-21,,All str fields lack max_length; float fields lack range validation
-A04-004,A04,HIGH,open,"anvil/api/app.py:161-165","No rate limiting middleware configured",2026-06-21,2026-06-21,,slowapi not in dependencies
+A01-001,A01,CRITICAL,fixed,"anvil/api/v1/health_ops.py:203","No auth on POST /services/restart-all",2026-06-21,2026-06-21,2026-06-21,Auth middleware covers all routes including service management
+A01-002,A01,CRITICAL,fixed,"anvil/api/v1/health_ops.py:252-364","5 service-management endpoints with no auth (start/stop/restart/kill-port)",2026-06-21,2026-06-21,2026-06-21,Auth middleware covers all routes
+A07-001,A07,CRITICAL,fixed,"anvil/ entire API","No authentication on ANY endpoint",2026-06-21,2026-06-21,2026-06-21,API key auth middleware + session cookie for browsers; --show-api-key CLI; key auto-generated on first run
+A04-001,A04,CRITICAL,fixed,"anvil/api/v1/training.py:47","POST /training/start accepts raw dict config (no validation)",2026-06-21,2026-06-21,2026-06-21,TrainConfig Pydantic model with Field constraints and extra="forbid"
+A04-002,A04,HIGH,fixed,"Multiple v1/ route files","18+ endpoints accept body: dict instead of typed Pydantic models",2026-06-21,2026-06-21,2026-06-21,19 endpoints across 8 files migrated: corpora(4), inference(7), eval_datasets(2), registry(1), eval(1), learning(1), content(1), datasets(1)
+A04-003,A04,HIGH,open,"anvil/api/v1/schemas.py:28-268","Pydantic models missing max_length, pattern, and range constraints",2026-06-21,2026-06-21,,New body models all have constraints; existing schemas partially enhanced
+A04-004,A04,HIGH,fixed,"anvil/api/app.py:161-165","No rate limiting middleware configured",2026-06-21,2026-06-21,2026-06-21,Custom in-process sliding-window rate limiter; configurable via ANVIL_RATE_LIMIT
 A04-006,A04,HIGH,open,"anvil/api/v1/datasets.py:260","No file size limit on POST /datasets/upload",2026-06-21,2026-06-21,,file.read() with no cap
 A04-007,A04,HIGH,open,"anvil/api/v1/content.py:420","No file size limit on POST /content/sessions/{id}/stage",2026-06-21,2026-06-21,,file.read() with no cap
 A04-008,A04,HIGH,open,"anvil/api/v1/datasets.py:1082","User-controlled regex without ReDoS protection in regex_replace",2026-06-21,2026-06-21,,pattern compiled directly from user input
-A01-003,A01,HIGH,open,"anvil/api/v1/inference.py:53-343","9 model inference endpoints with no auth",2026-06-21,2026-06-21,,Exposes model weights via model-params
+A01-003,A01,HIGH,fixed,"anvil/api/v1/inference.py:53-343","9 model inference endpoints with no auth",2026-06-21,2026-06-21,2026-06-21,Auth middleware covers all /v1/* endpoints; inference automatically protected
 A01-004,A01,HIGH,open,"anvil/api/v1/datasets.py:144-1152","IDOR on ALL dataset endpoints (no ownership checks)",2026-06-21,2026-06-21,,Any user can read/update/delete datasets by ID
 A01-005,A01,HIGH,open,"anvil/api/v1/training.py:645","No ownership check on SSE training stream",2026-06-21,2026-06-21,,Stream any training run by run_id
-A05-001,A05,HIGH,open,"anvil/supervisor/services.py:142-143","MLflow --allowed-hosts * accepts requests from any host",2026-06-21,2026-06-21,,Explicitly opens MLflow to any origin
+A05-001,A05,HIGH,open,"anvil/supervisor/services.py:142-143","MLflow --allowed-hosts * accepts requests from any host",2026-06-21,2026-06-21,,Requires authenticated reverse proxy per ADR-035; not yet implemented
 A07-002,A07,HIGH,open,"anvil/services/content/authz.py:39-60","AuthzContext is a no-op stub (reserved for future SaaS)",2026-06-21,2026-06-21,,require_management_action does nothing
-A04-005,A04,MEDIUM,open,"anvil/api/app.py:161-198","No security headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options)",2026-06-21,2026-06-21,,
+A04-005,A04,MEDIUM,fixed,"anvil/api/app.py:161-198","No security headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options)",2026-06-21,2026-06-21,2026-06-21,CSP, HSTS, X-Frame-Options: DENY, X-Content-Type-Options: nosniff in middleware
 A04-009,A04,MEDIUM,open,"anvil/api/v1/content.py:1085-1094","TOCTOU race condition in lock acquisition",2026-06-21,2026-06-21,,Check-then-act gap between list_active and acquire
 A04-010,A04,MEDIUM,open,"anvil/api/v1/training.py:46","Training start has no idempotency key",2026-06-21,2026-06-21,,Client retry creates duplicate runs
-A05-002,A05,MEDIUM,open,"anvil/api/v1/health_ops.py:86","Version disclosure in /v1/health response",2026-06-21,2026-06-21,,Exact version enables CVE lookup
+A05-002,A05,MEDIUM,fixed,"anvil/api/v1/health_ops.py:86","Version disclosure in /v1/health response",2026-06-21,2026-06-21,2026-06-21,/v1/health returns bare {"status":"healthy"}; metrics moved to /v1/health/detailed (authenticated)
 A05-003,A05,MEDIUM,open,"anvil/api/v1/corpora.py:137 (x9 files)","str(exc) in HTTPException details leaks internal information",2026-06-21,2026-06-21,,Affects corpora.py, content.py, datasets.py
-A05-004,A05,MEDIUM,open,"Dockerfile:11,30","Python base image not digest-pinned",2026-06-21,2026-06-21,,Floating python:3.11-slim tag
+A05-004,A05,MEDIUM,fixed,"Dockerfile:11,30","Python base image not digest-pinned",2026-06-21,2026-06-21,2026-06-21,Both builder and runtime stages pinned to sha256:7e2b6c0beae4
 A01-006,A01,MEDIUM,open,"anvil/api/v1/corpora.py:656","Path traversal risk in corpus file reads",2026-06-21,2026-06-21,,file_path concatenated with corpus root_path
-A01-007,A01,MEDIUM,open,"anvil/api/app.py:161-198","No CORS middleware configured (server binds to 0.0.0.0)",2026-06-21,2026-06-21,,
-A06-001,A06,MEDIUM,open,".github/workflows/ci.yml:125","SonarCloud action pinned to @master (floating tag)",2026-06-21,2026-06-21,,Supply chain risk from floating tag
-A08-001,A08,MEDIUM,open,".github/workflows/release.yml:125","CI/CD uses SonarSource action from @master (floating tag)",2026-06-21,2026-06-21,,Same issue in release workflow
-A09-001,A09,MEDIUM,open,"anvil/cli.py:162-166","logging.basicConfig set only in CLI not in API lifespan",2026-06-21,2026-06-21,,Alternative entry points lack logging config
-A09-002,A09,MEDIUM,open,"anvil/api/app.py:77 (x5)","Silent except: pass on startup failures",2026-06-21,2026-06-21,,License seeding, demo bootstrap, model warmup failures unlogged
-A05-005,A05,LOW,open,"anvil/api/app.py:198","StaticFiles mounted without explicit html=False",2026-06-21,2026-06-21,,Implicit default is safe but not explicit
-A06-002,A06,LOW,open,"pyproject.toml:54","torch>=2.0 no upper bound on optional GPU dep",2026-06-21,2026-06-21,,Optional extra; low risk but should be constrained
+A01-007,A01,MEDIUM,fixed,"anvil/api/app.py:161-198","No CORS middleware configured (server binds to 0.0.0.0)",2026-06-21,2026-06-21,2026-06-21,CORS via ANVIL_CORS_ORIGINS env var; disabled (same-origin) by default
+A06-001,A06,MEDIUM,fixed,".github/workflows/ci.yml:125","SonarCloud action pinned to @master (floating tag)",2026-06-21,2026-06-21,2026-06-21,Pinned to SHA ba3875ecf642b2129de2b589510c81a8b53dbf4e
+A08-001,A08,MEDIUM,fixed,".github/workflows/release.yml:125","CI/CD uses SonarSource action from @master (floating tag)",2026-06-21,2026-06-21,2026-06-21,Same action as ci.yml; both pinned. release.yml also audited: no other floating tags
+A09-001,A09,MEDIUM,fixed,"anvil/cli.py:162-166","logging.basicConfig set only in CLI not in API lifespan",2026-06-21,2026-06-21,2026-06-21,Centralized _setup_logging() called from both CLI and FastAPI lifespan
+A09-002,A09,MEDIUM,open,"anvil/api/app.py:77 (x5)","Silent except: pass on startup failures",2026-06-21,2026-06-21,,License seeding, demo bootstrap, model warmup failures now logged (was: silently swallowed)
+A05-005,A05,LOW,fixed,"anvil/api/app.py:198","StaticFiles mounted without explicit html=False",2026-06-21,2026-06-21,2026-06-21,StaticFiles mount now has html=False
+A06-002,A06,LOW,fixed,"pyproject.toml:54","torch>=2.0 no upper bound on optional GPU dep",2026-06-21,2026-06-21,2026-06-21,Changed to torch>=2.0,<3
 A03-001,A03,LOW,open,"anvil/services/content/local_versioned_content_store.py:214","User-controlled path in staging file construction",2026-06-21,2026-06-21,,Staging key is UUID; blob storage content-addressed
 A03-002,A03,LOW,open,"anvil/storage/local.py:55","No path containment check after Path.resolve()",2026-06-21,2026-06-21,,Path from internal sources not directly from user
 A09-003,A09,LOW,open,"anvil/cli.py:403","print() used in CLI training path",2026-06-21,2026-06-21,,Acceptable for CLI tool but should use logging

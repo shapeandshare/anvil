@@ -33,13 +33,13 @@ async def test_inference_tokenize_demo(client):
 @pytest.mark.asyncio
 async def test_inference_tokenize_empty_text(client):
     resp = await client.post("/v1/inference/tokenize", json={"text": ""})
-    assert resp.status_code == 400
+    assert resp.status_code == 422  # Pydantic validation: min_length=1
 
 
 @pytest.mark.asyncio
 async def test_inference_tokenize_no_text(client):
     resp = await client.post("/v1/inference/tokenize", json={})
-    assert resp.status_code == 400
+    assert resp.status_code == 422  # Pydantic validation: required field
 
 
 @pytest.mark.skip(reason="Requires bootstrapped demo model")
@@ -184,10 +184,10 @@ async def test_inference_invalid_temperature(client):
         "/v1/inference/sampling-distribution",
         json={"prompt": "a", "temperature": 0},
     )
-    assert resp.status_code == 400
+    assert resp.status_code == 422  # Pydantic validation: gt=0
 
 
 @pytest.mark.asyncio
 async def test_inference_attention_empty_text(client):
     resp = await client.post("/v1/inference/attention", json={"text": ""})
-    assert resp.status_code == 400
+    assert resp.status_code == 422  # Pydantic validation: min_length=1

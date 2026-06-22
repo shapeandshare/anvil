@@ -9,9 +9,11 @@ Pure Pydantic ``BaseModel`` subclasses used as request bodies for
 dataset management endpoints.  No business logic -- validation only.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class CreateDatasetBody(BaseModel):
@@ -628,3 +630,254 @@ class ImportJobOut(BaseModel):
     message: str | None = None
     started_at: datetime
     finished_at: datetime | None = None
+
+
+# ── Corpus Management (T006) schemas ──────────────────────────────────
+
+
+class CreateCorpusBody(BaseModel):
+    """Request body for creating a new corpus from a directory path.
+
+    Parameters
+    ----------
+    name : str
+        The corpus name. Must be 1-255 characters.
+    root_path : str
+        Filesystem path to scan. Must be 1-255 characters.
+    include_patterns : list[str] | None, optional
+        Gitignore-style include patterns. Defaults to ``None``.
+    exclude_patterns : list[str] | None, optional
+        Gitignore-style exclude patterns. Defaults to ``None``.
+    description : str | None, optional
+        Optional description. Defaults to ``None``.
+    chunking_strategy : str, optional
+        Chunking algorithm (``"windowed"``, ``"file"``, or ``"line"``).
+        Defaults to ``"windowed"``.
+    chunk_overlap : float, optional
+        Fractional overlap between chunks. Defaults to ``0.5``.
+    block_size : int, optional
+        Token block size for windowed chunking. Defaults to ``16``.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1, max_length=255)
+    root_path: str = Field(min_length=1, max_length=255)
+    include_patterns: list[str] | None = None
+    exclude_patterns: list[str] | None = None
+    description: str | None = None
+    chunking_strategy: str = "windowed"
+    chunk_overlap: float = 0.5
+    block_size: int = 16
+
+
+class ForkCorpusBody(BaseModel):
+    """Request body for forking an existing corpus.
+
+    Parameters
+    ----------
+    name : str
+        New corpus name. Must be 1-255 characters.
+    include_patterns : list[str] | None, optional
+        Gitignore-style include patterns. Defaults to ``None``.
+    exclude_patterns : list[str] | None, optional
+        Gitignore-style exclude patterns. Defaults to ``None``.
+    description : str | None, optional
+        Optional description. Defaults to ``None``.
+    chunking_strategy : str | None, optional
+        Chunking strategy override. Defaults to ``None``.
+    chunk_overlap : float | None, optional
+        Overlap override. Defaults to ``None``.
+    block_size : int | None, optional
+        Block size override. Defaults to ``None``.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1, max_length=255)
+    include_patterns: list[str] | None = None
+    exclude_patterns: list[str] | None = None
+    description: str | None = None
+    chunking_strategy: str | None = None
+    chunk_overlap: float | None = None
+    block_size: int | None = None
+
+
+class ResolvePathBody(BaseModel):
+    """Request body for resolving a folder name to an absolute path.
+
+    Parameters
+    ----------
+    folder_name : str
+        The folder name to locate. Must be 1-255 characters.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    folder_name: str = Field(min_length=1, max_length=255)
+
+
+class AnalyzePathBody(BaseModel):
+    """Request body for analyzing a directory path.
+
+    Parameters
+    ----------
+    path : str
+        Directory path to analyze. Must be 1-255 characters.
+    include_patterns : list[str] | None, optional
+        Gitignore-style include patterns. Defaults to ``None``.
+    exclude_patterns : list[str] | None, optional
+        Gitignore-style exclude patterns. Defaults to ``None``.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    path: str = Field(min_length=1, max_length=255)
+    include_patterns: list[str] | None = None
+    exclude_patterns: list[str] | None = None
+
+
+# ── Model Registry (T006/T008) schemas ────────────────────────────────
+
+
+class RegisterModelBody(BaseModel):
+    """Request body for registering a trained model from an experiment.
+
+    Parameters
+    ----------
+    experiment_id : int
+        The experiment ID to register the model from.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    experiment_id: int
+
+
+# ── Eval schemas (T006/T008) ──────────────────────────────────────────
+
+
+class EvalPerplexityBody(BaseModel):
+    """Request body for computing perplexity on a text.
+
+    Parameters
+    ----------
+    model_id : int
+        Identifier of the model.
+    version : int
+        Version of the model.
+    text : str
+        Input text to evaluate. Must be non-empty.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    model_id: int
+    version: int
+    text: str = Field(min_length=1)
+
+
+class CreateEvalDatasetBody(BaseModel):
+    """Request body for creating a new evaluation dataset.
+
+    Parameters
+    ----------
+    name : str
+        The dataset name. Must be 1-255 characters.
+    tags : dict | None, optional
+        Optional metadata tags. Defaults to ``None``.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1, max_length=255)
+    tags: dict | None = None
+
+
+class AppendRecordsBody(BaseModel):
+    """Request body for appending records to an evaluation dataset.
+
+    Parameters
+    ----------
+    records : list
+        List of evaluation records to append.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    records: list
+
+
+# ── Inference schemas (T006/T008) ─────────────────────────────────────
+
+
+class InferenceSampleBody(BaseModel):
+    """Request body for generating text samples from a registered model.
+
+    Parameters
+    ----------
+    model_id : int
+        Identifier of the model.
+    version : int
+        Version of the model.
+    temperature : float, optional
+        Sampling temperature. Defaults to ``0.5``.
+    num_samples : int, optional
+        Number of samples to generate. Defaults to ``10``.
+    prompt : str, optional
+        Optional prompt text. Defaults to ``""``.
+    top_k : int | None, optional
+        Top-K sampling parameter. Defaults to ``None``.
+    top_p : float | None, optional
+        Top-P (nucleus) sampling parameter. Defaults to ``None``.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    model_id: int
+    version: int
+    temperature: float = 0.5
+    num_samples: int = 10
+    prompt: str = ""
+    top_k: int | None = None
+    top_p: float | None = None
+
+
+# ── Dataset Import schemas (T006/T008) ────────────────────────────────
+
+
+class ImportFromCorpusBody(BaseModel):
+    """Request body for importing documents from a corpus into a dataset.
+
+    Parameters
+    ----------
+    corpus_id : int
+        The source corpus ID.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    corpus_id: int
+
+
+# ── Content Source schemas (T006/T008) ────────────────────────────────
+
+
+class CreateSourceBody(BaseModel):
+    """Request body for creating a new content source.
+
+    Parameters
+    ----------
+    slug : str
+        Unique machine-readable identifier. Must be 1-255 characters.
+    name : str
+        Human-readable name. Must be 1-255 characters.
+    kind : str, optional
+        Source kind (e.g. ``"manual"``). Defaults to ``"manual"``.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    slug: str = Field(min_length=1, max_length=255)
+    name: str = Field(min_length=1, max_length=255)
+    kind: str = "manual"

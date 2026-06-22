@@ -11,6 +11,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from anvil.api.app import app
+from anvil.api.deps import get_api_key_store
 
 
 @pytest.mark.asyncio
@@ -39,7 +40,11 @@ async def test_compute_backends_returns_json_array():
     ]
     with patch("anvil.api.v1.compute.available_backends", return_value=fake_backends):
         transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
+        async with AsyncClient(
+            transport=transport,
+            base_url="https://test",
+            headers={"X-API-Key": get_api_key_store().key or ""},
+        ) as client:
             response = await client.get("/v1/compute/backends")
             assert response.status_code == 200
             data = response.json()
@@ -72,7 +77,11 @@ async def test_compute_backends_unavailable_include_reason():
     ]
     with patch("anvil.api.v1.compute.available_backends", return_value=fake_backends):
         transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
+        async with AsyncClient(
+            transport=transport,
+            base_url="https://test",
+            headers={"X-API-Key": get_api_key_store().key or ""},
+        ) as client:
             response = await client.get("/v1/compute/backends")
             assert response.status_code == 200
             data = response.json()
@@ -90,7 +99,11 @@ async def test_compute_backends_empty_registry():
     """GET /v1/compute/backends returns empty list when no backends registered."""
     with patch("anvil.api.v1.compute.available_backends", return_value=[]):
         transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
+        async with AsyncClient(
+            transport=transport,
+            base_url="https://test",
+            headers={"X-API-Key": get_api_key_store().key or ""},
+        ) as client:
             response = await client.get("/v1/compute/backends")
             assert response.status_code == 200
             data = response.json()

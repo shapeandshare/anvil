@@ -76,7 +76,28 @@ async def rebootstrap_demo(
 
 @router.get("/health")
 async def health():
-    """Return system health status including CPU, memory, disk, and GPU.
+    """Return a bare liveness health check.
+
+    This endpoint is auth-exempt (for Docker compose healthcheck).
+    Detailed system metrics (version, uptime, CPU, memory, disk, GPU)
+    are available at the authenticated ``GET /v1/health/detailed``
+    endpoint (FR-021).
+
+    Returns
+    -------
+    dict
+        ``{"status": "healthy"}``
+    """
+    return {"status": "healthy"}
+
+
+@router.get("/health/detailed")
+async def health_detailed():
+    """Return detailed system health metrics.
+
+    Provides version, uptime, CPU, memory, disk, and GPU information.
+    This endpoint requires authentication (unlike the bare
+    ``GET /v1/health`` liveness check).
 
     Returns
     -------

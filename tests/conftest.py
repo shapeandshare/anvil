@@ -10,6 +10,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from anvil.api.app import app
+from anvil.api.deps import get_api_key_store
 from anvil.db import models
 from anvil.db.base import Base
 from anvil.db.session import AsyncSessionLocal, async_engine
@@ -20,7 +21,12 @@ async def client():
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+    api_key = get_api_key_store().key or ""
+    async with AsyncClient(
+        transport=transport,
+        base_url="https://test",
+        headers={"X-API-Key": api_key},
+    ) as ac:
         yield ac
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)

@@ -16,6 +16,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from anvil.api.app import app
+from anvil.api.deps import get_api_key_store
 from anvil.db.base import Base
 from anvil.db.session import AsyncSessionLocal, async_engine
 from anvil.services.tracking.tracking import TrackingService
@@ -133,7 +134,11 @@ async def test_training_start_degraded_mode_returns_200():
     orig_svc = training_module.tracking_svc
     training_module.tracking_svc = svc
     try:
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
+        async with AsyncClient(
+            transport=transport,
+            base_url="https://test",
+            headers={"X-API-Key": get_api_key_store().key or ""},
+        ) as client:
             config = {
                 "n_layer": 1,
                 "n_embd": 16,
@@ -162,7 +167,11 @@ async def test_training_start_active_mode_returns_mlflow_run_id():
     training_module.tracking_svc = svc
     transport = ASGITransport(app=app)
     try:
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
+        async with AsyncClient(
+            transport=transport,
+            base_url="https://test",
+            headers={"X-API-Key": get_api_key_store().key or ""},
+        ) as client:
             config = {
                 "n_layer": 1,
                 "n_embd": 16,

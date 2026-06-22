@@ -13,6 +13,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
+from ...api.v1.schemas import AppendRecordsBody, CreateEvalDatasetBody
 from ...services._shared.capability_unavailable import CapabilityUnavailable
 from ...services.tracking.tracking import TrackingService
 
@@ -21,15 +22,13 @@ _tracking_svc = TrackingService()
 
 
 @router.post("/eval-datasets")
-async def create_eval_dataset(body: dict) -> dict[str, Any]:
+async def create_eval_dataset(body: CreateEvalDatasetBody) -> dict[str, Any]:
     """Create a new evaluation dataset.
 
     Parameters
     ----------
-    body : dict
-        Request body with keys:
-          - ``name``: str — the dataset name (required)
-          - ``tags``: dict, optional — metadata tags
+    body : CreateEvalDatasetBody
+        Request body with ``name`` and optional ``tags``.
 
     Returns
     -------
@@ -41,10 +40,10 @@ async def create_eval_dataset(body: dict) -> dict[str, Any]:
     HTTPException
         If ``name`` is missing (400).
     """
-    name = body.get("name")
+    name = body.name
     if not name:
         raise HTTPException(status_code=400, detail="name required")
-    tags = body.get("tags")
+    tags = body.tags
     try:
         dataset = await _tracking_svc.create_eval_dataset(name=name, tags=tags)
         return {"available": True, "name": name, "dataset": str(dataset)}
@@ -53,14 +52,14 @@ async def create_eval_dataset(body: dict) -> dict[str, Any]:
 
 
 @router.post("/eval-datasets/{name}/records")
-async def append_eval_records(name: str, body: dict) -> dict[str, Any]:
+async def append_eval_records(name: str, body: AppendRecordsBody) -> dict[str, Any]:
     """Append evaluation records to an existing dataset.
 
     Parameters
     ----------
     name : str
         The name of the evaluation dataset.
-    body : dict
+    body : AppendRecordsBody
         Request body with a ``records`` key containing a list of records.
 
     Returns
@@ -68,7 +67,7 @@ async def append_eval_records(name: str, body: dict) -> dict[str, Any]:
     dict
         Availability flag and count of appended records.
     """
-    records = body.get("records", [])
+    records = body.records
     try:
         count = await _tracking_svc.append_eval_records(name=name, records=records)
         return {"available": True, "appended": count}
