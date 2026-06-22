@@ -101,7 +101,7 @@ async def test_training_exception_triggers_fail_run(
     try:
         async with AsyncClient(
             transport=transport,
-            base_url="http://test",
+            base_url="https://test",
             headers={"X-API-Key": get_api_key_store().key or ""},
         ) as client:
             config = {

@@ -51,7 +51,7 @@ async def test_oom_config_rejected_with_422(db_ready, monkeypatch):
     transport = ASGITransport(app=app)
     async with AsyncClient(
         transport=transport,
-        base_url="http://test",
+        base_url="https://test",
         headers={"X-API-Key": get_api_key_store().key or ""},
     ) as client:
         resp = await client.post(
@@ -91,7 +91,7 @@ async def test_oom_guard_skipped_for_cpu(db_ready, monkeypatch):
     transport = ASGITransport(app=app)
     async with AsyncClient(
         transport=transport,
-        base_url="http://test",
+        base_url="https://test",
         headers={"X-API-Key": get_api_key_store().key or ""},
     ) as client:
         resp = await client.post(

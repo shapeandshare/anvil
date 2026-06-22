@@ -24,7 +24,7 @@ async def client():
     api_key = get_api_key_store().key or ""
     async with AsyncClient(
         transport=transport,
-        base_url="http://test",
+        base_url="https://test",
         headers={"X-API-Key": api_key},
     ) as ac:
         yield ac

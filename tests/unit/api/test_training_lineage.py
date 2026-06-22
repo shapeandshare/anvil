@@ -106,7 +106,7 @@ async def test_start_with_dataset_id_calls_log_dataset_input(db_session, fake_tr
             transport = ASGITransport(app=app)
             async with AsyncClient(
                 transport=transport,
-                base_url="http://test",
+                base_url="https://test",
                 headers={"X-API-Key": get_api_key_store().key or ""},
             ) as client:
                 config = {**BASE_CONFIG, "dataset_id": 1}
@@ -136,7 +136,7 @@ async def test_start_with_corpus_id_calls_log_corpus_input(db_session, fake_trac
             transport = ASGITransport(app=app)
             async with AsyncClient(
                 transport=transport,
-                base_url="http://test",
+                base_url="https://test",
                 headers={"X-API-Key": get_api_key_store().key or ""},
             ) as client:
                 config = {**BASE_CONFIG, "corpus_id": 1}
@@ -170,7 +170,7 @@ async def test_no_dataset_or_corpus_no_phantom_input(db_session, fake_tracking):
             transport = ASGITransport(app=app)
             async with AsyncClient(
                 transport=transport,
-                base_url="http://test",
+                base_url="https://test",
                 headers={"X-API-Key": get_api_key_store().key or ""},
             ) as client:
                 config = {**BASE_CONFIG}
@@ -198,7 +198,7 @@ async def test_start_with_dataset_id_persists_input_digest(db_session, fake_trac
             transport = ASGITransport(app=app)
             async with AsyncClient(
                 transport=transport,
-                base_url="http://test",
+                base_url="https://test",
                 headers={"X-API-Key": get_api_key_store().key or ""},
             ) as client:
                 config = {**BASE_CONFIG, "dataset_id": 1}
@@ -231,7 +231,7 @@ async def test_no_input_id_no_digest(db_session, fake_tracking):
         transport = ASGITransport(app=app)
         async with AsyncClient(
             transport=transport,
-            base_url="http://test",
+            base_url="https://test",
             headers={"X-API-Key": get_api_key_store().key or ""},
         ) as client:
             config = {**BASE_CONFIG}

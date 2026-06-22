@@ -42,7 +42,7 @@ async def test_compute_backends_returns_json_array():
         transport = ASGITransport(app=app)
         async with AsyncClient(
             transport=transport,
-            base_url="http://test",
+            base_url="https://test",
             headers={"X-API-Key": get_api_key_store().key or ""},
         ) as client:
             response = await client.get("/v1/compute/backends")
@@ -79,7 +79,7 @@ async def test_compute_backends_unavailable_include_reason():
         transport = ASGITransport(app=app)
         async with AsyncClient(
             transport=transport,
-            base_url="http://test",
+            base_url="https://test",
             headers={"X-API-Key": get_api_key_store().key or ""},
         ) as client:
             response = await client.get("/v1/compute/backends")
@@ -101,7 +101,7 @@ async def test_compute_backends_empty_registry():
         transport = ASGITransport(app=app)
         async with AsyncClient(
             transport=transport,
-            base_url="http://test",
+            base_url="https://test",
             headers={"X-API-Key": get_api_key_store().key or ""},
         ) as client:
             response = await client.get("/v1/compute/backends")

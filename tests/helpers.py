@@ -24,6 +24,6 @@ def authed_client() -> AsyncClient:
     transport = ASGITransport(app=app)
     return AsyncClient(
         transport=transport,
-        base_url="http://test",
+        base_url="https://test",
         headers={"X-API-Key": TEST_API_KEY},
     )

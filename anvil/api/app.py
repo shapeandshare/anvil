@@ -476,6 +476,9 @@ async def login_post(request: Request) -> Response:
         status_code=200,
         content={"status": "ok", "session_id": session_id},
     )
+    # Mark the session cookie Secure whenever the connection is HTTPS so it is
+    # never sent over plaintext. Over local HTTP (no TLS) it must remain usable,
+    # so the flag tracks the request scheme rather than being hardcoded.
     response.set_cookie(
         key=SESSION_COOKIE_NAME,
         value=session_id,
@@ -483,7 +486,7 @@ async def login_post(request: Request) -> Response:
         samesite="strict",
         max_age=86_400,
         path="/",
-        secure=False,  # local-first; True in production behind TLS
+        secure=request.url.scheme == "https",
     )
     return response
 

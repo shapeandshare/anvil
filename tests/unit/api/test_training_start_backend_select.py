@@ -101,7 +101,7 @@ async def test_compute_backend_auto_accepts(fake_tracking):
     try:
         async with AsyncClient(
             transport=transport,
-            base_url="http://test",
+            base_url="https://test",
             headers={"X-API-Key": get_api_key_store().key or ""},
         ) as client:
             response = await client.post("/v1/training/start", json=config)
@@ -126,7 +126,7 @@ async def test_compute_backend_local_cpu_accepts(fake_tracking):
     try:
         async with AsyncClient(
             transport=transport,
-            base_url="http://test",
+            base_url="https://test",
             headers={"X-API-Key": get_api_key_store().key or ""},
         ) as client:
             response = await client.post("/v1/training/start", json=config)
@@ -150,7 +150,7 @@ async def test_compute_backend_local_gpu_falls_back_to_cpu(fake_tracking):
     try:
         async with AsyncClient(
             transport=transport,
-            base_url="http://test",
+            base_url="https://test",
             headers={"X-API-Key": get_api_key_store().key or ""},
         ) as client:
             response = await client.post("/v1/training/start", json=config)
@@ -174,7 +174,7 @@ async def test_compute_backend_modal_unavailable_returns_error(fake_tracking):
     try:
         async with AsyncClient(
             transport=transport,
-            base_url="http://test",
+            base_url="https://test",
             headers={"X-API-Key": get_api_key_store().key or ""},
         ) as client:
             response = await client.post("/v1/training/start", json=config)
@@ -199,7 +199,7 @@ async def test_compute_backend_unknown_returns_error(fake_tracking):
     try:
         async with AsyncClient(
             transport=transport,
-            base_url="http://test",
+            base_url="https://test",
             headers={"X-API-Key": get_api_key_store().key or ""},
         ) as client:
             response = await client.post("/v1/training/start", json=config)
@@ -223,7 +223,7 @@ async def test_compute_backend_defaults_to_auto(fake_tracking):
     try:
         async with AsyncClient(
             transport=transport,
-            base_url="http://test",
+            base_url="https://test",
             headers={"X-API-Key": get_api_key_store().key or ""},
         ) as client:
             response = await client.post("/v1/training/start", json=config)
