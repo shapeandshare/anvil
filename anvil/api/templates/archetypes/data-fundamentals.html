@@ -143,7 +143,7 @@
   var touchStartY = 0;
   var carouselEl = document.getElementById('concept-carousel');
 
-  function goTo(idx) {
+  function goTo(idx, writeHash) {
     if (idx < 0) idx = 0;
     if (idx >= totalSlides) idx = totalSlides - 1;
     current = idx;
@@ -156,24 +156,36 @@
     if (posEl) posEl.textContent = idx + 1;
     var slide = track.children[idx];
     var stepKey = slide ? slide.getAttribute('data-step-key') : null;
+    if (writeHash && stepKey && window.history && window.history.replaceState) {
+      window.history.replaceState(null, '', '#' + stepKey);
+    }
     document.dispatchEvent(new CustomEvent('concept:stepchange', { detail: { stepKey: stepKey, index: idx } }));
+  }
+
+  function indexForHash() {
+    var key = (window.location.hash || '').replace(/^#/, '');
+    if (!key) return -1;
+    for (var i = 0; i < totalSlides; i++) {
+      if (track.children[i].getAttribute('data-step-key') === key) return i;
+    }
+    return -1;
   }
 
   if (dots) {
     dots.addEventListener('click', function(e) {
       var dot = e.target.closest('.carousel-dot');
       if (dot) {
-        goTo(parseInt(dot.getAttribute('data-slide'), 10));
+        goTo(parseInt(dot.getAttribute('data-slide'), 10), true);
       }
     });
   }
 
-  if (prevBtn) prevBtn.addEventListener('click', function() { goTo(current - 1); });
-  if (nextBtn) nextBtn.addEventListener('click', function() { goTo(current + 1); });
+  if (prevBtn) prevBtn.addEventListener('click', function() { goTo(current - 1, true); });
+  if (nextBtn) nextBtn.addEventListener('click', function() { goTo(current + 1, true); });
 
   document.addEventListener('keydown', function(e) {
-    if (e.key === 'ArrowLeft') { goTo(current - 1); e.preventDefault(); }
-    else if (e.key === 'ArrowRight') { goTo(current + 1); e.preventDefault(); }
+    if (e.key === 'ArrowLeft') { goTo(current - 1, true); e.preventDefault(); }
+    else if (e.key === 'ArrowRight') { goTo(current + 1, true); e.preventDefault(); }
   });
 
   if (carouselEl) {
@@ -185,12 +197,21 @@
       var dx = e.changedTouches[0].clientX - touchStartX;
       var dy = e.changedTouches[0].clientY - touchStartY;
       if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
-        if (dx < 0) goTo(current + 1); else goTo(current - 1);
+        if (dx < 0) goTo(current + 1, true); else goTo(current - 1, true);
       }
     }, { passive: true });
   }
 
-  if (totalSlides > 0) goTo(0);
+  window.addEventListener('hashchange', function() {
+    var idx = indexForHash();
+    if (idx >= 0) goTo(idx, false);
+  });
+
+  var initialIdx = indexForHash();
+  if (totalSlides > 0) goTo(initialIdx >= 0 ? initialIdx : 0, false);
+  if (initialIdx >= 0 && carouselEl && carouselEl.scrollIntoView) {
+    carouselEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
 })();
 </script>
 {% endblock %}
