@@ -129,7 +129,7 @@
 </div>
 {% endblock %}
 {% block scripts %}
-<script>
+<script nonce="{{ request.state.csp_nonce }}">
 (function() {
   /* ── Carousel ── */
   var track = document.getElementById('carousel-track');

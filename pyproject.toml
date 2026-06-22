@@ -75,7 +75,7 @@ dev = [
 ]
 
 [project.scripts]
-anvil = "anvil.cli:serve"
+anvil = "anvil.cli:main"
 anvil-train = "anvil.cli:train"
 anvil-corpus = "anvil.cli:corpus_main"
 anvil-stop = "anvil.cli:stop"

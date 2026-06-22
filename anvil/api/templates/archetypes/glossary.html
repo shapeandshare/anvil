@@ -40,7 +40,7 @@
 </div>
 {% endblock %}
 {% block scripts %}
-<script>
+<script nonce="{{ request.state.csp_nonce }}">
 function toggleFaq(el) {
   var answer = el.querySelector('.faq-answer');
   var toggle = el.querySelector('.faq-toggle');

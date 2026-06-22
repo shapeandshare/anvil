@@ -166,13 +166,17 @@
   function _execScripts(container) {
     var scripts = container.querySelectorAll('script');
     var i, j, oldScript, newScript, attr;
+    var nonceMeta = document.querySelector('meta[name="csp-nonce"]');
+    var pageNonce = nonceMeta ? nonceMeta.getAttribute('content') : '';
     for (i = 0; i < scripts.length; i++) {
       oldScript = scripts[i];
       newScript = document.createElement('script');
       for (j = 0; j < oldScript.attributes.length; j++) {
         attr = oldScript.attributes[j];
+        if (attr.name === 'nonce') continue;
         newScript.setAttribute(attr.name, attr.value);
       }
+      if (pageNonce) newScript.setAttribute('nonce', pageNonce);
       newScript.textContent = oldScript.textContent;
       oldScript.parentNode.replaceChild(newScript, oldScript);
     }

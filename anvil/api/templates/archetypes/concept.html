@@ -83,7 +83,7 @@
 <script src="/static/js/widgets/experiment-tracking.js"></script>
 <script src="/static/js/widgets/governance.js"></script>
 <script src="/static/js/widgets/memory-divergence.js"></script>
-<script>
+<script nonce="{{ request.state.csp_nonce }}">
 (function() {
   /* ── Widget Classes Registry ── */
   var WIDGET_CLASSES = {

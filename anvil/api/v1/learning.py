@@ -11,13 +11,15 @@ and ``LEARNING_ARC_ADDITIONAL`` for the index page), and inference/sampling
 endpoints. Extracted from ``router.py`` as part of structural decomposition.
 """
 
+from __future__ import annotations
+
 import random
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
 from anvil.api.v1.schemas import InferenceSampleBody
-from anvil.core.engine import softmax
+from anvil.core.engine import LlamaModel, softmax
 
 router = APIRouter()
 
@@ -2191,6 +2193,338 @@ async def list_inference_models():
     return {"models": models}
 
 
+def _validate_sampling_params(
+    body: InferenceSampleBody,
+) -> tuple[int | None, float | None]:
+    """Validate ``top_k`` and ``top_p`` sampling parameters.
+
+    Parameters
+    ----------
+    body : InferenceSampleBody
+        Request body containing ``top_k`` and ``top_p`` fields.
+
+    Returns
+    -------
+    tuple of int | None and float | None
+        The validated ``top_k`` and ``top_p`` values.
+
+    Raises
+    ------
+    HTTPException
+        If ``top_k`` is not a positive integer, or ``top_p`` is not a
+        float in ``(0.0, 1.0]``.
+    """
+    top_k = body.top_k
+    top_p = body.top_p
+
+    if top_k is not None:
+        if not isinstance(top_k, int) or top_k <= 0:
+            raise HTTPException(
+                status_code=400, detail="top_k must be a positive integer"
+            )
+
+    if top_p is not None:
+        if not isinstance(top_p, (int, float)) or top_p <= 0.0 or top_p > 1.0:
+            raise HTTPException(
+                status_code=400,
+                detail="top_p must be a float in the range (0.0, 1.0]",
+            )
+
+    return top_k, top_p
+
+
+def _build_prompt_ids(
+    prompt: str,
+    chars: list[str],
+    model: LlamaModel,
+) -> list[int]:
+    """Build prompt token IDs from a prompt string.
+
+    Parameters
+    ----------
+    prompt : str
+        Input prompt text. May be empty.
+    chars : list of str
+        Vocabulary character list from the loaded model.
+    model : object
+        Loaded model instance with ``block_size`` attribute.
+
+    Returns
+    -------
+    list of int
+        Prompt token IDs (``BOS`` + character indices), or an empty
+        list if no valid prompt is provided. Truncated to
+        ``model.block_size``.
+
+    Raises
+    ------
+    HTTPException
+        If ``prompt`` contains a character not in the vocabulary.
+    """
+    BOS = len(chars)
+    if not (prompt and isinstance(prompt, str) and len(prompt) > 0):
+        return []
+
+    try:
+        prompt_ids = [BOS] + [chars.index(ch) for ch in prompt]
+    except ValueError as err:
+        bad_char = next(ch for ch in prompt if ch not in chars)
+        raise HTTPException(
+            status_code=400,
+            detail=f"Character {bad_char!r} not in model vocabulary",
+        ) from err
+
+    return prompt_ids[: model.block_size]
+
+
+def _sample_next_token(
+    logits: list,
+    temperature: float,
+    top_k: int | None,
+    top_p: float | None,
+    model: LlamaModel,
+) -> int:
+    """Sample a single token from logits with optional filtering.
+
+    Applies temperature scaling, optional Top-K truncation, optional
+    Top-P (nucleus) truncation, then softmax and weighted random
+    selection.
+
+    Parameters
+    ----------
+    logits : list of Value
+        Raw logits from the model forward pass.
+    temperature : float
+        Sampling temperature (divides all logits).
+    top_k : int | None
+        If set, keep only the top-K highest logits.
+    top_p : float | None
+        If set, keep the smallest set of logits whose cumulative
+        probability exceeds ``top_p``.
+    model : object
+        Loaded model instance with ``vocab_size`` attribute.
+
+    Returns
+    -------
+    int
+        Sampled token index.
+    """
+    from anvil.core.autograd import Value
+
+    scaled = [logit / temperature for logit in logits]
+
+    if top_k is not None and 0 < top_k < model.vocab_size:
+        sorted_vals = sorted(scaled, key=lambda v: v.data, reverse=True)
+        threshold = sorted_vals[top_k - 1].data
+        scaled = [v if v.data >= threshold else Value(-1e10) for v in scaled]
+
+    if top_p is not None and 0.0 < top_p < 1.0:
+        sorted_vals = sorted(scaled, key=lambda v: v.data, reverse=True)
+        sorted_probs = softmax(sorted_vals)
+        cumsum = 0.0
+        cutoff_idx = 0
+        for i, p in enumerate(sorted_probs):
+            cumsum += p.data
+            if cumsum >= top_p:
+                cutoff_idx = i
+                break
+        else:
+            cutoff_idx = len(sorted_vals) - 1
+        threshold = sorted_vals[cutoff_idx].data
+        scaled = [v if v.data >= threshold else Value(-1e10) for v in scaled]
+
+    probs = softmax(scaled)
+    token_id = random.choices(range(model.vocab_size), weights=[p.data for p in probs])[
+        0
+    ]
+    return token_id
+
+
+def _generate_with_prompt(
+    model: LlamaModel,
+    prompt_ids: list[int],
+    temperature: float,
+    top_k: int | None,
+    top_p: float | None,
+    chars: list[str],
+    BOS: int,
+    keys: list[list],
+    values: list[list],
+) -> str:
+    """Generate a text sample conditioned on a prompt.
+
+    Runs the prompt through the model to warm up the KV cache, then
+    auto-regressively samples subsequent tokens until ``BOS`` or
+    ``block_size`` is reached.
+
+    Parameters
+    ----------
+    model : object
+        Loaded model instance with ``forward``, ``block_size``, and
+        ``vocab_size`` attributes.
+    prompt_ids : list of int
+        Token IDs for the prompt (including leading ``BOS``).
+    temperature : float
+        Sampling temperature.
+    top_k : int | None
+        Top-K filter parameter.
+    top_p : float | None
+        Top-P filter parameter.
+    chars : list of str
+        Vocabulary character list.
+    BOS : int
+        Beginning-of-sequence token ID.
+    keys : list of list
+        KV-cache key arrays (one per layer).
+    values : list of list
+        KV-cache value arrays (one per layer).
+
+    Returns
+    -------
+    str
+        Generated text sample (prompt continuation).
+    """
+    logits = model.forward(prompt_ids[0], 0, keys, values)
+    for pos_id in range(1, len(prompt_ids)):
+        logits = model.forward(prompt_ids[pos_id], pos_id, keys, values)
+
+    sample = [chars[idx] for idx in prompt_ids[1:]]
+
+    for pos_id in range(len(prompt_ids), model.block_size):
+        token_id = _sample_next_token(logits, temperature, top_k, top_p, model)
+        if token_id == BOS:
+            break
+        sample.append(chars[token_id])
+        if pos_id < model.block_size - 1:
+            logits = model.forward(token_id, pos_id, keys, values)
+
+    return "".join(sample)
+
+
+def _generate_without_prompt(
+    model: LlamaModel,
+    temperature: float,
+    top_k: int | None,
+    top_p: float | None,
+    chars: list[str],
+    BOS: int,
+    keys: list[list],
+    values: list[list],
+) -> str:
+    """Generate a text sample from scratch (no prompt).
+
+    Starts with the ``BOS`` token and auto-regressively samples tokens
+    until ``BOS`` is re-encountered or ``block_size`` is reached.
+
+    Parameters
+    ----------
+    model : object
+        Loaded model instance with ``forward``, ``block_size``, and
+        ``vocab_size`` attributes.
+    temperature : float
+        Sampling temperature.
+    top_k : int | None
+        Top-K filter parameter.
+    top_p : float | None
+        Top-P filter parameter.
+    chars : list of str
+        Vocabulary character list.
+    BOS : int
+        Beginning-of-sequence token ID.
+    keys : list of list
+        KV-cache key arrays (one per layer).
+    values : list of list
+        KV-cache value arrays (one per layer).
+
+    Returns
+    -------
+    str
+        Generated text sample.
+    """
+    token_id = BOS
+    sample: list[str] = []
+
+    for pos_id in range(model.block_size):
+        logits = model.forward(token_id, pos_id, keys, values)
+        token_id = _sample_next_token(logits, temperature, top_k, top_p, model)
+        if token_id == BOS:
+            break
+        sample.append(chars[token_id])
+
+    return "".join(sample)
+
+
+def _sample_tokens(
+    model: LlamaModel,
+    prompt_ids: list[int],
+    temperature: float,
+    top_k: int | None,
+    top_p: float | None,
+    num_samples: int,
+    chars: list[str],
+    BOS: int,
+) -> list[str]:
+    """Generate multiple text samples from a model.
+
+    Parameters
+    ----------
+    model : object
+        Loaded model instance with ``n_layer``, ``block_size``, and
+        ``vocab_size`` attributes.
+    prompt_ids : list of int
+        Prompt token IDs (may be empty for unconditional generation).
+    temperature : float
+        Sampling temperature.
+    top_k : int | None
+        Top-K filter parameter.
+    top_p : float | None
+        Top-P filter parameter.
+    num_samples : int
+        Number of samples to generate.
+    chars : list of str
+        Vocabulary character list.
+    BOS : int
+        Beginning-of-sequence token ID.
+
+    Returns
+    -------
+    list of str
+        Generated text samples.
+    """
+    samples: list[str] = []
+    for _ in range(num_samples):
+        keys = [[] for _ in range(model.n_layer)]
+        values = [[] for _ in range(model.n_layer)]
+
+        if prompt_ids:
+            sample = _generate_with_prompt(
+                model,
+                prompt_ids,
+                temperature,
+                top_k,
+                top_p,
+                chars,
+                BOS,
+                keys,
+                values,
+            )
+        else:
+            sample = _generate_without_prompt(
+                model,
+                temperature,
+                top_k,
+                top_p,
+                chars,
+                BOS,
+                keys,
+                values,
+            )
+
+        samples.append(sample)
+
+    return samples
+
+
 @router.post("/inference/sample")
 async def inference_sample(body: InferenceSampleBody):
     """Generate text samples from a registered model.
@@ -2212,120 +2546,30 @@ async def inference_sample(body: InferenceSampleBody):
         If ``model_id`` or ``version`` are missing, or parameters are
         invalid.
     """
-    from anvil.core.autograd import Value
-
-    model_id = body.model_id
-    version = body.version
-    temperature = body.temperature
-    num_samples = body.num_samples
-    prompt = body.prompt
-    top_k = body.top_k
-    top_p = body.top_p
-
-    if top_k is not None:
-        if not isinstance(top_k, int) or top_k <= 0:
-            raise HTTPException(
-                status_code=400, detail="top_k must be a positive integer"
-            )
-
-    if top_p is not None:
-        if not isinstance(top_p, (int, float)) or top_p <= 0.0 or top_p > 1.0:
-            raise HTTPException(
-                status_code=400,
-                detail="top_p must be a float in the range (0.0, 1.0]",
-            )
+    top_k, top_p = _validate_sampling_params(body)
 
     from anvil.services.inference.inference import InferenceService
 
     inf_svc = InferenceService()
     try:
-        loaded = await inf_svc.load_model(model_id, version)
+        loaded = await inf_svc.load_model(body.model_id, body.version)
     except (ValueError, FileNotFoundError) as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
 
     model = loaded.model
     chars = loaded.chars
-
     BOS = len(chars)
-    prompt_ids = []
-    if prompt and isinstance(prompt, str) and len(prompt) > 0:
-        try:
-            prompt_ids = [BOS] + [chars.index(ch) for ch in prompt]
-        except ValueError as err:
-            bad_char = next(ch for ch in prompt if ch not in chars)
-            raise HTTPException(
-                status_code=400,
-                detail=f"Character {bad_char!r} not in model vocabulary",
-            ) from err
-        prompt_ids = prompt_ids[: model.block_size]
 
-    def apply_top_k(scaled, top_k_val, vocab_size):
-        if top_k_val <= 0 or top_k_val >= vocab_size:
-            return scaled
-        sorted_vals = sorted(scaled, key=lambda v: v.data, reverse=True)
-        threshold = sorted_vals[top_k_val - 1].data
-        return [v if v.data >= threshold else Value(-1e10) for v in scaled]
-
-    def apply_top_p(scaled, top_p_val):
-        if top_p_val <= 0.0 or top_p_val >= 1.0:
-            return scaled
-        sorted_vals = sorted(scaled, key=lambda v: v.data, reverse=True)
-        sorted_probs = softmax(sorted_vals)
-        cumsum = 0.0
-        cutoff_idx = 0
-        for i, p in enumerate(sorted_probs):
-            cumsum += p.data
-            if cumsum >= top_p_val:
-                cutoff_idx = i
-                break
-        else:
-            cutoff_idx = len(sorted_vals) - 1
-        threshold = sorted_vals[cutoff_idx].data
-        return [v if v.data >= threshold else Value(-1e10) for v in scaled]
-
-    samples = []
-    for _ in range(num_samples):
-        keys = [[] for _ in range(model.n_layer)]
-        values = [[] for _ in range(model.n_layer)]
-
-        if prompt_ids:
-            logits = model.forward(prompt_ids[0], 0, keys, values)
-            for pos_id in range(1, len(prompt_ids)):
-                logits = model.forward(prompt_ids[pos_id], pos_id, keys, values)
-            sample = [chars[idx] for idx in prompt_ids[1:]]
-            for pos_id in range(len(prompt_ids), model.block_size):
-                scaled = [logit / temperature for logit in logits]
-                if top_k is not None:
-                    scaled = apply_top_k(scaled, top_k, model.vocab_size)
-                if top_p is not None:
-                    scaled = apply_top_p(scaled, top_p)
-                probs = softmax(scaled)
-                token_id = random.choices(
-                    range(model.vocab_size), weights=[p.data for p in probs]
-                )[0]
-                if token_id == BOS:
-                    break
-                sample.append(chars[token_id])
-                if pos_id < model.block_size - 1:
-                    logits = model.forward(token_id, pos_id, keys, values)
-        else:
-            token_id = BOS
-            sample = []
-            for pos_id in range(model.block_size):
-                logits = model.forward(token_id, pos_id, keys, values)
-                scaled = [logit / temperature for logit in logits]
-                if top_k is not None:
-                    scaled = apply_top_k(scaled, top_k, model.vocab_size)
-                if top_p is not None:
-                    scaled = apply_top_p(scaled, top_p)
-                probs = softmax(scaled)
-                token_id = random.choices(
-                    range(model.vocab_size), weights=[p.data for p in probs]
-                )[0]
-                if token_id == BOS:
-                    break
-                sample.append(chars[token_id])
-
-        samples.append("".join(sample))
+    prompt_ids = _build_prompt_ids(body.prompt, chars, model)
+    samples = _sample_tokens(
+        model,
+        prompt_ids,
+        body.temperature,
+        top_k,
+        top_p,
+        body.num_samples,
+        chars,
+        BOS,
+    )
 
     return {"samples": samples}

@@ -8,7 +8,9 @@
 import json
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
+import numpy as np
 import pytest
 
 from anvil.core.engine import LlamaModel
@@ -244,3 +246,113 @@ class TestSafetensorsExportError:
         assert str(err) == msg
         assert msg in repr(err)
         assert isinstance(err, Exception)
+
+
+class TestExportStateDictUnknownKeys:
+    """Tests for unknown/invalid keys in model state dict (lines 92-95)."""
+
+    def test_unknown_top_level_key_is_skipped(self):
+        model = LlamaModel(vocab_size=10, n_embd=8, n_head=2, n_layer=1)
+        model.state_dict["extra_key"] = [[0.0]]
+        hf_sd = export_state_dict(model)
+        assert "extra_key" not in hf_sd
+        known_count = sum(1 for k in model.state_dict if not k.startswith("extra_key"))
+        # Unknown keys are skipped, but known keys still map correctly
+        assert len(hf_sd) == known_count
+
+    def test_unknown_layer_sub_key_is_skipped(self):
+        model = LlamaModel(vocab_size=10, n_embd=8, n_head=2, n_layer=1)
+        model.state_dict["layer0.unknown_sub"] = [[0.0]]
+        hf_sd = export_state_dict(model)
+        unknown_hf = [k for k in hf_sd if "unknown_sub" in k]
+        assert len(unknown_hf) == 0
+
+    def test_only_known_keys_appear_in_output(self):
+        model = LlamaModel(vocab_size=10, n_embd=8, n_head=2, n_layer=2)
+        model.state_dict["layer1.attn_wq"]  # verify it exists
+        model.state_dict["bogus_param"] = [[1.0]]
+        model.state_dict["layer0.unknown"] = [[1.0]]
+        hf_sd = export_state_dict(model)
+        # Every output key must match the HF naming convention
+        for hf_key in hf_sd:
+            assert hf_key.startswith("model.") or hf_key.startswith("lm_head")
+
+
+class TestNonContiguousTensor:
+    """Tests for non-contiguous numpy array handling in export (line 240)."""
+
+    def test_non_contiguous_tensor_is_not_allowed_before_save(self):
+        """Non-contiguous arrays are made contiguous before passing to
+        save_file."""
+        model = LlamaModel(vocab_size=10, n_embd=8, n_head=2, n_layer=1)
+        chars = ["a"]
+        svc = SafetensorsExportService()
+
+        tensors_seen: dict[str, np.ndarray] = {}
+        original_np_array = np.array
+
+        def mock_save_file(tensors, filename, metadata=None):
+            tensors_seen.update(tensors)
+
+        def mock_array(data, dtype=np.float32):
+            arr = original_np_array(data, dtype=dtype)
+            arr = np.asfortranarray(arr)
+            return arr
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with (
+                patch(
+                    "anvil.services.training.export.save_file",
+                    side_effect=mock_save_file,
+                ),
+                patch(
+                    "anvil.services.training.export.np.array",
+                    side_effect=mock_array,
+                ),
+            ):
+                result = svc.export(model, tmpdir, chars)
+                assert result["error"] is None
+
+        for name, arr in tensors_seen.items():
+            assert arr.flags["C_CONTIGUOUS"], f"{name} is not C_CONTIGUOUS"
+
+
+class TestExportErrorHandling:
+    """Tests for error handling paths in SafetensorsExportService."""
+
+    def test_import_error_returns_error_dict(self):
+        model = LlamaModel(vocab_size=10, n_embd=8, n_head=2, n_layer=1)
+        svc = SafetensorsExportService()
+        chars = ["a"]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch(
+                "anvil.services.training.export.save_file",
+                side_effect=ImportError("no module named safetensors"),
+            ):
+                result = svc.export(model, tmpdir, chars)
+                assert result["error"] is not None
+                assert "safetensors" in result["error"]
+                assert result["safetensors_path"] is None
+
+    def test_generic_exception_returns_error_dict(self):
+        model = LlamaModel(vocab_size=10, n_embd=8, n_head=2, n_layer=1)
+        svc = SafetensorsExportService()
+        chars = ["a"]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch(
+                "anvil.services.training.export.generate_config",
+                side_effect=RuntimeError("something went wrong"),
+            ):
+                result = svc.export(model, tmpdir, chars)
+                assert result["error"] is not None
+                assert "something went wrong" in result["error"]
+                assert result["safetensors_path"] is None
+
+    def test_retry_export_handles_load_failure(self):
+        svc = SafetensorsExportService()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = svc.retry_export("/nonexistent/model.json", tmpdir)
+            assert result["error"] is not None
+            assert result["safetensors_path"] is None

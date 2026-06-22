@@ -190,7 +190,7 @@
         let opts = '<option value="">— select source —</option>';
         (data || []).forEach(function (s) {
           sourcesCache[s.id] = s;
-          opts += '<option value="' + s.slug + '">' + escHtml(s.name) + ' (' + s.slug + ')</option>';
+          opts += '<option value="' + escHtml(s.slug) + '">' + escHtml(s.name) + ' (' + escHtml(s.slug) + ')</option>';
         });
         select.innerHTML = opts;
       })

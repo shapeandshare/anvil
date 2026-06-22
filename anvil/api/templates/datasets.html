@@ -357,7 +357,7 @@
 </div>
 
 {# ── JavaScript (preserved in full + extensions) ── #}
-<script>
+<script nonce="{{ request.state.csp_nonce }}">
 (function() {
 
   /* ── helpers ────────────────────────────────────────── */

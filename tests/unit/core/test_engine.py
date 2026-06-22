@@ -10,8 +10,18 @@ import math
 import pytest
 
 from anvil.core.autograd import Value
-from anvil.core.engine import LlamaModel, apply_rope, precompute_rope, train
+from anvil.core.engine import (
+    LlamaModel,
+    apply_rope,
+    linear,
+    matrix,
+    precompute_rope,
+    rmsnorm,
+    softmax,
+    train,
+)
 from anvil.core.tokenizer import Tokenizer
+from anvil.core.vocabulary import Vocabulary
 
 
 def test_value_backward_multipath():
@@ -348,3 +358,568 @@ def test_llama_state_dict_keys():
         assert f"layer{li}.mlp_down" in keys
         assert f"layer{li}.rms_1" in keys
         assert f"layer{li}.rms_2" in keys
+
+
+# --- Autograd operation coverage tests ---
+
+
+def test_value_exp_forward_backward():
+    """exp() forward produces correct data and backward flows correctly."""
+    a = Value(0.0)
+    b = a.exp()
+    assert abs(b.data - 1.0) < 1e-10
+    b.backward()
+    # d(exp(x))/dx = exp(x), so at x=0, grad = 1
+    assert abs(a.grad - 1.0) < 1e-10
+
+    # Test with positive value
+    a2 = Value(2.0)
+    b2 = a2.exp()
+    assert abs(b2.data - math.exp(2.0)) < 1e-10
+    b2.backward()
+    assert abs(a2.grad - math.exp(2.0)) < 1e-10
+
+
+def test_value_pow_forward_backward():
+    """__pow__ forward produces correct data and backward flows correctly."""
+    a = Value(3.0)
+    b = a**2
+    assert abs(b.data - 9.0) < 1e-10
+    b.backward()
+    # d(x^2)/dx = 2x, so at x=3, grad = 6
+    assert abs(a.grad - 6.0) < 1e-10
+
+    # Test with exponent 3
+    a2 = Value(2.0)
+    b2 = a2**3
+    assert abs(b2.data - 8.0) < 1e-10
+    b2.backward()
+    # d(x^3)/dx = 3x^2, so at x=2, grad = 12
+    assert abs(a2.grad - 12.0) < 1e-10
+
+
+def test_value_truediv_forward_backward():
+    """__truediv__ forward produces correct data and backward flows."""
+    a = Value(10.0)
+    b = Value(2.0)
+    c = a / b
+    assert abs(c.data - 5.0) < 1e-10
+    c.backward()
+    # c = a * b^-1, dc/da = 1/b = 0.5, dc/db = -a/b^2 = -2.5
+    assert abs(a.grad - 0.5) < 1e-10
+    assert abs(b.grad - (-2.5)) < 1e-10
+
+
+def test_value_rtruediv_forward_backward():
+    """__rtruediv__ (other / self) forward and backward."""
+    a = Value(2.0)
+    c = 10.0 / a
+    assert abs(c.data - 5.0) < 1e-10
+    c.backward()
+    # c = 10 * x^-1, dc/dx = -10/x^2 = -2.5
+    assert abs(a.grad - (-2.5)) < 1e-10
+
+
+def test_value_sub_forward_backward():
+    """__sub__ forward produces correct data and backward flows."""
+    a = Value(10.0)
+    b = Value(3.0)
+    c = a - b
+    assert abs(c.data - 7.0) < 1e-10
+    c.backward()
+    # c = a + (-b), dc/da = 1, dc/db = -1
+    assert abs(a.grad - 1.0) < 1e-10
+    assert abs(b.grad - (-1.0)) < 1e-10
+
+
+def test_value_rsub_forward():
+    """__rsub__ (other - self) forward produces correct data."""
+    a = Value(3.0)
+    c = 10.0 - a
+    assert abs(c.data - 7.0) < 1e-10
+    c.backward()
+    assert abs(a.grad - (-1.0)) < 1e-10
+
+
+def test_value_neg_forward():
+    """__neg__ forward produces correct data and backward flows."""
+    a = Value(5.0)
+    c = -a
+    assert abs(c.data - (-5.0)) < 1e-10
+    c.backward()
+    assert abs(a.grad - (-1.0)) < 1e-10
+
+
+def test_value_radd_forward():
+    """__radd__ (other + self) forward produces correct data."""
+    a = Value(5.0)
+    c = 10.0 + a
+    assert abs(c.data - 15.0) < 1e-10
+    c.backward()
+    assert abs(a.grad - 1.0) < 1e-10
+
+
+def test_value_rmul_forward():
+    """__rmul__ (other * self) forward produces correct data."""
+    a = Value(3.0)
+    c = 5.0 * a
+    assert abs(c.data - 15.0) < 1e-10
+    c.backward()
+    assert abs(a.grad - 5.0) < 1e-10
+
+
+def test_value_silu_forward_backward():
+    """silu() forward produces correct data and backward flows."""
+    # silu(0) = 0 * 0.5 = 0
+    a = Value(0.0)
+    b = a.silu()
+    assert abs(b.data - 0.0) < 1e-10
+    b.backward()
+    # derivative at 0: sigmoid(0) + 0 * sigmoid(0) * (1-sigmoid(0)) = 0.5
+    assert abs(a.grad - 0.5) < 1e-10
+
+    # silu(2) = 2 * sigmoid(2)
+    a2 = Value(2.0)
+    b2 = a2.silu()
+    s2 = 1.0 / (1.0 + math.exp(-2.0))
+    assert abs(b2.data - (2.0 * s2)) < 1e-10
+    b2.backward()
+    # derivative: s + x * s * (1-s)
+    expected_grad = s2 + 2.0 * s2 * (1.0 - s2)
+    assert abs(a2.grad - expected_grad) < 1e-10
+
+    # silu(-2) negative test
+    a3 = Value(-2.0)
+    b3 = a3.silu()
+    s3 = 1.0 / (1.0 + math.exp(2.0))
+    assert abs(b3.data - (-2.0 * s3)) < 1e-10
+
+
+def test_value_grad_accumulation():
+    """Gradients accumulate correctly when a Value is used in multiple outputs."""
+    a = Value(2.0)
+    b = a * 3.0
+    c = a * 4.0
+    loss = b + c
+    loss.backward()
+    # db/da = 3, dc/da = 4, so grad(a) = 3 + 4 = 7
+    assert abs(a.grad - 7.0) < 1e-10
+
+
+def test_value_deep_chain():
+    """Backward through a deeper chain: f(g(h(x)))"""
+    x = Value(2.0)
+    a = x * 3.0  # 6
+    b = a + 1.0  # 7
+    c = b * 2.0  # 14
+    c.backward()
+    # dc/dx = dc/db * db/da * da/dx = 2 * 1 * 3 = 6
+    assert abs(x.grad - 6.0) < 1e-10
+
+
+def test_value_scalar_operations():
+    """Value can operate directly with Python scalar (int/float)."""
+    a = Value(5.0)
+    assert (a + 3).data == 8.0
+    assert (3 + a).data == 8.0
+    assert (a * 2).data == 10.0
+    assert (2 * a).data == 10.0
+    assert (a - 1).data == 4.0
+    assert (1 - a).data == -4.0
+    assert (a / 2).data == 2.5
+    assert (10 / a).data == 2.0
+
+
+# --- Tokenizer edge case tests ---
+
+
+def test_tokenizer_empty_doc():
+    """encode('') returns just two BOS tokens."""
+    tok = Tokenizer(["hello"])
+    encoded = tok.encode("")
+    assert encoded == [tok.BOS, tok.BOS]
+
+
+def test_tokenizer_unknown_chars_skipped():
+    """Characters not in vocabulary are silently skipped."""
+    tok = Tokenizer(["abc"])
+    encoded = tok.encode("axyz")
+    # Only 'a' is in vocab; 'x', 'y', 'z' are skipped
+    assert encoded[0] == tok.BOS
+    assert encoded[-1] == tok.BOS
+    # 'a' is at index 0
+    assert tok.decode(encoded) == "a"
+
+
+def test_tokenizer_empty_docs():
+    """Tokenizer with empty docs list creates zero-size vocabulary."""
+    tok = Tokenizer([])
+    assert tok.vocab_size == 1
+    assert tok.BOS == 0
+    encoded = tok.encode("")
+    assert encoded == [0, 0]
+    decoded = tok.decode([0, 0])
+    assert decoded == ""
+
+
+def test_tokenizer_decode_bos_omitted():
+    """decode() silently omits BOS tokens from output."""
+    tok = Tokenizer(["abc"])
+    # BOS = 3 (index after a, b, c)
+    decoded = tok.decode([tok.BOS, 0, 1, tok.BOS, 2, tok.BOS])
+    assert decoded == "abc"
+
+
+def test_tokenizer_vocab_size():
+    """vocab_size = len(uchars) + 1 for BOS."""
+    tok = Tokenizer(["hello"])
+    assert tok.vocab_size == len(tok.uchars) + 1
+
+
+def test_tokenizer_roundtrip_multiple_docs():
+    """Roundtrip encode/decode works for various strings."""
+    tok = Tokenizer(["hello", "world"])
+    for text in ["hello", "world", "low", "he", "owo"]:
+        encoded = tok.encode(text)
+        decoded = tok.decode(encoded)
+        assert decoded == text, f"Roundtrip failed for '{text}': got '{decoded}'"
+
+
+def test_tokenizer_roundtrip_with_duplicate_chars():
+    """Characters appearing multiple times roundtrip correctly."""
+    tok = Tokenizer(["abc"])
+    encoded = tok.encode("aaabbbccc")
+    decoded = tok.decode(encoded)
+    assert decoded == "aaabbbccc"
+
+
+def test_tokenizer_decode_empty_list():
+    """decode([]) returns empty string."""
+    tok = Tokenizer(["abc"])
+    assert tok.decode([]) == ""
+
+
+# --- Vocabulary tests ---
+
+
+def test_vocabulary_roundtrip():
+    """Basic Vocabulary encode/decode roundtrip."""
+    chars = sorted(set("hello"))
+    vocab = Vocabulary(chars)
+    encoded = vocab.encode("hello")
+    decoded = vocab.decode(encoded)
+    assert decoded == "hello"
+
+
+def test_vocabulary_from_chars():
+    """from_chars class method produces a working Vocabulary."""
+    chars = sorted(set("world"))
+    vocab = Vocabulary.from_chars(chars)
+    assert vocab.chars == chars
+    assert vocab.bos_id == len(chars)
+    encoded = vocab.encode("world")
+    decoded = vocab.decode(encoded)
+    assert decoded == "world"
+
+
+def test_vocabulary_unknown_char_skipped():
+    """Characters not in vocabulary are silently skipped during encode."""
+    chars = sorted(set("abc"))
+    vocab = Vocabulary(chars)
+    encoded = vocab.encode("axyz")
+    decoded = vocab.decode(encoded)
+    assert decoded == "a"
+
+
+def test_vocabulary_empty_text():
+    """encode('') returns just two BOS tokens."""
+    chars = sorted(set("abc"))
+    vocab = Vocabulary(chars)
+    encoded = vocab.encode("")
+    assert encoded == [vocab.bos_id, vocab.bos_id]
+    assert vocab.decode(encoded) == ""
+
+
+def test_vocabulary_decode_bos_omitted():
+    """BOS tokens are silently omitted during decode."""
+    chars = sorted(set("abc"))
+    vocab = Vocabulary(chars)
+    # IDs: 0=a, 1=b, 2=c, bos_id=3
+    decoded = vocab.decode([3, 0, 1, 3, 2, 3])
+    assert decoded == "abc"
+
+
+def test_vocabulary_decode_empty_list():
+    """decode([]) returns empty string."""
+    chars = sorted(set("abc"))
+    vocab = Vocabulary(chars)
+    assert vocab.decode([]) == ""
+
+
+def test_vocabulary_bos_id():
+    """bos_id equals len(chars) and vocab_size equals len(chars) + 1."""
+    chars = sorted(set("abcdef"))
+    vocab = Vocabulary(chars)
+    assert vocab.bos_id == 6
+    assert vocab.vocab_size == 7
+
+
+def test_vocabulary_tokenizer_parity():
+    """Vocabulary encode/decode matches Tokenizer for same characters."""
+    chars = sorted(set("hello"))
+    vocab = Vocabulary(chars)
+    tok = Tokenizer(["hello"])
+    for text in ["hello", "hell", "eo", "h", ""]:
+        v_encoded = vocab.encode(text)
+        t_encoded = tok.encode(text)
+        assert v_encoded == t_encoded, f"encode mismatch for '{text}'"
+        v_decoded = vocab.decode(v_encoded)
+        t_decoded = tok.decode(t_encoded)
+        assert v_decoded == t_decoded, f"decode mismatch for '{text}'"
+
+
+# --- Engine helper function tests ---
+
+
+def test_matrix_shape():
+    """matrix(nout, nin) returns list of nout rows each with nin Value elements."""
+    m = matrix(3, 4)
+    assert len(m) == 3
+    assert all(len(row) == 4 for row in m)
+    assert all(isinstance(v, Value) for row in m for v in row)
+
+
+def test_linear_function():
+    """linear(x, w) computes weighted sum correctly."""
+    x = [Value(1.0), Value(2.0), Value(3.0)]
+    w = [
+        [Value(1.0), Value(0.0), Value(0.0)],
+        [Value(0.0), Value(1.0), Value(0.0)],
+    ]
+    result = linear(x, w)
+    assert len(result) == 2
+    assert abs(result[0].data - 1.0) < 1e-10
+    assert abs(result[1].data - 2.0) < 1e-10
+
+
+def test_linear_gradient_flow():
+    """linear() gradients flow backward through both inputs and weights."""
+    x = [Value(1.0), Value(2.0)]
+    w = [[Value(3.0), Value(4.0)]]
+    result = linear(x, w)
+    result[0].backward()
+    # result = 1*3 + 2*4 = 11
+    assert abs(result[0].data - 11.0) < 1e-10
+    # dx1 = w1 = 3, dx2 = w2 = 4
+    assert abs(x[0].grad - 3.0) < 1e-10
+    assert abs(x[1].grad - 4.0) < 1e-10
+    # dw1 = x1 = 1, dw2 = x2 = 2
+    assert abs(w[0][0].grad - 1.0) < 1e-10
+    assert abs(w[0][1].grad - 2.0) < 1e-10
+
+
+def test_softmax_uniform():
+    """softmax on uniform inputs produces equal probabilities."""
+    from anvil.core.autograd import Value
+
+    logits = [Value(2.0), Value(2.0), Value(2.0)]
+    probs = softmax(logits)
+    assert len(probs) == 3
+    for p in probs:
+        assert abs(p.data - 1.0 / 3.0) < 1e-10
+
+
+def test_softmax_single():
+    """softmax on single element returns 1.0."""
+    logits = [Value(5.0)]
+    probs = softmax(logits)
+    assert abs(probs[0].data - 1.0) < 1e-10
+
+
+def test_softmax_large_range():
+    """softmax with large value range (numerical stability via max subtraction)."""
+    logits = [Value(1000.0), Value(0.0)]
+    probs = softmax(logits)
+    # After max subtraction: [0, -1000]; exp gives [1, ~0]
+    assert abs(probs[0].data - 1.0) < 1e-10
+    assert abs(probs[1].data - 0.0) < 1e-10
+
+
+def test_softmax_negative_inputs():
+    """softmax with all negative values is still valid."""
+    logits = [Value(-1.0), Value(-2.0), Value(-3.0)]
+    probs = softmax(logits)
+    total = sum(p.data for p in probs)
+    assert abs(total - 1.0) < 1e-10
+
+
+def test_softmax_gradient_flow():
+    """Gradient flows backward through softmax."""
+    logits = [Value(1.0), Value(2.0)]
+    probs = softmax(logits)
+    loss = sum(p * Value(i) for i, p in enumerate(probs))
+    loss.backward()
+    # Gradients should exist on all logits
+    assert all(abs(p.grad) > 0 for p in logits)
+
+
+def test_rmsnorm_negative_values():
+    """rmsnorm handles negative values correctly (squared makes them positive)."""
+    x = [Value(-3.0), Value(-4.0)]
+    n = rmsnorm(x)
+    ms = (9.0 + 16.0) / 2.0  # 12.5
+    scale = (ms + 1e-5) ** -0.5
+    assert abs(n[0].data - (-3.0 * scale)) < 1e-10
+    assert abs(n[1].data - (-4.0 * scale)) < 1e-10
+    n[0].backward()
+    assert all(abs(v.grad) > 0 for v in x)
+
+
+def test_rmsnorm_zero():
+    """rmsnorm with all zeros produces zeros (with epsilon)."""
+    x = [Value(0.0), Value(0.0), Value(0.0)]
+    n = rmsnorm(x)
+    for ni in n:
+        assert abs(ni.data) < 1e-10
+
+
+def test_precompute_rope_custom_theta():
+    """precompute_rope with custom theta value produces valid tables."""
+    cos_t, sin_t = precompute_rope(4, 4, theta=5000.0)
+    assert len(cos_t) == 4
+    assert len(sin_t) == 4
+    assert len(cos_t[0]) == 2  # half = head_dim // 2
+    # theta=5000 gives lower frequencies than default 10000
+    cos_t2, sin_t2 = precompute_rope(4, 4, theta=10000.0)
+    assert cos_t[1] != cos_t2[1]  # Different theta produces different values
+
+
+def test_precompute_rope_varied_seq_len():
+    """precompute_rope works for different sequence lengths."""
+    for seq_len in [1, 2, 8, 16]:
+        cos_t, sin_t = precompute_rope(seq_len, 4)
+        assert len(cos_t) == seq_len
+        assert len(sin_t) == seq_len
+
+
+def test_precompute_rope_single_pos():
+    """precompute_rope with seq_len=1 produces one entry."""
+    cos_t, sin_t = precompute_rope(1, 4)
+    assert len(cos_t) == 1
+    assert len(sin_t) == 1
+
+
+# --- forward_introspect tests ---
+
+
+def test_forward_introspect_structure():
+    """forward_introspect returns correct dict keys and shapes."""
+    model = LlamaModel(vocab_size=27, n_embd=16, n_head=4, n_layer=1, block_size=16)
+    result = model.forward_introspect([5, 6])
+    assert "attention" in result
+    assert "logits" in result
+    assert "embeddings" in result
+    assert "n_layer" in result
+    assert "n_head" in result
+    assert "tokens" in result
+    assert result["n_layer"] == 1
+    assert result["n_head"] == 4
+    assert result["tokens"] == [5, 6]
+    assert len(result["embeddings"]) == 2
+    assert len(result["logits"]) == 27
+    # attention[layer][head][pos] = list of weights
+    assert len(result["attention"][0][0][0]) == 1  # first pos, 1 key
+    assert len(result["attention"][0][0][1]) == 2  # second pos, 2 keys
+
+
+def test_forward_introspect_zero_layer():
+    """forward_introspect works with n_layer=0."""
+    model = LlamaModel(vocab_size=27, n_embd=16, n_head=4, n_layer=0, block_size=16)
+    result = model.forward_introspect([5])
+    assert len(result["attention"]) == 0
+    assert len(result["embeddings"]) == 1
+    assert len(result["logits"]) == 27
+
+
+# --- train function edge case tests ---
+
+
+def test_train_stop_check():
+    """train() with stop_check that stops at step 1 returns early."""
+    docs = ["hello", "world"]
+    call_count = [0]
+
+    def stop_after_one():
+        call_count[0] += 1
+        return call_count[0] > 1
+
+    model, loss, samples, _ = train(docs, num_steps=100, stop_check=stop_after_one)
+    # Training runs for 1 step (stop after step 1), loss is valid
+    assert loss > 0
+    assert len(samples) == 20
+
+
+def test_train_stop_check_mid_training():
+    """train() with stop_check that stops after a few steps."""
+    docs = ["abc", "def"]
+    step_count = [0]
+
+    def stop_after_3():
+        step_count[0] += 1
+        return step_count[0] >= 3
+
+    model, loss, samples, _ = train(
+        docs, num_steps=50, stop_check=stop_after_3, n_embd=8, n_head=2
+    )
+    assert len(samples) == 20
+
+
+def test_train_progress_callback():
+    """train() invokes progress_callback on each step."""
+    docs = ["ab", "cd"]
+    captured = []
+
+    def cb(step, loss, tokens, grad_norm):
+        captured.append({"step": step, "loss": loss, "tokens": tokens})
+
+    train(docs, num_steps=5, n_embd=8, n_head=2, progress_callback=cb)
+    assert len(captured) == 5
+    for entry in captured:
+        assert entry["loss"] > 0
+        assert entry["tokens"] > 0
+
+
+def test_train_with_existing_model():
+    """train() accepts an existing model and updates its parameters."""
+    docs = ["hi", "lo"]
+    model = LlamaModel(vocab_size=5, n_embd=8, n_head=2, n_layer=1, block_size=16)
+    params_before = [p.data for p in model.params[:5]]
+    result_model, _, _, _ = train(docs, model=model, num_steps=3, n_embd=8, n_head=2)
+    params_after = [p.data for p in result_model.params[:5]]
+    assert any(
+        abs(before - after) > 1e-10
+        for before, after in zip(params_before, params_after)
+    )
+
+
+def test_train_learning_rate_decay():
+    """train() with high num_steps should show learning rate decay effect."""
+    docs = ["a", "b", "c"]
+    model, loss, samples, _ = train(
+        docs,
+        num_steps=10,
+        n_embd=8,
+        n_head=2,
+        learning_rate=0.01,
+    )
+    assert loss > 0
+    assert len(samples) == 20
+
+
+def test_train_temperature_effect():
+    """train() with different temperature produces valid samples."""
+    docs = ["hello", "world"]
+    _, _, samples_high_temp, _ = train(
+        docs, num_steps=5, n_embd=8, n_head=2, temperature=1.0
+    )
+    assert len(samples_high_temp) == 20
