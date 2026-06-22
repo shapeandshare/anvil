@@ -9,6 +9,25 @@
 {% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
 {% block content %}
 
+{# ── BANNER CTA: Tokenization learning lesson ── #}
+<div class="section-card section-card--banner" style="--stagger-i: 0">
+  <div class="section-card__content" style="display:flex;align-items:center;gap:var(--space-3);">
+    <span style="font-size:1.2rem;flex-shrink:0;">&#128288;</span>
+    <div style="flex:1;">
+      <div style="font-family:var(--font-body);font-weight:600;font-size:var(--text-footnote);color:var(--text-secondary);">
+        How Tokenization Works
+      </div>
+      <div style="font-size:var(--text-caption-2);color:var(--text-tertiary);margin-top:2px;">
+        How each curated sample becomes character tokens the model learns from &mdash; now in the interactive learning arc.
+      </div>
+    </div>
+    <a href="/v1/learn/tokenization" class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap;">
+      Learn More &rarr;
+    </a>
+  </div>
+</div>
+{% include "partials/related-lessons.html" %}
+
 {# ── SECTION CARD #1: Dataset Info ── #}
 <div class="section-card" style="--stagger-i: 0">
   <div class="section-card__header">
