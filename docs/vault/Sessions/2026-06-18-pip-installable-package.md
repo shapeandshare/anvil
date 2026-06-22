@@ -15,8 +15,8 @@ aliases:
   - Pip-Installable Package Session
 source: agent
 code-refs:
-  - specs/009-pip-installable-package/spec.md
-  - specs/009-pip-installable-package/tasks.md
+  - specs/012-pip-installable-package/spec.md
+  - specs/012-pip-installable-package/tasks.md
   - anvil/db/migration.py
   - anvil/services/demo_bootstrap.py
   - Dockerfile

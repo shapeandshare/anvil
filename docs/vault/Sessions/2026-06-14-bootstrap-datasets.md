@@ -38,7 +38,7 @@ updated: '2026-06-18'
 
 - `data/demo/**` (13 demo data files)
 - `anvil/services/demo_bootstrap.py` (DemoBootstrapService)
-- `specs/001-bootstrap-datasets/**` (12 spec/plan/task artifacts)
+- `specs/009-bootstrap-datasets/**` (12 spec/plan/task artifacts)
 - `tests/test_bootstrap.py` (7 test cases)
 - `tests/services/test_training.py` (3 test cases)
 - `tests/test_api/test_datasets_routes.py` (5 test cases)

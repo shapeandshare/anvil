@@ -32,5 +32,5 @@ Feature `010-responsible-data-governance` closes this gap: `DatasetService.delet
 ## References
 
 - `anvil/services/datasets/datasets.py` — `delete_dataset()` method
-- `specs/010-responsible-data-governance/spec.md` — FR-021, SC-005
-- `specs/010-responsible-data-governance/tasks.md` — T060, T051
+- `specs/013-responsible-data-governance/spec.md` — FR-021, SC-005
+- `specs/013-responsible-data-governance/tasks.md` — T060, T051

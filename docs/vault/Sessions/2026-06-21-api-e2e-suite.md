@@ -2,7 +2,7 @@
 
 **Date**: 2026-06-21
 **Tags**: #session #testing #e2e #api
-**Feature**: Whole-API E2E Test Suite (`specs/017-api-e2e-suite/`)
+**Feature**: Whole-API E2E Test Suite (`specs/021-api-e2e-suite/`)
 
 ## Summary
 
@@ -30,8 +30,8 @@ See [[discovery-models-init-metadata-registration]] for full details.
 
 ## Artifacts
 
-- Spec: `specs/017-api-e2e-suite/spec.md`
-- Plan: `specs/017-api-e2e-suite/plan.md`
-- Tasks: `specs/017-api-e2e-suite/tasks.md`
+- Spec: `specs/021-api-e2e-suite/spec.md`
+- Plan: `specs/021-api-e2e-suite/plan.md`
+- Tasks: `specs/021-api-e2e-suite/tasks.md`
 - Tests: `tests/e2e/api/` (14 files)
 - Fix: `anvil/db/models/__init__.py`

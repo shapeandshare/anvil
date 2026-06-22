@@ -61,4 +61,4 @@ Implemented the full Content Repository feature (spec 016) across all user stori
 ## Related
 - [[ADR-033-content-repository-substrate|ADR-033]]
 - [[ADR-030-saas-architecture|ADR-030]]
-- `specs/016-lakefs-content-repo/`
+- `specs/019-lakefs-content-repo/`

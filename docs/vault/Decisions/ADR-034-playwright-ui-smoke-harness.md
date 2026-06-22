@@ -13,9 +13,9 @@ aliases:
 status: status/draft
 source: agent
 code-refs:
-  - specs/017-playwright-ui-smoke/spec.md
-  - specs/017-playwright-ui-smoke/plan.md
-  - specs/017-playwright-ui-smoke/tasks.md
+  - specs/022-playwright-ui-smoke/spec.md
+  - specs/022-playwright-ui-smoke/plan.md
+  - specs/022-playwright-ui-smoke/tasks.md
 ---
 
 # ADR-034: Playwright UI Smoke Harness
@@ -95,6 +95,6 @@ The initial suite targets Chromium only. Firefox and WebKit are available via Pl
 
 ## References
 
-- [Spec](specs/017-playwright-ui-smoke/spec.md)
-- [Plan](specs/017-playwright-ui-smoke/plan.md)
-- [Tasks](specs/017-playwright-ui-smoke/tasks.md)
+- [Spec](specs/022-playwright-ui-smoke/spec.md)
+- [Plan](specs/022-playwright-ui-smoke/plan.md)
+- [Tasks](specs/022-playwright-ui-smoke/tasks.md)

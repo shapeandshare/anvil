@@ -15,11 +15,11 @@ aliases:
 status: status/draft
 source: agent
 code-refs:
-  - specs/016-lakefs-content-repo/spec.md
-  - specs/016-lakefs-content-repo/plan.md
-  - specs/016-lakefs-content-repo/research.md
-  - specs/016-lakefs-content-repo/contracts/versioned-content-store.md
-  - specs/014-saas-architecture/spec.md
+  - specs/019-lakefs-content-repo/spec.md
+  - specs/019-lakefs-content-repo/plan.md
+  - specs/019-lakefs-content-repo/research.md
+  - specs/019-lakefs-content-repo/contracts/versioned-content-store.md
+  - specs/016-saas-architecture/spec.md
 ---
 
 # ADR-033: Content Repository Substrate — Pure-Python Local, LakeFS for SaaS
@@ -141,7 +141,7 @@ Cross-cutting decisions that hold in **both** modes:
 
 The SaaS-mode consequences are owned by the 014 body of work and are recorded there:
 
-- `specs/014-saas-architecture/spec.md`: `VersionedContentStore` added to the abstraction
+- `specs/016-saas-architecture/spec.md`: `VersionedContentStore` added to the abstraction
   interfaces (FR-016); **Content Repository (versioned)** requirement group
   **FR-062–FR-067**; **SC-021** (cross-mode parity + org isolation); **AD-17**.
 - [[ADR-030-saas-architecture|ADR-030]]: abstraction table grown to six interfaces;

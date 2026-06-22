@@ -63,7 +63,7 @@ During the critical review, three agents verified key claims against the actual 
 
 ## References
 
-- [Spec](../../specs/017-playwright-ui-smoke/spec.md)
-- [Plan](../../specs/017-playwright-ui-smoke/plan.md)
-- [Tasks](../../specs/017-playwright-ui-smoke/tasks.md)
+- [Spec](../../specs/022-playwright-ui-smoke/spec.md)
+- [Plan](../../specs/022-playwright-ui-smoke/plan.md)
+- [Tasks](../../specs/022-playwright-ui-smoke/tasks.md)
 - [ADR-034](../Decisions/ADR-034-playwright-ui-smoke-harness.md)

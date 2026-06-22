@@ -17,8 +17,8 @@ code-refs:
   - anvil/supervisor/services.py
   - anvil/config.py
   - anvil/api/app.py
-  - specs/014-saas-architecture/spec.md
-  - specs/017-owasp-remediation/spec.md
+  - specs/016-saas-architecture/spec.md
+  - specs/020-owasp-remediation/spec.md
 tags:
   - type/decision
   - domain/architecture
