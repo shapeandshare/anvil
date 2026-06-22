@@ -22,7 +22,7 @@ train-gpu: $(VENV_DIR)/activate ## Train with GPU acceleration (--backend local-
 
 docker: ## [deprecated] Use `make compose-up` instead (multi-stage pip-installed build)
 	@echo "DEPRECATED: Use 'make compose-up' which builds + runs via compose.yaml."
-	@echo "See specs/009-pip-installable-package/quickstart.md for the validation loop."
+	@echo "See specs/012-pip-installable-package/quickstart.md for the validation loop."
 
 compose-up: ## Build image from wheel, bring online via compose, wait for health
 	docker compose up -d --build --wait

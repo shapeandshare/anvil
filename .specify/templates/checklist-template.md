@@ -32,6 +32,25 @@
 - [ ] CHK005 Item with specific criteria
 - [ ] CHK006 Final item in this category
 
+## UX Compliance (always include for UI/template features)
+
+**Source of truth**: `docs/ux-rules.md` — all UI, template, and CSS work MUST comply.
+
+- [ ] CHK-UX001 All Jinja templates avoid unaudited `|safe` / `Markup(...)` / `{% autoescape false %}` — each instance is individually justified and the input provably sanitized
+- [ ] CHK-UX002 No `outline: none` without an equivalent visible focus replacement (`:focus-visible`)
+- [ ] CHK-UX003 Actions use `<button>`; navigation uses `<a>` — never `<div>`/`<span>` with click handlers
+- [ ] CHK-UX004 All interactive elements have visible focus styles using `:focus-visible`
+- [ ] CHK-UX005 No `user-scalable=no` or `maximum-scale=1` (zoom not disabled)
+- [ ] CHK-UX006 Streaming/SSE pages use coalesced announcements (milestones only, not per-chunk)
+- [ ] CHK-UX007 Stream status uses `aria-live="polite"`, never `assertive`, for routine output
+- [ ] CHK-UX008 `prefers-reduced-motion` is honored for all animations (flicker, scanline, `--disturbance`)
+- [ ] CHK-UX009 Icon-only controls have `aria-label` or visually-hidden text
+- [ ] CHK-UX010 Every form control has an associated `<label>` or `aria-label`
+- [ ] CHK-UX011 Destructive/irreversible actions require confirmation or undo window
+- [ ] CHK-UX012 CSRF token present on every state-changing form
+- [ ] CHK-UX013 State is never signaled by color/glow alone (paired with text or shape cue)
+- [ ] CHK-UX014 Run `make ux-lint` on all changed template/CSS files — must pass before merge
+
 ## Notes
 
 - Check items off as completed: `[x]`
