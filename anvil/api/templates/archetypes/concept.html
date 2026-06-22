@@ -77,7 +77,7 @@
 <script src="/static/js/widgets/params.js"></script>
 <script src="/static/js/widgets/adam.js"></script>
 <script src="/static/js/widgets/architecture.js"></script>
-<script>
+<script nonce="{{ request.state.csp_nonce }}">
 (function() {
   /* ── Widget Classes Registry ── */
   var WIDGET_CLASSES = {

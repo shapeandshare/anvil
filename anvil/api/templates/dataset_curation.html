@@ -164,7 +164,7 @@
   </div>
 </div>
 
-<script>
+<script nonce="{{ request.state.csp_nonce }}">
 (function() {
   var DATASET_ID = {{ dataset.id }};
 
