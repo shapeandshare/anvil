@@ -12,7 +12,7 @@ Systematic remediation of 35 open OWASP Top 10 security findings in the anvil co
 **Language/Version**: Python 3.11+ (existing, `requires-python = ">=3.11"`)
 **Primary Dependencies**: FastAPI, async SQLAlchemy, Pydantic v2, Jinja2, uvicorn, Alembic (all existing — zero new runtime dependencies)
 **Storage**: SQLite via async SQLAlchemy (`data/anvil-state.db`); local filesystem via `LocalFileStore`; MLflow SQLite (`mlruns/mlflow.db`)
-**Testing**: pytest + pytest-asyncio + httpx (async test client); coverage threshold via `[tool.coverage.report] fail_under`
+**Testing**: pytest + pytest-asyncio + httpx (async test client); Playwright browser smoke tests (`tests/browser/`); e2e API suite (`tests/e2e/api/`); coverage threshold via `[tool.coverage.report] fail_under`. **Existing tests have zero auth awareness** — T004b must inject credentials into all three client fixtures (`tests/conftest.py`, `tests/e2e/api/conftest.py`, `tests/browser/conftest.py`) to prevent breakage.
 **Target Platform**: macOS (Apple Silicon + Intel), Linux (x86_64); Docker multi-stage runtime image
 **Project Type**: Web application (FastAPI backend + Jinja2 frontend, no JS framework)
 **Performance Goals**: Auth middleware adds <50ms p95 latency per request; rate limiting overhead negligible; no regression in existing training/inference throughput
