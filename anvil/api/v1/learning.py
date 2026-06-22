@@ -314,6 +314,29 @@ def _arc_context(current_key: str) -> dict:
     }
 
 
+def related_lessons(*keys: str) -> list[dict[str, str]]:
+    """Resolve learning-arc entries for the given keys, preserving order.
+
+    Used to attach a compact "Related lessons" call-to-action row to
+    workspace pages (datasets, training, experiments, etc.) so every page
+    links into the relevant parts of the learning platform. Data is sourced
+    from :data:`LEARNING_ARC` so lesson titles and paths stay single-sourced.
+
+    Parameters
+    ----------
+    *keys : str
+        Lesson keys to resolve (e.g. ``"tokenization"``), in the order they
+        should appear. Unknown keys are silently skipped.
+
+    Returns
+    -------
+    list of dict
+        The matching :data:`LEARNING_ARC` entries, in the requested order.
+    """
+    by_key = {item["key"]: item for item in LEARNING_ARC}
+    return [by_key[key] for key in keys if key in by_key]
+
+
 TOKENIZATION_STEPS = [
     {
         "key": "what-is-a-token",
@@ -1527,6 +1550,7 @@ async def models_page(request: Request):
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/models.html",
+        {"related_lessons": related_lessons("export", "architecture", "graph")},
     )
 
 
