@@ -31,8 +31,12 @@ import os
 import re
 import sys
 
-ALLOW = re.compile(r"ux-lint:\s*allow(?!-next)", re.IGNORECASE)      # suppresses its own line
-ALLOW_NEXT = re.compile(r"ux-lint:\s*allow-next\b", re.IGNORECASE)   # suppresses the following line
+ALLOW = re.compile(
+    r"ux-lint:\s*allow(?!-next)", re.IGNORECASE
+)  # suppresses its own line
+ALLOW_NEXT = re.compile(
+    r"ux-lint:\s*allow-next\b", re.IGNORECASE
+)  # suppresses the following line
 
 # Delimited comments are blanked before matching so a *mention* of a banned
 # pattern inside a comment doesn't false-positive. Suppression annotations
@@ -40,18 +44,20 @@ ALLOW_NEXT = re.compile(r"ux-lint:\s*allow-next\b", re.IGNORECASE)   # suppresse
 # copy, so blanking does not defeat them. (// line comments are NOT stripped —
 # too risky around `://` in strings/URLs.)
 COMMENT_SPANS = [
-    re.compile(r"{#.*?#}", re.DOTALL),                                       # Jinja {# #}
+    re.compile(r"{#.*?#}", re.DOTALL),  # Jinja {# #}
     re.compile(r"{%\s*comment\s*%}.*?{%\s*endcomment\s*%}", re.DOTALL | re.IGNORECASE),
-    re.compile(r"<!--.*?-->", re.DOTALL),                                    # HTML
-    re.compile(r"/\*.*?\*/", re.DOTALL),                                     # CSS / JS block
+    re.compile(r"<!--.*?-->", re.DOTALL),  # HTML
+    re.compile(r"/\*.*?\*/", re.DOTALL),  # CSS / JS block
 ]
 
 
 def blank_comments(text):
     """Replace delimited-comment spans with same-length runs, preserving
     newlines (so line numbers stay accurate)."""
+
     def _blank(m):
         return "".join("\n" if ch == "\n" else " " for ch in m.group(0))
+
     for rx in COMMENT_SPANS:
         text = rx.sub(_blank, text)
     return text
@@ -67,14 +73,19 @@ CHECKS = [
         "click-handler",
         "a11y",
         "<div>/<span> with click handler — use <button>/<a> (keyboard-inaccessible)",
-        re.compile(r"<(?:div|span)\b[^>]*?\s(?:onclick|@click|v-on:click|on:click)\s*=", re.IGNORECASE),
+        re.compile(
+            r"<(?:div|span)\b[^>]*?\s(?:onclick|@click|v-on:click|on:click)\s*=",
+            re.IGNORECASE,
+        ),
         MARKUP,
     ),
     (
         "viewport-zoom",
         "a11y",
         "viewport disables zoom (user-scalable=no / maximum-scale=1)",
-        re.compile(r"user-scalable\s*=\s*(?:no|0)|maximum-scale\s*=\s*1\b", re.IGNORECASE),
+        re.compile(
+            r"user-scalable\s*=\s*(?:no|0)|maximum-scale\s*=\s*1\b", re.IGNORECASE
+        ),
         MARKUP,
     ),
     (
@@ -94,7 +105,7 @@ CHECKS = [
     (
         "py-markup",
         "template",
-        "Markup() — bypasses autoescape; audit input",   # ux-lint:allow description string, not actual call
+        "Markup() — bypasses autoescape; audit input",  # ux-lint:allow description string, not actual call
         re.compile(r"\bMarkup\s*\("),
         {".py"},
     ),
@@ -136,13 +147,18 @@ def is_suppressed(lines, lineno):
 
 def lint_file(path):
     ext = os.path.splitext(path)[1].lower()
+    # Resolve to real path and constrain to working directory
+    real = os.path.realpath(path)
+    cwd = os.path.realpath(os.getcwd())
+    if not real.startswith(cwd):
+        return [], 0
     try:
-        with open(path, encoding="utf-8", errors="replace") as fh:
+        with open(real, encoding="utf-8", errors="replace") as fh:
             text = fh.read()
     except OSError:
         return [], 0
-    lines = text.splitlines()        # original — suppression annotations live in comments
-    scan = blank_comments(text)      # comments blanked — used for pattern matching
+    lines = text.splitlines()  # original — suppression annotations live in comments
+    scan = blank_comments(text)  # comments blanked — used for pattern matching
     findings = []
     n_suppressed = 0
     for _id, cat, msg, rx, exts in CHECKS:

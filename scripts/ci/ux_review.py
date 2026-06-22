@@ -87,13 +87,20 @@ def main(argv):
     try:
         rules = read_rules(rules_src)
     except (urllib.error.URLError, OSError) as exc:
-        print(f"ux-review: could not load ruleset from {rules_src}: {exc}", file=sys.stderr)
+        print(
+            f"ux-review: could not load ruleset from {rules_src}: {exc}",
+            file=sys.stderr,
+        )
         return 2
 
     blocks = []
+    cwd = os.path.realpath(os.getcwd())
     for path in files:
+        real = os.path.realpath(path)
+        if not real.startswith(cwd):
+            continue
         try:
-            with open(path, encoding="utf-8", errors="replace") as fh:
+            with open(real, encoding="utf-8", errors="replace") as fh:
                 blocks.append(f"=== FILE: {path} ===\n{fh.read()}")
         except OSError:
             continue
