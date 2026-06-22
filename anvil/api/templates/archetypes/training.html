@@ -10,10 +10,28 @@
 {% block content %}
 <div class="training-dashboard">
 
+  {# ── WIZARD STEPS (visual progress) ── #}
+  <div class="wizard-steps" role="list" aria-label="Training workflow: three steps">
+    <div class="wizard-step wizard-step--active" data-tab="tab-data">
+      <div class="wizard-step-bubble"><span>1</span></div>
+      <span class="wizard-step-label">Data</span>
+    </div>
+    <div class="wizard-step-connector wizard-step-connector--filled"></div>
+    <div class="wizard-step" data-tab="tab-configure">
+      <div class="wizard-step-bubble"><span>2</span></div>
+      <span class="wizard-step-label">Configure</span>
+    </div>
+    <div class="wizard-step-connector"></div>
+    <div class="wizard-step wizard-step--train" data-tab="tab-forge">
+      <div class="wizard-step-bubble"><span>&#9874;</span></div>
+      <span class="wizard-step-label">Forge</span>
+    </div>
+  </div>
+
   {# ── BANNER CTA: Training Loop learning lesson ── #}
   <div class="section-card section-card--banner" style="--stagger-i: 0">
     <div class="section-card__content" style="display:flex;align-items:center;gap:var(--space-3);">
-      <span style="font-size:1.2rem;flex-shrink:0;">&#9881;</span>
+      <span style="font-size:1.2rem;flex-shrink:0;">&#9874;</span>
       <div style="flex:1;">
         <div style="font-family:var(--font-body);font-weight:600;font-size:var(--text-footnote);color:var(--text-secondary);">
           How Training Works
@@ -27,50 +45,13 @@
       </a>
     </div>
   </div>
+  {% include "partials/related-lessons.html" %}
 
-  {# ── Training Pipeline Node Workflow ── #}
-  <div class="section-card" style="--stagger-i: 0">
-    <div class="ds-flow-diagram" style="border:none;padding:0;margin:0;">
-
-      {# Data Node #}
-      <div class="ds-flow-diagram-path" style="grid-template-rows:none;">
-        <div class="ds-flow-diagram-node" style="border-left-color:var(--accent-orange);">
-          <span class="ds-flow-diagram-node--badge" style="background:var(--accent-orange);color:#000;">1</span>
-          <div class="ds-flow-diagram-node--title">Select Data Source</div>
-          <div class="ds-flow-diagram-node--sub">Choose a corpus or dataset &mdash; the model learns from text character patterns</div>
-        </div>
-        <div class="ds-flow-diagram-arrow">&#9660;</div>
-        <div class="ds-flow-diagram-node" style="border-left-color:var(--accent-orange);">
-          <div class="ds-flow-diagram-node--title">Review Data Context</div>
-          <div class="ds-flow-diagram-node--sub">See file counts, chunk strategy, sample count &mdash; verify before training</div>
-        </div>
-      </div>
-
-      {# Config Node #}
-      <div class="ds-flow-diagram-path" style="grid-template-rows:none;">
-        <div class="ds-flow-diagram-node" style="border-left-color:var(--accent);">
-          <span class="ds-flow-diagram-node--badge" style="background:var(--accent);color:#fff;">2</span>
-          <div class="ds-flow-diagram-node--title">Configure &amp; Auto-Tune</div>
-          <div class="ds-flow-diagram-node--sub">Tune n_embd, n_layer, n_head, block_size &mdash; or let anvil pick defaults</div>
-        </div>
-        <div class="ds-flow-diagram-arrow">&#9660;</div>
-        <div class="ds-flow-diagram-node" style="border-left-color:var(--accent);">
-          <div class="ds-flow-diagram-node--title">Review Memory Estimate</div>
-          <div class="ds-flow-diagram-node--sub">Real-time GPU memory bar, parameter count, and OOM warnings</div>
-        </div>
-      </div>
-
-      {# Converge: Train + Results #}
-      <div class="ds-flow-diagram-converge" style="border-top-color:var(--separator);">
-        <div class="ds-flow-diagram-arrow">&#9660;</div>
-        <div class="ds-flow-diagram-node ds-flow-diagram-node--target" style="max-width:340px;">
-          <span class="ds-flow-diagram-node--badge" style="background:var(--accent-green);color:#000;margin-bottom:var(--space-1);">&#9874; 3</span>
-          <div class="ds-flow-diagram-node--title">Forge + Watch</div>
-          <div class="ds-flow-diagram-node--sub">Start training, stream live loss curve over SSE, monitor metrics &mdash; then export safetensors</div>
-        </div>
-      </div>
-
-    </div>
+  {# ── TAB NAVIGATION (jump-nav to sections) ── #}
+  <div class="wizard-tabs">
+    <button class="wizard-tab wizard-tab--active" data-tab="tab-data">Data</button>
+    <button class="wizard-tab" data-tab="tab-configure">Configure</button>
+    <button class="wizard-tab" data-tab="tab-forge">Forge</button>
   </div>
 
   <div class="training-runs section-card" id="runs-panel" style="display:none;--stagger-i: 0">
@@ -79,6 +60,7 @@
   </div>
 
   <!-- ── Section 1: Select Data ── -->
+  <div id="tab-data">
   <div class="section-card ds-flow-section" data-step="1" style="--stagger-i: 1">
     <div class="ds-flow-header">
       <span class="ds-flow-bubble">1</span>
@@ -111,8 +93,10 @@
       <div class="ds-card-empty">Model stats will appear here.</div>
     </div>
   </div>
+  </div>
 
   <!-- ── Section 2: Configure ── -->
+  <div id="tab-configure">
   <div class="section-card ds-flow-section" data-step="2" style="--stagger-i: 2">
     <div class="ds-flow-header">
       <span class="ds-flow-bubble">2</span>
@@ -159,13 +143,13 @@
         <div class="param-label-row"><label class="param-label">learning_rate</label>
         <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How big each weight update is. Too high = loss bounces around. Too low = barely learns. 0.01 is a good starting point for this model scale.</span></span></div>
         <input type="number" id="learning_rate" value="0.01" step="0.001" min="0.0001" max="1">
-        <p class="param-desc">Step size — 0.01 safe start. Drop if loss oscillates or spikes.</p>
+        <p class="param-desc">Step size — 0.01 safe start. Drop if loss oscillates or spikes. <a href="/v1/learn/adam#lr-decay" class="action-link type-caption-2">learning-rate decay &rarr;</a></p>
       </div>
       <div class="param-block">
         <div class="param-label-row"><label class="param-label">temperature</label>
         <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">Controls randomness in generation. 0 = always picks the most likely next character (boring but safe). 1.0+ = more creative but may produce gibberish.</span></span></div>
         <input type="number" id="temperature" value="0.5" step="0.1" min="0" max="2">
-        <p class="param-desc">Creativity — 0.1-0.3 predictable, 0.5-0.7 creative, 1.0+ chaos.</p><span class="fun-label fun-label--cool" style="margin-left:var(--space-1)">cool &amp; precise</span> <span class="fun-label fun-label--warm">creative spark</span> <span class="fun-label fun-label--hot">chaos mode</span>
+        <p class="param-desc">Creativity — 0.1-0.3 predictable, 0.5-0.7 creative, 1.0+ chaos. <a href="/v1/learn/sampling#temperature" class="action-link type-caption-2">how temperature works &rarr;</a></p><span class="fun-label fun-label--cool" style="margin-left:var(--space-1)">cool &amp; precise</span> <span class="fun-label fun-label--warm">creative spark</span> <span class="fun-label fun-label--hot">chaos mode</span>
       </div>
       <div class="param-block">
         <div class="param-label-row"><label class="param-label">Compute Backend</label>
@@ -190,8 +174,10 @@
     </div>
     <p class="autotune-feedback" id="autotune-feedback"></p>
   </div>
+  </div>
 
   <!-- ── Section 3: Train ── -->
+  <div id="tab-forge">
   <div class="section-card ds-flow-section" data-step="3" style="--stagger-i: 3">
     <div class="ds-flow-header">
       <span class="ds-flow-bubble ds-flow-bubble--forge">&#9874;</span>
@@ -205,6 +191,7 @@
       <button type="button" class="btn btn--forge btn-pulse" id="start-btn">Start Training</button>
       <button type="button" class="btn btn-secondary" id="stop-btn" disabled>Stop</button>
     </div>
+  </div>
   </div>
 
   <div class="training-chart section-card" style="--stagger-i: 4">
@@ -250,6 +237,35 @@
 <script>
 (function() {
   'use strict';
+
+  /* ── Tab switching (panels are always visible — tabs become jump-nav) ── */
+  function switchTab(tabId) {
+    document.querySelectorAll('.wizard-tabs .wizard-tab').forEach(function(tab) {
+      var isActive = tab.getAttribute('data-tab') === tabId;
+      tab.classList.toggle('wizard-tab--active', isActive);
+    });
+    document.querySelectorAll('.wizard-steps .wizard-step').forEach(function(step) {
+      var isActive = step.getAttribute('data-tab') === tabId;
+      step.classList.toggle('wizard-step--active', isActive);
+    });
+    var targetPanel = document.getElementById(tabId);
+    if (targetPanel) {
+      targetPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+  document.querySelectorAll('.wizard-tabs .wizard-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      var tabId = this.getAttribute('data-tab');
+      if (tabId) switchTab(tabId);
+    });
+  });
+  document.querySelector('.wizard-steps').addEventListener('click', function(e) {
+    var step = e.target.closest('.wizard-step');
+    if (step) {
+      var tabId = step.getAttribute('data-tab');
+      if (tabId) switchTab(tabId);
+    }
+  });
 
   /* ── State ── */
   var session = null;
@@ -1101,8 +1117,9 @@ var gpuToggle = document.getElementById('compute_backend');
 
   if (confirmBtn) {
     confirmBtn.addEventListener('click', function() {
+      var pending = _pendingStart;
       closeModal();
-      if (_pendingStart) {
+      if (pending) {
         startTraining();
       }
     });

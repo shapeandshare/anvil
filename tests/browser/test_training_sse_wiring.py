@@ -3,6 +3,9 @@
 Configures a tiny model through the UI, starts a training run, and
 asserts that at least one live data point (numeric step/loss) appears
 in the training progress display within 30 seconds.
+
+Also verifies the pipeline node tabs (wizard-steps / wizard-tabs)
+and banner CTA render and respond to interaction.
 """
 
 from __future__ import annotations
@@ -37,6 +40,87 @@ class TestTrainingSseWiring:
         page.goto(f"{base_url}{TRAIN_PAGE}")
         page.wait_for_load_state("networkidle")
         checker.assert_no_errors()
+
+    def test_wizard_steps_and_tabs_render(
+        self,
+        page,
+        base_url: str,
+        assert_no_console_errors,
+    ) -> None:
+        """Verify wizard-steps, wizard-tabs, and banner CTA are present."""
+        checker = assert_no_console_errors(page)
+        page.goto(f"{base_url}{TRAIN_PAGE}")
+        page.wait_for_load_state("networkidle")
+
+        steps = page.locator(".wizard-step")
+        assert steps.count() == 3, f"Expected 3 wizard-steps, got {steps.count()}"
+        assert steps.nth(0).locator(".wizard-step-bubble").text_content() == "1"
+        assert steps.nth(1).locator(".wizard-step-bubble").text_content() == "2"
+        assert "Forge" in (
+            steps.nth(2).locator(".wizard-step-label").text_content() or ""
+        )
+
+        tabs = page.locator(".wizard-tab")
+        assert tabs.count() == 3, f"Expected 3 wizard-tabs, got {tabs.count()}"
+        assert tabs.nth(0).text_content() == "Data"
+        assert tabs.nth(1).text_content() == "Configure"
+        assert tabs.nth(2).text_content() == "Forge"
+
+        banner = page.locator(".section-card--banner")
+        banner.wait_for(state="visible", timeout=5000)
+        assert "How Training Works" in (banner.text_content() or "")
+        assert banner.locator('a[href*="training-loop"]').is_visible()
+
+        checker.assert_no_errors()
+
+    def test_tab_switch_toggles_active_state(
+        self,
+        page,
+        base_url: str,
+        assert_no_console_errors,
+    ) -> None:
+        """Clicking a wizard-tab toggles --active on both tab and step."""
+        checker = assert_no_console_errors(page)
+        page.goto(f"{base_url}{TRAIN_PAGE}")
+        page.wait_for_load_state("networkidle")
+
+        data_tab = page.locator('.wizard-tab[data-tab="tab-data"]')
+        data_step = page.locator('.wizard-step[data-tab="tab-data"]')
+        assert "wizard-tab--active" in (data_tab.get_attribute("class") or "")
+        assert "wizard-step--active" in (data_step.get_attribute("class") or "")
+
+        config_tab = page.locator('.wizard-tab[data-tab="tab-configure"]')
+        config_tab.click()
+        page.wait_for_timeout(500)
+
+        assert "wizard-tab--active" not in (data_tab.get_attribute("class") or "")
+        assert "wizard-step--active" not in (data_step.get_attribute("class") or "")
+
+        config_step = page.locator('.wizard-step[data-tab="tab-configure"]')
+        assert "wizard-tab--active" in (config_tab.get_attribute("class") or "")
+        assert "wizard-step--active" in (config_step.get_attribute("class") or "")
+
+        checker.assert_no_errors()
+
+    def test_step_click_triggers_scroll(
+        self,
+        page,
+        base_url: str,
+    ) -> None:
+        """Clicking a wizard-step bubble scrolls to the target section."""
+        page.goto(f"{base_url}{TRAIN_PAGE}")
+        page.wait_for_load_state("networkidle")
+
+        forge_step = page.locator('.wizard-step[data-tab="tab-forge"]')
+        forge_step.click()
+        page.wait_for_timeout(500)
+
+        forge_tab = page.locator('.wizard-tab[data-tab="tab-forge"]')
+        assert "wizard-tab--active" in (forge_tab.get_attribute("class") or "")
+        assert "wizard-step--active" in (forge_step.get_attribute("class") or "")
+
+        start_btn = page.locator("#start-btn")
+        assert start_btn.is_visible()
 
     def test_training_modal_shows_on_click(
         self,
