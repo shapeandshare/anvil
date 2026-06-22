@@ -9,6 +9,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from anvil.api.app import app
+from anvil.api.deps import get_api_key_store
 from anvil.db.base import Base
 from anvil.db.session import async_engine
 from anvil.gpu import GpuInfo
@@ -48,7 +49,11 @@ async def test_oom_config_rejected_with_422(db_ready, monkeypatch):
     running_before = svc._running
 
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
+    async with AsyncClient(
+        transport=transport,
+        base_url="http://test",
+        headers={"X-API-Key": get_api_key_store().key or ""},
+    ) as client:
         resp = await client.post(
             "/v1/training/start",
             json={
@@ -84,7 +89,11 @@ async def test_oom_guard_skipped_for_cpu(db_ready, monkeypatch):
     )
 
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
+    async with AsyncClient(
+        transport=transport,
+        base_url="http://test",
+        headers={"X-API-Key": get_api_key_store().key or ""},
+    ) as client:
         resp = await client.post(
             "/v1/training/start",
             json={

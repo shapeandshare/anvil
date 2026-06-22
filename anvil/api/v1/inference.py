@@ -11,9 +11,152 @@ computation graphs, and loss breakdowns. All endpoints load model data
 from the registry (not hardcoded values).
 """
 
+from __future__ import annotations
+
 from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel, ConfigDict, Field
 
 from ...services.inference.inference import InferenceService
+
+
+class InferenceTokenizeBody(BaseModel):
+    """Request body for the tokenization endpoint.
+
+    Parameters
+    ----------
+    text : str
+        Text to tokenize. Must be between 1 and 100 000 characters.
+    model_id : str | None, optional
+        Model identifier. Defaults to ``None``.
+    version : int | None, optional
+        Model version. Defaults to ``None``.
+    """
+
+    text: str = Field(min_length=1, max_length=100_000)
+    model_id: int | None = None
+    version: int | None = None
+    model_config = ConfigDict(extra="forbid")
+
+
+class InferenceEmbeddingsBody(BaseModel):
+    """Request body for the embeddings endpoint.
+
+    Parameters
+    ----------
+    text : str
+        Text to embed. Must be between 1 and 10 000 characters.
+    model_id : str | None, optional
+        Model identifier. Defaults to ``None``.
+    version : int | None, optional
+        Model version. Defaults to ``None``.
+    """
+
+    text: str = Field(min_length=1, max_length=10_000)
+    model_id: int | None = None
+    version: int | None = None
+    model_config = ConfigDict(extra="forbid")
+
+
+class InferenceAttentionBody(BaseModel):
+    """Request body for the attention endpoint.
+
+    Parameters
+    ----------
+    text : str
+        Input text. Must be between 1 and 100 000 characters.
+    model_id : str | None, optional
+        Model identifier. Defaults to ``None``.
+    version : int | None, optional
+        Model version. Defaults to ``None``.
+    """
+
+    text: str = Field(min_length=1, max_length=100_000)
+    model_id: int | None = None
+    version: int | None = None
+    model_config = ConfigDict(extra="forbid")
+
+
+class InferenceSamplingBody(BaseModel):
+    """Request body for the sampling distribution endpoint.
+
+    Parameters
+    ----------
+    prompt : str
+        Prompt text.
+    temperature : float, optional
+        Sampling temperature. Must be positive. Defaults to ``0.5``.
+    top_k : int | None, optional
+        Top-k filtering value. Defaults to ``None``.
+    model_id : str | None, optional
+        Model identifier. Defaults to ``None``.
+    version : int | None, optional
+        Model version. Defaults to ``None``.
+    """
+
+    prompt: str = ""
+    temperature: float = Field(default=0.5, gt=0)
+    top_k: int | None = None
+    model_id: int | None = None
+    version: int | None = None
+    model_config = ConfigDict(extra="forbid")
+
+
+class InferenceBackwardBody(BaseModel):
+    """Request body for the backward graph endpoint.
+
+    Parameters
+    ----------
+    text : str
+        Input text. Must be between 1 and 100 000 characters.
+    model_id : str | None, optional
+        Model identifier. Defaults to ``None``.
+    version : int | None, optional
+        Model version. Defaults to ``None``.
+    """
+
+    text: str = Field(min_length=1, max_length=100_000)
+    model_id: int | None = None
+    version: int | None = None
+    model_config = ConfigDict(extra="forbid")
+
+
+class InferenceAutogradBody(BaseModel):
+    """Request body for the autograd example endpoint.
+
+    Parameters
+    ----------
+    text : str
+        Input text. Must be between 1 and 100 000 characters.
+    model_id : str | None, optional
+        Model identifier. Defaults to ``None``.
+    version : int | None, optional
+        Model version. Defaults to ``None``.
+    """
+
+    text: str = Field(min_length=1, max_length=100_000)
+    model_id: int | None = None
+    version: int | None = None
+    model_config = ConfigDict(extra="forbid")
+
+
+class InferenceLossBody(BaseModel):
+    """Request body for the loss breakdown endpoint.
+
+    Parameters
+    ----------
+    text : str
+        Input text. Must be between 1 and 100 000 characters.
+    model_id : str | None, optional
+        Model identifier. Defaults to ``None``.
+    version : int | None, optional
+        Model version. Defaults to ``None``.
+    """
+
+    text: str = Field(min_length=1, max_length=100_000)
+    model_id: int | None = None
+    version: int | None = None
+    model_config = ConfigDict(extra="forbid")
+
 
 router = APIRouter()
 _svc = InferenceService()
@@ -51,13 +194,13 @@ def _call_or_400(svc_method, *args):
 
 
 @router.post("/inference/tokenize")
-async def inference_tokenize(body: dict):
+async def inference_tokenize(body: InferenceTokenizeBody):
     """Tokenize input text using the loaded model's character vocabulary.
 
     Parameters
     ----------
-    body : dict
-        Request body with keys:
+    body : InferenceTokenizeBody
+        Request body with fields:
           - ``text``: str — text to tokenize
           - ``model_id``: int, optional — model identifier
           - ``version``: int, optional — model version
@@ -72,24 +215,24 @@ async def inference_tokenize(body: dict):
     HTTPException
         If ``text`` is empty (400) or the model is not found (404).
     """
-    text = body.get("text")
+    text = body.text
     if not isinstance(text, str) or not text:
         raise HTTPException(status_code=400, detail="text must be a non-empty string")
     try:
-        loaded = await _svc.load_model(body.get("model_id"), body.get("version"))
+        loaded = await _svc.load_model(body.model_id, body.version)
     except (ValueError, FileNotFoundError) as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     return _call_or_400(_svc.tokenize, text, loaded)
 
 
 @router.post("/inference/embeddings")
-async def inference_embeddings(body: dict):
+async def inference_embeddings(body: InferenceEmbeddingsBody):
     """Extract token embeddings for the input text.
 
     Parameters
     ----------
-    body : dict
-        Request body with keys:
+    body : InferenceEmbeddingsBody
+        Request body with fields:
           - ``text``: str — text to embed
           - ``model_id``: int, optional — model identifier
           - ``version``: int, optional — model version
@@ -104,24 +247,24 @@ async def inference_embeddings(body: dict):
     HTTPException
         If ``text`` is empty (400) or the model is not found (404).
     """
-    text = body.get("text")
+    text = body.text
     if not isinstance(text, str) or not text:
         raise HTTPException(status_code=400, detail="text must be a non-empty string")
     try:
-        loaded = await _svc.load_model(body.get("model_id"), body.get("version"))
+        loaded = await _svc.load_model(body.model_id, body.version)
     except (ValueError, FileNotFoundError) as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     return _call_or_400(_svc.embeddings, text, loaded)
 
 
 @router.post("/inference/attention")
-async def inference_attention(body: dict):
+async def inference_attention(body: InferenceAttentionBody):
     """Compute attention weights for the input text.
 
     Parameters
     ----------
-    body : dict
-        Request body with keys:
+    body : InferenceAttentionBody
+        Request body with fields:
           - ``text``: str — input text
           - ``model_id``: int, optional — model identifier
           - ``version``: int, optional — model version
@@ -136,24 +279,24 @@ async def inference_attention(body: dict):
     HTTPException
         If ``text`` is empty (400) or the model is not found (404).
     """
-    text = body.get("text")
+    text = body.text
     if not isinstance(text, str) or not text:
         raise HTTPException(status_code=400, detail="text must be a non-empty string")
     try:
-        loaded = await _svc.load_model(body.get("model_id"), body.get("version"))
+        loaded = await _svc.load_model(body.model_id, body.version)
     except (ValueError, FileNotFoundError) as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     return _call_or_400(_svc.attention, text, loaded)
 
 
 @router.post("/inference/sampling-distribution")
-async def inference_sampling_distribution(body: dict):
+async def inference_sampling_distribution(body: InferenceSamplingBody):
     """Get the sampling probability distribution for a prompt.
 
     Parameters
     ----------
-    body : dict
-        Request body with keys:
+    body : InferenceSamplingBody
+        Request body with fields:
           - ``prompt``: str — prompt text
           - ``temperature``: float, optional — sampling temperature (default 0.5)
           - ``top_k``: int, optional — top-k filtering
@@ -172,17 +315,17 @@ async def inference_sampling_distribution(body: dict):
         If ``prompt`` is not a string (400), temperature is not positive
         (400), or the model is not found (404).
     """
-    prompt = body.get("prompt", "")
+    prompt = body.prompt
     if not isinstance(prompt, str):
         raise HTTPException(status_code=400, detail="prompt must be a string")
-    temperature = body.get("temperature", 0.5)
+    temperature = body.temperature
     if not isinstance(temperature, (int, float)) or temperature <= 0:
         raise HTTPException(status_code=400, detail="temperature must be positive")
     try:
-        loaded = await _svc.load_model(body.get("model_id"), body.get("version"))
+        loaded = await _svc.load_model(body.model_id, body.version)
     except (ValueError, FileNotFoundError) as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
-    return _svc.sampling_distribution(prompt, temperature, body.get("top_k"), loaded)
+    return _svc.sampling_distribution(prompt, temperature, body.top_k, loaded)
 
 
 @router.get("/inference/forward-graph")
@@ -217,13 +360,13 @@ async def inference_forward_graph(
 
 
 @router.post("/inference/backward-graph")
-async def inference_backward_graph(body: dict):
+async def inference_backward_graph(body: InferenceBackwardBody):
     """Get the backward (autograd) computation graph for the input text.
 
     Parameters
     ----------
-    body : dict
-        Request body with keys:
+    body : InferenceBackwardBody
+        Request body with fields:
           - ``text``: str — input text
           - ``model_id``: int, optional — model identifier
           - ``version``: int, optional — model version
@@ -238,24 +381,24 @@ async def inference_backward_graph(body: dict):
     HTTPException
         If ``text`` is empty (400) or the model is not found (404).
     """
-    text = body.get("text")
+    text = body.text
     if not isinstance(text, str) or not text:
         raise HTTPException(status_code=400, detail="text must be a non-empty string")
     try:
-        loaded = await _svc.load_model(body.get("model_id"), body.get("version"))
+        loaded = await _svc.load_model(body.model_id, body.version)
     except (ValueError, FileNotFoundError) as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     return _call_or_400(_svc.backward_graph, text, loaded)
 
 
 @router.post("/inference/autograd-example")
-async def inference_autograd_example(body: dict):
+async def inference_autograd_example(body: InferenceAutogradBody):
     """Get an autograd computation graph example for the input text.
 
     Parameters
     ----------
-    body : dict
-        Request body with keys:
+    body : InferenceAutogradBody
+        Request body with fields:
           - ``text``: str — input text
           - ``model_id``: int, optional — model identifier
           - ``version``: int, optional — model version
@@ -270,24 +413,24 @@ async def inference_autograd_example(body: dict):
     HTTPException
         If ``text`` is empty (400) or the model is not found (404).
     """
-    text = body.get("text")
+    text = body.text
     if not isinstance(text, str) or not text:
         raise HTTPException(status_code=400, detail="text must be a non-empty string")
     try:
-        loaded = await _svc.load_model(body.get("model_id"), body.get("version"))
+        loaded = await _svc.load_model(body.model_id, body.version)
     except (ValueError, FileNotFoundError) as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     return _call_or_400(_svc.autograd_example_graph, text, loaded)
 
 
 @router.post("/inference/loss-breakdown")
-async def inference_loss_breakdown(body: dict):
+async def inference_loss_breakdown(body: InferenceLossBody):
     """Get a per-token loss breakdown for the input text.
 
     Parameters
     ----------
-    body : dict
-        Request body with keys:
+    body : InferenceLossBody
+        Request body with fields:
           - ``text``: str — input text
           - ``model_id``: int, optional — model identifier
           - ``version``: int, optional — model version
@@ -302,11 +445,11 @@ async def inference_loss_breakdown(body: dict):
     HTTPException
         If ``text`` is empty (400) or the model is not found (404).
     """
-    text = body.get("text")
+    text = body.text
     if not isinstance(text, str) or not text:
         raise HTTPException(status_code=400, detail="text must be a non-empty string")
     try:
-        loaded = await _svc.load_model(body.get("model_id"), body.get("version"))
+        loaded = await _svc.load_model(body.model_id, body.version)
     except (ValueError, FileNotFoundError) as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     return _call_or_400(_svc.loss_breakdown, text, loaded)

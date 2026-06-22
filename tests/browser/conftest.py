@@ -6,12 +6,15 @@ console error monitoring, and test data seeding helpers.
 
 from __future__ import annotations
 
+import json
 import subprocess
 import time
 from pathlib import Path
 
 import httpx
 import pytest
+
+from anvil.api.deps import get_api_key_store
 
 BASE_URL = "http://localhost:8080"
 COMPOSE_SERVICE = "anvil"
@@ -21,6 +24,7 @@ MLFLOW_API_URL = "http://127.0.0.1:5001/api/2.0/mlflow"
 READINESS_RETRIES = 12
 READINESS_INTERVAL = 5  # seconds
 PAGE_TIMEOUT = 15_000  # milliseconds
+TEST_API_KEY = get_api_key_store().key or ""
 
 
 # ---------------------------------------------------------------------------
@@ -183,7 +187,51 @@ def assert_no_console_errors():
 @pytest.fixture(scope="session")
 def seed_client() -> httpx.Client:
     """HTTP client used to seed test data via API (not for assertions)."""
-    return httpx.Client(base_url=BASE_URL, timeout=30.0)
+    return httpx.Client(
+        base_url=BASE_URL,
+        timeout=30.0,
+        headers={"X-API-Key": TEST_API_KEY},
+    )
+
+
+@pytest.fixture(autouse=True)
+def _login(page):
+    """Log in to the web UI before each test.
+
+    POSTs the API key to /login, stores the session cookie in the
+    browser context, so subsequent page navigations are authenticated.
+    """
+    response = page.request.post(
+        "/login",
+        data=json.dumps({"api_key": TEST_API_KEY}),
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.ok, f"Login failed: {response.status} {response.status_text}"
+
+    # Extract the Set-Cookie header and replay it into the browser context
+    set_cookie = response.headers.get("set-cookie")
+    if set_cookie:
+        page.context.add_cookies(
+            [
+                {
+                    "name": "anvil_session",
+                    "value": _extract_cookie_value(set_cookie, "anvil_session"),
+                    "domain": "localhost",
+                    "path": "/",
+                    "httpOnly": True,
+                    "sameSite": "Strict",
+                }
+            ]
+        )
+
+
+def _extract_cookie_value(set_cookie: str, name: str) -> str:
+    """Extract a named cookie value from a Set-Cookie header string."""
+    for part in set_cookie.split(";"):
+        part = part.strip()
+        if part.startswith(f"{name}="):
+            return part[len(f"{name}=") :]
+    return ""
 
 
 @pytest.fixture

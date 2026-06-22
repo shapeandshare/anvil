@@ -6,31 +6,99 @@
 """FastAPI web application factory.
 
 Creates and configures the FastAPI application instance with static file
-serving, Jinja2 templates, MLflow integration, and demo data bootstrapping.
-Manages the full application lifecycle via an ``asynccontextmanager`` lifespan.
+serving, Jinja2 templates, MLflow integration, demo data bootstrapping,
+and security middleware.  Manages the full application lifecycle via an
+``asynccontextmanager`` lifespan.
 """
 
+from __future__ import annotations
+
+import asyncio
 import logging
+import os
+import time
+from collections import defaultdict
 from contextlib import asynccontextmanager
 from importlib.metadata import version as _get_version
 from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.base import RequestResponseEndpoint
+from starlette.requests import Request as StarletteRequest
+from starlette.responses import Response
 
 from ..config import get_config
 from ..db import models  # noqa: F401 — register ORM models with Base.metadata
 from ..db.migration import MigrationService
 from ..db.session import init_engine
 from ..supervisor.services import MLflowService
+from .auth import (
+    SESSION_COOKIE_NAME,
+    generate_csrf_token,
+    get_session_store,
+    is_csrf_exempt,
+    is_exempt_route,
+    is_page_route,
+    verify_csrf_token,
+)
+from .deps import get_api_key_store
 from .v1.router import router as v1_router
 
 logger = logging.getLogger(__name__)
 
 MLFLOW_EXPERIMENT_NAME = "anvil"
-"""str: The default MLflow experiment name used for all training runs."""
+
+# ------------------------------------------------------------------
+# Security middleware configuration
+# ------------------------------------------------------------------
+
+# Rate limiting (in-process sliding window)
+_rate_limit_store: dict[str, list[float]] = defaultdict(list)
+_RATE_LIMIT_PER_MINUTE = int(os.getenv("ANVIL_RATE_LIMIT", "100"))
+_LOGIN_RATE_LIMIT_PER_MINUTE = 5
+_LOGIN_FAILURE_DELAY = 1.0  # seconds
+
+# CORS configuration
+_cors_origins_str = os.getenv("ANVIL_CORS_ORIGINS", "")
+
+
+def _make_rate_limit_key(request: StarletteRequest) -> str:
+    """Build a rate-limit key from client IP and route prefix.
+
+    Parameters
+    ----------
+    request : StarletteRequest
+
+    Returns
+    -------
+    str
+    """
+    client_ip = request.client.host if request.client else "unknown"
+    path = request.url.path
+    return f"{client_ip}:{path}"
+
+
+# ------------------------------------------------------------------
+# Lifespan
+# ------------------------------------------------------------------
+
+
+def _setup_logging() -> None:
+    """Configure structured logging for the application.
+
+    Sets up the root logger with a consistent format and level for all
+    runtime entry points (uvicorn, Docker, CLI).  Called from the
+    lifespan handler and from ``anvil.cli.serve``.
+    """
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(levelname)s [%(name)s] %(message)s",
+        force=True,
+    )
 
 
 @asynccontextmanager
@@ -38,22 +106,18 @@ async def lifespan(app: FastAPI):
     """Application lifespan context manager handling startup and shutdown.
 
     On startup:
-      1. Initializes the async SQLAlchemy engine and runs Alembic migrations.
+      0. Configures structured logging.
+      1. Initialises the async SQLAlchemy engine and runs Alembic migrations.
       2. Starts the MLflow service (unless ``mlflow_disable_local`` is set).
       3. Enables system metrics collection via ``TrackingService``.
       4. Reconciles orphaned MLflow runs.
-      5. Bootstraps demo corpora and datasets from ``data/demo/`` (best-effort).
-      6. Warms up the demo model in a background thread via the full system
-         pipeline (compute backend -> MLflow tracking -> model registration).
+      5. Bootstraps demo corpora and datasets (best-effort).
+      6. Warms up the demo model in a background thread.
 
     On shutdown:
       1. Stops the MLflow service if it was started by this process.
-
-    Parameters
-    ----------
-    app : FastAPI
-        The FastAPI application instance. State is stored in ``app.state``.
     """
+    _setup_logging()
     print("Setting up database...", flush=True)
     await init_engine()
     migration_svc = MigrationService()
@@ -74,10 +138,8 @@ async def lifespan(app: FastAPI):
     try:
         await TrackingService().reconcile_orphans()
     except Exception:
-        pass
+        logger.warning("Failed to reconcile orphaned MLflow runs", exc_info=True)
 
-    # Seed the approved-license catalog (idempotent; before demo
-    # bootstrap so license FK refs resolve).
     try:
         from ..db.session import AsyncSessionLocal
         from ..workbench import AnvilWorkbench
@@ -91,9 +153,8 @@ async def lifespan(app: FastAPI):
                 )
             await session.commit()
     except Exception:
-        pass
+        logger.warning("License seeding failed during startup", exc_info=True)
 
-    # Auto-bootstrap demo data if not yet imported (best-effort)
     try:
         from ..db.repositories.corpora import CorpusRepository
         from ..db.repositories.datasets import DatasetRepository
@@ -124,14 +185,8 @@ async def lifespan(app: FastAPI):
                     )
                 await session.commit()
     except Exception:
-        pass
+        logger.warning("Demo bootstrap failed during startup", exc_info=True)
 
-    # Warm up the demo model in the background so the server can come online
-    # immediately. Runs through the real system pipeline: compute backend ->
-    # MLflow tracking -> model registration, so the demo seeds data into all
-    # system views (experiment history, model registry). The training itself
-    # is CPU-bound pure Python and takes tens of seconds; running it
-    # synchronously here would block uvicorn from binding the port.
     print("Warming up demo model in background (may take ~30-60s)...", flush=True)
     try:
         import threading
@@ -146,23 +201,195 @@ async def lifespan(app: FastAPI):
             daemon=True,
         ).start()
     except Exception:
-        pass
+        logger.warning("Demo model warmup failed to start", exc_info=True)
 
     yield
-    svc = getattr(app.state, "mlflow", None)
-    if svc is not None:
-        svc.stop()
+    running_mlflow = getattr(app.state, "mlflow", None)
+    if running_mlflow is not None:
+        running_mlflow.stop()
 
+
+# ------------------------------------------------------------------
+# Application factory
+# ------------------------------------------------------------------
 
 anvil_version = _get_version("anvil")
-"""str: The installed version of the ``anvil`` package from package metadata."""
-
 
 app = FastAPI(
     title="anvil",
     version=anvil_version,
     lifespan=lifespan,
 )
+
+HERE = Path(__file__).parent
+templates = Jinja2Templates(directory=str(HERE / "templates"))
+templates.env.globals["version"] = anvil_version
+app.state.templates = templates
+
+static_dir = HERE / "static"
+if static_dir.exists():
+    app.mount(
+        "/static",
+        StaticFiles(directory=str(static_dir), html=False),
+        name="static",
+    )
+
+# ------------------------------------------------------------------
+# Middleware registration order (FR-029).
+#
+# Starlette executes ``@app.middleware`` handlers in REVERSE registration
+# order (the last registered runs first / outermost).  To achieve the
+# required execution order on each request:
+#
+#     rate-limit -> CORS -> security-headers -> auth -> route
+#
+# the handlers below are REGISTERED in the opposite order:
+#
+#     auth (first) -> security-headers -> CORS -> rate-limit (last)
+#
+# Rate limiting must run outermost so unauthenticated floods (e.g. login
+# brute force, FR-028) are throttled BEFORE the auth check runs.
+# ------------------------------------------------------------------
+
+
+@app.middleware("http")
+async def auth_middleware(
+    request: StarletteRequest, call_next: RequestResponseEndpoint
+) -> Response:
+    """Authentication and CSRF protection middleware (runs last, innermost).
+
+    - ``OPTIONS`` (CORS preflight) passes through without auth (FR-029).
+    - Exempt routes (``/login``, ``/v1/health``, ``/static/*``) pass through.
+    - ``/v1/*`` API routes accept EITHER ``X-API-Key`` header OR session cookie
+      (cookie fallback required for browser SSE — FR-025).
+    - Page routes require a valid session cookie; redirect to ``/login`` if missing.
+    - Cookie-authenticated state-changing requests must carry ``X-CSRF-Token``
+      (FR-027), unless the path is CSRF-exempt (``/v1/mlflow-proxy/*``).
+    """
+    path = request.url.path
+
+    if request.method == "OPTIONS":
+        return await call_next(request)
+
+    if is_exempt_route(path):
+        return await call_next(request)
+
+    api_key_store = get_api_key_store()
+    session_store = get_session_store()
+
+    api_key = request.headers.get("X-API-Key")
+    session_id = request.cookies.get(SESSION_COOKIE_NAME)
+
+    authenticated = False
+    authed_via_cookie = False
+
+    if api_key is not None and api_key_store.verify(api_key):
+        authenticated = True
+    elif session_id is not None and session_store.validate(session_id):
+        authenticated = True
+        authed_via_cookie = True
+
+    if not authenticated:
+        if is_page_route(path) or "text/html" in request.headers.get("accept", ""):
+            return RedirectResponse(url="/login", status_code=303)
+        return JSONResponse(
+            status_code=401,
+            content={"detail": "Authentication required", "code": "UNAUTHORIZED"},
+        )
+
+    if authed_via_cookie and not api_key and session_id is not None:
+        if request.method in ("POST", "PUT", "DELETE", "PATCH"):
+            if not is_csrf_exempt(path):
+                csrf_token = request.headers.get("X-CSRF-Token")
+                if not csrf_token or not verify_csrf_token(session_id, csrf_token):
+                    return JSONResponse(
+                        status_code=403,
+                        content={
+                            "detail": "CSRF token invalid or missing",
+                            "code": "FORBIDDEN",
+                        },
+                    )
+
+    return await call_next(request)
+
+
+@app.middleware("http")
+async def security_headers_middleware(
+    request: StarletteRequest, call_next: RequestResponseEndpoint
+) -> Response:
+    """Inject security headers (CSP, HSTS, XFO, XCTO) into every response."""
+    response = await call_next(request)
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data:; "
+        "font-src 'self'; "
+        "script-src 'self';"
+    )
+    response.headers["Strict-Transport-Security"] = (
+        "max-age=31536000; includeSubDomains"
+    )
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
+
+
+# CORS middleware (built-in, no new dependency). Registered after the two
+# @middleware handlers above but before rate-limit, so on the request path it
+# runs after rate-limit and before security-headers/auth.
+if _cors_origins_str:
+    origins = [o.strip() for o in _cors_origins_str.split(",") if o.strip()]
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Content-Type", "X-API-Key", "Idempotency-Key", "X-CSRF-Token"],
+        allow_credentials=True,
+    )
+
+
+@app.middleware("http")
+async def rate_limit_middleware(
+    request: StarletteRequest, call_next: RequestResponseEndpoint
+) -> Response:
+    """Sliding-window rate-limiting middleware (runs first, outermost).
+
+    Exempts ``/v1/health`` and ``/static/*``.
+    ``POST /login`` has its own stricter limit (5/min/IP) per FR-028.
+    """
+    path = request.url.path
+    if path == "/v1/health" or path.startswith("/static"):
+        return await call_next(request)
+
+    key = _make_rate_limit_key(request)
+    now = time.time()
+    window = 60.0
+
+    limit = (
+        _LOGIN_RATE_LIMIT_PER_MINUTE
+        if request.method == "POST" and path == "/login"
+        else _RATE_LIMIT_PER_MINUTE
+    )
+
+    timestamps = _rate_limit_store[key]
+    cutoff = now - window
+    _rate_limit_store[key] = [t for t in timestamps if t > cutoff]
+
+    if len(_rate_limit_store[key]) >= limit:
+        retry_after = int(window - (now - _rate_limit_store[key][0]))
+        return JSONResponse(
+            status_code=429,
+            content={"detail": "Too many requests", "code": "RATE_LIMITED"},
+            headers={"Retry-After": str(retry_after)},
+        )
+
+    _rate_limit_store[key].append(now)
+    return await call_next(request)
+
+
+# ------------------------------------------------------------------
+# Routes
+# ------------------------------------------------------------------
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -179,20 +406,129 @@ async def root_hero(request: Request):
     HTMLResponse
         The rendered ``archetypes/hero.html`` template with the anvil version.
     """
+    csrf_token = _get_csrf_token_for_request(request)
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/hero.html",
-        context={"version": anvil_version},
+        context={
+            "version": anvil_version,
+            "csrf_token": csrf_token,
+        },
     )
 
 
+# ------------------------------------------------------------------
+# Login / Logout routes
+# ------------------------------------------------------------------
+
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request) -> Response:
+    """Render the login page.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming HTTP request.
+
+    Returns
+    -------
+    HTMLResponse
+        The login page template.
+    """
+    return templates.TemplateResponse(
+        request,
+        "login.html",
+        context={},
+    )
+
+
+@app.post("/login")
+async def login_post(request: Request) -> Response:
+    """Authenticate with an API key and set a session cookie.
+
+    Expects ``{"api_key": "..."}`` in the JSON body.
+    On success sets ``HttpOnly; SameSite=Strict; Max-Age=86400`` cookie.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse(
+            status_code=400,
+            content={"detail": "Invalid JSON body", "code": "BAD_REQUEST"},
+        )
+
+    api_key = body.get("api_key", "")
+    api_key_store = get_api_key_store()
+
+    if not api_key_store.verify(api_key):
+        # Small fixed delay on failure (FR-028)
+        await asyncio.sleep(_LOGIN_FAILURE_DELAY)
+        return JSONResponse(
+            status_code=401,
+            content={"detail": "Invalid API key", "code": "UNAUTHORIZED"},
+        )
+
+    session_store = get_session_store()
+    session_id = session_store.create()
+
+    response = JSONResponse(
+        status_code=200,
+        content={"status": "ok", "session_id": session_id},
+    )
+    response.set_cookie(
+        key=SESSION_COOKIE_NAME,
+        value=session_id,
+        httponly=True,
+        samesite="strict",
+        max_age=86_400,
+        path="/",
+        secure=False,  # local-first; True in production behind TLS
+    )
+    return response
+
+
+@app.post("/logout")
+async def logout_post(request: Request) -> Response:
+    """Clear the session cookie and invalidate the server-side session."""
+    session_id = request.cookies.get(SESSION_COOKIE_NAME)
+    if session_id:
+        get_session_store().delete(session_id)
+
+    response = JSONResponse(status_code=200, content={"status": "logged_out"})
+    response.delete_cookie(
+        key=SESSION_COOKIE_NAME,
+        path="/",
+    )
+    return response
+
+
+# ------------------------------------------------------------------
+# CSRF token helper
+# ------------------------------------------------------------------
+
+
+def _get_csrf_token_for_request(request: Request) -> str:
+    """Extract or generate a CSRF token for the current request's session.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming HTTP request.
+
+    Returns
+    -------
+    str
+        The CSRF token, or an empty string if no session is present.
+    """
+    session_id = request.cookies.get(SESSION_COOKIE_NAME)
+    if session_id:
+        return generate_csrf_token(session_id)
+    return ""
+
+
+# ------------------------------------------------------------------
+# Router registration
+# ------------------------------------------------------------------
+
 app.include_router(v1_router, prefix="/v1")
-
-HERE = Path(__file__).parent
-templates = Jinja2Templates(directory=str(HERE / "templates"))
-templates.env.globals["version"] = anvil_version
-app.state.templates = templates
-
-static_dir = HERE / "static"
-if static_dir.exists():
-    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")

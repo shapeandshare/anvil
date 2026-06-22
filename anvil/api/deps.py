@@ -18,9 +18,24 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db.session import get_db
 from ..workbench import AnvilWorkbench
+from .api_key_store import ApiKeyStore
 
 # Import get_db_session for downstream convenience.
 __all__ = ["get_db_session", "get_workbench"]
+
+# Module-level singleton for the API key store — initialised once at
+# import time (which happens during application startup).
+_api_key_store = ApiKeyStore()
+
+
+def get_api_key_store() -> ApiKeyStore:
+    """Return the application-wide API key store singleton.
+
+    Returns
+    -------
+    ApiKeyStore
+    """
+    return _api_key_store
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession]:

@@ -11,6 +11,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from anvil.api.app import app
+from anvil.api.deps import get_api_key_store
 from anvil.db.base import Base
 from anvil.db.session import AsyncSessionLocal, async_engine
 
@@ -104,7 +105,9 @@ async def test_start_with_dataset_id_calls_log_dataset_input(db_session, fake_tr
         try:
             transport = ASGITransport(app=app)
             async with AsyncClient(
-                transport=transport, base_url="http://test"
+                transport=transport,
+                base_url="http://test",
+                headers={"X-API-Key": get_api_key_store().key or ""},
             ) as client:
                 config = {**BASE_CONFIG, "dataset_id": 1}
                 response = await client.post("/v1/training/start", json=config)
@@ -132,7 +135,9 @@ async def test_start_with_corpus_id_calls_log_corpus_input(db_session, fake_trac
         try:
             transport = ASGITransport(app=app)
             async with AsyncClient(
-                transport=transport, base_url="http://test"
+                transport=transport,
+                base_url="http://test",
+                headers={"X-API-Key": get_api_key_store().key or ""},
             ) as client:
                 config = {**BASE_CONFIG, "corpus_id": 1}
                 response = await client.post("/v1/training/start", json=config)
@@ -164,7 +169,9 @@ async def test_no_dataset_or_corpus_no_phantom_input(db_session, fake_tracking):
         try:
             transport = ASGITransport(app=app)
             async with AsyncClient(
-                transport=transport, base_url="http://test"
+                transport=transport,
+                base_url="http://test",
+                headers={"X-API-Key": get_api_key_store().key or ""},
             ) as client:
                 config = {**BASE_CONFIG}
                 response = await client.post("/v1/training/start", json=config)
@@ -190,7 +197,9 @@ async def test_start_with_dataset_id_persists_input_digest(db_session, fake_trac
         try:
             transport = ASGITransport(app=app)
             async with AsyncClient(
-                transport=transport, base_url="http://test"
+                transport=transport,
+                base_url="http://test",
+                headers={"X-API-Key": get_api_key_store().key or ""},
             ) as client:
                 config = {**BASE_CONFIG, "dataset_id": 1}
                 response = await client.post("/v1/training/start", json=config)
@@ -220,7 +229,11 @@ async def test_no_input_id_no_digest(db_session, fake_tracking):
 
     try:
         transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
+        async with AsyncClient(
+            transport=transport,
+            base_url="http://test",
+            headers={"X-API-Key": get_api_key_store().key or ""},
+        ) as client:
             config = {**BASE_CONFIG}
             response = await client.post("/v1/training/start", json=config)
             assert response.status_code == 200

@@ -9,6 +9,7 @@ import math
 
 from fastapi import APIRouter, HTTPException
 
+from ...api.v1.schemas import EvalPerplexityBody
 from ...core.engine import softmax
 from ...services.inference.inference import InferenceService
 
@@ -16,7 +17,7 @@ router = APIRouter()
 
 
 @router.post("/eval/perplexity")
-async def eval_perplexity(body: dict):
+async def eval_perplexity(body: EvalPerplexityBody):
     """Compute perplexity of a model on a given text string.
 
     Loads the specified model version, tokenizes the input text, and computes
@@ -25,11 +26,8 @@ async def eval_perplexity(body: dict):
 
     Parameters
     ----------
-    body : dict
-        Request body with keys:
-          - ``model_id``: int — identifier of the model
-          - ``version``: int — version of the model
-          - ``text``: str — input text to evaluate
+    body : EvalPerplexityBody
+        Request body with ``model_id``, ``version``, and ``text``.
 
     Returns
     -------
@@ -44,15 +42,9 @@ async def eval_perplexity(body: dict):
         (400), the model is not found (404), or a character is not in the
         vocabulary (400).
     """
-    model_id = body.get("model_id")
-    version = body.get("version")
-    text = body.get("text")
-
-    if model_id is None or version is None:
-        raise HTTPException(status_code=400, detail="model_id and version required")
-
-    if not isinstance(text, str) or not text:
-        raise HTTPException(status_code=400, detail="text must be a non-empty string")
+    model_id = body.model_id
+    version = body.version
+    text = body.text
 
     inf_svc = InferenceService()
     try:

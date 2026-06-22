@@ -16,6 +16,7 @@ import random
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
+from anvil.api.v1.schemas import InferenceSampleBody
 from anvil.core.engine import softmax
 
 router = APIRouter()
@@ -1611,14 +1612,14 @@ async def list_inference_models():
 
 
 @router.post("/inference/sample")
-async def inference_sample(body: dict):
+async def inference_sample(body: InferenceSampleBody):
     """Generate text samples from a registered model.
 
     Parameters
     ----------
-    body : dict
-        Request body with ``model_id``, ``version``, ``prompt``,
-        ``temperature``, ``num_samples``, ``top_k``, and ``top_p``.
+    body : InferenceSampleBody
+        Request body with ``model_id``, ``version``, and optional
+        sampling parameters.
 
     Returns
     -------
@@ -1633,16 +1634,13 @@ async def inference_sample(body: dict):
     """
     from anvil.core.autograd import Value
 
-    model_id = body.get("model_id")
-    version = body.get("version")
-    temperature = body.get("temperature", 0.5)
-    num_samples = body.get("num_samples", 10)
-    prompt = body.get("prompt", "")
-    top_k = body.get("top_k")
-    top_p = body.get("top_p")
-
-    if model_id is None or version is None:
-        raise HTTPException(status_code=400, detail="model_id and version required")
+    model_id = body.model_id
+    version = body.version
+    temperature = body.temperature
+    num_samples = body.num_samples
+    prompt = body.prompt
+    top_k = body.top_k
+    top_p = body.top_p
 
     if top_k is not None:
         if not isinstance(top_k, int) or top_k <= 0:

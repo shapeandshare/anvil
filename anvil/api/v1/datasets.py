@@ -27,6 +27,7 @@ from anvil.api.v1.schemas import (
     CreateFromCorpusBody,
     FilterBody,
     ImportBody,
+    ImportFromCorpusBody,
     ReplaceBody,
     UpdateDatasetBody,
     UpdateSampleBody,
@@ -533,7 +534,7 @@ async def import_dataset(
 @router.post("/datasets/{id}/import-corpus")
 async def import_dataset_from_corpus(
     id: int,
-    body: dict,
+    body: ImportFromCorpusBody,
     workbench: AnvilWorkbench = Depends(get_workbench),
 ):
     """Import documents from a corpus into an existing dataset.
@@ -547,7 +548,7 @@ async def import_dataset_from_corpus(
     ----------
     id : int
         The target dataset ID.
-    body : dict
+    body : ImportFromCorpusBody
         Request body with ``corpus_id`` specifying the source corpus.
     workbench : AnvilWorkbench
         Injected session-bound workbench.
@@ -564,7 +565,7 @@ async def import_dataset_from_corpus(
         If ``corpus_id`` is missing (422), the corpus is not found (404),
         or loading fails (404).
     """
-    corpus_id = body.get("corpus_id")
+    corpus_id = body.corpus_id
     if not corpus_id:
         raise HTTPException(status_code=422, detail="corpus_id required")
     try:

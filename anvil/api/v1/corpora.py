@@ -20,6 +20,12 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
 
 from ...api.deps import get_workbench
+from ...api.v1.schemas import (
+    AnalyzePathBody,
+    CreateCorpusBody,
+    ForkCorpusBody,
+    ResolvePathBody,
+)
 from ...services.tracking.tracking import TrackingService
 from ...workbench import AnvilWorkbench
 
@@ -43,7 +49,7 @@ tracking_svc = TrackingService()
 
 @router.post("/corpora")
 async def create_corpus(
-    body: dict,
+    body: CreateCorpusBody,
     workbench: AnvilWorkbench = Depends(get_workbench),
 ):
     """Create a new corpus from a directory path.
@@ -54,16 +60,9 @@ async def create_corpus(
 
     Parameters
     ----------
-    body : dict
-        Request body with keys:
-          - ``name``: str — corpus name (required)
-          - ``root_path``: str — filesystem path to scan (required)
-          - ``include_patterns``: list[str], optional — gitignore-style includes
-          - ``exclude_patterns``: list[str], optional — gitignore-style excludes
-          - ``description``: str, optional
-          - ``chunking_strategy``: str, optional (default ``"windowed"``)
-          - ``chunk_overlap``: float, optional (default ``0.5``)
-          - ``block_size``: int, optional (default ``16``)
+    body : CreateCorpusBody
+        Request body with ``name``, ``root_path``, optional patterns,
+        description, chunking strategy, overlap, and block size.
     workbench : AnvilWorkbench
         Injected session-bound workbench.
 
@@ -78,10 +77,10 @@ async def create_corpus(
         If validation fails (422).
     """
     try:
-        name = body["name"].strip()
-        root_path = body["root_path"].strip()
-        inc = body.get("include_patterns")
-        exc = body.get("exclude_patterns")
+        name = body.name.strip()
+        root_path = body.root_path.strip()
+        inc = body.include_patterns
+        exc = body.exclude_patterns
         if inc:
             inc = [p.strip() for p in inc]
         if exc:
@@ -89,12 +88,12 @@ async def create_corpus(
         corpus = await workbench.corpora.create(
             name=name,
             root_path=root_path,
-            description=body.get("description"),
+            description=body.description,
             include_patterns=inc,
             exclude_patterns=exc,
-            chunking_strategy=body.get("chunking_strategy", "windowed"),
-            chunk_overlap=body.get("chunk_overlap", 0.5),
-            block_size=body.get("block_size", 16),
+            chunking_strategy=body.chunking_strategy,
+            chunk_overlap=body.chunk_overlap,
+            block_size=body.block_size,
         )
 
         # Commit so MLflow tracking (which opens its own DB session) can read the corpus
@@ -141,7 +140,7 @@ async def create_corpus(
 @router.post("/corpora/{id}/fork")
 async def fork_corpus(
     id: int,
-    body: dict,
+    body: ForkCorpusBody,
     workbench: AnvilWorkbench = Depends(get_workbench),
 ):
     """Create a new corpus variant from an existing one.
@@ -155,15 +154,8 @@ async def fork_corpus(
     ----------
     id : int
         The source corpus ID.
-    body : dict
-        Request body with keys:
-          - ``name``: str — new corpus name (required)
-          - ``include_patterns``: list[str], optional
-          - ``exclude_patterns``: list[str], optional
-          - ``description``: str, optional
-          - ``chunking_strategy``: str, optional
-          - ``chunk_overlap``: float, optional
-          - ``block_size``: int, optional
+    body : ForkCorpusBody
+        Request body with ``name`` and optional overrides.
     workbench : AnvilWorkbench
         Injected session-bound workbench.
 
@@ -178,9 +170,9 @@ async def fork_corpus(
         If validation fails (422).
     """
     try:
-        name = body["name"].strip()
-        inc = body.get("include_patterns")
-        exc = body.get("exclude_patterns")
+        name = body.name.strip()
+        inc = body.include_patterns
+        exc = body.exclude_patterns
         if inc:
             inc = [p.strip() for p in inc]
         if exc:
@@ -188,12 +180,12 @@ async def fork_corpus(
         corpus = await workbench.corpora.fork(
             source_id=id,
             name=name,
-            description=body.get("description"),
+            description=body.description,
             include_patterns=inc,
             exclude_patterns=exc,
-            chunking_strategy=body.get("chunking_strategy"),
-            chunk_overlap=body.get("chunk_overlap"),
-            block_size=body.get("block_size"),
+            chunking_strategy=body.chunking_strategy,
+            chunk_overlap=body.chunk_overlap,
+            block_size=body.block_size,
         )
 
         await workbench.session.commit()
@@ -507,7 +499,7 @@ async def get_corpus_file(
 
 
 @router.post("/corpora/resolve-path")
-async def resolve_path(body: dict):
+async def resolve_path(body: ResolvePathBody):
     """Resolve a folder name to an absolute path by searching workspace roots.
 
     Iterates over ``WORKSPACE_ROOTS`` and returns the first match where
@@ -515,7 +507,7 @@ async def resolve_path(body: dict):
 
     Parameters
     ----------
-    body : dict
+    body : ResolvePathBody
         Request body with ``folder_name``: str — the folder to locate.
 
     Returns
@@ -528,7 +520,7 @@ async def resolve_path(body: dict):
     HTTPException
         If ``folder_name`` is empty (422).
     """
-    folder_name = body.get("folder_name", "").strip()
+    folder_name = body.folder_name.strip()
     if not folder_name:
         raise HTTPException(status_code=422, detail="folder_name required")
     for root in WORKSPACE_ROOTS:
@@ -545,7 +537,7 @@ async def resolve_path(body: dict):
 
 
 @router.post("/corpora/analyze-path")
-async def analyze_path(body: dict):
+async def analyze_path(body: AnalyzePathBody):
     """Analyze a directory path and return file statistics and recommendations.
 
     Scans the given path using ``CorpusLoader`` and returns file counts,
@@ -553,11 +545,9 @@ async def analyze_path(body: dict):
 
     Parameters
     ----------
-    body : dict
-        Request body with keys:
-          - ``path``: str — directory path to analyze (required)
-          - ``include_patterns``: list[str], optional
-          - ``exclude_patterns``: list[str], optional
+    body : AnalyzePathBody
+        Request body with ``path``, ``include_patterns``, and
+        ``exclude_patterns``.
 
     Returns
     -------
@@ -570,9 +560,9 @@ async def analyze_path(body: dict):
     HTTPException
         If the path is not a directory (422).
     """
-    root_path = body["path"].strip()
-    inc = body.get("include_patterns")
-    exc = body.get("exclude_patterns")
+    root_path = body.path.strip()
+    inc = body.include_patterns
+    exc = body.exclude_patterns
 
     from ...services.datasets.corpus_loader import CorpusLoader
 

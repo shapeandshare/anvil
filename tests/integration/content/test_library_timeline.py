@@ -21,7 +21,7 @@ from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 import anvil.db.models as _models_pkg
-from anvil.api.deps import get_workbench
+from anvil.api.deps import get_api_key_store, get_workbench
 from anvil.api.v1.content import router as content_router
 from anvil.config import get_config
 from anvil.db.base import Base
@@ -99,7 +99,9 @@ async def api(
 
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(
-        transport=transport, base_url="https://test"
+        transport=transport,
+        base_url="https://test",
+        headers={"X-API-Key": get_api_key_store().key or ""},
     ) as client:
         yield client
 

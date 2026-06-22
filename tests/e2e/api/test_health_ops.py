@@ -10,8 +10,23 @@ import pytest
 
 @pytest.mark.asyncio
 async def test_health(client):
-    """GET /v1/health returns status healthy with system and GPU info."""
+    """GET /v1/health returns bare liveness status (FR-021)."""
     r = await client.get("/v1/health")
+    assert r.status_code == 200
+
+    data = r.json()
+    assert data["status"] == "healthy"
+    # Public health endpoint returns only bare liveness
+    assert "version" not in data
+    assert "uptime_seconds" not in data
+    assert "system" not in data
+    assert "gpu" not in data
+
+
+@pytest.mark.asyncio
+async def test_health_detailed(client):
+    """GET /v1/health/detailed returns full system metrics (authenticated)."""
+    r = await client.get("/v1/health/detailed")
     assert r.status_code == 200
 
     data = r.json()

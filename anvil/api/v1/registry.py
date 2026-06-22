@@ -18,6 +18,7 @@ from datetime import UTC, datetime
 from fastapi import APIRouter, HTTPException, Query
 from mlflow.tracking import MlflowClient
 
+from ...api.v1.schemas import RegisterModelBody
 from ...config import get_mlflow_uri
 
 router = APIRouter()
@@ -25,7 +26,7 @@ router = APIRouter()
 
 @router.post("/registry/models", status_code=201)
 async def register_model(
-    body: dict,
+    body: RegisterModelBody,
 ):
     """Register a trained model from a completed MLflow experiment.
 
@@ -35,10 +36,9 @@ async def register_model(
 
     Parameters
     ----------
-    body : dict
-        Request body containing ``experiment_id`` (required) identifying the
-        completed experiment. Optional ``dataset_id`` or ``corpus_id`` in the
-        experiment params are used to derive the registry name.
+    body : RegisterModelBody
+        Request body containing ``experiment_id`` identifying the completed
+        experiment.
 
     Returns
     -------
@@ -53,9 +53,7 @@ async def register_model(
         (400), the experiment status is not ``FINISHED`` (400), or the
         experiment has no MLflow run ID (400).
     """
-    experiment_id = body.get("experiment_id")
-    if not experiment_id:
-        raise HTTPException(status_code=400, detail="experiment_id required")
+    experiment_id = body.experiment_id
 
     from ...services.tracking.tracking import TrackingService
 

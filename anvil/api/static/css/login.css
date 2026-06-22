@@ -1,0 +1,122 @@
+/* Copyright © 2026 Josh Burt
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * Login page — centered card with API key input.
+ */
+
+.login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - var(--nav-height, 56px));
+  padding: var(--space-6, 2rem);
+}
+
+.login-card {
+  background: var(--surface, #1c1c1e);
+  border-radius: var(--radius-lg, 16px);
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  box-shadow: var(--shadow-elevated, 0 8px 32px rgba(0,0,0,0.4));
+  width: 100%;
+  max-width: 400px;
+  padding: var(--space-8, 3rem);
+}
+
+.login-card__header {
+  text-align: center;
+  margin-bottom: var(--space-8, 2rem);
+}
+
+.login-card__logo {
+  color: var(--accent, #ff9f0a);
+  margin-bottom: var(--space-3, 0.75rem);
+}
+
+.login-card__title {
+  font-size: var(--font-size-2xl, 1.75rem);
+  font-weight: 700;
+  color: var(--text, #ffffff);
+  margin: 0 0 var(--space-1, 0.25rem);
+}
+
+.login-card__subtitle {
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--text-secondary, rgba(255,255,255,0.55));
+  margin: 0;
+}
+
+.login-card__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 1rem);
+}
+
+.login-card__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 0.5rem);
+}
+
+.login-card__label {
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: 500;
+  color: var(--text, #ffffff);
+}
+
+.login-card__input {
+  background: var(--surface-raised, #2c2c2e);
+  border: 1px solid var(--border, rgba(255,255,255,0.1));
+  border-radius: var(--radius-md, 10px);
+  padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
+  color: var(--text, #ffffff);
+  font-size: var(--font-size-base, 1rem);
+  font-family: var(--font-mono, "SF Mono", "JetBrains Mono", monospace);
+  transition: border-color 0.15s ease;
+  outline: none;
+}
+
+.login-card__input:focus {
+  border-color: var(--accent, #ff9f0a);
+  box-shadow: 0 0 0 2px rgba(255, 159, 10, 0.2);
+}
+
+.login-card__input::placeholder {
+  color: var(--text-tertiary, rgba(255,255,255,0.3));
+}
+
+.login-card__error {
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--danger, #ff453a);
+  background: rgba(255, 69, 58, 0.1);
+  border-radius: var(--radius-sm, 6px);
+  padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+  text-align: center;
+}
+
+.login-card__submit {
+  background: var(--accent, #ff9f0a);
+  color: #000;
+  border: none;
+  border-radius: var(--radius-md, 10px);
+  padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
+  font-size: var(--font-size-base, 1rem);
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.login-card__submit:hover {
+  opacity: 0.9;
+}
+
+.login-card__submit:focus-visible {
+  outline: 2px solid var(--accent, #ff9f0a);
+  outline-offset: 2px;
+}
+
+.login-card__submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

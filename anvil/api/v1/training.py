@@ -10,6 +10,8 @@ as managing training configs and the forward pass computation graph. Training
 runs execute asynchronously in the background with real-time SSE streaming.
 """
 
+from __future__ import annotations
+
 import asyncio
 import json
 import logging
@@ -18,6 +20,7 @@ import tempfile
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, ConfigDict, Field
 from starlette.responses import StreamingResponse
 
 from ...gpu import detect_gpu
@@ -32,6 +35,64 @@ from ...services.training.training import TrainingService
 
 logger = logging.getLogger(__name__)
 
+
+class TrainConfig(BaseModel):
+    """Pydantic model for training configuration.
+
+    Validates hyperparameters at the API boundary. Business-logic
+    constraints (n_head <= n_embd, divisibility, even head_dim) are
+    enforced separately in the endpoint handler.
+
+    Attributes
+    ----------
+    n_embd : int
+        Embedding dimension. Default ``16``. Range ``[4, 4096]``.
+    n_layer : int
+        Number of transformer layers. Default ``1``. Range ``[1, 128]``.
+    n_head : int
+        Number of attention heads. Default ``4``. Range ``[1, 64]``.
+    block_size : int
+        Context window size. Default ``16``. Range ``[8, 4096]``.
+    num_steps : int
+        Training iterations. Default ``1000``. Range ``[1, 1000000]``.
+    learning_rate : float
+        Adam learning rate. Default ``0.01``. Range ``(0, 1.0]``.
+    beta1 : float
+        Adam beta1. Default ``0.85``.
+    beta2 : float
+        Adam beta2. Default ``0.99``.
+    temperature : float
+        Sampling temperature. Default ``0.5``. Range ``[0, 2.0]``.
+    compute_backend : str | None
+        Compute backend identifier. Default ``"auto"``.
+    dataset_id : int | None
+        Optional dataset ID for training data.
+    corpus_id : int | None
+        Optional corpus ID for training data.
+    content_version_id : int | None
+        Optional content version ID for reproducibility.
+    device : str | None
+        Optional device override (e.g. ``"cpu"``, ``"cuda:0"``, ``"mps"``).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    n_embd: int = Field(default=16, ge=4, le=4096)
+    n_layer: int = Field(default=1, ge=1, le=128)
+    n_head: int = Field(default=4, ge=1, le=64)
+    block_size: int = Field(default=16, ge=8, le=4096)
+    num_steps: int = Field(default=1000, ge=1, le=1_000_000)
+    learning_rate: float = Field(default=0.01, gt=0, le=1.0)
+    beta1: float = Field(default=0.85)
+    beta2: float = Field(default=0.99)
+    temperature: float = Field(default=0.5, ge=0, le=2.0)
+    compute_backend: str | None = Field(default="auto")
+    dataset_id: int | None = None
+    corpus_id: int | None = None
+    content_version_id: int | None = None
+    device: str | None = None
+
+
 router = APIRouter()
 svc = TrainingService()
 tracking_svc = TrackingService()
@@ -44,7 +105,7 @@ MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 @router.post("/training/start")
-async def start_training(config: dict):
+async def start_training(config: TrainConfig):
     """Start a new training run asynchronously.
 
     Validates hyperparameters (``n_embd``, ``n_head``, ``block_size``),
@@ -53,20 +114,9 @@ async def start_training(config: dict):
 
     Parameters
     ----------
-    config : dict
-        Training configuration with keys:
-          - ``n_embd``: int, optional (default ``16``)
-          - ``n_head``: int, optional (default ``4``)
-          - ``n_layer``: int, optional (default ``1``)
-          - ``block_size``: int, optional (default ``16``)
-          - ``num_steps``: int, optional (default ``1000``)
-          - ``learning_rate``: float, optional (default ``0.01``)
-          - ``beta1``: float, optional (default ``0.85``)
-          - ``beta2``: float, optional (default ``0.99``)
-          - ``temperature``: float, optional (default ``0.5``)
-          - ``compute_backend``: str, optional (default ``ComputeBackend.AUTO``)
-          - ``dataset_id``: int, optional
-          - ``corpus_id``: int, optional
+    config : TrainConfig
+        Pydantic-validated training configuration with all hyperparameter
+        fields. See ``TrainConfig`` for field details and defaults.
 
     Returns
     -------
@@ -81,9 +131,9 @@ async def start_training(config: dict):
         (422), ``head_dim`` is odd (422), compute backend unavailable (422),
         or model would OOM GPU (422).
     """
-    n_embd = config.get("n_embd", 16)
-    n_head = config.get("n_head", 4)
-    block_size = config.get("block_size", 16)
+    n_embd = config.n_embd
+    n_head = config.n_head
+    block_size = config.block_size
 
     if n_head > n_embd:
         raise HTTPException(
@@ -105,10 +155,10 @@ async def start_training(config: dict):
             f"Try adjusting n_embd or n_head so that n_embd / n_head is even.",
         )
 
-    compute_backend = config.get("compute_backend", "auto")
-    dataset_id = config.get("dataset_id")
-    corpus_id = config.get("corpus_id")
-    content_version_id = config.get("content_version_id")
+    compute_backend = config.compute_backend
+    dataset_id = config.dataset_id
+    corpus_id = config.corpus_id
+    content_version_id = config.content_version_id
 
     try:
         resolved = resolve_backend({"compute_backend": compute_backend})
@@ -126,7 +176,7 @@ async def start_training(config: dict):
             vocab_size=200,
             n_embd=n_embd,
             n_head=n_head,
-            n_layer=config.get("n_layer", 1),
+            n_layer=config.n_layer,
             block_size=block_size,
             gpu_info=gpu_info,
         )
@@ -157,15 +207,15 @@ async def start_training(config: dict):
         )
 
     hyperparams = {
-        "n_layer": config.get("n_layer", 1),
+        "n_layer": config.n_layer,
         "n_embd": n_embd,
         "n_head": n_head,
         "block_size": block_size,
-        "num_steps": config.get("num_steps", 1000),
-        "learning_rate": config.get("learning_rate", 0.01),
-        "beta1": config.get("beta1", 0.85),
-        "beta2": config.get("beta2", 0.99),
-        "temperature": config.get("temperature", 0.5),
+        "num_steps": config.num_steps,
+        "learning_rate": config.learning_rate,
+        "beta1": config.beta1,
+        "beta2": config.beta2,
+        "temperature": config.temperature,
         "compute_backend": compute_backend,
         "corpus_id": corpus_id,
         "dataset_id": dataset_id,
@@ -558,7 +608,7 @@ async def start_training(config: dict):
         """Coroutine wrapper that runs training and handles exceptions."""
         try:
             await svc.start_training(
-                config,
+                config.model_dump(),
                 run_id,
                 on_complete=on_complete,
                 progress_callback_override=mlflow_progress_callback,

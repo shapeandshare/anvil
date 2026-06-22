@@ -35,6 +35,7 @@ import sys
 
 import uvicorn
 
+from .api.api_key_store import ApiKeyStore
 from .config import get_config
 from .services.compute.compute_backend import ComputeBackend
 from .services.datasets.chunking_strategy import ChunkingStrategy
@@ -418,6 +419,21 @@ def train():
 
     asyncio.run(_run())
     sys.exit(0)
+
+
+def show_api_key() -> None:
+    """Print the configured API key to stdout.
+
+    Reads the persisted key from the API key store.  If the key file
+    does not exist (e.g. the server has never been started), prints an
+    error and exits with status 1.
+    """
+    store = ApiKeyStore()
+    key = store.key
+    if key is None:
+        print("No API key found. Start the server first with 'anvil'.", file=sys.stderr)
+        sys.exit(1)
+    print(key)
 
 
 def corpus_main():

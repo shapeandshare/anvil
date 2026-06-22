@@ -10,6 +10,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from anvil.api.app import app
+from anvil.api.deps import get_api_key_store
 from anvil.services.tracking.tracking import TrackingService
 
 
@@ -98,7 +99,11 @@ async def test_training_exception_triggers_fail_run(
 
     transport = ASGITransport(app=app)
     try:
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
+        async with AsyncClient(
+            transport=transport,
+            base_url="http://test",
+            headers={"X-API-Key": get_api_key_store().key or ""},
+        ) as client:
             config = {
                 "n_layer": 1,
                 "n_embd": 16,
