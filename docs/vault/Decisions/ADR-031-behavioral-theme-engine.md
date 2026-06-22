@@ -130,4 +130,4 @@ layering / wave-avoidance constraints:
   (`tests/system/test_theme_engine.py`) for the JS engine.
 - Article V/VII: threading unchanged; run-status reconciled through the service.
 - Verified by `make lint`, `make typecheck`, `make test`, and the SC-001…SC-012
-  QA matrix in `specs/018-theme-engine/quickstart.md`.
+  QA matrix in `docs/vault/Specs/018 Theme Engine/quickstart.md`.

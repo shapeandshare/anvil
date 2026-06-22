@@ -66,9 +66,9 @@ ADR-035 introduced for MLflow.
 ## Artifacts
 
 - `docs/vault/Decisions/ADR-037-unified-interface-local-tls.md`
-- `specs/024-unified-interface-local-tls/spec.md` (FR-001..FR-010, SC-001..SC-007,
+- `docs/vault/Specs/024 Unified Interface Local TLS/spec.md` (FR-001..FR-010, SC-001..SC-007,
   3 user stories, edge cases, assumptions)
-- `specs/024-unified-interface-local-tls/checklists/requirements.md`
+- `docs/vault/Specs/024 Unified Interface Local TLS/checklists/requirements.md`
 - ADR index (`docs/vault/Decisions/README.md`) updated; `.specify/feature.json`
   pointed at spec 019.
 

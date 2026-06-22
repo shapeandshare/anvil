@@ -6,7 +6,7 @@ are correctly removed, while retention-protected versions (those with
 have their blobs preserved.
 
 See ``anvil/services/content/retention_service.py`` for the GC
-implementation and ``specs/019-lakefs-content-repo/`` for T097.
+implementation and ``docs/vault/Specs/019 LakeFS Content Repo/`` for T097.
 """
 
 from __future__ import annotations

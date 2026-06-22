@@ -3,8 +3,8 @@ title: "ADR-034: Playwright UI Smoke Harness"
 type: decision
 tags:
   - type/decision
-  - domain/testing
-  - domain/ci
+  - domain/ui
+  - domain/tooling
 created: 2026-06-21
 updated: 2026-06-21
 aliases:
@@ -13,9 +13,9 @@ aliases:
 status: status/draft
 source: agent
 code-refs:
-  - specs/022-playwright-ui-smoke/spec.md
-  - specs/022-playwright-ui-smoke/plan.md
-  - specs/022-playwright-ui-smoke/tasks.md
+  - docs/vault/Specs/022 Playwright UI Smoke/spec.md
+  - docs/vault/Specs/022 Playwright UI Smoke/plan.md
+  - docs/vault/Specs/022 Playwright UI Smoke/tasks.md
 ---
 
 # ADR-034: Playwright UI Smoke Harness
@@ -95,6 +95,6 @@ The initial suite targets Chromium only. Firefox and WebKit are available via Pl
 
 ## References
 
-- [Spec](specs/022-playwright-ui-smoke/spec.md)
-- [Plan](specs/022-playwright-ui-smoke/plan.md)
-- [Tasks](specs/022-playwright-ui-smoke/tasks.md)
+- [Spec](docs/vault/Specs/022 Playwright UI Smoke/spec.md)
+- [Plan](docs/vault/Specs/022 Playwright UI Smoke/plan.md)
+- [Tasks](docs/vault/Specs/022 Playwright UI Smoke/tasks.md)
