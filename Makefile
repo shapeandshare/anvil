@@ -6,6 +6,7 @@ include shared/cli.mk
 include shared/database.mk
 include shared/vault.mk
 include shared/sonar.mk
+include shared/ux.mk
 
 ## Convenience aliases
 

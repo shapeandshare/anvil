@@ -44,14 +44,15 @@
 .terminal-input, .form-input, .form-select {
   background: var(--surface-2); border: none; color: var(--text);
   font-family: var(--font-body); font-size: var(--text-callout); padding: var(--space-2) var(--space-3);
-  outline: none; caret-color: var(--accent); transition: box-shadow var(--dur-fast) var(--ease);
+  outline: none; /* ux-lint:allow focus replaced by box-shadow on :focus below */
+  caret-color: var(--accent); transition: box-shadow var(--dur-fast) var(--ease);
   min-width: 60px; border-radius: var(--radius); box-sizing: border-box;
 }
 .terminal-input:focus, .form-input:focus, .form-select:focus { box-shadow: 0 0 0 2px var(--accent); }
 .terminal-input::placeholder { color: var(--text-tertiary); }
 input.terminal-input, select.terminal-input, textarea.terminal-input {
   background: var(--surface-2); border: none; color: var(--text);
-  font-family: var(--font-body); font-size: var(--text-callout); padding: var(--space-2) var(--space-3); outline: none;
+  font-family: var(--font-body); font-size: var(--text-callout); padding: var(--space-2) var(--space-3); outline: none; /* ux-lint:allow .terminal-input:focus has box-shadow replacement */
 }
 input[type="number"].terminal-input { min-width: 80px; }
 select.terminal-input {
@@ -202,7 +203,7 @@ textarea.terminal-input.terminal-textarea { min-height: 60px; resize: vertical; 
 .token-stats-label { font-family: var(--font-mono); font-size: var(--text-caption-1); color: var(--text-tertiary); }
 
 .embedding-controls { margin-bottom: var(--space-2); }
-.embedding-canvas { width: 100%; height: 200px; display: block; outline: none; cursor: grab; }
+.embedding-canvas { width: 100%; height: 200px; display: block; outline: none; cursor: grab; } /* ux-lint:allow focus replaced by box-shadow on :focus next line */
 .embedding-canvas:focus { box-shadow: 0 0 0 2px var(--accent); border-radius: var(--radius); }
 .embedding-info { margin-top: var(--space-1); }
 
@@ -211,7 +212,7 @@ textarea.terminal-input.terminal-textarea { min-height: 60px; resize: vertical; 
 .heatmap-select { padding: var(--space-1) var(--space-2); background: var(--surface-2); border: none; border-radius: var(--radius); color: var(--text); font-family: var(--font-body); font-size: var(--text-subhead); cursor: pointer; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0,0 L5,6 L10,0' fill='%23007aff'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; padding-right: 24px; }
 .heatmap-select:focus { box-shadow: 0 0 0 2px var(--accent); }
 .heatmap-wrapper { overflow-x: auto; overflow-y: hidden; margin-bottom: var(--space-1); }
-.attn-canvas { display: block; outline: none; max-width: 100%; }
+.attn-canvas { display: block; outline: none; max-width: 100%; } /* ux-lint:allow focus replaced by box-shadow on :focus next line */
 .attn-canvas:focus { box-shadow: 0 0 0 2px var(--accent); border-radius: var(--radius); }
 .heatmap-legend { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }
 .legend-label { font-family: var(--font-body); font-size: var(--text-caption-2); color: var(--text-tertiary); min-width: 12px; text-align: center; }

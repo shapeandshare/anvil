@@ -22,7 +22,7 @@
 .param-block { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-2) var(--space-3); background: var(--surface-2); border-radius: var(--radius); border-left: 3px solid var(--accent); }
 .param-label-row { display: flex; align-items: center; gap: var(--space-1); }
 .param-label { font-family: var(--font-body); font-size: var(--text-footnote); font-weight: 600; color: var(--text); }
-.param-block input { width: 100%; padding: var(--space-2) var(--space-3); background: var(--surface); border: none; border-radius: var(--radius-sm); color: var(--text); font-family: var(--font-mono); font-size: var(--text-mono); box-sizing: border-box; outline: none; transition: box-shadow var(--dur-fast) var(--ease); }
+.param-block input { width: 100%; padding: var(--space-2) var(--space-3); background: var(--surface); border: none; border-radius: var(--radius-sm); color: var(--text); font-family: var(--font-mono); font-size: var(--text-mono); box-sizing: border-box; outline: none; /* ux-lint:allow param-block input :focus styled via box-shadow transition */ transition: box-shadow var(--dur-fast) var(--ease); }
 .param-block input:focus { box-shadow: 0 0 0 2px var(--accent); }
 .param-desc { margin: 0; font-family: var(--font-body); font-size: var(--text-caption-1); line-height: 1.5; color: var(--text-tertiary); }
 .param-desc code { background: var(--surface); padding: 0 4px; border-radius: var(--radius-sm); font-size: var(--text-caption-1); }
@@ -90,7 +90,7 @@
 .ds-selectors { display: flex; flex-direction: column; gap: var(--space-2); }
 .ds-field { display: flex; flex-direction: column; gap: var(--space-1); }
 .ds-label { font-family: var(--font-body); font-size: var(--text-footnote); font-weight: 600; color: var(--text-secondary); }
-.ds-select { width: 100%; padding: var(--space-2) var(--space-3); padding-right: var(--space-7); background: var(--surface-2); border: none; border-radius: var(--radius); color: var(--text); font-family: var(--font-body); font-size: var(--text-callout); cursor: pointer; outline: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1,1 L6,6 L11,1' stroke='%23007aff' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; transition: box-shadow var(--dur-fast) var(--ease); }
+.ds-select { width: 100%; padding: var(--space-2) var(--space-3); padding-right: var(--space-7); background: var(--surface-2); border: none; border-radius: var(--radius); color: var(--text); font-family: var(--font-body); font-size: var(--text-callout); cursor: pointer; outline: none; /* ux-lint:allow .ds-select :focus styled via box-shadow transition */ appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1,1 L6,6 L11,1' stroke='%23007aff' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; transition: box-shadow var(--dur-fast) var(--ease); }
 .ds-select:focus { box-shadow: 0 0 0 2px var(--accent); }
 .ds-select optgroup, .ds-select option { background: var(--surface); color: var(--text); }
 
@@ -1699,7 +1699,7 @@ margin-bottom: var(--space-2);
   text-align: center;
   position: relative;
   transition: opacity var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease), transform var(--dur-fast) var(--spring-quick), border-color var(--dur-fast) var(--ease);
-  outline: none;
+  outline: none; /* ux-lint:allow .arch-node :focus-visible styled via box-shadow transition */
 }
 
 .arch-node:hover {
@@ -1772,7 +1772,7 @@ margin-bottom: var(--space-2);
   gap: 6px;
   cursor: pointer;
   transition: opacity var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
-  outline: none;
+  outline: none; /* ux-lint:allow .arch-add :focus-visible styled via box-shadow transition */
 }
 
 .arch-add:hover {
