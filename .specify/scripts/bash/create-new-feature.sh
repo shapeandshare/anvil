@@ -322,7 +322,33 @@ if [ ${#BRANCH_NAME} -gt $MAX_BRANCH_LENGTH ]; then
     >&2 echo "[specify] Truncated to: $BRANCH_NAME (${#BRANCH_NAME} bytes)"
 fi
 
-FEATURE_DIR="$SPECS_DIR/$BRANCH_NAME"
+# Convert branch suffix to Title Case for directory naming
+slug_to_title() {
+    local slug="$1"
+    # Replace hyphens with spaces, then capitalize first letter of each word
+    local result
+    result=$(echo "$slug" | sed 's/-/ /g' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) substr($i,2)}1')
+    # Fix known acronyms (title-cased back to correct casing)
+    result=$(echo "$result" | sed -E \
+        -e 's/\bSaaS\b/SaaS/g' \
+        -e 's/\bOwasp\b/OWASP/g' \
+        -e 's/\bMlflow\b/MLflow/g' \
+        -e 's/\bCli\b/CLI/g' \
+        -e 's/\bUi\b/UI/g' \
+        -e 's/\bUx\b/UX/g' \
+        -e 's/\bTls\b/TLS/g' \
+        -e 's/\bApi\b/API/g' \
+        -e 's/\bDx\b/DX/g' \
+        -e 's/\bDb\b/DB/g' \
+        -e 's/\bLakefs\b/LakeFS/g' \
+        -e 's/\bLlm\b/LLM/g' \
+        -e 's/\bMd\b/MD/g' \
+        -e 's/\bE2e\b/E2E/g')
+    echo "$result"
+}
+SPEC_DIRNAME="${FEATURE_NUM} $(slug_to_title "$BRANCH_SUFFIX")"
+
+FEATURE_DIR="$SPECS_DIR/$SPEC_DIRNAME"
 SPEC_FILE="$FEATURE_DIR/spec.md"
 
 if [ "$DRY_RUN" != true ]; then
