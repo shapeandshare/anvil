@@ -42,3 +42,7 @@ The `main` branch requires the CI workflow to pass before merge. The workflow ru
 - **Lint**, **Type Check**, **Test**, **Vault Audit**: required for every source-code change.
 
 If a gate fails, the CI check shows red, logs the specific failure, and blocks merge. If the CI infrastructure fails (timeout, outage), merge is also blocked (fail-closed). This protects against regression while keeping the automated release pipeline flowing.
+
+---
+
+&copy; 2026 Josh Burt. Released under the MIT License.
