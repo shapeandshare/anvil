@@ -376,7 +376,7 @@ function updateMetrics(d) {
 
   function initChart() {
     var canvas = document.getElementById('loss-chart');
-    if (!chart && canvas) {
+    if (!chart && canvas && typeof LossChart !== 'undefined') {
       chart = new LossChart(canvas, { mode: 'live' });
     }
   }
@@ -902,7 +902,7 @@ var gpuToggle = document.getElementById('compute_backend');
       };
       session.onmetrics = function(d) {
         updateMetrics(d);
-        chart.appendPoint({ step: d.step, loss: d.loss });
+        if (chart) chart.appendPoint({ step: d.step, loss: d.loss });
         log('step ' + String(d.step).padStart(6) + ' | loss ' + d.loss.toFixed(4));
         saveTrainingState();
       };
@@ -1120,8 +1120,6 @@ var gpuToggle = document.getElementById('compute_backend');
 
   window.startTraining = async function startTraining() {
     if (session) { session.destroy(); session = null; }
-    initChart();
-    chart.clear();
     outputActions.innerHTML = '';
     lossDisplay.textContent = '';
     _outputHasContent = false;
@@ -1147,26 +1145,28 @@ var gpuToggle = document.getElementById('compute_backend');
     /* Log block_size mismatch warning if applicable */
     var bsWarn = document.getElementById('bs-mismatch-warn');
     if (bsWarn && bsWarn.style.display !== 'none' && cid && corpusCache[cid]) {
-      log('⚠️  Warning: block_size (' + config.block_size + ') > corpus chunk size (' + corpusCache[cid].block_size + ') — only chunks of ' + corpusCache[cid].block_size + ' chars will be used per step');
+      log('\u26a0\ufe0f  Warning: block_size (' + config.block_size + ') > corpus chunk size (' + corpusCache[cid].block_size + ') \u2014 only chunks of ' + corpusCache[cid].block_size + ' chars will be used per step');
     }
 
     /* Log data source warnings */
     var dataConflictWarn = document.getElementById('data-conflict-warn');
     if (dataConflictWarn && dataConflictWarn.style.display !== 'none') {
-      log('⚠️  Warning: Both corpus and dataset selected — dataset will be used, corpus ignored');
+      log('\u26a0\ufe0f  Warning: Both corpus and dataset selected \u2014 dataset will be used, corpus ignored');
     }
     var emptyDataWarn = document.getElementById('empty-data-warn');
     if (emptyDataWarn && emptyDataWarn.style.display !== 'none') {
-      log('⚠️  Warning: No data source selected — will use default demo corpus');
+      log('\u26a0\ufe0f  Warning: No data source selected \u2014 will use default demo corpus');
     }
 
     /* Log attention geometry warnings */
     var attnWarn = document.getElementById('attn-geom-warn');
     if (attnWarn && attnWarn.style.display !== 'none') {
-      log('⚠️  Warning: ' + attnWarn.textContent.replace(/\s+/g, ' ').trim());
+      log('\u26a0\ufe0f  Warning: ' + attnWarn.textContent.replace(/\s+/g, ' ').trim());
     }
 
     try {
+      initChart();
+      if (chart) chart.clear();
       var resp = await fetch('/v1/training/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1184,7 +1184,7 @@ var gpuToggle = document.getElementById('compute_backend');
       };
       session.onmetrics = function(d) {
         updateMetrics(d);
-        chart.appendPoint({ step: d.step, loss: d.loss });
+        if (chart) chart.appendPoint({ step: d.step, loss: d.loss });
         log('step ' + String(d.step).padStart(6) + ' | loss ' + d.loss.toFixed(4));
         saveTrainingState();
       };
