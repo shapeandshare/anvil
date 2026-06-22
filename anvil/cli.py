@@ -95,8 +95,9 @@ def _load_docs(corpus_id: int | None = None) -> list[str]:
         If *corpus_id* is ``None`` and no demo corpus has been
         bootstrapped.
     """
+    import asyncio
+
     if corpus_id is not None:
-        import asyncio
 
         from .db.repositories.corpora import CorpusRepository
         from .db.session import AsyncSessionLocal
