@@ -217,116 +217,6 @@ LEARNING_ARC = [
     },
 ]
 
-LEARNING_ARC_LESSONS = [
-    {
-        "key": "data-fundamentals",
-        "title": "Data Fundamentals",
-        "path": "/v1/learn/data-fundamentals",
-        "desc": "How datasets and corpora feed training data into the engine &mdash; and when to use each.",
-    },
-    {
-        "key": "tokenization",
-        "title": "Tokenization",
-        "path": "/v1/learn/tokenization",
-        "desc": "How the model chops text into character tokens and maps them to IDs.",
-    },
-    {
-        "key": "embeddings",
-        "title": "Embeddings",
-        "path": "/v1/learn/embeddings",
-        "desc": "How each token ID becomes a dense vector the model can compute with.",
-    },
-    {
-        "key": "parameters",
-        "title": "Parameters",
-        "path": "/v1/learn/parameters",
-        "desc": "Where the model's ~4K parameters live and what each matrix does.",
-    },
-    {
-        "key": "autograd",
-        "title": "Autograd",
-        "path": "/v1/learn/autograd",
-        "desc": "How gradients flow backward through the computation graph to train the model.",
-    },
-    {
-        "key": "attention",
-        "title": "Attention",
-        "path": "/v1/learn/attention",
-        "desc": "How each token looks at its predecessors to build context-aware representations.",
-    },
-    {
-        "key": "loss",
-        "title": "Cross-Entropy Loss",
-        "path": "/v1/learn/loss",
-        "desc": "How prediction error is measured and what the loss number means.",
-    },
-    {
-        "key": "sampling",
-        "title": "Sampling",
-        "path": "/v1/learn/sampling",
-        "desc": "How the model picks the next character from its probability distribution.",
-    },
-    {
-        "key": "adam",
-        "title": "Adam Optimizer",
-        "path": "/v1/learn/adam",
-        "desc": "How momentum and adaptive learning rates make training converge faster.",
-    },
-    {
-        "key": "training-loop",
-        "title": "Training Loop",
-        "path": "/v1/learn/training-loop",
-        "desc": "How the model learns by minimizing prediction error step by step.",
-    },
-    {
-        "key": "architecture",
-        "title": "Architecture",
-        "path": "/v1/learn/architecture",
-        "desc": "The full Llama decoder stack — RoPE, RMSNorm, SwiGLU — visualized end to end.",
-    },
-    {
-        "key": "graph",
-        "title": "Forward Pass",
-        "path": "/v1/learn/graph",
-        "desc": "Scrub through the Llama forward pass step by step on an interactive computation graph.",
-    },
-    {
-        "key": "export",
-        "title": "Model Export",
-        "path": "/v1/learn/export",
-        "desc": "How trained models are exported to safetensors for HuggingFace compatibility.",
-    },
-    {
-        "key": "chunking",
-        "title": "Chunking Strategies",
-        "path": "/v1/learn/chunking",
-        "desc": "How long documents are split into context-window-sized training samples — windowed, line, and file strategies.",
-    },
-    {
-        "key": "content-versioning",
-        "title": "Content Versioning",
-        "path": "/v1/learn/content-versioning",
-        "desc": "How training data is content-addressed, versioned, and traced from model back to the exact bytes it learned from.",
-    },
-    {
-        "key": "experiment-tracking",
-        "title": "Experiment Tracking",
-        "path": "/v1/learn/experiment-tracking",
-        "desc": "How MLflow records hyperparameters, loss curves, artifacts, and the model registry for every run.",
-    },
-    {
-        "key": "governance",
-        "title": "Data Governance",
-        "path": "/v1/learn/governance",
-        "desc": "How provenance, an acceptable-use gate, and a hash-chained audit trail keep data inclusion lawful and auditable.",
-    },
-    {
-        "key": "memory-divergence",
-        "title": "Memory & Divergence",
-        "path": "/v1/learn/memory-divergence",
-        "desc": "How anvil estimates memory before training and detects NaN/Inf loss divergence during it.",
-    },
-]
 
 LEARNING_ARC_ADDITIONAL = [
     {
@@ -347,6 +237,12 @@ LEARNING_ARC_ADDITIONAL = [
         "path": "/v1/learn/glossary",
         "desc": "Definitions for every technical term used across the learning arc and codebase.",
     },
+]
+
+# LEARNING_ARC_LESSONS is derived from LEARNING_ARC by excluding ADDITIONAL items.
+_ADDITIONAL_KEYS = frozenset(item["key"] for item in LEARNING_ARC_ADDITIONAL)
+LEARNING_ARC_LESSONS = [
+    item for item in LEARNING_ARC if item["key"] not in _ADDITIONAL_KEYS
 ]
 
 
