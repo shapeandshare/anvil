@@ -231,9 +231,7 @@ class TestComputeParamCountEdgeCases:
         assert count == expected_rms + 1 * expected_per_layer
 
     def test_large_config(self):
-        count = _compute_param_count(
-            1000, 768, 12, 12
-        )
+        count = _compute_param_count(1000, 768, 12, 12)
         assert count > 0
         assert count > 10_000_000  # Should be well into millions
 

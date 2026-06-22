@@ -25,9 +25,7 @@ from anvil.db.models.content_ingest_session import IngestSession
 from anvil.db.models.content_source import ContentSource
 from anvil.db.repositories.content_blobs import ContentBlobRepository
 from anvil.db.repositories.content_corpora import ContentCorpusRepository
-from anvil.db.repositories.content_ingest_sessions import (
-    ContentIngestSessionRepository,
-)
+from anvil.db.repositories.content_ingest_sessions import ContentIngestSessionRepository
 from anvil.db.repositories.content_sources import ContentSourceRepository
 from anvil.db.repositories.content_versions import ContentVersionRepository
 from anvil.services.content.accept_result import AcceptResult
@@ -35,10 +33,7 @@ from anvil.services.content.ingest_session_ref import IngestSessionRef
 from anvil.services.content.ingest_status import IngestStatus
 from anvil.services.content.ingestion_service import IngestionService
 from anvil.services.content.staged_entry import StagedEntry
-from anvil.services.content.validation_report import (
-    ValidationProblem,
-    ValidationReport,
-)
+from anvil.services.content.validation_report import ValidationProblem, ValidationReport
 
 
 @pytest_asyncio.fixture
@@ -191,9 +186,7 @@ class TestOpenSession:
         assert source is not None
 
         await service.open_session(corpus_id, source_id)
-        mock_store.open_session.assert_awaited_once_with(
-            corpus.slug, source.slug
-        )
+        mock_store.open_session.assert_awaited_once_with(corpus.slug, source.slug)
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -273,9 +266,7 @@ class TestStage:
         await session_repo.update_status(ref.session_id, IngestStatus.FAILED)
 
         with pytest.raises(ValueError, match="is not open"):
-            await service.stage(
-                ref.session_id, "data.txt", _async_bytes_iter(b"data")
-            )
+            await service.stage(ref.session_id, "data.txt", _async_bytes_iter(b"data"))
 
 
 # ═══════════════════════════════════════════════════════════════════

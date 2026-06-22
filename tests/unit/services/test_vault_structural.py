@@ -160,13 +160,15 @@ class TestComputeStructural:
 
     def test_integration(self) -> None:
         G = nx.DiGraph()
-        G.add_edges_from([
-            ("a", "b"),
-            ("a", "c"),
-            ("b", "c"),
-            ("x", "y"),
-            ("y", "x"),
-        ])
+        G.add_edges_from(
+            [
+                ("a", "b"),
+                ("a", "c"),
+                ("b", "c"),
+                ("x", "y"),
+                ("y", "x"),
+            ]
+        )
         notes = {
             "a": _meta("a"),
             "b": _meta("b"),

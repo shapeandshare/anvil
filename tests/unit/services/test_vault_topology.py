@@ -13,14 +13,12 @@ import networkx as nx
 import pytest
 
 from anvil.services.vault._types import NoteMetadata
-from anvil.services.vault.topology import (
-    _community_has_moc,
-    compute_topological,
-)
+from anvil.services.vault.topology import _community_has_moc, compute_topological
 
 
-def _meta(stem: str, tags: list[str] | None = None,
-          note_type: str | None = None) -> NoteMetadata:
+def _meta(
+    stem: str, tags: list[str] | None = None, note_type: str | None = None
+) -> NoteMetadata:
     return NoteMetadata(
         path=Path(f"/vault/{stem}.md"),
         stem=stem,

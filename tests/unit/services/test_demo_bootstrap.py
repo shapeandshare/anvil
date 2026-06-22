@@ -17,7 +17,6 @@ import pytest
 
 from anvil.services.demo.bootstrap_result import BootstrapResult
 
-
 # ═══════════════════════════════════════════════════════════════════
 # Static / pure-function helpers
 # ═══════════════════════════════════════════════════════════════════
@@ -25,20 +24,14 @@ from anvil.services.demo.bootstrap_result import BootstrapResult
 
 class TestCorpusNameFor:
     def test_generates_prefixed_name(self) -> None:
-        from anvil.services.demo.demo_bootstrap import (
-            DEMO_DIR,
-            DemoBootstrapService,
-        )
+        from anvil.services.demo.demo_bootstrap import DEMO_DIR, DemoBootstrapService
 
         item = DEMO_DIR / "small" / "names"
         name = DemoBootstrapService._corpus_name_for(item)
         assert name == "Demo - small/names"
 
     def test_nested_path(self) -> None:
-        from anvil.services.demo.demo_bootstrap import (
-            DEMO_DIR,
-            DemoBootstrapService,
-        )
+        from anvil.services.demo.demo_bootstrap import DEMO_DIR, DemoBootstrapService
 
         item = DEMO_DIR / "medium" / "alice"
         name = DemoBootstrapService._corpus_name_for(item)
@@ -47,20 +40,14 @@ class TestCorpusNameFor:
 
 class TestDatasetNameFor:
     def test_generates_prefixed_name(self) -> None:
-        from anvil.services.demo.demo_bootstrap import (
-            DEMO_DIR,
-            DemoBootstrapService,
-        )
+        from anvil.services.demo.demo_bootstrap import DEMO_DIR, DemoBootstrapService
 
         item = DEMO_DIR / "small" / "names.txt"
         name = DemoBootstrapService._dataset_name_for(item)
         assert name == "Demo - small/names"
 
     def test_stem_removes_suffix(self) -> None:
-        from anvil.services.demo.demo_bootstrap import (
-            DEMO_DIR,
-            DemoBootstrapService,
-        )
+        from anvil.services.demo.demo_bootstrap import DEMO_DIR, DemoBootstrapService
 
         item = DEMO_DIR / "medium" / "readme.txt"
         name = DemoBootstrapService._dataset_name_for(item)
@@ -91,10 +78,7 @@ class TestIsDemoEntity:
 
 class TestGetProvenanceFor:
     def test_finds_item_in_manifest(self) -> None:
-        from anvil.services.demo.demo_bootstrap import (
-            DEMO_DIR,
-            DemoBootstrapService,
-        )
+        from anvil.services.demo.demo_bootstrap import DEMO_DIR, DemoBootstrapService
 
         svc = DemoBootstrapService.__new__(DemoBootstrapService)
         svc._session = MagicMock()
@@ -117,10 +101,7 @@ class TestGetProvenanceFor:
         assert result["source"] == "Project Gutenberg"
 
     def test_not_in_manifest_returns_none(self) -> None:
-        from anvil.services.demo.demo_bootstrap import (
-            DEMO_DIR,
-            DemoBootstrapService,
-        )
+        from anvil.services.demo.demo_bootstrap import DEMO_DIR, DemoBootstrapService
 
         svc = DemoBootstrapService.__new__(DemoBootstrapService)
         svc._session = MagicMock()
@@ -137,10 +118,7 @@ class TestGetProvenanceFor:
         assert result is None
 
     def test_strips_txt_suffix_for_datasets(self) -> None:
-        from anvil.services.demo.demo_bootstrap import (
-            DEMO_DIR,
-            DemoBootstrapService,
-        )
+        from anvil.services.demo.demo_bootstrap import DEMO_DIR, DemoBootstrapService
 
         svc = DemoBootstrapService.__new__(DemoBootstrapService)
         svc._session = MagicMock()
@@ -297,9 +275,7 @@ class TestGetDefaultCorpus:
 
         mock_corpus = MagicMock(spec=Corpus)
         mock_corpus.name = "Demo - medium/alice"
-        bootstrap_service._corpus_repo.get_by_name = AsyncMock(
-            return_value=mock_corpus
-        )
+        bootstrap_service._corpus_repo.get_by_name = AsyncMock(return_value=mock_corpus)
 
         result = await bootstrap_service.get_default_corpus()
         assert result is not None
@@ -358,9 +334,7 @@ class TestGetDemoCorpus:
 
         mock_corpus = MagicMock(spec=Corpus)
         mock_corpus.name = "Demo - small/names"
-        bootstrap_service._corpus_repo.get_by_name = AsyncMock(
-            return_value=mock_corpus
-        )
+        bootstrap_service._corpus_repo.get_by_name = AsyncMock(return_value=mock_corpus)
 
         result = await bootstrap_service.get_demo_corpus("small/names")
         assert result is not None
@@ -436,9 +410,7 @@ class TestBootstrapAll:
         result = await svc.bootstrap_all()
         assert isinstance(result, BootstrapResult)
 
-    async def test_bootstrap_corpus_skips_existing(
-        self, monkeypatch, tmp_path
-    ) -> None:
+    async def test_bootstrap_corpus_skips_existing(self, monkeypatch, tmp_path) -> None:
         """_bootstrap_corpus skips when corpus already exists."""
         from anvil.services.demo import demo_bootstrap as db_mod
 

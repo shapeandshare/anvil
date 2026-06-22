@@ -25,9 +25,7 @@ from anvil.db.models.content_import_job import ImportJob
 from anvil.db.models.content_source import ContentSource
 from anvil.db.repositories.content_corpora import ContentCorpusRepository
 from anvil.db.repositories.content_import_jobs import ContentImportJobRepository
-from anvil.db.repositories.content_ingest_sessions import (
-    ContentIngestSessionRepository,
-)
+from anvil.db.repositories.content_ingest_sessions import ContentIngestSessionRepository
 from anvil.db.repositories.content_sources import ContentSourceRepository
 from anvil.services.content.import_service import ImportService
 from anvil.services.content.ingest_session_ref import IngestSessionRef
@@ -42,9 +40,7 @@ async def seed_corpus_and_source(
     """
     corpus = ContentCorpus(slug="import-corpus", name="Import Test Corpus")
     in_memory_session.add(corpus)
-    source = ContentSource(
-        slug="import-source", name="Import Source", kind="importer"
-    )
+    source = ContentSource(slug="import-source", name="Import Source", kind="importer")
     in_memory_session.add(source)
     await in_memory_session.flush()
     await in_memory_session.refresh(corpus)
@@ -138,7 +134,7 @@ class TestStart:
         fetched = await service._import_repo.get(job.id)
         assert fetched is not None
         assert fetched.id == job.id
-        assert 'pattern' in fetched.config_json
+        assert "pattern" in fetched.config_json
 
     async def test_start_opens_ingestion_session(
         self,
@@ -158,9 +154,7 @@ class TestStart:
             )
         )
 
-        await service.start(
-            corpus_id=corpus_id, source_slug=source_slug, config={}
-        )
+        await service.start(corpus_id=corpus_id, source_slug=source_slug, config={})
         mock_ingestion.open_session.assert_awaited_once()
 
     async def test_start_raises_for_missing_source(

@@ -231,9 +231,7 @@ def test_inference_service_backward_graph_single_token(
     assert "loss_value" in result["metadata"]
 
 
-def test_inference_service_autograd_example_graph(
-    demo_service, trained_loaded_model
-):
+def test_inference_service_autograd_example_graph(demo_service, trained_loaded_model):
     """autograd_example_graph returns a small teaching graph."""
     result = demo_service.autograd_example_graph("abc", trained_loaded_model)
     assert "model" in result
@@ -410,12 +408,11 @@ def test_load_model_raises_on_missing(demo_service):
         asyncio.run(demo_service.load_model(model_id=999999))
 
 
-def test_demo_provider_trains_on_fallback(
-    monkeypatch, tmp_path
-):
+def test_demo_provider_trains_on_fallback(monkeypatch, tmp_path):
     """DemoModelProvider trains on fallback corpus when DB unavailable."""
     # Force DEMO_MODEL_PATH to non-existent location
     import importlib
+
     import anvil.services.inference.demo_model_provider as dmp
 
     monkeypatch.setattr(dmp, "DEMO_MODEL_PATH", tmp_path / "nonexistent" / "model.json")

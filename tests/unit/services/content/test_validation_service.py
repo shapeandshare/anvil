@@ -187,9 +187,7 @@ class TestSizeGate:
 
         with patch("anvil.services.content.validation_service.async_open") as mock_open:
             mock_file = AsyncMock()
-            mock_file.__aenter__.return_value.read = AsyncMock(
-                return_value=b"small"
-            )
+            mock_file.__aenter__.return_value.read = AsyncMock(return_value=b"small")
             mock_open.return_value = mock_file
 
             mock_result = MagicMock()
@@ -262,7 +260,9 @@ class TestProvenanceGate:
                 corpus_slug="test-corpus",
             )
 
-        problem = next(p for p in report.problems if p.gate_name == "provenance_metadata")
+        problem = next(
+            p for p in report.problems if p.gate_name == "provenance_metadata"
+        )
         assert "path" in problem.reason
 
     async def test_empty_hash_fails(
@@ -326,7 +326,9 @@ class TestIntraBatchDedupGate:
                 corpus_slug="test-corpus",
             )
 
-        dedup_problems = [p for p in report.problems if p.gate_name == "intra_batch_dedup"]
+        dedup_problems = [
+            p for p in report.problems if p.gate_name == "intra_batch_dedup"
+        ]
         assert len(dedup_problems) == 1
         assert dedup_problems[0].entry_path == "b.txt"
 
@@ -355,7 +357,9 @@ class TestIntraBatchDedupGate:
                 corpus_slug="test-corpus",
             )
 
-        dedup_problems = [p for p in report.problems if p.gate_name == "intra_batch_dedup"]
+        dedup_problems = [
+            p for p in report.problems if p.gate_name == "intra_batch_dedup"
+        ]
         assert len(dedup_problems) == 0
 
 

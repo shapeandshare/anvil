@@ -10,8 +10,16 @@ import math
 import pytest
 
 from anvil.core.autograd import Value
-from anvil.core.engine import LlamaModel, apply_rope, precompute_rope, train, linear
-from anvil.core.engine import softmax, rmsnorm, matrix
+from anvil.core.engine import (
+    LlamaModel,
+    apply_rope,
+    linear,
+    matrix,
+    precompute_rope,
+    rmsnorm,
+    softmax,
+    train,
+)
 from anvil.core.tokenizer import Tokenizer
 from anvil.core.vocabulary import Vocabulary
 
@@ -375,7 +383,7 @@ def test_value_exp_forward_backward():
 def test_value_pow_forward_backward():
     """__pow__ forward produces correct data and backward flows correctly."""
     a = Value(3.0)
-    b = a ** 2
+    b = a**2
     assert abs(b.data - 9.0) < 1e-10
     b.backward()
     # d(x^2)/dx = 2x, so at x=3, grad = 6
@@ -383,7 +391,7 @@ def test_value_pow_forward_backward():
 
     # Test with exponent 3
     a2 = Value(2.0)
-    b2 = a2 ** 3
+    b2 = a2**3
     assert abs(b2.data - 8.0) < 1e-10
     b2.backward()
     # d(x^3)/dx = 3x^2, so at x=2, grad = 12
@@ -845,9 +853,7 @@ def test_train_stop_check():
         call_count[0] += 1
         return call_count[0] > 1
 
-    model, loss, samples, _ = train(
-        docs, num_steps=100, stop_check=stop_after_one
-    )
+    model, loss, samples, _ = train(docs, num_steps=100, stop_check=stop_after_one)
     # Training runs for 1 step (stop after step 1), loss is valid
     assert loss > 0
     assert len(samples) == 20
@@ -888,9 +894,7 @@ def test_train_with_existing_model():
     docs = ["hi", "lo"]
     model = LlamaModel(vocab_size=5, n_embd=8, n_head=2, n_layer=1, block_size=16)
     params_before = [p.data for p in model.params[:5]]
-    result_model, _, _, _ = train(
-        docs, model=model, num_steps=3, n_embd=8, n_head=2
-    )
+    result_model, _, _, _ = train(docs, model=model, num_steps=3, n_embd=8, n_head=2)
     params_after = [p.data for p in result_model.params[:5]]
     assert any(
         abs(before - after) > 1e-10

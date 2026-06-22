@@ -255,9 +255,7 @@ class TestExportStateDictUnknownKeys:
         model.state_dict["extra_key"] = [[0.0]]
         hf_sd = export_state_dict(model)
         assert "extra_key" not in hf_sd
-        known_count = sum(
-            1 for k in model.state_dict if not k.startswith("extra_key")
-        )
+        known_count = sum(1 for k in model.state_dict if not k.startswith("extra_key"))
         # Unknown keys are skipped, but known keys still map correctly
         assert len(hf_sd) == known_count
 
@@ -354,8 +352,6 @@ class TestExportErrorHandling:
     def test_retry_export_handles_load_failure(self):
         svc = SafetensorsExportService()
         with tempfile.TemporaryDirectory() as tmpdir:
-            result = svc.retry_export(
-                "/nonexistent/model.json", tmpdir
-            )
+            result = svc.retry_export("/nonexistent/model.json", tmpdir)
             assert result["error"] is not None
             assert result["safetensors_path"] is None

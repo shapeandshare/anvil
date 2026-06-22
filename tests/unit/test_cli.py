@@ -215,9 +215,9 @@ class TestFindPidByPort:
 
     @patch("subprocess.run")
     def test_returns_empty_on_timeout(self, mock_run: MagicMock):
-        from anvil.cli import _find_pid_by_port
-
         from subprocess import TimeoutExpired
+
+        from anvil.cli import _find_pid_by_port
 
         mock_run.side_effect = TimeoutExpired("lsof", 5)
 
@@ -303,9 +303,7 @@ class TestWaitAndSigkill:
         mock_kill.return_value = None
 
         _wait_and_sigkill([1111], 8080)
-        sigkill_calls = [
-            c for c in mock_kill.call_args_list if c[0][1] == SIGKILL
-        ]
+        sigkill_calls = [c for c in mock_kill.call_args_list if c[0][1] == SIGKILL]
         assert len(sigkill_calls) == 1
 
 
@@ -402,6 +400,7 @@ class TestStop:
         }
         stop()
         from signal import SIGTERM
+
         mock_kill_pids.assert_called_once_with([1111], SIGTERM)
 
 
@@ -413,9 +412,26 @@ class TestStop:
 class TestCorpusMain:
     """Verify corpus_main() argument parsing and service delegation."""
 
-    @patch("sys.argv", ["corpus_main", "create", "/tmp/docs", "--name", "test-corpus",
-                        "--description", "Test description", "--pattern", "*.txt",
-                        "--ignore", "*.log", "--strategy", "windowed", "--overlap", "0.3"])
+    @patch(
+        "sys.argv",
+        [
+            "corpus_main",
+            "create",
+            "/tmp/docs",
+            "--name",
+            "test-corpus",
+            "--description",
+            "Test description",
+            "--pattern",
+            "*.txt",
+            "--ignore",
+            "*.log",
+            "--strategy",
+            "windowed",
+            "--overlap",
+            "0.3",
+        ],
+    )
     @patch("anvil.db.session.AsyncSessionLocal")
     @patch("anvil.services.datasets.corpora.CorpusService")
     @patch("anvil.db.repositories.corpora.CorpusRepository")
@@ -473,9 +489,7 @@ class TestCorpusMain:
         mock_corpus.id = 1
         mock_corpus.file_count = 10
         mock_corpus.document_count = 100
-        mock_svc_cls.return_value.ingest = AsyncMock(
-            return_value=(mock_corpus, [])
-        )
+        mock_svc_cls.return_value.ingest = AsyncMock(return_value=(mock_corpus, []))
 
         corpus_main()
         mock_svc_cls.return_value.ingest.assert_awaited_once_with(1)
@@ -501,8 +515,20 @@ class TestCorpusMain:
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session.__aexit__ = AsyncMock(return_value=None)
 
-        c1 = SimpleNamespace(id=1, name="corpus-a", file_count=5, document_count=50, chunking_strategy="windowed")
-        c2 = SimpleNamespace(id=2, name="corpus-b", file_count=3, document_count=30, chunking_strategy="line")
+        c1 = SimpleNamespace(
+            id=1,
+            name="corpus-a",
+            file_count=5,
+            document_count=50,
+            chunking_strategy="windowed",
+        )
+        c2 = SimpleNamespace(
+            id=2,
+            name="corpus-b",
+            file_count=3,
+            document_count=30,
+            chunking_strategy="line",
+        )
         mock_svc_cls.return_value.list = AsyncMock(return_value=[c1, c2])
 
         corpus_main()
@@ -762,9 +788,7 @@ class TestLoadDocs:
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session.__aexit__ = AsyncMock(return_value=None)
 
-        mock_svc_cls.return_value.load_docs = AsyncMock(
-            return_value=["doc1", "doc2"]
-        )
+        mock_svc_cls.return_value.load_docs = AsyncMock(return_value=["doc1", "doc2"])
 
         result = _load_docs(corpus_id=42)
         assert result == ["doc1", "doc2"]
@@ -795,9 +819,7 @@ class TestLoadDocs:
         mock_demo_cls.return_value.get_default_corpus = AsyncMock(
             return_value=mock_corpus
         )
-        mock_svc_cls.return_value.load_docs = AsyncMock(
-            return_value=["default-doc"]
-        )
+        mock_svc_cls.return_value.load_docs = AsyncMock(return_value=["default-doc"])
 
         result = _load_docs(corpus_id=None)
         assert result == ["default-doc"]
@@ -817,9 +839,7 @@ class TestLoadDocs:
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session.__aexit__ = AsyncMock(return_value=None)
 
-        mock_demo_cls.return_value.get_default_corpus = AsyncMock(
-            return_value=None
-        )
+        mock_demo_cls.return_value.get_default_corpus = AsyncMock(return_value=None)
 
         with pytest.raises(RuntimeError, match="No demo corpus found"):
             _load_docs(corpus_id=None)
@@ -844,9 +864,9 @@ class TestTrain:
         mock_training_cls: MagicMock,
         mock_exit: MagicMock,
     ):
-        from anvil.cli import train
-
         import asyncio
+
+        from anvil.cli import train
 
         mock_resolve.return_value = {
             "engine": "local-stdlib",
@@ -866,10 +886,12 @@ class TestTrain:
         training_instance.start_training = AsyncMock()
 
         queue: asyncio.Queue = asyncio.Queue()
-        queue.put_nowait({
-            "event": "complete",
-            "data": '{"step": 1000, "final_loss": 0.1234, "device": "cpu", "samples": ["hello world"]}',
-        })
+        queue.put_nowait(
+            {
+                "event": "complete",
+                "data": '{"step": 1000, "final_loss": 0.1234, "device": "cpu", "samples": ["hello world"]}',
+            }
+        )
         training_instance.get_queue = MagicMock(return_value=queue)
 
         train()
@@ -925,9 +947,9 @@ class TestTrain:
         mock_training_cls: MagicMock,
         mock_exit: MagicMock,
     ):
-        from anvil.cli import train
-
         import asyncio
+
+        from anvil.cli import train
 
         mock_resolve.return_value = {
             "engine": "local-stdlib",
@@ -947,14 +969,18 @@ class TestTrain:
         training_instance.start_training = AsyncMock()
 
         queue: asyncio.Queue = asyncio.Queue()
-        queue.put_nowait({
-            "event": "metrics",
-            "data": '{"step": 500, "loss": 0.5678, "device": "cpu"}',
-        })
-        queue.put_nowait({
-            "event": "complete",
-            "data": '{"step": 1000, "final_loss": 0.1234, "device": "cpu", "samples": ["sample1"]}',
-        })
+        queue.put_nowait(
+            {
+                "event": "metrics",
+                "data": '{"step": 500, "loss": 0.5678, "device": "cpu"}',
+            }
+        )
+        queue.put_nowait(
+            {
+                "event": "complete",
+                "data": '{"step": 1000, "final_loss": 0.1234, "device": "cpu", "samples": ["sample1"]}',
+            }
+        )
         training_instance.get_queue = MagicMock(return_value=queue)
 
         train()
@@ -972,9 +998,9 @@ class TestTrain:
         mock_training_cls: MagicMock,
         mock_exit: MagicMock,
     ):
-        from anvil.cli import train
-
         import asyncio
+
+        from anvil.cli import train
 
         mock_resolve.return_value = {
             "engine": "local-stdlib",
@@ -994,10 +1020,12 @@ class TestTrain:
         training_instance.start_training = AsyncMock()
 
         queue: asyncio.Queue = asyncio.Queue()
-        queue.put_nowait({
-            "event": "error",
-            "data": "Something went wrong",
-        })
+        queue.put_nowait(
+            {
+                "event": "error",
+                "data": "Something went wrong",
+            }
+        )
         training_instance.get_queue = MagicMock(return_value=queue)
 
         train()

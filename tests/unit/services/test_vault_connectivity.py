@@ -22,8 +22,12 @@ from anvil.services.vault.connectivity import (
 )
 
 
-def _meta(stem: str, tags: list[str] | None = None, note_type: str | None = None,
-          path: Path | None = None) -> NoteMetadata:
+def _meta(
+    stem: str,
+    tags: list[str] | None = None,
+    note_type: str | None = None,
+    path: Path | None = None,
+) -> NoteMetadata:
     return NoteMetadata(
         path=path or Path(f"/vault/{stem}.md"),
         stem=stem,
