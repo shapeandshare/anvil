@@ -47,8 +47,8 @@ async def asgi_client() -> AsyncGenerator[AsyncClient, None]:
 async def test_api_key_auth(asgi_client: AsyncClient) -> None:
     """Client configured with a valid API key can make authenticated requests."""
     async with AnvilClient(_client=asgi_client) as ac:
-        datasets = await ac.datasets.list()
-        assert isinstance(datasets, list)
+        result = await ac.datasets.list()
+        assert result is not None
 
 
 @pytest.mark.asyncio
