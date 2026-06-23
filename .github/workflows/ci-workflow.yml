@@ -49,3 +49,17 @@ jobs:
         run: make setup
       - name: Run tests with coverage
         run: make test
+
+  gate-status:
+    name: Gate Status
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    needs: [lint, test]
+    if: always()
+    steps:
+      - name: Summarize gate results
+        run: |
+          echo "## Gate Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Gate | Status |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|------|--------|" >> "$GITHUB_STEP_SUMMARY"
