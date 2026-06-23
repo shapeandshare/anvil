@@ -178,9 +178,9 @@ jobs:
           echo "Running cz bump --changelog --increment ${INCREMENT}"
 
           # cz bump updates pyproject.toml version and appends CHANGELOG.md.
-          # --no-tag prevents a local tag that would collide with the
-          # explicit tag created later from the merged main branch.
-          python3 -m commitizen bump --yes --no-tag --changelog --increment "${INCREMENT}"
+          # The local tag created by cz bump is overwritten by the explicit
+          # tag step later (see git tag -f below).
+          python3 -m commitizen bump --yes --changelog --increment "${INCREMENT}"
 
           NEW_VERSION=$(grep '^version =' pyproject.toml \
             | sed 's/version = "\(.*\)"/\1/')
@@ -322,7 +322,7 @@ jobs:
 
           # Create tag and release from the merged result
           git fetch --tags origin
-          git tag "${TAG}" origin/main
+          git tag -f "${TAG}" origin/main
           git push origin "${TAG}"
 
           # Check if release already exists (idempotency)
