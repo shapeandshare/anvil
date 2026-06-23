@@ -1,3 +1,10 @@
+## v0.1.2 (2026-06-23)
+
+### Fix
+- Automated patch bump: source code merged to main without a version bump
+
+---
+
 ## v0.1.1 (2026-06-23)
 
 ### Fix

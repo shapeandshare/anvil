@@ -10,7 +10,7 @@
 
 name: CI Gates
 
-on:
+"on":
   pull_request:
   push:
     branches-ignore: [main]

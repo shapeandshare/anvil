@@ -228,8 +228,9 @@ def train():
         choices=[cb.value for cb in ComputeBackend],
         help=(
             "Compute backend. "
-            "auto=best available, local-cpu=CPU only, "
-            "local-gpu=GPU if available else CPU, modal=Modal cloud GPU"
+            "auto=auto-detect, local-cpu=CPU only, "
+            "local-gpu=GPU if available else CPU, "
+            "modal=Modal cloud GPU (local mode only, not available in SaaS)"
         ),
     )
     parser.add_argument(

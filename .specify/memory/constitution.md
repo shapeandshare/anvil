@@ -1,3 +1,20 @@
+<!--
+SYNC IMPACT REPORT — Constitution Amendment
+Version change: 1.7.0 → 1.8.0 (MINOR: new principle added)
+Date: 2026-06-22
+Modified principles: none renamed or removed
+Added sections:
+  - Article XI — Simplicity First (Boring Technology)
+Removed sections: none
+Templates / docs propagated:
+  - ✅ .specify/templates/plan-template.md (Constitution Check gate references Article XI)
+  - ✅ AGENTS.md (Behavioral Principle 13 + Architecture Rules bullet)
+  - ✅ docs/vault/Decisions/ADR-041-simplicity-first-boring-technology.md (new ADR)
+  - ✅ docs/vault/Decisions/README.md (ADR index row)
+  - ⚠ .specify/templates/spec-template.md (no change — no principle-gate section)
+  - ⚠ .specify/templates/tasks-template.md (no change — Polish phase already covers cleanup/refactor)
+Follow-up TODOs: none
+-->
 # anvil Constitution
 
 > **Canonical source** — this is the single authoritative constitution for the project. The root `CONSTITUTION.md` and `docs/vault/Governance/Constitution.md` redirect here. All agents, PRs, and specs must comply with this document.
@@ -78,6 +95,22 @@ Package boundaries SHALL follow domain (bounded context) boundaries. Sub-packagi
 
 - **§10.9 — Refactoring discipline**: Introducing a domain sub-package is a structural change that SHALL be its own commit/PR. It SHALL NOT be combined with behavioral changes. Imports in consuming modules MUST be updated in the same commit. The diff MUST show only moves and import rewrites — zero behavioral delta.
 
+### Article XI — Simplicity First (Boring Technology)
+
+Every change MUST favor the simplest, most boring solution that fully satisfies the requirement. Proven reliability and obviousness outrank cleverness, novelty, and speculative flexibility. This article is a hard gate at merge review: unjustified complexity, or an unproven approach where a simpler proven one exists, is reject-worthy.
+
+- **§11.1 — Simplest viable solution**: Implementations MUST choose the simplest approach that meets the stated requirement. Complexity is never the default — it MUST be justified by a concrete, present requirement, never by a hypothetical future one.
+
+- **§11.2 — Boring over novel**: Prefer mature, well-understood, widely-used technology and patterns over new, clever, or unproven ones. A novel or experimental dependency, framework, library, or pattern MUST NOT be introduced unless a simpler proven alternative has been evaluated and explicitly rejected in an ADR or the plan's Complexity Tracking table. This pairs with Article I (Zero-Dependency Core) and the "Lean dependencies" constraint.
+
+- **§11.3 — YAGNI (You Aren't Gonna Need It)**: Build only what the current requirement needs. Speculative generality, premature abstraction, configuration knobs without a present consumer, and "future-proofing" for unrequested scenarios are forbidden. Introduce an abstraction when the second concrete use case actually arrives — not before.
+
+- **§11.4 — Reuse before introducing**: Existing libraries, patterns, utilities, and abstractions already present in the codebase MUST be reused before a new one is introduced. Adding a second, parallel way to do something the codebase already does is reject-worthy.
+
+- **§11.5 — Justify every deviation**: Any solution more complex than the simplest viable alternative MUST be recorded in the plan's Complexity Tracking table (`.specify/templates/plan-template.md`) with (a) the simpler alternative considered and (b) the specific reason it was rejected. A change that adds complexity without this record fails the Constitution Check.
+
+- **§11.6 — Untested paths are not done**: An approach that cannot be tested, or has not been tested, MUST NOT be treated as complete or shipped as the chosen solution. A simpler, demonstrably testable approach is always preferred over a complex one whose correctness cannot be shown. This pairs with Article IV (TDD Mandatory).
+
 ## Additional Constraints
 
 - Schema changes via reversible Alembic migrations (`make db-revision`); data backfills accompany any vocabulary change.
@@ -99,4 +132,4 @@ Package boundaries SHALL follow domain (bounded context) boundaries. Sub-packagi
 
 This constitution supersedes all other practices in this repository. Amendments require documentation in an Architecture Decision Record (ADR), approval, and version bump. All PRs and agent sessions must verify compliance with these articles.
 
-**Version**: 1.7.0 | **Ratified**: 2026-06-10 | **Last Amended**: 2026-06-19
+**Version**: 1.8.0 | **Ratified**: 2026-06-10 | **Last Amended**: 2026-06-22
