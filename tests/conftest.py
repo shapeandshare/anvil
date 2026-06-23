@@ -13,6 +13,7 @@ from anvil.api.app import app
 from anvil.api.deps import get_api_key_store
 from anvil.db import models
 from anvil.db.base import Base
+from anvil.db.models import backup_operation
 from anvil.db.session import AsyncSessionLocal, async_engine
 
 

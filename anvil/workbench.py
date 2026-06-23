@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy.ext.asyncio import AsyncSession
 
 if TYPE_CHECKING:
+    from .db.repositories.backup_operations import BackupOperationRepository
     from .db.repositories.content_blobs import ContentBlobRepository
     from .db.repositories.content_corpora import ContentCorpusRepository
     from .db.repositories.content_import_jobs import ContentImportJobRepository
@@ -92,6 +93,8 @@ class AnvilWorkbench:
         self._content_lineage: LineageService | None = None
         self._content_imports: ImportService | None = None
         self._content_locks: LockService | None = None
+        # Backup & Restore (feature 026).
+        self._backup_repo: BackupOperationRepository | None = None
 
     # ── Stateless service accessors ─────────────────────────────────────
 
@@ -416,6 +419,21 @@ class AnvilWorkbench:
 
             self._content_locks = LockService(self.content_lock_repo)
         return self._content_locks
+
+    # ── Backup & Restore accessors (feature 026) ─────────────────────────
+
+    @property
+    def backup_repo(self) -> BackupOperationRepository:
+        """Lazily-initialised ``BackupOperationRepository`` bound to
+        *session*.
+        """
+        if self._backup_repo is None:
+            from .db.repositories.backup_operations import (
+                BackupOperationRepository,
+            )
+
+            self._backup_repo = BackupOperationRepository(self._session)
+        return self._backup_repo
 
     # ── Session lifecycle ───────────────────────────────────────────────
 

@@ -47,3 +47,7 @@ class AuditAction(StrEnum):
     POLICY_ACCEPT = "policy_accept"
     POLICY_REJECT = "policy_reject"
     CHAIN_CHECKPOINT = "chain_checkpoint"
+    BACKUP_CREATE = "backup_create"
+    BACKUP_RESTORE = "backup_restore"
+    BACKUP_DELETE = "backup_delete"
+    SAFETY_SNAPSHOT_CLEANUP = "safety_snapshot_cleanup"

@@ -36,3 +36,4 @@ class AuditTargetType(StrEnum):
     SAMPLE = "sample"
     POLICY = "policy"
     AUDIT_CHAIN = "audit_chain"
+    BACKUP = "backup"
