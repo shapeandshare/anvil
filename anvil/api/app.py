@@ -204,6 +204,19 @@ async def lifespan(app: FastAPI):
     except Exception:
         logger.warning("Demo model warmup failed to start", exc_info=True)
 
+    # Initialise the process-lifetime BackupService (feature 026).
+    try:
+        from ..services.backup.backup_service import BackupService
+
+        backup_svc = BackupService()
+        app.state.backup_service = backup_svc
+        logger.info("BackupService initialised")
+
+        # Recover from an interrupted restore (FR-030).
+        await backup_svc.recover_interrupted_restore()
+    except Exception:
+        logger.warning("BackupService init or journal recovery failed", exc_info=True)
+
     yield
     running_mlflow = getattr(app.state, "mlflow", None)
     if running_mlflow is not None:

@@ -44,5 +44,6 @@ This index lists all ADRs in this repository. ADRs document significant architec
 | ADR-037 | Unified Single-Origin Interface and Working Local TLS | Proposed | 2026-06-21 |
 | ADR-038 | UX Rules Integration | Accepted | 2026-06-21 |
 | ADR-039 | Client SDK Architecture | Accepted | 2026-06-21 |
+| ADR-040 | Full-Deployment Backup & Restore | Accepted | 2026-06-21 |
 
 **Status**: Draft → Reviewed → Canonical (human-only). See `_meta/tags.md` for lifecycle.

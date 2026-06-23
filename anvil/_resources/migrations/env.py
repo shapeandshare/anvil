@@ -32,6 +32,9 @@ from anvil.db.models.content_lock import CheckoutLock
 
 # Content Repository models (feature 016).
 from anvil.db.models.content_source import ContentSource
+
+# Backup Operation model (feature 026).
+from anvil.db.models.backup_operation import BackupOperation
 from anvil.db.models.content_tag import ContentTag
 from anvil.db.models.content_version import ContentVersion
 from anvil.db.models.content_version_run_ref import VersionRunRef

@@ -177,4 +177,18 @@ def get_config():
         "storage_backend": os.getenv("ANVIL_STORAGE_BACKEND", "local"),
         "device": os.getenv("ANVIL_DEVICE", ""),
         "content_dir": os.getenv("ANVIL_CONTENT_DIR", "data/content"),
+        # Backup & Restore (feature 026)
+        "backup_dir": os.getenv("ANVIL_BACKUP_DIR", str(Path("data/backups"))),
+        "backup_quota_bytes": int(os.getenv("ANVIL_BACKUP_QUOTA_BYTES", str(10 * 1024**3))),
+        "backup_quota_warn_fraction": float(
+            os.getenv("ANVIL_BACKUP_QUOTA_WARN", "0.8")
+        ),
+        "backup_retention_max_count": (
+            int(v) if (v := os.getenv("ANVIL_BACKUP_RETENTION_MAX_COUNT")) else None
+        ),
+        "backup_retention_max_age_days": (
+            int(v)
+            if (v := os.getenv("ANVIL_BACKUP_RETENTION_MAX_AGE_DAYS"))
+            else None
+        ),
     }

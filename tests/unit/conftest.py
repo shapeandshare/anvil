@@ -25,6 +25,7 @@ from anvil.db.base import Base
 # Each sub-module must be explicitly imported (models/__init__.py is bare).
 from anvil.db.models import (  # isort: skip
     audit_event,
+    backup_operation,
     corpus,
     corpus_file,
     curation_operation,

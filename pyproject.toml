@@ -83,6 +83,7 @@ anvil-bootstrap-datasets = "anvil.cli:bootstrap_datasets_main"
 anvil-db = "anvil.cli:db_main"
 anvil-vault = "anvil.services.vault.cli:main"
 anvil-show-api-key = "anvil.cli:show_api_key"
+anvil-backup = "anvil.services.backup.cli:main"
 
 [tool.ruff]
 target-version = "py311"
