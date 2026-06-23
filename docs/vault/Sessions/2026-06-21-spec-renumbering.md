@@ -81,8 +81,8 @@ Order determined by `**Created**:` date in each spec.md, with alphabetical tiebr
 - **Reference**: 3 SaaS diagram/architecture references (14 references)
 
 ### Phase 6 — Non-.md files
-- **Makefile**: `specs/009-pip-installable-package` → `specs/012-pip-installable-package`
-- **`.specify/feature.json`**: `specs/020-ux-rules-integration` → `specs/025-ux-rules-integration`
+- **Makefile**: `specs/009-pip-installable-package` → `docs/vault/Specs/012 Pip Installable Package`
+- **`.specify/feature.json`**: `specs/020-ux-rules-integration` → `docs/vault/Specs/025 UX Rules Integration`
 - **Source code**: `anvil/services/content/__init__.py`, `anvil/services/content/authz.py` (2 files)
 - **Tests**: 3 test files referencing spec 016 lakefs-content-repo
 

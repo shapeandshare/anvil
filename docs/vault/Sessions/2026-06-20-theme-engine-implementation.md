@@ -29,7 +29,7 @@ Full Spec Kit flow for behavioral theme engine feature: specify → clarify → 
 - **Neutral signal instrumentation** (TDD, 15 tests): `CoreStepObservation`→`Pydantic StepMetrics`; widened `metrics` (grad_norm, exact tokens_per_sec via `ThroughputTracker`); new `divergence` event (halts NaN runs via `DivergenceError`, reconciled status) and `milestone` cadence marker; engines/protocol/backends/service/route/sse.js wired.
 - **Expressive mappings**: forge (loss→cooling-metal, throughput→glow, quench/divergence states), oldgrowth (client-derived disturbance from grad_norm+loss volatility, scanline overlay), aurora (loss→calm, throughput→flow). All gated by effect level.
 - **Accessibility**: centralized reduced-motion/effects/visibility gating, picker toggles, reduced-motion resets in every theme layer.
-- **Spec artifacts**: `specs/018-theme-engine/` (spec, plan, research, data-model, 3 contracts, tasks, checklist) + **ADR-031**.
+- **Spec artifacts**: `docs/vault/Specs/018 Theme Engine/` (spec, plan, research, data-model, 3 contracts, tasks, checklist) + **ADR-031**.
 
 ## Key Discoveries
 

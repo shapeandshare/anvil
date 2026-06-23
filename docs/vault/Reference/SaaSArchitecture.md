@@ -27,7 +27,7 @@ source: agent
 > deferred follow-up.
 
 > [!IMPORTANT]
-> **Authoritative source**: `specs/016-saas-architecture/spec.md` Architecture Decisions **AD-1 through AD-16** supersede any conflicting detail in this exploration document. Key post-review corrections: compute is **AWS Batch on EC2** (CPU+GPU+multi-node, not Fargate-default — Fargate has no GPU); auth is **app-managed Cognito OIDC/JWT** (not ALB-managed, not custom JWT+refresh); tenancy is **full RBAC** (Organization→Team→Role→User, not user_id-only); job state is **Postgres source-of-truth + append-only job_events + reconciler**; usage metering enables **billback per user/org**.
+> **Authoritative source**: `docs/vault/Specs/016 SaaS Architecture/spec.md` Architecture Decisions **AD-1 through AD-16** supersede any conflicting detail in this exploration document. Key post-review corrections: compute is **AWS Batch on EC2** (CPU+GPU+multi-node, not Fargate-default — Fargate has no GPU); auth is **app-managed Cognito OIDC/JWT** (not ALB-managed, not custom JWT+refresh); tenancy is **full RBAC** (Organization→Team→Role→User, not user_id-only); job state is **Postgres source-of-truth + append-only job_events + reconciler**; usage metering enables **billback per user/org**.
 
 ## Overview
 
