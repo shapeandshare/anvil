@@ -18,6 +18,8 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      result: ${{ steps.check.outputs.result }}
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
@@ -27,14 +29,16 @@ jobs:
       - name: Setup environment
         run: make setup
       - name: Run lint
-        run: make lint
+        id: check
+        run: |
+          make lint && echo "result=passed" >> "$GITHUB_OUTPUT" || echo "result=failed" >> "$GITHUB_OUTPUT"
 
   test:
     name: Test
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: lint
-    if: needs.lint.result == 'success'
+    if: needs.lint.outputs.result == 'passed'
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
