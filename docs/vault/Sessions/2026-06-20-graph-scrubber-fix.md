@@ -22,7 +22,7 @@ Fixed a bug where the `/v1/learn/graph` computation graph visualizer did not res
 - Added node filtering: only nodes where `n.step <= _currentStep` are drawn; edges are filtered to those connecting visible nodes
 - Default behavior (no step set, e.g., during `setGraph()`) renders all nodes via `Infinity` fallback
 - Cleaned up hoisted `var` declarations for CSS custom property values
-- Wrote discovery note in `docs/vault/Discovery/graph-scrubber-ignored-by-draw.md`
+- Wrote discovery note in `docs/vault/Discoveries/graph-scrubber-ignored-by-draw.md`
 
 ## Discoveries
 
@@ -32,4 +32,4 @@ Fixed a bug where the `/v1/learn/graph` computation graph visualizer did not res
 ## Session Artifacts
 
 - `anvil/api/static/js/graph-view.js` — modified: `draw()` now filters by `_currentStep`
-- `docs/vault/Discovery/graph-scrubber-ignored-by-draw.md` — new discovery note
+- `docs/vault/Discoveries/graph-scrubber-ignored-by-draw.md` — new discovery note

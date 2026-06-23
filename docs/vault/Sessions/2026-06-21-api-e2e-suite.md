@@ -2,7 +2,7 @@
 
 **Date**: 2026-06-21
 **Tags**: #session #testing #e2e #api
-**Feature**: Whole-API E2E Test Suite (`specs/021-api-e2e-suite/`)
+**Feature**: Whole-API E2E Test Suite (`docs/vault/Specs/021 API E2E Suite/`)
 
 ## Summary
 
@@ -17,7 +17,7 @@ Implemented a comprehensive end-to-end API test suite covering all 14 routers of
 
 ## Pre-existing Bugs Found
 
-See [[discovery-models-init-metadata-registration]] for full details.
+See [[Discoveries/models-init-metadata-registration]] for full details.
 
 1. **`NoReferencedTableError` in all `client` fixture tests**: The `models/__init__.py` was bare (docstring-only), so `ImportSource` and all other ORM models except `Dataset`/`CurationOperation` were never registered with `Base.metadata`. Fixed by adding imports for all 19 model modules.
 2. **Unhandled `IntegrityError` propagation**: SQLAlchemy DB constraint violations propagate as exceptions through ASGITransport rather than being caught by FastAPI's error middleware and returned as HTTP 500. Test pattern documented in `test_dataset_duplicate_name`.
@@ -30,8 +30,8 @@ See [[discovery-models-init-metadata-registration]] for full details.
 
 ## Artifacts
 
-- Spec: `specs/021-api-e2e-suite/spec.md`
-- Plan: `specs/021-api-e2e-suite/plan.md`
-- Tasks: `specs/021-api-e2e-suite/tasks.md`
+- Spec: `docs/vault/Specs/021 API E2E Suite/spec.md`
+- Plan: `docs/vault/Specs/021 API E2E Suite/plan.md`
+- Tasks: `docs/vault/Specs/021 API E2E Suite/tasks.md`
 - Tests: `tests/e2e/api/` (14 files)
 - Fix: `anvil/db/models/__init__.py`

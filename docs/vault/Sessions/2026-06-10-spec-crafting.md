@@ -57,7 +57,7 @@ Complete bootstrap of the anvil repository through iterative spec crafting and f
 - `run_id` must be reserved before async task starts so SSE stream can find the queue immediately
 
 ## Artifacts Created
-- `specs/001-bootstrap-llm-workbench/spec.md` — full feature specification
+- `docs/vault/Specs/001 Bootstrap LLM Workbench/spec.md` — full feature specification
 - `anvil/` — complete Python package (22 modules)
 - `.specify/memory/constitution.md`, `AGENTS.md`, `docs/vault/` — governance and agentic harness
 - 10 passing tests (unit + e2e HTTP + DB CRUD + training)

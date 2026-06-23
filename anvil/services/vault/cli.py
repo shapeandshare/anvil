@@ -104,6 +104,38 @@ def build_parser() -> argparse.ArgumentParser:
         help="Build release-notes.md from CHANGELOG and PR_BODY",
     )
 
+    # --- migrate-specs ---
+    ms_p = sub.add_parser(
+        "migrate-specs",
+        help="Migrate specs/ artifacts into docs/vault/Specs/",
+    )
+    ms_group = ms_p.add_mutually_exclusive_group(required=True)
+    ms_group.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print migration plan without making changes",
+    )
+    ms_group.add_argument(
+        "--verify-only",
+        action="store_true",
+        help="Check all specs are represented in vault (exit 0/1)",
+    )
+    ms_group.add_argument(
+        "--apply",
+        action="store_true",
+        help="Execute the migration",
+    )
+    ms_p.add_argument(
+        "--vault-dir",
+        default="docs/vault",
+        help="Path to Obsidian vault directory (default: docs/vault)",
+    )
+    ms_p.add_argument(
+        "--specs-dir",
+        default="specs",
+        help="Path to specs directory (default: specs)",
+    )
+
     return parser
 
 
@@ -132,6 +164,8 @@ def main(argv: list[str] | None = None) -> None:
         _cmd_check_version(args)
     elif args.command == "build-notes":
         _cmd_build_notes(args)
+    elif args.command == "migrate-specs":
+        _cmd_migrate_specs(args)
     else:
         parser.print_help()
         sys.exit(1)
@@ -265,6 +299,27 @@ def _cmd_build_notes(args: argparse.Namespace) -> None:
     from .build_notes import main
 
     main()
+
+
+def _cmd_migrate_specs(args: argparse.Namespace) -> None:
+    """Handle the ``migrate-specs`` subcommand.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Parsed CLI arguments.
+    """
+    from .migrate_specs import run
+
+    sys.exit(
+        run(
+            vault_dir=args.vault_dir,
+            specs_dir=args.specs_dir,
+            dry_run=args.dry_run,
+            verify_only=args.verify_only,
+            apply=args.apply,
+        )
+    )
 
 
 if __name__ == "__main__":

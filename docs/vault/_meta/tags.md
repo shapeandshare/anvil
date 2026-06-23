@@ -21,10 +21,13 @@ Tags are organized into axes. A note may carry multiple tags across axes; within
 Every note has exactly one `type/*` tag. Determines template and content structure.
 
 - `type/principle` — Governance and constitutional notes. Non-negotiable rules.
+- `type/vision` — Strategic, project-level direction and commitments. Written to `Vision/`.
 - `type/design` — Conceptual intent: architecture decisions, rationale, theses.
 - `type/system` — A bounded implemented subsystem. Carries `code-refs:`.
+- `type/code` — A code-architecture note: module, class, autoload, or convention. Carries `code-refs:`. Written to `Code/`.
+- `type/spec` — A specification note tracking a feature spec's status and decisions. Carries `spec-refs:`. Written to `Specs/`.
 - `type/reference` — Glossary, guides, reference material, MOCs of reference material.
-- `type/moc` — Map of Content (folder or domain tier).
+- `type/moc` — Map of Content (folder, domain, or concept tier).
 - `type/decision` — An architecture or content decision. Written to `Decisions/` as ADRs.
 - `type/discovery` — A non-obvious constraint, gap, or conflict found during a session. Written to `Discoveries/`.
 - `type/session-log` — Session activity log; permanent audit trail. Written to `Sessions/`. Append-only.
