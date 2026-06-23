@@ -46,6 +46,17 @@ Non-obvious constraints, gaps, and conflicts discovered during agent sessions. E
 ## Discoveries from this session
 - [[Discoveries/pre-commit-and-pr-ready-tooling-pattern|Pre-commit and pr-ready Tooling Pattern]] — `make format` and `make typecheck` were documented stubs with no recipes (silent no-ops), and the CI `typecheck` gate was passing without running mypy. The `pr-ready` target and pre-commit hook close the gap between local dev and CI enforcement.
 
+## Discoveries from this session (2026-06-22 — Modal local-mode boundary)
+
+- **Modal is local-mode only, not a SaaS compute path**: ModalBackend is explicitly
+  a local-mode cloud GPU option. The SaaS architecture (ADR-030) uses AWS Batch for
+  compute. Modal lacks `job_events`, `ResourceSpec`, `EventBus` integration, IAM auth,
+  checkpointing, and usage metering — all requirements for SaaS-mode compute that
+  Batch provides. The boundary is documented in [[Discoveries/modal-local-mode-boundary]],
+  cross-referenced in [[Decisions/ADR-015-pluggable-compute-backends|ADR-015]],
+  and explicitly marked in the `DualBackend.md` reference. CLI help text and the
+  training UI tooltip now say "local mode only."
+
 ## Discoveries from this session (2026-06-21 — UX rules integration)
 
 - **UX linter FILES default silently empty without `origin/main`**: `shared/ux.mk` uses `git diff --name-only --diff-filter=ACMR origin/main...` to auto-detect changed files. If `origin/main` doesn't exist (detached HEAD, shallow clone, no remote), this silently returns empty — `make ux-lint` passes with zero files checked. Always pass `FILES=` explicitly when the remote baseline is uncertain. ([[Decisions/ADR-038-ux-rules-integration|ADR-038]])
