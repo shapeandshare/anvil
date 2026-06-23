@@ -389,6 +389,8 @@ SomeException
 - SQLite (app DB at `data/anvil-state.db` in WAL mode; MLflow DB at `mlruns/mlflow.db`). Persistent state under `data/` and `mlruns/`. Backup archives at `data/backups/` (new, configurable via `ANVIL_BACKUP_DIR`). (027-deployment-backup-restore)
 - Python 3.11+ (matches repo; uses `StrEnum`, PEP 604 unions, PEP 563 `from __future__ import annotations`) + `httpx>=0.27,<1` (transport — already a direct dep), `pydantic>=2,<3` (DTOs — already a dep). No new runtime dependencies. (026-client-sdk)
 - N/A — the SDK is a stateless HTTP client; the only persisted state is an in-memory session cookie + optional API key held on the client instance. (026-client-sdk)
+- Python 3.11+ + FastAPI + Jinja2 (existing project stack — no new deps) (opencode/lucky-canyon)
+- N/A — static content defined as structured data in a Python module (opencode/lucky-canyon)
 
 ## Recent Changes
 - 025-ux-rules-integration: Added Python 3.11+ (existing repo convention) + Stdlib only — `ux_lint.py` (re/ sys/ os/), `ux_review.py` (stdlib + urllib for OpenAI-compatible API calls)
