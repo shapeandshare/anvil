@@ -33,6 +33,9 @@ class DatasetListCommand(AbstractCommand):
         """
         params = {"q": query} if query else None
         data: list[dict[str, object]] = await self._transport.request(
-            HttpMethod.GET, "/v1/datasets", params=params, response_model=list,
+            HttpMethod.GET,
+            "/v1/datasets",
+            params=params,
+            response_model=list,
         )
         return data

@@ -12,6 +12,7 @@ each operation to its corresponding command class.
 
 from __future__ import annotations
 
+import builtins
 
 from .._shared.transport import Transport
 from .dataset_create_command import DatasetCreateCommand
@@ -21,7 +22,6 @@ from .dataset_get_command import DatasetGetCommand
 from .dataset_list_command import DatasetListCommand
 from .dataset_update_command import DatasetUpdateCommand
 from .dataset_upload_command import DatasetUploadCommand
-import builtins
 
 
 class DatasetsClient:
@@ -76,7 +76,9 @@ class DatasetsClient:
         return await self._get_cmd.execute(dataset_id)
 
     async def create(
-        self, name: str, description: str | None = None,
+        self,
+        name: str,
+        description: str | None = None,
     ) -> dict[str, object]:
         """Create a new dataset.
 
@@ -118,11 +120,16 @@ class DatasetsClient:
             The updated dataset record.
         """
         return await self._update_cmd.execute(
-            dataset_id, name=name, description=description,
+            dataset_id,
+            name=name,
+            description=description,
         )
 
     async def delete(
-        self, dataset_id: int, *, force: bool = False,
+        self,
+        dataset_id: int,
+        *,
+        force: bool = False,
     ) -> dict[str, object]:
         """Delete a dataset.
 
@@ -142,7 +149,9 @@ class DatasetsClient:
         return await self._delete_cmd.execute(dataset_id, force=force)
 
     async def upload(
-        self, dataset_id: int, file_path: str,
+        self,
+        dataset_id: int,
+        file_path: str,
     ) -> dict[str, object]:
         """Upload a file into a dataset.
 
@@ -185,7 +194,9 @@ class DatasetsClient:
             Raw ``bytes``, ``str`` path if ``dest`` was given, or ``None``.
         """
         return await self._export_cmd.execute(
-            dataset_id, fmt=fmt, dest=dest,
+            dataset_id,
+            fmt=fmt,
+            dest=dest,
         )
 
     async def search(self, query: str) -> builtins.list[dict[str, object]]:

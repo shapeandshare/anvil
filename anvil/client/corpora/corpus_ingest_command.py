@@ -19,7 +19,9 @@ class CorpusIngestCommand(AbstractCommand):
     """Ingest files into a corpus — ``POST /v1/corpora/{id}/ingest[?max_files=]``."""
 
     async def execute(
-        self, corpus_id: int, max_files: int | None = None,
+        self,
+        corpus_id: int,
+        max_files: int | None = None,
     ) -> dict[str, object]:
         """Trigger ingestion of files into a corpus.
 

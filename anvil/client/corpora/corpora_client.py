@@ -12,6 +12,7 @@ operation to its corresponding command class.
 
 from __future__ import annotations
 
+import builtins
 
 from .._shared.transport import Transport
 from .corpus_analyze_path_command import CorpusAnalyzePathCommand
@@ -21,7 +22,6 @@ from .corpus_files_command import CorpusFilesCommand
 from .corpus_get_command import CorpusGetCommand
 from .corpus_ingest_command import CorpusIngestCommand
 from .corpus_list_command import CorpusListCommand
-import builtins
 
 
 class CorporaClient:
@@ -46,7 +46,9 @@ class CorporaClient:
         self._analyze_path_cmd = CorpusAnalyzePathCommand(transport)
 
     async def create(
-        self, name: str, description: str | None = None,
+        self,
+        name: str,
+        description: str | None = None,
     ) -> dict[str, object]:
         """Create a new corpus.
 
@@ -105,7 +107,9 @@ class CorporaClient:
         return await self._delete_cmd.execute(corpus_id)
 
     async def files(
-        self, corpus_id: int, language: str | None = None,
+        self,
+        corpus_id: int,
+        language: str | None = None,
     ) -> builtins.list[dict[str, object]]:
         """List files belonging to a corpus.
 
@@ -124,7 +128,9 @@ class CorporaClient:
         return await self._files_cmd.execute(corpus_id, language=language)
 
     async def ingest(
-        self, corpus_id: int, max_files: int | None = None,
+        self,
+        corpus_id: int,
+        max_files: int | None = None,
     ) -> dict[str, object]:
         """Trigger ingestion of files into a corpus.
 

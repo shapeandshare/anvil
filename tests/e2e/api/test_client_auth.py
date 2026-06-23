@@ -14,9 +14,7 @@ from httpx import ASGITransport, AsyncClient
 
 from anvil.api.app import app
 from anvil.api.deps import get_api_key_store
-from anvil.client._shared.errors.authentication_error import (
-    AuthenticationError,
-)
+from anvil.client._shared.errors.authentication_error import AuthenticationError
 from anvil.client.anvil_client import AnvilClient
 from anvil.db.base import Base
 from anvil.db.session import async_engine

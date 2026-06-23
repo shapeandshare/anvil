@@ -36,6 +36,7 @@ class DatasetUploadCommand(AbstractCommand):
             The server response confirming the upload.
         """
         import aiofiles  # type: ignore[import-untyped]
+
         async with aiofiles.open(file_path, "rb") as f:
             content = await f.read()
         filename = Path(file_path).name

@@ -428,9 +428,7 @@ class AnvilWorkbench:
         *session*.
         """
         if self._backup_repo is None:
-            from .db.repositories.backup_operations import (
-                BackupOperationRepository,
-            )
+            from .db.repositories.backup_operations import BackupOperationRepository
 
             self._backup_repo = BackupOperationRepository(self._session)
         return self._backup_repo

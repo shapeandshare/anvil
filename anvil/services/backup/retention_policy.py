@@ -8,7 +8,7 @@ retention limits are exceeded.
 """
 
 from collections.abc import Sequence
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 
 
 class RetentionPolicy:

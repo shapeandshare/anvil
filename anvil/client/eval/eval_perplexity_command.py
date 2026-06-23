@@ -19,7 +19,10 @@ class EvalPerplexityCommand(AbstractCommand):
     """Compute perplexity — ``POST /v1/eval/perplexity``."""
 
     async def execute(
-        self, model_id: str, dataset_name: str, max_samples: int | None = None,
+        self,
+        model_id: str,
+        dataset_name: str,
+        max_samples: int | None = None,
     ) -> dict[str, object]:
         """Compute perplexity for a trained model.
 

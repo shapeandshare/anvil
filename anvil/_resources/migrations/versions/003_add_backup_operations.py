@@ -20,11 +20,17 @@ def upgrade() -> None:
         "backup_operations",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("backup_id", sa.String(64), nullable=False),
-        sa.Column("operation_type", sa.String(20), nullable=False, server_default="backup"),
+        sa.Column(
+            "operation_type", sa.String(20), nullable=False, server_default="backup"
+        ),
         sa.Column("status", sa.String(20), nullable=False, server_default="creating"),
         sa.Column("archive_filename", sa.String(255), nullable=True),
-        sa.Column("archive_size_bytes", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("total_uncompressed_bytes", sa.Integer(), nullable=False, server_default="0"),
+        sa.Column(
+            "archive_size_bytes", sa.Integer(), nullable=False, server_default="0"
+        ),
+        sa.Column(
+            "total_uncompressed_bytes", sa.Integer(), nullable=False, server_default="0"
+        ),
         sa.Column("manifest_sha256", sa.String(64), nullable=True),
         sa.Column("deployment_version", sa.String(50), nullable=True),
         sa.Column("schema_revision", sa.String(64), nullable=True),
@@ -48,7 +54,9 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("backup_id"),
     )
-    op.create_index("ix_backup_operations_backup_id", "backup_operations", ["backup_id"])
+    op.create_index(
+        "ix_backup_operations_backup_id", "backup_operations", ["backup_id"]
+    )
     op.create_index("ix_backup_operations_status", "backup_operations", ["status"])
     op.create_index(
         "ix_backup_operations_created_at", "backup_operations", ["created_at"]

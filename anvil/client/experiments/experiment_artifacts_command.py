@@ -19,7 +19,9 @@ class ExperimentArtifactsCommand(AbstractCommand):
     """List run artifacts — ``GET /v1/experiments/{eid}/runs/{rid}/artifacts``."""
 
     async def execute(
-        self, experiment_id: str, run_id: str,
+        self,
+        experiment_id: str,
+        run_id: str,
     ) -> dict[str, object]:
         """Fetch the artifact listing for a specific run.
 

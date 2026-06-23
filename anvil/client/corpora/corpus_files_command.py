@@ -19,7 +19,9 @@ class CorpusFilesCommand(AbstractCommand):
     """List corpus files — ``GET /v1/corpora/{id}/files[?language=]``."""
 
     async def execute(
-        self, corpus_id: int, language: str | None = None,
+        self,
+        corpus_id: int,
+        language: str | None = None,
     ) -> list[dict[str, object]]:
         """List files belonging to a corpus.
 

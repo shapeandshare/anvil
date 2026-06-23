@@ -19,7 +19,10 @@ class EvalDatasetCreateCommand(AbstractCommand):
     """Create an eval dataset — ``POST /v1/eval-datasets``."""
 
     async def execute(
-        self, name: str, source: str, description: str | None = None,
+        self,
+        name: str,
+        source: str,
+        description: str | None = None,
     ) -> dict[str, object]:
         """Create a new evaluation dataset on the server.
 

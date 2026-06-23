@@ -46,8 +46,10 @@ class TestResponse:
     def test_extra_fields_forbidden(self) -> None:
         raw = {"data": {"name": "x", "value": 1}, "error": None, "extra": True}
         import json
+
         import pytest
         from pydantic import ValidationError
+
         raw_str = json.dumps(raw)
         with pytest.raises(ValidationError):
             Response[_DummyData].model_validate_json(raw_str)

@@ -69,9 +69,7 @@ async def test_get_all_restorable_excludes_safety(db_session: AsyncSession):
     repo = BackupOperationRepository(db_session)
     await repo.add(BackupOperation(backup_id="manual-1", operation_type="backup"))
     await repo.add(
-        BackupOperation(
-            backup_id="safety-1", operation_type="pre_restore_safety"
-        )
+        BackupOperation(backup_id="safety-1", operation_type="pre_restore_safety")
     )
     restorable = await repo.get_all_restorable()
     ids = [r.backup_id for r in restorable]

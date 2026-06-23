@@ -115,7 +115,9 @@ class ExperimentsClient:
         return await self._delete_cmd.execute(experiment_id)
 
     async def list_artifacts(
-        self, experiment_id: str, run_id: str,
+        self,
+        experiment_id: str,
+        run_id: str,
     ) -> dict[str, object]:
         """List artifacts for a specific run.
 
@@ -162,5 +164,8 @@ class ExperimentsClient:
             as a string.
         """
         return await self._download_cmd.execute(
-            experiment_id, run_id, path, dest=dest,
+            experiment_id,
+            run_id,
+            path,
+            dest=dest,
         )

@@ -12,12 +12,12 @@ corresponding command class.
 
 from __future__ import annotations
 
+import builtins
 
 from .._shared.transport import Transport
 from .services_list_command import ServicesListCommand
 from .services_logs_command import ServicesLogsCommand
 from .services_restart_all_command import ServicesRestartAllCommand
-import builtins
 
 
 class ServicesClient:
@@ -48,7 +48,9 @@ class ServicesClient:
         return await self._list_cmd.execute()
 
     async def logs(
-        self, name: str, lines: int | None = None,
+        self,
+        name: str,
+        lines: int | None = None,
     ) -> builtins.list[str]:
         """Retrieve recent log lines from a service.
 

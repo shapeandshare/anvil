@@ -64,6 +64,7 @@ class TestRestoreJournal:
         )
         # Simulate crash: live dir is gone, .bak exists
         import shutil
+
         shutil.rmtree(live_dir)
 
         result = journal.recover()

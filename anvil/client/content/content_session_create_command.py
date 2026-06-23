@@ -19,7 +19,9 @@ class ContentSessionCreateCommand(AbstractCommand):
     """Create a content session — ``POST /v1/content/sessions``."""
 
     async def execute(
-        self, corpus_id: int, name: str | None = None,
+        self,
+        corpus_id: int,
+        name: str | None = None,
     ) -> dict[str, object]:
         """Create a new content session on the server.
 
@@ -39,6 +41,9 @@ class ContentSessionCreateCommand(AbstractCommand):
         if name is not None:
             body["name"] = name
         data: dict[str, object] = await self._transport.request(
-            HttpMethod.POST, "/v1/content/sessions", json=body, response_model=dict,
+            HttpMethod.POST,
+            "/v1/content/sessions",
+            json=body,
+            response_model=dict,
         )
         return data

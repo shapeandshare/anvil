@@ -14,8 +14,8 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 
-from .._shared.transport import Transport
 from .._shared.stream_event import StreamEvent
+from .._shared.transport import Transport
 from .training_config import TrainingConfig
 from .training_start_command import TrainingStartCommand
 from .training_status_command import TrainingStatusCommand

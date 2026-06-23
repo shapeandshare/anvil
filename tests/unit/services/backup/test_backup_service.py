@@ -49,9 +49,7 @@ class TestBackupServiceCreate:
         assert result.backup_id != ""
         assert isinstance(result.rotated_backup_ids, list)
 
-    async def test_create_backup_lock_prevents_concurrent(
-        self, tmp_path: PosixPath
-    ):
+    async def test_create_backup_lock_prevents_concurrent(self, tmp_path: PosixPath):
         """Second concurrent create raises RuntimeError (FR-012)."""
         svc = BackupService(
             backup_dir=str(tmp_path / "backups"),
@@ -63,9 +61,7 @@ class TestBackupServiceCreate:
         result2 = await svc.create_backup(repo=repo)
         assert result2.backup_id != result.backup_id
 
-    async def test_create_backup_cleans_on_failure(
-        self, tmp_path: PosixPath
-    ):
+    async def test_create_backup_cleans_on_failure(self, tmp_path: PosixPath):
         """On failure, the operation is marked FAILED."""
         svc = BackupService(
             backup_dir=str(tmp_path / "backups"),
@@ -86,9 +82,7 @@ class TestBackupServiceCreate:
         with pytest.raises(RuntimeError, match="simulated failure"):
             await svc.create_backup(repo=repo)
 
-    async def test_list_backups_returns_summaries(
-        self, tmp_path: PosixPath
-    ):
+    async def test_list_backups_returns_summaries(self, tmp_path: PosixPath):
         """List returns a list of BackupSummary objects."""
         svc = BackupService(
             backup_dir=str(tmp_path / "backups"),
@@ -105,9 +99,7 @@ class TestBackupServiceCreate:
 class TestBackupServiceRotation:
     """Auto-rotation behavior."""
 
-    async def test_rotation_returns_rotated_ids(
-        self, tmp_path: PosixPath
-    ):
+    async def test_rotation_returns_rotated_ids(self, tmp_path: PosixPath):
         """Create multiple backups and verify rotation ids are returned."""
         svc = BackupService(
             backup_dir=str(tmp_path / "backups"),

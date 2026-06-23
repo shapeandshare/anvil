@@ -778,8 +778,7 @@ def _migrate_one_spec(entry: dict[str, object]) -> None:
         slug=slug,
         spec_md_content=spec_md_content if spec_md_content else "",
         artifacts=[
-            {"filename": str(a["filename"]), "type": str(a["type"])}
-            for a in artifacts
+            {"filename": str(a["filename"]), "type": str(a["type"])} for a in artifacts
         ],
     )
 

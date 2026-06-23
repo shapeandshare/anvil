@@ -30,6 +30,8 @@ class HealthGetCommand(AbstractCommand):
             Basic status information from the server.
         """
         data: dict[str, object] = await self._transport.request(
-            HttpMethod.GET, "/v1/health", response_model=dict,
+            HttpMethod.GET,
+            "/v1/health",
+            response_model=dict,
         )
         return data
