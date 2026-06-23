@@ -34,6 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: lint
+    if: needs.lint.result == 'success'
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
