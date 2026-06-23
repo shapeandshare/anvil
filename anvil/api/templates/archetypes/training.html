@@ -153,7 +153,7 @@
       </div>
       <div class="param-block">
         <div class="param-label-row"><label class="param-label">Compute Backend</label>
-        <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">Where training runs. Auto picks the best available. Local CPU uses pure Python (stdlib). Local GPU uses PyTorch (CUDA/MPS). Modal runs on cloud GPUs — requires the modal package.</span></span></div>
+        <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">Where training runs. Auto picks the best available. Local CPU uses pure Python (stdlib). Local GPU uses PyTorch (CUDA/MPS). Modal runs on cloud GPUs (local mode only — requires the modal package).</span></span></div>
         <div class="device-toggle">
           <select id="compute_backend" onchange="window.updateModelStats()" style="width:100%;padding:6px 8px;border-radius:var(--radius-sm,6px);border:1px solid var(--border,#38383a);background:var(--surface,#1c1c1e);color:var(--text,#fff);font-size:0.8rem;font-family:var(--font-body,sans-serif);">
             <option value="auto">Auto</option>
