@@ -68,7 +68,8 @@ class TestKillPidFile:
 
     def test_kill_nonexistent_process_cleans_up(self):
         """kill_pid_file cleans up the PID file even if the process
-        is already gone."""
+        is already gone.
+        """
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "gone.pid"
             path.write_text("999999")
@@ -94,7 +95,7 @@ class TestProcessSupervisor:
         assert sv.is_running("nonexistent") is False
 
     def test_start_and_stop(self):
-        """start launches a process and stop terminates it."""
+        """Start launches a process and stop terminates it."""
         with tempfile.TemporaryDirectory() as tmp:
             sv = ProcessSupervisor(log_dir=tmp)
             sv.start("sleeper", ["sleep", "0.1"])
@@ -106,7 +107,8 @@ class TestProcessSupervisor:
 
     def test_duplicate_start_is_noop(self):
         """Starting a process that is already running should be a
-        no-op."""
+        no-op.
+        """
         with tempfile.TemporaryDirectory() as tmp:
             sv = ProcessSupervisor(log_dir=tmp)
             sv.start("dup", ["sleep", "0.2"])
@@ -116,7 +118,8 @@ class TestProcessSupervisor:
 
     def test_stop_nonexistent_is_noop(self):
         """Stopping a process that was never started should not
-        raise."""
+        raise.
+        """
         sv = ProcessSupervisor()
         sv.stop("never-started")  # should not raise
 
@@ -142,7 +145,7 @@ class TestProcessSupervisor:
             assert status.startswith("exited(")
 
     def test_start_creates_log_file(self):
-        """start should create a log file for the process output."""
+        """Start should create a log file for the process output."""
         import sys
 
         with tempfile.TemporaryDirectory() as tmp:

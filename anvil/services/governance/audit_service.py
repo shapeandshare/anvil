@@ -19,7 +19,7 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Sequence
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from ...db.models.audit_event import AuditEvent
 from ...db.repositories.audit_events import AuditEventRepository
@@ -135,7 +135,7 @@ class AuditService:
             surrounding transaction can be rolled back.
         """
         if event_timestamp is None:
-            event_timestamp = datetime.now(timezone.utc)
+            event_timestamp = datetime.now(UTC)
         # Store as UTC-naive so round-trip through SQLite preserves the
         # isoformat string identically for hash-chain verification.
         event_timestamp = event_timestamp.replace(tzinfo=None)

@@ -121,7 +121,8 @@ class TestCommitImport:
 
     async def test_commit_import_creates_samples(self, in_memory_session, tmp_path):
         """commit_import should persist parsed samples and set dataset
-        status."""
+        status.
+        """
         from anvil.db.models.dataset import Dataset
         from anvil.db.repositories.curation import SampleRepository
         from anvil.storage.local import LocalFileStore

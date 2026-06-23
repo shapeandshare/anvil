@@ -50,7 +50,8 @@ class TestGateDecision:
 
     def test_rejected_defaults(self):
         """A rejected decision has accepted=False and no license_id or
-        origin."""
+        origin.
+        """
         d = GateDecision(accepted=False, reason="nope")
         assert d.accepted is False
         assert d.reason == "nope"
@@ -59,7 +60,8 @@ class TestGateDecision:
 
     def test_accepted_all_fields(self):
         """An accepted decision carries the resolved license_id and
-        origin."""
+        origin.
+        """
         d = GateDecision(
             accepted=True,
             license_id=5,
@@ -110,7 +112,8 @@ class TestListLicenses:
 
     async def test_returns_all_by_default(self, gov_svc):
         """list_licenses without arguments returns all entries including
-        the own-content sentinel."""
+        the own-content sentinel.
+        """
         licenses = await gov_svc.list_licenses()
         identifiers = {lic.identifier for lic in licenses}
         assert "MIT" in identifiers
@@ -119,7 +122,8 @@ class TestListLicenses:
 
     async def test_excludes_own_content(self, gov_svc):
         """list_licenses with include_own_content=False filters out the
-        sentinel."""
+        sentinel.
+        """
         licenses = await gov_svc.list_licenses(include_own_content=False)
         identifiers = {lic.identifier for lic in licenses}
         assert "MIT" in identifiers
@@ -206,7 +210,8 @@ class TestEvaluateSubmission:
 
     async def test_accepts_valid_license(self, gov_svc):
         """A valid submission with an approved license should be
-        accepted and include the resolved license_id."""
+        accepted and include the resolved license_id.
+        """
         result = await gov_svc.evaluate_submission(
             declared_source="my data",
             license_identifier="MIT",
@@ -220,7 +225,8 @@ class TestEvaluateSubmission:
 
     async def test_accepts_own_content(self, gov_svc):
         """Using the own-content sentinel should be accepted with no
-        license_id."""
+        license_id.
+        """
         result = await gov_svc.evaluate_submission(
             declared_source="my own data",
             license_identifier="own-content",
@@ -244,7 +250,8 @@ class TestAssignProvenance:
 
     async def test_assigns_to_dataset(self, tmp_path, in_memory_session, gov_svc):
         """Assigning provenance to a Dataset should set all provenance
-        fields."""
+        fields.
+        """
         from anvil.db.models.dataset import Dataset
 
         ds = Dataset(
@@ -268,7 +275,8 @@ class TestAssignProvenance:
 
     async def test_assigns_to_corpus(self, tmp_path, in_memory_session, gov_svc):
         """Assigning provenance to a Corpus should set all provenance
-        fields."""
+        fields.
+        """
         from anvil.db.models.corpus import Corpus
 
         c = Corpus(
@@ -297,7 +305,8 @@ class TestAssignProvenance:
 
     async def test_raises_type_error_for_unsupported(self, gov_svc):
         """assign_provenance should raise TypeError for unsupported
-        entity types."""
+        entity types.
+        """
         with pytest.raises(TypeError, match="Unsupported entity type"):
             await gov_svc.assign_provenance(
                 entity="not-a-model",
@@ -360,7 +369,8 @@ class TestGetProvenance:
 
     async def test_returns_empty_for_nonexistent(self, gov_svc):
         """get_provenance for a non-existent entity should return a view
-        with all defaults."""
+        with all defaults.
+        """
         result = await gov_svc.get_provenance(target_type="dataset", target_id=9999)
         assert result.source_description is None
         assert result.origin == DataOrigin.USER

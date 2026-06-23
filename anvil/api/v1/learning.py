@@ -168,6 +168,36 @@ LEARNING_ARC = [
         "desc": "How trained models are exported to safetensors for HuggingFace compatibility.",
     },
     {
+        "key": "chunking",
+        "title": "Chunking Strategies",
+        "path": "/v1/learn/chunking",
+        "desc": "How long documents are split into context-window-sized training samples — windowed, line, and file strategies.",
+    },
+    {
+        "key": "content-versioning",
+        "title": "Content Versioning",
+        "path": "/v1/learn/content-versioning",
+        "desc": "How training data is content-addressed, versioned, and traced from model back to the exact bytes it learned from.",
+    },
+    {
+        "key": "experiment-tracking",
+        "title": "Experiment Tracking",
+        "path": "/v1/learn/experiment-tracking",
+        "desc": "How MLflow records hyperparameters, loss curves, artifacts, and the model registry for every run.",
+    },
+    {
+        "key": "governance",
+        "title": "Data Governance",
+        "path": "/v1/learn/governance",
+        "desc": "How provenance, an acceptable-use gate, and a hash-chained audit trail keep data inclusion lawful and auditable.",
+    },
+    {
+        "key": "memory-divergence",
+        "title": "Memory & Divergence",
+        "path": "/v1/learn/memory-divergence",
+        "desc": "How anvil estimates memory before training and detects NaN/Inf loss divergence during it.",
+    },
+    {
         "key": "faq",
         "title": "FAQ",
         "path": "/v1/learn/faq",
@@ -187,86 +217,6 @@ LEARNING_ARC = [
     },
 ]
 
-LEARNING_ARC_LESSONS = [
-    {
-        "key": "data-fundamentals",
-        "title": "Data Fundamentals",
-        "path": "/v1/learn/data-fundamentals",
-        "desc": "How datasets and corpora feed training data into the engine &mdash; and when to use each.",
-    },
-    {
-        "key": "tokenization",
-        "title": "Tokenization",
-        "path": "/v1/learn/tokenization",
-        "desc": "How the model chops text into character tokens and maps them to IDs.",
-    },
-    {
-        "key": "embeddings",
-        "title": "Embeddings",
-        "path": "/v1/learn/embeddings",
-        "desc": "How each token ID becomes a dense vector the model can compute with.",
-    },
-    {
-        "key": "parameters",
-        "title": "Parameters",
-        "path": "/v1/learn/parameters",
-        "desc": "Where the model's ~4K parameters live and what each matrix does.",
-    },
-    {
-        "key": "autograd",
-        "title": "Autograd",
-        "path": "/v1/learn/autograd",
-        "desc": "How gradients flow backward through the computation graph to train the model.",
-    },
-    {
-        "key": "attention",
-        "title": "Attention",
-        "path": "/v1/learn/attention",
-        "desc": "How each token looks at its predecessors to build context-aware representations.",
-    },
-    {
-        "key": "loss",
-        "title": "Cross-Entropy Loss",
-        "path": "/v1/learn/loss",
-        "desc": "How prediction error is measured and what the loss number means.",
-    },
-    {
-        "key": "sampling",
-        "title": "Sampling",
-        "path": "/v1/learn/sampling",
-        "desc": "How the model picks the next character from its probability distribution.",
-    },
-    {
-        "key": "adam",
-        "title": "Adam Optimizer",
-        "path": "/v1/learn/adam",
-        "desc": "How momentum and adaptive learning rates make training converge faster.",
-    },
-    {
-        "key": "training-loop",
-        "title": "Training Loop",
-        "path": "/v1/learn/training-loop",
-        "desc": "How the model learns by minimizing prediction error step by step.",
-    },
-    {
-        "key": "architecture",
-        "title": "Architecture",
-        "path": "/v1/learn/architecture",
-        "desc": "The full Llama decoder stack — RoPE, RMSNorm, SwiGLU — visualized end to end.",
-    },
-    {
-        "key": "graph",
-        "title": "Forward Pass",
-        "path": "/v1/learn/graph",
-        "desc": "Scrub through the Llama forward pass step by step on an interactive computation graph.",
-    },
-    {
-        "key": "export",
-        "title": "Model Export",
-        "path": "/v1/learn/export",
-        "desc": "How trained models are exported to safetensors for HuggingFace compatibility.",
-    },
-]
 
 LEARNING_ARC_ADDITIONAL = [
     {
@@ -287,6 +237,12 @@ LEARNING_ARC_ADDITIONAL = [
         "path": "/v1/learn/glossary",
         "desc": "Definitions for every technical term used across the learning arc and codebase.",
     },
+]
+
+# LEARNING_ARC_LESSONS is derived from LEARNING_ARC by excluding ADDITIONAL items.
+_ADDITIONAL_KEYS = frozenset(item["key"] for item in LEARNING_ARC_ADDITIONAL)
+LEARNING_ARC_LESSONS = [
+    item for item in LEARNING_ARC if item["key"] not in _ADDITIONAL_KEYS
 ]
 
 
@@ -1195,6 +1151,420 @@ CLOUD_COMPUTE_STEPS = [
 ]
 
 
+CHUNKING_STEPS = [
+    {
+        "key": "why-chunking",
+        "title": "Why Chunk at All?",
+        "body": (
+            "The model has a fixed context window (<code>block_size</code>, default 16 "
+            "characters). A raw document is almost always longer than that. Chunking is "
+            "the step that turns one long text into many bite-sized training documents, "
+            "each short enough to fit the window. anvil ships three strategies, all "
+            "implementing one tiny interface: <code>Chunker.chunk(text) -> list[str]</code> "
+            "in <code>anvil/services/chunking/base.py</code>. A chunker is stateless — the "
+            "same input always yields the same chunks."
+        ),
+        "widget": "chunking",
+    },
+    {
+        "key": "file-as-doc",
+        "title": "Strategy 1: File-as-Document",
+        "body": (
+            "<code>FileAsDocChunker</code> is the identity strategy: it returns the whole "
+            "text as a single chunk (<code>[text]</code>), or an empty list if the text is "
+            "empty. Use it when each file is already a coherent unit you want kept intact, "
+            "or as a baseline to compare the other strategies against. It is the "
+            '<code>ChunkingStrategy.FILE</code> = <code>"file"</code> option.'
+        ),
+    },
+    {
+        "key": "line-as-doc",
+        "title": "Strategy 2: Line-as-Document",
+        "body": (
+            "<code>LineAsDocChunker</code> splits on newlines and returns one chunk per "
+            "<b>non-empty</b> line, each stripped of surrounding whitespace "
+            "(<code>line.strip() for line in text.splitlines() if line.strip()</code>). "
+            "Perfect for line-oriented records: name lists, logs, CSV rows. This is "
+            '<code>ChunkingStrategy.LINE</code> = <code>"line"</code>. anvil\'s bundled '
+            "demo name corpus uses exactly this shape — one name per line, one training "
+            "sample per name."
+        ),
+    },
+    {
+        "key": "windowed",
+        "title": "Strategy 3: Fixed-Size Window",
+        "body": (
+            "<code>FixedSizeWindowChunker(block_size, overlap)</code> slides a fixed-width "
+            "window across the text. The stride between windows is "
+            "<code>max(1, int(block_size * (1 - overlap)))</code> — so "
+            "<code>overlap=0.0</code> gives disjoint windows and <code>overlap=0.5</code> "
+            "(the default) advances by half a window each step, covering the text densely. "
+            "The final window may be shorter than <code>block_size</code>. This is the "
+            "default strategy (<code>ChunkingStrategy.WINDOWED</code> = "
+            '<code>"windowed"</code>) and the right choice for continuous prose.'
+        ),
+    },
+    {
+        "key": "overlap-tradeoff",
+        "title": "The Overlap Trade-off",
+        "body": (
+            "Overlap is validated to the half-open range <code>[0.0, 1.0)</code> — exactly "
+            "<code>1.0</code> is rejected because it would produce zero stride and loop "
+            "forever. More overlap means more chunks (more training examples) and fewer "
+            "boundaries where a pattern gets split across two windows — but also more "
+            "duplicated text and slower training. Less overlap is leaner but risks cutting "
+            "a recurring sequence exactly at a window edge. The 50% default is a balanced "
+            "starting point."
+        ),
+    },
+    {
+        "key": "chunking-feeds-training",
+        "title": "From Chunks to Training",
+        "body": (
+            "When you train from a corpus, <code>TrainingService._load_docs</code> picks "
+            "the chunker named in the corpus's chunk config, runs every file through it, "
+            "and the resulting list of strings becomes the training documents — each one "
+            "BOS-wrapped and fed through the loop you saw in the Training Loop lesson. The "
+            "auto-detection on the Datasets page is just choosing which of these three "
+            "<code>Chunker</code> subclasses to instantiate."
+        ),
+    },
+]
+
+CONTENT_VERSIONING_STEPS = [
+    {
+        "key": "why-version-data",
+        "title": "Why Version Your Data?",
+        "body": (
+            "Reproducibility in ML is impossible if the data can silently change. anvil's "
+            "content repository (ADR-033) is a Git-like substrate for training data: every "
+            "byte is content-addressed, every snapshot is an immutable version, and every "
+            "training run records exactly which version it consumed. It is pure-Python and "
+            "local-first, living under <code>anvil/services/content/</code>."
+        ),
+        "widget": "contentVersioning",
+    },
+    {
+        "key": "content-addressing",
+        "title": "Content-Addressed Blobs",
+        "body": (
+            "Every piece of content is stored as a <b>blob</b> keyed by its SHA-256 hash. "
+            "The store computes <code>hashlib.sha256(raw).hexdigest()</code> and writes the "
+            "bytes to <code>blobs/&lt;first-2-hex-chars&gt;/&lt;full-sha256&gt;</code>. "
+            "Because the address <i>is</i> the hash, identical content is automatically "
+            "deduplicated — if the blob already exists on disk, the write is skipped. The "
+            "<code>content_hash</code> (64 hex chars) is the primary key of the "
+            "<code>ContentBlob</code> table, enforcing uniqueness at the database level too."
+        ),
+    },
+    {
+        "key": "manifest",
+        "title": "The Manifest",
+        "body": (
+            "A <b>manifest</b> describes one version of a corpus: its "
+            "<code>corpus_slug</code>, <code>version_number</code>, the chunking config "
+            "(<code>strategy</code>, <code>block_size</code>, <code>chunk_overlap</code>), "
+            "and an ordered list of entries. Each <code>ManifestEntry</code> carries a "
+            "<code>path</code>, the blob's <code>content_hash</code>, and a "
+            "<code>weight</code> (default 1.0). The manifest is then itself hashed: entries "
+            "are sorted, serialized to canonical JSON, and SHA-256'd into a "
+            "<code>manifest_digest</code> — an immutable fingerprint of the entire snapshot."
+        ),
+    },
+    {
+        "key": "versions-and-refs",
+        "title": "Versions and VersionRefs",
+        "body": (
+            "A <code>VersionRef</code> pins a snapshot by combining the human-facing "
+            "<code>version_number</code> and optional <code>label</code> with the "
+            "content-addressed <code>manifest_digest</code> and internal "
+            "<code>version_id</code>. New versions increment monotonically: "
+            "<code>max(existing version_numbers) + 1</code>, starting at 1. Because the "
+            "digest is derived from content, you can never confuse two different snapshots "
+            "that happen to share a version number — the hash always disambiguates."
+        ),
+    },
+    {
+        "key": "weight-replication",
+        "title": "Weight-Based Replication",
+        "body": (
+            "Each entry has a <code>weight</code> that controls how much it contributes to "
+            "training. The rule (FR-021, in <code>TrainingService._load_docs_from_version</code>) "
+            "is deliberately simple integer replication: "
+            "<code>factor = max(1, round(weight))</code>, and each entry's chunks are added "
+            "to the training set <code>factor</code> times. So a weight of 3 triples an "
+            "entry's presence; a weight of 0.4 still contributes once (the floor of 1). "
+            "This is replication, not probabilistic sampling — predictable and "
+            "reproducible."
+        ),
+    },
+    {
+        "key": "lineage-and-locks",
+        "title": "Lineage and Locks",
+        "body": (
+            "When a run trains on a version, <code>LineageService</code> records a "
+            "<code>VersionRunRef</code> row linking the <code>version_id</code> to the "
+            "MLflow run UUID and a <code>corpus_ref</code>. That join table is the audit "
+            "trail: from any trained model you can trace the MLflow run back to the exact "
+            "<code>manifest_digest</code> of the data it learned from. <code>LockService</code> "
+            "adds advisory checkout locks (acquire / release / list) scoped like "
+            '<code>"corpus:42"</code>, so collaborators can coordinate edits without '
+            "clobbering each other."
+        ),
+    },
+]
+
+EXPERIMENT_TRACKING_STEPS = [
+    {
+        "key": "what-is-a-run",
+        "title": "What is an Experiment Run?",
+        "body": (
+            "Every time you train, anvil opens an <b>MLflow run</b> — a record that "
+            "captures the hyperparameters, the loss curve, the final samples, and the "
+            "exported model artifacts in one place. The <code>TrackingService</code> "
+            "(<code>anvil/services/tracking/tracking.py</code>) is the thin async wrapper "
+            "around the MLflow client that anvil uses for all of this. Runs live in the "
+            '"anvil" experiment so the Experiments page can list and compare them.'
+        ),
+        "widget": "experimentTracking",
+    },
+    {
+        "key": "params-logged",
+        "title": "Logging Hyperparameters",
+        "body": (
+            "At the start of a run, <code>start_run</code> logs every hyperparameter as an "
+            "MLflow <i>param</i>: <code>n_layer</code>, <code>n_embd</code>, "
+            "<code>n_head</code>, <code>block_size</code>, <code>num_steps</code>, "
+            "<code>learning_rate</code>, <code>beta1</code>, <code>beta2</code>, "
+            "<code>temperature</code>, plus the resolved <code>engine_backend</code> "
+            "(STDLIB/TORCH) and <code>device</code> (cpu/cuda:0/mps). Params are immutable "
+            "for the life of the run — they describe the experiment's configuration."
+        ),
+    },
+    {
+        "key": "metrics-logged",
+        "title": "Logging Metrics",
+        "body": (
+            "Unlike params, <i>metrics</i> are time series. Every training step calls "
+            '<code>log_metric(run_id, "loss", value, step=step)</code>, building the loss '
+            "curve you scrub through in the Training Loop lesson. At completion, "
+            '<code>log_final_metric("final_loss", ...)</code> records the terminal value '
+            "with no step. Tags like <code>anvil.status</code>, "
+            "<code>architectures=LlamaForCausalLM</code>, and an "
+            "<code>anvil.input_digest</code> (the SHA-256 of the dataset/corpus that fed "
+            "the run) round out the record."
+        ),
+    },
+    {
+        "key": "artifacts-and-registry",
+        "title": "Artifacts and the Model Registry",
+        "body": (
+            "When a run finishes, its artifacts are uploaded: <code>samples.txt</code>, "
+            "<code>model.safetensors</code>, <code>config.json</code>, "
+            "<code>tokenizer.json</code>, plus the MLflow <code>MLmodel</code> and "
+            "<code>conda.yaml</code> descriptors. Then the model is registered in the "
+            "<b>Model Registry</b> under a sanitized name — <code>dataset-{id}</code>, "
+            "<code>corpus-{id}</code>, or <code>demo</code> — with the source pinned as a "
+            "<code>runs:/{run_id}/</code> URI. Each registration auto-increments the "
+            "model's version number."
+        ),
+    },
+    {
+        "key": "primary-lineage",
+        "title": "MLflow as Primary Lineage",
+        "body": (
+            "anvil treats MLflow as the source of truth for trained models (ADR-016). At "
+            "inference time, <code>InferenceService</code> resolves a model first from the "
+            "local artifact cache, then from the MLflow Model Registry — downloading the "
+            "registered artifacts on demand. The exported model is MLflow-pyfunc compliant "
+            "(ADR-009): the <code>MLmodel</code> file names "
+            "<code>anvil._pyfunc_model.AnvilPyfuncModel</code> as its loader, so "
+            '<code>mlflow.pyfunc.load_model("models:/dataset-42/3")</code> works in any '
+            "MLflow-aware tool."
+        ),
+    },
+    {
+        "key": "degraded-mode",
+        "title": "Fire-and-Forget by Design",
+        "body": (
+            "Tracking must never break training. The <code>TrackingService</code> is "
+            "deliberately <b>fire-and-forget</b>: if MLflow is unreachable, it sets an "
+            "internal <code>_degraded</code> flag and every logging call becomes a silent "
+            "no-op. Training continues, the model still trains and exports — only the "
+            "experiment record is skipped. This is the opposite of the governance "
+            "<code>AuditService</code>, which deliberately <i>raises</i> on failure because "
+            "an audit trail with silent gaps would be worthless. Two subsystems, two "
+            "opposite error philosophies, each correct for its job."
+        ),
+    },
+]
+
+GOVERNANCE_STEPS = [
+    {
+        "key": "why-governance",
+        "title": "Why Data Governance?",
+        "body": (
+            "A model is only as trustworthy as the data it learned from. anvil ships a "
+            "governance layer (ADR-023) so that data inclusion is lawful, attributed, and "
+            "auditable. It rests on three pillars: machine-readable <b>provenance</b>, a "
+            "tamper-evident <b>audit trail</b>, and an <b>acceptable-use gate</b> on every "
+            "submission. The code lives in <code>anvil/services/governance/</code>."
+        ),
+        "widget": "governance",
+    },
+    {
+        "key": "provenance",
+        "title": "Provenance: Where Data Came From",
+        "body": (
+            "Bundled sample data carries a <code>provenance.json</code> manifest shipped "
+            "inside the wheel. Each item records its <code>source</code>, "
+            "<code>license</code>, and <code>attribution</code> — for example, Alice in "
+            'Wonderland is tagged <code>license: "Public Domain"</code> with its Project '
+            "Gutenberg source. The <code>Dataset</code> and <code>Corpus</code> tables "
+            "gained five provenance columns: <code>source_description</code>, "
+            "<code>license_id</code> (a foreign key into the license catalog), "
+            "<code>attribution_text</code>, <code>origin</code> "
+            '(<code>"bundled"</code> or <code>"user"</code>), and '
+            "<code>parent_provenance_ref</code> for derived data."
+        ),
+    },
+    {
+        "key": "license-catalog",
+        "title": "The License Catalog",
+        "body": (
+            "An approved-license catalog (<code>license_catalog</code> table) is seeded at "
+            "startup with a broad permissive set: Public Domain, CC0-1.0, MIT, "
+            "BSD-2-Clause, BSD-3-Clause, Apache-2.0, CC-BY-4.0, CC-BY-SA-4.0, and "
+            "Generated/Original. Attribution-required licenses (the CC-BY family) are "
+            "flagged <code>requires_attribution=True</code>. A special "
+            '<code>"own-content"</code> sentinel covers private/proprietary user data — '
+            "it is marked non-redistributable, exempting it from the approved-license "
+            "requirement while still being recorded."
+        ),
+    },
+    {
+        "key": "acceptable-use-gate",
+        "title": "The Acceptable-Use Gate",
+        "body": (
+            "Every upload and import must pass a gate. The submitter declares a "
+            "<code>declared_source</code>, picks a <code>license_identifier</code> (an "
+            'approved license or <code>"own-content"</code>), and sets '
+            "<code>acceptable_use_affirmed=true</code>. The gate is "
+            "<b>declaration-only</b> — there is deliberately no keyword, PII, or ML content "
+            "scanning; it is an honest-affirmation model. Missing a source, a license, or "
+            "the affirmation yields a rejection (HTTP 422) with a clear, respectful "
+            "explanation rather than a cryptic error."
+        ),
+    },
+    {
+        "key": "hash-chained-audit",
+        "title": "The Hash-Chained Audit Trail",
+        "body": (
+            "Every consequential event — seed, upload, import, curate, delete, takedown, "
+            "policy accept/reject — is appended to an <code>audit_events</code> table. Each "
+            "entry stores a SHA-256 <code>entry_hash</code> computed over its canonical "
+            "fields <b>including the previous entry's hash</b>. The genesis entry uses 64 "
+            "zeros as its <code>prev_hash</code>. This is the same blockchain-style linkage "
+            "you may know from Git commits: change any past entry and every subsequent hash "
+            "stops matching."
+        ),
+    },
+    {
+        "key": "chain-verification",
+        "title": "Verifying Integrity",
+        "body": (
+            "<code>AuditService.verify_chain()</code> recomputes every entry's hash and "
+            "checks each <code>prev_hash</code> linkage, returning a "
+            "<code>ChainVerifyResult</code> with <code>valid</code>, the first "
+            "<code>break_at_sequence</code> if broken, and <code>entries_checked</code>. "
+            "Crucially, unlike the fire-and-forget MLflow tracker, <code>AuditService</code> "
+            "<b>raises</b> on any write failure so the transaction rolls back — a gap in the "
+            "audit trail is never silently tolerated. Tamper detection beats convenience "
+            "when the whole point is accountability."
+        ),
+    },
+]
+
+
+MEMORY_DIVERGENCE_STEPS = [
+    {
+        "key": "why-pre-flight",
+        "title": "Knowing Before You Train",
+        "body": (
+            "Two things can ruin a training run: running out of memory before it even "
+            "starts, and the loss exploding to infinity once it does. anvil guards both. "
+            "A pre-flight <b>memory estimator</b> predicts the footprint of a config "
+            "before launch, and a runtime <b>divergence detector</b> halts the run the "
+            "instant the loss goes non-finite. This lesson covers both safety nets."
+        ),
+        "widget": "memoryDivergence",
+    },
+    {
+        "key": "memory-breakdown",
+        "title": "What Uses Memory",
+        "body": (
+            "<code>estimate_training_memory</code> counts parameters with the same formula "
+            "the model uses, then sizes four FP32 (4-byte) buffers: <b>weights</b> "
+            "(1x params), <b>gradients</b> (1x params), the <b>Adam optimizer</b> state "
+            "(2x params, for the m and v moments), and the <b>KV cache</b> "
+            "(<code>n_layer x 2 x block_size x n_embd x 4</code> bytes). Their sum is the "
+            "<code>total</code>; the optimizer alone is the single largest consumer at "
+            "twice the model's own weight footprint."
+        ),
+    },
+    {
+        "key": "peak-and-headroom",
+        "title": "Peak vs Total",
+        "body": (
+            "Total isn't the whole story — the backward pass holds activations alive too. "
+            "The estimator applies a conservative 2x headroom factor: "
+            "<code>peak = total * 2</code>. That peak is what gets compared against "
+            "available memory, because peak is what actually triggers an "
+            "out-of-memory error."
+        ),
+    },
+    {
+        "key": "oom-prediction",
+        "title": "Predicting OOM",
+        "body": (
+            "The estimator detects the device (CUDA reports free VRAM; MPS uses total "
+            "system memory as the ceiling) and computes <code>peak / available</code>. "
+            "Above 90% it sets <code>would_oom=True</code> and warns the run will likely "
+            "fail; above 75% it warns you are close to the limit; below that it is clear. "
+            "On CPU it never hard-blocks — system RAM and virtual memory absorb the "
+            "overflow, just slowly. This is why the tiny defaults "
+            "(<code>n_embd=16</code>, <code>n_layer=1</code>) always fit anywhere."
+        ),
+    },
+    {
+        "key": "what-is-divergence",
+        "title": "When Training Diverges",
+        "body": (
+            "Sometimes the loss doesn't just plateau — it blows up. A learning rate that's "
+            "too high, or pathological data, can push the loss to <code>NaN</code> "
+            "(not-a-number) or <code>Inf</code> (infinity). Once that happens, every "
+            "subsequent gradient is poisoned and the run is unrecoverable. anvil classifies "
+            "this with <code>classify_divergence(loss)</code>, which returns "
+            "<code>DivergenceReason.LOSS_NAN</code>, <code>LOSS_INF</code>, or "
+            "<code>None</code> if the loss is still finite."
+        ),
+    },
+    {
+        "key": "divergence-handling",
+        "title": "Halting on Divergence",
+        "body": (
+            "The training progress callback checks every step. The moment "
+            "<code>classify_divergence</code> returns a reason, it emits a "
+            "<code>divergence</code> SSE event to the dashboard and raises "
+            "<code>DivergenceError</code> to stop the loop immediately — no point burning "
+            "compute on a dead run. The run is flagged as diverged so the UI can explain "
+            "what happened. Stopping fast and loudly beats silently producing a broken "
+            "model, the same accountability instinct behind the audit trail."
+        ),
+    },
+]
+
+
 @router.get("/learn", response_class=HTMLResponse)
 async def learn_index(request: Request):
     """Render the learning hub index page with ordered lessons and additional sections."""
@@ -1322,6 +1692,56 @@ async def export_concept_page(request: Request):
         request,
         "archetypes/concept.html",
         {"steps": EXPORT_STEPS, **_arc_context("export")},
+    )
+
+
+@router.get("/learn/chunking", response_class=HTMLResponse)
+async def chunking_concept_page(request: Request):
+    """Render the chunking strategies walkthrough page with interactive steps."""
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "archetypes/concept.html",
+        {"steps": CHUNKING_STEPS, **_arc_context("chunking")},
+    )
+
+
+@router.get("/learn/content-versioning", response_class=HTMLResponse)
+async def content_versioning_concept_page(request: Request):
+    """Render the content versioning walkthrough page with interactive steps."""
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "archetypes/concept.html",
+        {"steps": CONTENT_VERSIONING_STEPS, **_arc_context("content-versioning")},
+    )
+
+
+@router.get("/learn/experiment-tracking", response_class=HTMLResponse)
+async def experiment_tracking_concept_page(request: Request):
+    """Render the experiment tracking walkthrough page with interactive steps."""
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "archetypes/concept.html",
+        {"steps": EXPERIMENT_TRACKING_STEPS, **_arc_context("experiment-tracking")},
+    )
+
+
+@router.get("/learn/governance", response_class=HTMLResponse)
+async def governance_concept_page(request: Request):
+    """Render the data governance walkthrough page with interactive steps."""
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "archetypes/concept.html",
+        {"steps": GOVERNANCE_STEPS, **_arc_context("governance")},
+    )
+
+
+@router.get("/learn/memory-divergence", response_class=HTMLResponse)
+async def memory_divergence_concept_page(request: Request):
+    """Render the memory and divergence walkthrough page with interactive steps."""
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "archetypes/concept.html",
+        {"steps": MEMORY_DIVERGENCE_STEPS, **_arc_context("memory-divergence")},
     )
 
 
@@ -1513,6 +1933,62 @@ GLOSSARY_TERMS = [
     {
         "name": "Compute Shape",
         "definition": "One of <code>cpu</code>/<code>gpu</code>/<code>multi-gpu</code>/<code>multi-node</code> — selects the pre-registered Batch job definition and queue.",
+    },
+    {
+        "name": "Chunker",
+        "definition": "Strategy that splits text into context-window-sized documents via <code>chunk(text) -> list[str]</code>. Three implementations: <code>FixedSizeWindowChunker</code> (windowed), <code>LineAsDocChunker</code> (line), <code>FileAsDocChunker</code> (file).",
+    },
+    {
+        "name": "Overlap",
+        "definition": "Fraction of adjacent windows that overlap in <code>FixedSizeWindowChunker</code>, in <code>[0.0, 1.0)</code>. Stride = <code>max(1, int(block_size * (1 - overlap)))</code>. Default 0.5.",
+    },
+    {
+        "name": "Content Blob",
+        "definition": "Content-addressed bytes in the versioned store, keyed by SHA-256 and written to <code>blobs/&lt;hash[:2]&gt;/&lt;hash&gt;</code>. Identical content is deduplicated automatically.",
+    },
+    {
+        "name": "Manifest",
+        "definition": "Immutable description of one content version — corpus slug, version number, chunk config, and ordered entries — hashed to a <code>manifest_digest</code> (SHA-256 of canonical JSON).",
+    },
+    {
+        "name": "VersionRef",
+        "definition": "Pins a content snapshot by combining <code>version_number</code> and <code>label</code> with the content-addressed <code>manifest_digest</code> and internal <code>version_id</code>.",
+    },
+    {
+        "name": "Weight Replication",
+        "definition": "Training-data weighting rule <code>factor = max(1, round(weight))</code>; each content entry's chunks are repeated <code>factor</code> times. Replication, not probabilistic sampling.",
+    },
+    {
+        "name": "MLflow Run",
+        "definition": "Experiment record holding a training run's params (hyperparameters), metrics (per-step loss), tags, and artifacts. Logged by <code>TrackingService</code>.",
+    },
+    {
+        "name": "Model Registry",
+        "definition": "MLflow registry of trained models, named <code>dataset-{id}</code>/<code>corpus-{id}</code>/<code>demo</code>, source-pinned via a <code>runs:/{run_id}/</code> URI, auto-incrementing versions.",
+    },
+    {
+        "name": "Fire-and-Forget",
+        "definition": "<code>TrackingService</code> error policy: if MLflow is unreachable it sets <code>_degraded</code> and silently no-ops, so tracking never breaks training. Opposite of <code>AuditService</code>, which raises.",
+    },
+    {
+        "name": "Provenance",
+        "definition": "Machine-readable record of data origin — <code>source</code>, <code>license</code>, <code>attribution</code> — in <code>provenance.json</code> for bundled data and five provenance columns on Dataset/Corpus.",
+    },
+    {
+        "name": "Acceptable-Use Gate",
+        "definition": "Declaration-only check on upload/import requiring <code>declared_source</code>, an approved <code>license</code> (or <code>own-content</code>), and <code>acceptable_use_affirmed=true</code>. Rejections return HTTP 422. No content scanning.",
+    },
+    {
+        "name": "Audit Chain",
+        "definition": "Append-only <code>audit_events</code> log where each entry's SHA-256 <code>entry_hash</code> covers the previous entry's hash (genesis <code>prev_hash</code> = 64 zeros). <code>verify_chain()</code> detects tampering.",
+    },
+    {
+        "name": "Memory Estimate",
+        "definition": "Pre-flight footprint = weights + gradients + Adam (2x params) + KV cache, in FP32, with <code>peak = total x 2</code> for backward-pass activations. Flags likely OOM above 90% of available memory.",
+    },
+    {
+        "name": "Divergence",
+        "definition": "Non-finite training loss. <code>classify_divergence(loss)</code> returns <code>DivergenceReason.LOSS_NAN</code> or <code>LOSS_INF</code>; the run emits a <code>divergence</code> SSE event and raises <code>DivergenceError</code> to halt.",
     },
 ]
 

@@ -983,7 +983,8 @@ async def injection_event_stream(
 
     async def event_stream():
         """Generator that yields SSE events from ``_injection_queue``
-        or heartbeats every 30 seconds."""
+        or heartbeats every 30 seconds.
+        """
         while True:
             try:
                 msg = await asyncio.wait_for(_injection_queue.get(), timeout=30)
@@ -1169,14 +1170,14 @@ async def list_locks(
     return {
         "data": [
             LockOut(
-                id=l.id,
-                scope=l.scope,
-                holder=l.holder,
-                state=l.state,
-                acquired_at=l.acquired_at,
-                released_at=l.released_at,
+                id=lock.id,
+                scope=lock.scope,
+                holder=lock.holder,
+                state=lock.state,
+                acquired_at=lock.acquired_at,
+                released_at=lock.released_at,
             ).model_dump()
-            for l in locks
+            for lock in locks
         ],
         "error": None,
     }

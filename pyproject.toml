@@ -98,9 +98,9 @@ convention = "numpy"
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["E402", "F401", "D100", "D104"]
-"tests/**/*.py" = ["E402", "F401", "B011", "F841", "RUF006", "D100", "D101", "D102", "D103", "D104", "D107"]
-"anvil/_resources/migrations/**" = ["E402", "F401", "D"]
-"examples/**" = ["E402", "E741", "D"]
+"tests/**/*.py" = ["E402", "F401", "B007", "B011", "B017", "C401", "F841", "RUF001", "RUF002", "RUF005", "RUF006", "RUF012", "RUF015", "RUF043", "RUF059", "E741", "ASYNC240", "D100", "D101", "D102", "D103", "D104", "D107"]
+"anvil/_resources/migrations/**" = ["E402", "F401", "RUF002", "D"]
+"examples/**" = ["E402", "E741", "B007", "B905", "RUF059", "D"]
 "scripts/**" = ["D"]
 "anvil/api/v1/corpora.py" = ["E741"]
 "anvil/api/v1/datasets.py" = ["B904"]
@@ -108,7 +108,7 @@ convention = "numpy"
 "anvil/api/v1/experiments.py" = ["ASYNC240", "ASYNC230"]
 "anvil/api/v1/router.py" = ["ASYNC221", "ASYNC240", "B904"]
 "anvil/api/v1/training.py" = ["ASYNC230"]
-"anvil/services/inference.py" = ["ASYNC240"]
+"anvil/services/inference/inference.py" = ["ASYNC240"]
 
 [tool.ruff.format]
 quote-style = "double"

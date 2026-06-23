@@ -13,7 +13,7 @@ sampling temperature, GPU usage flag, and optional dataset or corpus
 associations.
 """
 
-from sqlalchemy import Boolean, Float, ForeignKey, Integer, String
+from sqlalchemy import Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..base import Base

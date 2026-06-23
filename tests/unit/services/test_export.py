@@ -235,7 +235,8 @@ class TestSafetensorsExportError:
 
     def test_construct_with_message(self):
         """Constructing SafetensorsExportError with a message should
-        store and expose it via str and repr."""
+        store and expose it via str and repr.
+        """
         from anvil.services.training.safetensors_export_error import (
             SafetensorsExportError,
         )

@@ -109,11 +109,16 @@ async def test_about_page(client):
 
 @pytest.mark.asyncio
 async def test_learn_index(client):
-    """GET /v1/learn renders the learning hub index."""
+    """GET /v1/learn renders the learning hub index with all lessons listed."""
     r = await client.get("/v1/learn")
     assert r.status_code == 200
     assert "text/html" in r.headers["content-type"]
     assert "Learning Path" in r.text
+    assert "/v1/learn/chunking" in r.text
+    assert "/v1/learn/content-versioning" in r.text
+    assert "/v1/learn/experiment-tracking" in r.text
+    assert "/v1/learn/governance" in r.text
+    assert "/v1/learn/memory-divergence" in r.text
 
 
 @pytest.mark.asyncio
@@ -222,6 +227,61 @@ async def test_learn_export(client):
     assert r.status_code == 200
     assert "text/html" in r.headers["content-type"]
     assert "Model Export" in r.text
+
+
+@pytest.mark.asyncio
+async def test_learn_chunking(client):
+    """GET /v1/learn/chunking renders the chunking strategies lesson."""
+    r = await client.get("/v1/learn/chunking")
+    assert r.status_code == 200
+    assert "text/html" in r.headers["content-type"]
+    assert "Chunking Strategies" in r.text
+    assert "FixedSizeWindowChunker" in r.text
+    assert 'data-widget="chunking"' in r.text
+
+
+@pytest.mark.asyncio
+async def test_learn_content_versioning(client):
+    """GET /v1/learn/content-versioning renders the content versioning lesson."""
+    r = await client.get("/v1/learn/content-versioning")
+    assert r.status_code == 200
+    assert "text/html" in r.headers["content-type"]
+    assert "Content Versioning" in r.text
+    assert "manifest_digest" in r.text
+    assert 'data-widget="contentVersioning"' in r.text
+
+
+@pytest.mark.asyncio
+async def test_learn_experiment_tracking(client):
+    """GET /v1/learn/experiment-tracking renders the experiment tracking lesson."""
+    r = await client.get("/v1/learn/experiment-tracking")
+    assert r.status_code == 200
+    assert "text/html" in r.headers["content-type"]
+    assert "Experiment Tracking" in r.text
+    assert "Model Registry" in r.text
+    assert 'data-widget="experimentTracking"' in r.text
+
+
+@pytest.mark.asyncio
+async def test_learn_governance(client):
+    """GET /v1/learn/governance renders the data governance lesson."""
+    r = await client.get("/v1/learn/governance")
+    assert r.status_code == 200
+    assert "text/html" in r.headers["content-type"]
+    assert "Data Governance" in r.text
+    assert "Acceptable-Use Gate" in r.text
+    assert 'data-widget="governance"' in r.text
+
+
+@pytest.mark.asyncio
+async def test_learn_memory_divergence(client):
+    """GET /v1/learn/memory-divergence renders the memory and divergence lesson."""
+    r = await client.get("/v1/learn/memory-divergence")
+    assert r.status_code == 200
+    assert "text/html" in r.headers["content-type"]
+    assert "Memory &amp; Divergence" in r.text
+    assert "DivergenceError" in r.text
+    assert 'data-widget="memoryDivergence"' in r.text
 
 
 @pytest.mark.asyncio

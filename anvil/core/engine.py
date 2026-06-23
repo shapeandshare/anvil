@@ -3,6 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+"""From-scratch Llama-style transformer engine with zero external deps.
+
+Provides primitives for building, training, and running a decoder-only
+transformer with RoPE, SwiGLU MLP, RMSNorm, and KV-cache attention.
+"""
+
 import math
 import random
 
@@ -10,14 +16,17 @@ from anvil.core.autograd import Value
 
 
 def matrix(nout, nin, std=0.08):
+    """Create an ``nout x nin`` matrix of Gaussian-initialized ``Value``s."""
     return [[Value(random.gauss(0, std)) for _ in range(nin)] for _ in range(nout)]
 
 
 def linear(x, w):
+    """Compute a matrix-vector product returning a list of ``Value``s."""
     return [sum(wi * xi for wi, xi in zip(wo, x, strict=True)) for wo in w]
 
 
 def softmax(logits):
+    """Compute numerically-stable softmax over a list of ``Value`` logits."""
     max_val = max(val.data for val in logits)
     exps = [(val - max_val).exp() for val in logits]
     total = sum(exps)
@@ -25,6 +34,7 @@ def softmax(logits):
 
 
 def rmsnorm(x):
+    """Apply RMS normalization to a list of ``Value``s."""
     ms = sum(xi * xi for xi in x) / len(x)
     scale = (ms + 1e-5) ** -0.5
     return [xi * scale for xi in x]
@@ -71,6 +81,8 @@ def apply_rope(
 
 
 class LlamaModel:
+    """A decoder-only transformer with RoPE, SwiGLU MLP, RMSNorm, and KV-cache."""
+
     def __init__(
         self,
         vocab_size: int,
@@ -124,6 +136,24 @@ class LlamaModel:
         )
 
     def forward(self, token_id, pos_id, keys, values):
+        """Run one forward pass for a single token at the given position.
+
+        Parameters
+        ----------
+        token_id : int
+            The token index to embed and process.
+        pos_id : int
+            The sequence position for RoPE computation.
+        keys : list of list of list of Value
+            KV-cache for keys, indexed by layer then position.
+        values : list of list of list of Value
+            KV-cache for values, indexed by layer then position.
+
+        Returns
+        -------
+        list of Value
+            Logits over the vocabulary for this token position.
+        """
         tok_emb = self.state_dict["wte"][token_id]
         x = tok_emb
 
@@ -205,9 +235,19 @@ class LlamaModel:
         return logits
 
     def num_params(self):
+        """Return the total number of trainable parameters."""
         return len(self.params)
 
     def save(self, path: str, chars=None) -> None:
+        """Serialize the model to a JSON file.
+
+        Parameters
+        ----------
+        path : str
+            Filesystem path for the output JSON file.
+        chars : list of str or None, optional
+            Optional character mapping to include in the saved data.
+        """
         import json
         import os
 
@@ -234,6 +274,23 @@ class LlamaModel:
 
     @classmethod
     def load(cls, path: str) -> "LlamaModel":
+        """Load a serialized ``LlamaModel`` from a JSON file.
+
+        Parameters
+        ----------
+        path : str
+            Filesystem path to the saved JSON checkpoint.
+
+        Returns
+        -------
+        LlamaModel
+            The deserialized model instance.
+
+        Raises
+        ------
+        ValueError
+            If the file contains an old GPT-2 format checkpoint.
+        """
         import json
 
         with open(path) as f:
@@ -268,6 +325,23 @@ class LlamaModel:
         return model
 
     def forward_introspect(self, token_ids: list[int]) -> dict:
+        """Run forward pass over multiple tokens and return introspection data.
+
+        Similar to ``forward`` but processes a full sequence and returns
+        attention weights, per-token embeddings, and final logits for
+        visualization in the web UI.
+
+        Parameters
+        ----------
+        token_ids : list of int
+            Sequence of token indices to process.
+
+        Returns
+        -------
+        dict
+            A dictionary with keys ``attention``, ``logits``,
+            ``embeddings``, ``n_layer``, ``n_head``, and ``tokens``.
+        """
         keys = [[] for _ in range(self.n_layer)]
         values = [[] for _ in range(self.n_layer)]
         all_embeddings: list[list[float]] = []
@@ -388,6 +462,50 @@ def train(
     optimizer_state_callback=None,
     stop_check=None,
 ):
+    """Train a ``LlamaModel`` on character-level text data.
+
+    Implements the full training loop: tokenization, cross-entropy loss,
+    backward pass, hand-rolled Adam optimizer with linear LR decay, and
+    final sampling of generated text.
+
+    Parameters
+    ----------
+    docs : list of str
+        List of document strings to train on.
+    model : LlamaModel or None, optional
+        Existing model to continue training, or None to create a new one.
+    num_steps : int, optional
+        Number of training steps. Defaults to 1000.
+    block_size : int, optional
+        Context length per step. Defaults to 16.
+    n_embd : int, optional
+        Embedding dimension for new models. Defaults to 16.
+    n_head : int, optional
+        Number of attention heads for new models. Defaults to 4.
+    n_layer : int, optional
+        Number of layers for new models. Defaults to 1.
+    learning_rate : float, optional
+        Initial learning rate. Defaults to 0.01.
+    beta1 : float, optional
+        Adam beta1. Defaults to 0.85.
+    beta2 : float, optional
+        Adam beta2. Defaults to 0.99.
+    temperature : float, optional
+        Sampling temperature. Defaults to 0.5.
+    progress_callback : callable or None, optional
+        Called each step with ``(step, loss, tokens, grad_norm)``.
+    optimizer_state_callback : callable or None, optional
+        Called each step with ``(step, m, v, grads)``.
+    stop_check : callable or None, optional
+        Called each step; if returns True, training halts early.
+
+    Returns
+    -------
+    tuple
+        ``(model, loss, samples, uchars)`` where ``model`` is the trained
+        ``LlamaModel``, ``loss`` is the final loss, ``samples`` is a list
+        of generated strings, and ``uchars`` is the sorted unique chars.
+    """
     random.seed(42)
     uchars = sorted(set("".join(docs)))
     BOS = len(uchars)
