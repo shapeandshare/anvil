@@ -72,13 +72,12 @@ jobs:
         if: steps.check.outputs.needs_bump == 'true'
         env:
           GH_TOKEN: ${{ secrets.BUMP_PAT }}
-          CURRENT: ${{ steps.check.outputs.version_current }}
         run: |
           set -euo pipefail
 
+          CURRENT="${{ steps.check.outputs.version_current }}"
           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
           NEW_VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))"
-
           BRANCH="ci/auto-bump-patch-${NEW_VERSION}"
 
           git config user.name  "github-actions[bot]"
@@ -86,26 +85,8 @@ jobs:
 
           git checkout -b "${BRANCH}" --no-recurse-submodules
 
-          # Bump patch version in pyproject.toml
-          sed -i.bak \
-            "s/version = \"${CURRENT}\"/version = \"${NEW_VERSION}\"/" \
-            pyproject.toml && rm pyproject.toml.bak
-
-          # Prepend changelog entry
-          TODAY=$(date -u '+%Y-%m-%d')
-          FIRST_VERSION_LINE=$(grep -n '^## v' CHANGELOG.md | head -1 | cut -d: -f1)
-          CL_TMP=$(mktemp)
-          if [ -z "$FIRST_VERSION_LINE" ]; then
-            cat CHANGELOG.md > "$CL_TMP"
-            printf '## v%s (%s)\n\n### Fix\n- Automated patch bump: source code merged to main without a version bump\n\n---\n\n' \
-              "${NEW_VERSION}" "${TODAY}" >> "$CL_TMP"
-          else
-            head -n "$((FIRST_VERSION_LINE - 1))" CHANGELOG.md > "$CL_TMP"
-            printf '## v%s (%s)\n\n### Fix\n- Automated patch bump: source code merged to main without a version bump\n\n---\n\n' \
-              "${NEW_VERSION}" "${TODAY}" >> "$CL_TMP"
-            tail -n "+${FIRST_VERSION_LINE}" CHANGELOG.md >> "$CL_TMP"
-          fi
-          mv "$CL_TMP" CHANGELOG.md
+          # Bump version + prepend changelog via Python (replaces fragile sed)
+          anvil-vault bump-patch
 
           git add pyproject.toml CHANGELOG.md
           git commit -m "chore: auto bump version ${CURRENT} -> ${NEW_VERSION}
