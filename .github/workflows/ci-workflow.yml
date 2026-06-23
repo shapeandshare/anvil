@@ -69,8 +69,7 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "| Gate | Status |" >> "$GITHUB_STEP_SUMMARY"
           echo "|------|--------|" >> "$GITHUB_STEP_SUMMARY"
-          for gate in bump-scope-guard lint test; do
-            STATUS="${{ needs[gate].result }}"
-            echo "| $gate | $STATUS |" >> "$GITHUB_STEP_SUMMARY"
-          done
+          echo "| bump-scope-guard | ${{ needs.bump-scope-guard.result }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| lint | ${{ needs.lint.result }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| test | ${{ needs.test.result }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
