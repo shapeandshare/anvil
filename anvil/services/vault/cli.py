@@ -86,6 +86,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Git repository root path (default: .)",
     )
 
+    # --- bump-patch ---
+    sub.add_parser(
+        "bump-patch",
+        help="Bump patch version in pyproject.toml and prepend CHANGELOG entry",
+    )
+
     # --- detect-increment ---
     sub.add_parser(
         "detect-increment",
@@ -158,6 +164,8 @@ def main(argv: list[str] | None = None) -> None:
         _cmd_check_guarded_imports(args)
     elif args.command == "check-bump-scope":
         _cmd_check_bump_scope(args)
+    elif args.command == "bump-patch":
+        _cmd_bump_patch(args)
     elif args.command == "detect-increment":
         _cmd_detect_increment(args)
     elif args.command == "check-version":
@@ -278,6 +286,13 @@ def _cmd_check_bump_scope(args: argparse.Namespace) -> None:
     from .check_bump_scope import main as bump_main
 
     bump_main()
+
+
+def _cmd_bump_patch(args: argparse.Namespace) -> None:
+    """Handle the ``bump-patch`` subcommand."""
+    from .bump_version import main
+
+    main()
 
 
 def _cmd_detect_increment(args: argparse.Namespace) -> None:
