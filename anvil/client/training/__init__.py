@@ -1,0 +1,1 @@
+"""Training orchestration — start, stop, status, SSE stream."""
