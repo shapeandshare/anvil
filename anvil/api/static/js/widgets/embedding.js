@@ -67,7 +67,7 @@
     this._infoEl.innerHTML = '<div class="loading-indicator"><span class="spinner"></span> Computing embeddings...</div>';
     this._emptyEl.style.display = 'none';
 
-    fetch('/v1/inference/embeddings', {
+    window.apiFetch('/v1/inference/embeddings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: text })

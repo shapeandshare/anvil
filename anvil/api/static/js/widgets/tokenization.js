@@ -53,7 +53,7 @@
     stats.innerHTML = '';
     empty.style.display = 'none';
 
-    fetch('/v1/inference/tokenize', {
+    window.apiFetch('/v1/inference/tokenize', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: text })

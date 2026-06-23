@@ -100,7 +100,7 @@
     this._infoEl.innerHTML = '<div class="loading-indicator"><span class="spinner"></span> Computing attention...</div>';
     this._emptyEl.style.display = 'none';
 
-    fetch('/v1/inference/attention', {
+    window.apiFetch('/v1/inference/attention', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: text })

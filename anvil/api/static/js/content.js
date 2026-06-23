@@ -37,7 +37,7 @@
 
   function api(path, opts) {
     opts = opts || {};
-    return fetch(path, opts)
+    return (window.apiFetch || fetch)(path, opts)
       .then(function (r) {
         return r.json().then(function (body) {
           if (!r.ok || body.error) {
@@ -250,7 +250,7 @@
     let statusEl = document.getElementById('stage-status');
     if (statusEl) statusEl.textContent = 'Uploading...';
 
-    fetch('/v1/content/sessions/' + sessionId + '/stage?path=' + encodeURIComponent(path), {
+    window.apiFetch('/v1/content/sessions/' + sessionId + '/stage?path=' + encodeURIComponent(path), {
       method: 'POST',
       body: formData,
     })

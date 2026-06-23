@@ -90,7 +90,7 @@
     if (!text) return;
 
     var endpoint = this._showFull ? FULL_MODEL_ENDPOINT : EXAMPLE_ENDPOINT;
-    fetch(endpoint, {
+    window.apiFetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: text })
