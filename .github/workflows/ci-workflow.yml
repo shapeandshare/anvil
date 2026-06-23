@@ -18,8 +18,6 @@ jobs:
     name: Bump Scope Guard
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    outputs:
-      scope: ${{ steps.classify.outputs.scope }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -30,22 +28,13 @@ jobs:
       - name: Classify change scope
         id: classify
         run: |
-          echo "BUMP_SCOPE=full" > scope_output.txt
-          cat scope_output.txt
-          SCOPE=$(grep "^BUMP_SCOPE=" scope_output.txt | cut -d= -f2)
-          echo "scope=${SCOPE}" >> "$GITHUB_OUTPUT"
-      - name: Upload scope artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: bump-scope-output
-          path: scope_output.txt
+          echo "scope=full" >> "$GITHUB_OUTPUT"
 
   lint:
     name: Lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: bump-scope-guard
-    if: needs.bump-scope-guard.outputs.scope != 'version-only'
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
@@ -62,7 +51,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: bump-scope-guard
-    if: needs.bump-scope-guard.outputs.scope != 'version-only'
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
