@@ -33,6 +33,25 @@
 
 [Gates determined based on constitution file]
 
+**Simplicity First gate (Article XI — hard MUST)**: Confirm this plan favors
+the simplest, most boring solution that meets the requirement:
+
+- [ ] **Simplest viable** (§11.1) — the chosen approach is the simplest that
+      satisfies the requirement; any added complexity has a concrete, present
+      justification (not a hypothetical future one).
+- [ ] **Boring over novel** (§11.2) — no novel/experimental dependency,
+      framework, or pattern is introduced where a simpler proven alternative
+      exists; any such choice is recorded in Complexity Tracking below.
+- [ ] **YAGNI** (§11.3) — no speculative generality, premature abstraction, or
+      config knobs without a present consumer.
+- [ ] **Reuse first** (§11.4) — existing libraries/patterns/abstractions are
+      reused before introducing new ones.
+- [ ] **Testable** (§11.6) — the approach is demonstrably testable; untested or
+      untestable paths are not treated as complete (pairs with Article IV TDD).
+
+> Any deviation from the simplest viable solution MUST be recorded in the
+> Complexity Tracking table below (§11.5), or this gate fails.
+
 ## Project Structure
 
 ### Documentation (this feature)
