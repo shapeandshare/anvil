@@ -290,70 +290,92 @@ def build_migration_plan(
     for spec_dir in sorted(specs_dir.iterdir()):
         if not spec_dir.is_dir():
             continue
-
-        dirname = spec_dir.name
-        try:
-            num, slug = parse_spec_number_and_slug(dirname)
-        except ValueError:
-            continue
-
-        title = spec_dirname_to_title(dirname)
-        vault_spec_dir = vault_specs_dir / title
-
-        entry: dict[str, object] = {
-            "source": str(spec_dir),
-            "target_dir": str(vault_spec_dir),
-            "title": title,
-            "number": num,
-            "slug": slug,
-            "artifacts": [],
-            "scaffold_dirs": [],
-            "root_note_path": str(vault_spec_dir / f"{title}.md"),
-            "has_spec_md": False,
-            "spec_md_source": "",
-            "spec_md_content": "",
-        }
-
-        # Collect artifact files
-        for fname in sorted(ARTIFACT_TYPES):
-            src = spec_dir / fname
-            if src.exists():
-                artifact_type = ARTIFACT_TYPES[fname]
-                dest_name = f"{title} - {fname}"
-                artifacts = entry["artifacts"]
-                assert isinstance(artifacts, list)
-                artifacts.append(
-                    {
-                        "source": str(src),
-                        "target": str(vault_spec_dir / dest_name),
-                        "type": artifact_type,
-                        "filename": dest_name,
-                    }
-                )
-
-        # Load spec.md content for root index note generation
-        spec_md = spec_dir / "spec.md"
-        if spec_md.exists():
-            entry["has_spec_md"] = True
-            entry["spec_md_source"] = str(spec_md)
-            entry["spec_md_content"] = spec_md.read_text(encoding="utf-8")
-
-        # Collect scaffold subdirectories
-        for sdir in SCAFFOLD_DIRS:
-            src_dir = spec_dir / sdir
-            if src_dir.exists() and src_dir.is_dir():
-                scaffold_dirs = entry["scaffold_dirs"]
-                assert isinstance(scaffold_dirs, list)
-                scaffold_dirs.append(
-                    {
-                        "source": str(src_dir),
-                        "target": str(vault_spec_dir / sdir),
-                    }
-                )
-
-        plan.append(entry)
+        entry = _build_spec_plan_entry(spec_dir, vault_specs_dir)
+        if entry is not None:
+            plan.append(entry)
 
     return plan
+
+
+def _build_spec_plan_entry(
+    spec_dir: Path, vault_specs_dir: Path
+) -> dict[str, object] | None:
+    """Build a single migration plan entry for one spec directory.
+
+    Parameters
+    ----------
+    spec_dir : Path
+        Path to the spec directory in ``specs/``.
+    vault_specs_dir : Path
+        Path to the ``docs/vault/Specs/`` directory.
+
+    Returns
+    -------
+    dict or None
+        Plan entry dict, or ``None`` if the directory doesn't match
+        the ``NNN-slug`` pattern.
+    """
+    dirname = spec_dir.name
+    try:
+        num, slug = parse_spec_number_and_slug(dirname)
+    except ValueError:
+        return None
+
+    title = spec_dirname_to_title(dirname)
+    vault_spec_dir = vault_specs_dir / title
+
+    entry: dict[str, object] = {
+        "source": str(spec_dir),
+        "target_dir": str(vault_spec_dir),
+        "title": title,
+        "number": num,
+        "slug": slug,
+        "artifacts": [],
+        "scaffold_dirs": [],
+        "root_note_path": str(vault_spec_dir / f"{title}.md"),
+        "has_spec_md": False,
+        "spec_md_source": "",
+        "spec_md_content": "",
+    }
+
+    # Collect artifact files
+    for fname in sorted(ARTIFACT_TYPES):
+        src = spec_dir / fname
+        if src.exists():
+            artifact_type = ARTIFACT_TYPES[fname]
+            dest_name = f"{title} - {fname}"
+            artifacts = entry["artifacts"]
+            assert isinstance(artifacts, list)
+            artifacts.append(
+                {
+                    "source": str(src),
+                    "target": str(vault_spec_dir / dest_name),
+                    "type": artifact_type,
+                    "filename": dest_name,
+                }
+            )
+
+    # Load spec.md content for root index note generation
+    spec_md = spec_dir / "spec.md"
+    if spec_md.exists():
+        entry["has_spec_md"] = True
+        entry["spec_md_source"] = str(spec_md)
+        entry["spec_md_content"] = spec_md.read_text(encoding="utf-8")
+
+    # Collect scaffold subdirectories
+    for sdir in SCAFFOLD_DIRS:
+        src_dir = spec_dir / sdir
+        if src_dir.exists() and src_dir.is_dir():
+            scaffold_dirs = entry["scaffold_dirs"]
+            assert isinstance(scaffold_dirs, list)
+            scaffold_dirs.append(
+                {
+                    "source": str(src_dir),
+                    "target": str(vault_spec_dir / sdir),
+                }
+            )
+
+    return entry
 
 
 # ---------------------------------------------------------------------------
@@ -701,65 +723,79 @@ def apply_migration(
     plan = build_migration_plan(specs_dir, vault_specs_dir)
 
     for entry in plan:
-        title = entry["title"]
-        assert isinstance(title, str)
-        target_dir_str = entry["target_dir"]
-        assert isinstance(target_dir_str, str)
-        target_dir = Path(target_dir_str)
-
-        # 1. Create target directory
-        target_dir.mkdir(parents=True, exist_ok=True)
-
-        # 2. Migrate artifact files (move + frontmatter)
-        artifacts = entry["artifacts"]
-        assert isinstance(artifacts, list)
-        for art in artifacts:
-            assert isinstance(art, dict)
-            src_str = art["source"]
-            dst_str = art["target"]
-            assert isinstance(src_str, str)
-            assert isinstance(dst_str, str)
-            src = Path(src_str)
-            dst = Path(dst_str)
-            art_type = art["type"]
-            assert isinstance(art_type, str)
-            _migrate_artifact_file(src, dst, title, art_type)
-
-        # 3. Write root index note
-        spec_md_content = entry.get("spec_md_content", "")
-        assert isinstance(spec_md_content, str)
-        slug = entry["slug"]
-        assert isinstance(slug, str)
-        number = entry["number"]
-        assert isinstance(number, str)
-        _write_root_index_note(
-            target_dir=target_dir,
-            spec_title=title,
-            spec_number=number,
-            slug=slug,
-            spec_md_content=spec_md_content if spec_md_content else "",
-            artifacts=[
-                {"filename": str(a["filename"]), "type": str(a["type"])}
-                for a in artifacts
-            ],
-        )
-
-        # 4. Move scaffold subdirectories as-is
-        scaffold_dirs = entry["scaffold_dirs"]
-        assert isinstance(scaffold_dirs, list)
-        for sd in scaffold_dirs:
-            assert isinstance(sd, dict)
-            src_sd = sd["source"]
-            dst_sd = sd["target"]
-            assert isinstance(src_sd, str)
-            assert isinstance(dst_sd, str)
-            _move_scaffold_dir(
-                Path(src_sd),
-                Path(dst_sd),
-            )
+        _migrate_one_spec(entry)
 
     # 5. Fixup: repair frontmatter in any already-migrated files
     _fix_existing_files(vault_specs_dir)
+
+
+def _migrate_one_spec(entry: dict[str, object]) -> None:
+    """Migrate a single spec directory entry.
+
+    Handles directory creation, artifact migration, root index note
+    writing, and scaffold subdirectory movement for one spec.
+
+    Parameters
+    ----------
+    entry : dict
+        A single migration plan entry from :func:`build_migration_plan`.
+    """
+    title = entry["title"]
+    assert isinstance(title, str)
+    target_dir_str = entry["target_dir"]
+    assert isinstance(target_dir_str, str)
+    target_dir = Path(target_dir_str)
+
+    # 1. Create target directory
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    # 2. Migrate artifact files (move + frontmatter)
+    artifacts = entry["artifacts"]
+    assert isinstance(artifacts, list)
+    for art in artifacts:
+        assert isinstance(art, dict)
+        src_str = art["source"]
+        dst_str = art["target"]
+        assert isinstance(src_str, str)
+        assert isinstance(dst_str, str)
+        src = Path(src_str)
+        dst = Path(dst_str)
+        art_type = art["type"]
+        assert isinstance(art_type, str)
+        _migrate_artifact_file(src, dst, title, art_type)
+
+    # 3. Write root index note
+    spec_md_content = entry.get("spec_md_content", "")
+    assert isinstance(spec_md_content, str)
+    slug = entry["slug"]
+    assert isinstance(slug, str)
+    number = entry["number"]
+    assert isinstance(number, str)
+    _write_root_index_note(
+        target_dir=target_dir,
+        spec_title=title,
+        spec_number=number,
+        slug=slug,
+        spec_md_content=spec_md_content if spec_md_content else "",
+        artifacts=[
+            {"filename": str(a["filename"]), "type": str(a["type"])}
+            for a in artifacts
+        ],
+    )
+
+    # 4. Move scaffold subdirectories as-is
+    scaffold_dirs = entry["scaffold_dirs"]
+    assert isinstance(scaffold_dirs, list)
+    for sd in scaffold_dirs:
+        assert isinstance(sd, dict)
+        src_sd = sd["source"]
+        dst_sd = sd["target"]
+        assert isinstance(src_sd, str)
+        assert isinstance(dst_sd, str)
+        _move_scaffold_dir(
+            Path(src_sd),
+            Path(dst_sd),
+        )
 
 
 def run(
