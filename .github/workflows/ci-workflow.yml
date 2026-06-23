@@ -22,12 +22,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
-      - name: Install anvil
-        run: echo "skip install"
-      - name: Classify change scope
-        id: classify
-        run: |
-          echo "scope=full" >> "$GITHUB_OUTPUT"
+      - run: echo "bump-scope-guard ok"
 
   lint:
     name: Lint
