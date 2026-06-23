@@ -1,7 +1,7 @@
 # Implementation Plan: Deployment Backup & Restore
 
-**Branch**: `026-deployment-backup-restore` | **Date**: 2026-06-21 | **Spec**: [spec.md](./spec.md)
-**Input**: Feature specification from `/docs/vault/Specs/026 Deployment Backup Restore/spec.md`
+**Branch**: `027-deployment-backup-restore` | **Date**: 2026-06-21 | **Spec**: [spec.md](./spec.md)
+**Input**: Feature specification from `/docs/vault/Specs/027 Deployment Backup Restore/spec.md`
 
 ## Summary
 
@@ -45,7 +45,7 @@ Add full-deployment backup & restore to anvil: a consistent point-in-time snapsh
 ### Documentation (this feature)
 
 ```text
-docs/vault/Specs/026 Deployment Backup Restore/
+docs/vault/Specs/027 Deployment Backup Restore/
 ├── plan.md              # This file
 ├── research.md          # Phase 0 output (R1–R13)
 ├── data-model.md        # Phase 1 output

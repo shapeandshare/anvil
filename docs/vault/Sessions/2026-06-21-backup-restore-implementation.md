@@ -14,7 +14,7 @@ source: agent
 
 **Session**: Implemented the complete backup & restore feature for the
 anvil deployment (feature 026-deployment-backup-restore). See
-[[Decisions/ADR-039-deployment-backup-restore|ADR-039]] for the full
+[[Decisions/ADR-040-deployment-backup-restore|ADR-040]] for the full
 architecture decision record.
 
 ## What was done

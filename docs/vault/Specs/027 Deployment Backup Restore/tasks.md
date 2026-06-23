@@ -1,6 +1,6 @@
 # Tasks: Deployment Backup & Restore
 
-**Input**: Design documents from `/docs/vault/Specs/026 Deployment Backup Restore/`
+**Input**: Design documents from `/docs/vault/Specs/027 Deployment Backup Restore/`
 **Prerequisites**: plan.md, spec.md, research.md (R1–R14), data-model.md, contracts/ (api-v1-backup.md, cli-backup.md, backup-archive.md), quickstart.md
 
 **Tests**: REQUIRED — Constitution Article IV mandates TDD (Red-Green-Refactor). Test tasks are written FIRST and must FAIL before implementation.

@@ -1,5 +1,5 @@
 ---
-title: 'ADR-039: Full-Deployment Backup & Restore'
+title: 'ADR-040: Full-Deployment Backup & Restore'
 type: decision
 tags:
   - type/decision
@@ -15,9 +15,9 @@ code-refs:
   - anvil/db/repositories/backup_operations.py
   - anvil/api/v1/backup.py
   - anvil/config.py
-aliases: 'ADR-039: Full-Deployment Backup & Restore'
+aliases: 'ADR-040: Full-Deployment Backup & Restore'
 ---
-# ADR-039: Full-Deployment Backup & Restore
+# ADR-040: Full-Deployment Backup & Restore
 
 ## Status
 

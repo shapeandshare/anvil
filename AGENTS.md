@@ -340,10 +340,10 @@ SomeException
 - Python 3.11+ (existing repo convention) + Stdlib only — `ux_lint.py` (re/ sys/ os/), `ux_review.py` (stdlib + urllib for OpenAI-compatible API calls) (025-ux-rules-integration)
 - N/A — flat files on disk (025-ux-rules-integration)
 - OpenCode skills: `ux-review` (audit UI), `ux-generate` (generate compliant UI) at `.opencode/skills/` (025-ux-rules-integration)
-- Python 3.11+ + FastAPI, async SQLAlchemy + aiosqlite, Jinja2, MLflow (sidecar). Backup archiving uses **stdlib only** (`tarfile`, `hashlib`, `shutil`, `tempfile`, `sqlite3`) — no new third-party deps. (026-deployment-backup-restore)
-- SQLite (app DB at `data/anvil-state.db` in WAL mode; MLflow DB at `mlruns/mlflow.db`). Filesystem state under `data/` and `mlruns/`. Backup archives at `data/backups/` (new, configurable via `ANVIL_BACKUP_DIR`). (026-deployment-backup-restore)
-- Python 3.11+ + FastAPI, async SQLAlchemy + aiosqlite, Jinja2, MLflow (sidecar). Backup archiving uses **stdlib only** (`tarfile`, `hashlib`, `shutil`, `tempfile`, `sqlite3`) — no new third-party deps. (026-deployment-backup-restore)
-- SQLite (app DB at `data/anvil-state.db` in WAL mode; MLflow DB at `mlruns/mlflow.db`). Persistent state under `data/` and `mlruns/`. Backup archives at `data/backups/` (new, configurable via `ANVIL_BACKUP_DIR`). (026-deployment-backup-restore)
+- Python 3.11+ + FastAPI, async SQLAlchemy + aiosqlite, Jinja2, MLflow (sidecar). Backup archiving uses **stdlib only** (`tarfile`, `hashlib`, `shutil`, `tempfile`, `sqlite3`) — no new third-party deps. (027-deployment-backup-restore)
+- SQLite (app DB at `data/anvil-state.db` in WAL mode; MLflow DB at `mlruns/mlflow.db`). Persistent state under `data/` and `mlruns/`. Backup archives at `data/backups/` (new, configurable via `ANVIL_BACKUP_DIR`). (027-deployment-backup-restore)
+- Python 3.11+ (matches repo; uses `StrEnum`, PEP 604 unions, PEP 563 `from __future__ import annotations`) + `httpx>=0.27,<1` (transport — already a direct dep), `pydantic>=2,<3` (DTOs — already a dep). No new runtime dependencies. (026-client-sdk)
+- N/A — the SDK is a stateless HTTP client; the only persisted state is an in-memory session cookie + optional API key held on the client instance. (026-client-sdk)
 
 ## Recent Changes
 - 025-ux-rules-integration: Added Python 3.11+ (existing repo convention) + Stdlib only — `ux_lint.py` (re/ sys/ os/), `ux_review.py` (stdlib + urllib for OpenAI-compatible API calls)
