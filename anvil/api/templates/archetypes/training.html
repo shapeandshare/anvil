@@ -803,7 +803,7 @@ var gpuToggle = document.getElementById('compute_backend');
     var name = prompt('Register model from Experiment #' + experimentId + '\n\nEnter a name for this model:');
     if (!name || !name.trim()) return;
     var desc = prompt('Optional description (or leave blank):');
-    fetch('/v1/registry/models', {
+    window.apiFetch('/v1/registry/models', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ experiment_id: experimentId, name: name.trim(), description: desc || null }),
@@ -936,7 +936,10 @@ var gpuToggle = document.getElementById('compute_backend');
         }
         renderRunsList(window.coreSession.getActiveRuns());
         /* If run already completed on the server, fetch experiment data */
-        fetch('/v1/experiments').then(function(r) { return r.json(); }).then(function(expData) {
+        fetch('/v1/experiments').then(function(r) {
+          if (!r.ok) throw new Error(r.statusText);
+          return r.json();
+        }).then(function(expData) {
           refreshOutputActions(expData);
         }).catch(function() {});
       };
@@ -999,7 +1002,10 @@ var gpuToggle = document.getElementById('compute_backend');
         log(' (restored from previous session)');
         log('═══════════════════════════════════════');
       }
-      fetch('/v1/experiments').then(function(r) { return r.json(); }).then(function(expData) {
+      fetch('/v1/experiments').then(function(r) {
+        if (!r.ok) throw new Error(r.statusText);
+        return r.json();
+      }).then(function(expData) {
         refreshOutputActions(expData);
       }).catch(function() {});
     } else if (saved.status === 'errored') {
@@ -1018,7 +1024,10 @@ var gpuToggle = document.getElementById('compute_backend');
     log(' FINAL loss: ' + finalLoss);
     log('═══════════════════════════════════════');
 
-    fetch('/v1/experiments').then(function(r) { return r.json(); }).then(function(expData) {
+    fetch('/v1/experiments').then(function(r) {
+      if (!r.ok) throw new Error(r.statusText);
+      return r.json();
+    }).then(function(expData) {
       refreshOutputActions(expData);
       /* Keep in runs list but mark done — user can dismiss */
       if (runId) {
@@ -1184,7 +1193,7 @@ var gpuToggle = document.getElementById('compute_backend');
     try {
       initChart();
       if (chart) chart.clear();
-      var resp = await fetch('/v1/training/start', {
+      var resp = await window.apiFetch('/v1/training/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config)
@@ -1361,7 +1370,10 @@ var gpuToggle = document.getElementById('compute_backend');
     statusEl.innerHTML = '<span style="color:var(--text-muted);font-size:0.62rem;">' + parts.join(' · ') + '</span>';
 
     /* Also fetch GPU details for memory estimation */
-    fetch('/v1/health').then(function(r) { return r.json(); }).then(function(health) {
+    fetch('/v1/health/detailed').then(function(r) {
+      if (!r.ok) throw new Error(r.statusText);
+      return r.json();
+    }).then(function(health) {
       var gpu = health.gpu || {};
       _gpuInfo = gpu;
       updateModelStats(corpusSelect.value, datasetSelect.value);
@@ -1371,7 +1383,10 @@ var gpuToggle = document.getElementById('compute_backend');
   }).catch(function() {
     document.getElementById('gpu-status').innerHTML = '<span class="text-muted">Could not detect compute backends</span>';
     /* Fallback: still try to get GPU info from health */
-    fetch('/v1/health').then(function(r) { return r.json(); }).then(function(health) {
+    fetch('/v1/health/detailed').then(function(r) {
+      if (!r.ok) throw new Error(r.statusText);
+      return r.json();
+    }).then(function(health) {
       _gpuInfo = health.gpu || {};
       updateModelStats(corpusSelect.value, datasetSelect.value);
     }).catch(function() {});

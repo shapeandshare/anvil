@@ -104,7 +104,7 @@
       var btnId = 'btn-' + name + '-' + action;
       setBtnLoading(btnId, true);
       try {
-        var resp = await fetch('/v1/services/' + name + '/' + action, { method: 'POST' });
+        var resp = await window.apiFetch('/v1/services/' + name + '/' + action, { method: 'POST' });
         var data = await resp.json();
         if (resp.ok) {
           toast(name + ': ' + data.status, 'success');
@@ -121,7 +121,7 @@
     restartAll: async function() {
       setBtnLoading('btn-restart-all', true);
       try {
-        var resp = await fetch('/v1/services/restart-all', { method: 'POST' });
+        var resp = await window.apiFetch('/v1/services/restart-all', { method: 'POST' });
         var data = await resp.json();
         if (resp.ok) {
           toast('All services restarted', 'success');
@@ -141,7 +141,7 @@
         var svcResp = await fetch('/v1/services');
         var svcData = await svcResp.json();
         for (var i = 0; i < svcData.services.length; i++) {
-          await fetch('/v1/services/logs/' + svcData.services[i].name + '/clear', { method: 'POST' });
+          await window.apiFetch('/v1/services/logs/' + svcData.services[i].name + '/clear', { method: 'POST' });
         }
         toast('Logs cleared', 'success');
       } catch(e) {
@@ -154,7 +154,7 @@
     healthCheck: async function() {
       setBtnLoading('btn-health', true);
       try {
-        var resp = await fetch('/v1/health');
+        var resp = await fetch('/v1/health/detailed');
         var data = await resp.json();
         if (resp.ok) {
           toast('HEALTHY | v' + data.version + ' | uptime: ' + data.uptime_seconds + 's', 'success');
@@ -170,7 +170,7 @@
     rebootstrapDemo: async function() {
       setBtnLoading('btn-rebootstrap-demo', true);
       try {
-        var resp = await fetch('/v1/demo/bootstrap', { method: 'POST' });
+        var resp = await window.apiFetch('/v1/demo/bootstrap', { method: 'POST' });
         var data = await resp.json();
         if (resp.ok) {
           var created = data.corpora_created + data.datasets_created;
@@ -188,7 +188,7 @@
     killPort: async function(name) {
       setBtnLoading('btn-' + name + '-killport', true);
       try {
-        var resp = await fetch('/v1/services/' + name + '/kill-port', { method: 'POST' });
+        var resp = await window.apiFetch('/v1/services/' + name + '/kill-port', { method: 'POST' });
         var data = await resp.json();
         if (resp.ok) {
           toast(name + ': port ' + data.port + ' freed (' + data.killed + ' process' + (data.killed !== 1 ? 'es' : '') + ' killed)', 'success');
@@ -204,9 +204,13 @@
   };
 
   window.loadServices = async function loadServices() {
-    var healthResp = await fetch('/v1/health');
+    var detailedResp = await fetch('/v1/health/detailed');
     var svcResp = await fetch('/v1/services');
-    var health = await healthResp.json();
+    if (!detailedResp.ok || !svcResp.ok) {
+      document.getElementById('services-list').innerHTML = '<span class="text-muted type-subhead">Could not load services — check your session.</span>';
+      return;
+    }
+    var health = await detailedResp.json();
     var svcData = await svcResp.json();
 
     var uptime = health.uptime_seconds || 0;
@@ -308,7 +312,7 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
     var el = document.getElementById('system-resources');
     if (!el) return;
     try {
-      var resp = await fetch('/v1/health');
+      var resp = await fetch('/v1/health/detailed');
       var health = await resp.json();
       var s = health.system || {};
       var cpu = s.cpu_percent !== undefined ? s.cpu_percent : '?';

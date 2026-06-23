@@ -32,7 +32,7 @@
 
   function api(path, opts) {
     opts = opts || {};
-    return fetch(path, opts)
+    return (window.apiFetch || fetch)(path, opts)
       .then(function (r) {
         return r.json().then(function (body) {
           if (!r.ok || body.error) {

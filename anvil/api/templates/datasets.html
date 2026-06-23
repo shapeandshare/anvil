@@ -546,7 +546,7 @@
       var status = document.getElementById('wiz-create-status');
       btn.textContent = '> ingesting...';
       status.textContent = '> ingesting...';
-      fetch('/v1/corpora/' + id + '/ingest', { method: 'POST' })
+      window.apiFetch('/v1/corpora/' + id + '/ingest', { method: 'POST' })
         .then(function(r) {
           return r.json().then(function(body) { return { ok: r.ok, body: body }; });
         })
@@ -573,7 +573,7 @@
     if (e.target.classList.contains('del-btn') || (e.target.closest && e.target.closest('.del-btn'))) {
       var btn = e.target.classList.contains('del-btn') ? e.target : e.target.closest('.del-btn');
       var id = btn.getAttribute('data-id');
-      fetch('/v1/corpora/' + id, { method: 'DELETE' }).then(function() { loadCorpora(); loadCombinedData(); });
+      window.apiFetch('/v1/corpora/' + id, { method: 'DELETE' }).then(function() { loadCorpora(); loadCombinedData(); });
     }
 
     /* toggle corpus errors */
@@ -627,7 +627,7 @@
       var name = tr.querySelector('.ie-name').value.trim();
       var desc = tr.querySelector('.ie-desc').value.trim();
       if (!name) { showToast('Name is required.', 'error'); return; }
-      fetch('/v1/datasets/' + id, {
+      window.apiFetch('/v1/datasets/' + id, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: name, description: desc || null })
@@ -661,7 +661,7 @@
       var id = btn.getAttribute('data-id');
       var name = btn.getAttribute('data-name');
       if (!confirm('Delete dataset "' + name + '"? This cannot be undone.')) return;
-      fetch('/v1/datasets/' + id, { method: 'DELETE' })
+      window.apiFetch('/v1/datasets/' + id, { method: 'DELETE' })
       .then(function(r) {
         if (r.status === 409) throw new Error('Blocked: dataset is referenced by one or more training configs.');
         if (!r.ok) return r.json().then(function(d) { throw new Error(d.detail || 'Delete failed'); });
@@ -703,7 +703,7 @@
       var name = tr.querySelector('.fork-name').value.trim();
       var desc = tr.querySelector('.fork-desc').value.trim();
       if (!name) { showToast('Name is required.', 'error'); return; }
-      fetch('/v1/datasets/' + id + '/clone', {
+      window.apiFetch('/v1/datasets/' + id + '/clone', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: name, description: desc || null })
@@ -744,7 +744,7 @@
     formData.append('file', fileInput.files[0]);
     status.textContent = '> uploading...';
     try {
-      var resp = await fetch('/v1/datasets/upload', { method: 'POST', body: formData });
+      var resp = await window.apiFetch('/v1/datasets/upload', { method: 'POST', body: formData });
       var data = await resp.json();
       status.textContent = '> uploaded "' + data.name + '" -- ' + data.document_count + ' lines, ' + data.vocabulary_size + ' unique chars';
       loadDatasets();
@@ -763,7 +763,7 @@
     if (!name) { status.textContent = '! Name is required.'; return; }
     status.textContent = '> creating...';
     try {
-      var resp = await fetch('/v1/datasets', {
+      var resp = await window.apiFetch('/v1/datasets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: name, description: desc || null })
@@ -807,7 +807,7 @@
     var status = document.getElementById('wiz-status');
     status.textContent = '> resolving path for "' + dirName + '"...';
     /* Try to resolve via server */
-    fetch('/v1/corpora/resolve-path', {
+    window.apiFetch('/v1/corpora/resolve-path', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ folder_name: dirName }),
@@ -930,7 +930,7 @@
     if (incList) body.include_patterns = incList;
     if (excList) body.exclude_patterns = excList;
     try {
-      var resp = await fetch('/v1/corpora/analyze-path', {
+      var resp = await window.apiFetch('/v1/corpora/analyze-path', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -1188,7 +1188,7 @@
 
     try {
       /* create */
-      var resp = await fetch('/v1/corpora', {
+      var resp = await window.apiFetch('/v1/corpora', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -1204,7 +1204,7 @@
 
       /* ingest */
       var maxFiles = document.getElementById('wiz-max-files').value;
-      var ingestResp = await fetch('/v1/corpora/' + corpusId + '/ingest?max_files=' + maxFiles, { method: 'POST' });
+      var ingestResp = await window.apiFetch('/v1/corpora/' + corpusId + '/ingest?max_files=' + maxFiles, { method: 'POST' });
       var ingestParsed = await safeJson(ingestResp);
       if (!ingestParsed.ok) {
         btn.disabled = false;
@@ -1503,7 +1503,7 @@
     status.textContent = '> importing...';
 
     try {
-      var resp = await fetch('/v1/datasets/' + datasetId + '/import-corpus', {
+      var resp = await window.apiFetch('/v1/datasets/' + datasetId + '/import-corpus', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ corpus_id: corpusId }),
@@ -1601,7 +1601,7 @@
     };
 
     try {
-      var resp = await fetch('/v1/datasets/from-corpus', {
+      var resp = await window.apiFetch('/v1/datasets/from-corpus', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),

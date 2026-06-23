@@ -128,7 +128,7 @@
 
   window.deleteVersion = function(version) {
     if (!confirm('Delete version ' + version + ' of this model?')) return;
-    fetch('/v1/registry/models/' + modelId + '/versions/' + version, { method: 'DELETE' })
+    window.apiFetch('/v1/registry/models/' + modelId + '/versions/' + version, { method: 'DELETE' })
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data.detail) { alert('Error: ' + data.detail); }
@@ -139,7 +139,7 @@
 
   window.deleteModel = function() {
     if (!confirm('Delete this entire model and all versions? This cannot be undone.')) return;
-    fetch('/v1/registry/models/' + modelId, { method: 'DELETE' })
+    window.apiFetch('/v1/registry/models/' + modelId, { method: 'DELETE' })
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data.detail) { alert('Error: ' + data.detail); }

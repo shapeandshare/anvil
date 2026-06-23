@@ -180,7 +180,7 @@
     var body = { prompt: this._prompt, temperature: this._temperature };
     if (this._topK != null) body.top_k = this._topK;
 
-    fetch('/v1/inference/sampling-distribution', {
+    window.apiFetch('/v1/inference/sampling-distribution', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)

@@ -22,6 +22,7 @@ import psutil
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from anvil import __version__ as anvil_version
+from anvil.api.auth import SESSION_COOKIE_NAME, generate_csrf_token
 from anvil.api.deps import get_workbench
 from anvil.config import get_config, get_mlflow_browser_uri
 from anvil.gpu import detect_gpu
@@ -423,3 +424,31 @@ async def kill_service_port(name: str, request: Request):
         except ProcessLookupError:
             pass
     return {"status": "killed", "port": port, "killed": killed}
+
+
+@router.get("/csrf-token")
+async def get_csrf_token(request: Request):
+    """Return a CSRF token for the current session.
+
+    Reads the session cookie and generates an HMAC-SHA256 CSRF token
+    bound to that session. The frontend includes this token as the
+    ``X-CSRF-Token`` header on state-changing requests (POST, PUT,
+    DELETE, PATCH) made while authenticated via cookie.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming HTTP request.
+
+    Returns
+    -------
+    dict
+        ``{"token": "<hex-encoded csrf token>"}`` or ``{"token": ""}``
+        if no session cookie is present.
+    """
+    session_id = request.cookies.get(SESSION_COOKIE_NAME)
+    if session_id:
+        token = generate_csrf_token(session_id)
+    else:
+        token = ""
+    return {"token": token}

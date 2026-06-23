@@ -57,7 +57,7 @@
     this._statsEl.innerHTML = '<div class="loading-indicator"><span class="spinner"></span> Computing loss...</div>';
     this._emptyEl.style.display = 'none';
 
-    fetch('/v1/inference/loss-breakdown', {
+    window.apiFetch('/v1/inference/loss-breakdown', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: text })
