@@ -45,5 +45,6 @@ This index lists all ADRs in this repository. ADRs document significant architec
 | ADR-038 | UX Rules Integration | Accepted | 2026-06-21 |
 | ADR-039 | Client SDK Architecture | Accepted | 2026-06-21 |
 | ADR-040 | Full-Deployment Backup & Restore | Accepted | 2026-06-21 |
+| ADR-041 | Simplicity First (Boring Technology) | Accepted | 2026-06-22 |
 
 **Status**: Draft → Reviewed → Canonical (human-only). See `_meta/tags.md` for lifecycle.

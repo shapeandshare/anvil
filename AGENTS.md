@@ -1,6 +1,6 @@
 # anvil — Agent Guidelines
 
-**Last updated**: 2026-06-21 (sonarcloud-tooling + content-repository-016-mvp; scripts-python-over-bash + package-module-migration, testing-guide consolidation; OWASP remediation spec 017 + ADRs 035/036; whole-API e2e test suite 017)
+**Last updated**: 2026-06-22 (constitution v1.8.0: Article XI Simplicity First / Boring Technology + ADR-041; sonarcloud-tooling + content-repository-016-mvp; scripts-python-over-bash + package-module-migration, testing-guide consolidation; OWASP remediation spec 017 + ADRs 035/036; whole-API e2e test suite 017)
 
 ## Project Overview
 
@@ -232,6 +232,50 @@ Coverage is reported via `pytest --cov=anvil --cov-report=term-missing`. Current
         ...
     ```
 
+13. **Simplicity First (Boring Technology)** — Favor the simplest, most boring
+    solution that fully satisfies the requirement. Proven reliability and
+    obviousness outrank cleverness, novelty, and speculative flexibility. This
+    is a hard MUST gate (Constitution Article XI), enforced at merge review.
+
+    Rules:
+    - **Simplest viable solution** — choose the simplest approach that meets the
+      requirement. Complexity is never the default; justify it with a concrete,
+      present need, never a hypothetical future one.
+    - **Boring over novel** — prefer mature, well-understood, widely-used
+      technology and patterns. A novel/experimental dependency, framework,
+      library, or pattern MUST NOT be introduced unless a simpler proven
+      alternative was evaluated and explicitly rejected in an ADR or the plan's
+      Complexity Tracking table. Pairs with Article I and "Lean dependencies".
+    - **YAGNI** — build only what the current requirement needs. No speculative
+      generality, premature abstraction, or config knobs without a present
+      consumer. Add the abstraction when the *second* concrete use case arrives.
+    - **Reuse before introducing** — reuse existing libraries, patterns, and
+      abstractions in the codebase before adding new ones; a second parallel way
+      to do the same thing is reject-worthy.
+    - **Justify every deviation** — any solution more complex than the simplest
+      viable alternative MUST be recorded in the Complexity Tracking table
+      (`.specify/templates/plan-template.md`) with the simpler alternative and
+      why it was rejected. Unrecorded complexity fails the Constitution Check.
+    - **Untested paths are not done** — an approach that cannot be, or has not
+      been, tested MUST NOT be treated as complete. Prefer a simpler, testable
+      approach over a complex one whose correctness cannot be shown. Pairs with
+      Principle 2 (TDD).
+
+    Correct (boring, present-need only):
+    ```python
+    # One supported strategy today → a plain function, no plugin registry.
+    def chunk_lines(corpus: str) -> list[str]:
+        return corpus.splitlines()
+    ```
+
+    Incorrect (speculative generality for one caller):
+    ```python
+    # No second strategy exists yet — premature abstraction (violates YAGNI).
+    class ChunkerFactory:
+        def __init__(self, plugins: dict[str, type[Chunker]]): ...
+        def build(self, name: str) -> Chunker: ...
+    ```
+
 ## Vault Enrichment Protocol
 
 ### During a session:
@@ -262,6 +306,7 @@ Coverage is reported via `pytest --cov=anvil --cov-report=term-missing`. Current
 - `mypy --strict` enforced. Plus `enable_error_code = ["ignore-without-code", "possibly-undefined", "redundant-cast", "redundant-expr"]` and `warn_unused_ignores = true` in `pyproject.toml`. No type-error suppression (`# type: ignore`, `cast()`, `Any` abuse). Strict explicit typing on all function signatures.
 - **Domain-Driven Package Decomposition**: Package boundaries follow domain boundaries. Result/error/value types tightly coupled to one service co-locate in that service's domain sub-package. Cross-domain types go in `_shared/`. Domain sub-packages use plural nouns; internal sub-packages use underscore prefix. Max 2 levels of nesting. See Constitution Article X.
 - **Enums over magic strings**: See Principle 11 in Agent Behavioral Principles above.
+- **Simplicity First (boring over complex/untested)**: Choose the simplest, most boring solution that meets the requirement; reuse before introducing; no speculative abstraction (YAGNI); record any justified complexity in the plan's Complexity Tracking table. Untested/untestable approaches are not "done". See Principle 13 above and Constitution Article XI.
 
 ## Packaging Conventions
 
