@@ -78,35 +78,26 @@
     this._render();
   }
 
-  ContentVersioningWidget.prototype._token = function (name, fallback) {
-    var style = getComputedStyle(document.documentElement);
-    return style.getPropertyValue(name).trim() || fallback;
-  };
-
   ContentVersioningWidget.prototype._render = function () {
     var self = this;
-    var mm = window.matchMedia('(prefers-reduced-motion: reduce)');
-    this._reducedMotion = mm.matches;
-    mm.addEventListener('change', function (e) {
-      self._reducedMotion = e.matches;
-    });
+    window.AnvilBase.initReducedMotion(this);
 
-    var accent = this._token('--accent', '#007aff');
-    var cyan = this._token('--accent-cyan', '#32d74b');
-    var purple = this._token('--accent-purple', '#af52de');
-    var orange = this._token('--accent-orange', '#ff9500');
-    var green = this._token('--accent-green', '#34c759');
-    var surface = this._token('--surface', '#1c1c1e');
-    var surface2 = this._token('--surface-2', '#2c2c2e');
-    var text = this._token('--text', '#ffffff');
-    var muted = this._token('--text-muted', '#8e8e93');
-    var border = this._token('--border', '#38383a');
-    var radius = this._token('--radius', '13px');
-    var radiusSm = this._token('--radius-sm', '8px');
-    var mono = this._token('--font-mono', 'ui-monospace,SF Mono,Menlo,monospace');
-    var body = this._token('--font-body', '-apple-system,BlinkMacSystemFont,system-ui,sans-serif');
-    var space2 = this._token('--space-2', '0.5rem');
-    var space3 = this._token('--space-3', '0.75rem');
+    var accent = window.AnvilBase.token('--accent', '#007aff');
+    var cyan = window.AnvilBase.token('--accent-cyan', '#32d74b');
+    var purple = window.AnvilBase.token('--accent-purple', '#af52de');
+    var orange = window.AnvilBase.token('--accent-orange', '#ff9500');
+    var green = window.AnvilBase.token('--accent-green', '#34c759');
+    var surface = window.AnvilBase.token('--surface', '#1c1c1e');
+    var surface2 = window.AnvilBase.token('--surface-2', '#2c2c2e');
+    var text = window.AnvilBase.token('--text', '#ffffff');
+    var muted = window.AnvilBase.token('--text-muted', '#8e8e93');
+    var border = window.AnvilBase.token('--border', '#38383a');
+    var radius = window.AnvilBase.token('--radius', '13px');
+    var radiusSm = window.AnvilBase.token('--radius-sm', '8px');
+    var mono = window.AnvilBase.token('--font-mono', 'ui-monospace,SF Mono,Menlo,monospace');
+    var body = window.AnvilBase.token('--font-body', '-apple-system,BlinkMacSystemFont,system-ui,sans-serif');
+    var space2 = window.AnvilBase.token('--space-2', '0.5rem');
+    var space3 = window.AnvilBase.token('--space-3', '0.75rem');
 
     /* Build stage HTML */
     var stageHtml = '';
@@ -224,7 +215,7 @@
   };
 
   ContentVersioningWidget.prototype._resolveColor = function (varName, fallback) {
-    var c = this._token(varName, fallback);
+    var c = window.AnvilBase.token(varName, fallback);
     return c || fallback;
   };
 
@@ -276,8 +267,8 @@
     var stage = this._stages[idx];
     var capText = this._captions[stage.id];
     var col = this._resolveColor(stage.color, '#007aff');
-    var textColor = this._token('--text', '#ffffff');
-    var muted = this._token('--text-muted', '#8e8e93');
+    var textColor = window.AnvilBase.token('--text', '#ffffff');
+    var muted = window.AnvilBase.token('--text-muted', '#8e8e93');
 
     if (capText) {
       this._captionEl.innerHTML =
@@ -302,15 +293,15 @@
   ContentVersioningWidget.prototype._renderVizHash = function () {
     var self = this;
     var viz = this._vizEl;
-    var accent = this._token('--accent', '#007aff');
-    var cyan = this._token('--accent-cyan', '#32d74b');
-    var green = this._token('--accent-green', '#34c759');
-    var surface = this._token('--surface', '#1c1c1e');
-    var text = this._token('--text', '#ffffff');
-    var muted = this._token('--text-muted', '#8e8e93');
-    var mono = this._token('--font-mono', 'ui-monospace,SF Mono,Menlo,monospace');
-    var radiusSm = this._token('--radius-sm', '8px');
-    var border = this._token('--border', '#38383a');
+    var accent = window.AnvilBase.token('--accent', '#007aff');
+    var cyan = window.AnvilBase.token('--accent-cyan', '#32d74b');
+    var green = window.AnvilBase.token('--accent-green', '#34c759');
+    var surface = window.AnvilBase.token('--surface', '#1c1c1e');
+    var text = window.AnvilBase.token('--text', '#ffffff');
+    var muted = window.AnvilBase.token('--text-muted', '#8e8e93');
+    var mono = window.AnvilBase.token('--font-mono', 'ui-monospace,SF Mono,Menlo,monospace');
+    var radiusSm = window.AnvilBase.token('--radius-sm', '8px');
+    var border = window.AnvilBase.token('--border', '#38383a');
 
     var files = [
       { name: 'alice.txt', content: 'Hello world', hash: 'a3f91e2b', group: 'A' },
@@ -422,15 +413,15 @@
   /* STAGE 1: Manifest */
   ContentVersioningWidget.prototype._renderVizManifest = function () {
     var viz = this._vizEl;
-    var accent = this._token('--accent', '#007aff');
-    var cyan = this._token('--accent-cyan', '#32d74b');
-    var green = this._token('--accent-green', '#34c759');
-    var surface = this._token('--surface', '#1c1c1e');
-    var text = this._token('--text', '#ffffff');
-    var muted = this._token('--text-muted', '#8e8e93');
-    var border = this._token('--border', '#38383a');
-    var mono = this._token('--font-mono', 'ui-monospace,SF Mono,Menlo,monospace');
-    var radiusSm = this._token('--radius-sm', '8px');
+    var accent = window.AnvilBase.token('--accent', '#007aff');
+    var cyan = window.AnvilBase.token('--accent-cyan', '#32d74b');
+    var green = window.AnvilBase.token('--accent-green', '#34c759');
+    var surface = window.AnvilBase.token('--surface', '#1c1c1e');
+    var text = window.AnvilBase.token('--text', '#ffffff');
+    var muted = window.AnvilBase.token('--text-muted', '#8e8e93');
+    var border = window.AnvilBase.token('--border', '#38383a');
+    var mono = window.AnvilBase.token('--font-mono', 'ui-monospace,SF Mono,Menlo,monospace');
+    var radiusSm = window.AnvilBase.token('--radius-sm', '8px');
 
     var manifestDigest = '8c4da2f17e3b9a05d6f1c8e4a2b7093c1d5f0e6a7b8c9d0e1f2a3b4c5d6e7f8';
     var shortDigest = manifestDigest.slice(0, 12) + '\u2026';
@@ -492,13 +483,13 @@
   ContentVersioningWidget.prototype._renderVizVersion = function () {
     var self = this;
     var viz = this._vizEl;
-    var purple = this._token('--accent-purple', '#af52de');
-    var surface = this._token('--surface', '#1c1c1e');
-    var text = this._token('--text', '#ffffff');
-    var muted = this._token('--text-muted', '#8e8e93');
-    var mono = this._token('--font-mono', 'ui-monospace,SF Mono,Menlo,monospace');
-    var radiusSm = this._token('--radius-sm', '8px');
-    var border = this._token('--border', '#38383a');
+    var purple = window.AnvilBase.token('--accent-purple', '#af52de');
+    var surface = window.AnvilBase.token('--surface', '#1c1c1e');
+    var text = window.AnvilBase.token('--text', '#ffffff');
+    var muted = window.AnvilBase.token('--text-muted', '#8e8e93');
+    var mono = window.AnvilBase.token('--font-mono', 'ui-monospace,SF Mono,Menlo,monospace');
+    var radiusSm = window.AnvilBase.token('--radius-sm', '8px');
+    var border = window.AnvilBase.token('--border', '#38383a');
 
     var html = '<div style="display:flex;flex-direction:column;align-items:center;gap:12px;">';
     html += '<div style="font-size:0.68rem;color:' + muted + ';font-family:' + mono + ';">Monotonically increasing version chain</div>';
@@ -556,14 +547,14 @@
   ContentVersioningWidget.prototype._renderVizReplication = function () {
     var self = this;
     var viz = this._vizEl;
-    var orange = this._token('--accent-orange', '#ff9500');
-    var surface = this._token('--surface', '#1c1c1e');
-    var surface2 = this._token('--surface-2', '#2c2c2e');
-    var text = this._token('--text', '#ffffff');
-    var muted = this._token('--text-muted', '#8e8e93');
-    var border = this._token('--border', '#38383a');
-    var mono = this._token('--font-mono', 'ui-monospace,SF Mono,Menlo,monospace');
-    var radiusSm = this._token('--radius-sm', '8px');
+    var orange = window.AnvilBase.token('--accent-orange', '#ff9500');
+    var surface = window.AnvilBase.token('--surface', '#1c1c1e');
+    var surface2 = window.AnvilBase.token('--surface-2', '#2c2c2e');
+    var text = window.AnvilBase.token('--text', '#ffffff');
+    var muted = window.AnvilBase.token('--text-muted', '#8e8e93');
+    var border = window.AnvilBase.token('--border', '#38383a');
+    var mono = window.AnvilBase.token('--font-mono', 'ui-monospace,SF Mono,Menlo,monospace');
+    var radiusSm = window.AnvilBase.token('--radius-sm', '8px');
 
     var html = '<div style="display:flex;flex-direction:column;align-items:center;gap:14px;">';
 
@@ -647,13 +638,13 @@
   ContentVersioningWidget.prototype._renderVizLineage = function () {
     var self = this;
     var viz = this._vizEl;
-    var green = this._token('--accent-green', '#34c759');
-    var purple = this._token('--accent-purple', '#af52de');
-    var surface = this._token('--surface', '#1c1c1e');
-    var text = this._token('--text', '#ffffff');
-    var muted = this._token('--text-muted', '#8e8e93');
-    var mono = this._token('--font-mono', 'ui-monospace,SF Mono,Menlo,monospace');
-    var radiusSm = this._token('--radius-sm', '8px');
+    var green = window.AnvilBase.token('--accent-green', '#34c759');
+    var purple = window.AnvilBase.token('--accent-purple', '#af52de');
+    var surface = window.AnvilBase.token('--surface', '#1c1c1e');
+    var text = window.AnvilBase.token('--text', '#ffffff');
+    var muted = window.AnvilBase.token('--text-muted', '#8e8e93');
+    var mono = window.AnvilBase.token('--font-mono', 'ui-monospace,SF Mono,Menlo,monospace');
+    var radiusSm = window.AnvilBase.token('--radius-sm', '8px');
 
     var html = '<div style="display:flex;flex-direction:column;align-items:center;gap:14px;">';
     html += '<div style="font-size:0.68rem;color:' + muted + ';font-family:' + mono + ';">Provenance lineage: content \u2192 model</div>';
@@ -730,7 +721,7 @@
       this._stage = -1;
       this._clearVizTimers();
       if (this._vizEl) {
-        this._vizEl.innerHTML = '<div style="font-size:0.72rem;color:' + this._token('--text-muted', '#8e8e93') + ';text-align:center;padding:' + this._token('--space-3', '0.75rem') + ';">Click a stage above or press Play/Step to explore</div>';
+        this._vizEl.innerHTML = '<div style="font-size:0.72rem;color:' + window.AnvilBase.token('--text-muted', '#8e8e93') + ';text-align:center;padding:' + window.AnvilBase.token('--space-3', '0.75rem') + ';">Click a stage above or press Play/Step to explore</div>';
       }
       for (var ri = 0; ri < this._stageEls.length; ri++) {
         this._stageEls[ri].classList.remove('active');
@@ -755,10 +746,7 @@
 
   ContentVersioningWidget.prototype._stop = function () {
     this._playing = false;
-    if (this._timer) {
-      clearInterval(this._timer);
-      this._timer = null;
-    }
+    window.AnvilBase.stop(this);
     if (this._playBtn) {
       this._playBtn.textContent = 'Play';
     }
@@ -778,8 +766,8 @@
     for (var i = 0; i < this._stageEls.length; i++) {
       this._stageEls[i].classList.remove('active');
     }
-    var muted = this._token('--text-muted', '#8e8e93');
-    var space3 = this._token('--space-3', '0.75rem');
+    var muted = window.AnvilBase.token('--text-muted', '#8e8e93');
+    var space3 = window.AnvilBase.token('--space-3', '0.75rem');
     if (this._vizEl) {
       this._vizEl.innerHTML = '<div style="font-size:0.72rem;color:' + muted + ';text-align:center;padding:' + space3 + ';">Click a stage above or press Play/Step to explore</div>';
     }

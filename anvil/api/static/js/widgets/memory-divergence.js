@@ -22,11 +22,6 @@
     this._render();
   }
 
-  MemoryDivergenceWidget.prototype._token = function (name, fallback) {
-    var style = getComputedStyle(document.documentElement);
-    return style.getPropertyValue(name).trim() || fallback;
-  };
-
   MemoryDivergenceWidget.prototype._compute = function () {
     var vocabSize = 65;
     var blockSize = 16;
@@ -67,12 +62,12 @@
   MemoryDivergenceWidget.prototype._oomStatus = function (peak) {
     var ratio = peak / this._available;
     if (ratio >= 0.90) {
-      return { label: 'would OOM', token: '--accent-red', color: this._token('--accent-red', '#ff3b30'), cls: 'mdiv-oom-would' };
+      return { label: 'would OOM', token: '--accent-red', color: window.AnvilBase.token('--accent-red', '#ff3b30'), cls: 'mdiv-oom-would' };
     }
     if (ratio >= 0.75) {
-      return { label: 'close to limit', token: '--accent-orange', color: this._token('--accent-orange', '#ff9500'), cls: 'mdiv-oom-close' };
+      return { label: 'close to limit', token: '--accent-orange', color: window.AnvilBase.token('--accent-orange', '#ff9500'), cls: 'mdiv-oom-close' };
     }
-    return { label: 'fits', token: '--accent-green', color: this._token('--accent-green', '#34c759'), cls: 'mdiv-oom-fits' };
+    return { label: 'fits', token: '--accent-green', color: window.AnvilBase.token('--accent-green', '#34c759'), cls: 'mdiv-oom-fits' };
   };
 
   MemoryDivergenceWidget.prototype._genLossData = function () {
@@ -88,30 +83,26 @@
 
   MemoryDivergenceWidget.prototype._render = function () {
     var self = this;
-    var mm = window.matchMedia('(prefers-reduced-motion: reduce)');
-    this._reducedMotion = mm.matches;
-    mm.addEventListener('change', function (e) {
-      self._reducedMotion = e.matches;
-    });
+    window.AnvilBase.initReducedMotion(this);
 
-    var accent = this._token('--accent', '#007aff');
-    var green = this._token('--accent-green', '#34c759');
-    var red = this._token('--accent-red', '#ff3b30');
-    var orange = this._token('--accent-orange', '#ff9500');
-    var purple = this._token('--accent-purple', '#af52de');
-    var cyan = this._token('--accent-cyan', '#32d74b');
-    var surface = this._token('--surface', '#1c1c1e');
-    var surface2 = this._token('--surface-2', '#2c2c2e');
-    var text = this._token('--text', '#ffffff');
-    var muted = this._token('--text-muted', '#8e8e93');
-    var border = this._token('--border', '#38383a');
-    var radius = this._token('--radius', '13px');
-    var radiusSm = this._token('--radius-sm', '8px');
-    var mono = this._token('--font-mono', 'ui-monospace,SF Mono,Menlo,monospace');
-    var body = this._token('--font-body', '-apple-system,BlinkMacSystemFont,system-ui,sans-serif');
-    var space2 = this._token('--space-2', '0.5rem');
-    var space3 = this._token('--space-3', '0.75rem');
-    var space4 = this._token('--space-4', '1rem');
+    var accent = window.AnvilBase.token('--accent', '#007aff');
+    var green = window.AnvilBase.token('--accent-green', '#34c759');
+    var red = window.AnvilBase.token('--accent-red', '#ff3b30');
+    var orange = window.AnvilBase.token('--accent-orange', '#ff9500');
+    var purple = window.AnvilBase.token('--accent-purple', '#af52de');
+    var cyan = window.AnvilBase.token('--accent-cyan', '#32d74b');
+    var surface = window.AnvilBase.token('--surface', '#1c1c1e');
+    var surface2 = window.AnvilBase.token('--surface-2', '#2c2c2e');
+    var text = window.AnvilBase.token('--text', '#ffffff');
+    var muted = window.AnvilBase.token('--text-muted', '#8e8e93');
+    var border = window.AnvilBase.token('--border', '#38383a');
+    var radius = window.AnvilBase.token('--radius', '13px');
+    var radiusSm = window.AnvilBase.token('--radius-sm', '8px');
+    var mono = window.AnvilBase.token('--font-mono', 'ui-monospace,SF Mono,Menlo,monospace');
+    var body = window.AnvilBase.token('--font-body', '-apple-system,BlinkMacSystemFont,system-ui,sans-serif');
+    var space2 = window.AnvilBase.token('--space-2', '0.5rem');
+    var space3 = window.AnvilBase.token('--space-3', '0.75rem');
+    var space4 = window.AnvilBase.token('--space-4', '1rem');
 
     var css =
       '<style>' +
@@ -342,14 +333,14 @@
     var statusColor = status.color;
     var avail = this._available;
 
-    var accent = this._token('--accent', '#007aff');
-    var green = this._token('--accent-green', '#34c759');
-    var orange = this._token('--accent-orange', '#ff9500');
-    var purple = this._token('--accent-purple', '#af52de');
-    var muted = this._token('--text-muted', '#8e8e93');
-    var text = this._token('--text', '#ffffff');
-    var mono = this._token('--font-mono', 'ui-monospace,SF Mono,Menlo,monospace');
-    var surface2 = this._token('--surface-2', '#2c2c2e');
+    var accent = window.AnvilBase.token('--accent', '#007aff');
+    var green = window.AnvilBase.token('--accent-green', '#34c759');
+    var orange = window.AnvilBase.token('--accent-orange', '#ff9500');
+    var purple = window.AnvilBase.token('--accent-purple', '#af52de');
+    var muted = window.AnvilBase.token('--text-muted', '#8e8e93');
+    var text = window.AnvilBase.token('--text', '#ffffff');
+    var mono = window.AnvilBase.token('--font-mono', 'ui-monospace,SF Mono,Menlo,monospace');
+    var surface2 = window.AnvilBase.token('--surface-2', '#2c2c2e');
 
     var segments = [];
     var segColors = [accent, green, orange, purple];
@@ -439,7 +430,7 @@
 
       if (mem.peak > avail) {
         var overEl = document.createElement('div');
-        overEl.style.cssText += 'position:absolute;right:0;top:0;bottom:0;width:' + Math.min((mem.peak - avail) / avail * 100, 100) + '%;background:' + this._token('--accent-red', '#ff3b30') + ';opacity:0.15;border-radius:' + this._token('--radius-sm', '8px') + ';';
+        overEl.style.cssText += 'position:absolute;right:0;top:0;bottom:0;width:' + Math.min((mem.peak - avail) / avail * 100, 100) + '%;background:' + window.AnvilBase.token('--accent-red', '#ff3b30') + ';opacity:0.15;border-radius:' + window.AnvilBase.token('--radius-sm', '8px') + ';';
         availTrack.appendChild(overEl);
       }
 
@@ -502,7 +493,7 @@
       points.push(px.toFixed(1) + ',' + py.toFixed(1));
     }
 
-    var strokeColor = this._diverged ? this._token('--accent-red', '#ff3b30') : this._token('--accent', '#007aff');
+    var strokeColor = this._diverged ? window.AnvilBase.token('--accent-red', '#ff3b30') : window.AnvilBase.token('--accent', '#007aff');
     var fillColor = this._diverged ? 'rgba(255,59,48,0.08)' : 'rgba(0,122,255,0.08)';
 
     var fillPoints = points.slice();
@@ -511,10 +502,10 @@
     fillPoints.push(lastX.toFixed(1) + ',' + bottomY.toFixed(1));
     fillPoints.push(pad.l + ',' + bottomY.toFixed(1));
 
-    var accent = this._token('--accent', '#007aff');
-    var redColor = this._token('--accent-red', '#ff3b30');
-    var mutedColor = this._token('--text-muted', '#8e8e93');
-    var mono = this._token('--font-mono', 'ui-monospace,SF Mono,Menlo,monospace');
+    var accent = window.AnvilBase.token('--accent', '#007aff');
+    var redColor = window.AnvilBase.token('--accent-red', '#ff3b30');
+    var mutedColor = window.AnvilBase.token('--text-muted', '#8e8e93');
+    var mono = window.AnvilBase.token('--font-mono', 'ui-monospace,SF Mono,Menlo,monospace');
 
     var svgHtml =
       '<svg class="mdiv-curve-svg" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="Training loss curve showing ' + (this._diverged ? 'divergence spike' : 'healthy downward trend') + '">' +
@@ -531,8 +522,8 @@
     this._curveWrap.innerHTML = svgHtml;
 
     if (this._diverged) {
-      var red = this._token('--accent-red', '#ff3b30');
-      var textColor = this._token('--text', '#ffffff');
+      var red = window.AnvilBase.token('--accent-red', '#ff3b30');
+      var textColor = window.AnvilBase.token('--text', '#ffffff');
       this._bannerWrap.innerHTML =
         '<div class="mdiv-banner mdiv-banner-danger">' +
         '<span style="font-weight:700;">DivergenceError — LOSS_NAN</span>' +
@@ -544,10 +535,7 @@
   };
 
   MemoryDivergenceWidget.prototype._clearTimer = function () {
-    if (this._timer) {
-      clearInterval(this._timer);
-      this._timer = null;
-    }
+    window.AnvilBase.stop(this);
     this._playing = false;
     if (this._playBtn) {
       this._playBtn.textContent = 'Play';

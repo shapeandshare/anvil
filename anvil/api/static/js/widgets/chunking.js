@@ -39,11 +39,6 @@
     this._render();
   }
 
-  ChunkingWidget.prototype._token = function (name, fallback) {
-    var style = getComputedStyle(document.documentElement);
-    return style.getPropertyValue(name).trim() || fallback;
-  };
-
   ChunkingWidget.prototype._computeStride = function () {
     return Math.max(1, Math.round(BLOCK_SIZE * (1 - this._overlap)));
   };
@@ -60,28 +55,24 @@
 
   ChunkingWidget.prototype._render = function () {
     var self = this;
-    var mm = window.matchMedia('(prefers-reduced-motion: reduce)');
-    this._reducedMotion = mm.matches;
-    mm.addEventListener('change', function (e) {
-      self._reducedMotion = e.matches;
-    });
+    window.AnvilBase.initReducedMotion(this);
 
-    var accent = this._token('--accent', '#007aff');
-    var green = this._token('--accent-green', '#34c759');
-    var orange = this._token('--accent-orange', '#ff9500');
-    var purple = this._token('--accent-purple', '#af52de');
-    var cyan = this._token('--accent-cyan', '#32d74b');
-    var surface = this._token('--surface', '#1c1c1e');
-    var surface2 = this._token('--surface-2', '#2c2c2e');
-    var text = this._token('--text', '#ffffff');
-    var muted = this._token('--text-muted', '#8e8e93');
-    var border = this._token('--border', '#38383a');
-    var radius = this._token('--radius', '13px');
-    var radiusSm = this._token('--radius-sm', '8px');
-    var mono = this._token('--font-mono', 'ui-monospace,SF Mono,Menlo,monospace');
-    var body = this._token('--font-body', '-apple-system,BlinkMacSystemFont,system-ui,sans-serif');
-    var space2 = this._token('--space-2', '0.5rem');
-    var space3 = this._token('--space-3', '0.75rem');
+    var accent = window.AnvilBase.token('--accent', '#007aff');
+    var green = window.AnvilBase.token('--accent-green', '#34c759');
+    var orange = window.AnvilBase.token('--accent-orange', '#ff9500');
+    var purple = window.AnvilBase.token('--accent-purple', '#af52de');
+    var cyan = window.AnvilBase.token('--accent-cyan', '#32d74b');
+    var surface = window.AnvilBase.token('--surface', '#1c1c1e');
+    var surface2 = window.AnvilBase.token('--surface-2', '#2c2c2e');
+    var text = window.AnvilBase.token('--text', '#ffffff');
+    var muted = window.AnvilBase.token('--text-muted', '#8e8e93');
+    var border = window.AnvilBase.token('--border', '#38383a');
+    var radius = window.AnvilBase.token('--radius', '13px');
+    var radiusSm = window.AnvilBase.token('--radius-sm', '8px');
+    var mono = window.AnvilBase.token('--font-mono', 'ui-monospace,SF Mono,Menlo,monospace');
+    var body = window.AnvilBase.token('--font-body', '-apple-system,BlinkMacSystemFont,system-ui,sans-serif');
+    var space2 = window.AnvilBase.token('--space-2', '0.5rem');
+    var space3 = window.AnvilBase.token('--space-3', '0.75rem');
 
     /* Strategy buttons */
     var stratHtml =
@@ -279,11 +270,11 @@
 
   ChunkingWidget.prototype._updateOverlapButtons = function () {
     var btns = this._overlapEl ? this._overlapEl.querySelectorAll('.chunking-ov-btn') : [];
-    var accent = this._token('--accent', '#007aff');
-    var surface2 = this._token('--surface-2', '#2c2c2e');
-    var text = this._token('--text', '#ffffff');
-    var muted = this._token('--text-muted', '#8e8e93');
-    var border = this._token('--border', '#38383a');
+    var accent = window.AnvilBase.token('--accent', '#007aff');
+    var surface2 = window.AnvilBase.token('--surface-2', '#2c2c2e');
+    var text = window.AnvilBase.token('--text', '#ffffff');
+    var muted = window.AnvilBase.token('--text-muted', '#8e8e93');
+    var border = window.AnvilBase.token('--border', '#38383a');
     for (var i = 0; i < btns.length; i++) {
       var btn = btns[i];
       var val = parseFloat(btn.getAttribute('data-overlap'));
@@ -302,11 +293,11 @@
 
   ChunkingWidget.prototype._updateStrategyButtons = function () {
     var btns = this.container.querySelectorAll('.chunking-strat-btn');
-    var accent = this._token('--accent', '#007aff');
-    var surface2 = this._token('--surface-2', '#2c2c2e');
-    var text = this._token('--text', '#ffffff');
-    var muted = this._token('--text-muted', '#8e8e93');
-    var border = this._token('--border', '#38383a');
+    var accent = window.AnvilBase.token('--accent', '#007aff');
+    var surface2 = window.AnvilBase.token('--surface-2', '#2c2c2e');
+    var text = window.AnvilBase.token('--text', '#ffffff');
+    var muted = window.AnvilBase.token('--text-muted', '#8e8e93');
+    var border = window.AnvilBase.token('--border', '#38383a');
     for (var i = 0; i < btns.length; i++) {
       var btn = btns[i];
       var strat = btn.getAttribute('data-strategy');
@@ -372,10 +363,7 @@
 
   ChunkingWidget.prototype._stop = function () {
     this._playing = false;
-    if (this._timer) {
-      clearInterval(this._timer);
-      this._timer = null;
-    }
+    window.AnvilBase.stop(this);
     if (this._playBtn) {
       this._playBtn.textContent = 'Play';
     }
@@ -423,7 +411,7 @@
 
   ChunkingWidget.prototype._renderStrip = function () {
     if (!this._stripTextEl) return;
-    var accent = this._token('--accent', '#007aff');
+    var accent = window.AnvilBase.token('--accent', '#007aff');
 
     if (this._strategy === 'line') {
       var lines = SAMPLE.split('\n');
@@ -473,8 +461,8 @@
   ChunkingWidget.prototype._renderChips = function () {
     if (!this._chipsEl) return;
     var self = this;
-    var accent = this._token('--accent', '#007aff');
-    var muted = this._token('--text-muted', '#8e8e93');
+    var accent = window.AnvilBase.token('--accent', '#007aff');
+    var muted = window.AnvilBase.token('--text-muted', '#8e8e93');
 
     this._chipsEl.innerHTML = '';
 
@@ -540,13 +528,13 @@
 
   ChunkingWidget.prototype._updateCaption = function () {
     if (!this._captionEl) return;
-    var accent = this._token('--accent', '#007aff');
-    var text = this._token('--text', '#ffffff');
-    var muted = this._token('--text-muted', '#8e8e93');
-    var mono = this._token('--font-mono', 'ui-monospace,SF Mono,Menlo,monospace');
-    var surface2 = this._token('--surface-2', '#2c2c2e');
-    var space2 = this._token('--space-2', '0.5rem');
-    var space3 = this._token('--space-3', '0.75rem');
+    var accent = window.AnvilBase.token('--accent', '#007aff');
+    var text = window.AnvilBase.token('--text', '#ffffff');
+    var muted = window.AnvilBase.token('--text-muted', '#8e8e93');
+    var mono = window.AnvilBase.token('--font-mono', 'ui-monospace,SF Mono,Menlo,monospace');
+    var surface2 = window.AnvilBase.token('--surface-2', '#2c2c2e');
+    var space2 = window.AnvilBase.token('--space-2', '0.5rem');
+    var space3 = window.AnvilBase.token('--space-3', '0.75rem');
 
     var cap = CAPTIONS[this._strategy] || CAPTIONS.windowed;
     var bodyText = cap.body;

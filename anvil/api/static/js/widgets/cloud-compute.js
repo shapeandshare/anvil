@@ -78,35 +78,26 @@
     this._render();
   }
 
-  CloudComputeWidget.prototype._token = function (name, fallback) {
-    var style = getComputedStyle(document.documentElement);
-    return style.getPropertyValue(name).trim() || fallback;
-  };
-
   CloudComputeWidget.prototype._render = function () {
     var self = this;
-    var mm = window.matchMedia('(prefers-reduced-motion: reduce)');
-    this._reducedMotion = mm.matches;
-    mm.addEventListener('change', function (e) {
-      self._reducedMotion = e.matches;
-    });
+    window.AnvilBase.initReducedMotion(this);
 
-    var accent = this._token('--accent', '#007aff');
-    var cyan = this._token('--accent-cyan', '#32d74b');
-    var orange = this._token('--accent-orange', '#ff9500');
-    var green = this._token('--accent-green', '#34c759');
-    var purple = this._token('--accent-purple', '#af52de');
-    var surface = this._token('--surface', '#1c1c1e');
-    var surface2 = this._token('--surface-2', '#2c2c2e');
-    var text = this._token('--text', '#ffffff');
-    var muted = this._token('--text-muted', '#8e8e93');
-    var border = this._token('--border', '#38383a');
-    var radius = this._token('--radius', '13px');
-    var radiusSm = this._token('--radius-sm', '8px');
-    var mono = this._token('--font-mono', 'ui-monospace,SF Mono,Menlo,monospace');
-    var body = this._token('--font-body', '-apple-system,BlinkMacSystemFont,system-ui,sans-serif');
-    var space2 = this._token('--space-2', '0.5rem');
-    var space3 = this._token('--space-3', '0.75rem');
+    var accent = window.AnvilBase.token('--accent', '#007aff');
+    var cyan = window.AnvilBase.token('--accent-cyan', '#32d74b');
+    var orange = window.AnvilBase.token('--accent-orange', '#ff9500');
+    var green = window.AnvilBase.token('--accent-green', '#34c759');
+    var purple = window.AnvilBase.token('--accent-purple', '#af52de');
+    var surface = window.AnvilBase.token('--surface', '#1c1c1e');
+    var surface2 = window.AnvilBase.token('--surface-2', '#2c2c2e');
+    var text = window.AnvilBase.token('--text', '#ffffff');
+    var muted = window.AnvilBase.token('--text-muted', '#8e8e93');
+    var border = window.AnvilBase.token('--border', '#38383a');
+    var radius = window.AnvilBase.token('--radius', '13px');
+    var radiusSm = window.AnvilBase.token('--radius-sm', '8px');
+    var mono = window.AnvilBase.token('--font-mono', 'ui-monospace,SF Mono,Menlo,monospace');
+    var body = window.AnvilBase.token('--font-body', '-apple-system,BlinkMacSystemFont,system-ui,sans-serif');
+    var space2 = window.AnvilBase.token('--space-2', '0.5rem');
+    var space3 = window.AnvilBase.token('--space-3', '0.75rem');
 
     /* Build stage HTML */
     var stageHtml = '';
@@ -208,7 +199,7 @@
   };
 
   CloudComputeWidget.prototype._resolveColor = function (varName, fallback) {
-    var c = this._token(varName, fallback);
+    var c = window.AnvilBase.token(varName, fallback);
     return c || fallback;
   };
 
@@ -240,8 +231,8 @@
 
     var stage = this._stages[idx];
     var capText = this._captions[stage.id];
-    var textColor = this._token('--text', '#ffffff');
-    var muted = this._token('--text-muted', '#8e8e93');
+    var textColor = window.AnvilBase.token('--text', '#ffffff');
+    var muted = window.AnvilBase.token('--text-muted', '#8e8e93');
     var col = this._resolveColor(stage.color, '#007aff');
 
     if (capText) {
@@ -288,10 +279,7 @@
 
   CloudComputeWidget.prototype._stop = function () {
     this._playing = false;
-    if (this._timer) {
-      clearInterval(this._timer);
-      this._timer = null;
-    }
+    window.AnvilBase.stop(this);
     if (this._playBtn) {
       this._playBtn.textContent = 'Play';
     }
@@ -310,9 +298,9 @@
     for (var i = 0; i < this._stageEls.length; i++) {
       this._stageEls[i].classList.remove('active');
     }
-    var muted = this._token('--text-muted', '#8e8e93');
-    var surface2 = this._token('--surface-2', '#2c2c2e');
-    var space3 = this._token('--space-3', '0.75rem');
+    var muted = window.AnvilBase.token('--text-muted', '#8e8e93');
+    var surface2 = window.AnvilBase.token('--surface-2', '#2c2c2e');
+    var space3 = window.AnvilBase.token('--space-3', '0.75rem');
     this._captionEl.innerHTML =
       '<div style="font-size:0.72rem;color:' + muted + ';text-align:center;padding:' + space3 + ';">Click a stage above or press Play/Step to explore</div>';
   };
