@@ -27,6 +27,8 @@ class ContentCorpusListCommand(AbstractCommand):
             A list of content corpus records as raw dictionaries.
         """
         data: list[dict[str, object]] = await self._transport.request(
-            HttpMethod.GET, "/v1/content/corpora", response_model=list,
+            HttpMethod.GET,
+            "/v1/content/corpora",
+            response_model=list,
         )
         return data

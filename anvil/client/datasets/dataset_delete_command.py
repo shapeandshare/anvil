@@ -19,7 +19,10 @@ class DatasetDeleteCommand(AbstractCommand):
     """Delete a dataset — ``DELETE /v1/datasets/{id}[?force=]``."""
 
     async def execute(
-        self, dataset_id: int, *, force: bool = False,
+        self,
+        dataset_id: int,
+        *,
+        force: bool = False,
     ) -> dict[str, object]:
         """Delete a dataset from the server.
 

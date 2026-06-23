@@ -27,6 +27,8 @@ class HealthDetailedCommand(AbstractCommand):
             System metrics including CPU, memory, disk, and GPU information.
         """
         data: dict[str, object] = await self._transport.request(
-            HttpMethod.GET, "/v1/health/detailed", response_model=dict,
+            HttpMethod.GET,
+            "/v1/health/detailed",
+            response_model=dict,
         )
         return data

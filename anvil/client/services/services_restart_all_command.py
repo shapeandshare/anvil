@@ -27,6 +27,8 @@ class ServicesRestartAllCommand(AbstractCommand):
             A response payload confirming the restart request.
         """
         data: dict[str, object] = await self._transport.request(
-            HttpMethod.POST, "/v1/services/restart-all", response_model=dict,
+            HttpMethod.POST,
+            "/v1/services/restart-all",
+            response_model=dict,
         )
         return data

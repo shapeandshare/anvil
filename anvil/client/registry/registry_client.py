@@ -85,7 +85,9 @@ class RegistryClient:
         """
         return await self._get_cmd.execute(model_id)
 
-    async def delete(self, model_id: str, version: str | None = None) -> dict[str, object]:
+    async def delete(
+        self, model_id: str, version: str | None = None
+    ) -> dict[str, object]:
         """Delete a registered model (all versions) or a specific version.
 
         Parameters

@@ -36,7 +36,10 @@ class EvalClient:
         self._dataset_get_cmd = EvalDatasetGetCommand(transport)
 
     async def perplexity(
-        self, model_id: str, dataset_name: str, max_samples: int | None = None,
+        self,
+        model_id: str,
+        dataset_name: str,
+        max_samples: int | None = None,
     ) -> dict[str, object]:
         """Compute perplexity for a trained model.
 
@@ -55,11 +58,16 @@ class EvalClient:
             The evaluation result including perplexity score.
         """
         return await self._perplexity_cmd.execute(
-            model_id, dataset_name, max_samples=max_samples,
+            model_id,
+            dataset_name,
+            max_samples=max_samples,
         )
 
     async def create_dataset(
-        self, name: str, source: str, description: str | None = None,
+        self,
+        name: str,
+        source: str,
+        description: str | None = None,
     ) -> dict[str, object]:
         """Create a new evaluation dataset.
 
@@ -78,7 +86,9 @@ class EvalClient:
             The newly created eval dataset record.
         """
         return await self._dataset_create_cmd.execute(
-            name, source, description=description,
+            name,
+            source,
+            description=description,
         )
 
     async def get_dataset(self, name: str) -> dict[str, object]:

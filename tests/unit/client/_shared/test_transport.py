@@ -80,7 +80,9 @@ class TestTransportRequest:
         mock_resp.is_error = False
 
         transport._client.request = AsyncMock(return_value=mock_resp)
-        result = await transport.request(HttpMethod.GET, "/v1/test", response_model=_DummyResult)
+        result = await transport.request(
+            HttpMethod.GET, "/v1/test", response_model=_DummyResult
+        )
         assert result.ok is True
 
     @pytest.mark.asyncio
@@ -95,7 +97,9 @@ class TestTransportRequest:
         transport._client.request = AsyncMock(return_value=mock_resp)
 
         with pytest.raises(NotFoundError) as exc_info:
-            await transport.request(HttpMethod.GET, "/v1/missing", response_model=_DummyResult)
+            await transport.request(
+                HttpMethod.GET, "/v1/missing", response_model=_DummyResult
+            )
         assert "not found" in str(exc_info.value)
 
     @pytest.mark.asyncio
@@ -110,7 +114,9 @@ class TestTransportRequest:
         transport._client.request = AsyncMock(return_value=mock_resp)
 
         with pytest.raises(AuthenticationError):
-            await transport.request(HttpMethod.GET, "/v1/secret", response_model=_DummyResult)
+            await transport.request(
+                HttpMethod.GET, "/v1/secret", response_model=_DummyResult
+            )
 
     @pytest.mark.asyncio
     async def test_422_maps_to_validation_error(self) -> None:
@@ -124,7 +130,9 @@ class TestTransportRequest:
         transport._client.request = AsyncMock(return_value=mock_resp)
 
         with pytest.raises(ValidationError):
-            await transport.request(HttpMethod.POST, "/v1/submit", response_model=_DummyResult)
+            await transport.request(
+                HttpMethod.POST, "/v1/submit", response_model=_DummyResult
+            )
 
     @pytest.mark.asyncio
     async def test_api_key_header_injected(self) -> None:
@@ -152,7 +160,9 @@ class TestTransportRequest:
         mock_resp.is_error = False
         transport._client.request = AsyncMock(return_value=mock_resp)
 
-        await transport.request(HttpMethod.GET, "/v1/health", response_model=_DummyResult)
+        await transport.request(
+            HttpMethod.GET, "/v1/health", response_model=_DummyResult
+        )
         call_kwargs = transport._client.request.call_args.kwargs
         # httpx.AsyncClient prepends base_url automatically at the client level;
         # verify the path was passed correctly
@@ -170,7 +180,9 @@ class TestTransportRetry:
         ok_resp = _mock_response(200, {"data": {"ok": True}, "error": None})
 
         transport._client.request = AsyncMock(side_effect=[err_resp, ok_resp])
-        result = await transport.request(HttpMethod.GET, "/v1/test", response_model=_DummyResult)
+        result = await transport.request(
+            HttpMethod.GET, "/v1/test", response_model=_DummyResult
+        )
         assert result.ok is True
         assert transport._client.request.call_count == 2
 
@@ -182,7 +194,9 @@ class TestTransportRetry:
 
         transport._client.request = AsyncMock(return_value=err_resp)
         with pytest.raises(ServerError):
-            await transport.request(HttpMethod.GET, "/v1/test", response_model=_DummyResult)
+            await transport.request(
+                HttpMethod.GET, "/v1/test", response_model=_DummyResult
+            )
         assert transport._client.request.call_count == 2  # 1 original + 1 retry
 
     @pytest.mark.asyncio
@@ -191,7 +205,9 @@ class TestTransportRetry:
         transport = Transport(config)
         transport._client.request = AsyncMock(side_effect=httpx.ConnectError("refused"))
         with pytest.raises(ConnectionError):
-            await transport.request(HttpMethod.GET, "/v1/test", response_model=_DummyResult)
+            await transport.request(
+                HttpMethod.GET, "/v1/test", response_model=_DummyResult
+            )
 
 
 class TestTransportSSE:

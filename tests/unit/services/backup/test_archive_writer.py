@@ -10,9 +10,7 @@ from anvil.services.backup.archive_writer import ArchiveWriter
 class TestArchiveWriter:
     """Verify archive structure, manifest, and atomic write."""
 
-    async def test_creates_tar_gz_with_manifest_as_first_entry(
-        self, tmp_path: Path
-    ):
+    async def test_creates_tar_gz_with_manifest_as_first_entry(self, tmp_path: Path):
         """The manifest must be the first member of the archive."""
         src_dir = tmp_path / "src"
         src_dir.mkdir()

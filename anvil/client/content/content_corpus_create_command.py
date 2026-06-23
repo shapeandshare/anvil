@@ -19,7 +19,9 @@ class ContentCorpusCreateCommand(AbstractCommand):
     """Create a content corpus — ``POST /v1/content/corpora``."""
 
     async def execute(
-        self, name: str, description: str | None = None,
+        self,
+        name: str,
+        description: str | None = None,
     ) -> dict[str, object]:
         """Create a new versioned content corpus on the server.
 
@@ -39,6 +41,9 @@ class ContentCorpusCreateCommand(AbstractCommand):
         if description is not None:
             body["description"] = description
         data: dict[str, object] = await self._transport.request(
-            HttpMethod.POST, "/v1/content/corpora", json=body, response_model=dict,
+            HttpMethod.POST,
+            "/v1/content/corpora",
+            json=body,
+            response_model=dict,
         )
         return data

@@ -19,8 +19,8 @@ from ._shared.server_config import ServerConfig
 from ._shared.transport import Transport
 
 if TYPE_CHECKING:
-    from .content.content_client import ContentClient
     from .compute.compute_client import ComputeClient
+    from .content.content_client import ContentClient
     from .corpora.corpora_client import CorporaClient
     from .datasets.datasets_client import DatasetsClient
     from .eval.eval_client import EvalClient
@@ -301,7 +301,9 @@ class AnvilClient:
             API key to authenticate with.
         """
         await self._transport.request(
-            "POST", "/login", json={"api_key": api_key},
+            "POST",
+            "/login",
+            json={"api_key": api_key},
             response_model=dict,  # type: ignore[arg-type]
         )
         self._transport._auth_mode = "session"
@@ -313,7 +315,8 @@ class AnvilClient:
         server side, then resets the transport auth mode to ``"none"``.
         """
         await self._transport.request(
-            "POST", "/logout",
+            "POST",
+            "/logout",
             response_model=dict,  # type: ignore[arg-type]
         )
         self._transport._auth_mode = "none"

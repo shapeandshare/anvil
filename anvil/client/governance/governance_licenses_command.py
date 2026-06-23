@@ -27,6 +27,8 @@ class GovernanceLicensesCommand(AbstractCommand):
             A list of license record as raw dictionaries.
         """
         data: list[dict[str, object]] = await self._transport.request(
-            HttpMethod.GET, "/v1/governance/licenses", response_model=list,
+            HttpMethod.GET,
+            "/v1/governance/licenses",
+            response_model=list,
         )
         return data

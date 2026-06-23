@@ -8,14 +8,14 @@
 import asyncio
 import os
 import shutil
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from pathlib import Path
 
 from ...config import get_config
 from .backup_lock import BackupLock
 from .backup_status import BackupStatus
-from .backup_summary import BackupSummary
 from .backup_storage_status import BackupStorageStatus
+from .backup_summary import BackupSummary
 from .create_backup_result import CreateBackupResult
 from .progress_event import ProgressEvent
 from .restore_preview import RestorePreview
@@ -350,6 +350,7 @@ class BackupService:
         from datetime import datetime
 
         from anvil.db.models.backup_operation import BackupOperation
+
         from .archive_reader import ArchiveReader
         from .restore_engine import RestoreEngine
         from .restore_journal import RestoreJournal
@@ -379,15 +380,14 @@ class BackupService:
             # Auto-create pre-restore safety snapshot (inline, without
             # acquiring the lock — we already hold it).
             from anvil.db.models.backup_operation import BackupOperation
+
             from .archive_writer import ArchiveWriter
             from .snapshot_planner import SnapshotPlanner
 
             planner = SnapshotPlanner()
             plan = planner.plan(self._backup_dir, self._quota_bytes)
             safety_id = (
-                datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-                + "-"
-                + os.urandom(3).hex()
+                datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ") + "-" + os.urandom(3).hex()
             )
             safety_op = BackupOperation(
                 backup_id=safety_id,

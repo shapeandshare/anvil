@@ -125,9 +125,7 @@ async def test_restore_happy_path(client):
     assert create_r.status_code == 202
     bid = create_r.json()["backup_id"]
 
-    rr = await client.post(
-        f"/v1/backup/{bid}/restore", json={"confirm": "RESTORE"}
-    )
+    rr = await client.post(f"/v1/backup/{bid}/restore", json={"confirm": "RESTORE"})
     assert rr.status_code == 202
     data = rr.json()
     assert "safety_snapshot_id" in data

@@ -27,6 +27,8 @@ class ComputeBackendsCommand(AbstractCommand):
             A list of compute backend records as raw dictionaries.
         """
         data: list[dict[str, object]] = await self._transport.request(
-            HttpMethod.GET, "/v1/compute/backends", response_model=list,
+            HttpMethod.GET,
+            "/v1/compute/backends",
+            response_model=list,
         )
         return data

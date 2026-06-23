@@ -80,10 +80,10 @@ def main(argv: list[str] | None = None) -> None:
 async def _run(args: argparse.Namespace) -> None:
     """Execute the requested subcommand."""
     from ...db.session import AsyncSessionLocal
-    from ...workbench import AnvilWorkbench
     from ...services.governance.audit_action import AuditAction
     from ...services.governance.audit_outcome import AuditOutcome
     from ...services.governance.audit_target_type import AuditTargetType
+    from ...workbench import AnvilWorkbench
 
     async with AsyncSessionLocal() as session:
         wb = AnvilWorkbench(session)
@@ -107,11 +107,12 @@ async def _run(args: argparse.Namespace) -> None:
 
 async def _cmd_create(wb) -> None:
     """Create a backup and print result."""
-    from .snapshot_planner import SnapshotPlanner
-    from .archive_writer import ArchiveWriter
-    from ...db.models.backup_operation import BackupOperation
     import os
     from datetime import datetime
+
+    from ...db.models.backup_operation import BackupOperation
+    from .archive_writer import ArchiveWriter
+    from .snapshot_planner import SnapshotPlanner
 
     backup_id = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ") + "-" + os.urandom(3).hex()
 

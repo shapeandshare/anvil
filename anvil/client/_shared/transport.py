@@ -16,12 +16,13 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any
-from collections.abc import AsyncIterator
 
 import httpx
-from pydantic import BaseModel, ConfigDict, ValidationError as PydanticValidationError
+from pydantic import BaseModel, ConfigDict
+from pydantic import ValidationError as PydanticValidationError
 
 from anvil.client._shared.server_config import ServerConfig
 
@@ -119,7 +120,12 @@ class Transport:
         headers: dict[str, str] = {}
         if self._api_key:
             headers["X-API-Key"] = self._api_key
-        if self._auth_mode == "session" and method_str in ("POST", "PUT", "DELETE", "PATCH"):
+        if self._auth_mode == "session" and method_str in (
+            "POST",
+            "PUT",
+            "DELETE",
+            "PATCH",
+        ):
 
             csrf_token = self._session_cookies.get("_csrf_token")
             if csrf_token:
@@ -176,7 +182,9 @@ class Transport:
                 return payload
 
             if status in (429,) or (status >= 500 and status < 600):
-                if attempt < max_attempts - 1 and self._is_retryable(method_str, idempotency_key):
+                if attempt < max_attempts - 1 and self._is_retryable(
+                    method_str, idempotency_key
+                ):
                     retry_after = self._get_retry_after(response)
                     backoff = retry_after or (self._config.retry_backoff * (2**attempt))
                     logger.debug(
@@ -194,7 +202,9 @@ class Transport:
                 error_msg = raw.get("error", "") if isinstance(raw, dict) else ""
             except Exception:
                 error_msg = response.text
-            self._raise_for_status(status, error_msg or response.reason_phrase or str(status))
+            self._raise_for_status(
+                status, error_msg or response.reason_phrase or str(status)
+            )
 
         # Should not reach here, but handle defensively
         raise RuntimeError("Unreachable: all retry attempts exhausted without result")
@@ -283,11 +293,14 @@ class Transport:
         headers: dict[str, str] = {}
         if self._api_key:
             headers["X-API-Key"] = self._api_key
-        response = await self._client.request("GET", path, params=params, headers=headers or None)
+        response = await self._client.request(
+            "GET", path, params=params, headers=headers or None
+        )
         response.raise_for_status()
 
         if dest:
             import aiofiles  # type: ignore[import-untyped]
+
             content = response.content
             async with aiofiles.open(str(dest), "wb") as f:
                 await f.write(content)
@@ -301,17 +314,11 @@ class Transport:
     def _raise_for_status(self, status: int, message: str) -> None:
         """Map an HTTP status code to a typed ApiError exception and raise it."""
         from anvil.client._shared.errors.api_error import ApiError
-        from anvil.client._shared.errors.authentication_error import (
-            AuthenticationError,
-        )
+        from anvil.client._shared.errors.authentication_error import AuthenticationError
         from anvil.client._shared.errors.not_found_error import NotFoundError
-        from anvil.client._shared.errors.rate_limit_error import (
-            RateLimitError,
-        )
+        from anvil.client._shared.errors.rate_limit_error import RateLimitError
         from anvil.client._shared.errors.server_error import ServerError
-        from anvil.client._shared.errors.validation_error import (
-            ValidationError,
-        )
+        from anvil.client._shared.errors.validation_error import ValidationError
 
         if status in (401, 403):
             raise AuthenticationError(message, status_code=status)
@@ -348,7 +355,4 @@ class Transport:
             return None
 
     def __repr__(self) -> str:
-        return (
-            f"Transport(config={self._config!r}, "
-            f"auth_mode={self._auth_mode!r})"
-        )
+        return f"Transport(config={self._config!r}, " f"auth_mode={self._auth_mode!r})"

@@ -8,8 +8,11 @@ progressive: $(VENV_DIR)/activate ## Run progressive training walkthrough (train
 		if [ -f "examples/$$f" ]; then $(PYTHON) "examples/$$f"; fi; \
 	done
 
+show-api-key: $(VENV_DIR)/activate ## Show the generated API key
+	$(PYTHON) -c "from anvil.cli import show_api_key; show_api_key()"
+
 vault: ## Open docs/vault/ in Obsidian
 	@echo "Open docs/vault/ in Obsidian for the best experience."
 	@open docs/vault/ 2>/dev/null || echo "Run: open docs/vault/"
 
-.PHONY: train progressive vault
+.PHONY: train progressive show-api-key vault

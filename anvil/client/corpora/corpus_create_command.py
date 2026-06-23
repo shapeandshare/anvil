@@ -19,7 +19,9 @@ class CorpusCreateCommand(AbstractCommand):
     """Create a new corpus — ``POST /v1/corpora``."""
 
     async def execute(
-        self, name: str, description: str | None = None,
+        self,
+        name: str,
+        description: str | None = None,
     ) -> dict[str, object]:
         """Create a new corpus on the server.
 
@@ -39,6 +41,9 @@ class CorpusCreateCommand(AbstractCommand):
         if description is not None:
             body["description"] = description
         data: dict[str, object] = await self._transport.request(
-            HttpMethod.POST, "/v1/corpora", json=body, response_model=dict,
+            HttpMethod.POST,
+            "/v1/corpora",
+            json=body,
+            response_model=dict,
         )
         return data

@@ -50,6 +50,7 @@ class TestCLIParser:
     def test_parser_no_args_exits(self):
         """Running the CLI with no args should call sys.exit(1)."""
         import sys
+
         try:
             main([])
         except SystemExit as e:

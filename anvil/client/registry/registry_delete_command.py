@@ -19,7 +19,9 @@ from .._shared.http_method import HttpMethod
 class RegistryDeleteCommand(AbstractCommand):
     """Delete a model or version — ``DELETE /v1/registry/models/{id}[/versions/{version}]``."""
 
-    async def execute(self, model_id: str, version: str | None = None) -> dict[str, object]:
+    async def execute(
+        self, model_id: str, version: str | None = None
+    ) -> dict[str, object]:
         """Delete a registered model (all versions) or a specific version.
 
         Parameters

@@ -10,19 +10,18 @@ deleting full-deployment backups.  Audit events (FR-031) are emitted at
 the route layer via the session-bound ``workbench.audit`` (research R11).
 """
 
-from typing import Annotated
-
 import asyncio
 import json
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
-from ..deps import get_workbench
 from ...services.governance.audit_action import AuditAction
 from ...services.governance.audit_outcome import AuditOutcome
 from ...services.governance.audit_target_type import AuditTargetType
 from ...workbench import AnvilWorkbench
+from ..deps import get_workbench
 
 router = APIRouter()
 

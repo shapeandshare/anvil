@@ -19,7 +19,9 @@ class ServicesLogsCommand(AbstractCommand):
     """Tail service logs — ``GET /v1/services/logs/{name}[?lines=]``."""
 
     async def execute(
-        self, name: str, lines: int | None = None,
+        self,
+        name: str,
+        lines: int | None = None,
     ) -> list[str]:
         """Retrieve recent log lines from a service.
 

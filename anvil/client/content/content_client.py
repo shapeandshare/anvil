@@ -15,8 +15,8 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 
-from .._shared.transport import Transport
 from .._shared.stream_event import StreamEvent
+from .._shared.transport import Transport
 from .content_corpus_create_command import ContentCorpusCreateCommand
 from .content_corpus_list_command import ContentCorpusListCommand
 from .content_session_create_command import ContentSessionCreateCommand
@@ -46,7 +46,9 @@ class ContentClient:
         self._stream_composition_cmd = ContentStreamCompositionCommand(transport)
 
     async def create_corpus(
-        self, name: str, description: str | None = None,
+        self,
+        name: str,
+        description: str | None = None,
     ) -> dict[str, object]:
         """Create a new versioned content corpus.
 
@@ -75,7 +77,9 @@ class ContentClient:
         return await self._corpus_list_cmd.execute()
 
     async def create_session(
-        self, corpus_id: int, name: str | None = None,
+        self,
+        corpus_id: int,
+        name: str | None = None,
     ) -> dict[str, object]:
         """Create a new content session.
 

@@ -30,6 +30,8 @@ class InferenceModelsCommand(AbstractCommand):
             Model listing from the server.
         """
         data: dict[str, object] = await self._transport.request(
-            HttpMethod.GET, "/v1/inference/models", response_model=dict,
+            HttpMethod.GET,
+            "/v1/inference/models",
+            response_model=dict,
         )
         return data
