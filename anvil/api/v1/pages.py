@@ -18,7 +18,6 @@ from fastapi.responses import HTMLResponse
 from ...api.deps import get_workbench
 from ...db.models.license_entry import LicenseEntry
 from ...workbench import AnvilWorkbench
-from .help_content import HELP_SECTIONS
 from .learning import related_lessons
 
 router = APIRouter()
@@ -42,7 +41,6 @@ async def training_page(request: Request):
         request,
         "archetypes/training.html",
         {
-            "help_section_id": "training",
             "related_lessons": related_lessons(
                 "parameters", "architecture", "autograd", "adam", "attention"
             ),
@@ -68,7 +66,6 @@ async def experiments_page(request: Request):
         request,
         "archetypes/experiment.html",
         {
-            "help_section_id": "experiments",
             "related_lessons": related_lessons(
                 "loss", "training-loop", "adam", "experiment-tracking"
             ),
@@ -123,7 +120,6 @@ async def datasets_page(
         request,
         "datasets.html",
         {
-            "help_section_id": "data",
             "licenses": licenses,
             "related_lessons": related_lessons(
                 "data-fundamentals", "tokenization", "chunking", "governance"
@@ -150,7 +146,6 @@ async def operations_page(request: Request):
         request,
         "operations.html",
         {
-            "help_section_id": "operations",
             "related_lessons": related_lessons(
                 "cloud-compute", "memory-divergence", "faq", "glossary"
             ),
@@ -176,7 +171,6 @@ async def inference_page(request: Request):
         request,
         "archetypes/playground.html",
         {
-            "help_section_id": "playground",
             "related_lessons": related_lessons(
                 "sampling", "attention", "embeddings", "graph"
             ),
@@ -225,7 +219,6 @@ async def content_page(request: Request):
         request,
         "archetypes/content_library.html",
         {
-            "help_section_id": "content-library",
             "related_lessons": related_lessons(
                 "data-fundamentals", "content-versioning", "governance", "chunking"
             ),
@@ -259,28 +252,4 @@ async def about_page(
         request,
         "about.html",
         {"licenses": licenses},
-    )
-
-
-@router.get("/help", response_class=HTMLResponse)
-async def help_page(request: Request):
-    """Render the non-educational help guide page.
-
-    Displays an anchor-index listing of all workspace pages with detailed
-    help sections for each. Content is defined in ``HELP_SECTIONS``.
-
-    Parameters
-    ----------
-    request : Request
-        The incoming HTTP request.
-
-    Returns
-    -------
-    HTMLResponse
-        Rendered ``archetypes/help.html`` template with sections.
-    """
-    return request.app.state.templates.TemplateResponse(
-        request,
-        "archetypes/help.html",
-        {"sections": HELP_SECTIONS},
     )
