@@ -23,8 +23,7 @@ jobs:
         with:
           fetch-depth: 2
       - name: Install anvil
-        run: |
-          pip install .
+        run: echo "skip install"
       - name: Classify change scope
         id: classify
         run: |
