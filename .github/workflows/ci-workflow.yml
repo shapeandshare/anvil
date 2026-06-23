@@ -8,7 +8,7 @@
 # FR-005: runs same commands as local dev (make targets)
 # FR-006a: version-only bump PRs bypass heavy gates via bump-scope-guard
 
-name: CI
+name: CI Gates
 
 "on":
   pull_request:
