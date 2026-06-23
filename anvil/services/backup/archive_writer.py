@@ -210,7 +210,9 @@ class ArchiveWriter:
             return None
         target_dir = tmp_dir or db_path.parent
         target_dir.mkdir(parents=True, exist_ok=True)
-        tmp = Path(tempfile.mktemp(suffix=".db", dir=str(target_dir)))
+        fd, tmp_path_str = tempfile.mkstemp(suffix=".db", dir=str(target_dir))
+        os.close(fd)
+        tmp = Path(tmp_path_str)
         src = sqlite3.connect(str(db_path))
         dst = sqlite3.connect(str(tmp))
         try:
