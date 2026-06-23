@@ -1,3 +1,10 @@
+## v0.1.1 (2026-06-23)
+
+### Fix
+- Automated patch bump: source code merged to main without a version bump
+
+---
+
 # Changelog
 
 All notable changes to anvil are documented here.
