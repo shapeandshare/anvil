@@ -260,10 +260,15 @@
         var totalExt = externScripts.length;
 
         function _flushInlines() {
+          var _nonceMeta;
+          var _pageNonce;
           loadedCount++;
           if (loadedCount >= totalExt) {
+            _nonceMeta = document.querySelector('meta[name="csp-nonce"]');
+            _pageNonce = _nonceMeta ? _nonceMeta.getAttribute('content') : '';
             for (k = 0; k < inlinScripts.length; k++) {
               ns = document.createElement('script');
+              if (_pageNonce) ns.setAttribute('nonce', _pageNonce);
               ns.textContent = inlinScripts[k].textContent;
               document.body.appendChild(ns);
             }
