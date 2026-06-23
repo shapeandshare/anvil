@@ -136,6 +136,27 @@ window.ANVIL_VERSION = '{{ version }}';
 <script src="/static/js/themes/unicorn.js"></script>
 <script src="/static/js/themes/vinyl.js"></script>
 <script src="/static/js/core.js"></script>
+<script nonce="{{ request.state.csp_nonce }}">
+window.CSRF_TOKEN = null;
+window.CSRF_TOKEN_PROMISE = fetch('/v1/csrf-token').then(function(r) { return r.json(); }).then(function(d) {
+  window.CSRF_TOKEN = d.token || null;
+}).catch(function() {});
+
+window.apiFetch = function(url, opts) {
+  opts = opts || {};
+  var method = (opts.method || 'GET').toUpperCase();
+  if (['POST','PUT','DELETE','PATCH'].indexOf(method) !== -1) {
+    return window.CSRF_TOKEN_PROMISE.then(function() {
+      if (window.CSRF_TOKEN) {
+        opts.headers = opts.headers || {};
+        opts.headers['X-CSRF-Token'] = window.CSRF_TOKEN;
+      }
+      return fetch(url, opts);
+    });
+  }
+  return fetch(url, opts);
+};
+</script>
 <div id="modals-container">{% block modals %}{% endblock %}</div>
 {% block scripts %}{% endblock %}
 <footer style="text-align:center;padding:var(--space-4) var(--space-3);font-size:var(--font-size-xs);color:var(--text-tertiary);border-top:1px solid var(--border-subtle);margin-top:var(--space-6);">

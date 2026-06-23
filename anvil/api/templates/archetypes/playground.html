@@ -316,7 +316,7 @@
     outputEl.innerHTML = '<div class="loading-pulse">Generating samples...</div>';
 
     try {
-      var resp = await fetch('/v1/inference/sample', {
+      var resp = await window.apiFetch('/v1/inference/sample', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

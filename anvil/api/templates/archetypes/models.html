@@ -68,7 +68,10 @@
   var tableEl = document.getElementById('models-table');
   var tbody = document.getElementById('models-tbody');
 
-  fetch('/v1/registry/models').then(function(r) { return r.json(); }).then(function(data) {
+  fetch('/v1/registry/models').then(function(r) {
+    if (!r.ok) { throw new Error(r.status + ': ' + r.statusText); }
+    return r.json();
+  }).then(function(data) {
     var models = data.models || [];
 
     if (models.length === 0) {

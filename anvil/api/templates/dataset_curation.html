@@ -307,7 +307,7 @@
     btn.disabled = true;
     status.textContent = '> deduplicating...';
     try {
-      var resp = await fetch('/v1/datasets/' + DATASET_ID + '/curate/dedup', { method: 'POST' });
+      var resp = await window.apiFetch('/v1/datasets/' + DATASET_ID + '/curate/dedup', { method: 'POST' });
       var data = await resp.json();
       if (!resp.ok) throw new Error(data.detail || 'Dedup failed');
       var r = data.data;
@@ -335,7 +335,7 @@
     if (max) body.max_length = parseInt(max, 10);
     status.textContent = '> filtering...';
     try {
-      var resp = await fetch('/v1/datasets/' + DATASET_ID + '/curate/filter', {
+      var resp = await window.apiFetch('/v1/datasets/' + DATASET_ID + '/curate/filter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -361,7 +361,7 @@
     if (!pattern) { status.textContent = '! Enter a regex pattern.'; return; }
     status.textContent = '> replacing...';
     try {
-      var resp = await fetch('/v1/datasets/' + DATASET_ID + '/curate/replace', {
+      var resp = await window.apiFetch('/v1/datasets/' + DATASET_ID + '/curate/replace', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pattern: pattern, replacement: replacement }),
@@ -388,7 +388,7 @@
     if (!confirm('Delete sample #' + index + '?')) return;
     var status = document.getElementById('curate-status');
     status.textContent = '> deleting sample #' + index + '...';
-    fetch('/v1/datasets/' + DATASET_ID + '/samples/' + sampleId, { method: 'DELETE' })
+    window.apiFetch('/v1/datasets/' + DATASET_ID + '/samples/' + sampleId, { method: 'DELETE' })
       .then(function(r) {
         if (!r.ok) return r.json().then(function(d) { throw new Error(d.detail || 'Delete failed'); });
         showToast('Sample #' + index + ' deleted', 'success');
