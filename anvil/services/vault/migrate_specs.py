@@ -57,30 +57,44 @@ ARTIFACT_TYPES: dict[str, str] = {
 
 SCAFFOLD_DIRS: set[str] = {"checklists", "contracts"}
 
+# Domain tag constants (SonarCloud S1192: deduplicated)
+_DOMAIN_CORE = "domain/core"
+_DOMAIN_TRAINING = "domain/training"
+_DOMAIN_UI = "domain/ui"
+_DOMAIN_INFRA = "domain/infrastructure"
+_DOMAIN_TRACKING = "domain/tracking"
+_DOMAIN_TOOLING = "domain/tooling"
+_DOMAIN_GOV = "domain/governance"
+_DOMAIN_VAULT = "domain/vault"
+
 DOMAIN_KEYWORDS: dict[str, str] = {
-    "core": "domain/core",
-    "model": "domain/core",
-    "engine": "domain/core",
-    "training": "domain/core",
-    "dataset": "domain/training",
-    "data": "domain/training",
-    "corpus": "domain/training",
-    "ui": "domain/ui",
-    "frontend": "domain/ui",
-    "ux": "domain/ui",
-    "saas": "domain/infrastructure",
-    "infrastructure": "domain/infrastructure",
-    "docker": "domain/infrastructure",
-    "deploy": "domain/infrastructure",
-    "experiment": "domain/tracking",
-    "tracking": "domain/tracking",
-    "mlflow": "domain/tracking",
-    "release": "domain/tooling",
-    "version": "domain/tooling",
-    "ci": "domain/tooling",
-    "content": "domain/governance",
-    "governance": "domain/governance",
+    "core": _DOMAIN_CORE,
+    "model": _DOMAIN_CORE,
+    "engine": _DOMAIN_CORE,
+    "training": _DOMAIN_CORE,
+    "dataset": _DOMAIN_TRAINING,
+    "data": _DOMAIN_TRAINING,
+    "corpus": _DOMAIN_TRAINING,
+    "ui": _DOMAIN_UI,
+    "frontend": _DOMAIN_UI,
+    "ux": _DOMAIN_UI,
+    "saas": _DOMAIN_INFRA,
+    "infrastructure": _DOMAIN_INFRA,
+    "docker": _DOMAIN_INFRA,
+    "deploy": _DOMAIN_INFRA,
+    "experiment": _DOMAIN_TRACKING,
+    "tracking": _DOMAIN_TRACKING,
+    "mlflow": _DOMAIN_TRACKING,
+    "release": _DOMAIN_TOOLING,
+    "version": _DOMAIN_TOOLING,
+    "ci": _DOMAIN_TOOLING,
+    "content": _DOMAIN_GOV,
+    "governance": _DOMAIN_GOV,
 }
+
+# YAML null date marker (SonarCloud S1192: deduplicated)
+_YAML_NULL_DATE = "created: ~"
+_YAML_NULL_UPDATED = "updated: ~"
 
 # ---------------------------------------------------------------------------
 # Pure functions (testable, no I/O)
@@ -778,9 +792,9 @@ def run(
     int
         Exit code: ``0`` for success, ``1`` for failures.
     """
-    vault_path = Path(vault_dir)
+    vault_path = Path(vault_dir).resolve()
     vault_specs_dir = vault_path / "Specs"
-    specs_path = Path(specs_dir)
+    specs_path = Path(specs_dir).resolve()
 
     if dry_run:
         lines = dry_run_migration(specs_path, vault_specs_dir)
