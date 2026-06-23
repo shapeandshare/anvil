@@ -3,13 +3,18 @@ title: "SSE Training Chart — Assertable DOM Text Signals"
 type: discovery
 tags:
   - type/discovery
-  - domain/testing
-  - domain/frontend
+  - domain/inference
+  - domain/ui
 created: 2026-06-21
 updated: 2026-06-21
 aliases:
   - "SSE Training Chart — Assertable DOM Text Signals"
 status: status/draft
+source: agent
+code-refs:
+  - anvil/api/templates/archetypes/training.html
+  - anvil/api/static/js/chart.js
+  - anvil/api/static/js/sse.js
 ---
 
 # SSE Training Chart — Assertable DOM Text Signals

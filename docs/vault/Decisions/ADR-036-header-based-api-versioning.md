@@ -14,7 +14,7 @@ related:
 code-refs:
   - anvil/api/v1/router.py
   - anvil/api/app.py
-  - specs/023-header-api-versioning/spec.md
+  - docs/vault/Specs/023 Header API Versioning/spec.md
 tags:
   - type/decision
   - domain/architecture

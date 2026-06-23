@@ -37,5 +37,5 @@ Changed the model name link in `models.html` from `/v1/model-detail/{id}` to `/v
 
 ## Related vault notes
 
-- [[Discovery/models-page-single-click-play-navigation]]
+- [[Discoveries/models-page-single-click-play-navigation]]
 - [[Sessions/2026-06-19-model-play-button]] — prior session that added the Play button and URL param support

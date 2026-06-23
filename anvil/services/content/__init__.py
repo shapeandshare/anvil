@@ -16,5 +16,5 @@ existing ``LocalFileStore`` + SQLite metadata (no external service). SaaS
 mode (future) uses a LakeFS-backed implementation behind the same
 ``VersionedContentStore`` interface.
 
-See ADR-033 and ``specs/019-lakefs-content-repo/`` for the full architecture.
+See ADR-033 and ``docs/vault/Specs/019 LakeFS Content Repo/`` for the full architecture.
 """

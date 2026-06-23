@@ -28,6 +28,7 @@ EXEMPT_DEADEND_NAMES: set[str] = {"index", "README"}
 def compute_connectivity(
     G: nx.DiGraph,
     notes: dict[str, NoteMetadata],
+    excluded_stems: set[str] | None = None,
 ) -> ConnectivityMetrics:
     """Compute connectivity metrics: orphans, dead ends, density, component, bidirectionals.
 
@@ -37,6 +38,10 @@ def compute_connectivity(
         Directed wikilink graph (node stems with edges for links).
     notes : dict[str, NoteMetadata]
         Mapping from stem to ``NoteMetadata``.
+    excluded_stems : set of str, optional
+        Stems to exclude from orphan/dead-end/sink counts (e.g. spec
+        subfiles, scaffold files). These notes remain in the graph for
+        link resolution but are not counted in connectivity analysis.
 
     Returns
     -------
@@ -52,13 +57,13 @@ def compute_connectivity(
         meta = notes.get(stem)
         if meta is None:
             continue
-        if _is_exempt(meta, EXEMPT_ORPHAN_TYPES, EXEMPT_ORPHAN_NAMES):
+        if _is_exempt(meta, EXEMPT_ORPHAN_TYPES, EXEMPT_ORPHAN_NAMES, excluded_stems):
             continue
         if G.in_degree(stem) == 0:
             metrics.orphans.append(stem)
 
     total_eligible = len(G.nodes()) - _count_exempt(
-        notes, EXEMPT_ORPHAN_TYPES, EXEMPT_ORPHAN_NAMES
+        notes, EXEMPT_ORPHAN_TYPES, EXEMPT_ORPHAN_NAMES, excluded_stems
     )
     metrics.orphan_count = len(metrics.orphans)
     metrics.orphan_rate = (
@@ -70,14 +75,14 @@ def compute_connectivity(
         meta = notes.get(stem)
         if meta is None:
             continue
-        if _is_exempt(meta, EXEMPT_DEADEND_TYPES, EXEMPT_DEADEND_NAMES):
+        if _is_exempt(meta, EXEMPT_DEADEND_TYPES, EXEMPT_DEADEND_NAMES, excluded_stems):
             continue
         if G.out_degree(stem) == 0:
             metrics.dead_ends.append(stem)
 
     metrics.dead_end_count = len(metrics.dead_ends)
     eligible_de = len(G.nodes()) - _count_exempt(
-        notes, EXEMPT_DEADEND_TYPES, EXEMPT_DEADEND_NAMES
+        notes, EXEMPT_DEADEND_TYPES, EXEMPT_DEADEND_NAMES, excluded_stems
     )
     metrics.dead_end_rate = (
         (metrics.dead_end_count / eligible_de * 100) if eligible_de > 0 else 0.0
@@ -172,6 +177,7 @@ def _is_exempt(
     meta: NoteMetadata,
     exempt_types: set[str],
     exempt_names: set[str],
+    excluded_stems: set[str] | None = None,
 ) -> bool:
     """Check if a note is exempt from a metric based on type, name, or path.
 
@@ -183,6 +189,8 @@ def _is_exempt(
         Type strings to exempt.
     exempt_names : set of str
         Stem names to exempt.
+    excluded_stems : set of str, optional
+        Additional stems to exclude (e.g. scaffold files from scanner).
 
     Returns
     -------
@@ -190,6 +198,8 @@ def _is_exempt(
         True if the note should be exempted.
     """
     if meta.stem in exempt_names:
+        return True
+    if excluded_stems and meta.stem in excluded_stems:
         return True
     if meta.note_type and f"type/{meta.note_type}" in exempt_types:
         return True
@@ -205,6 +215,7 @@ def _count_exempt(
     notes: dict[str, NoteMetadata],
     exempt_types: set[str],
     exempt_names: set[str],
+    excluded_stems: set[str] | None = None,
 ) -> int:
     """Count how many notes are exempt from a metric.
 
@@ -216,6 +227,8 @@ def _count_exempt(
         Type strings to exempt.
     exempt_names : set of str
         Stem names to exempt.
+    excluded_stems : set of str, optional
+        Additional stems to exclude.
 
     Returns
     -------
@@ -226,7 +239,7 @@ def _count_exempt(
     for stem, meta in notes.items():
         if stem in exempt_names:
             count += 1
-        elif _is_exempt(meta, exempt_types, exempt_names):
+        elif _is_exempt(meta, exempt_types, exempt_names, excluded_stems):
             count += 1
     return count
 
