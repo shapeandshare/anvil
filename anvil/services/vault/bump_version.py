@@ -41,9 +41,7 @@ def _bump_patch(version: str) -> str:
     """
     m = re.match(r"^(\d+)\.(\d+)\.(\d+)$", version)
     if not m:
-        raise ValueError(
-            f"Version '{version}' does not match MAJOR.MINOR.PATCH format"
-        )
+        raise ValueError(f"Version '{version}' does not match MAJOR.MINOR.PATCH format")
     major, minor, patch = int(m.group(1)), int(m.group(2)), int(m.group(3))
     return f"{major}.{minor}.{patch + 1}"
 
