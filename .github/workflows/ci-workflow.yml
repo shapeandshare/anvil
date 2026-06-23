@@ -1,3 +1,13 @@
+# CI workflow: gate enforcement for anvil
+#
+# Runs the project's declared quality gates on every PR and non-main push.
+# Branch protection configuration must require this workflow to pass on main.
+#
+# FR-001/FR-002: validates every change against all declared gates
+# FR-003: blocks merge on failure (via branch protection settings)
+# FR-005: runs same commands as local dev (make targets)
+# FR-006a: version-only bump PRs bypass heavy gates via bump-scope-guard
+
 name: CI Gates
 
 on:
@@ -14,35 +24,113 @@ env:
   UV_CACHE_DIR: /tmp/.uv-cache
 
 jobs:
+  # ── Classification job: determine whether to run the heavy gate suite ──
+  bump-scope-guard:
+    name: Bump Scope Guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      scope: ${{ steps.classify.outputs.scope }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Install anvil
+        run: |
+          pip install .
+      - name: Classify change scope
+        id: classify
+        run: |
+          anvil-vault check-bump-scope > scope_output.txt
+          cat scope_output.txt
+          SCOPE=$(grep "^BUMP_SCOPE=" scope_output.txt | cut -d= -f2)
+          echo "scope=${SCOPE}" >> "$GITHUB_OUTPUT"
+      - name: Upload scope artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bump-scope-output
+          path: scope_output.txt
+
+  # ── Lint gate ──
   lint:
     name: Lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    outputs:
-      result: ${{ steps.check.outputs.result }}
+    needs: bump-scope-guard
+    if: needs.bump-scope-guard.outputs.scope != 'version-only'
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
-        uses: astral-sh/setup-uv@8d55fbecc275b1c35dbe060458839f8d30439ccf
+        uses: astral-sh/setup-uv@8d55fbecc275b1c35dbe060458839f8d30439ccf  # v3
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Setup environment
         run: make setup
       - name: Run lint
-        id: check
-        run: |
-          make lint && echo "result=passed" >> "$GITHUB_OUTPUT" || echo "result=failed" >> "$GITHUB_OUTPUT"
+        run: make lint
 
+  # ── Auto-format gate ──
+  format:
+    name: Auto-format
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: bump-scope-guard
+    if: needs.bump-scope-guard.outputs.scope != 'version-only'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@8d55fbecc275b1c35dbe060458839f8d30439ccf  # v3
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Setup environment
+        run: make setup
+      - name: Run auto-format
+        run: make format
+      - name: Commit formatting changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --exit-code; then
+            git commit -m "style: auto-format with black + isort [skip ci]"
+            git push
+          else
+            echo "No formatting changes needed."
+          fi
+
+  # ── Type-check gate ──
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: bump-scope-guard
+    if: needs.bump-scope-guard.outputs.scope != 'version-only'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@8d55fbecc275b1c35dbe060458839f8d30439ccf  # v3
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Setup environment
+        run: make setup
+      - name: Run typecheck
+        run: make typecheck
+
+  # ── Test + coverage gate ──
   test:
     name: Test
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: lint
-    if: needs.lint.outputs.result == 'passed'
+    needs: bump-scope-guard
+    if: needs.bump-scope-guard.outputs.scope != 'version-only'
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
-        uses: astral-sh/setup-uv@8d55fbecc275b1c35dbe060458839f8d30439ccf
+        uses: astral-sh/setup-uv@8d55fbecc275b1c35dbe060458839f8d30439ccf  # v3
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Setup environment
@@ -50,11 +138,76 @@ jobs:
       - name: Run tests with coverage
         run: make test
 
+  # ── SonarCloud static analysis gate ──
+  sonar-scan:
+    name: SonarCloud
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: bump-scope-guard
+    if: needs.bump-scope-guard.outputs.scope != 'version-only'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history for blame/tracking
+      - name: Install uv
+        uses: astral-sh/setup-uv@8d55fbecc275b1c35dbe060458839f8d30439ccf  # v3
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Setup environment
+        run: make setup
+      - name: Run tests with coverage (prerequisite for SonarCloud)
+        run: make test
+      - name: Run SonarCloud scan
+        uses: SonarSource/sonarcloud-github-action@ba3875ecf642b2129de2b589510c81a8b53dbf4e  # master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ── Vault audit gate ──
+  vault-audit:
+    name: Vault Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: bump-scope-guard
+    if: needs.bump-scope-guard.outputs.scope != 'version-only'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@8d55fbecc275b1c35dbe060458839f8d30439ccf  # v3
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Setup environment
+        run: make setup
+      - name: Run vault audit
+        run: make vault-audit
+
+  # ── Browser smoke test (NON-blocking for v1) ──
+  browser-smoke:
+    name: Browser Smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: bump-scope-guard
+    if: needs.bump-scope-guard.outputs.scope != 'version-only'
+    continue-on-error: true  # v1: non-blocking; see ADR-034 for promotion criteria
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@8d55fbecc275b1c35dbe060458839f8d30439ccf  # v3
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Setup environment
+        run: make setup
+      - name: Install Playwright Chromium
+        run: uv run playwright install --with-deps chromium
+      - name: Run browser smoke tests
+        run: make test-browser
+
+  # ── Gate status summarizer ──
   gate-status:
     name: Gate Status
     runs-on: ubuntu-latest
     timeout-minutes: 3
-    needs: [lint, test]
+    needs: [bump-scope-guard, format, lint, typecheck, test, sonar-scan, vault-audit]
     if: always()
     steps:
       - name: Summarize gate results
@@ -63,3 +216,8 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "| Gate | Status |" >> "$GITHUB_STEP_SUMMARY"
           echo "|------|--------|" >> "$GITHUB_STEP_SUMMARY"
+          for gate in bump-scope-guard format lint typecheck test sonar-scan vault-audit; do
+            STATUS="${{ needs[gate].result }}"
+            echo "| $gate | $STATUS |" >> "$GITHUB_STEP_SUMMARY"
+          done
+          echo "" >> "$GITHUB_STEP_SUMMARY"
