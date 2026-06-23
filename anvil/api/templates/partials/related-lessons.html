@@ -9,9 +9,7 @@
    Renders a compact row of links into the learning platform.
    Expects `related_lessons`: a list of {path, title} dicts
    (see anvil.api.v1.learning.related_lessons). Renders nothing
-   when the variable is absent or empty.
-   Also renders a "Help guide" chip when `help_section_id` is set
-   (see anvil.api.v1.help_content.HelpSection.anchor_id). #}
+   when the variable is absent or empty. #}
 {% if related_lessons %}
 <nav class="related-lessons" aria-label="Related lessons">
   <span class="related-lessons__label"><span aria-hidden="true">&#128218;</span> Related lessons</span>
@@ -19,9 +17,6 @@
     {% for lesson in related_lessons %}
     <a href="{{ lesson.path }}" class="related-lessons__chip">{{ lesson.title }} <span aria-hidden="true">&rarr;</span></a>
     {% endfor %}
-    {% if help_section_id %}
-    <a href="/v1/help#{{ help_section_id }}" class="related-lessons__chip related-lessons__chip--help"><span aria-hidden="true">&#10068;</span> Help guide <span aria-hidden="true">&rarr;</span></a>
-    {% endif %}
   </div>
 </nav>
 {% endif %}

@@ -327,26 +327,3 @@ async def test_model_detail_page(client):
     assert r.status_code == 200
     assert "text/html" in r.headers["content-type"]
     assert "Model Detail" in r.text
-
-
-@pytest.mark.asyncio
-async def test_help_page(client):
-    """GET /v1/help renders the help guide page with workspace sections."""
-    r = await client.get("/v1/help")
-    assert r.status_code == 200
-    assert "text/html" in r.headers["content-type"]
-    assert "Help Guide" in r.text
-    assert "Training Dashboard" in r.text
-    assert "Data" in r.text
-    assert "Experiments" in r.text
-    assert "Models" in r.text
-    assert "Playground" in r.text
-    assert "Operations" in r.text
-    assert "Content Library" in r.text
-    assert 'id="training"' in r.text
-    assert 'id="data"' in r.text
-    assert 'id="experiments"' in r.text
-    assert 'id="models"' in r.text
-    assert 'id="playground"' in r.text
-    assert 'id="operations"' in r.text
-    assert 'id="content-library"' in r.text
