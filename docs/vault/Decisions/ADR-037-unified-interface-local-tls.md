@@ -20,7 +20,7 @@ code-refs:
   - anvil/config.py
   - anvil/api/app.py
   - anvil/supervisor/services.py
-  - specs/024-unified-interface-local-tls/spec.md
+  - docs/vault/Specs/024 Unified Interface Local TLS/spec.md
 tags:
   - type/decision
   - domain/architecture

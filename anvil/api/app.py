@@ -16,6 +16,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import secrets
 import time
 from collections import defaultdict
 from contextlib import asynccontextmanager
@@ -318,13 +319,15 @@ async def security_headers_middleware(
     request: StarletteRequest, call_next: RequestResponseEndpoint
 ) -> Response:
     """Inject security headers (CSP, HSTS, XFO, XCTO) into every response."""
+    nonce = secrets.token_urlsafe(16)
+    request.state.csp_nonce = nonce
     response = await call_next(request)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
         "style-src 'self' 'unsafe-inline'; "
         "img-src 'self' data:; "
         "font-src 'self'; "
-        "script-src 'self';"
+        f"script-src 'self' 'nonce-{nonce}';"
     )
     response.headers["Strict-Transport-Security"] = (
         "max-age=31536000; includeSubDomains"

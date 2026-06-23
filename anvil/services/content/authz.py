@@ -7,7 +7,7 @@ in the future SaaS delivery.
 See Also
 --------
 ADR-033 : Content repository substrate
-specs/019-lakefs-content-repo/spec.md : US2 authorization
+docs/vault/Specs/019 LakeFS Content Repo/spec.md : US2 authorization
 """
 
 from __future__ import annotations

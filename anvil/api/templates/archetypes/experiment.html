@@ -82,7 +82,7 @@
 </style>
 {% endblock %}
 {% block scripts %}
-<script>
+<script nonce="{{ request.state.csp_nonce }}">
 (function() {
   'use strict';
   var runId = window.core && window.core.getUrlParams().get('run_id');

@@ -18,7 +18,7 @@ source: agent
 
 # SaaS System Diagrams — Full Fidelity
 
-Granular per-subsystem diagrams for the anvil SaaS architecture. Aligned with Architecture Decisions **AD-1 through AD-16** in `specs/016-saas-architecture/spec.md`. For the narrative overview and feature matrix see [[SaaSArchitecture]].
+Granular per-subsystem diagrams for the anvil SaaS architecture. Aligned with Architecture Decisions **AD-1 through AD-16** in `docs/vault/Specs/016 SaaS Architecture/spec.md`. For the narrative overview and feature matrix see [[SaaSArchitecture]].
 
 > [!NOTE]
 > **Updated 2026-06-19**: Part G adds observability, MLflow-proxy, multi-cluster, and HA diagrams (AD-12..AD-16). Parts A–F structural/auth/compute/deploy diagrams are not yet annotated with the cluster-admin tier or Multi-AZ details inline, but the new Part G and [[Decisions/ADR-030-saas-architecture|ADR-030]] cover the deltas. See [[2026-06-19-saas-spec-hardening|the hardening session log]].
@@ -1117,6 +1117,6 @@ graph TB
 
 - [[SaaSSecurityAndFlowDiagrams]] — user-story flows, DFDs, perimeter, egress, tenant/access boundaries (39 diagrams)
 - [[SaaSArchitecture]] — narrative overview + feature matrix
-- `specs/016-saas-architecture/spec.md` — AD-1..AD-16, FRs, acceptance gates
-- `specs/016-saas-architecture/data-model.md` — schema detail
+- `docs/vault/Specs/016 SaaS Architecture/spec.md` — AD-1..AD-16, FRs, acceptance gates
+- `docs/vault/Specs/016 SaaS Architecture/data-model.md` — schema detail
 - `docs/vault/Decisions/ADR-030-saas-architecture.md` — decision record

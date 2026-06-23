@@ -10,6 +10,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="csp-nonce" content="{{ request.state.csp_nonce }}">
 <title>anvil</title>
 <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
@@ -18,7 +19,7 @@
 <link rel="stylesheet" href="/static/css/utilities.css">
 <link rel="stylesheet" href="/static/css/components.css">
 <link rel="stylesheet" href="/static/css/code.css">
-<script>
+<script nonce="{{ request.state.csp_nonce }}">
 window.ANVIL_VERSION = '{{ version }}';
 (function () {
   var raw = null;
@@ -137,5 +138,8 @@ window.ANVIL_VERSION = '{{ version }}';
 <script src="/static/js/core.js"></script>
 <div id="modals-container">{% block modals %}{% endblock %}</div>
 {% block scripts %}{% endblock %}
+<footer style="text-align:center;padding:var(--space-4) var(--space-3);font-size:var(--font-size-xs);color:var(--text-tertiary);border-top:1px solid var(--border-subtle);margin-top:var(--space-6);">
+  &copy; 2026 Josh Burt &mdash; MIT License
+</footer>
 </body>
 </html>

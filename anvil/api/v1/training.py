@@ -23,14 +23,17 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.responses import StreamingResponse
 
-from ...gpu import detect_gpu
+from ...gpu import GpuInfo, detect_gpu
 from ...services.compute.compute_backend_unavailable import ComputeBackendUnavailable
 from ...services.compute.resolve import resolve_backend
 from ...services.compute.training_engine import TrainingEngine
 from ...services.tracking.mps_metrics_collector import MPSMetricsCollector
 from ...services.tracking.mps_sampler_thread import MPSSamplerThread
 from ...services.tracking.tracking import TrackingService
-from ...services.training.memory_estimator import estimate_training_memory
+from ...services.training.memory_estimator import (
+    MemoryEstimate,
+    estimate_training_memory,
+)
 from ...services.training.training import TrainingService
 
 logger = logging.getLogger(__name__)
@@ -104,122 +107,187 @@ MODELS_DIR = Path("data/models")
 MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
 
-@router.post("/training/start")
-async def start_training(config: TrainConfig):
-    """Start a new training run asynchronously.
+def _validate_hparams(
+    n_embd: int,
+    n_head: int,
+    block_size: int,
+) -> None:
+    """Validate hyperparameter constraints for training.
 
-    Validates hyperparameters (``n_embd``, ``n_head``, ``block_size``),
-    resolves the compute backend, estimates GPU memory for torch backend,
-    creates an MLflow run, and launches the training as an ``asyncio.Task``.
+    Checks that ``n_head <= n_embd``, ``n_embd`` is divisible by
+    ``n_head``, and ``head_dim`` is even (required by RoPE).
 
     Parameters
     ----------
-    config : TrainConfig
-        Pydantic-validated training configuration with all hyperparameter
-        fields. See ``TrainConfig`` for field details and defaults.
-
-    Returns
-    -------
-    dict
-        ``run_id``, ``mlflow_run_id``, ``experiment_id``, ``status``, and
-        ``tracking`` status.
+    n_embd : int
+        Embedding dimension.
+    n_head : int
+        Number of attention heads.
+    block_size : int
+        Context window size (validated by Pydantic at the boundary).
 
     Raises
     ------
     HTTPException
-        If ``n_head > n_embd`` (422), ``n_embd`` not divisible by ``n_head``
-        (422), ``head_dim`` is odd (422), compute backend unavailable (422),
-        or model would OOM GPU (422).
+        With status 422 if any constraint is violated.
     """
-    n_embd = config.n_embd
-    n_head = config.n_head
-    block_size = config.block_size
-
     if n_head > n_embd:
         raise HTTPException(
             status_code=422,
-            detail=f"n_head ({n_head}) exceeds n_embd ({n_embd}) — head_dim would be 0. n_head must be <= n_embd.",
+            detail=(
+                f"n_head ({n_head}) exceeds n_embd ({n_embd}) — head_dim would"
+                f" be 0. n_head must be <= n_embd."
+            ),
         )
     if n_embd % n_head != 0:
         raise HTTPException(
             status_code=422,
-            detail=f"n_embd ({n_embd}) is not divisible by n_head ({n_head}). "
-            f"The embedding dimension must be evenly divisible by the number of attention heads. "
-            f"Try n_head={max(h for h in range(1, n_head + 1) if n_embd % h == 0)}.",
+            detail=(
+                f"n_embd ({n_embd}) is not divisible by n_head ({n_head}). "
+                f"The embedding dimension must be evenly divisible by the number"
+                f" of attention heads. "
+                f"Try n_head="
+                f"{max(h for h in range(1, min(n_head, 64) + 1) if n_embd % h == 0)}."
+            ),
         )
     head_dim = n_embd // n_head
     if head_dim % 2 != 0:
         raise HTTPException(
             status_code=422,
-            detail=f"head_dim={head_dim} is odd — RoPE (Rotary Position Embedding) requires an even head dimension. "
-            f"Try adjusting n_embd or n_head so that n_embd / n_head is even.",
+            detail=(
+                f"head_dim={head_dim} is odd — RoPE (Rotary Position Embedding)"
+                f" requires an even head dimension. "
+                f"Try adjusting n_embd or n_head so that n_embd / n_head is even."
+            ),
         )
 
-    compute_backend = config.compute_backend
-    dataset_id = config.dataset_id
-    corpus_id = config.corpus_id
-    content_version_id = config.content_version_id
 
+def _resolve_training_backend(
+    compute_backend: str | None,
+) -> tuple[TrainingEngine, str]:
+    """Resolve compute backend and device for training.
+
+    Parameters
+    ----------
+    compute_backend : str | None
+        Compute backend identifier (e.g. ``"auto"``, ``"local-torch"``).
+
+    Returns
+    -------
+    tuple[TrainingEngine, str]
+        ``(engine_backend, device)`` tuple.
+
+    Raises
+    ------
+    HTTPException
+        With status 422 if the requested backend is unavailable.
+    """
     try:
         resolved = resolve_backend({"compute_backend": compute_backend})
     except ComputeBackendUnavailable as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
+    return resolved["engine"], resolved["device"]
 
-    engine_backend = resolved["engine"]
-    device = resolved["device"]
 
-    gpu_info = detect_gpu()
+def _estimate_memory(
+    engine_backend: TrainingEngine,
+    config: TrainConfig,
+    gpu_info: GpuInfo,
+) -> MemoryEstimate | None:
+    """Estimate GPU memory for torch backend and raise if OOM.
 
-    memory_est = None
-    if engine_backend == TrainingEngine.TORCH:
-        memory_est = estimate_training_memory(
-            vocab_size=200,
-            n_embd=n_embd,
-            n_head=n_head,
-            n_layer=config.n_layer,
-            block_size=block_size,
-            gpu_info=gpu_info,
+    Parameters
+    ----------
+    engine_backend : TrainingEngine
+        The resolved training engine backend.
+    config : TrainConfig
+        Training configuration with hyperparameters.
+    gpu_info : GpuInfo
+        GPU information from ``detect_gpu()``.
+
+    Returns
+    -------
+    MemoryEstimate | None
+        Memory estimate if ``engine_backend`` is ``TORCH``, else ``None``.
+
+    Raises
+    ------
+    HTTPException
+        With status 422 if the model config would OOM the GPU.
+    """
+    if engine_backend != TrainingEngine.TORCH:
+        return None
+    memory_est = estimate_training_memory(
+        vocab_size=200,
+        n_embd=config.n_embd,
+        n_head=config.n_head,
+        n_layer=config.n_layer,
+        block_size=config.block_size,
+        gpu_info=gpu_info,
+    )
+    if memory_est.would_oom:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"Model config would likely OOM your GPU. "
+                f"Estimated peak memory: {memory_est.peak_gb:.1f} GB, "
+                f"available: {memory_est.available_gb:.1f} GB "
+                f"({memory_est.device_backend}, {memory_est.device_name}). "
+                f"Try reducing n_embd, n_layer, n_head, or block_size. "
+                f"Breakdown: {memory_est.param_count:,} params, "
+                f"{memory_est.weights_bytes / (1024**2):.0f} MB weights, "
+                f"{memory_est.gradients_bytes / (1024**2):.0f} MB gradients, "
+                f"{memory_est.optimizer_bytes / (1024**2):.0f} MB optimizer, "
+                f"{memory_est.kv_cache_bytes / (1024**2):.0f} MB KV cache."
+            ),
         )
-        if memory_est.would_oom:
-            raise HTTPException(
-                status_code=422,
-                detail=(
-                    f"Model config would likely OOM your GPU. "
-                    f"Estimated peak memory: {memory_est.peak_gb:.1f} GB, "
-                    f"available: {memory_est.available_gb:.1f} GB "
-                    f"({memory_est.device_backend}, {memory_est.device_name}). "
-                    f"Try reducing n_embd, n_layer, n_head, or block_size. "
-                    f"Breakdown: {memory_est.param_count:,} params, "
-                    f"{memory_est.weights_bytes / (1024**2):.0f} MB weights, "
-                    f"{memory_est.gradients_bytes / (1024**2):.0f} MB gradients, "
-                    f"{memory_est.optimizer_bytes / (1024**2):.0f} MB optimizer, "
-                    f"{memory_est.kv_cache_bytes / (1024**2):.0f} MB KV cache."
-                ),
-            )
+    return memory_est
 
-    run_id = svc.reserve_run()
 
-    if memory_est is not None and memory_est.warnings:
-        logger.warning(
-            "Memory estimate for run %d: %s",
-            run_id,
-            "; ".join(memory_est.warnings),
-        )
+async def _setup_mlflow_run(
+    config: TrainConfig,
+    run_id: int,
+    engine_backend: TrainingEngine,
+    device: str,
+    tracking_svc: TrackingService,
+    gpu_info: GpuInfo,
+) -> tuple[str | None, int]:
+    """Build hyperparams dict, start MLflow run, and allocate experiment ID.
 
-    hyperparams = {
+    Parameters
+    ----------
+    config : TrainConfig
+        Training configuration.
+    run_id : int
+        Reserved training run ID.
+    engine_backend : TrainingEngine
+        Resolved compute engine backend.
+    device : str
+        Resolved device string.
+    tracking_svc : TrackingService
+        MLflow tracking service instance.
+    gpu_info : GpuInfo
+        GPU information for enrichment tags.
+
+    Returns
+    -------
+    tuple[str | None, int]
+        ``(mlflow_run_id, experiment_id)`` tuple.
+    """
+    hyperparams: dict[str, str | int | float | None] = {
         "n_layer": config.n_layer,
-        "n_embd": n_embd,
-        "n_head": n_head,
-        "block_size": block_size,
+        "n_embd": config.n_embd,
+        "n_head": config.n_head,
+        "block_size": config.block_size,
         "num_steps": config.num_steps,
         "learning_rate": config.learning_rate,
         "beta1": config.beta1,
         "beta2": config.beta2,
         "temperature": config.temperature,
-        "compute_backend": compute_backend,
-        "corpus_id": corpus_id,
-        "dataset_id": dataset_id,
-        "content_version_id": content_version_id,
+        "compute_backend": config.compute_backend,
+        "corpus_id": config.corpus_id,
+        "dataset_id": config.dataset_id,
+        "content_version_id": config.content_version_id,
     }
 
     hyperparams["gpu_available"] = str(gpu_info.available)
@@ -236,26 +304,53 @@ async def start_training(config: TrainConfig):
         device=device,
     )
 
-    # Generate a numeric experiment_id from the run_id_seq table.
-    # This is used as the anvil.experiment_id tag for MLflow lookup.
     experiment_id = await svc.allocate_experiment_id()
 
-    # Store experiment identity as MLflow tags
     if mlflow_run_id:
         await tracking_svc.set_tag(
-            mlflow_run_id, "anvil.experiment_id", str(experiment_id)
+            mlflow_run_id,
+            "anvil.experiment_id",
+            str(experiment_id),
         )
         await tracking_svc.set_tag(mlflow_run_id, "anvil.status", "running")
 
+    return mlflow_run_id, experiment_id
+
+
+async def _log_dataset_metadata(
+    mlflow_run_id: str | None,
+    dataset_id: int | None,
+    corpus_id: int | None,
+    content_version_id: int | None,
+    tracking_svc: TrackingService,
+) -> None:
+    """Log dataset, corpus, and content-version metadata as MLflow tags.
+
+    Parameters
+    ----------
+    mlflow_run_id : str | None
+        MLflow run ID (may be ``None`` if MLflow is degraded).
+    dataset_id : int | None
+        Optional dataset ID.
+    corpus_id : int | None
+        Optional corpus ID.
+    content_version_id : int | None
+        Optional content version ID for reproducibility.
+    tracking_svc : TrackingService
+        MLflow tracking service instance.
+    """
     from ...db.session import AsyncSessionLocal
 
-    input_digest = None
-    input_role = None
+    input_digest: str | None = None
+    input_role: str | None = None
     if mlflow_run_id and dataset_id:
         async with AsyncSessionLocal() as sess:
             try:
                 input_digest = await tracking_svc.log_dataset_input(
-                    mlflow_run_id, dataset_id=dataset_id, role="training", session=sess
+                    mlflow_run_id,
+                    dataset_id=dataset_id,
+                    role="training",
+                    session=sess,
                 )
                 input_role = "training"
             except Exception:
@@ -264,20 +359,26 @@ async def start_training(config: TrainConfig):
         async with AsyncSessionLocal() as sess:
             try:
                 input_digest = await tracking_svc.log_corpus_input(
-                    mlflow_run_id, corpus_id=corpus_id, session=sess
+                    mlflow_run_id,
+                    corpus_id=corpus_id,
+                    session=sess,
                 )
                 input_role = "corpus"
             except Exception:
                 pass
 
-    # Store input metadata as MLflow tags (not in DB)
     if mlflow_run_id and input_digest:
-        await tracking_svc.set_tag(mlflow_run_id, "anvil.input_digest", input_digest)
         await tracking_svc.set_tag(
-            mlflow_run_id, "anvil.input_role", input_role or "training"
+            mlflow_run_id,
+            "anvil.input_digest",
+            input_digest,
+        )
+        await tracking_svc.set_tag(
+            mlflow_run_id,
+            "anvil.input_role",
+            input_role or "training",
         )
 
-    # Phase 1C: push dataset/corpus metadata as MLflow tags
     if mlflow_run_id and dataset_id:
         async with AsyncSessionLocal() as sess:
             try:
@@ -287,7 +388,9 @@ async def start_training(config: TrainConfig):
                 ds = await ds_repo.get(dataset_id)
                 if ds:
                     await tracking_svc.set_tag(
-                        mlflow_run_id, "anvil.dataset.name", ds.name
+                        mlflow_run_id,
+                        "anvil.dataset.name",
+                        ds.name,
                     )
                     await tracking_svc.set_tag(
                         mlflow_run_id,
@@ -320,7 +423,9 @@ async def start_training(config: TrainConfig):
                 corpus = await corp_repo.get(corpus_id)
                 if corpus:
                     await tracking_svc.set_tag(
-                        mlflow_run_id, "anvil.dataset.name", corpus.name
+                        mlflow_run_id,
+                        "anvil.dataset.name",
+                        corpus.name,
                     )
                     await tracking_svc.set_tag(
                         mlflow_run_id,
@@ -341,7 +446,6 @@ async def start_training(config: TrainConfig):
             except Exception:
                 pass
 
-    # Phase US1-1: content version reproducibility (T046)
     if mlflow_run_id and content_version_id is not None:
         async with AsyncSessionLocal() as sess:
             try:
@@ -352,7 +456,6 @@ async def start_training(config: TrainConfig):
                 lineage = LineageService(ver_repo)
                 version = await ver_repo.get(int(content_version_id))
                 if version:
-                    # Log manifest digest as MLflow tags/params
                     await tracking_svc.set_tag(
                         mlflow_run_id,
                         "anvil.content_version_id",
@@ -364,16 +467,18 @@ async def start_training(config: TrainConfig):
                         version.manifest_digest,
                     )
 
-                    # Attach corpus_manifest.json as MLflow artifact
                     client = tracking_svc._client
                     if client:
                         import json as _json
 
                         def _log_manifest():
+                            import os as _os
                             import tempfile as _tf
 
                             with _tf.NamedTemporaryFile(
-                                mode="w", suffix=".json", delete=False
+                                mode="w",
+                                suffix=".json",
+                                delete=False,
                             ) as f:
                                 _json.dump(
                                     {
@@ -388,15 +493,13 @@ async def start_training(config: TrainConfig):
                                 )
                                 fpath = f.name
                             client.log_artifact(mlflow_run_id, fpath)
-                            import os as _os
-
                             _os.unlink(fpath)
 
                         await asyncio.get_event_loop().run_in_executor(
-                            None, _log_manifest
+                            None,
+                            _log_manifest,
                         )
 
-                    # Record lineage link
                     await lineage.record_run_ref(
                         version_id=version.id,
                         mlflow_run_id=mlflow_run_id,
@@ -405,6 +508,69 @@ async def start_training(config: TrainConfig):
                     await sess.commit()
             except Exception:
                 pass
+
+
+@router.post("/training/start")
+async def start_training(config: TrainConfig):
+    """Start a new training run asynchronously.
+
+    Validates hyperparameters (``n_embd``, ``n_head``, ``block_size``),
+    resolves the compute backend, estimates GPU memory for torch backend,
+    creates an MLflow run, and launches the training as an ``asyncio.Task``.
+
+    Parameters
+    ----------
+    config : TrainConfig
+        Pydantic-validated training configuration with all hyperparameter
+        fields. See ``TrainConfig`` for field details and defaults.
+
+    Returns
+    -------
+    dict
+        ``run_id``, ``mlflow_run_id``, ``experiment_id``, ``status``, and
+        ``tracking`` status.
+
+    Raises
+    ------
+    HTTPException
+        If ``n_head > n_embd`` (422), ``n_embd`` not divisible by ``n_head``
+        (422), ``head_dim`` is odd (422), compute backend unavailable (422),
+        or model would OOM GPU (422).
+    """
+    _validate_hparams(config.n_embd, config.n_head, config.block_size)
+
+    engine_backend, device = _resolve_training_backend(config.compute_backend)
+
+    gpu_info = detect_gpu()
+    memory_est = _estimate_memory(engine_backend, config, gpu_info)
+
+    run_id = svc.reserve_run()
+    if memory_est is not None and memory_est.warnings:
+        logger.warning(
+            "Memory estimate for run %d: %s",
+            run_id,
+            "; ".join(memory_est.warnings),
+        )
+
+    mlflow_run_id, experiment_id = await _setup_mlflow_run(
+        config,
+        run_id,
+        engine_backend,
+        device,
+        tracking_svc,
+        gpu_info,
+    )
+
+    await _log_dataset_metadata(
+        mlflow_run_id,
+        config.dataset_id,
+        config.corpus_id,
+        config.content_version_id,
+        tracking_svc,
+    )
+
+    dataset_id = config.dataset_id
+    corpus_id = config.corpus_id
 
     mps_thread = None
     if mlflow_run_id and MPSMetricsCollector.is_available():

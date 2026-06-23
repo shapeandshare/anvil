@@ -401,7 +401,7 @@ docker run -p 8080:8080 -p 5001:5001 -v anvil-workspace:/workspace anvil
 
 ## License
 
-Released under the **MIT License**.
+Copyright &copy; 2026 Josh Burt. Released under the **MIT License**.
 
 <br>
 

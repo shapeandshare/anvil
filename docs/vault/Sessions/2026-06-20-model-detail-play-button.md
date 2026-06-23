@@ -25,4 +25,4 @@ Added a "Play" button to the model detail page (`model_detail.html`) so users ca
 
 ## References
 
-- [[Discovery/models-page-single-click-play-navigation]] — updated to include this change
+- [[Discoveries/models-page-single-click-play-navigation]] — updated to include this change

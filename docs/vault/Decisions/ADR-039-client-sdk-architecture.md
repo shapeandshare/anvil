@@ -12,7 +12,7 @@ code-refs:
   - anvil/client/
   - anvil/client/_shared/
   - anvil/client/anvil_client.py
-  - specs/026-client-sdk/
+  - docs/vault/Specs/026 Client SDK/
 aliases: 'ADR-039: Client SDK Architecture'
 ---
 

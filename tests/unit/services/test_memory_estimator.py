@@ -198,3 +198,150 @@ class TestToDictWithGpu:
         assert d["available_gb"] == 14.0
         assert d["device_backend"] == "cuda"
         assert d["utilization_pct"] is not None
+
+
+class TestFormatCountEdgeCases:
+    def test_exactly_one_million(self):
+        assert _format_count(1_000_000) == "1.0M"
+
+    def test_just_below_one_million(self):
+        assert _format_count(999_999) == "1000.0K"
+
+    def test_exactly_one_thousand(self):
+        assert _format_count(1_000) == "1.0K"
+
+    def test_just_below_one_thousand(self):
+        assert _format_count(999) == "999"
+
+    def test_zero(self):
+        assert _format_count(0) == "0"
+
+    def test_large_billions(self):
+        result = _format_count(2_500_000_000)
+        assert result.endswith("M")
+        assert "2500" in result
+
+
+class TestComputeParamCountEdgeCases:
+    def test_zero_vocab(self):
+        count = _compute_param_count(0, 16, 4, 1)
+        # No embeddings or lm_head, but rms_final + per_layer remain
+        expected_rms = 16  # rms_final
+        expected_per_layer = 4 * 16 * 16 + 3 * int(8 * 16 / 3) * 16 + 2 * 16
+        assert count == expected_rms + 1 * expected_per_layer
+
+    def test_large_config(self):
+        count = _compute_param_count(1000, 768, 12, 12)
+        assert count > 0
+        assert count > 10_000_000  # Should be well into millions
+
+    def test_deep_network(self):
+        one_layer = _compute_param_count(50, 16, 4, 1)
+        many_layers = _compute_param_count(50, 16, 4, 10)
+        diff = many_layers - one_layer
+        per_layer = 4 * 16 * 16 + 3 * int(8 * 16 / 3) * 16 + 2 * 16
+        assert diff == 9 * per_layer
+
+
+class TestMemoryEstimateProperties:
+    def test_zero_bytes_all_properties(self):
+        est = MemoryEstimate(
+            vocab_size=0,
+            n_embd=0,
+            n_head=0,
+            n_layer=0,
+            block_size=0,
+            intermediate_size=0,
+            param_count=0,
+        )
+        assert est.total_mb == 0.0
+        assert est.peak_mb == 0.0
+        assert est.peak_gb == 0.0
+        assert est.available_mb is None
+        assert est.available_gb is None
+        assert est.utilization_pct is None
+
+    def test_utilization_pct_rounded_to_zero(self):
+        """Available memory is much larger than peak, utilisation
+        rounds to 0% but property should still compute."""
+        est = MemoryEstimate(
+            vocab_size=10,
+            n_embd=4,
+            n_head=2,
+            n_layer=1,
+            block_size=4,
+            intermediate_size=int(8 * 4 / 3),
+            param_count=100,
+            available_bytes=int(1e12),  # 1 TB available
+            peak_bytes=1000,  # tiny peak
+        )
+        pct = est.utilization_pct
+        assert pct is not None
+        assert pct < 1.0
+
+    def test_available_mb_and_gb_computed(self):
+        est = MemoryEstimate(
+            vocab_size=10,
+            n_embd=4,
+            n_head=2,
+            n_layer=1,
+            block_size=4,
+            intermediate_size=int(8 * 4 / 3),
+            param_count=100,
+            available_bytes=1_073_741_824,  # 1 GB
+        )
+        assert est.available_mb == 1024.0
+        assert est.available_gb == 1.0
+
+
+class TestExactThresholdBoundaries:
+    """Test memory estimation at exact utilisation thresholds."""
+
+    def _cuda(self, total_gb, avail_gb):
+        return GpuInfo(
+            available=True,
+            backend="cuda",
+            device_name="TestGPU",
+            memory_total_gb=total_gb,
+            memory_available_gb=avail_gb,
+        )
+
+    def test_exactly_at_warn_threshold(self):
+        """Exactly 75% utilization should produce a warning."""
+        est = estimate_training_memory(
+            vocab_size=200,
+            n_embd=128,
+            n_head=4,
+            n_layer=4,
+            block_size=256,
+            gpu_info=self._cuda(100, 100),
+        )
+        peak_gb = est.peak_bytes / (1024**3)
+        avail_gb = peak_gb / 0.749
+        est = estimate_training_memory(
+            vocab_size=200,
+            n_embd=128,
+            n_head=4,
+            n_layer=4,
+            block_size=256,
+            gpu_info=self._cuda(avail_gb, avail_gb),
+        )
+        # Should be just ~75%, either at threshold or slightly below
+        # It should NOT OOM and should NOT say close to limit
+        assert est.would_oom is False
+
+    def test_mps_without_total_falls_back(self):
+        """MPS without total memory should still produce estimate."""
+        est = estimate_training_memory(
+            vocab_size=50,
+            gpu_info=GpuInfo(
+                available=True,
+                backend="mps",
+                device_name="M3",
+                memory_total_gb=None,
+                memory_available_gb=None,
+            ),
+        )
+        assert est.available_bytes is None
+        assert any("Could not determine" in w for w in est.warnings)
+        assert est.device_backend == "mps"

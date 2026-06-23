@@ -24,6 +24,8 @@ Open this vault in [Obsidian](https://obsidian.md) for graph navigation.
 | [[Governance/Constitution|Governance]] | Constitution, policies, principles |
 | [[Design/Design|Design]] | Conceptual design and rationale |
 | [[Systems/Systems|Systems]] | Implemented subsystems and tooling |
+| [[Code/Code|Code]] | Code-architecture notes: modules, classes, conventions |
+| [[Specs/Specs|Specs]] | Specification notes tracking feature spec status |
 | [[Decisions/ADR-001-architecture-decisions|Decisions]] | Architecture Decision Records |
 | [[Reference/ArchitectureOverview|Reference]] | Glossary, architecture guides, topic references |
 | [[Discoveries/Discoveries|Discoveries]] | Non-obvious constraints found during sessions |

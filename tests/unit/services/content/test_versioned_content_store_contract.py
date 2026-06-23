@@ -6,7 +6,7 @@
 """Contract tests for VersionedContentStore guarantees VCS-1 and VCS-2.
 
 Tests two foundational contract guarantees (from
-``specs/019-lakefs-content-repo/contracts/versioned-content-store.md``):
+``docs/vault/Specs/019 LakeFS Content Repo/contracts/versioned-content-store.md``):
 
 - **VCS-1**: A ``VersionRef.manifest_digest`` resolves to a byte-identical
   entry set forever. Once frozen, ``resolve()`` returns the exact same

@@ -1,10 +1,11 @@
 ---
 title: "Session: 2026-06-21 — Playwright UI Smoke Harness Spec Kit"
-type: session
+type: session-log
 tags:
-  - type/session
-  - domain/testing
-  - domain/ci
+  - type/session-log
+  - domain/ui
+  - domain/tooling
+source: agent
 created: 2026-06-21
 updated: 2026-06-21
 aliases:
@@ -63,7 +64,7 @@ During the critical review, three agents verified key claims against the actual 
 
 ## References
 
-- [Spec](../../specs/022-playwright-ui-smoke/spec.md)
-- [Plan](../../specs/022-playwright-ui-smoke/plan.md)
-- [Tasks](../../specs/022-playwright-ui-smoke/tasks.md)
+- [Spec](../../docs/vault/Specs/022 Playwright UI Smoke/spec.md)
+- [Plan](../../docs/vault/Specs/022 Playwright UI Smoke/plan.md)
+- [Tasks](../../docs/vault/Specs/022 Playwright UI Smoke/tasks.md)
 - [ADR-034](../Decisions/ADR-034-playwright-ui-smoke-harness.md)

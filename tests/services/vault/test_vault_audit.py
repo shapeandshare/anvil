@@ -13,10 +13,75 @@ import pytest
 
 from anvil.services.vault.vault_audit import (
     VaultAuditService,
+    _is_scaffold_path,
+    _is_spec_subfile,
     extract_wikilinks,
     parse_frontmatter,
     validate_schema,
 )
+
+
+class TestIsScaffoldPath:
+    """Tests for ``_is_scaffold_path``."""
+
+    def test_scaffold_checklist_true(self) -> None:
+        vault_root = Path("/vault")
+        path = Path("/vault/Specs/015 Demo/checklists/requirements.md")
+        assert _is_scaffold_path(path, vault_root) is True
+
+    def test_scaffold_contracts_true(self) -> None:
+        vault_root = Path("/vault")
+        path = Path("/vault/Specs/015 Demo/contracts/README.md")
+        assert _is_scaffold_path(path, vault_root) is True
+
+    def test_normal_spec_file_false(self) -> None:
+        vault_root = Path("/vault")
+        path = Path("/vault/Specs/015 Demo/015 Demo - plan.md")
+        assert _is_scaffold_path(path, vault_root) is False
+
+    def test_root_spec_note_false(self) -> None:
+        vault_root = Path("/vault")
+        path = Path("/vault/Specs/015 Demo/015 Demo.md")
+        assert _is_scaffold_path(path, vault_root) is False
+
+    def test_non_spec_path_false(self) -> None:
+        vault_root = Path("/vault")
+        path = Path("/vault/Notes/ValidNote.md")
+        assert _is_scaffold_path(path, vault_root) is False
+
+    def test_nested_checklist_edge(self) -> None:
+        vault_root = Path("/vault")
+        path = Path("/vault/Specs/015 Demo/checklists/subdir/deep.md")
+        assert _is_scaffold_path(path, vault_root) is True
+
+
+class TestIsSpecSubfile:
+    """Tests for ``_is_spec_subfile``."""
+
+    def test_plan_subfile_true(self) -> None:
+        vault_root = Path("/vault")
+        path = Path("/vault/Specs/015 Demo/015 Demo - plan.md")
+        assert _is_spec_subfile(path, vault_root) is True
+
+    def test_tasks_subfile_true(self) -> None:
+        vault_root = Path("/vault")
+        path = Path("/vault/Specs/015 Demo/015 Demo - tasks.md")
+        assert _is_spec_subfile(path, vault_root) is True
+
+    def test_root_note_false(self) -> None:
+        vault_root = Path("/vault")
+        path = Path("/vault/Specs/015 Demo/015 Demo.md")
+        assert _is_spec_subfile(path, vault_root) is False
+
+    def test_non_spec_file_false(self) -> None:
+        vault_root = Path("/vault")
+        path = Path("/vault/Notes/ValidNote.md")
+        assert _is_spec_subfile(path, vault_root) is False
+
+    def test_checklist_file_false(self) -> None:
+        vault_root = Path("/vault")
+        path = Path("/vault/Specs/015 Demo/checklists/requirements.md")
+        assert _is_spec_subfile(path, vault_root) is False
 
 
 class TestParseFrontmatter:
@@ -156,3 +221,154 @@ class TestVaultAuditService:
 
         broken = [f for f in report.errors if f.rule == "broken_wikilink"]
         assert broken == [], f"unexpected broken wikilinks: {broken}"
+
+    @pytest.mark.asyncio
+    async def test_spec_folder_skips_scaffold_from_schema(self, tmp_path: Path) -> None:
+        """Scaffold files (checklists/, contracts/) skip schema validation.
+
+        Scaffold files have no frontmatter and are tool-generated. They
+        must be added to the filename_index (so wikilinks resolve) but
+        must NOT produce schema validation errors.
+        """
+        spec_dir = tmp_path / "Specs" / "015 Demo"
+        checklists_dir = spec_dir / "checklists"
+        contracts_dir = spec_dir / "contracts"
+        checklists_dir.mkdir(parents=True)
+        contracts_dir.mkdir(parents=True)
+
+        # Root spec note (has frontmatter)
+        (spec_dir / "015 Demo.md").write_text(
+            "---\ntitle: 015 Demo\ntype: spec\ntags:\n  - type/spec\n"
+            "created: '2026-06-21'\nupdated: '2026-06-21'\n---\n# 015 Demo\n",
+            encoding="utf-8",
+        )
+        # Spec subfile (prefixed, has frontmatter)
+        (spec_dir / "015 Demo - plan.md").write_text(
+            "---\ntitle: 015 Demo Plan\ntype: spec\ntags:\n  - type/spec\n"
+            "created: '2026-06-21'\nupdated: '2026-06-21'\n---\n# Plan\n",
+            encoding="utf-8",
+        )
+        # Scaffold checklist file (tool-generated, no frontmatter)
+        (checklists_dir / "requirements.md").write_text(
+            "# Requirements\n- [ ] Item 1\n",
+            encoding="utf-8",
+        )
+        # Scaffold contracts file (tool-generated, no frontmatter)
+        (contracts_dir / "README.md").write_text(
+            "# Contract\nThis is a contract.\n",
+            encoding="utf-8",
+        )
+
+        svc = VaultAuditService(vault_dir=str(tmp_path))
+        report = await svc.run_mechanical_audit()
+
+        # 4 files total: 015 Demo.md, 015 Demo - plan.md, requirements.md, README.md
+        assert report.stats["files_scanned"] == 4
+
+        # Scaffold files must produce SKIPPED findings
+        skipped_rules = {f.rule for f in report.skipped}
+        assert "skipped_scaffold" in skipped_rules
+
+        # Scaffold files must NOT produce missing_frontmatter warnings
+        scaffold_warnings = [
+            f
+            for f in report.warnings
+            if "requirements" in f.note_path or "README" in f.note_path
+        ]
+        assert (
+            scaffold_warnings == []
+        ), f"Scaffold files wrongly got schema warnings: {scaffold_warnings}"
+
+        # Wikilinks to scaffold files must resolve (they're in filename_index)
+        # Root note linking to [[requirements]] must not produce broken_wikilink
+        (spec_dir / "015 Demo.md").write_text(
+            "---\ntitle: 015 Demo\ntype: spec\ntags:\n  - type/spec\n"
+            "created: '2026-06-21'\nupdated: '2026-06-21'\n"
+            "---\n# 015 Demo\nLinks to [[requirements]] and [[README]]\n",
+            encoding="utf-8",
+        )
+        svc2 = VaultAuditService(vault_dir=str(tmp_path))
+        report2 = await svc2.run_mechanical_audit()
+        broken = [f for f in report2.errors if f.rule == "broken_wikilink"]
+        assert not any(
+            "requirements" in b.message or "README" in b.message for b in broken
+        ), f"Wikilinks to scaffold files wrongly broken: {broken}"
+
+    @pytest.mark.asyncio
+    async def test_spec_subfiles_pass_schema(self, tmp_path: Path) -> None:
+        """Spec subfiles (prefixed artifacts) must pass schema validation
+        since they carry full frontmatter with tags: [type/spec]."""
+        spec_dir = tmp_path / "Specs" / "016 Another"
+        spec_dir.mkdir(parents=True)
+
+        (spec_dir / "016 Another.md").write_text(
+            "---\ntitle: 016 Another\ntype: spec\ntags:\n  - type/spec\n"
+            "created: '2026-06-21'\nupdated: '2026-06-21'\n---\n# 016 Another\n",
+            encoding="utf-8",
+        )
+        (spec_dir / "016 Another - plan.md").write_text(
+            "---\ntitle: 016 Another Plan\ntype: spec\ntags:\n  - type/spec\n"
+            "created: '2026-06-21'\nupdated: '2026-06-21'\n---\n# Plan\n",
+            encoding="utf-8",
+        )
+
+        svc = VaultAuditService(vault_dir=str(tmp_path))
+        report = await svc.run_mechanical_audit()
+
+        # 2 files, both with valid frontmatter -> 0 errors
+        assert report.stats["files_scanned"] == 2
+        # Spec subfiles have frontmatter, so no missing_frontmatter
+        schema_errors = [
+            f
+            for f in report.errors
+            if f.rule
+            in ("missing_frontmatter", "missing_required_field", "missing_type_tag")
+        ]
+        assert (
+            schema_errors == []
+        ), f"Spec subfiles wrongly got schema errors: {schema_errors}"
+
+    @pytest.mark.asyncio
+    async def test_duplicate_stem_suppressed_for_spec_artifacts(
+        self, tmp_path: Path
+    ) -> None:
+        """Duplicate filename stems across spec directories must not cause warnings.
+
+        After prefixing, every spec has a root ``NNN Title.md`` and prefixed
+        subfiles like ``NNN Title - plan.md``. Scaffold subdirs still have
+        un-prefixed names (``requirements.md``, ``README.md``). The
+        duplicate-stem check must suppress warnings for both cases.
+        """
+        spec1 = tmp_path / "Specs" / "015 Demo"
+        spec2 = tmp_path / "Specs" / "020 Other"
+        spec1.mkdir(parents=True)
+        spec2.mkdir(parents=True)
+
+        fm = (
+            "---\ntitle: {t}\ntype: spec\ntags:\n  - type/spec\n"
+            "created: '2026-06-21'\nupdated: '2026-06-21'\n---\n"
+        )
+
+        for spec, title in [(spec1, "015 Demo"), (spec2, "020 Other")]:
+            (spec / f"{title}.md").write_text(
+                fm.format(t=title) + f"# {title}\n", encoding="utf-8"
+            )
+
+        # Scaffold subdirs in both specs produce duplicate 'requirements' stems
+        for spec in [spec1, spec2]:
+            ck = spec / "checklists"
+            ck.mkdir(exist_ok=True)
+            (ck / "requirements.md").write_text(
+                "# Requirements\n- [ ] Item\n", encoding="utf-8"
+            )
+
+        svc = VaultAuditService(vault_dir=str(tmp_path))
+        report = await svc.run_mechanical_audit()
+
+        duplicate_warnings = [
+            f for f in report.warnings if f.rule == "duplicate_filename"
+        ]
+        # All duplicates are in scaffold subdirs -> suppressed
+        assert (
+            duplicate_warnings == []
+        ), f"Duplicate-stem warnings not suppressed: {duplicate_warnings}"
