@@ -1,0 +1,62 @@
+<!--
+  ~ Copyright © 2026 Josh Burt
+  ~
+  ~ This source code is licensed under the MIT license found in the
+  ~ LICENSE file in the root directory of this source tree.
+-->
+
+{% extends "base.html" %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
+{% block content %}
+
+<div class="section-card" style="--stagger-i: 0;">
+  <div class="section-card__header">
+    <span class="section-card__icon">&#10068;</span>
+    <h2 class="section-card__title">Help Guide</h2>
+  </div>
+  <div class="section-card__content" style="max-width:720px;">
+    <p class="page-intro">
+      Step-by-step guidance for every workspace page in anvil — from setting up
+      data and running training to managing experiments, deploying models, and
+      monitoring operations. Each section explains the page's purpose, its key
+      controls, and common workflows.
+    </p>
+
+    <nav class="help-index" style="display:flex;flex-direction:column;gap:var(--space-2);margin-top:var(--space-4);">
+      {% for section in sections %}
+      <a href="#{{ section.anchor_id }}" class="help-index-item" style="display:flex;flex-direction:column;gap:var(--space-1);padding:var(--space-3) var(--space-4);background:var(--bg);border:var(--border-width) solid var(--border);border-radius:var(--radius);text-decoration:none;">
+        <span class="help-index-item-title" style="font-family:var(--font-display);font-size:1rem;color:var(--text);font-weight:600;">{{ section.title }}</span>
+        <span class="help-index-item-desc" style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-muted);line-height:1.5;">{{ section.description }}</span>
+      </a>
+      {% endfor %}
+    </nav>
+  </div>
+</div>
+
+{% for section in sections %}
+<div class="section-card" id="{{ section.anchor_id }}" style="--stagger-i: {{ loop.index }};">
+  <div class="section-card__header">
+    <h2 class="section-card__title">{{ section.title }}</h2>
+    <a href="/v1/help" class="btn btn-sm btn-secondary" style="text-decoration:none;">Back to index</a>
+  </div>
+  <div class="section-card__content" style="max-width:720px;">
+    {{ section.content | safe }}
+
+    {% if section.related_lesson_keys %}
+    <div style="margin-top:var(--space-4);padding-top:var(--space-3);border-top:1px solid var(--border-subtle);display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;">
+      <span style="font-size:var(--font-size-xs);color:var(--text-tertiary);">Related lessons:</span>
+      {% for key in section.related_lesson_keys %}
+      <a href="/v1/learn/{{ key }}" class="btn btn-sm btn-secondary" style="text-decoration:none;">{{ key | replace('-', ' ') | title }}</a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div style="margin-top:var(--space-4);">
+      <a href="{{ section.route }}" class="action-link">Open {{ section.title }} &rarr;</a>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+{% endblock %}
+{% block scripts %}{% endblock %}

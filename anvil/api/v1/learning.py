@@ -2029,7 +2029,10 @@ async def models_page(request: Request):
     return request.app.state.templates.TemplateResponse(
         request,
         "archetypes/models.html",
-        {"related_lessons": related_lessons("export", "architecture", "graph")},
+        {
+            "help_section_id": "models",
+            "related_lessons": related_lessons("export", "architecture", "graph"),
+        },
     )
 
 
