@@ -2030,7 +2030,6 @@ async def models_page(request: Request):
         request,
         "archetypes/models.html",
         {
-            "help_section_id": "models",
             "related_lessons": related_lessons("export", "architecture", "graph"),
         },
     )
