@@ -103,6 +103,28 @@ Training no longer selects backends via a simple `use_gpu` boolean. The ADR-015 
 | `"local-torch"` | PyTorch (`torch_engine.py`) | `anvil/services/compute/local.py` |
 | `"modal"` | PyTorch (remote) | `anvil/services/compute/modal_backend.py` |
 
+### Modal Scope Boundary
+
+The Modal backend is a **local-mode-only** compute option. It is not available in
+SaaS mode (`ANVIL_MODE=saas`). The three-mode architecture ([[Decisions/ADR-030-saas-architecture|ADR-030]])
+assigns Modal to local mode alongside `local-stdlib` and `local-torch`. SaaS mode
+uses AWS Batch via `BatchComputeBackend` in `anvil/_saas/implementations/`.
+
+The SaaS architecture spec's feature matrix confirms:
+| Mode | Modal available? |
+|------|-----------------|
+| Local (`ANVIL_MODE=local`) | ✅ |
+| SaaS (`ANVIL_MODE=saas`) | ❌ |
+| SaaS Developer (docker) | ❌ |
+
+This is enforced by import isolation: the SaaS entrypoint (`anvil/_saas/`) has no
+import path to `anvil/services/compute/modal_backend.py`. Modal is structurally
+unreachable in SaaS mode (FR-011).
+
+See [[Discoveries/modal-local-mode-boundary]] for the full gap analysis between
+Modal's capabilities and SaaS compute requirements (job_events, ResourceSpec,
+EventBus, IAM auth, checkpointing, usage metering).
+
 ### Naming Layer Gap
 
 **`resolve_backend()`** (in `anvil/services/compute/resolve.py`) returns human-facing category names: `"local"` for both local-stdlib and local-torch, `"modal"` for cloud GPU. The registry expects the composite name.
