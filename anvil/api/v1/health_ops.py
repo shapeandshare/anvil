@@ -132,14 +132,13 @@ async def health_detailed():
     mlflow_status = "unknown"
     mlflow_error: str | None = None
     try:
-        import urllib.request
+        import socket
 
-        mlflow_uri = get_config()["mlflow_uri"]
-        resp = urllib.request.urlopen(
-            f"{mlflow_uri.rstrip('/')}/api/2.0/mlflow/experiments/list",
-            timeout=3,
+        sock = socket.create_connection(
+            ("127.0.0.1", get_config()["mlflow_port"]), timeout=3
         )
-        mlflow_status = "reachable" if resp.status == 200 else f"http_{resp.status}"
+        sock.close()
+        mlflow_status = "reachable"
     except Exception as exc:
         mlflow_status = "unreachable"
         mlflow_error = str(exc)
