@@ -1,36 +1,30 @@
 # Release workflow for anvil
 #
-# Publishes a GitHub Release whenever a PR with a conventional commit
-# title is merged to main. The PR title determines the version bump:
-#   feat   → MINOR (x.Y.0)
-#   fix    → PATCH (x.y.Z)
-#   BREAKING CHANGE → MAJOR (X.0.0)
-#   chore/docs/ci → no bump (changelog only)
+# Single workflow handling version detection, bumping, and release.
+# Replaces the old Release + Auto Bump dual-workflow design.
 #
-# The version bump is delivered via an auto-merge PR (not direct push)
-# to avoid re-triggering the release workflow and to respect branch
-# protection rules. The bump commit includes [skip ci] to prevent loops.
+# On push to main (with source changes): classifies the merge commit via
+# conventional commit → bumps MAJOR/MINOR/PATCH via anvil-vault → creates
+# an auto-merge bump PR → tags + GitHub Release.
 #
-# workflow_dispatch is available as an escape hatch for cases where
-# GitHub suppresses push-based workflows (merge commits touching
-# .github/workflows/ files will not fire push-based workflows).
+# workflow_dispatch is available as an escape hatch for edge cases where
+# GitHub suppresses push-based workflows.
 #
 # Required GitHub Secrets:
 # - BUMP_PAT: Fine-grained PAT with Contents: write, Pull requests: write,
-#   Workflows: write permissions. Used for PR creation because
-#   GITHUB_TOKEN PRs don't trigger CI checks under branch protection.
+#   Workflows: write permissions. Required because GITHUB_TOKEN PRs
+#   don't trigger CI checks under branch protection.
 
 name: Release
 
 on:
   push:
     branches: [main]
+    paths:
+      - 'anvil/**'
+      - '!CHANGELOG.md'
+      - '!.github/**'
   workflow_dispatch:
-    inputs:
-      reason:
-        description: Reason for manual trigger
-        required: false
-        default: "manual trigger"
 
 permissions:
   contents: read
@@ -47,7 +41,7 @@ jobs:
   # ---------------------------------------------------------------------------
   # Job 1 -- Detect version change and determine bump type
   # ---------------------------------------------------------------------------
-  check-version:
+  detect:
     name: Detect Version Bump
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -63,7 +57,7 @@ jobs:
       - name: Install anvil
         run: pip install .
 
-      - name: Compare version and determine bump type
+      - name: Detect increment
         id: check
         env:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
@@ -71,13 +65,13 @@ jobs:
           anvil-vault detect-increment >> "$GITHUB_OUTPUT"
 
   # ---------------------------------------------------------------------------
-  # Job 2 -- Bump version, create changelog, open auto-merge PR, tag and release
+  # Job 2 -- Bump version, create auto-merge PR, tag, and GitHub Release
   # ---------------------------------------------------------------------------
-  bump-and-release:
+  release:
     name: Bump and Release
     runs-on: ubuntu-latest
-    needs: check-version
-    if: needs.check-version.outputs.version_changed == 'true'
+    needs: detect
+    if: needs.detect.outputs.version_changed == 'true'
     timeout-minutes: 15
     permissions:
       contents: write
@@ -92,35 +86,26 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install commitizen and anvil
-        run: |
-          pip install "commitizen>=3.0,<4" .
-
-      - name: Determine bump increment
-        id: increment
-        run: |
-          INCREMENT="${{ needs.check-version.outputs.increment }}"
-          echo "increment=${INCREMENT}" >> "$GITHUB_OUTPUT"
-          if [ "${INCREMENT}" = "SKIP" ]; then
-            echo "Manually bumped version — no automatic bump needed."
-          fi
+      - name: Install anvil
+        run: pip install .
 
       # -----------------------------------------------------------------------
-      # BUMP_PAT preflight check (T014)
+      # Preflight + classification
       # -----------------------------------------------------------------------
-      - name: Check BUMP_PAT preflight
+      - name: Classify and preflight
         id: preflight
+        env:
+          BUMP_PAT: ${{ secrets.BUMP_PAT }}
         run: |
           set -euo pipefail
 
-          INCREMENT="${{ needs.check-version.outputs.increment }}"
+          INCREMENT="${{ needs.detect.outputs.increment }}"
+
           if [ "${INCREMENT}" = "NONE" ]; then
-            echo "No version bump needed — skipping release."
             echo "skip=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           if [ "${INCREMENT}" = "SKIP" ]; then
-            echo "Version was already bumped manually — creating tag and release without additional bump."
             echo "skip=false" >> "$GITHUB_OUTPUT"
             echo "skip-bump=true" >> "$GITHUB_OUTPUT"
             exit 0
@@ -147,48 +132,43 @@ jobs:
             echo "::error::4. Re-run this workflow via Actions → Release"
             exit 1
           fi
-        env:
-          BUMP_PAT: ${{ secrets.BUMP_PAT }}
 
       - name: Skip release (no bump needed)
         if: steps.preflight.outputs.skip == 'true'
         run: |
           echo "Merge commit does not contain a version-affecting"
           echo "conventional commit type (feat/fix/BREAKING CHANGE)."
-          echo "Skipping release. A changelog entry may still be created"
-          echo "for documentation purposes."
+          echo "Skipping release."
 
       # -----------------------------------------------------------------------
-      # Run commitizen bump (T011)
+      # Version bump — skipped if version was already bumped manually
       # -----------------------------------------------------------------------
-      - name: Bump version and update changelog
+      - name: Bump version
         id: bump
         if: steps.preflight.outputs.skip != 'true' && steps.preflight.outputs.skip-bump != 'true'
         run: |
           set -euo pipefail
 
-          # cz bump creates a commit, so git identity must be configured
-          # first or it fails with "empty ident name not allowed". The bump
-          # PR step branches at this commit and amends its message, so the
-          # commit must exist with a valid author here.
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          INCREMENT="${{ needs.detect.outputs.increment }}"
+          echo "Running anvil-vault bump --increment ${INCREMENT}"
 
-          INCREMENT="${{ steps.increment.outputs.increment }}"
-          echo "Running cz bump --changelog --increment ${INCREMENT}"
-
-          # cz bump updates pyproject.toml version and appends CHANGELOG.md.
-          # The local tag created by cz bump is overwritten by the explicit
-          # tag step later (see git tag -f below).
-          python3 -m commitizen bump --yes --changelog --increment "${INCREMENT}"
+          anvil-vault bump --increment "${INCREMENT}"
 
           NEW_VERSION=$(grep '^version =' pyproject.toml \
             | sed 's/version = "\(.*\)"/\1/')
           echo "new_version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
           echo "Version bumped to: ${NEW_VERSION}"
 
+      - name: Read current version (skip-bump case, e.g. manual bump)
+        id: version-read
+        if: steps.preflight.outputs.skip-bump == 'true'
+        run: |
+          VERSION=$(grep '^version =' pyproject.toml \
+            | sed 's/version = "\(.*\)"/\1/')
+          echo "new_version=${VERSION}" >> "$GITHUB_OUTPUT"
+
       # -----------------------------------------------------------------------
-      # Extract PR description for release notes (T017 — Phase 4 integration)
+      # Build release notes (from CHANGELOG and PR description)
       # -----------------------------------------------------------------------
       - name: Fetch PR description
         id: pr-description
@@ -199,7 +179,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Get the branch name from the merge commit
           BRANCH=$(git log -1 --merges --format=%P | head -n1 || echo "")
           if [ -z "${BRANCH}" ]; then
             echo "Not a merge commit — no PR description available."
@@ -215,12 +194,9 @@ jobs:
           if [ -n "${PR_BODY}" ]; then
             echo "PR description fetched (${#PR_BODY} chars)"
           else
-            echo "No PR description found or fetch failed — will use changelog only"
+            echo "No PR description found or fetch failed"
           fi
 
-      # -----------------------------------------------------------------------
-      # Build release notes (T013)
-      # -----------------------------------------------------------------------
       - name: Build release notes
         id: release-notes
         if: steps.preflight.outputs.skip != 'true'
@@ -231,13 +207,11 @@ jobs:
 
           anvil-vault build-notes
 
-          VERSION=$(grep '^version =' pyproject.toml \
-            | sed 's/version = "\(.*\)"/\1/')
-
+          VERSION="${{ steps.bump.outputs.new_version || steps.version-read.outputs.new_version }}"
           TAG="v${VERSION}"
+
           if git tag --list "${TAG}" | grep -q "${TAG}"; then
             echo "Tag ${TAG} already exists — idempotent re-run detected."
-            echo "Skipping tag and release creation."
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
@@ -245,7 +219,7 @@ jobs:
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
       # -----------------------------------------------------------------------
-      # Create bump PR (T012) — auto-merge pattern with [skip ci]
+      # Create bump PR with auto-merge (skip if version already bumped)
       # -----------------------------------------------------------------------
       - name: Create bump PR with auto-merge
         if: steps.release-notes.outputs.exists != 'true' && steps.preflight.outputs.skip-bump != 'true'
@@ -257,16 +231,15 @@ jobs:
           VERSION="${{ steps.release-notes.outputs.version }}"
           BRANCH="ci/bump-v${VERSION}"
 
-          # Identity already set in the bump step, but set again here in
-          # case this step runs in a fresh shell context.
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # `cz bump` already committed the version + changelog change onto
-          # the current branch (HEAD). Create the PR branch at that commit
-          # and rewrite the message to include [skip ci] for loop prevention.
+          # anvil-vault bump modifies files in-place. Create a commit,
+          # branch, and amend the message to include [skip ci] for
+          # loop prevention.
           git checkout -b "${BRANCH}"
-          git commit --amend -m "chore: bump version to v${VERSION}
+          git add pyproject.toml CHANGELOG.md
+          git commit -m "chore: bump version to v${VERSION}
 
           Automated version bump from release workflow.
 
@@ -284,7 +257,7 @@ jobs:
           echo "Bump PR created and auto-merged: ${PR_URL}"
 
       # -----------------------------------------------------------------------
-      # Wait for auto-merge and create tag (T013)
+      # Create git tag and GitHub Release
       # -----------------------------------------------------------------------
       - name: Create git tag and GitHub Release
         if: steps.release-notes.outputs.exists != 'true'
@@ -305,7 +278,6 @@ jobs:
             WAIT=0
             while [ "${WAIT}" -lt "${MAX_WAIT}" ]; do
               git fetch origin main
-              # Check if the bump commit is on main
               if git log origin/main --oneline -10 | grep -q "bump version to v${VERSION}"; then
                 echo "Bump commit detected on main after ${WAIT}s"
                 break
@@ -337,14 +309,13 @@ jobs:
           fi
 
       # -----------------------------------------------------------------------
-      # Infinite loop prevention (T016)
+      # Infinite loop prevention
       # -----------------------------------------------------------------------
       - name: Loop detection
         if: always()
         run: |
           set -euo pipefail
 
-          # Check if the most recent commit message contains [skip ci]
           LAST_MSG=$(git log -1 --format=%B)
           if echo "${LAST_MSG}" | grep -q "\[skip ci\]"; then
             echo "Last commit contains [skip ci] — loop prevention active."
@@ -352,7 +323,6 @@ jobs:
             echo "Last commit does not contain [skip ci] — this is a human commit."
           fi
 
-          # Check for rapid successive triggers (two releases within 60s)
           RECENT_TAGS=$(git tag --list 'v*' --sort=-creatordate | head -2)
           TAG_COUNT=$(echo "${RECENT_TAGS}" | wc -l)
           if [ "${TAG_COUNT}" -ge 2 ]; then

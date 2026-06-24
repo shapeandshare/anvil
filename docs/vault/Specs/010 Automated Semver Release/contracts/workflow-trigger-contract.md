@@ -2,16 +2,14 @@
 
 **Purpose**: Define the contract between GitHub events, workflow triggers, and the release pipeline behavior.
 
-**Applies to**: `release.yml` and `auto-bump.yml` in `.github/workflows/`
+**Applies to**: `release.yml` in `.github/workflows/` (single consolidated workflow)
 
 ## Event-to-Workflow Mapping
 
 | Event | Workflow | Trigger Condition | Purpose |
 |-------|----------|-------------------|---------|
-| `push` to `main` | `release.yml` | Always (no path filter) | Detect version change, auto-release |
+| `push` to `main` (`anvil/**`) | `release.yml` | Source code changes only (excludes CHANGELOG.md, .github/) | Detect conventional commit, bump MAJOR/MINOR/PATCH, create bump PR, tag, and release |
 | `workflow_dispatch` | `release.yml` | Manual via Actions UI | Escape hatch for suppressed workflows |
-| `push` to `main` (`anvil/**`) | `auto-bump.yml` | Source code changes only (excludes CHANGELOG.md, .github/) | Safety-net: auto-open patch bump PR |
-| `workflow_dispatch` | `auto-bump.yml` | Manual via Actions UI | Escape hatch for suppressed workflows |
 
 ## Token Permissions
 
@@ -19,7 +17,7 @@
 |-------|-------|----------|
 | `GITHUB_TOKEN` (built-in) | `contents: write` | `actions/checkout`, `git push` (tag), `gh release create` |
 | `GITHUB_TOKEN` (built-in) | `pull-requests: write` | (reserved, not used for PRs due to CI restriction) |
-| `BUMP_PAT` (secret) | `contents: write` | `gh pr create` — opens the bump/auto-bump PR |
+| `BUMP_PAT` (secret) | `contents: write` | `gh pr create` — opens the bump PR |
 | `BUMP_PAT` (secret) | `pull-requests: write` | `gh pr merge --auto --squash` — auto-merges bump PR |
 | `BUMP_PAT` (secret) | `workflows: write` | Ensures PRs created by the workflow trigger CI checks |
 
@@ -28,7 +26,6 @@
 | Workflow | Concurrency Group | Behavior |
 |----------|-------------------|----------|
 | `release.yml` | `release` | Queue, no cancellation (`cancel-in-progress: false`) |
-| `auto-bump.yml` | `auto-bump` | Queue, no cancellation (`cancel-in-progress: false`) |
 
 ## Security Constraints
 
@@ -43,7 +40,6 @@
 |-------|----------|--------|
 | BUMP_PAT missing | CRITICAL | Abort with diagnostic message |
 | Tag already exists | CRITICAL | Abort with resolution instructions |
-| `cz` not installed | CRITICAL | Abort with install instructions |
 | PR description fetch fails | NON-CRITICAL | Log warning, continue without PR body |
 | Changelog format unexpected | NON-CRITICAL | Log warning, continue |
 | Second workflow triggers within 60s | WARNING | Abort with "possible loop detected" message |

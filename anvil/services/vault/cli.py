@@ -86,10 +86,22 @@ def build_parser() -> argparse.ArgumentParser:
         help="Git repository root path (default: .)",
     )
 
+    # --- bump ---
+    bump_p = sub.add_parser(
+        "bump",
+        help="Bump version by type (MAJOR/MINOR/PATCH) and prepend CHANGELOG entry",
+    )
+    bump_p.add_argument(
+        "--increment",
+        required=True,
+        choices=["MAJOR", "MINOR", "PATCH"],
+        help="Version increment type",
+    )
+
     # --- bump-patch ---
     sub.add_parser(
         "bump-patch",
-        help="Bump patch version in pyproject.toml and prepend CHANGELOG entry",
+        help="[deprecated] Bump patch version — use 'bump --increment PATCH' instead",
     )
 
     # --- detect-increment ---
@@ -166,6 +178,8 @@ def main(argv: list[str] | None = None) -> None:
         _cmd_check_bump_scope(args)
     elif args.command == "bump-patch":
         _cmd_bump_patch(args)
+    elif args.command == "bump":
+        _cmd_bump(args)
     elif args.command == "detect-increment":
         _cmd_detect_increment(args)
     elif args.command == "check-version":
@@ -289,10 +303,29 @@ def _cmd_check_bump_scope(args: argparse.Namespace) -> None:
 
 
 def _cmd_bump_patch(args: argparse.Namespace) -> None:
-    """Handle the ``bump-patch`` subcommand."""
+    """Handle the ``bump-patch`` subcommand.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Parsed CLI arguments.
+    """
     from .bump_version import main
 
     main()
+
+
+def _cmd_bump(args: argparse.Namespace) -> None:
+    """Handle the ``bump`` subcommand.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Parsed CLI arguments.
+    """
+    from .bump_version import bump_main
+
+    bump_main(increment=args.increment)
 
 
 def _cmd_detect_increment(args: argparse.Namespace) -> None:
