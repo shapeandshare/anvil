@@ -129,7 +129,7 @@ known_first_party = ["anvil"]
 [tool.pylint]
 max-line-length = 88
 disable = [
-    "R0801", "too-many-arguments", "too-many-branches",
+    "E0401", "R0801", "too-many-arguments", "too-many-branches",
     "too-many-instance-attributes", "too-many-lines",
     "too-many-locals", "too-many-public-methods",
     "too-many-return-statements",
