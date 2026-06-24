@@ -108,6 +108,9 @@ function teardownMapping() {
 
     var root = document.documentElement;
     if (excitedPref === 'on') {
+      root.setAttribute('data-excited', 'on');
+
+      // CSS var injection for non-animation properties (color, opacity, etc.)
       root.style.setProperty('--rpm', '1.000');
       root.style.setProperty('--warmth', '1.000');
       root.style.setProperty('--level', '0.051');
@@ -124,26 +127,53 @@ function teardownMapping() {
       root.style.setProperty('--ring', '0.949');
       root.style.setProperty('--clearing', '0.949');
       root.style.setProperty('--clarity', '0.949');
-      root.setAttribute('data-excited', 'on');
 
-      // Force animation speed on known elements (inline style wins everything)
-      document.querySelectorAll('.vinyl-reel, .vinyl-vu-needle').forEach(function(el) {
-        el.style.setProperty('animation-duration', '2s', 'important');
-      });
+      // Injected style overrides animation-duration for ALL themed animated
+      // elements. CSS calc(var(--xxx)) in animation-duration doesn't update
+      // dynamically, so a stylesheet !important rule is needed.
+      replaceExcitedStyle('on');
 
       bus.emit('metrics', { tokens_per_sec: 600000, loss: 0.5 });
       bus.emit('milestone', {});
       bus.emit('complete', {});
     } else if (excitedPref === 'off') {
       root.setAttribute('data-excited', 'off');
-      document.querySelectorAll('.vinyl-reel, .vinyl-vu-needle').forEach(function(el) {
-        el.style.removeProperty('animation-duration');
-      });
+      replaceExcitedStyle('off');
     } else {
       root.removeAttribute('data-excited');
-      document.querySelectorAll('.vinyl-reel, .vinyl-vu-needle').forEach(function(el) {
-        el.style.removeProperty('animation-duration');
-      });
+      replaceExcitedStyle('auto');
+    }
+  }
+
+  var EXCITED_STYLE_ID = 'theme-excited-override';
+
+  function replaceExcitedStyle(mode) {
+    var existing = document.getElementById(EXCITED_STYLE_ID);
+    var el;
+    if (mode === 'auto') {
+      if (existing) existing.remove();
+      return;
+    }
+    var dur = mode === 'on' ? '2s' : '120s';
+    var css =
+      '[data-skin="vinyl"] .vinyl-reel { animation-duration: ' + dur + ' !important; }' +
+      '[data-skin="vinyl"] .vinyl-vu-needle { transition-duration: 0.05s !important; }' +
+      '[data-skin="bloom"] .app-main::after { animation-duration: ' + dur + ' !important; }' +
+      '[data-skin="solarflare"] .app-main::after { animation-duration: ' + dur + ' !important; }' +
+      '[data-skin="tide"] .app-main::after { animation-duration: ' + dur + ' !important; }' +
+      '[data-skin="tide"] .app-main::before { animation-duration: ' + dur + ' !important; }' +
+      '[data-skin="mainframe"] .app-main::after { animation-duration: ' + dur + ' !important; }' +
+      '[data-skin="pulse"] .app-main::after { animation-duration: ' + dur + ' !important; }' +
+      '[data-skin="stormfront"] .app-main::after { animation-duration: ' + dur + ' !important; }' +
+      '[data-skin="reactor"] .app-main { animation-duration: ' + dur + ' !important; }' +
+      '[data-skin="deepsea"] .app-main::after { animation-duration: ' + dur + ' !important; }';
+    if (existing) {
+      existing.textContent = css;
+    } else {
+      el = document.createElement('style');
+      el.id = EXCITED_STYLE_ID;
+      el.textContent = css;
+      document.head.appendChild(el);
     }
   }
 
@@ -228,6 +258,7 @@ function teardownMapping() {
     }).join('');
     html += '</div>';
     html += '<div class="theme-picker__controls">' +
+      '<label class="theme-picker__toggle"><input type="checkbox" id="theme-particles-toggle" checked> Show particles</label>' +
       '<label class="theme-picker__toggle"><input type="checkbox" id="theme-reduce-effects"> Reduce effects</label>' +
       '<label class="theme-picker__toggle"><input type="checkbox" id="theme-audio-optin"> Enable theme audio</label>' +
       '<div class="theme-picker__excited">' +
@@ -341,10 +372,28 @@ function teardownMapping() {
     if (trigger) trigger.focus();
   }
 
+  function readParticlesOn() {
+    return window.ParticleSystem ? window.ParticleSystem.readPref() !== 'none' : true;
+  }
+
   function wireEffectControls() {
+    var particles = document.getElementById('theme-particles-toggle');
     var reduce = document.getElementById('theme-reduce-effects');
     var audio = document.getElementById('theme-audio-optin');
     var excited = document.getElementById('theme-excited-select');
+    if (particles && window.ParticleSystem) {
+      particles.checked = readParticlesOn();
+      particles.addEventListener('change', function () {
+        if (particles.checked) {
+          window.ParticleSystem.writePref('');
+        } else {
+          window.ParticleSystem.writePref('none');
+        }
+        // Re-apply current theme to pick up the pref change
+        var cur = current();
+        apply(cur.themeId, cur.mode);
+      });
+    }
     if (reduce) {
       reduce.checked = readFlag(EFFECTS_KEY);
       reduce.addEventListener('change', function () {

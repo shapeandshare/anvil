@@ -133,8 +133,7 @@ body {
   gap: var(--space-2);
   padding: var(--space-2);
   background: var(--surface, #1c1c1e);
-  background-clip: padding-box;
-  border: var(--border-width) solid var(--glass-border);
+  border: var(--border-width) solid var(--separator);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
 }

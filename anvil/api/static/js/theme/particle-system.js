@@ -61,10 +61,9 @@
   }
 
   function getEffectiveConfig(themeConfig) {
+    // localStorage pref is strictly on/off — never overrides the theme's own effect.
     var pref = readPref();
     if (pref === 'none') return { type: 'none', params: {} };
-    if (pref && effects[pref]) return { type: pref, params: {} };
-    // Fall back to theme default
     return themeConfig || { type: 'css', params: {} };
   }
 
