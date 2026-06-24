@@ -122,7 +122,7 @@ async def health_detailed():
     try:
         svc = MigrationService()
         db_schema_version = await svc.get_schema_version()
-        db_migration = await svc.current()
+        db_migration = (await svc.current()) or "unknown"
         db_status = "connected"
     except Exception as exc:
         db_status = "error"

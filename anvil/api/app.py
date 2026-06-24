@@ -36,7 +36,6 @@ from starlette.responses import Response
 from ..config import get_config
 from ..db import models  # noqa: F401 — register ORM models with Base.metadata
 from ..db.migration import MigrationService
-from ..db.schema_version import SCHEMA_VERSION
 from ..db.session import init_engine
 from ..supervisor.services import MLflowService
 from .auth import (

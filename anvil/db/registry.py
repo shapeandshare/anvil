@@ -14,8 +14,6 @@ checks) share this module instead of maintaining duplicate import lists.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-
 # Import all model modules to register them on Base.metadata.
 # Each module defines a single ORM model with a ``__tablename__``.
 from . import models  # noqa: F401  — registers models via models/__init__.py

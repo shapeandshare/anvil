@@ -18,9 +18,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from anvil.db.base import Base
-from anvil.db.registry import (  # noqa: F401  — registers all models on Base.metadata
-    get_expected_tables,
-)
+from anvil.db.registry import get_expected_tables  # registers all models on Base.metadata
 
 config = context.config
 if config.config_file_name is not None:
