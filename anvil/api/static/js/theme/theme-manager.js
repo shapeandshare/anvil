@@ -126,13 +126,24 @@ function teardownMapping() {
       root.style.setProperty('--clarity', '0.949');
       root.setAttribute('data-excited', 'on');
 
+      // Force animation speed on known elements (inline style wins everything)
+      document.querySelectorAll('.vinyl-reel, .vinyl-vu-needle').forEach(function(el) {
+        el.style.setProperty('animation-duration', '2s', 'important');
+      });
+
       bus.emit('metrics', { tokens_per_sec: 600000, loss: 0.5 });
       bus.emit('milestone', {});
       bus.emit('complete', {});
     } else if (excitedPref === 'off') {
       root.setAttribute('data-excited', 'off');
+      document.querySelectorAll('.vinyl-reel, .vinyl-vu-needle').forEach(function(el) {
+        el.style.removeProperty('animation-duration');
+      });
     } else {
       root.removeAttribute('data-excited');
+      document.querySelectorAll('.vinyl-reel, .vinyl-vu-needle').forEach(function(el) {
+        el.style.removeProperty('animation-duration');
+      });
     }
   }
 
