@@ -1,6 +1,6 @@
 ---
 aliases:
-  - Always-On Canvas Particles — Idle Baseline, Layering, Wave Avoidance
+  - 'Always-On Canvas Particles — Idle Baseline, Layering, Wave Avoidance'
 code-refs:
   - anvil/api/static/js/theme/particle-system.js
   - anvil/api/static/js/theme/theme-manager.js
@@ -10,21 +10,24 @@ related:
   - '[[Reference/theme-creation-guide]]'
   - '[[Discoveries/theme-presence-tiers-css-vs-session-gated-js]]'
   - '[[Sessions/2026-06-20-particle-system-always-on-and-rain-overhaul]]'
+  - '[[Sessions/2026-06-23-particle-system-toggle-and-localstorage-fix]]'
+  - '[[Discoveries/localstorage-particle-pref-override]]'
 session: 2026-06-20-particle-system-always-on-and-rain-overhaul
 source: agent
 summary: >-
-  The canvas particle system is a third theme presence tier that now runs on every
-  page (not just during training). Making signal-driven canvas effects visible at rest
-  required an idle-signal baseline that distinguishes an unset var from a set "0",
-  layering them behind content without washing out the static nav, and avoiding a
-  load-time "wave" from re-application and edge-only seeding.
+  The canvas particle system is a third theme presence tier that now runs on
+  every page (not just during training). Making signal-driven canvas effects
+  visible at rest required an idle-signal baseline that distinguishes an unset
+  var from a set "0", layering them behind content without washing out the
+  static nav, and avoiding a load-time "wave" from re-application and edge-only
+  seeding.
 tags:
   - type/discovery
   - domain/ui
   - status/draft
-title: Always-On Canvas Particles — Idle Baseline, Layering, Wave Avoidance
+title: 'Always-On Canvas Particles — Idle Baseline, Layering, Wave Avoidance'
 type: discovery
-updated: '2026-06-20'
+updated: '2026-06-23'
 ---
 
 The behavioral theme system has a `<canvas>` particle layer
@@ -75,6 +78,12 @@ bottom) visibly fills the viewport edge-to-center on first paint; seeding the in
 population across the **full** viewport makes it look steady immediately and also hides
 any momentary main-thread stall during load. The full-screen-seed fix was applied to the
 rain effect; other edge-seeding effects can show a milder version of the same wave.
+
+**On/off toggle (2026-06-23).** Added a "Show particles" checkbox in the theme picker
+that sets `localStorage.theme:particle` to `'none'` (off) or clears it (on). The pref
+is strictly on/off — it no longer overrides the theme's own effect type. See
+[[Discoveries/localstorage-particle-pref-override]] and
+[[Sessions/2026-06-23-particle-system-toggle-and-localstorage-fix]].
 
 ## References
 
