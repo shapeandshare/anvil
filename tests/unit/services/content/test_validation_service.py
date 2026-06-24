@@ -99,7 +99,7 @@ class TestUTF8Gate:
         with patch("anvil.services.content.validation_service.async_open") as mock_open:
             mock_file = AsyncMock()
             mock_file.__aenter__.return_value.read = AsyncMock(
-                return_value="café".encode("utf-8")
+                return_value="café".encode()
             )
             mock_open.return_value = mock_file
 

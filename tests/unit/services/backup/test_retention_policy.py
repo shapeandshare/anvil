@@ -1,6 +1,6 @@
 """Tests for RetentionPolicy — auto-rotation logic (FR-027, FR-032)."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 
 from anvil.services.backup.retention_policy import RetentionPolicy
 
@@ -19,8 +19,8 @@ def _make_backup(
             "backup_id": backup_id,
             "operation_type": op_type,
             "archive_size_bytes": size,
-            "created_at": datetime.now(timezone.utc).replace(
-                day=max(1, datetime.now(timezone.utc).day - age_days)
+            "created_at": datetime.now(UTC).replace(
+                day=max(1, datetime.now(UTC).day - age_days)
             ),
         },
     )()

@@ -5,7 +5,7 @@
 
 """Tests for BackupOperationRepository CRUD."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,7 +25,7 @@ async def db_session():
 
 
 BACKUP_ID = "20260621T143000Z-a1b2c3"
-NOW = datetime(2026, 6, 21, 14, 30, 0, tzinfo=timezone.utc)
+NOW = datetime(2026, 6, 21, 14, 30, 0, tzinfo=UTC)
 
 
 @pytest.mark.asyncio

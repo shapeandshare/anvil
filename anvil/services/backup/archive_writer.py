@@ -10,9 +10,7 @@ manifests.
 import asyncio
 import hashlib
 import io
-import json
 import os
-import shutil
 import sqlite3
 import tarfile
 import tempfile
@@ -20,7 +18,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from ... import __version__ as anvil_version
-from ...config import get_config
 from .backup_manifest import BackupManifest
 from .manifest_entry import ManifestEntry
 
@@ -90,7 +87,6 @@ class ArchiveWriter:
         operation_type: str,
         progress_callback: object | None,
     ) -> dict:
-        cfg = get_config()
         filename = f"backup-{backup_id}.tar.gz"
         tmp_path = self._tmp_dir / f"{filename}.part"
         final_path = self._backup_dir / filename

@@ -26,6 +26,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from ...config import get_config
+from ...services.governance.audit_action import AuditAction
+from ...services.governance.audit_outcome import AuditOutcome
+from ...services.governance.audit_target_type import AuditTargetType
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -80,9 +83,6 @@ def main(argv: list[str] | None = None) -> None:
 async def _run(args: argparse.Namespace) -> None:
     """Execute the requested subcommand."""
     from ...db.session import AsyncSessionLocal
-    from ...services.governance.audit_action import AuditAction
-    from ...services.governance.audit_outcome import AuditOutcome
-    from ...services.governance.audit_target_type import AuditTargetType
     from ...workbench import AnvilWorkbench
 
     async with AsyncSessionLocal() as session:
@@ -268,5 +268,3 @@ async def _cmd_restore(args: argparse.Namespace, wb) -> None:
     print("Restart the application to load restored state.")
 
 
-from datetime import datetime
-from pathlib import Path

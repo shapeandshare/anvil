@@ -9,6 +9,7 @@ space/quota.
 
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import ClassVar
 
 
 @dataclass
@@ -49,7 +50,7 @@ class SnapshotPlanner:
     (diagnostic-only logs, environment-specific config/secrets).
     """
 
-    INCLUDED_ROOTS: list[str] = [
+    INCLUDED_ROOTS: ClassVar[list[str]] = [
         "data/anvil-state.db",
         "data/models",
         "data/datasets",
@@ -58,7 +59,7 @@ class SnapshotPlanner:
         "mlruns",
     ]
 
-    EXCLUDED_ROOTS: list[str] = [
+    EXCLUDED_ROOTS: ClassVar[list[str]] = [
         "logs",
         ".env",
     ]

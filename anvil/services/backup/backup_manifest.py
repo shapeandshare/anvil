@@ -48,4 +48,6 @@ class BackupManifest(BaseModel):
     entries: list[ManifestEntry]
 
     class Config:
-        extra = "ignore"  # forward-compat: ignore unknown fields
+        """Pydantic config: ignore unknown fields for forward compat."""
+
+        extra = "ignore"

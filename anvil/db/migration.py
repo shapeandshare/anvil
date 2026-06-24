@@ -10,8 +10,9 @@ from __future__ import annotations
 import asyncio
 import importlib.resources as _resources
 import logging
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeVar
 
 from alembic import command
 from alembic.config import Config as AlembicConfig
@@ -31,6 +32,9 @@ ALEMBIC_INI = str(_RESOURCE_DIR / "alembic.ini")
 """Path to the Alembic configuration file inside the installed package."""
 _MIGRATIONS_DIR = str(_RESOURCE_DIR / "migrations")
 """Path to the Alembic migration scripts directory inside the installed package."""
+
+F = TypeVar("F", bound=Callable[..., Any])
+R = TypeVar("R")
 
 
 class MigrationService:
@@ -96,7 +100,7 @@ class MigrationService:
             db_path = url[len("sqlite+aiosqlite:///") :]
             Path(db_path).parent.mkdir(parents=True, exist_ok=True)
 
-    async def _run_sync(self, fn, *args: Any, **kwargs: Any) -> Any:
+    async def _run_sync(self, fn: Callable[..., R], *args: Any, **kwargs: Any) -> R:
         """Run a synchronous Alembic command in a thread executor.
 
         Parameters
@@ -223,10 +227,18 @@ class MigrationService:
             result: list[dict[str, str]] = []
             for rev in script.walk_revisions("base", "heads"):
                 # Each rev is a Revision object with revision, down_revision, doc
+                down_rev = rev.down_revision
+                down: str
+                if down_rev is None:
+                    down = "<base>"
+                elif isinstance(down_rev, str):
+                    down = down_rev
+                else:
+                    down = ",".join(down_rev)
                 result.append(
                     {
                         "revision": rev.revision,
-                        "down_revision": rev.down_revision or "<base>",
+                        "down_revision": down,
                         "message": rev.doc or "",
                     }
                 )
