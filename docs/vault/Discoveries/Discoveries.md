@@ -63,6 +63,10 @@ Non-obvious constraints, gaps, and conflicts discovered during agent sessions. E
 - **Makefile PYTHON variable must be used in included mk files**: `shared/ux.mk` used bare `python`, which isn't on `PATH` in this environment — the `$(PYTHON)` variable (`.venv/bin/python3`) from `shared/python.mk` is required. Include-order matters: `python.mk` must precede `ux.mk` in the root Makefile's include list. ([[Decisions/ADR-038-ux-rules-integration|ADR-038]])
 - **Pre-existing S4 violations baseline**: Running `make ux-lint` on all 35 templates for the first time surfaced 17 S4 violations (2 unaudited `|safe`, 15 `<div>` click handlers in FAQ/glossary templates). These existed before the gate and represent a remediation backlog, not new regressions. ([[Sessions/2026-06-21-ux-rules-integration-completion|session log]])
 
+## Discoveries from this session (2026-06-24 — Regex backtracking vulnerability)
+
+- [[Discoveries/regex-backtracking-yaml-frontmatter|Regex Backtracking in YAML Frontmatter Parsing]] — `re.DOTALL` + `.*?` + `\s*\n` in the frontmatter-stripping regex (`hygiene.py:347`) creates an O(n²) backtracking vector. Fixed by replacing with simple linear string operations (`str.startswith` + `str.find`).
+
 ## Related MOCs
 
 - [[Sessions/2026-06-10-implementation|Sessions]] — Full session logs

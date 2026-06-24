@@ -344,9 +344,11 @@ def _find_over_linking(
         except OSError:
             continue
 
-        fm_match = re.match(r"^---\s*\n.*?\n---\s*\n", content, re.DOTALL)
-        if fm_match:
-            content = content[fm_match.end() :]
+        # Use simple string ops instead of regex to avoid backtracking
+        # (re.match with .*? + re.DOTALL on large content is O(n^2) worst-case).
+        fm_end = content.find("\n---\n") if content.startswith("---\n") else -1
+        if fm_end != -1:
+            content = content[fm_end + 5 :]
 
         sections = re.split(r"^(##+ .+)$", content, flags=re.MULTILINE)
         current_section = "root"
