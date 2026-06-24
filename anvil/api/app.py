@@ -17,6 +17,7 @@ import asyncio
 import logging
 import os
 import secrets
+import sys
 import time
 from collections import defaultdict
 from contextlib import asynccontextmanager
@@ -60,7 +61,7 @@ MLFLOW_EXPERIMENT_NAME = "anvil"
 # Rate limiting (in-process sliding window)
 _rate_limit_store: dict[str, list[float]] = defaultdict(list)
 _RATE_LIMIT_PER_MINUTE = int(os.getenv("ANVIL_RATE_LIMIT", "100"))
-_LOGIN_RATE_LIMIT_PER_MINUTE = 5
+_LOGIN_RATE_LIMIT_PER_MINUTE = 10
 _LOGIN_FAILURE_DELAY = 1.0  # seconds
 
 # CORS configuration
@@ -123,6 +124,15 @@ async def lifespan(app: FastAPI):
     await init_engine()
     migration_svc = MigrationService()
     await migration_svc.ensure_migrated()
+
+    # Schema version gate — refuse to start if the DB was created by a
+    # squashed migration that predates the current schema.
+    try:
+        await migration_svc.ensure_schema_version()
+    except Exception as exc:
+        logger.critical("Schema version check failed: %s", exc)
+        print(f"FATAL: {exc}", flush=True)
+        sys.exit(1)
 
     cfg = get_config()
     if cfg["mlflow_disable_local"]:
@@ -336,11 +346,25 @@ async def security_headers_middleware(
     request.state.csp_nonce = nonce
     response = await call_next(request)
     response.headers["Content-Security-Policy"] = (
-        "default-src 'self'; "
-        "style-src 'self' 'unsafe-inline'; "
-        "img-src 'self' data:; "
-        "font-src 'self'; "
-        f"script-src 'self' 'nonce-{nonce}';"
+        (
+            "default-src 'self'; "
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
+            "img-src 'self' data: https://fastapi.tiangolo.com; "
+            "font-src 'self' https://fonts.gstatic.com; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "connect-src 'self' https://cdn.jsdelivr.net; "
+            "worker-src 'self' blob:; "
+        )
+        if request.url.path in ("/docs", "/redoc", "/openapi.json")
+        or request.url.path.startswith("/docs/")
+        or request.url.path.startswith("/redoc/")
+        else (
+            "default-src 'self'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; "
+            "font-src 'self'; "
+            f"script-src 'self' 'nonce-{nonce}';"
+        )
     )
     response.headers["Strict-Transport-Security"] = (
         "max-age=31536000; includeSubDomains"

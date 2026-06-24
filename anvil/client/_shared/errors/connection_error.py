@@ -16,7 +16,7 @@ from __future__ import annotations
 from .api_error import ApiError
 
 
-class ConnectionError(ApiError):
+class ConnectionError(ApiError):  # pylint: disable=redefined-builtin
     """Raised when the transport layer cannot reach the server.
 
     Not an HTTP error — wraps ``httpx`` connectivity failures.

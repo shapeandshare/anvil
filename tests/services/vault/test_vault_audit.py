@@ -297,7 +297,8 @@ class TestVaultAuditService:
     @pytest.mark.asyncio
     async def test_spec_subfiles_pass_schema(self, tmp_path: Path) -> None:
         """Spec subfiles (prefixed artifacts) must pass schema validation
-        since they carry full frontmatter with tags: [type/spec]."""
+        since they carry full frontmatter with tags: [type/spec].
+        """
         spec_dir = tmp_path / "Specs" / "016 Another"
         spec_dir.mkdir(parents=True)
 

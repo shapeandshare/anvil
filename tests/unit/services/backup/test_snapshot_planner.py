@@ -41,7 +41,8 @@ class TestSnapshotPlannerPlan:
     def test_plan_does_not_include_excluded_roots(self, tmp_path: PosixPath):
         """An explicit check that excluded roots (data/backups, .env) are
         not in the INCLUDED_ROOTS — they should not appear in archive entries
-        even if they exist on disk."""
+        even if they exist on disk.
+        """
         planner = SnapshotPlanner()
         for rel in SnapshotPlanner.EXCLUDED_ROOTS:
             assert rel not in SnapshotPlanner.INCLUDED_ROOTS

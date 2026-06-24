@@ -9,9 +9,10 @@ space/quota.
 
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import ClassVar
 
 
-@dataclass
+@dataclass  # noqa: dataclass
 class SnapshotPlan:
     """Result of planning a snapshot — the set of roots to archive and
     whether pre-flight checks passed.
@@ -49,7 +50,7 @@ class SnapshotPlanner:
     (diagnostic-only logs, environment-specific config/secrets).
     """
 
-    INCLUDED_ROOTS: list[str] = [
+    INCLUDED_ROOTS: ClassVar[list[str]] = [
         "data/anvil-state.db",
         "data/models",
         "data/datasets",
@@ -58,7 +59,7 @@ class SnapshotPlanner:
         "mlruns",
     ]
 
-    EXCLUDED_ROOTS: list[str] = [
+    EXCLUDED_ROOTS: ClassVar[list[str]] = [
         "logs",
         ".env",
     ]

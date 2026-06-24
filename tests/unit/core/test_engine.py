@@ -507,7 +507,7 @@ def test_value_grad_accumulation():
 
 
 def test_value_deep_chain():
-    """Backward through a deeper chain: f(g(h(x)))"""
+    """Backward through a deeper chain: f(g(h(x)))."""
     x = Value(2.0)
     a = x * 3.0  # 6
     b = a + 1.0  # 7
@@ -719,7 +719,7 @@ def test_linear_gradient_flow():
 
 
 def test_softmax_uniform():
-    """softmax on uniform inputs produces equal probabilities."""
+    """Softmax on uniform inputs produces equal probabilities."""
     from anvil.core.autograd import Value
 
     logits = [Value(2.0), Value(2.0), Value(2.0)]
@@ -730,14 +730,14 @@ def test_softmax_uniform():
 
 
 def test_softmax_single():
-    """softmax on single element returns 1.0."""
+    """Softmax on single element returns 1.0."""
     logits = [Value(5.0)]
     probs = softmax(logits)
     assert abs(probs[0].data - 1.0) < 1e-10
 
 
 def test_softmax_large_range():
-    """softmax with large value range (numerical stability via max subtraction)."""
+    """Softmax with large value range (numerical stability via max subtraction)."""
     logits = [Value(1000.0), Value(0.0)]
     probs = softmax(logits)
     # After max subtraction: [0, -1000]; exp gives [1, ~0]
@@ -746,7 +746,7 @@ def test_softmax_large_range():
 
 
 def test_softmax_negative_inputs():
-    """softmax with all negative values is still valid."""
+    """Softmax with all negative values is still valid."""
     logits = [Value(-1.0), Value(-2.0), Value(-3.0)]
     probs = softmax(logits)
     total = sum(p.data for p in probs)
@@ -764,7 +764,7 @@ def test_softmax_gradient_flow():
 
 
 def test_rmsnorm_negative_values():
-    """rmsnorm handles negative values correctly (squared makes them positive)."""
+    """Rmsnorm handles negative values correctly (squared makes them positive)."""
     x = [Value(-3.0), Value(-4.0)]
     n = rmsnorm(x)
     ms = (9.0 + 16.0) / 2.0  # 12.5
@@ -776,7 +776,7 @@ def test_rmsnorm_negative_values():
 
 
 def test_rmsnorm_zero():
-    """rmsnorm with all zeros produces zeros (with epsilon)."""
+    """Rmsnorm with all zeros produces zeros (with epsilon)."""
     x = [Value(0.0), Value(0.0), Value(0.0)]
     n = rmsnorm(x)
     for ni in n:
@@ -898,7 +898,7 @@ def test_train_with_existing_model():
     params_after = [p.data for p in result_model.params[:5]]
     assert any(
         abs(before - after) > 1e-10
-        for before, after in zip(params_before, params_after)
+        for before, after in zip(params_before, params_after, strict=False)
     )
 
 

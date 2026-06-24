@@ -453,4 +453,4 @@ class TestRevert:
 
 
 # Need to import select at module level for seeded_session fixture usage.
-from sqlalchemy import select  # noqa: E402
+from sqlalchemy import select

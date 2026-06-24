@@ -1,10 +1,10 @@
 ---
 title: Unified Single-Origin Interface and Working Local TLS
 type: decision
-status: draft
+status: accepted
 source: agent
 created: '2026-06-21'
-updated: '2026-06-21'
+updated: '2026-06-23'
 aliases:
   - Unified Single-Origin Interface and Working Local TLS
   - ADR-037

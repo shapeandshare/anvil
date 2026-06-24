@@ -9,24 +9,24 @@ VAULT_DIR := docs/vault
 
 .PHONY: vault-audit
 vault-audit: $(VENV_DIR)/activate ## Run vault audit + graph health (report only, no changes)
-	anvil-vault audit --vault-dir $(VAULT_DIR)
+	$(VENV_BIN)/anvil-vault audit --vault-dir $(VAULT_DIR)
 
 .PHONY: vault-audit-apply
 vault-audit-apply: $(VENV_DIR)/activate ## Run vault audit with safe auto-fixes applied in-place
-	anvil-vault audit --vault-dir $(VAULT_DIR) --apply
+	$(VENV_BIN)/anvil-vault audit --vault-dir $(VAULT_DIR) --apply
 
 .PHONY: vault-audit-diff
 vault-audit-diff: $(VENV_DIR)/activate ## Show auto-fixes the audit would apply (no changes)
-	anvil-vault audit --vault-dir $(VAULT_DIR) --diff
+	$(VENV_BIN)/anvil-vault audit --vault-dir $(VAULT_DIR) --diff
 
 .PHONY: vault-audit-fast
 vault-audit-fast: $(VENV_DIR)/activate ## Mechanical audit only (skip networkx graph-health pass)
-	anvil-vault audit --vault-dir $(VAULT_DIR) --skip-graph-health
+	$(VENV_BIN)/anvil-vault audit --vault-dir $(VAULT_DIR) --skip-graph-health
 
 .PHONY: adr-check
 adr-check: ## Validate ADR uniqueness and naming conventions
-	anvil-vault check-adrs
+	$(VENV_BIN)/anvil-vault check-adrs
 
 .PHONY: guarded-imports-check
 guarded-imports-check: ## Validate TYPE_CHECKING guarded imports are annotation-only
-	anvil-vault check-guarded-imports
+	$(VENV_BIN)/anvil-vault check-guarded-imports

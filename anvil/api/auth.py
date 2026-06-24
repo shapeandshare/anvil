@@ -199,13 +199,17 @@ PAGE_PREFIXES: tuple[str, ...] = (
 
 EXEMPT_ROUTES: frozenset[str] = frozenset(
     {
+        "/",
         "/login",
+        "/docs",
+        "/redoc",
+        "/openapi.json",
         "/v1/health",
     }
 )
 """Routes that are always accessible without authentication."""
 
-EXEMPT_PREFIXES: tuple[str, ...] = ("/static",)
+EXEMPT_PREFIXES: tuple[str, ...] = ("/static", "/docs/", "/redoc/")
 """Prefixes whose sub-paths are always accessible without authentication."""
 
 

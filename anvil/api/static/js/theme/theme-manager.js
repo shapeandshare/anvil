@@ -9,6 +9,7 @@
   var STORAGE_KEY = 'theme';
   var EFFECTS_KEY = 'theme:reduce-effects';
   var AUDIO_KEY = 'theme:audio';
+  var EXCITED_KEY = 'theme:excited';
   var LAYER_LINK_ID = 'theme-layer-css';
   var registry = window.ThemeRegistry;
 
@@ -92,13 +93,87 @@ function teardownMapping() {
   }
 
   function bindMapping(theme) {
-    if (!theme.mapping || !bus || !bus.session()) return;
+    if (!theme.mapping || !bus) return;
+    var excitedPref = readExcitedPref();
+
+    if (!bus.session() && excitedPref === 'auto') return;
+
     var snap = window.EffectLevel ? window.EffectLevel.snapshot() : {};
     try {
       activeTeardown = theme.mapping(bus, snap) || null;
     } catch (e) {
       console.warn('[theme] mapping bind failed for', theme.id, e);
       activeTeardown = null;
+    }
+
+    var root = document.documentElement;
+    if (excitedPref === 'on') {
+      root.setAttribute('data-excited', 'on');
+
+      // CSS var injection for non-animation properties (color, opacity, etc.)
+      root.style.setProperty('--rpm', '1.000');
+      root.style.setProperty('--warmth', '1.000');
+      root.style.setProperty('--level', '0.051');
+      root.style.setProperty('--throughput', '1.000');
+      root.style.setProperty('--output', '0.949');
+      root.style.setProperty('--neon', '0.949');
+      root.style.setProperty('--flow', '1.000');
+      root.style.setProperty('--prog', '0.949');
+      root.style.setProperty('--heat', '1.000');
+      root.style.setProperty('--velocity', '1.000');
+      root.style.setProperty('--focus', '0.949');
+      root.style.setProperty('--surge', '1.000');
+      root.style.setProperty('--calm', '0.949');
+      root.style.setProperty('--ring', '0.949');
+      root.style.setProperty('--clearing', '0.949');
+      root.style.setProperty('--clarity', '0.949');
+
+      // Injected style overrides animation-duration for ALL themed animated
+      // elements. CSS calc(var(--xxx)) in animation-duration doesn't update
+      // dynamically, so a stylesheet !important rule is needed.
+      replaceExcitedStyle('on');
+
+      bus.emit('metrics', { tokens_per_sec: 600000, loss: 0.5, grad_norm: 0.85 });
+      bus.emit('milestone', {});
+      bus.emit('complete', {});
+    } else if (excitedPref === 'off') {
+      root.setAttribute('data-excited', 'off');
+      replaceExcitedStyle('off');
+    } else {
+      root.removeAttribute('data-excited');
+      replaceExcitedStyle('auto');
+    }
+  }
+
+  var EXCITED_STYLE_ID = 'theme-excited-override';
+
+  function replaceExcitedStyle(mode) {
+    var existing = document.getElementById(EXCITED_STYLE_ID);
+    var el;
+    if (mode === 'auto') {
+      if (existing) existing.remove();
+      return;
+    }
+    var dur = mode === 'on' ? '2s' : '120s';
+    var css =
+      '[data-skin="vinyl"] .vinyl-reel { animation-duration: ' + dur + ' !important; }' +
+      '[data-skin="vinyl"] .vinyl-vu-needle { transition-duration: 0.05s !important; }' +
+      '[data-skin="bloom"] .app-main::after { animation-duration: ' + dur + ' !important; }' +
+      '[data-skin="solarflare"] .app-main::after { animation-duration: ' + dur + ' !important; }' +
+      '[data-skin="tide"] .app-main::after { animation-duration: ' + dur + ' !important; }' +
+      '[data-skin="tide"] .app-main::before { animation-duration: ' + dur + ' !important; }' +
+      '[data-skin="mainframe"] .app-main::after { animation-duration: ' + dur + ' !important; }' +
+      '[data-skin="pulse"] .app-main::after { animation-duration: ' + dur + ' !important; }' +
+      '[data-skin="stormfront"] .app-main::after { animation-duration: ' + dur + ' !important; }' +
+      '[data-skin="reactor"] .app-main { animation-duration: ' + dur + ' !important; }' +
+      '[data-skin="deepsea"] .app-main::after { animation-duration: ' + dur + ' !important; }';
+    if (existing) {
+      existing.textContent = css;
+    } else {
+      el = document.createElement('style');
+      el.id = EXCITED_STYLE_ID;
+      el.textContent = css;
+      document.head.appendChild(el);
     }
   }
 
@@ -183,13 +258,15 @@ function teardownMapping() {
     }).join('');
     html += '</div>';
     html += '<div class="theme-picker__controls">' +
+      '<label class="theme-picker__toggle"><input type="checkbox" id="theme-particles-toggle" checked> Show particles</label>' +
       '<label class="theme-picker__toggle"><input type="checkbox" id="theme-reduce-effects"> Reduce effects</label>' +
       '<label class="theme-picker__toggle"><input type="checkbox" id="theme-audio-optin"> Enable theme audio</label>' +
-      '<div class="theme-picker__particles">' +
-      '<label for="theme-particle-select" class="theme-picker__particles-label">Particles</label>' +
-      '<select id="theme-particle-select" class="theme-picker__select">' +
-      '<option value="default">Default</option>' +
-      '<option value="none">None</option>' +
+      '<div class="theme-picker__excited">' +
+      '<label for="theme-excited-select" class="theme-picker__excited-label">Excited</label>' +
+      '<select id="theme-excited-select" class="theme-picker__select">' +
+      '<option value="auto">Auto</option>' +
+      '<option value="on">On</option>' +
+      '<option value="off">Off</option>' +
       '</select>' +
       '</div>' +
       '</div>';
@@ -295,9 +372,28 @@ function teardownMapping() {
     if (trigger) trigger.focus();
   }
 
+  function readParticlesOn() {
+    return window.ParticleSystem ? window.ParticleSystem.readPref() !== 'none' : true;
+  }
+
   function wireEffectControls() {
+    var particles = document.getElementById('theme-particles-toggle');
     var reduce = document.getElementById('theme-reduce-effects');
     var audio = document.getElementById('theme-audio-optin');
+    var excited = document.getElementById('theme-excited-select');
+    if (particles && window.ParticleSystem) {
+      particles.checked = readParticlesOn();
+      particles.addEventListener('change', function () {
+        if (particles.checked) {
+          window.ParticleSystem.writePref('');
+        } else {
+          window.ParticleSystem.writePref('none');
+        }
+        // Re-apply current theme to pick up the pref change
+        var cur = current();
+        apply(cur.themeId, cur.mode);
+      });
+    }
     if (reduce) {
       reduce.checked = readFlag(EFFECTS_KEY);
       reduce.addEventListener('change', function () {
@@ -312,51 +408,22 @@ function teardownMapping() {
         if (window.EffectLevel) window.EffectLevel.setAudioOptIn(audio.checked);
       });
     }
-    wireParticleSelect();
+    if (excited) {
+      excited.value = readExcitedPref();
+      excited.addEventListener('change', function () {
+        writeExcitedPref(excited.value);
+        reapplyEffectLevel();
+      });
+    }
   }
 
-  function wireParticleSelect() {
-    var select = document.getElementById('theme-particle-select');
-    if (!select) return;
-    var ps_effects, si, opt, saved, val, cur;
-    if (ps) {
-      ps_effects = ps.getEffects();
-      for (si = 0; si < ps_effects.length; si++) {
-        if (ps_effects[si] !== 'css') {
-          opt = document.createElement('option');
-          opt.value = ps_effects[si];
-          opt.textContent = ps_effects[si].charAt(0).toUpperCase() + ps_effects[si].slice(1);
-          select.appendChild(opt);
-        }
-      }
+  function updateGlassDiffusion(snap) {
+    var root = document.documentElement;
+    if (snap.legible) {
+      root.setAttribute('data-glass-diffusion', '');
+    } else {
+      root.removeAttribute('data-glass-diffusion');
     }
-    if (ps) {
-      saved = ps.readPref();
-      if (saved === 'none') select.value = 'none';
-      else if (saved && saved !== 'default') {
-        for (si = 0; si < select.options.length; si++) {
-          if (select.options[si].value === saved) {
-            select.value = saved;
-            break;
-          }
-        }
-      } else {
-        select.value = 'default';
-      }
-    }
-    select.addEventListener('change', function () {
-      val = select.value;
-      if (ps) {
-        if (val === 'default') {
-          ps.writePref(null);
-          try { localStorage.removeItem('theme:particle'); } catch (e) {}
-        } else {
-          ps.writePref(val);
-        }
-        cur = current();
-        apply(cur.themeId, cur.mode, { persist: true });
-      }
-    });
   }
 
   function readFlag(key) {
@@ -365,6 +432,19 @@ function teardownMapping() {
 
   function writeFlag(key, on) {
     try { localStorage.setItem(key, on ? '1' : '0'); } catch (e) { return; }
+  }
+
+  function readExcitedPref() {
+    var v;
+    try {
+      v = localStorage.getItem(EXCITED_KEY);
+      if (v === 'on' || v === 'off') return v;
+    } catch (e) {}
+    return 'auto';
+  }
+
+  function writeExcitedPref(v) {
+    try { localStorage.setItem(EXCITED_KEY, v); } catch (e) {}
   }
 
   function escapeHtml(s) {
@@ -440,6 +520,7 @@ function teardownMapping() {
 
   function init() {
     var pref = readPref();
+    var snap;
     if (window.EffectLevel) {
       window.EffectLevel.setReducedEffects(readFlag(EFFECTS_KEY));
       window.EffectLevel.setAudioOptIn(readFlag(AUDIO_KEY));
@@ -448,7 +529,12 @@ function teardownMapping() {
     buildPicker();
     wirePicker();
     window.addEventListener('storage', onStorage);
-    if (window.EffectLevel) window.EffectLevel.onChange(reapplyEffectLevel);
+    if (window.EffectLevel) {
+      window.EffectLevel.onChange(reapplyEffectLevel);
+      window.EffectLevel.onChange(updateGlassDiffusion);
+      snap = window.EffectLevel.snapshot();
+      updateGlassDiffusion(snap);
+    }
   }
 
   window.ThemeManager = {

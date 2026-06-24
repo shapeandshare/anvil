@@ -1,10 +1,10 @@
 ---
-title: MLflow Reverse Proxy — Authenticated, Port-Closed Access in Local and SaaS
+title: 'MLflow Reverse Proxy — Authenticated, Port-Closed Access in Local and SaaS'
 type: decision
-status: draft
+status: superseded
 source: agent
 created: '2026-06-21'
-updated: '2026-06-21'
+updated: '2026-06-23'
 aliases:
   - MLflow Reverse Proxy
   - ADR-035
@@ -26,6 +26,7 @@ tags:
   - domain/mlops
   - domain/operations
   - status/draft
+superseded-by: '[[Decisions/ADR-037-unified-interface-local-tls]]'
 ---
 
 # ADR-035: MLflow Reverse Proxy — Authenticated, Port-Closed Access in Local and SaaS

@@ -157,7 +157,10 @@ class Transport:
                     )
                     await asyncio.sleep(backoff)
                     continue
+                # pylint: disable=redefined-builtin
                 from anvil.client._shared.errors.connection_error import ConnectionError
+
+                # pylint: enable=redefined-builtin
 
                 raise ConnectionError(str(exc)) from exc
 

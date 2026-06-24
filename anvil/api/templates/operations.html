@@ -361,6 +361,20 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
         }
       }
       html += '</div>';
+
+      // ── Database & MLflow ──
+      var db = health.database || {};
+      var dbStatusBadge = db.status === 'connected' ? '<span class="badge badge-green">OK</span>' : '<span class="badge badge-red">' + (db.status || '?') + '</span>';
+      html += '<div class="section-card" style="margin-top:var(--space-3);">';
+      html += '<div class="section-card__header"><span class="section-card__icon">&#128451;</span><h2 class="section-card__title">Infrastructure</h2></div>';
+      html += '<div class="info-grid" style="border:none;padding:0;">';
+      html += '<span class="info-key">database</span><span class="info-val">' + dbStatusBadge + ' &middot; schema v' + (db.schema_version || '?');
+      if (db.expected_schema_version) html += ' (expected v' + db.expected_schema_version + ')';
+      html += ' &middot; revision: ' + (db.migration_revision || '&mdash;') + '</span>';
+      html += '<span class="info-key">mlflow</span><span class="info-val">' + (health.mlflow && health.mlflow.status ? health.mlflow.status : '?') + '</span>';
+      html += '<span class="info-key">api docs</span><span class="info-val"><a href="/docs" target="_blank" class="action-link">Swagger UI</a> &middot; <a href="/redoc" target="_blank" class="action-link">ReDoc</a></span>';
+      html += '</div></div>';
+
       el.innerHTML = html;
     } catch(e) {
       el.innerHTML = '<span class="text-muted type-subhead">Could not fetch system info.</span>';

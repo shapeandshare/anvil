@@ -283,7 +283,8 @@ class TestNonContiguousTensor:
 
     def test_non_contiguous_tensor_is_not_allowed_before_save(self):
         """Non-contiguous arrays are made contiguous before passing to
-        save_file."""
+        save_file.
+        """
         model = LlamaModel(vocab_size=10, n_embd=8, n_head=2, n_layer=1)
         chars = ["a"]
         svc = SafetensorsExportService()

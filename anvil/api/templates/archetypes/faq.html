@@ -83,7 +83,7 @@
               Position Embedding (RoPE), SwiGLU gated MLP, RMSNorm with learned scale
               parameters, and bias-free linear layers. It does NOT use learned position
               embeddings (WPE), ReLU activations, or LayerNorm — those were removed in
-              the Llama migration (see ADR-007). The architecture is identical whether
+              the Llama migration. The architecture is identical whether
               training on CPU (pure Python) or GPU (PyTorch). See the
               <a href="/v1/learn/parameters" class="action-link">Parameters walkthrough</a>
               for a full breakdown of every weight matrix.
@@ -184,10 +184,8 @@ with a custom Value autograd graph — this is the default.
               list. As of the latest release the arc spans 14 interactive walkthroughs
               plus the FAQ and Glossary, including step-by-step deep dives into data
               flow, model export, the forward pass computation graph, full architecture
-              visualization, and cloud compute with Modal. The arc is defined in
-              <code>LEARNING_ARC</code> in
-              <code>anvil/api/v1/learning.py</code> and automatically wired with
-              prev/next navigation.
+              visualization, and cloud compute with Modal. The arc is automatically wired
+              with prev/next navigation across all lessons.
             </p>
           </div>
         </div>
@@ -204,7 +202,7 @@ with a custom Value autograd graph — this is the default.
               neural net) through manual backprop, RMSNorm, RoPE attention, and full
               Llama blocks to a complete multi-layer model with safetensors export.
               Each script is self-contained and runnable. See the Progressive Walkthroughs
-              reference in the vault for a detailed breakdown of what each script teaches
+              reference for a detailed breakdown of what each script teaches
               and the pedagogical design behind the progression.
             </p>
           </div>
@@ -221,8 +219,7 @@ with a custom Value autograd graph — this is the default.
               <a href="/v1/learn/glossary" class="action-link">Glossary</a>
               with definitions for every technical term: Value, RMSNorm, KV Cache,
               AdamW, BOS, Softmax, Cross-Entropy, State Dict, RoPE, SwiGLU, Safetensors,
-              Dual Backend, and more. It lives at <code>docs/vault/Reference/Glossary.md</code>
-              and is accessible from the learning page.
+              Dual Backend, and more.
             </p>
           </div>
         </div>

@@ -263,7 +263,8 @@ class TestMemoryEstimateProperties:
 
     def test_utilization_pct_rounded_to_zero(self):
         """Available memory is much larger than peak, utilisation
-        rounds to 0% but property should still compute."""
+        rounds to 0% but property should still compute.
+        """
         est = MemoryEstimate(
             vocab_size=10,
             n_embd=4,

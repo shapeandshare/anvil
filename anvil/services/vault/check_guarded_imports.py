@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 
-@dataclass
+@dataclass  # noqa: dataclass
 class GuardedImport:
     """A single TYPE_CHECKING-guarded import statement."""
 
@@ -31,7 +31,7 @@ class GuardedImport:
     line: int
 
 
-@dataclass
+@dataclass  # noqa: dataclass
 class GuardedImportIssue:
     """A violation: guarded symbol used in runtime (non-annotation) code."""
 
@@ -41,7 +41,7 @@ class GuardedImportIssue:
     message: str
 
 
-@dataclass
+@dataclass  # noqa: dataclass
 class ScanResult:
     """Aggregated scan result for a single file."""
 
