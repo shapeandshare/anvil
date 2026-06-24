@@ -5,7 +5,7 @@
 
 """Detect whether the project version changed since the parent commit.
 
-Used by the auto-bump workflow to decide whether to open a patch-bump PR.
+Used by CI to decide whether a version bump is needed.
 """
 
 from __future__ import annotations

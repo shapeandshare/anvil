@@ -13,14 +13,59 @@ import os
 import tempfile
 
 from anvil.services.vault.bump_version import (
+    BumpType,
+    _bump,
     _bump_patch,
     _prepend_changelog,
     _update_pyproject,
 )
 
 
+class TestBump:
+    """Tests for the generic version increment helper."""
+
+    def test_major_increment(self) -> None:
+        """Major bumps reset minor and patch to 0."""
+        assert _bump("0.1.5", BumpType.MAJOR) == "1.0.0"
+
+    def test_minor_increment(self) -> None:
+        """Minor bumps reset patch to 0."""
+        assert _bump("0.1.5", BumpType.MINOR) == "0.2.0"
+
+    def test_patch_increment(self) -> None:
+        """Patch bumps increment patch by 1."""
+        assert _bump("0.1.5", BumpType.PATCH) == "0.1.6"
+
+    def test_major_from_any_version(self) -> None:
+        """Major bump always produces X.0.0."""
+        assert _bump("1.9.9", BumpType.MAJOR) == "2.0.0"
+        assert _bump("0.0.1", BumpType.MAJOR) == "1.0.0"
+
+    def test_minor_from_any_version(self) -> None:
+        """Minor bump preserves major, resets patch."""
+        assert _bump("2.5.100", BumpType.MINOR) == "2.6.0"
+
+    def test_invalid_increment_raises(self) -> None:
+        """Unknown increment type raises ValueError."""
+        import pytest
+
+        with pytest.raises(ValueError):
+            _bump("0.1.0", "INVALID")
+
+    def test_invalid_format_raises(self) -> None:
+        """Non-MAJOR.MINOR.PATCH strings raise ValueError."""
+        import pytest
+
+        with pytest.raises(ValueError):
+            _bump("abc", BumpType.PATCH)
+        with pytest.raises(ValueError):
+            _bump("0.1", BumpType.PATCH)
+        with pytest.raises(ValueError):
+            _bump("0.1.0-beta", BumpType.PATCH)
+
+
 class TestBumpPatch:
-    """Tests for the version-string increment helper."""
+    """Tests for the convenience patch-only wrapper."""
 
     def test_patch_increment(self) -> None:
         """Patch component increments by 1."""
@@ -37,17 +82,6 @@ class TestBumpPatch:
     def test_large_patch(self) -> None:
         """Large patch values increment correctly."""
         assert _bump_patch("2.5.999") == "2.5.1000"
-
-    def test_invalid_format_raises(self) -> None:
-        """Non-MAJOR.MINOR.PATCH strings raise ValueError."""
-        import pytest
-
-        with pytest.raises(ValueError):
-            _bump_patch("abc")
-        with pytest.raises(ValueError):
-            _bump_patch("0.1")
-        with pytest.raises(ValueError):
-            _bump_patch("0.1.0-beta")
 
 
 class TestUpdatePyproject:
@@ -110,6 +144,37 @@ class TestPrependChangelog:
             with open(path) as f:
                 text = f.read()
             assert text.startswith("## v0.1.1 (")
+            assert "### Features" in text
             assert "# Changelog" in text
+        finally:
+            os.unlink(path)
+
+    def test_major_changelog_message(self) -> None:
+        """Major increments get the correct label in the changelog."""
+        import tempfile
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
+            f.write("# Changelog\n")
+            path = f.name
+        try:
+            _prepend_changelog(path, "1.0.0", increment=BumpType.MAJOR)
+            with open(path) as f:
+                text = f.read()
+            assert "major bump" in text
+        finally:
+            os.unlink(path)
+
+    def test_minor_changelog_message(self) -> None:
+        """Minor increments get the correct label in the changelog."""
+        import tempfile
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
+            f.write("# Changelog\n")
+            path = f.name
+        try:
+            _prepend_changelog(path, "0.2.0", increment=BumpType.MINOR)
+            with open(path) as f:
+                text = f.read()
+            assert "minor bump" in text
         finally:
             os.unlink(path)

@@ -30,5 +30,5 @@ Organized by purpose into three subdirectories:
 |--------|-------------|---------|
 | `dev/detect-gpu-platform.sh` | `shared/python.mk` | Detects Apple Silicon / NVIDIA GPU for conditional dep install |
 | `ci/detect_increment.py` | `.github/workflows/release.yml` | Classifies merge commit → MAJOR/MINOR/PATCH/SKIP/NONE |
-| `ci/check_version.py` | `.github/workflows/auto-bump.yml` | Detects whether version changed since parent commit |
+| `ci/check_version.py` | `.github/workflows/release.yml` | Detects whether version changed since parent commit |
 | `release/build_notes.py` | `.github/workflows/release.yml` | Assembles release-notes.md from CHANGELOG + PR body |
