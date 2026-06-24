@@ -61,9 +61,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
-        uses: astral-sh/setup-uv@8d55fbecc275b1c35dbe060458839f8d30439ccf  # v3
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
         with:
-          version: ${{ env.PYTHON_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
       - name: Setup environment
         run: make setup
       - name: Run lint
@@ -83,9 +83,9 @@ jobs:
         with:
           ref: ${{ github.head_ref || github.ref_name }}
       - name: Install uv
-        uses: astral-sh/setup-uv@8d55fbecc275b1c35dbe060458839f8d30439ccf  # v3
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
         with:
-          version: ${{ env.PYTHON_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
       - name: Setup environment
         run: make setup
       - name: Run auto-format
@@ -112,9 +112,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
-        uses: astral-sh/setup-uv@8d55fbecc275b1c35dbe060458839f8d30439ccf  # v3
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
         with:
-          version: ${{ env.PYTHON_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
       - name: Setup environment
         run: make setup
       - name: Run typecheck
@@ -130,9 +130,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
-        uses: astral-sh/setup-uv@8d55fbecc275b1c35dbe060458839f8d30439ccf  # v3
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
         with:
-          version: ${{ env.PYTHON_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
       - name: Setup environment
         run: make setup
       - name: Run tests with coverage
@@ -150,9 +150,9 @@ jobs:
         with:
           fetch-depth: 0  # full history for blame/tracking
       - name: Install uv
-        uses: astral-sh/setup-uv@8d55fbecc275b1c35dbe060458839f8d30439ccf  # v3
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
         with:
-          version: ${{ env.PYTHON_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
       - name: Setup environment
         run: make setup
       - name: Run tests with coverage (prerequisite for SonarCloud)
@@ -173,9 +173,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
-        uses: astral-sh/setup-uv@8d55fbecc275b1c35dbe060458839f8d30439ccf  # v3
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
         with:
-          version: ${{ env.PYTHON_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
       - name: Setup environment
         run: make setup
       - name: Run vault audit
@@ -192,9 +192,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
-        uses: astral-sh/setup-uv@8d55fbecc275b1c35dbe060458839f8d30439ccf  # v3
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
         with:
-          version: ${{ env.PYTHON_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
       - name: Setup environment
         run: make setup
       - name: Install Playwright Chromium
