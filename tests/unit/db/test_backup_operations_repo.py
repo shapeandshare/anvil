@@ -5,7 +5,7 @@
 
 """Tests for BackupOperationRepository CRUD."""
 
-from datetime import datetime, timezone, UTC
+from datetime import UTC, datetime, timezone
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession

@@ -1,6 +1,6 @@
 """Tests for RetentionPolicy — auto-rotation logic (FR-027, FR-032)."""
 
-from datetime import datetime, timezone, UTC
+from datetime import UTC, datetime, timezone
 
 from anvil.services.backup.retention_policy import RetentionPolicy
 

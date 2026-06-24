@@ -266,5 +266,3 @@ async def _cmd_restore(args: argparse.Namespace, wb) -> None:
         f"{result.get('safety_snapshot_id', '?')}"
     )
     print("Restart the application to load restored state.")
-
-
