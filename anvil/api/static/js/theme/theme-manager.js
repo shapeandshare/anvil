@@ -106,15 +106,33 @@ function teardownMapping() {
       activeTeardown = null;
     }
 
-    // Apply forced excited/idle state after mapping subscribes.
-    // Also emit milestone/complete so themes with visible flash effects
-    // provide immediate visual feedback that the mode is active.
+    var root = document.documentElement;
     if (excitedPref === 'on') {
+      root.style.setProperty('--rpm', '1.000');
+      root.style.setProperty('--warmth', '1.000');
+      root.style.setProperty('--level', '0.051');
+      root.style.setProperty('--throughput', '1.000');
+      root.style.setProperty('--output', '0.949');
+      root.style.setProperty('--neon', '0.949');
+      root.style.setProperty('--flow', '1.000');
+      root.style.setProperty('--prog', '0.949');
+      root.style.setProperty('--heat', '1.000');
+      root.style.setProperty('--velocity', '1.000');
+      root.style.setProperty('--focus', '0.949');
+      root.style.setProperty('--surge', '1.000');
+      root.style.setProperty('--calm', '0.949');
+      root.style.setProperty('--ring', '0.949');
+      root.style.setProperty('--clearing', '0.949');
+      root.style.setProperty('--clarity', '0.949');
+      root.setAttribute('data-excited', 'on');
+
       bus.emit('metrics', { tokens_per_sec: 600000, loss: 0.5 });
       bus.emit('milestone', {});
       bus.emit('complete', {});
     } else if (excitedPref === 'off') {
-      bus.emit('metrics', { tokens_per_sec: 0, loss: 9.8 });
+      root.setAttribute('data-excited', 'off');
+    } else {
+      root.removeAttribute('data-excited');
     }
   }
 
