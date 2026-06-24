@@ -18,6 +18,7 @@ Exit codes:
 from __future__ import annotations
 
 import argparse
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -25,6 +26,33 @@ from pathlib import Path
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 _MIGRATIONS_DIR = _REPO_ROOT / "anvil" / "_resources" / "migrations" / "versions"
 _SCHEMA_VERSION_FILE = _REPO_ROOT / "anvil" / "db" / "schema_version.py"
+
+# Allowlist for git ref characters: alphanumeric, dots, slashes, hyphens,
+# underscores — everything else is rejected to prevent injection.
+_VALID_REF_RE = re.compile(r"^[a-zA-Z0-9\.\/\-\_]+$")
+
+
+def _validate_ref(ref: str) -> str:
+    """Validate that *ref* contains only safe characters for a git reference.
+
+    Parameters
+    ----------
+    ref : str
+        The git ref string to validate.
+
+    Returns
+    -------
+    str
+        The validated ref.
+
+    Raises
+    ------
+    ValueError
+        If the ref contains unexpected characters.
+    """
+    if not _VALID_REF_RE.match(ref):
+        raise ValueError(f"Invalid git ref: {ref!r}")
+    return ref
 
 
 def _git_diff_files(ref_a: str, ref_b: str) -> list[str]:
@@ -64,7 +92,11 @@ def main(argv: list[str] | None = None) -> None:
     )
     args = parser.parse_args(argv)
 
-    changed = _git_diff_files(args.base_ref, args.head_ref)
+    # Validate git refs before passing to subprocess
+    base_ref = _validate_ref(args.base_ref)
+    head_ref = _validate_ref(args.head_ref)
+
+    changed = _git_diff_files(base_ref, head_ref)
     migrations_changed = _files_under(changed, _MIGRATIONS_DIR)
 
     if not migrations_changed:
