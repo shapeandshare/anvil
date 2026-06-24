@@ -12,5 +12,3 @@ safetensors model export fails.
 
 class SafetensorsExportError(Exception):
     """Raised when safetensors export fails."""
-
-    pass
