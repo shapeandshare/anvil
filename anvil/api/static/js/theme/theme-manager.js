@@ -367,7 +367,7 @@ function teardownMapping() {
     glassOverlay = document.createElement('div');
     glassOverlay.className = 'glass-diffusion';
     // Insert before .nav-bar so nav (z:1, later in DOM) paints on top
-    // of the glass overlay (z:1), regardless of whether the particle
+    // of the glass overlay (z:0), regardless of whether the particle
     // canvas (z:0) exists as the shell's first child.
     nav = shell.querySelector('.nav-bar');
     if (nav) {

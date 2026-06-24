@@ -271,18 +271,6 @@ body {
   padding: 0 var(--space-6) var(--space-6);
   position: relative;
   isolation: isolate;
-  display: flex;
-  flex-direction: column;
-}
-
-/* ── App Footer ── */
-.app-footer {
-  text-align: center;
-  padding: var(--space-4) var(--space-3);
-  font-size: var(--font-size-xs);
-  color: var(--text-tertiary);
-  border-top: 1px solid var(--border-subtle);
-  flex-shrink: 0;
 }
 
 /* ── Ambient Background Particles (default theme only) ── */
@@ -326,14 +314,15 @@ body {
 }
 
 /* ── Glass Diffusion Overlay ── */
-/* Active when 'Reduce effects' is on. Sits between the particle canvas (z:0) and
-   nav/content (z:1+) to visually diffuse background particle motion. */
+/* Active when 'Reduce effects' is on. Sits at the same z-index as the particle
+   canvas (z:0) but later in DOM, so backdrop-filter blurs the shell background
+   and particles while content (app-main, nav) paints unblurred on top. */
 .glass-diffusion {
   position: fixed;
   inset: 0;
   width: 100%;
   height: 100%;
-  z-index: 1;
+  z-index: 0;
   pointer-events: none;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
