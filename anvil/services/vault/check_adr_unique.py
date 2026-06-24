@@ -25,7 +25,7 @@ from pathlib import Path
 _ADR_PATTERN = re.compile(r"(.+\.md)$")
 
 
-@dataclass
+@dataclass  # noqa: dataclass
 class ADRIssue:
     """A detected issue with an ADR file."""
 

@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import ClassVar
 
 
-@dataclass
+@dataclass  # noqa: dataclass
 class SnapshotPlan:
     """Result of planning a snapshot — the set of roots to archive and
     whether pre-flight checks passed.
