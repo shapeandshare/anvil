@@ -51,7 +51,7 @@ body {
   border: var(--border-width) solid var(--glass-border);
   border-radius: var(--radius-lg);
   position: relative;
-  z-index: 1;
+  z-index: 10;
 }
 
 .nav-bar__tabs {
@@ -152,6 +152,7 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
+  background: var(--surface);
 }
 
 .theme-picker__item {

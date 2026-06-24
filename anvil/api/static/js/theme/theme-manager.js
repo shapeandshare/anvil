@@ -133,7 +133,7 @@ function teardownMapping() {
       // dynamically, so a stylesheet !important rule is needed.
       replaceExcitedStyle('on');
 
-      bus.emit('metrics', { tokens_per_sec: 600000, loss: 0.5 });
+      bus.emit('metrics', { tokens_per_sec: 600000, loss: 0.5, grad_norm: 0.85 });
       bus.emit('milestone', {});
       bus.emit('complete', {});
     } else if (excitedPref === 'off') {
