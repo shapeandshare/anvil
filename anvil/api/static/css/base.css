@@ -26,10 +26,6 @@ body {
   overflow: hidden;
 }
 
-img, svg { display: block; max-width: 100%; }
-a { color: var(--accent); text-decoration: none; }
-a:hover { text-decoration: underline; }
-
 /* ── App Shell ── */
 .app-shell {
   display: flex;
@@ -315,6 +311,26 @@ a:hover { text-decoration: underline; }
   0%   { transform: translateY(0) scale(1); opacity: 0.25; }
   25%  { opacity: 0.55; }
   100% { transform: translateY(-100vh) scale(0.3); opacity: 0; }
+}
+
+/* ── Glass Diffusion Overlay ── */
+/* Active when 'Reduce effects' is on. Sits between the particle canvas (z:0) and
+   nav/content (z:1+) to visually diffuse background particle motion. */
+.glass-diffusion {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.glass-diffusion--active {
+  opacity: 1;
 }
 
 /* ── Tab Items (in nav-bar) ── */
