@@ -9,6 +9,7 @@
   var STORAGE_KEY = 'theme';
   var EFFECTS_KEY = 'theme:reduce-effects';
   var AUDIO_KEY = 'theme:audio';
+  var EXCITED_KEY = 'theme:excited';
   var LAYER_LINK_ID = 'theme-layer-css';
   var registry = window.ThemeRegistry;
 
@@ -92,13 +93,24 @@ function teardownMapping() {
   }
 
   function bindMapping(theme) {
-    if (!theme.mapping || !bus || !bus.session()) return;
+    if (!theme.mapping || !bus) return;
+    var excitedPref = readExcitedPref();
+
+    if (!bus.session() && excitedPref === 'auto') return;
+
     var snap = window.EffectLevel ? window.EffectLevel.snapshot() : {};
     try {
       activeTeardown = theme.mapping(bus, snap) || null;
     } catch (e) {
       console.warn('[theme] mapping bind failed for', theme.id, e);
       activeTeardown = null;
+    }
+
+    // Apply forced excited/idle state after mapping subscribes
+    if (excitedPref === 'on') {
+      bus.emit('metrics', { tokens_per_sec: 600000, loss: 0.5 });
+    } else if (excitedPref === 'off') {
+      bus.emit('metrics', { tokens_per_sec: 0, loss: 9.8 });
     }
   }
 
@@ -185,11 +197,12 @@ function teardownMapping() {
     html += '<div class="theme-picker__controls">' +
       '<label class="theme-picker__toggle"><input type="checkbox" id="theme-reduce-effects"> Reduce effects</label>' +
       '<label class="theme-picker__toggle"><input type="checkbox" id="theme-audio-optin"> Enable theme audio</label>' +
-      '<div class="theme-picker__particles">' +
-      '<label for="theme-particle-select" class="theme-picker__particles-label">Particles</label>' +
-      '<select id="theme-particle-select" class="theme-picker__select">' +
-      '<option value="default">Default</option>' +
-      '<option value="none">None</option>' +
+      '<div class="theme-picker__excited">' +
+      '<label for="theme-excited-select" class="theme-picker__excited-label">Excited</label>' +
+      '<select id="theme-excited-select" class="theme-picker__select">' +
+      '<option value="auto">Auto</option>' +
+      '<option value="on">On</option>' +
+      '<option value="off">Off</option>' +
       '</select>' +
       '</div>' +
       '</div>';
@@ -298,6 +311,7 @@ function teardownMapping() {
   function wireEffectControls() {
     var reduce = document.getElementById('theme-reduce-effects');
     var audio = document.getElementById('theme-audio-optin');
+    var excited = document.getElementById('theme-excited-select');
     if (reduce) {
       reduce.checked = readFlag(EFFECTS_KEY);
       reduce.addEventListener('change', function () {
@@ -312,51 +326,13 @@ function teardownMapping() {
         if (window.EffectLevel) window.EffectLevel.setAudioOptIn(audio.checked);
       });
     }
-    wireParticleSelect();
-  }
-
-  function wireParticleSelect() {
-    var select = document.getElementById('theme-particle-select');
-    if (!select) return;
-    var ps_effects, si, opt, saved, val, cur;
-    if (ps) {
-      ps_effects = ps.getEffects();
-      for (si = 0; si < ps_effects.length; si++) {
-        if (ps_effects[si] !== 'css') {
-          opt = document.createElement('option');
-          opt.value = ps_effects[si];
-          opt.textContent = ps_effects[si].charAt(0).toUpperCase() + ps_effects[si].slice(1);
-          select.appendChild(opt);
-        }
-      }
+    if (excited) {
+      excited.value = readExcitedPref();
+      excited.addEventListener('change', function () {
+        writeExcitedPref(excited.value);
+        reapplyEffectLevel();
+      });
     }
-    if (ps) {
-      saved = ps.readPref();
-      if (saved === 'none') select.value = 'none';
-      else if (saved && saved !== 'default') {
-        for (si = 0; si < select.options.length; si++) {
-          if (select.options[si].value === saved) {
-            select.value = saved;
-            break;
-          }
-        }
-      } else {
-        select.value = 'default';
-      }
-    }
-    select.addEventListener('change', function () {
-      val = select.value;
-      if (ps) {
-        if (val === 'default') {
-          ps.writePref(null);
-          try { localStorage.removeItem('theme:particle'); } catch (e) {}
-        } else {
-          ps.writePref(val);
-        }
-        cur = current();
-        apply(cur.themeId, cur.mode, { persist: true });
-      }
-    });
   }
 
   function updateGlassDiffusion(snap) {
@@ -374,6 +350,19 @@ function teardownMapping() {
 
   function writeFlag(key, on) {
     try { localStorage.setItem(key, on ? '1' : '0'); } catch (e) { return; }
+  }
+
+  function readExcitedPref() {
+    var v;
+    try {
+      v = localStorage.getItem(EXCITED_KEY);
+      if (v === 'on' || v === 'off') return v;
+    } catch (e) {}
+    return 'auto';
+  }
+
+  function writeExcitedPref(v) {
+    try { localStorage.setItem(EXCITED_KEY, v); } catch (e) {}
   }
 
   function escapeHtml(s) {
@@ -449,6 +438,7 @@ function teardownMapping() {
 
   function init() {
     var pref = readPref();
+    var snap;
     if (window.EffectLevel) {
       window.EffectLevel.setReducedEffects(readFlag(EFFECTS_KEY));
       window.EffectLevel.setAudioOptIn(readFlag(AUDIO_KEY));
@@ -456,11 +446,12 @@ function teardownMapping() {
     apply(pref.themeId, pref.mode);
     buildPicker();
     wirePicker();
-    initGlassOverlay();
     window.addEventListener('storage', onStorage);
     if (window.EffectLevel) {
       window.EffectLevel.onChange(reapplyEffectLevel);
-      window.EffectLevel.onChange(updateGlassOverlay);
+      window.EffectLevel.onChange(updateGlassDiffusion);
+      snap = window.EffectLevel.snapshot();
+      updateGlassDiffusion(snap);
     }
   }
 

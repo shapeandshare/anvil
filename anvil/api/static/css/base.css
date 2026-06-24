@@ -222,14 +222,14 @@ body {
   cursor: pointer;
 }
 
-.theme-picker__particles {
+.theme-picker__excited {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   margin-top: var(--space-1);
 }
 
-.theme-picker__particles-label {
+.theme-picker__excited-label {
   font-size: var(--text-caption-1);
   color: var(--text-secondary);
   white-space: nowrap;
@@ -266,11 +266,22 @@ body {
 
 /* ── Main Content ── */
 .app-main {
-  flex: 1;
   min-height: 0;
   padding: 0 var(--space-6) var(--space-6);
   position: relative;
   isolation: isolate;
+}
+
+/* ── Site Footer ── */
+.site-footer {
+  flex-shrink: 0;
+  margin-top: auto;
+  text-align: center;
+  padding: var(--space-4) var(--space-3) calc(var(--space-4) + env(safe-area-inset-bottom));
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  border-top: 1px solid var(--border-subtle);
+  position: relative;
 }
 
 /* ── Ambient Background Particles (default theme only) ── */
@@ -313,25 +324,12 @@ body {
   100% { transform: translateY(-100vh) scale(0.3); opacity: 0; }
 }
 
-/* ── Glass Diffusion Overlay ── */
-/* Active when 'Reduce effects' is on. Sits at the same z-index as the particle
-   canvas (z:0) but later in DOM, so backdrop-filter blurs the shell background
-   and particles while content (app-main, nav) paints unblurred on top. */
-.glass-diffusion {
-  position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.4s ease;
-}
-
-.glass-diffusion--active {
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  opacity: 1;
+/* ── Glass Diffusion ── */
+/* When 'Reduce effects' is on ([data-glass-diffusion] on <html>), mute the
+   shell background gradient to further reduce visual motion. The particle
+   canvas is blurred via JS (filter: blur) rather than hidden. */
+[data-glass-diffusion] .app-shell {
+  background: radial-gradient(ellipse 1200px 700px at 50% 5%, color-mix(in srgb, var(--accent-orange) 6%, transparent), transparent);
 }
 
 /* ── Tab Items (in nav-bar) ── */

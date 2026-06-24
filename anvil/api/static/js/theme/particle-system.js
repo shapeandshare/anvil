@@ -255,6 +255,9 @@
     }
     isRunning = !legible;
     startAnimation();
+    if (canvas) {
+      canvas.style.filter = legible ? 'blur(12px)' : '';
+    }
   }
 
   function stopEffect() {
@@ -288,10 +291,10 @@
     if (!activeConfig || activeConfig.type === 'css' || activeConfig.type === 'none') return;
     if (snap.level === 'paused' || snap.legible) {
       pause();
-      if (canvas) canvas.style.opacity = '0';
+      if (canvas) canvas.style.filter = 'blur(12px)';
     } else {
       resume();
-      if (canvas) canvas.style.opacity = '1';
+      if (canvas) canvas.style.filter = '';
     }
   }
 
