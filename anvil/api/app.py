@@ -17,6 +17,7 @@ import asyncio
 import logging
 import os
 import secrets
+import sys
 import time
 from collections import defaultdict
 from contextlib import asynccontextmanager
@@ -35,6 +36,7 @@ from starlette.responses import Response
 from ..config import get_config
 from ..db import models  # noqa: F401 — register ORM models with Base.metadata
 from ..db.migration import MigrationService
+from ..db.schema_version import SCHEMA_VERSION
 from ..db.session import init_engine
 from ..supervisor.services import MLflowService
 from .auth import (
@@ -123,6 +125,15 @@ async def lifespan(app: FastAPI):
     await init_engine()
     migration_svc = MigrationService()
     await migration_svc.ensure_migrated()
+
+    # Schema version gate — refuse to start if the DB was created by a
+    # squashed migration that predates the current schema.
+    try:
+        await migration_svc.ensure_schema_version()
+    except Exception as exc:
+        logger.critical("Schema version check failed: %s", exc)
+        print(f"FATAL: {exc}", flush=True)
+        sys.exit(1)
 
     cfg = get_config()
     if cfg["mlflow_disable_local"]:

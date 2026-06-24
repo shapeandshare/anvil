@@ -1237,7 +1237,7 @@ CONTENT_VERSIONING_STEPS = [
         "title": "Why Version Your Data?",
         "body": (
             "Reproducibility in ML is impossible if the data can silently change. anvil's "
-            "content repository (ADR-033) is a Git-like substrate for training data: every "
+            "content repository is a Git-like substrate for training data: every "
             "byte is content-addressed, every snapshot is an immutable version, and every "
             "training run records exactly which version it consumed. It is pure-Python and "
             "local-first, living under <code>anvil/services/content/</code>."
@@ -1289,8 +1289,7 @@ CONTENT_VERSIONING_STEPS = [
         "title": "Weight-Based Replication",
         "body": (
             "Each entry has a <code>weight</code> that controls how much it contributes to "
-            "training. The rule (FR-021, in <code>TrainingService._load_docs_from_version</code>) "
-            "is deliberately simple integer replication: "
+            "training. The rule is deliberately simple integer replication: "
             "<code>factor = max(1, round(weight))</code>, and each entry's chunks are added "
             "to the training set <code>factor</code> times. So a weight of 3 triples an "
             "entry's presence; a weight of 0.4 still contributes once (the floor of 1). "
@@ -1373,11 +1372,11 @@ EXPERIMENT_TRACKING_STEPS = [
         "key": "primary-lineage",
         "title": "MLflow as Primary Lineage",
         "body": (
-            "anvil treats MLflow as the source of truth for trained models (ADR-016). At "
+            "anvil treats MLflow as the source of truth for trained models. At "
             "inference time, <code>InferenceService</code> resolves a model first from the "
             "local artifact cache, then from the MLflow Model Registry — downloading the "
-            "registered artifacts on demand. The exported model is MLflow-pyfunc compliant "
-            "(ADR-009): the <code>MLmodel</code> file names "
+            "registered artifacts on demand. The exported model is MLflow-pyfunc compliant: "
+            "the <code>MLmodel</code> file names "
             "<code>anvil._pyfunc_model.AnvilPyfuncModel</code> as its loader, so "
             '<code>mlflow.pyfunc.load_model("models:/dataset-42/3")</code> works in any '
             "MLflow-aware tool."
@@ -1405,7 +1404,7 @@ GOVERNANCE_STEPS = [
         "title": "Why Data Governance?",
         "body": (
             "A model is only as trustworthy as the data it learned from. anvil ships a "
-            "governance layer (ADR-023) so that data inclusion is lawful, attributed, and "
+            "governance layer so that data inclusion is lawful, attributed, and "
             "auditable. It rests on three pillars: machine-readable <b>provenance</b>, a "
             "tamper-evident <b>audit trail</b>, and an <b>acceptable-use gate</b> on every "
             "submission. The code lives in <code>anvil/services/governance/</code>."
@@ -1776,11 +1775,11 @@ GLOSSARY_TERMS = [
     },
     {
         "name": "Vault",
-        "definition": "Obsidian-compatible documentation directory at <code>docs/vault/</code>.",
+        "definition": "Obsidian-compatible documentation directory for internal project knowledge.",
     },
     {
         "name": "Constitution",
-        "definition": "Project governance document (<code>.specify/memory/constitution.md</code>) defining non-negotiable principles.",
+        "definition": "Project governance document defining non-negotiable principles for codebase work.",
     },
     {
         "name": "Value",

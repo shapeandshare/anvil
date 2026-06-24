@@ -19,6 +19,7 @@ from alembic.script import ScriptDirectory
 
 from ..config import get_config
 from .migration_error import MigrationError
+from .schema_version import SCHEMA_VERSION
 
 logger = logging.getLogger(__name__)
 
@@ -140,6 +141,9 @@ class MigrationService:
             ) from exc
         after = await self.current()
         logger.info("Migrated DB: %s → %s", before or "<base>", after or "<base>")
+        if before != after:
+            await self.set_schema_version()
+            logger.info("Set DB schema version to v%d", SCHEMA_VERSION)
         return before, after
 
     async def verify_schema(self) -> None:
@@ -299,6 +303,127 @@ class MigrationService:
                 logger.info("Database already at HEAD: %s — no action needed", after)
         else:
             await self.verify_schema()
+
+    # ------------------------------------------------------------------
+    # Schema version (PRAGMA user_version) support
+    # ------------------------------------------------------------------
+
+    async def get_schema_version(self) -> int:
+        """Read ``PRAGMA user_version`` from the SQLite database.
+
+        Returns
+        -------
+        int
+            The stored schema version, or ``0`` if the database is
+            fresh/unstamped (no file, no table, or unreadable).
+        """
+
+        def _get() -> int:
+            from sqlalchemy import create_engine
+
+            sync_url = self._db_url.replace("+aiosqlite", "")
+            engine = create_engine(sync_url)
+            try:
+                with engine.connect() as conn:
+                    row = conn.exec_driver_sql("PRAGMA user_version").fetchone()
+                    return int(row[0]) if row else 0
+            except Exception:
+                return 0
+            finally:
+                engine.dispose()
+
+        return await self._run_sync(_get)
+
+    async def set_schema_version(self) -> None:
+        """Write ``SCHEMA_VERSION`` to ``PRAGMA user_version``.
+
+        Called after a successful migration upgrade so that subsequent
+        startup checks can verify the DB matches the code.
+        """
+
+        def _set() -> None:
+            from sqlalchemy import create_engine
+
+            sync_url = self._db_url.replace("+aiosqlite", "")
+            engine = create_engine(sync_url)
+            try:
+                with engine.connect() as conn:
+                    conn.exec_driver_sql(f"PRAGMA user_version = {SCHEMA_VERSION}")
+                    conn.commit()
+            finally:
+                engine.dispose()
+
+        await self._run_sync(_set)
+
+    async def ensure_schema_version(self) -> None:
+        """Verify the DB schema version matches ``SCHEMA_VERSION``.
+
+        Raises ``MigrationError`` if the database has a non-zero
+        *user_version* that does not match the code constant.  A
+        *user_version* of ``0`` (fresh DB) is always allowed — the
+        version will be set after the first migration run.
+
+        Raises
+        ------
+        MigrationError
+            If a version mismatch is detected — likely caused by a
+            squashed migration that this database predates.
+        """
+        db_version = await self.get_schema_version()
+        if db_version == 0:
+            return
+        if db_version != SCHEMA_VERSION:
+            raise MigrationError(
+                f"Database schema version mismatch: DB has v{db_version}, "
+                f"code expects v{SCHEMA_VERSION}. "
+                "This usually means Alembic migrations were squashed "
+                "after this database was created.\n"
+                "Fix: rm data/anvil-state.db && make run"
+            )
+
+    # ------------------------------------------------------------------
+    # Table integrity check
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    async def verify_table_integrity(
+        db_url: str | None = None,
+    ) -> list[str]:
+        """Compare ORM-model tables against the actual database schema.
+
+        Returns a list of missing table names (empty = all present).
+
+        Parameters
+        ----------
+        db_url : str, optional
+            SQLAlchemy database URL. Defaults to config.
+        """
+        from sqlalchemy import create_engine, text
+
+        if db_url is None:
+            db_url = f"sqlite+aiosqlite:///{get_config()['state_db_path']}"
+
+        from ..db.registry import get_expected_tables
+
+        expected = get_expected_tables()
+
+        def _check() -> list[str]:
+            sync_url = db_url.replace("+aiosqlite", "")
+            engine = create_engine(sync_url)
+            try:
+                with engine.connect() as conn:
+                    rows = conn.execute(
+                        text("SELECT name FROM sqlite_master " "WHERE type='table'")
+                    ).fetchall()
+                    actual = {row[0] for row in rows}
+                return sorted(expected - actual)
+            finally:
+                engine.dispose()
+
+        import asyncio
+
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, _check)
 
     # ------------------------------------------------------------------
     # Private helpers

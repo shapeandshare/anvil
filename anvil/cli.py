@@ -789,7 +789,7 @@ def bootstrap_datasets_main():
 def db_main(argv: list[str] | None = None) -> None:
     """CLI subcommands for database schema management.
 
-    Usage: anvil db <upgrade|downgrade|current|history|revision|stamp>
+    Usage: anvil db <upgrade|downgrade|current|history|revision|stamp|verify>
     """
     parser = argparse.ArgumentParser(description="Manage database schema migrations")
     sub = parser.add_subparsers(dest="command")
@@ -797,6 +797,7 @@ def db_main(argv: list[str] | None = None) -> None:
     sub.add_parser("upgrade", help="Apply all pending migrations")
     sub.add_parser("current", help="Show current migration revision")
     sub.add_parser("history", help="Show migration history")
+    sub.add_parser("verify", help="Check all ORM model tables exist in the database")
 
     downgrade_p = sub.add_parser("downgrade", help="Roll back one or more migrations")
     downgrade_p.add_argument(
@@ -858,6 +859,20 @@ def db_main(argv: list[str] | None = None) -> None:
             elif args.command == "stamp":
                 await svc.stamp(args.revision)
                 print(f"Stamped database at revision: {args.revision}")
+            elif args.command == "verify":
+                missing = await MigrationService.verify_table_integrity()
+                if not missing:
+                    print("All ORM model tables present in database.")
+                else:
+                    print(
+                        f"Missing {len(missing)} table(s): {', '.join(missing)}",
+                        file=sys.stderr,
+                    )
+                    print(
+                        "Fix: rm data/anvil-state.db && make run",
+                        file=sys.stderr,
+                    )
+                    sys.exit(1)
         except MigrationError as exc:
             print(f"Error: {exc}", file=sys.stderr)
             sys.exit(1)

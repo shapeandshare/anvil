@@ -18,27 +18,9 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from anvil.db.base import Base
-
-# Import ORM model modules so they register on Base.metadata
-# for Alembic autogenerate. One import per model file (Article VI
-# — bare __init__.py, no re-exports, so no star-import available).
-from anvil.db.models.audit_event import AuditEvent
-
-# Backup Operation model (feature 026).
-from anvil.db.models.backup_operation import BackupOperation
-from anvil.db.models.content_blob import ContentBlob
-from anvil.db.models.content_corpus import ContentCorpus
-from anvil.db.models.content_entry import ContentEntry
-from anvil.db.models.content_import_job import ImportJob
-from anvil.db.models.content_ingest_session import IngestSession
-from anvil.db.models.content_lock import CheckoutLock
-
-# Content Repository models (feature 016).
-from anvil.db.models.content_source import ContentSource
-from anvil.db.models.content_tag import ContentTag
-from anvil.db.models.content_version import ContentVersion
-from anvil.db.models.content_version_run_ref import VersionRunRef
-from anvil.db.models.license_entry import LicenseEntry
+from anvil.db.registry import (  # noqa: F401  — registers all models on Base.metadata
+    get_expected_tables,
+)
 
 config = context.config
 if config.config_file_name is not None:

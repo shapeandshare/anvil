@@ -25,6 +25,8 @@ from anvil import __version__ as anvil_version
 from anvil.api.auth import SESSION_COOKIE_NAME, generate_csrf_token
 from anvil.api.deps import get_workbench
 from anvil.config import get_config, get_mlflow_browser_uri
+from anvil.db.migration import MigrationService
+from anvil.db.schema_version import SCHEMA_VERSION
 from anvil.gpu import detect_gpu
 from anvil.workbench import AnvilWorkbench
 
@@ -96,20 +98,52 @@ async def health():
 async def health_detailed():
     """Return detailed system health metrics.
 
-    Provides version, uptime, CPU, memory, disk, and GPU information.
-    This endpoint requires authentication (unlike the bare
-    ``GET /v1/health`` liveness check).
+    Provides version, uptime, CPU, memory, disk, GPU, database
+    connectivity, and schema version.  This endpoint requires
+    authentication (unlike the bare ``GET /v1/health`` liveness check).
 
     Returns
     -------
     dict
-        ``status``, ``version``, ``uptime_seconds``, ``system`` metrics and
-        ``gpu`` details.
+        ``status``, ``version``, ``uptime_seconds``, ``system`` metrics,
+        ``gpu`` details, ``database`` connectivity and schema version,
+        ``mlflow`` connectivity, and ``docs`` links.
     """
     cpu_percent = psutil.cpu_percent(interval=0)
     mem = psutil.virtual_memory()
     disk = psutil.disk_usage("/")
     gpu = detect_gpu()
+
+    # Database health
+    db_status = "unknown"
+    db_schema_version = 0
+    db_migration = "unknown"
+    db_error: str | None = None
+    try:
+        svc = MigrationService()
+        db_schema_version = await svc.get_schema_version()
+        db_migration = await svc.current()
+        db_status = "connected"
+    except Exception as exc:
+        db_status = "error"
+        db_error = str(exc)
+
+    # MLflow health
+    mlflow_status = "unknown"
+    mlflow_error: str | None = None
+    try:
+        import urllib.request
+
+        mlflow_uri = get_config()["mlflow_uri"]
+        resp = urllib.request.urlopen(
+            f"{mlflow_uri.rstrip('/')}/api/2.0/mlflow/experiments/list",
+            timeout=3,
+        )
+        mlflow_status = "reachable" if resp.status == 200 else f"http_{resp.status}"
+    except Exception as exc:
+        mlflow_status = "unreachable"
+        mlflow_error = str(exc)
+
     return {
         "status": "healthy",
         "version": anvil_version,
@@ -133,6 +167,21 @@ async def health_detailed():
             "torch_version": gpu.torch_version,
             "cuda_version": gpu.cuda_version,
             "errors": gpu.errors,
+        },
+        "database": {
+            "status": db_status,
+            "schema_version": db_schema_version,
+            "expected_schema_version": SCHEMA_VERSION,
+            "migration_revision": db_migration,
+            "error": db_error,
+        },
+        "mlflow": {
+            "status": mlflow_status,
+            "error": mlflow_error,
+        },
+        "docs": {
+            "swagger": "/docs",
+            "redoc": "/redoc",
         },
     }
 

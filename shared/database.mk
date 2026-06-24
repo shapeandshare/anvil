@@ -33,4 +33,7 @@ db-stamp: $(VENV_DIR)/activate ## Stamp the DB at a specific revision (usage: RE
 	fi
 	$(PYTHON) -m anvil.cli db_main stamp $(REVISION)
 
-.PHONY: setup db-upgrade db-downgrade db-current db-history db-revision db-stamp
+db-verify: $(VENV_DIR)/activate ## Verify all ORM model tables exist in the database
+	$(PYTHON) -m anvil.cli db_main verify
+
+.PHONY: setup db-upgrade db-downgrade db-current db-history db-revision db-stamp db-verify
