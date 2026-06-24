@@ -15,7 +15,6 @@
   var activeTeardown = null;
   var bus = window.SignalBus ? window.SignalBus.create() : null;
   var ps = window.ParticleSystem;
-  var glassOverlay = null;
 
   // Picker keyboard-navigation / live-preview state.
   var pickerItems = [];   // theme buttons, in registry order
@@ -360,35 +359,12 @@ function teardownMapping() {
     });
   }
 
-  function initGlassOverlay() {
-    var shell = document.querySelector('.app-shell');
-    var nav, snap;
-    if (!shell) return;
-    glassOverlay = document.createElement('div');
-    glassOverlay.className = 'glass-diffusion';
-    // Insert before .nav-bar so nav (z:1, later in DOM) paints on top
-    // of the glass overlay (z:0), regardless of whether the particle
-    // canvas (z:0) exists as the shell's first child.
-    nav = shell.querySelector('.nav-bar');
-    if (nav) {
-      shell.insertBefore(glassOverlay, nav);
-    } else {
-      shell.appendChild(glassOverlay);
-    }
-    if (window.EffectLevel) {
-      snap = window.EffectLevel.snapshot();
-      if (snap.legible) {
-        glassOverlay.classList.add('glass-diffusion--active');
-      }
-    }
-  }
-
-  function updateGlassOverlay(snap) {
-    if (!glassOverlay) return;
+  function updateGlassDiffusion(snap) {
+    var root = document.documentElement;
     if (snap.legible) {
-      glassOverlay.classList.add('glass-diffusion--active');
+      root.setAttribute('data-glass-diffusion', '');
     } else {
-      glassOverlay.classList.remove('glass-diffusion--active');
+      root.removeAttribute('data-glass-diffusion');
     }
   }
 
