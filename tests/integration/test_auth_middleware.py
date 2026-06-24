@@ -73,10 +73,16 @@ async def test_login_page_is_exempt(unauth_client):
 @pytest.mark.asyncio
 async def test_unauthenticated_page_route_redirects_to_login(unauth_client):
     resp = await unauth_client.get(
-        "/", headers={"accept": "text/html"}, follow_redirects=False
+        "/v1/training-page", headers={"accept": "text/html"}, follow_redirects=False
     )
     assert resp.status_code == 303
     assert resp.headers["location"] == "/login"
+
+
+@pytest.mark.asyncio
+async def test_hero_page_is_exempt_from_auth(unauth_client):
+    resp = await unauth_client.get("/")
+    assert resp.status_code == 200
 
 
 @pytest.mark.asyncio

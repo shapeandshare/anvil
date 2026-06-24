@@ -199,6 +199,7 @@ PAGE_PREFIXES: tuple[str, ...] = (
 
 EXEMPT_ROUTES: frozenset[str] = frozenset(
     {
+        "/",
         "/login",
         "/v1/health",
     }
