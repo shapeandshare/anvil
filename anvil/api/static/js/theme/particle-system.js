@@ -61,9 +61,9 @@
   }
 
   function getEffectiveConfig(themeConfig) {
-    // localStorage pref is strictly on/off — never overrides the theme's own effect.
+    // Off by default — only enable when user explicitly sets a non-'none' pref.
     var pref = readPref();
-    if (pref === 'none') return { type: 'none', params: {} };
+    if (pref === 'none' || pref == null) return { type: 'none', params: {} };
     return themeConfig || { type: 'css', params: {} };
   }
 

@@ -373,7 +373,9 @@ function teardownMapping() {
   }
 
   function readParticlesOn() {
-    return window.ParticleSystem ? window.ParticleSystem.readPref() !== 'none' : true;
+    if (!window.ParticleSystem) return true;
+    var pref = window.ParticleSystem.readPref();
+    return pref !== null && pref !== 'none';
   }
 
   function wireEffectControls() {
