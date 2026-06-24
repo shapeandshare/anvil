@@ -346,21 +346,25 @@ async def security_headers_middleware(
     request.state.csp_nonce = nonce
     response = await call_next(request)
     response.headers["Content-Security-Policy"] = (
-        "default-src 'self'; "
-        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
-        "img-src 'self' data: https://fastapi.tiangolo.com; "
-        "font-src 'self' https://fonts.gstatic.com; "
-        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
-        "connect-src 'self' https://cdn.jsdelivr.net; "
-        "worker-src 'self' blob:; "
-    ) if request.url.path in ("/docs", "/redoc", "/openapi.json") or request.url.path.startswith(
-        "/docs/"
-    ) or request.url.path.startswith("/redoc/") else (
-        "default-src 'self'; "
-        "style-src 'self' 'unsafe-inline'; "
-        "img-src 'self' data:; "
-        "font-src 'self'; "
-        f"script-src 'self' 'nonce-{nonce}';"
+        (
+            "default-src 'self'; "
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
+            "img-src 'self' data: https://fastapi.tiangolo.com; "
+            "font-src 'self' https://fonts.gstatic.com; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "connect-src 'self' https://cdn.jsdelivr.net; "
+            "worker-src 'self' blob:; "
+        )
+        if request.url.path in ("/docs", "/redoc", "/openapi.json")
+        or request.url.path.startswith("/docs/")
+        or request.url.path.startswith("/redoc/")
+        else (
+            "default-src 'self'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; "
+            "font-src 'self'; "
+            f"script-src 'self' 'nonce-{nonce}';"
+        )
     )
     response.headers["Strict-Transport-Security"] = (
         "max-age=31536000; includeSubDomains"
