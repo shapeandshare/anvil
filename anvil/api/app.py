@@ -350,7 +350,8 @@ async def security_headers_middleware(
         "style-src 'self' 'unsafe-inline'; "
         "img-src 'self' data:; "
         "font-src 'self'; "
-        f"script-src 'self' 'nonce-{nonce}';"
+        f"script-src 'self' 'nonce-{nonce}' https://cdn.jsdelivr.net; "
+        "connect-src 'self' https://cdn.jsdelivr.net; "
     )
     response.headers["Strict-Transport-Security"] = (
         "max-age=31536000; includeSubDomains"

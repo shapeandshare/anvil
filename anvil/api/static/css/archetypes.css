@@ -169,7 +169,7 @@
   padding: var(--space-8) var(--space-4) var(--space-6);
   max-width: 720px;
   margin: 0 auto;
-  min-height: 100%;
+  flex: 1;
 }
 
 /* ── Forge Section ── */

@@ -271,6 +271,18 @@ body {
   padding: 0 var(--space-6) var(--space-6);
   position: relative;
   isolation: isolate;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── App Footer ── */
+.app-footer {
+  text-align: center;
+  padding: var(--space-4) var(--space-3);
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  border-top: 1px solid var(--border-subtle);
+  flex-shrink: 0;
 }
 
 /* ── Ambient Background Particles (default theme only) ── */
