@@ -13,7 +13,6 @@ Supports dry-run (ranked table) and ``--fix`` mode (auto-insert reciprocals).
 from __future__ import annotations
 
 import json
-import re
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -108,8 +107,11 @@ def compute_tfidf(
         except OSError:
             stem_text[stem] = ""
             continue
-        fm_match = re.match(r"^---\s*\n.*?\n---\s*\n", content, re.DOTALL)
-        body = content[fm_match.end() :] if fm_match else content
+        body = content
+        if content.startswith("---"):
+            parts = content.split("---", 2)
+            if len(parts) == 3:
+                body = parts[2].lstrip("\n")
         stem_text[stem] = body.strip()
 
     if not stem_text:
