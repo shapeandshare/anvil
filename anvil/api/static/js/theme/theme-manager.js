@@ -106,9 +106,13 @@ function teardownMapping() {
       activeTeardown = null;
     }
 
-    // Apply forced excited/idle state after mapping subscribes
+    // Apply forced excited/idle state after mapping subscribes.
+    // Also emit milestone/complete so themes with visible flash effects
+    // provide immediate visual feedback that the mode is active.
     if (excitedPref === 'on') {
       bus.emit('metrics', { tokens_per_sec: 600000, loss: 0.5 });
+      bus.emit('milestone', {});
+      bus.emit('complete', {});
     } else if (excitedPref === 'off') {
       bus.emit('metrics', { tokens_per_sec: 0, loss: 9.8 });
     }
