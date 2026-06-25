@@ -105,51 +105,51 @@
     <p class="ds-flow-desc">Tune the model architecture. Change any parameter below — the model stats card above updates in real time. Click <strong>Auto-Tune</strong> to let anvil pick sensible defaults for your data.</p>
     <div class="config-grid">
       <div class="param-block">
-        <div class="param-label-row"><label class="param-label">n_embd</label>
+        <div class="param-label-row"><label class="param-label" for="n_embd">n_embd</label>
         <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">The width of each layer's representation. Wider = more capacity to learn patterns, but more parameters and slower training. Powers of 2 are standard (16, 32, 64, 128).</span></span></div>
         <input type="number" id="n_embd" value="16" min="4" max="256">
         <p class="param-desc">Embedding size — powers of 2 (16, 32, 64…). Must be divisible by <code>n_head</code>.</p>
       </div>
       <div class="param-block">
-        <div class="param-label-row"><label class="param-label">n_layer</label>
+        <div class="param-label-row"><label class="param-label" for="n_layer">n_layer</label>
         <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How many transformer blocks stack on top of each other. Deeper = more hierarchical pattern discovery. 1-2 layers learn simple patterns, 4+ can learn complex structure.</span></span></div>
         <input type="number" id="n_layer" value="1" min="1" max="12">
         <p class="param-desc">Transformer depth — 1–2 for simple patterns, 4+ for complex structure.</p>
       </div>
       <div class="param-block">
-        <div class="param-label-row"><label class="param-label">n_head</label>
+        <div class="param-label-row"><label class="param-label" for="n_head">n_head</label>
         <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How many parallel attention computations happen at each layer. Each head can focus on different relationships. Must divide n_embd evenly.</span></span></div>
         <input type="number" id="n_head" value="4" min="1" max="16">
         <p class="param-desc">Attention heads — must divide <code>n_embd</code> evenly (e.g. 64 &amp; 4 works).</p>
         <span id="attn-geom-warn" class="ds-warn" style="display:none;"></span>
       </div>
       <div class="param-block">
-        <div class="param-label-row"><label class="param-label">block_size</label>
+        <div class="param-label-row"><label class="param-label" for="block_size">block_size</label>
         <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How many characters the model can 'see' at once when predicting the next character. Larger context = more coherent output but slower training.</span></span></div>
         <input type="number" id="block_size" value="16" min="8" max="1024">
         <p class="param-desc">Context window in characters — match to your corpus chunk size.</p>
         <span id="bs-mismatch-warn" class="ds-warn" style="display:none;">&#9888; block_size exceeds corpus chunk size — only chunks up to the corpus block_size will be used per step. Increase corpus chunk size or lower training block_size.</span>
       </div>
       <div class="param-block">
-        <div class="param-label-row"><label class="param-label">num_steps</label>
+        <div class="param-label-row"><label class="param-label" for="num_steps">num_steps</label>
         <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How many gradient updates the model performs. More steps = lower loss, but diminishing returns. Start with 1000 and increase if loss is still falling.</span></span></div>
         <input type="number" id="num_steps" value="1000" min="10" max="100000">
         <p class="param-desc">Training steps — more = lower loss. Start with 1000.</p>
       </div>
       <div class="param-block">
-        <div class="param-label-row"><label class="param-label">learning_rate</label>
+        <div class="param-label-row"><label class="param-label" for="learning_rate">learning_rate</label>
         <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">How big each weight update is. Too high = loss bounces around. Too low = barely learns. 0.01 is a good starting point for this model scale.</span></span></div>
         <input type="number" id="learning_rate" value="0.01" step="0.001" min="0.0001" max="1">
         <p class="param-desc">Step size — 0.01 safe start. Drop if loss oscillates or spikes. <a href="/v1/learn/adam#lr-decay" class="action-link type-caption-2">learning-rate decay &rarr;</a></p>
       </div>
       <div class="param-block">
-        <div class="param-label-row"><label class="param-label">temperature</label>
+        <div class="param-label-row"><label class="param-label" for="temperature">temperature</label>
         <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">Controls randomness in generation. 0 = always picks the most likely next character (boring but safe). 1.0+ = more creative but may produce gibberish.</span></span></div>
         <input type="number" id="temperature" value="0.5" step="0.1" min="0" max="2">
         <p class="param-desc">Creativity — 0.1-0.3 predictable, 0.5-0.7 creative, 1.0+ chaos. <a href="/v1/learn/sampling#temperature" class="action-link type-caption-2">how temperature works &rarr;</a></p><span class="fun-label fun-label--cool" style="margin-left:var(--space-1)">cool &amp; precise</span> <span class="fun-label fun-label--warm">creative spark</span> <span class="fun-label fun-label--hot">chaos mode</span>
       </div>
       <div class="param-block">
-        <div class="param-label-row"><label class="param-label">Compute Backend</label>
+        <div class="param-label-row"><label class="param-label" for="compute_backend">Compute Backend</label>
         <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">Where training runs. Auto picks the best available. Local CPU uses pure Python (stdlib). Local GPU uses PyTorch (CUDA/MPS). Modal runs on cloud GPUs (local mode only — requires the modal package).</span></span></div>
         <div class="device-toggle">
           <select id="compute_backend" onchange="window.updateModelStats()" style="width:100%;padding:6px 8px;border-radius:var(--radius-sm,6px);border:1px solid var(--border,#38383a);background:var(--surface,#1c1c1e);color:var(--text,#fff);font-size:0.8rem;font-family:var(--font-body,sans-serif);">
@@ -213,7 +213,7 @@
   </div>
 
   <div class="training-output section-card" style="--stagger-i: 6">
-    <div class="section-card__header section-card__header--clickable" id="output-header" role="button" tabindex="0" aria-expanded="false" aria-controls="output-body">
+    <div class="section-card__header section-card__header--clickable" id="output-header" role="button" tabindex="0" aria-expanded="false" aria-controls="output-body" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
       <span class="section-card__icon">&#128228;</span>
       <h2 class="section-card__title">Output</h2>
       <span class="output-indicator" id="output-indicator"></span>

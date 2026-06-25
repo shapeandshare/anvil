@@ -502,7 +502,7 @@
         if (!self._reducedMotion && self._strategy === 'windowed') {
           chip.style.opacity = '0';
           chip.style.transform = 'translateY(-10px)';
-          chip.offsetWidth;
+          void chip.offsetWidth; // force reflow for CSS transition
           chip.style.opacity = '1';
           chip.style.transform = 'translateY(0)';
         }

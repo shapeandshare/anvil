@@ -111,7 +111,7 @@
     var widgetType = el.getAttribute('data-widget');
     var WidgetClass = widgetType && WIDGET_CLASSES[widgetType];
     if (WidgetClass) {
-      new WidgetClass(el);
+      var widget = new WidgetClass(el);
     }
   });
 

@@ -117,12 +117,16 @@
       </button>
 
       {# ── Filter by length ── #}
+      <label for="filter-min" class="sr-only">Min characters</label>
       <input type="number" class="form-input type-caption-1" id="filter-min" placeholder="min chars" style="width:80px;">
+      <label for="filter-max" class="sr-only">Max characters</label>
       <input type="number" class="form-input type-caption-1" id="filter-max" placeholder="max chars" style="width:80px;">
       <button class="btn btn-sm btn-secondary" id="curate-filter-btn">Filter Length</button>
 
       {# ── Regex replace ── #}
+      <label for="replace-pattern" class="sr-only">Regex pattern</label>
       <input type="text" class="form-input type-caption-1" id="replace-pattern" placeholder="pattern" style="width:100px;">
+      <label for="replace-replacement" class="sr-only">Regex replacement</label>
       <input type="text" class="form-input type-caption-1" id="replace-replacement" placeholder="replacement" style="width:100px;">
       <button class="btn btn-sm btn-secondary" id="curate-replace-btn">Regex Replace</button>
 
@@ -137,6 +141,7 @@
     <span class="section-card__icon">&#128221;</span>
     <h2 class="section-card__title">Samples</h2>
     <div style="display:flex;gap:var(--space-2);align-items:center;">
+      <label for="sample-search" class="sr-only">Search samples</label>
       <input type="text" class="form-input type-caption-1" id="sample-search" placeholder="search..." style="width:120px;">
       <button class="btn btn-sm btn-secondary type-caption-1" id="sample-search-btn">search</button>
       <span class="text-muted type-caption-1" id="sample-count-label">--</span>

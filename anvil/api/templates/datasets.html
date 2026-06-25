@@ -77,6 +77,7 @@
     <div class="ds-section">
       <div class="ds-section-label">Upload File <span class="tooltip-trigger"><span class="tooltip-icon">i</span><span class="tooltip-content">Accepts .txt files. Each line becomes a training sample. Files with more diverse characters give the model more tokens to work with.</span></span></div>
       <form id="upload-form" class="upload-zone">
+        <label for="file-input" class="sr-only">Choose file</label>
         <input type="file" class="form-input" id="file-input" accept=".txt">
         <button type="submit" class="btn btn-primary">upload</button>
       </form>
@@ -87,7 +88,9 @@
         <div class="ds-section-label">Provenance &amp; Governance</div>
         <div style="display:flex;flex-direction:column;gap:var(--space-2);">
           <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;">
+            <label for="declared-source" class="sr-only">Declared source</label>
             <input type="text" class="form-input" id="declared-source" placeholder="Declared source / origin (e.g. Project Gutenberg)" style="flex:1;min-width:200px;">
+            <label for="license-select" class="sr-only">License</label>
             <select class="form-select" id="license-select" style="flex:1;min-width:200px;">
               <option value="">Select a license...</option>
               {% for license in licenses %}
@@ -110,7 +113,9 @@
     <div class="ds-section">
       <div class="ds-section-label">Create Dataset <span class="tooltip-trigger"><span class="tooltip-icon">i</span><span class="tooltip-content">Create an empty dataset first, then add samples by uploading files or curating existing data.</span></span></div>
       <div id="create-dataset-form" style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;">
+        <label for="new-dataset-name" class="sr-only">Dataset name</label>
         <input type="text" class="form-input" id="new-dataset-name" placeholder="name">
+        <label for="new-dataset-description" class="sr-only">Description</label>
         <input type="text" class="form-input" id="new-dataset-description" placeholder="description (optional)">
         <button class="btn btn-primary" id="create-dataset-btn">create</button>
       </div>
@@ -122,7 +127,7 @@
     {# ── Dataset list section ── #}
     <div class="ds-section">
       <div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-3);flex-wrap:wrap;">
-        <span class="label-text" style="flex-shrink:0;">DATASETS</span>
+        <label for="dataset-search" class="label-text" style="flex-shrink:0;">DATASETS</label>
         <input type="text" class="form-input type-footnote" id="dataset-search" placeholder="filter...">
         <button class="btn btn-sm btn-secondary type-caption-1" id="search-btn">filter</button>
       </div>
@@ -153,19 +158,23 @@
     <div class="ds-zone ds-zone--analyze">
       <div class="ds-zone-label">Analyze Path</div>
       <div id="wiz-drop-zone" style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:flex-start;">
+        <label for="wiz-root" class="sr-only">Root path</label>
         <input type="text" class="form-input" id="wiz-root" placeholder="root_path">
         <button class="btn btn-secondary" id="wiz-browse-btn" title="Select folder via native dialog">browse</button>
+        <label for="wiz-folder-picker" class="sr-only">Folder picker</label>
         <input type="file" id="wiz-folder-picker" webkitdirectory style="display:none;">
         <div class="filter-bag filter-bag--include">
           <div class="filter-bag__header">
             <span class="filter-bag__label"><span class="filter-bag__label-icon">+</span> include</span>
           </div>
+          <label for="wiz-include" class="sr-only">Include pattern</label>
           <input type="text" class="form-input" id="wiz-include" placeholder="e.g. **/*, *.py">
         </div>
         <div class="filter-bag filter-bag--exclude">
           <div class="filter-bag__header">
             <span class="filter-bag__label"><span class="filter-bag__label-icon">&minus;</span> exclude</span>
           </div>
+          <label for="wiz-exclude" class="sr-only">Exclude pattern</label>
           <input type="text" class="form-input" id="wiz-exclude" placeholder="e.g. tests/, node_modules">
         </div>
         <button class="btn btn-success" id="wiz-analyze-btn" title="Scan directory and auto-select best chunking params">auto-tune</button>
@@ -214,19 +223,20 @@
       <div class="ds-zone ds-zone--create">
         <div class="ds-zone-label">Create &amp; Ingest Corpus</div>
         <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;">
+          <label for="wiz-name" class="sr-only">Corpus name</label>
           <input type="text" class="form-input" id="wiz-name" placeholder="corpus name">
-          <span class="help-text">strategy:</span>
+          <label for="wiz-strategy" class="help-text">strategy:</label>
           <select class="form-select" id="wiz-strategy">
             <option value="windowed">windowed</option>
             <option value="file">file</option>
             <option value="line">line</option>
           </select>
-          <span class="help-text">max files:</span>
+          <label for="wiz-max-files" class="help-text">max files:</label>
           <input type="number" class="form-input" id="wiz-max-files" value="10000" min="100" max="1000000" step="1000">
-          <span class="help-text" id="wiz-bs-label">block_size:</span>
+          <label class="help-text" for="wiz-block-size">block_size:</label>
           <input type="range" id="wiz-block-size" min="8" max="1024" value="64" step="8" style="accent-color:var(--primary);vertical-align:middle;">
           <span id="wiz-bs-value" class="type-caption-1" style="color:var(--accent-cyan);min-width:35px;">64</span>
-          <span class="help-text" id="wiz-ov-label">overlap:</span>
+          <label class="help-text" for="wiz-overlap">overlap:</label>
           <input type="range" id="wiz-overlap" min="0" max="50" value="25" style="accent-color:var(--primary);vertical-align:middle;">
           <span id="wiz-ov-value" class="type-caption-1" style="color:var(--accent-cyan);min-width:30px;">25%</span>
           <button class="btn btn-primary" id="wiz-create-btn">create &amp; ingest</button>
@@ -251,17 +261,17 @@
       <div class="ds-section-label">Import as Dataset <span class="tooltip-trigger"><span class="tooltip-icon">i</span><span class="tooltip-content">Create a new dataset from a corpus with custom chunking parameters — different from the corpus's original settings.</span></span></div>
       <div id="corpus-to-dataset" style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:flex-end;">
         <div style="display:flex;flex-direction:column;gap:var(--space-1);">
-          <span class="label-text">Source Corpus</span>
+          <label class="label-text" for="cd-corpus-select">Source Corpus</label>
           <select class="form-select" id="cd-corpus-select">
             <option value="">Select a corpus...</option>
           </select>
         </div>
         <div style="display:flex;flex-direction:column;gap:var(--space-1);">
-          <span class="label-text">Name</span>
+          <label class="label-text" for="cd-name">Name</label>
           <input type="text" class="form-input type-caption-1" id="cd-name" placeholder="dataset name">
         </div>
         <div style="display:flex;flex-direction:column;gap:var(--space-1);">
-          <span class="label-text">Strategy</span>
+          <label class="label-text" for="cd-strategy">Strategy</label>
           <select class="form-select" id="cd-strategy">
             <option value="windowed">windowed</option>
             <option value="file">file</option>
@@ -269,12 +279,12 @@
           </select>
         </div>
         <div style="display:flex;flex-direction:column;gap:var(--space-1);">
-          <span class="label-text" id="cd-bs-label">Block Size</span>
+          <label class="label-text" for="cd-block-size">Block Size</label>
           <input type="range" id="cd-block-size" min="8" max="1024" value="64" step="8" style="accent-color:var(--primary);vertical-align:middle;">
           <span id="cd-bs-value" class="type-caption-1" style="color:var(--accent-cyan);min-width:35px;text-align:center;">64</span>
         </div>
         <div style="display:flex;flex-direction:column;gap:var(--space-1);">
-          <span class="label-text" id="cd-ov-label">Overlap</span>
+          <label class="label-text" for="cd-overlap">Overlap</label>
           <input type="range" id="cd-overlap" min="0" max="50" value="25" style="accent-color:var(--primary);vertical-align:middle;">
           <span id="cd-ov-value" class="type-caption-1" style="color:var(--accent-cyan);min-width:30px;text-align:center;">25%</span>
         </div>
@@ -307,14 +317,14 @@
     <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:flex-end;">
 
       <div style="display:flex;flex-direction:column;gap:var(--space-1);">
-        <span class="label-text">Source Corpus</span>
+        <label class="label-text" for="import-corpus-select">Source Corpus</label>
         <select class="form-select" id="import-corpus-select">
           <option value="">Select a corpus...</option>
         </select>
       </div>
 
       <div style="display:flex;flex-direction:column;gap:var(--space-1);">
-        <span class="label-text">Target Dataset</span>
+        <label class="label-text" for="import-dataset-select">Target Dataset</label>
         <select class="form-select" id="import-dataset-select">
           <option value="">Select a dataset...</option>
         </select>

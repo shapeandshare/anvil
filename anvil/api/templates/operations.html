@@ -66,7 +66,7 @@
 </div>
 
 <div class="section-card" style="--stagger-i: 3">
-  <div class="section-card__header section-card__header--clickable" id="logs-header" role="button" tabindex="0" aria-expanded="false" aria-controls="logs-body">
+  <div class="section-card__header section-card__header--clickable" id="logs-header" role="button" tabindex="0" aria-expanded="false" aria-controls="logs-body" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleLogs()}">
     <span class="section-card__icon">&#128196;</span>
     <h2 class="section-card__title">Service Logs — tail -f</h2>
     <span class="output-toggle-icon collapsed" id="logs-toggle-icon">▼</span>

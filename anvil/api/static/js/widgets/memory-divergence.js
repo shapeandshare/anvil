@@ -497,7 +497,7 @@
     var fillColor = this._diverged ? 'rgba(255,59,48,0.08)' : 'rgba(0,122,255,0.08)';
 
     var fillPoints = points.slice();
-    var lastX = pad.l + (maxX / maxX) * pw;
+    var lastX = pad.l + pw;
     var bottomY = pad.t + ph;
     fillPoints.push(lastX.toFixed(1) + ',' + bottomY.toFixed(1));
     fillPoints.push(pad.l + ',' + bottomY.toFixed(1));

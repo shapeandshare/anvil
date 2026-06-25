@@ -347,7 +347,6 @@
     var spawnTimer = null;
     var rainbowTimer = null;
     var cloudTimer = null;
-    var burstTimers = [];
     var hue = 0;
     var burstTimer = null;
     var magic = 0.3;
@@ -739,8 +738,6 @@
     /* ── Teardown ── */
     return function teardown() {
       if (burstTimer) clearTimeout(burstTimer);
-      burstTimers.forEach(function (t) { clearTimeout(t); });
-      burstTimers = [];
 
       stopSpawnTimers();
       stopAnimation();
