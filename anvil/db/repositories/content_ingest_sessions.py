@@ -173,9 +173,7 @@ class ContentIngestSessionRepository:
         """
         result = await self._session.execute(
             select(IngestSession)
-            .where(
-                IngestSession.status.notin_(["ACCEPTED", "FAILED"])
-            )
+            .where(IngestSession.status.notin_(["ACCEPTED", "FAILED"]))
             .order_by(IngestSession.created_at.desc())
         )
         return result.scalars().all()

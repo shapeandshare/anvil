@@ -99,8 +99,6 @@ class ContentBlobRepository:
             Number of blob rows deleted.
         """
         result = await self._session.execute(
-            delete(ContentBlob).where(
-                ContentBlob.content_hash.notin_(keep_hashes)
-            )
+            delete(ContentBlob).where(ContentBlob.content_hash.notin_(keep_hashes))
         )
         return result.rowcount  # type: ignore[attr-defined, no-any-return]
