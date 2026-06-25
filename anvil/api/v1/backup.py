@@ -12,7 +12,8 @@ the route layer via the session-bound ``workbench.audit`` (research R11).
 
 import asyncio
 import json
-from typing import Annotated
+from collections.abc import AsyncGenerator
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -30,7 +31,7 @@ router = APIRouter()
 async def create_backup(
     request: Request,
     wb: Annotated[AnvilWorkbench, Depends(get_workbench)],
-) -> dict:
+) -> dict[str, Any]:
     """Initiate a full deployment backup.
 
     Returns 202 with the new backup id.  The caller observes progress
@@ -53,7 +54,7 @@ async def create_backup(
             outcome=AuditOutcome.SUCCESS.value,
             params={"backup_id": result.backup_id},
         )
-    except Exception:
+    except (RuntimeError, ValueError):
         pass
 
     # Audit: one backup_delete per rotated id.
@@ -67,7 +68,7 @@ async def create_backup(
                 outcome=AuditOutcome.SUCCESS.value,
                 params={"reason": "auto-rotation", "triggered_by": result.backup_id},
             )
-        except Exception:
+        except (RuntimeError, ValueError):
             pass
 
     return {"backup_id": result.backup_id, "status": "creating"}
@@ -77,7 +78,7 @@ async def create_backup(
 async def list_backups(
     request: Request,
     wb: Annotated[AnvilWorkbench, Depends(get_workbench)],
-) -> list:
+) -> list[dict[str, Any]]:
     """Return all backup operations as a list of summaries."""
     svc = request.app.state.backup_service
     summaries = await svc.list_backups(repo=wb.backup_repo)
@@ -88,11 +89,11 @@ async def list_backups(
 async def backup_status(
     request: Request,
     wb: Annotated[AnvilWorkbench, Depends(get_workbench)],
-) -> dict:
+) -> dict[str, Any]:
     """Return backup storage status for the Operations page."""
     svc = request.app.state.backup_service
     status = await svc.storage_status(repo=wb.backup_repo)
-    return status.model_dump(mode="json")
+    return status.model_dump(mode="json")  # type: ignore[no-any-return]
 
 
 @router.get("/backup/stream/{operation_id}")
@@ -109,7 +110,7 @@ async def stream_backup_progress(
 
     if queue is None:
 
-        async def _done():
+        async def _done() -> AsyncGenerator[str, None]:
             yield "event: error\ndata: " + json.dumps(
                 {"message": "Operation not found or already completed"}
             ) + "\n\n"
@@ -120,7 +121,7 @@ async def stream_backup_progress(
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )
 
-    async def event_stream():
+    async def event_stream() -> AsyncGenerator[str, None]:
         while True:
             try:
                 msg = await asyncio.wait_for(queue.get(), timeout=30)
@@ -142,13 +143,13 @@ async def get_backup(
     backup_id: str,
     request: Request,
     wb: Annotated[AnvilWorkbench, Depends(get_workbench)],
-) -> dict:
+) -> dict[str, Any] | JSONResponse:
     """Return a single backup summary."""
     svc = request.app.state.backup_service
     summary = await svc.get_backup(repo=wb.backup_repo, backup_id=backup_id)
     if summary is None:
         return JSONResponse(status_code=404, content={"detail": "Backup not found"})
-    return summary.model_dump(mode="json")
+    return summary.model_dump(mode="json")  # type: ignore[no-any-return]
 
 
 @router.post("/backup/{backup_id}/verify")
@@ -156,11 +157,11 @@ async def verify_backup(
     backup_id: str,
     request: Request,
     wb: Annotated[AnvilWorkbench, Depends(get_workbench)],
-) -> dict:
+) -> dict[str, Any]:
     """Verify integrity of a backup archive (FR-025)."""
     svc = request.app.state.backup_service
     result = await svc.verify(backup_id, repo=wb.backup_repo)
-    return result.model_dump(mode="json")
+    return result.model_dump(mode="json")  # type: ignore[no-any-return]
 
 
 @router.post("/backup/{backup_id}/restore", status_code=202)
@@ -168,7 +169,7 @@ async def restore_backup(
     backup_id: str,
     request: Request,
     wb: Annotated[AnvilWorkbench, Depends(get_workbench)],
-) -> dict:
+) -> dict[str, Any] | JSONResponse:
     """Restore a deployment from a backup."""
     body = await request.json()
     confirm = body.get("confirm", "")
@@ -196,7 +197,7 @@ async def restore_backup(
             outcome=AuditOutcome.SUCCESS.value,
             params={"safety_snapshot_id": result.get("safety_snapshot_id")},
         )
-    except Exception:
+    except (RuntimeError, ValueError):
         pass
 
     return dict(result)
@@ -207,7 +208,7 @@ async def delete_backup(
     backup_id: str,
     request: Request,
     wb: Annotated[AnvilWorkbench, Depends(get_workbench)],
-) -> dict:
+) -> dict[str, Any] | JSONResponse:
     """Delete a backup archive and its DB record."""
     svc = request.app.state.backup_service
     try:
@@ -225,7 +226,7 @@ async def delete_backup(
             actor="system",
             outcome=AuditOutcome.SUCCESS.value,
         )
-    except Exception:
+    except (RuntimeError, ValueError):
         pass
 
     return {"deleted": backup_id}

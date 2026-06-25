@@ -16,7 +16,7 @@ import signal
 import subprocess
 import time
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import psutil
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -44,7 +44,7 @@ _bootstrap_in_progress: bool = False
 @router.post("/demo/bootstrap")
 async def rebootstrap_demo(
     workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
-) -> dict:
+) -> dict[str, Any]:
     """Re-bootstrap all demo data into the database.
 
     Idempotent — existing entities are skipped, not duplicated.
@@ -62,7 +62,7 @@ async def rebootstrap_demo(
         BootstrapResult fields (corpora_created, datasets_created,
         corpora_skipped, datasets_skipped, errors, total_time_ms).
     """
-    global _bootstrap_in_progress
+    global _bootstrap_in_progress  # pylint: disable=global-statement
     if _bootstrap_in_progress:
         raise HTTPException(
             status_code=409,
@@ -78,7 +78,7 @@ async def rebootstrap_demo(
 
 
 @router.get("/health")
-async def health():
+async def health() -> dict[str, Any]:
     """Return a bare liveness health check.
 
     This endpoint is auth-exempt (for Docker compose healthcheck).
@@ -95,7 +95,7 @@ async def health():
 
 
 @router.get("/health/detailed")
-async def health_detailed():
+async def health_detailed() -> dict[str, Any]:
     """Return detailed system health metrics.
 
     Provides version, uptime, CPU, memory, disk, GPU, database
@@ -124,7 +124,7 @@ async def health_detailed():
         db_schema_version = await svc.get_schema_version()
         db_migration = (await svc.current()) or "unknown"
         db_status = "connected"
-    except Exception as exc:
+    except (RuntimeError, ValueError, OSError) as exc:
         db_status = "error"
         db_error = str(exc)
 
@@ -139,7 +139,7 @@ async def health_detailed():
         )
         sock.close()
         mlflow_status = "reachable"
-    except Exception as exc:
+    except OSError as exc:
         mlflow_status = "unreachable"
         mlflow_error = str(exc)
 
@@ -186,7 +186,7 @@ async def health_detailed():
 
 
 @router.get("/services")
-async def list_services(request: Request):
+async def list_services(request: Request) -> dict[str, Any]:
     """List available services and their status.
 
     Parameters
@@ -254,7 +254,7 @@ def _validate_service_name(name: str) -> str:
 
 
 @router.get("/services/logs/{name}")
-async def get_service_logs(name: str, lines: int = 50):
+async def get_service_logs(name: str, lines: int = 50) -> dict[str, Any]:
     """Retrieve the last N lines of a service log file.
 
     Parameters
@@ -278,7 +278,7 @@ async def get_service_logs(name: str, lines: int = 50):
 
 
 @router.post("/services/restart-all")
-async def restart_all_services(request: Request):
+async def restart_all_services(request: Request) -> dict[str, Any]:
     """Restart all managed services (MLflow).
 
     Parameters
@@ -305,7 +305,7 @@ async def restart_all_services(request: Request):
 
 
 @router.post("/services/logs/{name}/clear")
-async def clear_service_logs(name: str):
+async def clear_service_logs(name: str) -> dict[str, Any]:
     """Clear a service's log file by truncating it.
 
     Parameters
@@ -327,7 +327,7 @@ async def clear_service_logs(name: str):
 
 
 @router.post("/services/{name}/start")
-async def start_service(name: str, request: Request):
+async def start_service(name: str, request: Request) -> dict[str, Any]:
     """Start a named service.
 
     Parameters
@@ -357,7 +357,7 @@ async def start_service(name: str, request: Request):
 
 
 @router.post("/services/{name}/stop")
-async def stop_service(name: str, request: Request):
+async def stop_service(name: str, request: Request) -> dict[str, Any]:
     """Stop a named service.
 
     Parameters
@@ -383,7 +383,7 @@ async def stop_service(name: str, request: Request):
 
 
 @router.post("/services/{name}/restart")
-async def restart_service(name: str, request: Request):
+async def restart_service(name: str, request: Request) -> dict[str, Any]:
     """Restart a named service.
 
     Parameters
@@ -431,6 +431,7 @@ def _poll_port(port: int, timeout: float = 2.0) -> list[int]:
             capture_output=True,
             text=True,
             timeout=5,
+            check=False,
         )
         if result.returncode == 0 and result.stdout.strip():
             return [int(pid) for pid in result.stdout.strip().split()]
@@ -439,7 +440,7 @@ def _poll_port(port: int, timeout: float = 2.0) -> list[int]:
 
 
 @router.post("/services/{name}/kill-port")
-async def kill_service_port(name: str, request: Request):
+async def kill_service_port(name: str, _request: Request) -> dict[str, Any]:
     """Kill any process occupying a service's port.
 
     Parameters
@@ -475,7 +476,7 @@ async def kill_service_port(name: str, request: Request):
 
 
 @router.get("/csrf-token")
-async def get_csrf_token(request: Request):
+async def get_csrf_token(request: Request) -> dict[str, Any]:
     """Return a CSRF token for the current session.
 
     Reads the session cookie and generates an HMAC-SHA256 CSRF token

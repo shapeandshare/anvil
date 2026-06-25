@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -26,6 +27,7 @@ from ...api.v1.schemas import (
     ForkCorpusBody,
     ResolvePathBody,
 )
+from ...services.datasets.chunking_strategy import ChunkingStrategy
 from ...services.tracking.tracking import TrackingService
 from ...workbench import AnvilWorkbench
 
@@ -51,7 +53,7 @@ tracking_svc = TrackingService()
 async def create_corpus(
     body: CreateCorpusBody,
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """Create a new corpus from a directory path.
 
     Accepts corpus configuration (name, root path, include/exclude patterns,
@@ -91,7 +93,11 @@ async def create_corpus(
             description=body.description,
             include_patterns=inc,
             exclude_patterns=exc,
-            chunking_strategy=body.chunking_strategy,
+            chunking_strategy=(
+                ChunkingStrategy(body.chunking_strategy)
+                if body.chunking_strategy
+                else ChunkingStrategy.WINDOWED
+            ),
             chunk_overlap=body.chunk_overlap,
             block_size=body.block_size,
         )
@@ -137,12 +143,12 @@ async def create_corpus(
     return {"data": _corpus_to_dict(corpus), "error": None}
 
 
-@router.post("/corpora/{id}/fork")
+@router.post("/corpora/{corpus_id}/fork")
 async def fork_corpus(
-    id: int,
+    corpus_id: int,
     body: ForkCorpusBody,
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """Create a new corpus variant from an existing one.
 
     Copies the source corpus's parameters and applies any overrides
@@ -178,12 +184,16 @@ async def fork_corpus(
         if exc:
             exc = [p.strip() for p in exc]
         corpus = await workbench.corpora.fork(
-            source_id=id,
+            source_id=corpus_id,
             name=name,
             description=body.description,
             include_patterns=inc,
             exclude_patterns=exc,
-            chunking_strategy=body.chunking_strategy,
+            chunking_strategy=(
+                ChunkingStrategy(body.chunking_strategy)
+                if body.chunking_strategy
+                else None
+            ),
             chunk_overlap=body.chunk_overlap,
             block_size=body.block_size,
         )
@@ -225,7 +235,9 @@ async def fork_corpus(
 
 
 @router.get("/corpora")
-async def list_corpora(workbench: AnvilWorkbench = Depends(get_workbench)):
+async def list_corpora(
+    workbench: AnvilWorkbench = Depends(get_workbench),
+) -> dict[str, Any]:
     """List all corpora.
 
     Parameters
@@ -238,15 +250,17 @@ async def list_corpora(workbench: AnvilWorkbench = Depends(get_workbench)):
     dict
         List of corpus dicts and ``"error": None``.
     """
-    corpora = await workbench.corpora.list()
+    corpora = await workbench.corpora.list_all()
     return {
         "data": [_corpus_to_dict(c) for c in corpora],
         "error": None,
     }
 
 
-@router.get("/corpora/{id}")
-async def get_corpus(id: int, workbench: AnvilWorkbench = Depends(get_workbench)):
+@router.get("/corpora/{corpus_id}")
+async def get_corpus(
+    corpus_id: int, workbench: AnvilWorkbench = Depends(get_workbench)
+) -> dict[str, Any]:
     """Get a single corpus by ID.
 
     Parameters
@@ -267,7 +281,7 @@ async def get_corpus(id: int, workbench: AnvilWorkbench = Depends(get_workbench)
     HTTPException
         If the corpus is not found (404).
     """
-    corpus = await workbench.corpora.get(id)
+    corpus = await workbench.corpora.get(corpus_id)
     if corpus is None:
         raise HTTPException(status_code=404, detail="Corpus not found")
     lang_map = None
@@ -286,8 +300,10 @@ async def get_corpus(id: int, workbench: AnvilWorkbench = Depends(get_workbench)
     return {"data": d, "error": None}
 
 
-@router.delete("/corpora/{id}")
-async def delete_corpus(id: int, workbench: AnvilWorkbench = Depends(get_workbench)):
+@router.delete("/corpora/{corpus_id}")
+async def delete_corpus(
+    corpus_id: int, workbench: AnvilWorkbench = Depends(get_workbench)
+) -> dict[str, Any]:
     """Delete a corpus by ID.
 
     Also logs a lifecycle event via ``TrackingService``.
@@ -309,7 +325,7 @@ async def delete_corpus(id: int, workbench: AnvilWorkbench = Depends(get_workben
     HTTPException
         If the corpus is not found (404).
     """
-    deleted = await workbench.corpora.delete(id)
+    deleted = await workbench.corpora.delete(corpus_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Corpus not found")
     # Phase 1B: lifecycle tracking for delete
@@ -317,20 +333,20 @@ async def delete_corpus(id: int, workbench: AnvilWorkbench = Depends(get_workben
     if not tracking_svc_del.is_degraded:
         try:
             await tracking_svc_del.log_corpus_lifecycle_event(
-                corpus_id=id,
+                corpus_id=corpus_id,
                 event_type="delete",
             )
-        except Exception:
+        except (ValueError, OSError):
             pass
     return {"data": {"status": "deleted"}, "error": None}
 
 
-@router.post("/corpora/{id}/ingest")
+@router.post("/corpora/{corpus_id}/ingest")
 async def ingest_corpus(
-    id: int,
+    corpus_id: int,
     max_files: int = 10000,
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """Ingest files from a corpus directory into documents.
 
     Scans the corpus root path, reads matching files, and creates chunked
@@ -357,7 +373,7 @@ async def ingest_corpus(
         If the corpus is not found or the path is invalid (422).
     """
     try:
-        corpus, errors = await workbench.corpora.ingest(id, max_files)
+        corpus, errors = await workbench.corpora.ingest(corpus_id, max_files)
     except (ValueError, NotADirectoryError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -411,12 +427,12 @@ async def ingest_corpus(
     }
 
 
-@router.get("/corpora/{id}/files")
+@router.get("/corpora/{corpus_id}/files")
 async def list_corpus_files(
-    id: int,
+    corpus_id: int,
     language: str | None = None,
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """List files belonging to a corpus, optionally filtered by language.
 
     Parameters
@@ -433,7 +449,7 @@ async def list_corpus_files(
     dict
         List of file metadata dicts and ``"error": None``.
     """
-    files = await workbench.corpora.get_files(id, language)
+    files = await workbench.corpora.get_files(corpus_id, language)
     return {
         "data": [
             {
@@ -452,12 +468,12 @@ async def list_corpus_files(
     }
 
 
-@router.get("/corpora/{id}/files/{file_id}")
+@router.get("/corpora/{corpus_id}/files/{file_id}")
 async def get_corpus_file(
-    id: int,
+    corpus_id: int,
     file_id: int,
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """Get a single file from a corpus by file ID.
 
     Parameters
@@ -480,7 +496,7 @@ async def get_corpus_file(
         If the file is not found (404).
     """
     f = await workbench.corpora.get_file(file_id)
-    if f is None or f.corpus_id != id:
+    if f is None or f.corpus_id != corpus_id:
         raise HTTPException(status_code=404, detail="File not found")
     return {
         "data": {
@@ -499,7 +515,7 @@ async def get_corpus_file(
 
 
 @router.post("/corpora/resolve-path")
-async def resolve_path(body: ResolvePathBody):
+async def resolve_path(body: ResolvePathBody) -> dict[str, Any]:
     """Resolve a folder name to an absolute path by searching workspace roots.
 
     Iterates over ``WORKSPACE_ROOTS`` and returns the first match where
@@ -537,7 +553,7 @@ async def resolve_path(body: ResolvePathBody):
 
 
 @router.post("/corpora/analyze-path")
-async def analyze_path(body: AnalyzePathBody):
+async def analyze_path(body: AnalyzePathBody) -> dict[str, Any]:
     """Analyze a directory path and return file statistics and recommendations.
 
     Scans the given path using ``CorpusLoader`` and returns file counts,
@@ -596,7 +612,7 @@ async def analyze_path(body: AnalyzePathBody):
     }
 
 
-def _build_language_stats(scan) -> dict:
+def _build_language_stats(scan: Any) -> dict[str, Any]:
     """Build per-language statistics from a scan result.
 
     Parameters
@@ -624,7 +640,7 @@ def _build_language_stats(scan) -> dict:
     return stats
 
 
-def _build_recommendations(scan) -> list[dict]:
+def _build_recommendations(scan: Any) -> list[dict[str, Any]]:
     """Build chunking strategy recommendations from a scan result.
 
     Analyzes file type distribution (code vs. docs vs. data), average file
@@ -687,7 +703,7 @@ def _build_recommendations(scan) -> list[dict]:
     is_doc_heavy = doc_count > code_count and doc_avg > 5000
     is_data_oriented = data_count > code_count and data_count > doc_count
 
-    recs: list[dict] = []
+    recs: list[dict[str, Any]] = []
 
     is_mixed = sum(1 for c in [code_count > 100, doc_count > 100, data_count > 100]) > 1
 
@@ -770,7 +786,7 @@ def _build_recommendations(scan) -> list[dict]:
     return recs
 
 
-def _corpus_to_dict(corpus) -> dict:
+def _corpus_to_dict(corpus: Any) -> dict[str, Any]:
     """Serialize a corpus ORM object to a plain dict.
 
     Parameters

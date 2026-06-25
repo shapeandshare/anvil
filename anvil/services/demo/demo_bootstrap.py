@@ -25,6 +25,7 @@ import json
 import time
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -58,7 +59,7 @@ DEFAULT_CORPUS_NAME = "Demo - medium/alice"
 
 # Chunking configuration per directory — determines how files are split into
 # training documents during corpus ingestion.
-_CORPUS_CONFIG: dict[str, dict] = {
+_CORPUS_CONFIG: dict[str, dict[str, Any]] = {
     "small/names": {
         "strategy": ChunkingStrategy.FILE,
         "block_size": 16,
@@ -122,7 +123,7 @@ class DemoBootstrapService:
             ref = _resources.files("anvil").joinpath("data", "demo", "provenance.json")
             text = ref.read_text(encoding="utf-8")
             self._provenance_manifest = json.loads(text)
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             self._provenance_manifest = {}
 
     def _get_provenance_for(self, item: Path) -> dict[str, str] | None:
@@ -297,7 +298,7 @@ class DemoBootstrapService:
             # Assign provenance.
             await self._assign_provenance(corpus, prov)
             return True
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=broad-exception-caught
             result.errors.append(f"Failed to create corpus '{name}': {exc}")
             return False
 
@@ -347,7 +348,7 @@ class DemoBootstrapService:
             # Assign provenance.
             await self._assign_provenance(dataset, prov)
             return True
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=broad-exception-caught
             result.errors.append(f"Failed to create dataset '{name}': {exc}")
             return False
 

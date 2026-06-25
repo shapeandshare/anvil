@@ -26,7 +26,7 @@ from .result import ComputeResult
 from .training_engine import TrainingEngine
 
 
-def _load_weights_into_model(model: LlamaModel, weights: dict) -> None:
+def _load_weights_into_model(model: LlamaModel, weights: dict[str, Any]) -> None:
     """Load exported weight lists into a CPU LlamaModel.
 
     Handles both 2D matrices (attention, SwiGLU, embeddings) and
@@ -45,15 +45,16 @@ def _load_weights_into_model(model: LlamaModel, weights: dict) -> None:
     """
     for k, data in weights.items():
         mat = model.state_dict[k]
-        if isinstance(mat[0], list):
+        assert isinstance(mat, list), f"Expected a list, got {type(mat)}"
+        if mat and isinstance(mat[0], list):
             # 2D matrix
             for i, row in enumerate(data):
                 for j, val in enumerate(row):
-                    mat[i][j].data = val
+                    mat[i][j].data = val  # type: ignore[index]
         else:
             # 1D vector (RMSNorm scales)
             for i, val in enumerate(data):
-                mat[i].data = val
+                mat[i].data = val  # type: ignore[union-attr]
 
 
 class LocalStdlibBackend:
@@ -175,4 +176,4 @@ def _local_factory() -> LocalStdlibBackend:
     return LocalStdlibBackend()
 
 
-register(RegistryBackend.LOCAL_STDLIB, _local_factory)
+register(RegistryBackend.LOCAL_STDLIB, _local_factory)  # type: ignore[arg-type]

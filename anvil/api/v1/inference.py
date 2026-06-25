@@ -13,6 +13,8 @@ from the registry (not hardcoded values).
 
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -162,7 +164,7 @@ router = APIRouter()
 _svc = InferenceService()
 
 
-def _call_or_400(svc_method, *args):
+def _call_or_400(svc_method: Any, *args: Any) -> Any:
     """Call an inference service method, converting ``KeyError`` to HTTP 400.
 
     Parameters
@@ -194,7 +196,7 @@ def _call_or_400(svc_method, *args):
 
 
 @router.post("/inference/tokenize")
-async def inference_tokenize(body: InferenceTokenizeBody):
+async def inference_tokenize(body: InferenceTokenizeBody) -> dict[str, Any]:
     """Tokenize input text using the loaded model's character vocabulary.
 
     Parameters
@@ -216,17 +218,17 @@ async def inference_tokenize(body: InferenceTokenizeBody):
         If ``text`` is empty (400) or the model is not found (404).
     """
     text = body.text
-    if not isinstance(text, str) or not text:
+    if not text:
         raise HTTPException(status_code=400, detail="text must be a non-empty string")
     try:
         loaded = await _svc.load_model(body.model_id, body.version)
     except (ValueError, FileNotFoundError) as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
-    return _call_or_400(_svc.tokenize, text, loaded)
+    return _call_or_400(_svc.tokenize, text, loaded)  # type: ignore[no-any-return]
 
 
 @router.post("/inference/embeddings")
-async def inference_embeddings(body: InferenceEmbeddingsBody):
+async def inference_embeddings(body: InferenceEmbeddingsBody) -> dict[str, Any]:
     """Extract token embeddings for the input text.
 
     Parameters
@@ -248,17 +250,17 @@ async def inference_embeddings(body: InferenceEmbeddingsBody):
         If ``text`` is empty (400) or the model is not found (404).
     """
     text = body.text
-    if not isinstance(text, str) or not text:
+    if not text:
         raise HTTPException(status_code=400, detail="text must be a non-empty string")
     try:
         loaded = await _svc.load_model(body.model_id, body.version)
     except (ValueError, FileNotFoundError) as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
-    return _call_or_400(_svc.embeddings, text, loaded)
+    return _call_or_400(_svc.embeddings, text, loaded)  # type: ignore[no-any-return]
 
 
 @router.post("/inference/attention")
-async def inference_attention(body: InferenceAttentionBody):
+async def inference_attention(body: InferenceAttentionBody) -> dict[str, Any]:
     """Compute attention weights for the input text.
 
     Parameters
@@ -280,17 +282,19 @@ async def inference_attention(body: InferenceAttentionBody):
         If ``text`` is empty (400) or the model is not found (404).
     """
     text = body.text
-    if not isinstance(text, str) or not text:
+    if not text:
         raise HTTPException(status_code=400, detail="text must be a non-empty string")
     try:
         loaded = await _svc.load_model(body.model_id, body.version)
     except (ValueError, FileNotFoundError) as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
-    return _call_or_400(_svc.attention, text, loaded)
+    return _call_or_400(_svc.attention, text, loaded)  # type: ignore[no-any-return]
 
 
 @router.post("/inference/sampling-distribution")
-async def inference_sampling_distribution(body: InferenceSamplingBody):
+async def inference_sampling_distribution(
+    body: InferenceSamplingBody,
+) -> dict[str, Any]:
     """Get the sampling probability distribution for a prompt.
 
     Parameters
@@ -319,7 +323,7 @@ async def inference_sampling_distribution(body: InferenceSamplingBody):
     if not isinstance(prompt, str):
         raise HTTPException(status_code=400, detail="prompt must be a string")
     temperature = body.temperature
-    if not isinstance(temperature, (int, float)) or temperature <= 0:
+    if temperature <= 0:
         raise HTTPException(status_code=400, detail="temperature must be positive")
     try:
         loaded = await _svc.load_model(body.model_id, body.version)
@@ -332,7 +336,7 @@ async def inference_sampling_distribution(body: InferenceSamplingBody):
 async def inference_forward_graph(
     model_id: int | None = Query(None),
     version: int | None = Query(None),
-):
+) -> dict[str, Any]:
     """Get the forward computation graph structure for the loaded model.
 
     Parameters
@@ -360,7 +364,7 @@ async def inference_forward_graph(
 
 
 @router.post("/inference/backward-graph")
-async def inference_backward_graph(body: InferenceBackwardBody):
+async def inference_backward_graph(body: InferenceBackwardBody) -> dict[str, Any]:
     """Get the backward (autograd) computation graph for the input text.
 
     Parameters
@@ -382,17 +386,17 @@ async def inference_backward_graph(body: InferenceBackwardBody):
         If ``text`` is empty (400) or the model is not found (404).
     """
     text = body.text
-    if not isinstance(text, str) or not text:
+    if not text:
         raise HTTPException(status_code=400, detail="text must be a non-empty string")
     try:
         loaded = await _svc.load_model(body.model_id, body.version)
     except (ValueError, FileNotFoundError) as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
-    return _call_or_400(_svc.backward_graph, text, loaded)
+    return _call_or_400(_svc.backward_graph, text, loaded)  # type: ignore[no-any-return]
 
 
 @router.post("/inference/autograd-example")
-async def inference_autograd_example(body: InferenceAutogradBody):
+async def inference_autograd_example(body: InferenceAutogradBody) -> dict[str, Any]:
     """Get an autograd computation graph example for the input text.
 
     Parameters
@@ -414,17 +418,17 @@ async def inference_autograd_example(body: InferenceAutogradBody):
         If ``text`` is empty (400) or the model is not found (404).
     """
     text = body.text
-    if not isinstance(text, str) or not text:
+    if not text:
         raise HTTPException(status_code=400, detail="text must be a non-empty string")
     try:
         loaded = await _svc.load_model(body.model_id, body.version)
     except (ValueError, FileNotFoundError) as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
-    return _call_or_400(_svc.autograd_example_graph, text, loaded)
+    return _call_or_400(_svc.autograd_example_graph, text, loaded)  # type: ignore[no-any-return]
 
 
 @router.post("/inference/loss-breakdown")
-async def inference_loss_breakdown(body: InferenceLossBody):
+async def inference_loss_breakdown(body: InferenceLossBody) -> dict[str, Any]:
     """Get a per-token loss breakdown for the input text.
 
     Parameters
@@ -446,20 +450,20 @@ async def inference_loss_breakdown(body: InferenceLossBody):
         If ``text`` is empty (400) or the model is not found (404).
     """
     text = body.text
-    if not isinstance(text, str) or not text:
+    if not text:
         raise HTTPException(status_code=400, detail="text must be a non-empty string")
     try:
         loaded = await _svc.load_model(body.model_id, body.version)
     except (ValueError, FileNotFoundError) as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
-    return _call_or_400(_svc.loss_breakdown, text, loaded)
+    return _call_or_400(_svc.loss_breakdown, text, loaded)  # type: ignore[no-any-return]
 
 
 @router.get("/inference/model-params")
 async def inference_model_params(
     model_id: int | None = Query(None),
     version: int | None = Query(None),
-):
+) -> dict[str, Any]:
     """Get the loaded model's parameter list with shapes and values.
 
     Parameters

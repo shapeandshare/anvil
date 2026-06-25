@@ -10,6 +10,8 @@ metadata about ingested files, total chunk count, language distribution,
 and ingestion errors.
 """
 
+from typing import Any
+
 
 class CorpusLoadResult:
     """Result container for a corpus ingestion operation.
@@ -28,7 +30,7 @@ class CorpusLoadResult:
 
     def __init__(
         self,
-        files: list[dict],
+        files: list[dict[str, Any]],
         total_docs: int,
         language_map: dict[str, int],
         errors: list[str],

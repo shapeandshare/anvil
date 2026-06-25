@@ -11,6 +11,7 @@ experiments, datasets, inference, operations, learning). Extracted from
 """
 
 from collections.abc import Sequence
+from typing import Any
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
@@ -24,7 +25,7 @@ router = APIRouter()
 
 
 @router.get("/training-page", response_class=HTMLResponse)
-async def training_page(request: Request):
+async def training_page(request: Request) -> HTMLResponse:
     """Render the training configuration and control page.
 
     Parameters
@@ -37,7 +38,7 @@ async def training_page(request: Request):
     HTMLResponse
         Rendered ``archetypes/training.html`` template.
     """
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "archetypes/training.html",
         {
@@ -49,7 +50,7 @@ async def training_page(request: Request):
 
 
 @router.get("/experiments-page", response_class=HTMLResponse)
-async def experiments_page(request: Request):
+async def experiments_page(request: Request) -> HTMLResponse:
     """Render the experiment history and comparison page.
 
     Parameters
@@ -62,7 +63,7 @@ async def experiments_page(request: Request):
     HTMLResponse
         Rendered ``archetypes/experiment.html`` template.
     """
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "archetypes/experiment.html",
         {
@@ -74,7 +75,7 @@ async def experiments_page(request: Request):
 
 
 @router.get("/learn/graph", response_class=HTMLResponse)
-async def graph_concept_page(request: Request):
+async def graph_concept_page(request: Request) -> HTMLResponse:
     """Render the interactive forward pass computation graph page.
 
     Parameters
@@ -87,7 +88,7 @@ async def graph_concept_page(request: Request):
     HTMLResponse
         Rendered ``archetypes/graph.html`` template with arc context.
     """
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "archetypes/graph.html",
         _arc_context("graph"),
@@ -98,7 +99,7 @@ async def graph_concept_page(request: Request):
 async def datasets_page(
     request: Request,
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> HTMLResponse:
     """Render the dataset management page.
 
     Parameters
@@ -116,7 +117,7 @@ async def datasets_page(
     licenses = await workbench.governance.list_licenses(
         include_own_content=False,
     )
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "datasets.html",
         {
@@ -129,7 +130,7 @@ async def datasets_page(
 
 
 @router.get("/operations-page", response_class=HTMLResponse)
-async def operations_page(request: Request):
+async def operations_page(request: Request) -> HTMLResponse:
     """Render the service operations and management page.
 
     Parameters
@@ -142,7 +143,7 @@ async def operations_page(request: Request):
     HTMLResponse
         Rendered ``operations.html`` template.
     """
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "operations.html",
         {
@@ -154,7 +155,7 @@ async def operations_page(request: Request):
 
 
 @router.get("/inference-page", response_class=HTMLResponse)
-async def inference_page(request: Request):
+async def inference_page(request: Request) -> HTMLResponse:
     """Render the model inference/sampling playground page.
 
     Parameters
@@ -167,7 +168,7 @@ async def inference_page(request: Request):
     HTMLResponse
         Rendered ``archetypes/playground.html`` template.
     """
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "archetypes/playground.html",
         {
@@ -178,7 +179,7 @@ async def inference_page(request: Request):
     )
 
 
-def _arc_context(key: str) -> dict:
+def _arc_context(key: str) -> dict[str, Any]:
     """Look up the learning arc context dictionary for a given key.
 
     Delegates to :func:`anvil.api.v1.learning._arc_context` to avoid
@@ -202,7 +203,7 @@ def _arc_context(key: str) -> dict:
 
 
 @router.get("/content-page", response_class=HTMLResponse)
-async def content_page(request: Request):
+async def content_page(request: Request) -> HTMLResponse:
     """Render the content library management page.
 
     Parameters
@@ -215,7 +216,7 @@ async def content_page(request: Request):
     HTMLResponse
         Rendered ``archetypes/content_library.html`` template.
     """
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "archetypes/content_library.html",
         {
@@ -230,7 +231,7 @@ async def content_page(request: Request):
 async def about_page(
     request: Request,
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> HTMLResponse:
     """Render the about page with governance info, licenses, and project overview.
 
     Parameters
@@ -248,7 +249,7 @@ async def about_page(
     licenses: Sequence[LicenseEntry] = await workbench.governance.list_licenses(
         include_own_content=False,
     )
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "about.html",
         {"licenses": licenses},

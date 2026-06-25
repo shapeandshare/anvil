@@ -11,7 +11,7 @@ import json
 import logging
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -64,7 +64,7 @@ class AdvisoryService:
         self._blob_repo = blob_repo
         self._db_session = db_session
 
-    async def detect_near_duplicates(self, version_id: int) -> list[dict]:
+    async def detect_near_duplicates(self, version_id: int) -> list[dict[str, Any]]:
         """Detect near-duplicate entries across versions in the same corpus.
 
         Compares each entry's ``content_hash`` against entries from other
@@ -135,7 +135,7 @@ class AdvisoryService:
                     dup_entry.version_id,
                 )
 
-        duplicates: list[dict] = []
+        duplicates: list[dict[str, Any]] = []
         for entry in entries:
             match = dup_lookup.get(entry.content_hash)
             if match is not None:

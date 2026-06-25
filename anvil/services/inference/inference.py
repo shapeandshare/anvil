@@ -8,6 +8,8 @@
 Follows layer discipline: services consume repositories, routes call services.
 """
 
+# pylint: disable=protected-access
+
 from __future__ import annotations
 
 import asyncio
@@ -200,6 +202,8 @@ class InferenceService:
                         all_versions, key=lambda v: int(v.version), reverse=True
                     )
                     run_id = sorted_versions[0].run_id
+                    if run_id is None:
+                        raise ValueError("MLflow run_id is None")
                     local_dir = await loop.run_in_executor(
                         None,
                         lambda: client.download_artifacts(
@@ -215,7 +219,7 @@ class InferenceService:
                         return LoadedModel(
                             gpt_model, gpt_model.chars, model_id, version, model_name
                         )
-            except Exception:
+            except Exception:  # pylint: disable=broad-exception-caught
                 pass
 
         raise ValueError(f"Model not found: model_id={model_id}, version={version}")
@@ -244,18 +248,18 @@ class InferenceService:
         if models:
             for m in models:
                 if m.get("name") == "demo" and m.get("id") is not None:
-                    self._default_id = m["id"]
-                    return m["id"]
+                    mid = m["id"]
+                    assert isinstance(mid, int)
+                    self._default_id = mid
+                    return mid
             for m in models:
                 mid = m.get("id")
-                if mid is not None:
+                if isinstance(mid, int):
                     self._default_id = mid
                     return mid
 
         # Filesystem fallback: scan for any experiment_<N>.json artifact that
         # the warmup pipeline or seed script may have created.
-        from pathlib import Path
-
         models_dir = Path("data/models")
         fallback = models_dir / "experiment_1.json"
         if not fallback.exists() and models_dir.is_dir():
@@ -321,10 +325,11 @@ class InferenceService:
             ``"n_embd"``, and ``"projection"`` (2D coordinates).
         """
         ids = loaded.vocab.encode(text)
+        wte = loaded.model._get_matrix("wte")
         vectors = []
         labels = []
         for _i, tid in enumerate(ids):
-            row = [v.data for v in loaded.model.state_dict["wte"][tid]]
+            row = [v.data for v in wte[tid]]
             vectors.append(row)
             label = loaded.chars[tid] if tid != loaded.vocab.bos_id else "<BOS>"
             labels.append({"char": label, "id": tid})
@@ -420,8 +425,8 @@ class InferenceService:
         """
         ids = loaded.vocab.encode(prompt)
         n_layers = loaded.model.n_layer
-        keys: list[list] = [[] for _ in range(n_layers)]
-        values: list[list] = [[] for _ in range(n_layers)]
+        keys: list[list[list[Value]]] = [[] for _ in range(n_layers)]
+        values: list[list[list[Value]]] = [[] for _ in range(n_layers)]
         for pos_id, tid in enumerate(ids):
             loaded.model.forward(tid, pos_id, keys, values)
 
@@ -508,8 +513,8 @@ class InferenceService:
             depth), and ``"edges"`` (parent-child relationships).
         """
         n_layers = loaded.model.n_layer
-        keys: list[list] = [[] for _ in range(n_layers)]
-        values: list[list] = [[] for _ in range(n_layers)]
+        keys: list[list[list[Value]]] = [[] for _ in range(n_layers)]
+        values: list[list[list[Value]]] = [[] for _ in range(n_layers)]
         tid = loaded.vocab.bos_id
         logits = loaded.model.forward(tid, 0, keys, values)
 
@@ -528,8 +533,7 @@ class InferenceService:
                 if hasattr(child, "_local_grads") and child._local_grads:
                     lg = child._local_grads
                     if len(lg) == 1 and lg[0] != 1.0:
-                        if isinstance(lg[0], (int, float)) and lg[0] != 1.0:
-                            return "pow"
+                        return "pow"
                 return "silu"
             if n_children == 2:
                 parent_types = [type(c).__name__ for c in val._children[:2]]
@@ -545,7 +549,7 @@ class InferenceService:
             if v_id in visited:
                 for n in nodes:
                     if n["id"] == str(v_id):
-                        return n["id"]
+                        return str(n["id"])
                 return str(v_id)
             visited.add(v_id)
 
@@ -610,9 +614,10 @@ class InferenceService:
         ids = ids[: n + 1]
 
         # Forward pass over the sequence
-        keys: list[list] = [[] for _ in range(loaded.model.n_layer)]
-        values: list[list] = [[] for _ in range(loaded.model.n_layer)]
+        keys: list[list[list[Value]]] = [[] for _ in range(loaded.model.n_layer)]
+        values: list[list[list[Value]]] = [[] for _ in range(loaded.model.n_layer)]
         losses: list[Value] = []
+        logits: list[Value] | None = None
         for pos_id in range(n):
             token_id, target_id = ids[pos_id], ids[pos_id + 1]
             logits = loaded.model.forward(token_id, pos_id, keys, values)
@@ -624,9 +629,11 @@ class InferenceService:
         loss = (1.0 / n) * sum(losses)
 
         # Backward pass
+        assert isinstance(loss, Value)
         loss.backward()
 
         # Traverse graph from the last logit Value
+        assert logits is not None
         logit_val = logits[-1]
         nodes: list[dict[str, Any]] = []
         edges: list[dict[str, Any]] = []
@@ -641,8 +648,7 @@ class InferenceService:
                 if hasattr(child, "_local_grads") and child._local_grads:
                     lg = child._local_grads
                     if len(lg) == 1 and lg[0] != 1.0:
-                        if isinstance(lg[0], (int, float)) and lg[0] != 1.0:
-                            return "pow"
+                        return "pow"
                 return "silu"
             if n_children == 2:
                 parent_types = [type(c).__name__ for c in val._children[:2]]
@@ -658,7 +664,7 @@ class InferenceService:
             if v_id in visited:
                 for n in nodes:
                     if n["id"] == str(v_id):
-                        return n["id"]
+                        return str(n["id"])
                 return str(v_id)
             visited.add(v_id)
 
@@ -728,7 +734,8 @@ class InferenceService:
             (t for t in ids if t != loaded.vocab.bos_id),
             ids[0] if ids else loaded.vocab.bos_id,
         )
-        row = [v.data for v in loaded.model.state_dict["wte"][seed_id]]
+        wte = loaded.model._get_matrix("wte")
+        row = [v.data for v in wte[seed_id]]
 
         def _seed(i: int, fallback: float) -> float:
             return round(float(row[i]), 4) if i < len(row) else fallback
@@ -844,16 +851,14 @@ class InferenceService:
             ``"losses"`` (per-token loss values), ``"average_loss"``,
             ``"random_baseline"``, and ``"vocab_size"``.
         """
-        import math
-
         ids = loaded.vocab.encode(text)
         n = min(len(ids) - 1, loaded.model.block_size)
         ids = ids[: n + 1]
 
         from ...core.engine import softmax
 
-        keys: list[list] = [[] for _ in range(loaded.model.n_layer)]
-        values: list[list] = [[] for _ in range(loaded.model.n_layer)]
+        keys: list[list[list[Value]]] = [[] for _ in range(loaded.model.n_layer)]
+        values: list[list[list[Value]]] = [[] for _ in range(loaded.model.n_layer)]
         losses: list[float] = []
         for pos_id in range(n):
             token_id, target_id = ids[pos_id], ids[pos_id + 1]
@@ -903,15 +908,14 @@ class InferenceService:
         total_params = 0
 
         for name, mat in loaded.model.state_dict.items():
-            is_1d = not (mat and isinstance(mat[0], list))
-            if is_1d:
+            if mat and isinstance(mat[0], list):
+                rows = len(mat)
+                cols = len(mat[0]) if rows > 0 else 0
+                num_params = rows * cols
+            else:
                 rows = len(mat)
                 cols = 1
                 num_params = rows
-            else:
-                rows = len(mat)
-                cols = len(mat[0]) if mat and rows > 0 else 0
-                num_params = rows * cols
             total_params += num_params
 
             if name == "wte":

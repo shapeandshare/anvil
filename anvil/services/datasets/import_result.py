@@ -9,6 +9,8 @@ Provides the ``ImportResult`` class used by ``DatasetImportService``
 to report the outcome of committing samples to a dataset.
 """
 
+from typing import Any
+
 
 class ImportResult:
     """Outcome of a dataset import operation.
@@ -29,8 +31,8 @@ class ImportResult:
         self,
         import_source_id: int,
         rows_imported: int,
-        errors: list[dict],
-        preview: list[dict],
+        errors: list[dict[str, Any]],
+        preview: list[dict[str, Any]],
     ):
         """Initialise the import result.
 

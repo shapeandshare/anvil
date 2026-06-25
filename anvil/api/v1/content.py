@@ -22,6 +22,7 @@ import json
 import re
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from starlette.responses import StreamingResponse
@@ -76,7 +77,7 @@ def _slugify(name: str) -> str:
 async def create_corpus(
     body: ContentCorpusCreate,
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """Create a new versioned content corpus.
 
     Accepts corpus configuration and provenance metadata. Delegates
@@ -124,7 +125,7 @@ async def create_corpus(
 @router.get("/content/corpora")
 async def list_corpora(
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """List all versioned content corpora.
 
     Parameters
@@ -144,16 +145,16 @@ async def list_corpora(
     }
 
 
-@router.get("/content/corpora/{id}")
+@router.get("/content/corpora/{corpus_id}")
 async def get_corpus(
-    id: int,
+    corpus_id: int,
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """Get a single versioned content corpus by ID.
 
     Parameters
     ----------
-    id : int
+    corpus_id : int
         The corpus primary key.
     workbench : AnvilWorkbench
         Injected session-bound workbench.
@@ -168,7 +169,7 @@ async def get_corpus(
     HTTPException
         If the corpus is not found (404).
     """
-    corpus = await workbench.content_corpus_repo.get(id)
+    corpus = await workbench.content_corpus_repo.get(corpus_id)
     if corpus is None:
         raise HTTPException(status_code=404, detail="Corpus not found")
     return {
@@ -177,16 +178,16 @@ async def get_corpus(
     }
 
 
-@router.delete("/content/corpora/{id}")
+@router.delete("/content/corpora/{corpus_id}")
 async def delete_corpus(
-    id: int,
+    corpus_id: int,
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """Delete a versioned content corpus by ID.
 
     Parameters
     ----------
-    id : int
+    corpus_id : int
         The corpus primary key.
     workbench : AnvilWorkbench
         Injected session-bound workbench.
@@ -201,23 +202,23 @@ async def delete_corpus(
     HTTPException
         If the corpus is not found (404).
     """
-    deleted = await workbench.content_corpus_repo.delete(id)
+    deleted = await workbench.content_corpus_repo.delete(corpus_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Corpus not found")
     await workbench.session.commit()
     return {"data": {"status": "deleted"}, "error": None}
 
 
-@router.get("/content/corpora/{id}/versions")
+@router.get("/content/corpora/{corpus_id}/versions")
 async def list_corpus_versions(
-    id: int,
+    corpus_id: int,
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """List all versions of a content corpus.
 
     Parameters
     ----------
-    id : int
+    corpus_id : int
         The corpus primary key.
     workbench : AnvilWorkbench
         Injected session-bound workbench.
@@ -227,7 +228,7 @@ async def list_corpus_versions(
     dict
         List of ``ContentVersionOut`` dicts and ``"error": None``.
     """
-    versions = await workbench.content_version_repo.list_by_corpus(id)
+    versions = await workbench.content_version_repo.list_by_corpus(corpus_id)
     return {
         "data": [_version_to_out(v).model_dump() for v in versions],
         "error": None,
@@ -241,7 +242,7 @@ async def list_corpus_versions(
 async def create_source(
     body: CreateSourceBody,
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """Create a new content source.
 
     Parameters
@@ -288,7 +289,7 @@ async def create_source(
 @router.get("/content/sources")
 async def list_sources(
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """List all content sources.
 
     Parameters
@@ -323,7 +324,7 @@ async def list_sources(
 async def open_session(
     body: SessionOpenBody,
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """Open a new ingestion session for a corpus.
 
     Creates an isolated staging area where content can be uploaded,
@@ -363,6 +364,8 @@ async def open_session(
     await workbench.session.commit()
 
     session = await workbench.content_ingest_session_repo.get(ref.session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found")
     return {
         "data": SessionOut(
             id=session.id,
@@ -377,13 +380,13 @@ async def open_session(
     }
 
 
-@router.post("/content/sessions/{id}/stage")
+@router.post("/content/sessions/{session_id}/stage")
 async def stage_file(
-    id: int,
+    session_id: int,
     path: str,
     file: UploadFile,
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """Stage a file into an open ingestion session.
 
     Accepts a multipart file upload, stores the content as a
@@ -410,7 +413,7 @@ async def stage_file(
     HTTPException
         If the session is not found (404) or not open (422).
     """
-    session = await workbench.content_ingest_session_repo.get(id)
+    session = await workbench.content_ingest_session_repo.get(session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
 
@@ -427,7 +430,7 @@ async def stage_file(
     async def _stream() -> AsyncIterator[bytes]:
         yield content
 
-    staged = await workbench.content_ingestion.stage(id, path, _stream())
+    staged = await workbench.content_ingestion.stage(session_id, path, _stream())
     await workbench.session.commit()
 
     return {
@@ -440,11 +443,11 @@ async def stage_file(
     }
 
 
-@router.post("/content/sessions/{id}/validate")
+@router.post("/content/sessions/{session_id}/validate")
 async def validate_session(
-    id: int,
+    session_id: int,
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """Run validation gates over a session's staged content.
 
     Parameters
@@ -464,11 +467,11 @@ async def validate_session(
     HTTPException
         If the session is not found (404).
     """
-    session = await workbench.content_ingest_session_repo.get(id)
+    session = await workbench.content_ingest_session_repo.get(session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    report = await workbench.content_ingestion.validate(id)
+    report = await workbench.content_ingestion.validate(session_id)
     await workbench.session.commit()
 
     return {
@@ -480,11 +483,11 @@ async def validate_session(
     }
 
 
-@router.post("/content/sessions/{id}/accept")
+@router.post("/content/sessions/{session_id}/accept")
 async def accept_session(
-    id: int,
+    session_id: int,
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """Accept staged content and fold it into the canonical corpus.
 
     Creates a new immutable version containing all staged entries.
@@ -507,7 +510,7 @@ async def accept_session(
         If the session is not found (404), or if governance gate
         blocks the accept (422).
     """
-    session = await workbench.content_ingest_session_repo.get(id)
+    session = await workbench.content_ingest_session_repo.get(session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
 
@@ -520,7 +523,7 @@ async def accept_session(
         )
 
     try:
-        result = await workbench.content_ingestion.accept(id)
+        result = await workbench.content_ingestion.accept(session_id)
         await workbench.session.commit()
     except ValueError as exc:
         await workbench.session.rollback()
@@ -534,7 +537,7 @@ async def accept_session(
                 "event": "accepted",
                 "data": json.dumps(
                     {
-                        "session_id": id,
+                        "session_id": session_id,
                         "version_id": result.version_id,
                         "version_number": result.version_number,
                         "entry_count": result.entry_count,
@@ -557,11 +560,11 @@ async def accept_session(
     }
 
 
-@router.post("/content/sessions/{id}/abandon")
+@router.post("/content/sessions/{session_id}/abandon")
 async def abandon_session(
-    id: int,
+    session_id: int,
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """Abandon an ingestion session without accepting its content.
 
     Marks the session as failed and discards staged entries.
@@ -583,13 +586,15 @@ async def abandon_session(
     HTTPException
         If the session is not found (404).
     """
-    session = await workbench.content_ingest_session_repo.get(id)
+    session = await workbench.content_ingest_session_repo.get(session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
 
     from ...services.content.ingest_status import IngestStatus
 
-    await workbench.content_ingest_session_repo.update_status(id, IngestStatus.FAILED)
+    await workbench.content_ingest_session_repo.update_status(
+        session_id, IngestStatus.FAILED
+    )
     await workbench.session.commit()
     return {"data": {"status": "abandoned"}, "error": None}
 
@@ -597,7 +602,7 @@ async def abandon_session(
 @router.get("/content/sessions")
 async def list_active_sessions(
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """List all active ingestion sessions.
 
     Parameters
@@ -631,12 +636,12 @@ async def list_active_sessions(
 # ── Versions ─────────────────────────────────────────────────────────────
 
 
-@router.post("/content/corpora/{id}/freeze")
+@router.post("/content/corpora/{corpus_id}/freeze")
 async def freeze_version(
-    id: int,
+    corpus_id: int,
     body: FreezeVersionBody | None = None,
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """Freeze a new immutable version of a corpus.
 
     When ``body.composition`` is ``None``, snapshots the current HEAD
@@ -646,7 +651,7 @@ async def freeze_version(
 
     Parameters
     ----------
-    id : int
+    corpus_id : int
         The corpus primary key.
     body : FreezeVersionBody, optional
         Optional note, label, and composition specification.
@@ -664,7 +669,7 @@ async def freeze_version(
         If the corpus is not found (404), or the composition spec
         is invalid (422).
     """
-    corpus = await workbench.content_corpus_repo.get(id)
+    corpus = await workbench.content_corpus_repo.get(corpus_id)
     if corpus is None:
         raise HTTPException(status_code=404, detail="Corpus not found")
 
@@ -675,7 +680,7 @@ async def freeze_version(
             for item in body.composition
         ]
         try:
-            version = await workbench.content_composition.freeze(id, spec)
+            version = await workbench.content_composition.freeze(corpus_id, spec)
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
     else:
@@ -688,7 +693,7 @@ async def freeze_version(
     return {
         "data": ContentVersionOut(
             id=version.version_id,
-            corpus_id=id,
+            corpus_id=corpus_id,
             version_number=version.version_number,
             manifest_digest=version.manifest_digest,
             label=version.label or (body.label if body else None),
@@ -700,12 +705,12 @@ async def freeze_version(
     }
 
 
-@router.post("/content/corpora/{id}/composition/preview")
+@router.post("/content/corpora/{corpus_id}/composition/preview")
 async def composition_preview(
-    id: int,
+    corpus_id: int,
     entries: list[CompositionSpecItem],
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """Preview the token/byte contribution of a composition spec.
 
     Accepts a list of ``CompositionSpecItem`` dicts and returns a
@@ -714,7 +719,7 @@ async def composition_preview(
 
     Parameters
     ----------
-    id : int
+    corpus_id : int
         The corpus primary key.
     entries : list[CompositionSpecItem]
         Composition specification entries.
@@ -731,7 +736,7 @@ async def composition_preview(
     HTTPException
         If the corpus is not found (404).
     """
-    corpus = await workbench.content_corpus_repo.get(id)
+    corpus = await workbench.content_corpus_repo.get(corpus_id)
     if corpus is None:
         raise HTTPException(status_code=404, detail="Corpus not found")
 
@@ -739,7 +744,7 @@ async def composition_preview(
         {"content_hash": item.content_hash, "weight": item.weight} for item in entries
     ]
     try:
-        result = await workbench.content_composition.preview(id, spec)
+        result = await workbench.content_composition.preview(corpus_id, spec)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -748,8 +753,8 @@ async def composition_preview(
 
 @router.get("/content/stream/composition")
 async def stream_composition(
-    workbench: AnvilWorkbench = Depends(get_workbench),
-):
+    _workbench: AnvilWorkbench = Depends(get_workbench),
+) -> StreamingResponse:
     """SSE event stream for composition preview updates.
 
     Placeholder endpoint (T073a) — clients connect and receive a
@@ -758,7 +763,7 @@ async def stream_composition(
 
     Parameters
     ----------
-    workbench : AnvilWorkbench
+    _workbench : AnvilWorkbench
         Injected session-bound workbench.
 
     Returns
@@ -767,7 +772,7 @@ async def stream_composition(
         SSE stream with ``text/event-stream`` content type.
     """
 
-    async def event_stream():
+    async def event_stream() -> AsyncIterator[str]:
         """Generator that yields SSE heartbeats every 30 seconds."""
         while True:
             await asyncio.sleep(30)
@@ -783,17 +788,17 @@ async def stream_composition(
     )
 
 
-@router.post("/content/versions/{id}/tag")
+@router.post("/content/versions/{version_id}/tag")
 async def tag_version(
-    id: int,
+    version_id: int,
     body: TagBody,
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """Tag a content version (FR-023).
 
     Parameters
     ----------
-    id : int
+    version_id : int
         The version primary key.
     body : TagBody
         Tag name.
@@ -810,12 +815,12 @@ async def tag_version(
     HTTPException
         If the version is not found (404).
     """
-    version = await workbench.content_version_repo.get(id)
+    version = await workbench.content_version_repo.get(version_id)
     if version is None:
         raise HTTPException(status_code=404, detail="Version not found")
 
     try:
-        await workbench.content_corpora.tag(id, body.name)
+        await workbench.content_corpora.tag(version_id, body.name)
         await workbench.session.commit()
     except ValueError as exc:
         await workbench.session.rollback()
@@ -823,23 +828,23 @@ async def tag_version(
 
     return {
         "data": {
-            "id": id,
+            "id": version_id,
             "tag": body.name,
         },
         "error": None,
     }
 
 
-@router.get("/content/versions/{id}")
+@router.get("/content/versions/{version_id}")
 async def get_version(
-    id: int,
+    version_id: int,
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """Get version detail including entries.
 
     Parameters
     ----------
-    id : int
+    version_id : int
         The version primary key.
     workbench : AnvilWorkbench
         Injected session-bound workbench.
@@ -854,11 +859,11 @@ async def get_version(
     HTTPException
         If the version is not found (404).
     """
-    version = await workbench.content_version_repo.get(id)
+    version = await workbench.content_version_repo.get(version_id)
     if version is None:
         raise HTTPException(status_code=404, detail="Version not found")
 
-    entries = await workbench.content_version_repo.get_entries(id)
+    entries = await workbench.content_version_repo.get_entries(version_id)
 
     out = _version_to_out(version).model_dump()
     out["entries"] = [
@@ -874,11 +879,11 @@ async def get_version(
     return {"data": out, "error": None}
 
 
-@router.get("/content/versions/{id}/lineage")
+@router.get("/content/versions/{version_id}/lineage")
 async def get_version_lineage(
-    id: int,
+    version_id: int,
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """Get version lineage including sources and run refs.
 
     Returns sources (from the ingestion session that created the
@@ -886,7 +891,7 @@ async def get_version_lineage(
 
     Parameters
     ----------
-    id : int
+    version_id : int
         The version primary key.
     workbench : AnvilWorkbench
         Injected session-bound workbench.
@@ -902,16 +907,18 @@ async def get_version_lineage(
     HTTPException
         If the version is not found (404).
     """
-    version = await workbench.content_version_repo.get(id)
+    version = await workbench.content_version_repo.get(version_id)
     if version is None:
         raise HTTPException(status_code=404, detail="Version not found")
 
-    run_refs = await workbench.content_version_repo.get_run_refs(id)
+    run_refs = await workbench.content_version_repo.get_run_refs(version_id)
 
     # Look up the source that produced this version via the
     # accepted session.
-    session = await workbench.content_ingest_session_repo.get_by_accepted_version(id)
-    sources: list[dict] = []
+    session = await workbench.content_ingest_session_repo.get_by_accepted_version(
+        version_id
+    )
+    sources: list[dict[str, Any]] = []
     if session is not None and session.source_id is not None:
         source = await workbench.content_source_repo.get(session.source_id)
         if source is not None:
@@ -925,7 +932,7 @@ async def get_version_lineage(
             )
 
     # Also collect source slugs from entries that have a source_id.
-    entries = await workbench.content_version_repo.get_entries(id)
+    entries = await workbench.content_version_repo.get_entries(version_id)
     entry_source_ids = {e.source_id for e in entries if e.source_id is not None}
     for src_id in entry_source_ids:
         if src_id not in {s["id"] for s in sources}:
@@ -942,7 +949,7 @@ async def get_version_lineage(
 
     return {
         "data": {
-            "version_id": id,
+            "version_id": version_id,
             "sources": sources,
             "run_refs": [
                 {
@@ -961,8 +968,8 @@ async def get_version_lineage(
 
 @router.get("/content/stream/injection")
 async def injection_event_stream(
-    workbench: AnvilWorkbench = Depends(get_workbench),
-):
+    _workbench: AnvilWorkbench = Depends(get_workbench),
+) -> StreamingResponse:
     """SSE event stream for ingestion session lifecycle events.
 
     Pushes real-time ``accepted`` events when an ingestion session is
@@ -972,7 +979,7 @@ async def injection_event_stream(
 
     Parameters
     ----------
-    workbench : AnvilWorkbench
+    _workbench : AnvilWorkbench
         Injected session-bound workbench (unused placeholder).
 
     Returns
@@ -981,7 +988,7 @@ async def injection_event_stream(
         SSE stream with ``text/event-stream`` content type.
     """
 
-    async def event_stream():
+    async def event_stream() -> AsyncIterator[str]:
         """Generator that yields SSE events from ``_injection_queue``
         or heartbeats every 30 seconds.
         """
@@ -1005,19 +1012,19 @@ async def injection_event_stream(
 # ── Revert ───────────────────────────────────────────────────────────────
 
 
-@router.post("/content/corpora/{id}/revert")
+@router.post("/content/corpora/{corpus_id}/revert")
 async def revert_corpus(
-    id: int,
+    corpus_id: int,
     body: RevertBody,
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """Revert a corpus to a prior version.
 
     Creates a new HEAD that is a copy of the target version.
 
     Parameters
     ----------
-    id : int
+    corpus_id : int
         The corpus primary key.
     body : RevertBody
         Revert parameters including ``to_version_id``.
@@ -1035,14 +1042,14 @@ async def revert_corpus(
         If the corpus or target version is not found (404), or if
         the target version belongs to a different corpus (422).
     """
-    corpus = await workbench.content_corpus_repo.get(id)
+    corpus = await workbench.content_corpus_repo.get(corpus_id)
     if corpus is None:
         raise HTTPException(status_code=404, detail="Corpus not found")
 
     target = await workbench.content_version_repo.get(body.to_version_id)
     if target is None:
         raise HTTPException(status_code=404, detail="Target version not found")
-    if target.corpus_id != id:
+    if target.corpus_id != corpus_id:
         raise HTTPException(
             status_code=422,
             detail="Target version does not belong to this corpus",
@@ -1050,7 +1057,7 @@ async def revert_corpus(
 
     target_version_number = target.version_number
     try:
-        ref = await workbench.content_corpora.revert(id, body.to_version_id)
+        ref = await workbench.content_corpora.revert(corpus_id, body.to_version_id)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -1072,7 +1079,7 @@ async def revert_corpus(
 async def acquire_lock(
     body: LockBody,
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """Acquire an advisory content lock.
 
     Parameters
@@ -1117,16 +1124,16 @@ async def acquire_lock(
     }
 
 
-@router.post("/content/locks/{id}/release")
+@router.post("/content/locks/{lock_id}/release")
 async def release_lock(
-    id: int,
+    lock_id: int,
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """Release an advisory content lock.
 
     Parameters
     ----------
-    id : int
+    lock_id : int
         The lock primary key.
     workbench : AnvilWorkbench
         Injected session-bound workbench.
@@ -1141,11 +1148,11 @@ async def release_lock(
     HTTPException
         If the lock is not found (404).
     """
-    lock = await workbench.content_lock_repo.get(id)
+    lock = await workbench.content_lock_repo.get(lock_id)
     if lock is None:
         raise HTTPException(status_code=404, detail="Lock not found")
 
-    await workbench.content_locks.release(id)
+    await workbench.content_locks.release(lock_id)
     await workbench.session.commit()
     return {"data": {"status": "released"}, "error": None}
 
@@ -1153,7 +1160,7 @@ async def release_lock(
 @router.get("/content/locks")
 async def list_locks(
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """List all active advisory content locks.
 
     Parameters
@@ -1185,8 +1192,8 @@ async def list_locks(
 
 @router.get("/content/stream/locks")
 async def stream_locks(
-    workbench: AnvilWorkbench = Depends(get_workbench),
-):
+    _workbench: AnvilWorkbench = Depends(get_workbench),
+) -> StreamingResponse:
     """SSE event stream for lock lifecycle notifications.
 
     Placeholder endpoint (US7) — clients connect and receive a
@@ -1195,7 +1202,7 @@ async def stream_locks(
 
     Parameters
     ----------
-    workbench : AnvilWorkbench
+    _workbench : AnvilWorkbench
         Injected session-bound workbench (unused placeholder).
 
     Returns
@@ -1204,7 +1211,7 @@ async def stream_locks(
         SSE stream with ``text/event-stream`` content type.
     """
 
-    async def event_stream():
+    async def event_stream() -> AsyncIterator[str]:
         """Generator that yields SSE heartbeats every 30 seconds."""
         while True:
             await asyncio.sleep(30)
@@ -1227,7 +1234,7 @@ async def stream_locks(
 async def start_import(
     body: ImportStart,
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """Start a new declarative content import job.
 
     Opens an ingestion session through the ``IngestionService`` on
@@ -1270,16 +1277,16 @@ async def start_import(
     }
 
 
-@router.get("/content/imports/{id}")
+@router.get("/content/imports/{job_id}")
 async def get_import_job(
-    id: int,
+    job_id: int,
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """Get the current status of an import job.
 
     Parameters
     ----------
-    id : int
+    job_id : int
         The import job primary key.
     workbench : AnvilWorkbench
         Injected session-bound workbench.
@@ -1294,7 +1301,7 @@ async def get_import_job(
     HTTPException
         If the job is not found (404).
     """
-    job = await workbench.content_imports.status(id)
+    job = await workbench.content_imports.status(job_id)
     if job is None:
         raise HTTPException(status_code=404, detail="Import job not found")
 
@@ -1306,8 +1313,8 @@ async def get_import_job(
 
 @router.get("/content/stream/import")
 async def stream_import(
-    workbench: AnvilWorkbench = Depends(get_workbench),
-):
+    _workbench: AnvilWorkbench = Depends(get_workbench),
+) -> StreamingResponse:
     """SSE event stream for import job progress updates.
 
     Placeholder endpoint (US6) — clients connect and receive a
@@ -1317,7 +1324,7 @@ async def stream_import(
 
     Parameters
     ----------
-    workbench : AnvilWorkbench
+    _workbench : AnvilWorkbench
         Injected session-bound workbench (unused placeholder).
 
     Returns
@@ -1326,7 +1333,7 @@ async def stream_import(
         SSE stream with ``text/event-stream`` content type.
     """
 
-    async def event_stream():
+    async def event_stream() -> AsyncIterator[str]:
         """Generator that yields SSE heartbeats every 30 seconds."""
         while True:
             await asyncio.sleep(30)
@@ -1345,7 +1352,7 @@ async def stream_import(
 # ── Helpers ──────────────────────────────────────────────────────────────
 
 
-def _corpus_to_out(corpus) -> ContentCorpusOut:
+def _corpus_to_out(corpus: Any) -> ContentCorpusOut:
     """Convert a ``ContentCorpus`` ORM instance to a ``ContentCorpusOut``
     schema.
 
@@ -1374,7 +1381,7 @@ def _corpus_to_out(corpus) -> ContentCorpusOut:
     )
 
 
-def _version_to_out(version) -> ContentVersionOut:
+def _version_to_out(version: Any) -> ContentVersionOut:
     """Convert a ``ContentVersion`` ORM instance to a
     ``ContentVersionOut`` schema.
 
@@ -1401,7 +1408,7 @@ def _version_to_out(version) -> ContentVersionOut:
     )
 
 
-def _import_job_to_out(job) -> ImportJobOut:
+def _import_job_to_out(job: Any) -> ImportJobOut:
     """Convert an ``ImportJob`` ORM instance to an ``ImportJobOut``
     schema.
 

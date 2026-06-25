@@ -14,10 +14,11 @@ from __future__ import annotations
 
 import json
 import re
-from collections.abc import Sequence
-from typing import TYPE_CHECKING
+from collections.abc import AsyncGenerator, Sequence
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.expression import ColumnElement
 
 from ...db.models.curation_operation import CurationOperation
 from ...db.models.sample import Sample
@@ -194,7 +195,7 @@ class DatasetCurationService:
         import sqlalchemy as sa
 
         samples_before = await self._sample_repo.count_active(self._dataset_id)
-        conditions = [not Sample.is_removed]
+        conditions: list[ColumnElement[bool]] = [sa.not_(Sample.is_removed)]
         if min_length is not None:
             conditions.append(Sample.length < min_length)
         if max_length is not None:
@@ -253,7 +254,7 @@ class DatasetCurationService:
         replacement: str,
         case_sensitive: bool = True,
         audit: AuditService | None = None,
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Apply a regex substitution to all active sample texts.
 
         Reads each sample from the file store, applies the regex
@@ -297,7 +298,7 @@ class DatasetCurationService:
         result = await self._session.execute(
             sa.select(Sample).where(
                 Sample.dataset_id == self._dataset_id,
-                not Sample.is_removed,
+                sa.not_(Sample.is_removed),
             )
         )
         active: Sequence[Sample] = result.scalars().all()
@@ -451,7 +452,7 @@ class DatasetCurationService:
         result = await self._session.execute(
             sa.select(Sample).where(
                 Sample.dataset_id == self._dataset_id,
-                not Sample.is_removed,
+                sa.not_(Sample.is_removed),
             )
         )
         active: Sequence[Sample] = result.scalars().all()
@@ -493,7 +494,7 @@ class DatasetCurationService:
             duplicate_count=duplicate_count,
         )
 
-    async def _text_stream(self, text: str):
+    async def _text_stream(self, text: str) -> AsyncGenerator[bytes, None]:
         """Async generator yielding encoded text as byte chunks.
 
         Parameters

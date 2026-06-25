@@ -131,10 +131,10 @@ def _label_for(name: str) -> str:
     str
         Human-readable label, or the raw ``name`` if no mapping exists.
     """
-    labels = {
-        ComputeBackend.AUTO: "Auto",
-        ComputeBackend.LOCAL_CPU: "Local (CPU)",
-        ComputeBackend.LOCAL_GPU: "Local (GPU)",
-        ComputeBackend.MODAL: "Modal (cloud GPU)",
+    labels: dict[str, str] = {
+        ComputeBackend.AUTO.value: "Auto",
+        ComputeBackend.LOCAL_CPU.value: "Local (CPU)",
+        ComputeBackend.LOCAL_GPU.value: "Local (GPU)",
+        ComputeBackend.MODAL.value: "Modal (cloud GPU)",
     }
     return labels.get(name, name)

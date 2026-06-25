@@ -8,6 +8,7 @@
 This module is the ``loader_module`` target in the ``MLmodel`` file.
 It must be importable at inference time (the ``anvil`` package must be installed).
 """
+# pylint: disable=attribute-defined-outside-init
 
 import json
 from pathlib import Path
@@ -16,7 +17,7 @@ import mlflow.pyfunc
 import pandas as pd
 
 
-class AnvilPyfuncModel(mlflow.pyfunc.PythonModel):
+class AnvilPyfuncModel(mlflow.pyfunc.PythonModel):  # type: ignore[name-defined, misc]
     """Pyfunc wrapper that loads an anvil-trained Llama model via HuggingFace transformers.
 
     Usage::
@@ -25,7 +26,7 @@ class AnvilPyfuncModel(mlflow.pyfunc.PythonModel):
         model.predict(pd.DataFrame({"text": ["hello"]}))
     """
 
-    def load_context(self, context):
+    def load_context(self, context: object) -> None:
         """Load model artifacts from an MLflow model directory.
 
         Reads the HuggingFace ``config.json`` from the artifact URI,
@@ -43,7 +44,7 @@ class AnvilPyfuncModel(mlflow.pyfunc.PythonModel):
         from safetensors.torch import load_file
         from transformers import LlamaConfig, LlamaForCausalLM
 
-        model_dir = Path(context.artifact_uri)
+        model_dir = Path(context.artifact_uri)  # type: ignore[attr-defined]
 
         # Load model architecture and weights
         self.config = LlamaConfig.from_pretrained(str(model_dir))
@@ -60,7 +61,7 @@ class AnvilPyfuncModel(mlflow.pyfunc.PythonModel):
         # Load character-level tokenizer metadata
         tokenizer_path = model_dir / "tokenizer.json"
         if tokenizer_path.exists():
-            with open(tokenizer_path) as f:
+            with open(tokenizer_path, encoding="utf-8") as f:
                 tokenizer_data = json.load(f)
             self.vocab = tokenizer_data.get("vocab", {})
             self.chars = tokenizer_data.get("chars", [])
@@ -72,7 +73,7 @@ class AnvilPyfuncModel(mlflow.pyfunc.PythonModel):
             self.bos_token_id = None
             self._reverse_vocab = {}
 
-    def predict(self, context, model_input):
+    def predict(self, _context: object, model_input: pd.DataFrame) -> pd.DataFrame:
         """Generate text continuations for each input string.
 
         Parameters

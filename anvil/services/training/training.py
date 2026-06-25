@@ -15,6 +15,7 @@ import json
 import threading
 import time
 from collections.abc import Awaitable, Callable
+from typing import Any
 
 # Side-effect imports: each module registers its backends at module level.
 from ..compute import local_stdlib_backend  # noqa: F401 — registers local-stdlib
@@ -40,7 +41,9 @@ unbounded memory growth when the SSE consumer is slow or disconnected.
 """
 
 
-async def _enqueue_or_drop(queue: asyncio.Queue, event: dict[str, object]) -> None:
+async def _enqueue_or_drop(
+    queue: asyncio.Queue[dict[str, object]], event: dict[str, object]
+) -> None:
     """Put an event into the queue, silently dropping if the queue is full.
 
     Designed to be submitted via ``asyncio.run_coroutine_threadsafe`` from
@@ -69,12 +72,12 @@ class TrainingService:
     and remote (:class:`ComputeBackendResult.MODAL`) compute backends.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialise the training service with empty run state."""
-        self._queues: dict[int, asyncio.Queue] = {}
+        self._queues: dict[int, asyncio.Queue[dict[str, object]]] = {}
         self._stop_events: dict[int, threading.Event] = {}
         self._running = 0
-        self._run_metadata: dict[int, dict] = {}
+        self._run_metadata: dict[int, dict[str, Any]] = {}
         self._diverged_runs: set[int] = set()
 
     def is_diverged(self, run_id: int) -> bool:
@@ -96,7 +99,7 @@ class TrainingService:
         self,
         *,
         run_id: int,
-        queue: asyncio.Queue,
+        queue: asyncio.Queue[dict[str, object]],
         loop: asyncio.AbstractEventLoop,
         device: str,
         num_steps: int,
@@ -288,7 +291,7 @@ class TrainingService:
             from ...storage.local import LocalFileStore
             from ..datasets.datasets import DatasetService
 
-            async def _load():
+            async def _load() -> list[str]:
                 async with AsyncSessionLocal() as session:
                     repo = DatasetRepository(session)
                     store = LocalFileStore()
@@ -304,7 +307,7 @@ class TrainingService:
         from ..datasets.corpus_loader import CorpusLoader
         from ..demo.demo_bootstrap import DEFAULT_CORPUS_NAME, DemoBootstrapService
 
-        async def _load_default():
+        async def _load_default() -> list[str]:
             async with AsyncSessionLocal() as session:
                 repo = CorpusRepository(session)
                 loader = CorpusLoader()
@@ -346,7 +349,7 @@ class TrainingService:
         from ...db.repositories.content_versions import ContentVersionRepository
         from ...db.session import AsyncSessionLocal
 
-        async def _load():
+        async def _load() -> list[str]:
             async with AsyncSessionLocal() as session:
                 ver_repo = ContentVersionRepository(session)
                 version = await ver_repo.get(content_version_id)
@@ -448,7 +451,7 @@ class TrainingService:
             row = result.fetchone()
             await session.commit()
             if row:
-                return row[0]
+                return row[0]  # type: ignore[no-any-return]
             return int(__import__("time").time() * 1000)  # fallback
 
     def stop_run(self, run_id: int) -> None:
@@ -465,9 +468,11 @@ class TrainingService:
 
     async def start_training(
         self,
-        config: dict,
+        config: dict[str, Any],
         run_id: int | None = None,
-        on_complete: Callable[[ComputeResult, dict], Awaitable[None]] | None = None,
+        on_complete: (
+            Callable[[ComputeResult, dict[str, Any]], Awaitable[None]] | None
+        ) = None,
         progress_callback_override: Callable[[int, float], None] | None = None,
     ) -> int:
         """Start a training run with the given configuration.
@@ -608,7 +613,7 @@ class TrainingService:
 
         return run_id
 
-    def get_queue(self, run_id: int) -> asyncio.Queue | None:
+    def get_queue(self, run_id: int) -> asyncio.Queue[dict[str, object]] | None:
         """Get the SSE event queue for a running training session.
 
         Parameters

@@ -11,6 +11,7 @@ using pluggable chunking strategies (line, file, or fixed-size window).
 """
 
 from pathlib import Path
+from typing import Any
 
 from pathspec import PathSpec
 from pathspec.patterns.gitwildmatch import GitWildMatchPattern
@@ -258,7 +259,7 @@ class CorpusLoader:
         spec = _build_spec(include_patterns, exclude_patterns)
         chunker = self._make_chunker(chunking_strategy, chunk_overlap, block_size)
 
-        files: list[dict] = []
+        files: list[dict[str, Any]] = []
         total_docs = 0
         language_map: dict[str, int] = {}
         errors: list[str] = []

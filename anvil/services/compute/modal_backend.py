@@ -20,10 +20,11 @@ from collections.abc import Callable
 from typing import Any
 
 from .compute_backend_result import ComputeBackendResult
+from .compute_status import ComputeStatus
 from .protocol import ProgressCallback, StopCheck
 from .registry import register
 from .registry_backend import RegistryBackend
-from .result import ComputeResult, ComputeStatus
+from .result import ComputeResult
 from .training_engine import TrainingEngine
 
 #: Module-level flag so ``is_available()`` does not retry the import on
@@ -119,9 +120,9 @@ class ModalBackend:
         if self._function_factory is not None:
             remote_fn = self._function_factory()
         else:
-            import modal  # lazy import -- only needed without injected factory
+            import modal as _modal_lib  # lazy import -- only needed without injected factory
 
-            remote_fn = self._build_remote_function(modal)
+            remote_fn = self._build_remote_function(_modal_lib)
 
         # --- submit ---
         call = await loop.run_in_executor(None, lambda: remote_fn.spawn(docs, config))
@@ -132,9 +133,9 @@ class ModalBackend:
 
         # --- poll loop ---
         while True:
-            if stop_check is not None and stop_check():
+            if stop_check():
                 # User requested cancellation
-                await loop.run_in_executor(None, lambda: call.cancel())
+                await loop.run_in_executor(None, call.cancel)
                 return ComputeResult(
                     status=ComputeStatus.FAILED,
                     error_message="Training cancelled by user",
@@ -144,14 +145,14 @@ class ModalBackend:
                     engine=TrainingEngine.TORCH,
                 )
 
-            status: str = await loop.run_in_executor(None, lambda: call.get_status())
+            status: str = await loop.run_in_executor(None, call.get_status)
 
             # Notify the caller of the current status
             if progress_callback is not None:
                 progress_callback(0, 0.0)
 
             if status == "success":
-                result_data: dict = await loop.run_in_executor(None, lambda: call.get())
+                result_data: dict[str, Any] = await loop.run_in_executor(None, call.get)
                 return ComputeResult(
                     status=ComputeStatus.COMPLETED,
                     exported_remotely=True,
@@ -164,9 +165,7 @@ class ModalBackend:
 
             if status in ("failed", "error"):
                 # MLflow status strings, not ComputeStatus
-                error: str | None = await loop.run_in_executor(
-                    None, lambda: call.get_error()
-                )
+                error: str | None = await loop.run_in_executor(None, call.get_error)
                 return ComputeResult(
                     status=ComputeStatus.FAILED,
                     error_message=str(error) if error else "Remote job failed",
@@ -204,7 +203,7 @@ class ModalBackend:
         """
         app = modal_module.App("anvil-training")
 
-        @app.function(
+        @app.function(  # type: ignore[untyped-decorator]
             secrets=[modal_module.Secret.from_name("mlflow-secret")],
             timeout=3600,
         )
@@ -274,7 +273,7 @@ class ModalBackend:
 
                 with tempfile.TemporaryDirectory() as tmpdir:
                     samples_path = os.path.join(tmpdir, "samples.txt")
-                    with open(samples_path, "w") as f:
+                    with open(samples_path, "w", encoding="utf-8") as f:
                         f.write("\n".join(samples))
                     mlflow.log_artifact(samples_path)
 
@@ -330,4 +329,4 @@ def _modal_factory() -> ModalBackend:
     return ModalBackend()
 
 
-register(RegistryBackend.MODAL, _modal_factory)
+register(RegistryBackend.MODAL, _modal_factory)  # type: ignore[arg-type]

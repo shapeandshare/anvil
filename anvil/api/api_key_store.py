@@ -104,7 +104,7 @@ class ApiKeyStore:
             return
 
         if self._key_path.exists():
-            self._key = self._key_path.read_text().strip()
+            self._key = self._key_path.read_text(encoding="utf-8").strip()
             logger.debug("Loaded API key from %s", self._key_path)
             return
 
@@ -123,6 +123,6 @@ class ApiKeyStore:
         if self._key is None:
             return
         self._key_path.parent.mkdir(parents=True, exist_ok=True)
-        self._key_path.write_text(self._key)
+        self._key_path.write_text(self._key, encoding="utf-8")
         self._key_path.chmod(0o600)
         logger.debug("Persisted API key to %s", self._key_path)

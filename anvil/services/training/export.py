@@ -36,7 +36,7 @@ ANVIL_TO_HF: dict[str, str] = {
 # layer{i}.rms_2 → model.layers.{i}.post_attention_layernorm.weight
 
 
-def export_state_dict(model: LlamaModel) -> dict[str, list]:
+def export_state_dict(model: LlamaModel) -> dict[str, list[Any]]:
     """Map anvil internal state dict to HF-compatible tensor names.
 
     Converts anvil's internal parameter naming convention (e.g.
@@ -55,7 +55,7 @@ def export_state_dict(model: LlamaModel) -> dict[str, list]:
         Mapping from HF-convention tensor names to raw value lists.
         No biases are included (Llama has bias-free linear layers).
     """
-    hf_sd: dict[str, list] = {}
+    hf_sd: dict[str, list[Any]] = {}
     for internal_key, mat in model.state_dict.items():
         if internal_key == "wte":
             hf_key = "model.embed_tokens.weight"
@@ -96,10 +96,10 @@ def export_state_dict(model: LlamaModel) -> dict[str, list]:
         # Convert: Value objects → float data
         if isinstance(mat[0], list):
             # 2D matrix: list[list[Value]] → list[list[float]]
-            hf_sd[hf_key] = [[p.data for p in row] for row in mat]
+            hf_sd[hf_key] = [[p.data for p in row] for row in mat]  # type: ignore[union-attr]
         else:
             # 1D vector: list[Value] → list[float]
-            hf_sd[hf_key] = [p.data for p in mat]
+            hf_sd[hf_key] = [p.data for p in mat]  # type: ignore[union-attr]
 
     return hf_sd
 
@@ -233,7 +233,7 @@ class SafetensorsExportService:
             hf_sd = export_state_dict(model)
 
             # 2. Convert to numpy arrays and write safetensors
-            np_tensors: dict[str, np.ndarray] = {}
+            np_tensors: dict[str, np.ndarray[Any, Any]] = {}
             for name, data in hf_sd.items():
                 arr = np.array(data, dtype=np.float32)
                 if not arr.flags["C_CONTIGUOUS"]:
@@ -289,7 +289,7 @@ class SafetensorsExportService:
                 "error": msg,
             }
 
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             return {
                 "safetensors_path": None,
                 "config_path": None,
@@ -325,7 +325,7 @@ class SafetensorsExportService:
             model = LlamaModel.load(model_path)
             chars = model.chars or []
             return self.export(model, output_dir, chars)
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             return {
                 "safetensors_path": None,
                 "config_path": None,

@@ -42,7 +42,7 @@ def detect_gpu() -> GpuInfo:
             info.device_name = _get_mps_device_name()
             try:
                 info.memory_total_gb = _get_mps_memory()
-            except Exception:
+            except (OSError, RuntimeError):
                 pass
             return info
 
@@ -50,13 +50,13 @@ def detect_gpu() -> GpuInfo:
             info.available = True
             info.backend = DeviceType.CUDA
             info.device_name = torch.cuda.get_device_name(0)
-            info.memory_total_gb = torch.cuda.get_device_properties(0).total_mem / (
+            info.memory_total_gb = torch.cuda.get_device_properties(0).total_memory / (
                 1024**3
             )
             try:
                 free, _ = torch.cuda.mem_get_info(0)
                 info.memory_available_gb = free / (1024**3)
-            except Exception:
+            except (RuntimeError, AttributeError):
                 pass
             cap = torch.cuda.get_device_capability(0)
             info.compute_capability = f"{cap[0]}.{cap[1]}"
@@ -65,7 +65,7 @@ def detect_gpu() -> GpuInfo:
 
     except ImportError:
         info.errors.append("torch not installed — install with: pip install torch")
-    except Exception as exc:
+    except (RuntimeError, OSError, AttributeError) as exc:
         info.errors.append(f"GPU detection error: {exc}")
 
     return info
@@ -85,9 +85,10 @@ def _get_mps_device_name() -> str:
                 capture_output=True,
                 text=True,
                 timeout=2,
+                check=False,
             )
             return result.stdout.strip() or "Apple Silicon"
-        except Exception:
+        except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
             return "Apple Silicon"
     return f"MPS ({machine})"
 
@@ -96,7 +97,8 @@ def _get_mps_memory() -> float | None:
     """Return total system memory in GB as a proxy for MPS-usable memory."""
     import psutil
 
-    return psutil.virtual_memory().total / (1024**3)
+    mem: int = psutil.virtual_memory().total
+    return mem / (1024**3)
 
 
 def resolve_device(preferred: str | None = None) -> str:

@@ -18,7 +18,7 @@ import re
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from aiofiles import open as async_open
+from aiofiles import open as async_open  # type: ignore[import-untyped]
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -238,7 +238,7 @@ class ValidationService:
         blob_path = Path(content_dir) / "blobs" / content_hash[:2] / content_hash
         try:
             async with async_open(str(blob_path), "rb") as f:
-                return await f.read()
+                return await f.read()  # type: ignore[no-any-return]
         except FileNotFoundError:
             return None
 
@@ -376,7 +376,7 @@ class ValidationService:
             empty list when no sensitive content is detected.
         """
         problems: list[ValidationProblem] = []
-        patterns: list[tuple[str, re.Pattern]] = [
+        patterns: list[tuple[str, re.Pattern[str]]] = [
             ("credit_card", re.compile(r"\d{4}[- ]?\d{4}[- ]?\d{4}[- ]?\d{4}")),
             ("email", re.compile(r"[\w.+-]+@[\w-]+\.\w+")),
             ("ssn", re.compile(r"\d{3}-\d{2}-\d{4}")),

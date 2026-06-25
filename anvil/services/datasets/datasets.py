@@ -12,6 +12,7 @@ content from the file store.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from ...db.models.dataset import Dataset
@@ -46,7 +47,7 @@ class DatasetService:
         self._repo = repo
         self._store = store or LocalFileStore("data/datasets")
 
-    async def list_datasets(self):
+    async def list_datasets(self) -> Sequence[Dataset]:
         """Return all datasets.
 
         Returns
@@ -56,12 +57,12 @@ class DatasetService:
         """
         return await self._repo.get_all()
 
-    async def get_dataset(self, id: int):
+    async def get_dataset(self, dataset_id: int) -> Dataset | None:
         """Retrieve a single dataset by ID.
 
         Parameters
         ----------
-        id : int
+        dataset_id : int
             The dataset ID.
 
         Returns
@@ -69,7 +70,7 @@ class DatasetService:
         Dataset or None
             The dataset record if found, ``None`` otherwise.
         """
-        return await self._repo.get(id)
+        return await self._repo.get(dataset_id)
 
     async def create_dataset(
         self, name: str, description: str | None = None
@@ -92,13 +93,13 @@ class DatasetService:
         return await self._repo.add(dataset)
 
     async def update_dataset(
-        self, id: int, name: str | None = None, description: str | None = None
+        self, dataset_id: int, name: str | None = None, description: str | None = None
     ) -> Dataset | None:
         """Update a dataset's name and/or description.
 
         Parameters
         ----------
-        id : int
+        dataset_id : int
             The dataset ID.
         name : str, optional
             New name. ``None`` means unchanged.
@@ -110,7 +111,7 @@ class DatasetService:
         Dataset or None
             The updated dataset, or ``None`` if not found.
         """
-        dataset = await self._repo.get(id)
+        dataset = await self._repo.get(dataset_id)
         if dataset is None:
             return None
         if name is not None:
@@ -119,7 +120,9 @@ class DatasetService:
             dataset.description = description
         return await self._repo.update(dataset)
 
-    async def delete_dataset(self, id: int, audit: AuditService | None = None):
+    async def delete_dataset(
+        self, dataset_id: int, audit: AuditService | None = None
+    ) -> None:
         """Delete a dataset by ID.
 
         Checks for referencing training configs before deletion and
@@ -127,7 +130,7 @@ class DatasetService:
 
         Parameters
         ----------
-        id : int
+        dataset_id : int
             The dataset ID to delete.
         audit : AuditService, optional
             The hash-chained audit service. If provided, a ``delete``
@@ -138,7 +141,7 @@ class DatasetService:
         ValueError
             If one or more training configs reference this dataset.
         """
-        configs = await self._repo.has_referencing_configs(id)
+        configs = await self._repo.has_referencing_configs(dataset_id)
         if configs:
             names = [c.name or f"config #{c.id}" for c in configs]
             raise ValueError(
@@ -149,14 +152,14 @@ class DatasetService:
             await audit.record(
                 action_type=AuditAction.DELETE.value,
                 target_type="dataset",
-                target_id=str(id),
+                target_id=str(dataset_id),
                 actor="system",
                 outcome=AuditOutcome.SUCCESS.value,
             )
 
-        await self._repo.delete(id)
+        await self._repo.delete(dataset_id)
 
-    async def search_datasets(self, query: str):
+    async def search_datasets(self, query: str) -> Sequence[Dataset]:
         """Search datasets by name or description.
 
         Parameters
@@ -188,7 +191,9 @@ class DatasetService:
         """
         from ...db.repositories.curation import SampleRepository
 
-        samples = await SampleRepository(self._repo._session).get_active_texts(
+        samples = await SampleRepository(
+            self._repo._session
+        ).get_active_texts(  # pylint: disable=protected-access
             dataset_id
         )
         texts = []

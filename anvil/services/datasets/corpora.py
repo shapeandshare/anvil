@@ -13,6 +13,7 @@ that are chunked into training documents.
 from __future__ import annotations
 
 import json
+from collections.abc import Sequence
 
 from ...db.models.corpus import Corpus
 from ...db.models.corpus_file import CorpusFile
@@ -220,7 +221,7 @@ class CorpusService:
         )
         return await self._repo.add(corpus)
 
-    async def list(self):
+    async def list_all(self) -> Sequence[Corpus]:
         """Return all corpora.
 
         Returns
@@ -230,12 +231,12 @@ class CorpusService:
         """
         return await self._repo.get_all()
 
-    async def get(self, id: int) -> Corpus | None:
+    async def get(self, corpus_id: int) -> Corpus | None:
         """Retrieve a single corpus by its ID.
 
         Parameters
         ----------
-        id : int
+        corpus_id : int
             The corpus ID.
 
         Returns
@@ -243,14 +244,14 @@ class CorpusService:
         Corpus or None
             The corpus record if found, ``None`` otherwise.
         """
-        return await self._repo.get(id)
+        return await self._repo.get(corpus_id)
 
-    async def delete(self, id: int) -> bool:
+    async def delete(self, corpus_id: int) -> bool:
         """Delete a corpus by its ID.
 
         Parameters
         ----------
-        id : int
+        corpus_id : int
             The corpus ID to delete.
 
         Returns
@@ -258,9 +259,11 @@ class CorpusService:
         bool
             ``True`` if the corpus was deleted, ``False`` if not found.
         """
-        return await self._repo.delete(id)
+        return await self._repo.delete(corpus_id)
 
-    async def ingest(self, id: int, max_files: int = 10000) -> tuple[Corpus, list[str]]:
+    async def ingest(
+        self, corpus_id: int, max_files: int = 10000
+    ) -> tuple[Corpus, list[str]]:
         """Ingest files from the corpus directory into the database.
 
         Walks the corpus root directory, chunks files according to the
@@ -269,7 +272,7 @@ class CorpusService:
 
         Parameters
         ----------
-        id : int
+        corpus_id : int
             The corpus ID to ingest.
         max_files : int
             Maximum number of files to ingest. Defaults to ``10000``.
@@ -282,11 +285,11 @@ class CorpusService:
         Raises
         ------
         ValueError
-            If no corpus with the given ``id`` exists.
+            If no corpus with the given ``corpus_id`` exists.
         """
-        corpus = await self._repo.get(id)
+        corpus = await self._repo.get(corpus_id)
         if corpus is None:
-            raise ValueError(f"Corpus {id} not found")
+            raise ValueError(f"Corpus {corpus_id} not found")
 
         inc = json.loads(corpus.include_patterns) if corpus.include_patterns else None
         exc = json.loads(corpus.exclude_patterns) if corpus.exclude_patterns else None
@@ -363,13 +366,15 @@ class CorpusService:
                 .Path(corpus.root_path, fd["relative_path"])
                 .read_text("utf-8")
             )
-            chunker = self._loader._make_chunker(
+            chunker = self._loader._make_chunker(  # pylint: disable=protected-access
                 corpus.chunking_strategy, corpus.chunk_overlap, corpus.block_size
             )
             all_chunks.extend(chunker.chunk(text))
         return all_chunks
 
-    async def get_files(self, corpus_id: int, language: str | None = None):
+    async def get_files(
+        self, corpus_id: int, language: str | None = None
+    ) -> Sequence[CorpusFile]:
         """Return the ingested files for a corpus, optionally filtered by language.
 
         Parameters
@@ -387,7 +392,7 @@ class CorpusService:
         """
         return await self._repo.get_files(corpus_id, language)
 
-    async def get_file(self, file_id: int):
+    async def get_file(self, file_id: int) -> CorpusFile | None:
         """Return a single ingested file by its ID.
 
         Parameters

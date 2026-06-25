@@ -11,10 +11,18 @@ and autograd so training can run on CUDA or MPS devices.
 It is an optional backend — torch must be installed (``pip install torch``).
 """
 
+from __future__ import annotations
+
 import math
 import random
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from types import ModuleType
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from torch import Tensor as torch_Tensor
+    from torch import device as torch_device
+    from torch.nn import Parameter as torch_Parameter
 
 _TORCH_AVAILABLE: bool = False  # Whether torch was successfully imported
 _torch_mod: ModuleType | None = None  # Imported torch module (or None)
@@ -174,7 +182,7 @@ class TorchLlamaModel:
         """
         return sum(p.numel() for p in self.parameters())
 
-    def parameters(self):
+    def parameters(self) -> Iterator[torch_Parameter]:
         """Yield all trainable parameters in the model.
 
         Iterates over all ``nn.Parameter`` and ``nn.ParameterList``
@@ -186,7 +194,7 @@ class TorchLlamaModel:
             Each trainable parameter in the model.
         """
         if not _TORCH_AVAILABLE:
-            return []
+            return
         assert torch is not None
         for v in vars(self).values():
             if isinstance(v, torch.nn.Parameter):
@@ -194,7 +202,13 @@ class TorchLlamaModel:
             elif isinstance(v, torch.nn.ParameterList):
                 yield from v
 
-    def forward(self, token_id: int, pos_id: int, keys: list[list], values: list[list]):
+    def forward(
+        self,
+        token_id: int,
+        pos_id: int,
+        keys: list[list[torch_Tensor]],
+        values: list[list[torch_Tensor]],
+    ) -> torch_Tensor:
         """Run a single forward step through the transformer.
 
         Processes one token at the given position using PyTorch
@@ -305,9 +319,9 @@ class TorchLlamaModel:
         # Final RMSNorm with learned scale before lm_head
         x = F.rms_norm(x, normalized_shape=(self.n_embd,), eps=1e-5) * self.rms_final
         logits = F.linear(x, self.lm_head)
-        return logits
+        return logits  # type: ignore[no-any-return]
 
-    def to(self, device):
+    def to(self, device: str | torch_device) -> TorchLlamaModel:
         """Move all model parameters and buffers to a device.
 
         Transfers ``nn.Parameter``, ``nn.ParameterList``, and RoPE
@@ -336,16 +350,15 @@ class TorchLlamaModel:
         self.sin_table = self.sin_table.to(device)
         return self
 
-    def eval(self):
+    def eval(self) -> None:
         """Set the model to evaluation mode.
 
         This is a no-op for the current implementation since dropout
         and batch norm are not used. Included for API compatibility
         with PyTorch conventions.
         """
-        pass
 
-    def export_weights(self) -> dict[str, list]:
+    def export_weights(self) -> dict[str, list[Any]]:
         """Export all weights as plain Python lists.
 
         Detaches each parameter tensor, moves it to CPU, converts to
@@ -360,7 +373,7 @@ class TorchLlamaModel:
             RMSNorm scales).
         """
         assert torch is not None
-        sd: dict[str, list] = {}
+        sd: dict[str, list[Any]] = {}
         sd["wte"] = self.wte.detach().cpu().tolist()
         sd["lm_head"] = self.lm_head.detach().cpu().tolist()
         sd["rms_final"] = self.rms_final.detach().cpu().tolist()
@@ -479,8 +492,8 @@ def train_torch(
         tokens = [BOS] + [uchars.index(ch) for ch in doc] + [BOS]
         n = min(block_size, len(tokens) - 1)
 
-        keys = [[] for _ in range(n_layer)]
-        values = [[] for _ in range(n_layer)]
+        keys: list[list[torch_Tensor]] = [[] for _ in range(n_layer)]
+        values: list[list[torch_Tensor]] = [[] for _ in range(n_layer)]
 
         total_loss = torch.tensor(0.0, device=device_obj)
 
@@ -518,8 +531,8 @@ def train_torch(
         for _ in range(20):
             token_id = BOS
             sample: list[str] = []
-            samp_keys = [[] for _ in range(model.n_layer)]
-            samp_values = [[] for _ in range(model.n_layer)]
+            samp_keys: list[list[torch_Tensor]] = [[] for _ in range(model.n_layer)]
+            samp_values: list[list[torch_Tensor]] = [[] for _ in range(model.n_layer)]
             for pos_id in range(block_size):
                 logits = model.forward(token_id, pos_id, samp_keys, samp_values)
                 scaled = logits / temperature

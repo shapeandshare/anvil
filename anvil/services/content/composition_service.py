@@ -9,6 +9,8 @@ version) operations.
 
 from __future__ import annotations
 
+from typing import Any
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -52,7 +54,7 @@ class CompositionService:
         self._corpus_repo = corpus_repo
         self._db_session = db_session
 
-    def validate_spec(self, spec: list[dict]) -> None:
+    def validate_spec(self, spec: list[dict[str, Any]]) -> None:
         """Validate a composition specification.
 
         Checks that *spec* is non-empty and the sum of all weights
@@ -77,7 +79,9 @@ class CompositionService:
         if total_weight <= 0:
             raise ValueError("Composition spec weights must sum to a positive value")
 
-    async def preview(self, corpus_id: int, spec: list[dict]) -> dict:
+    async def preview(
+        self, corpus_id: int, spec: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Preview the token/byte contribution of a composition spec.
 
         Accepts a list of ``{"content_hash": str, "weight": float}``
@@ -118,7 +122,7 @@ class CompositionService:
 
         from ...db.models.content_blob import ContentBlob
 
-        sources: list[dict] = []
+        sources: list[dict[str, Any]] = []
         total_bytes = 0
 
         for item in spec:
@@ -146,7 +150,7 @@ class CompositionService:
             "total_tokens": total_bytes // 4,
         }
 
-    async def freeze(self, corpus_id: int, spec: list[dict]) -> VersionRef:
+    async def freeze(self, corpus_id: int, spec: list[dict[str, Any]]) -> VersionRef:
         """Freeze a composition version from a specification.
 
         Converts each spec item to a ``ManifestEntry`` and delegates
