@@ -151,7 +151,7 @@ def warmup_demo_via_system_pipeline() -> None:
             result = await backend.run(
                 docs,
                 config,
-                progress_callback=lambda step, loss, **kwargs: None,
+                progress_callback=lambda *args, **kwargs: None,
                 stop_check=lambda: False,
             )
 

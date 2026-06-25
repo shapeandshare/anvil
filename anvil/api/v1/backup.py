@@ -164,7 +164,7 @@ async def verify_backup(
     return result.model_dump(mode="json")  # type: ignore[no-any-return]
 
 
-@router.post("/backup/{backup_id}/restore", status_code=202)
+@router.post("/backup/{backup_id}/restore", status_code=202, response_model=None)
 async def restore_backup(
     backup_id: str,
     request: Request,
@@ -203,7 +203,7 @@ async def restore_backup(
     return dict(result)
 
 
-@router.delete("/backup/{backup_id}")
+@router.delete("/backup/{backup_id}", response_model=None)
 async def delete_backup(
     backup_id: str,
     request: Request,
