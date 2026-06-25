@@ -2116,18 +2116,14 @@ def _validate_sampling_params(
     top_k = body.top_k
     top_p = body.top_p
 
-    if top_k is not None:
-        if top_k <= 0:
-            raise HTTPException(
-                status_code=400, detail="top_k must be a positive integer"
-            )
+    if top_k is not None and top_k <= 0:
+        raise HTTPException(status_code=400, detail="top_k must be a positive integer")
 
-    if top_p is not None:
-        if top_p <= 0.0 or top_p > 1.0:
-            raise HTTPException(
-                status_code=400,
-                detail="top_p must be a float in the range (0.0, 1.0]",
-            )
+    if top_p is not None and (top_p <= 0.0 or top_p > 1.0):
+        raise HTTPException(
+            status_code=400,
+            detail="top_p must be a float in the range (0.0, 1.0]",
+        )
 
     return top_k, top_p
 
@@ -2424,7 +2420,9 @@ def _sample_tokens(
     return samples
 
 
-@router.post("/inference/sample")
+@router.post(
+    "/inference/sample", responses={400: {"description": "Invalid sampling parameters"}}
+)
 async def inference_sample(body: InferenceSampleBody) -> dict[str, Any]:
     """Generate text samples from a registered model.
 

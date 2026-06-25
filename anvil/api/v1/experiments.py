@@ -99,6 +99,106 @@ def _get_mlflow_experiment_id() -> str | None:
         return None
 
 
+async def _enrich_experiments(
+    experiments: list[dict[str, Any]],
+) -> None:
+    """Enrich experiments in-place with dataset/corpus names and artifact flags.
+
+    Opens a database session to resolve ``dataset_name`` from the
+    ``dataset_id`` (or ``corpus_id`` fallback) for each experiment, and
+    sets the ``artifact_available`` flag based on whether the model file
+    exists on disk.
+
+    Parameters
+    ----------
+    experiments : list[dict[str, Any]]
+        List of experiment dicts to enrich in place.
+    """
+    from ...db.repositories.corpora import CorpusRepository
+    from ...db.repositories.datasets import DatasetRepository
+    from ...db.session import AsyncSessionLocal
+
+    async with AsyncSessionLocal() as session:
+        ds_repo = DatasetRepository(session)
+        corp_repo = CorpusRepository(session)
+
+        for exp in experiments:
+            await _resolve_experiment_name(exp, ds_repo, corp_repo)
+            _set_artifact_flag(exp)
+
+
+async def _resolve_experiment_name(
+    exp: dict[str, Any],
+    ds_repo: Any,
+    corp_repo: Any,
+) -> None:
+    """Resolve a human-readable dataset name for an experiment.
+    Tries ``dataset_id`` first, then falls back to ``corpus_id``.
+    """
+    if not exp.get("dataset_name"):
+        name = await _resolve_name_from_ds(exp, ds_repo)
+    else:
+        name = await _resolve_name_from_corpus(exp, corp_repo)
+    if name is not None:
+        exp["dataset_name"] = name
+
+
+async def _resolve_name_from_ds(exp: dict[str, Any], ds_repo: Any) -> str | None:
+    """Resolve experiment name from its dataset_id."""
+    ds_id = exp.get("dataset_id")
+    if ds_id is None:
+        return None
+    try:
+        ds = await ds_repo.get(int(ds_id))
+    except (ValueError, OSError):
+        return None
+    return ds.name if ds else None
+
+
+async def _resolve_name_from_corpus(exp: dict[str, Any], corp_repo: Any) -> str | None:
+    """Resolve experiment name from its corpus_id fallback."""
+    corp_id = exp.get("corpus_id")
+    if corp_id is None:
+        return None
+    try:
+        corp = await corp_repo.get(int(corp_id))
+    except (ValueError, OSError):
+        return None
+    return corp.name if corp else None
+
+
+def _set_artifact_flag(exp: dict[str, Any]) -> None:
+    """Set the ``artifact_available`` flag on an experiment dict."""
+    exp["artifact_available"] = (
+        Path(f"data/models/experiment_{exp['id']}.json").exists()
+        if exp.get("id")
+        else False
+    )
+
+
+def _build_mlflow_url(
+    request: Request,
+    mlflow_exp_id: str | None,
+) -> str | None:
+    """Build an absolute MLflow browser URL for a given experiment ID.
+
+    Parameters
+    ----------
+    request : Request
+        FastAPI request object used to construct the base URI.
+    mlflow_exp_id : str | None
+        MLflow experiment ID to link to. Returns ``None`` if ``None``.
+
+    Returns
+    -------
+    str | None
+        Absolute MLflow experiment URL or ``None``.
+    """
+    if mlflow_exp_id:
+        return f"{get_mlflow_browser_uri(request)}/#/experiments/{mlflow_exp_id}"
+    return None
+
+
 @router.get("/experiments")
 async def list_experiments(request: Request) -> dict[str, Any]:
     """List all experiments with enrichment data.
@@ -125,52 +225,12 @@ async def list_experiments(request: Request) -> dict[str, Any]:
     experiments = await tracking_svc.list_experiments()
 
     # Enrich with dataset/corpus names and artifact availability
-    from ...db.session import AsyncSessionLocal
-
-    async with AsyncSessionLocal() as session:
-        from ...db.repositories.corpora import CorpusRepository
-        from ...db.repositories.datasets import DatasetRepository
-
-        ds_repo = DatasetRepository(session)
-        corp_repo = CorpusRepository(session)
-
-        for exp in experiments:
-            # Resolve dataset name from DB if not already set via MLflow tag
-            if not exp.get("dataset_name"):
-                ds_id = exp.get("dataset_id")
-                if ds_id:
-                    try:
-                        ds = await ds_repo.get(int(ds_id))
-                        if ds:
-                            exp["dataset_name"] = ds.name
-                    except (ValueError, OSError):
-                        pass
-            else:
-                # Fall back to corpus name if no dataset_id
-                corp_id = exp.get("corpus_id")
-                if corp_id:
-                    try:
-                        corp = await corp_repo.get(int(corp_id))
-                        if corp:
-                            exp["dataset_name"] = corp.name
-                    except (ValueError, OSError):
-                        pass
-
-            # Check artifact availability
-            exp["artifact_available"] = (
-                Path(f"data/models/experiment_{exp['id']}.json").exists()
-                if exp.get("id")
-                else False
-            )
+    await _enrich_experiments(experiments)
 
     mlflow_exp_id = _get_mlflow_experiment_id()
     return {
         "mlflow_experiment_id": mlflow_exp_id,
-        "mlflow_url": (
-            f"{get_mlflow_browser_uri(request)}/#/experiments/{mlflow_exp_id}"
-            if mlflow_exp_id
-            else None
-        ),
+        "mlflow_url": _build_mlflow_url(request, mlflow_exp_id),
         "experiments": experiments,
     }
 

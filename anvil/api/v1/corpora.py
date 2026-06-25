@@ -16,7 +16,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -236,7 +236,7 @@ async def fork_corpus(
 
 @router.get("/corpora")
 async def list_corpora(
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, Any]:
     """List all corpora.
 
@@ -259,7 +259,7 @@ async def list_corpora(
 
 @router.get("/corpora/{corpus_id}")
 async def get_corpus(
-    corpus_id: int, workbench: AnvilWorkbench = Depends(get_workbench)
+    corpus_id: int, workbench: Annotated[AnvilWorkbench, Depends(get_workbench)]
 ) -> dict[str, Any]:
     """Get a single corpus by ID.
 
@@ -302,7 +302,7 @@ async def get_corpus(
 
 @router.delete("/corpora/{corpus_id}")
 async def delete_corpus(
-    corpus_id: int, workbench: AnvilWorkbench = Depends(get_workbench)
+    corpus_id: int, workbench: Annotated[AnvilWorkbench, Depends(get_workbench)]
 ) -> dict[str, Any]:
     """Delete a corpus by ID.
 
@@ -640,6 +640,44 @@ def _build_language_stats(scan: Any) -> dict[str, Any]:
     return stats
 
 
+def _collect_file_sizes(lang_sizes: dict[str, list[int]], langs: set[str]) -> list[int]:
+    """Collect file sizes for a set of languages from a scan result.
+
+    Parameters
+    ----------
+    lang_sizes : dict[str, list[int]]
+        Mapping of language names to lists of file sizes.
+    langs : set[str]
+        Languages to collect sizes for.
+
+    Returns
+    -------
+    list[int]
+        Flat list of file sizes for the given languages.
+    """
+    sizes: list[int] = []
+    for lang in langs:
+        if lang in lang_sizes:
+            sizes.extend(lang_sizes[lang])
+    return sizes
+
+
+def _avg_or_zero(sizes: list[int]) -> float:
+    """Return the average of a list, or 0 if empty.
+
+    Parameters
+    ----------
+    sizes : list[int]
+        List of file sizes.
+
+    Returns
+    -------
+    float
+        Average or 0.
+    """
+    return sum(sizes) / len(sizes) if sizes else 0.0
+
+
 def _build_recommendations(scan: Any) -> list[dict[str, Any]]:
     """Build chunking strategy recommendations from a scan result.
 
@@ -683,21 +721,8 @@ def _build_recommendations(scan: Any) -> list[dict[str, Any]]:
     doc_count = sum(scan.language_map.get(l, 0) for l in DOC_LANGS)
     data_count = sum(scan.language_map.get(l, 0) for l in DATA_LANGS)
 
-    code_avg = 0
-    code_sizes = []
-    for lang in CODE_LANGS:
-        if lang in lang_sizes:
-            code_sizes.extend(lang_sizes[lang])
-    if code_sizes:
-        code_avg = sum(code_sizes) / len(code_sizes)
-
-    doc_avg = 0
-    doc_sizes = []
-    for lang in DOC_LANGS:
-        if lang in lang_sizes:
-            doc_sizes.extend(lang_sizes[lang])
-    if doc_sizes:
-        doc_avg = sum(doc_sizes) / len(doc_sizes)
+    code_avg = _avg_or_zero(_collect_file_sizes(lang_sizes, CODE_LANGS))
+    doc_avg = _avg_or_zero(_collect_file_sizes(lang_sizes, DOC_LANGS))
 
     is_code_heavy = code_count > doc_count and code_count > data_count
     is_doc_heavy = doc_count > code_count and doc_avg > 5000

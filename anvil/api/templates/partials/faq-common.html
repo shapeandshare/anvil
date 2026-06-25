@@ -1,6 +1,6 @@
 <script nonce="{{ request.state.csp_nonce }}">
 (function() {
-  window.toggleFaq = function toggleFaq(el) {
+  globalThis.toggleFaq = function toggleFaq(el) {
     var expanded = el.getAttribute('aria-expanded') === 'true';
     el.setAttribute('aria-expanded', !expanded);
     var answer = el.querySelector('.faq-answer');
@@ -18,7 +18,7 @@
     el.addEventListener('keydown', function(e) {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        window.toggleFaq(el);
+        globalThis.toggleFaq(el);
       }
     });
   });
