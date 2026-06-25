@@ -602,6 +602,8 @@ class VaultAuditService:
             wikilinks = extract_wikilinks(content)
             for wl in wikilinks:
                 target_stem = wl.rsplit("/", 1)[-1] if "/" in wl else wl
+                if target_stem.endswith(".md"):
+                    target_stem = target_stem[:-3]
                 if target_stem not in filename_index:
                     report.add(
                         Finding(

@@ -3,8 +3,8 @@ title: 'ADR-039: Client SDK Architecture'
 type: decision
 tags:
   - type/decision
-  - domain/client
-  - domain/api
+  - domain/tooling
+  - domain/architecture
 created: '2026-06-21'
 updated: '2026-06-21'
 source: agent

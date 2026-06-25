@@ -3,8 +3,7 @@ title: 'ADR-040: Full-Deployment Backup & Restore'
 type: decision
 tags:
   - type/decision
-  - domain/ops
-  - domain/data
+  - domain/operations
   - domain/architecture
 created: '2026-06-21'
 updated: '2026-06-21'

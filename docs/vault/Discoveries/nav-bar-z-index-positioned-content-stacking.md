@@ -8,6 +8,8 @@ tags:
 title: Nav-Bar Z-Index Competition with Page Content Positioned Elements
 type: discovery
 updated: '2026-06-23T00:00:00.000Z'
+code-refs:
+  - anvil/api/static/css/base.css
 ---
 
 # Nav-Bar Z-Index Competition with Page Content Positioned Elements
