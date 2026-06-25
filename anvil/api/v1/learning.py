@@ -14,11 +14,13 @@ endpoints. Extracted from ``router.py`` as part of structural decomposition.
 from __future__ import annotations
 
 import random
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
 from anvil.api.v1.schemas import InferenceSampleBody
+from anvil.core.autograd import Value
 from anvil.core.engine import LlamaModel, softmax
 
 router = APIRouter()
@@ -246,7 +248,7 @@ LEARNING_ARC_LESSONS = [
 ]
 
 
-def _arc_context(current_key: str) -> dict:
+def _arc_context(current_key: str) -> dict[str, Any]:
     """Build prev/next navigation context from ``LEARNING_ARC``.
 
     Parameters
@@ -1565,9 +1567,9 @@ MEMORY_DIVERGENCE_STEPS = [
 
 
 @router.get("/learn", response_class=HTMLResponse)
-async def learn_index(request: Request):
+async def learn_index(request: Request) -> HTMLResponse:
     """Render the learning hub index page with ordered lessons and additional sections."""
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]  # type: ignore[no-any-return]
         request,
         "archetypes/learn-index.html",
         {"lessons": LEARNING_ARC_LESSONS, "additional": LEARNING_ARC_ADDITIONAL},
@@ -1575,9 +1577,9 @@ async def learn_index(request: Request):
 
 
 @router.get("/learn/data-fundamentals", response_class=HTMLResponse)
-async def data_fundamentals_page(request: Request):
+async def data_fundamentals_page(request: Request) -> HTMLResponse:
     """Render the data fundamentals walkthrough with pipeline diagram and steps."""
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "archetypes/data-fundamentals.html",
         {"steps": DATA_FUNDAMENTALS_STEPS, **_arc_context("data-fundamentals")},
@@ -1585,9 +1587,9 @@ async def data_fundamentals_page(request: Request):
 
 
 @router.get("/learn/attention", response_class=HTMLResponse)
-async def attention_concept_page(request: Request):
+async def attention_concept_page(request: Request) -> HTMLResponse:
     """Render the attention mechanism walkthrough page with interactive steps."""
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "archetypes/concept.html",
         {"steps": ATTENTION_STEPS, **_arc_context("attention")},
@@ -1595,9 +1597,9 @@ async def attention_concept_page(request: Request):
 
 
 @router.get("/learn/tokenization", response_class=HTMLResponse)
-async def tokenization_concept_page(request: Request):
+async def tokenization_concept_page(request: Request) -> HTMLResponse:
     """Render the tokenization walkthrough page with interactive steps."""
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "archetypes/concept.html",
         {"steps": TOKENIZATION_STEPS, **_arc_context("tokenization")},
@@ -1605,9 +1607,9 @@ async def tokenization_concept_page(request: Request):
 
 
 @router.get("/learn/embeddings", response_class=HTMLResponse)
-async def embeddings_concept_page(request: Request):
+async def embeddings_concept_page(request: Request) -> HTMLResponse:
     """Render the embeddings walkthrough page with interactive steps."""
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "archetypes/concept.html",
         {"steps": EMBEDDING_STEPS, **_arc_context("embeddings")},
@@ -1615,9 +1617,9 @@ async def embeddings_concept_page(request: Request):
 
 
 @router.get("/learn/sampling", response_class=HTMLResponse)
-async def sampling_concept_page(request: Request):
+async def sampling_concept_page(request: Request) -> HTMLResponse:
     """Render the sampling walkthrough page with interactive steps."""
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "archetypes/concept.html",
         {"steps": SAMPLING_STEPS, **_arc_context("sampling")},
@@ -1625,9 +1627,9 @@ async def sampling_concept_page(request: Request):
 
 
 @router.get("/learn/training-loop", response_class=HTMLResponse)
-async def training_loop_concept_page(request: Request):
+async def training_loop_concept_page(request: Request) -> HTMLResponse:
     """Render the training loop walkthrough page with interactive steps."""
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "archetypes/concept.html",
         {"steps": TRAINING_LOOP_STEPS, **_arc_context("training-loop")},
@@ -1635,9 +1637,9 @@ async def training_loop_concept_page(request: Request):
 
 
 @router.get("/learn/autograd", response_class=HTMLResponse)
-async def autograd_concept_page(request: Request):
+async def autograd_concept_page(request: Request) -> HTMLResponse:
     """Render the autograd walkthrough page with interactive steps."""
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "archetypes/concept.html",
         {"steps": AUTOGRAD_STEPS, **_arc_context("autograd")},
@@ -1645,9 +1647,9 @@ async def autograd_concept_page(request: Request):
 
 
 @router.get("/learn/loss", response_class=HTMLResponse)
-async def loss_concept_page(request: Request):
+async def loss_concept_page(request: Request) -> HTMLResponse:
     """Render the loss functions walkthrough page with interactive steps."""
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "archetypes/concept.html",
         {"steps": LOSS_STEPS, **_arc_context("loss")},
@@ -1655,9 +1657,9 @@ async def loss_concept_page(request: Request):
 
 
 @router.get("/learn/parameters", response_class=HTMLResponse)
-async def params_concept_page(request: Request):
+async def params_concept_page(request: Request) -> HTMLResponse:
     """Render the model parameters walkthrough page with interactive steps."""
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "archetypes/concept.html",
         {"steps": PARAMS_STEPS, **_arc_context("parameters")},
@@ -1665,9 +1667,9 @@ async def params_concept_page(request: Request):
 
 
 @router.get("/learn/adam", response_class=HTMLResponse)
-async def adam_concept_page(request: Request):
+async def adam_concept_page(request: Request) -> HTMLResponse:
     """Render the Adam optimizer walkthrough page with interactive steps."""
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "archetypes/concept.html",
         {"steps": ADAM_STEPS, **_arc_context("adam")},
@@ -1675,9 +1677,9 @@ async def adam_concept_page(request: Request):
 
 
 @router.get("/learn/architecture", response_class=HTMLResponse)
-async def architecture_concept_page(request: Request):
+async def architecture_concept_page(request: Request) -> HTMLResponse:
     """Render the transformer architecture walkthrough page."""
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "archetypes/architecture.html",
         {"steps": ARCHITECTURE_STEPS, **_arc_context("architecture")},
@@ -1685,9 +1687,9 @@ async def architecture_concept_page(request: Request):
 
 
 @router.get("/learn/export", response_class=HTMLResponse)
-async def export_concept_page(request: Request):
+async def export_concept_page(request: Request) -> HTMLResponse:
     """Render the model export walkthrough page with interactive steps."""
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "archetypes/concept.html",
         {"steps": EXPORT_STEPS, **_arc_context("export")},
@@ -1695,9 +1697,9 @@ async def export_concept_page(request: Request):
 
 
 @router.get("/learn/chunking", response_class=HTMLResponse)
-async def chunking_concept_page(request: Request):
+async def chunking_concept_page(request: Request) -> HTMLResponse:
     """Render the chunking strategies walkthrough page with interactive steps."""
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "archetypes/concept.html",
         {"steps": CHUNKING_STEPS, **_arc_context("chunking")},
@@ -1705,9 +1707,9 @@ async def chunking_concept_page(request: Request):
 
 
 @router.get("/learn/content-versioning", response_class=HTMLResponse)
-async def content_versioning_concept_page(request: Request):
+async def content_versioning_concept_page(request: Request) -> HTMLResponse:
     """Render the content versioning walkthrough page with interactive steps."""
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "archetypes/concept.html",
         {"steps": CONTENT_VERSIONING_STEPS, **_arc_context("content-versioning")},
@@ -1715,9 +1717,9 @@ async def content_versioning_concept_page(request: Request):
 
 
 @router.get("/learn/experiment-tracking", response_class=HTMLResponse)
-async def experiment_tracking_concept_page(request: Request):
+async def experiment_tracking_concept_page(request: Request) -> HTMLResponse:
     """Render the experiment tracking walkthrough page with interactive steps."""
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "archetypes/concept.html",
         {"steps": EXPERIMENT_TRACKING_STEPS, **_arc_context("experiment-tracking")},
@@ -1725,9 +1727,9 @@ async def experiment_tracking_concept_page(request: Request):
 
 
 @router.get("/learn/governance", response_class=HTMLResponse)
-async def governance_concept_page(request: Request):
+async def governance_concept_page(request: Request) -> HTMLResponse:
     """Render the data governance walkthrough page with interactive steps."""
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "archetypes/concept.html",
         {"steps": GOVERNANCE_STEPS, **_arc_context("governance")},
@@ -1735,9 +1737,9 @@ async def governance_concept_page(request: Request):
 
 
 @router.get("/learn/memory-divergence", response_class=HTMLResponse)
-async def memory_divergence_concept_page(request: Request):
+async def memory_divergence_concept_page(request: Request) -> HTMLResponse:
     """Render the memory and divergence walkthrough page with interactive steps."""
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "archetypes/concept.html",
         {"steps": MEMORY_DIVERGENCE_STEPS, **_arc_context("memory-divergence")},
@@ -1993,9 +1995,9 @@ GLOSSARY_TERMS = [
 
 
 @router.get("/learn/faq", response_class=HTMLResponse)
-async def faq_page(request: Request):
+async def faq_page(request: Request) -> HTMLResponse:
     """Render the FAQ walkthrough page."""
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "archetypes/faq.html",
         {"arc": LEARNING_ARC},
@@ -2003,9 +2005,9 @@ async def faq_page(request: Request):
 
 
 @router.get("/learn/glossary", response_class=HTMLResponse)
-async def glossary_page(request: Request):
+async def glossary_page(request: Request) -> HTMLResponse:
     """Render the glossary page with definitions for all technical terms."""
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "archetypes/glossary.html",
         {"terms": GLOSSARY_TERMS, "arc": LEARNING_ARC},
@@ -2013,9 +2015,9 @@ async def glossary_page(request: Request):
 
 
 @router.get("/learn/cloud-compute", response_class=HTMLResponse)
-async def cloud_compute_concept_page(request: Request):
+async def cloud_compute_concept_page(request: Request) -> HTMLResponse:
     """Render the cloud compute walkthrough page with interactive steps."""
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "archetypes/concept.html",
         {"steps": CLOUD_COMPUTE_STEPS, **_arc_context("cloud-compute")},
@@ -2023,9 +2025,9 @@ async def cloud_compute_concept_page(request: Request):
 
 
 @router.get("/models-page", response_class=HTMLResponse)
-async def models_page(request: Request):
+async def models_page(request: Request) -> HTMLResponse:
     """Render the model registry page."""
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "archetypes/models.html",
         {
@@ -2035,7 +2037,7 @@ async def models_page(request: Request):
 
 
 @router.get("/model-detail/{model_id}", response_class=HTMLResponse)
-async def model_detail_page(request: Request, model_id: str):
+async def model_detail_page(request: Request, model_id: str) -> HTMLResponse:
     """Render the model detail page for a given model ID.
 
     Parameters
@@ -2055,13 +2057,13 @@ async def model_detail_page(request: Request, model_id: str):
         if parsed <= 0:
             raise ValueError
     except (ValueError, TypeError):
-        return request.app.state.templates.TemplateResponse(
+        return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
             request,
             "archetypes/model_detail.html",
             {"model_id": 0, "error": f"Invalid model ID: {model_id}"},
             status_code=404,
         )
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "archetypes/model_detail.html",
         {"model_id": parsed},
@@ -2069,7 +2071,7 @@ async def model_detail_page(request: Request, model_id: str):
 
 
 @router.get("/inference/models")
-async def list_inference_models():
+async def list_inference_models() -> dict[str, Any]:
     """List all registered models available for inference.
 
     Returns
@@ -2115,13 +2117,13 @@ def _validate_sampling_params(
     top_p = body.top_p
 
     if top_k is not None:
-        if not isinstance(top_k, int) or top_k <= 0:
+        if top_k <= 0:
             raise HTTPException(
                 status_code=400, detail="top_k must be a positive integer"
             )
 
     if top_p is not None:
-        if not isinstance(top_p, (int, float)) or top_p <= 0.0 or top_p > 1.0:
+        if top_p <= 0.0 or top_p > 1.0:
             raise HTTPException(
                 status_code=400,
                 detail="top_p must be a float in the range (0.0, 1.0]",
@@ -2159,7 +2161,7 @@ def _build_prompt_ids(
         If ``prompt`` contains a character not in the vocabulary.
     """
     BOS = len(chars)
-    if not (prompt and isinstance(prompt, str) and len(prompt) > 0):
+    if not prompt:
         return []
 
     try:
@@ -2175,7 +2177,7 @@ def _build_prompt_ids(
 
 
 def _sample_next_token(
-    logits: list,
+    logits: list[Value],
     temperature: float,
     top_k: int | None,
     top_p: float | None,
@@ -2245,8 +2247,8 @@ def _generate_with_prompt(
     top_p: float | None,
     chars: list[str],
     BOS: int,
-    keys: list[list],
-    values: list[list],
+    keys: list[list[list[Value]]],
+    values: list[list[list[Value]]],
 ) -> str:
     """Generate a text sample conditioned on a prompt.
 
@@ -2305,8 +2307,8 @@ def _generate_without_prompt(
     top_p: float | None,
     chars: list[str],
     BOS: int,
-    keys: list[list],
-    values: list[list],
+    keys: list[list[list[Value]]],
+    values: list[list[list[Value]]],
 ) -> str:
     """Generate a text sample from scratch (no prompt).
 
@@ -2390,8 +2392,8 @@ def _sample_tokens(
     """
     samples: list[str] = []
     for _ in range(num_samples):
-        keys = [[] for _ in range(model.n_layer)]
-        values = [[] for _ in range(model.n_layer)]
+        keys: list[list[list[Value]]] = [[] for _ in range(model.n_layer)]
+        values: list[list[list[Value]]] = [[] for _ in range(model.n_layer)]
 
         if prompt_ids:
             sample = _generate_with_prompt(
@@ -2423,7 +2425,7 @@ def _sample_tokens(
 
 
 @router.post("/inference/sample")
-async def inference_sample(body: InferenceSampleBody):
+async def inference_sample(body: InferenceSampleBody) -> dict[str, Any]:
     """Generate text samples from a registered model.
 
     Parameters

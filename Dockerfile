@@ -8,7 +8,7 @@
 # Run:    docker run -p 8080:8080 -p 5001:5001 anvil
 
 # ---- Stage 1: builder — build the wheel ----
-FROM python:3.11-slim@sha256:7e2b6c0beae4164cc34d6ca850fc87b2c6efeebedb67f0184d4e886648fcc41b AS builder
+FROM python:3.11-slim AS builder
 
 WORKDIR /src
 
@@ -27,7 +27,7 @@ COPY anvil/ anvil/
 RUN uv build --wheel --out-dir /dist .
 
 # ---- Stage 2: runtime — install ONLY the wheel (no source tree) ----
-FROM python:3.11-slim@sha256:7e2b6c0beae4164cc34d6ca850fc87b2c6efeebedb67f0184d4e886648fcc41b AS runtime
+FROM python:3.11-slim AS runtime
 
 # Create a non-root user for security
 RUN useradd --create-home --uid 1000 anvil

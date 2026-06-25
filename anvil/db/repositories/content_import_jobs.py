@@ -10,6 +10,8 @@ Provides CRUD operations and status management for the ``ImportJob``
 entity via the async SQLAlchemy repository pattern.
 """
 
+from typing import Any
+
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -83,7 +85,7 @@ class ContentImportJobRepository:
         -------
         None
         """
-        values: dict = {"status": status}
+        values: dict[str, Any] = {"status": status}
         if message is not None:
             values["message"] = message
         await self._session.execute(

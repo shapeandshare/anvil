@@ -128,7 +128,7 @@ class ProcessSupervisor:
     def __init__(self, log_dir: str = "logs"):
         self.log_dir = Path(log_dir)
         self.log_dir.mkdir(parents=True, exist_ok=True)
-        self._processes: dict[str, subprocess.Popen] = {}
+        self._processes: dict[str, subprocess.Popen[bytes]] = {}
 
     def start(self, name: str, cmd: list[str]) -> None:
         """Start a named background subprocess.

@@ -100,7 +100,7 @@ class ContentBlobRepository:
         """
         result = await self._session.execute(
             delete(ContentBlob).where(
-                ContentBlob.content_hash.notin_(keep_hashes)  # type: ignore[operator]
+                ContentBlob.content_hash.notin_(keep_hashes)
             )
         )
-        return result.rowcount
+        return result.rowcount  # type: ignore[attr-defined, no-any-return]

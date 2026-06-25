@@ -119,7 +119,7 @@ class ContentCorpusRepository:
         result = await self._session.execute(
             delete(ContentCorpus).where(ContentCorpus.id == id)
         )
-        return result.rowcount > 0
+        return result.rowcount > 0  # type: ignore[attr-defined, no-any-return]
 
     # ---- Domain operations ----
 

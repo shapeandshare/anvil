@@ -81,7 +81,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref || github.ref_name }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Install uv
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
         with:
@@ -97,7 +97,7 @@ jobs:
           git add -A
           if ! git diff --cached --exit-code; then
             git commit -m "style: auto-format with black + isort [skip ci]"
-            git push
+            git push origin HEAD:${{ github.head_ref || github.ref_name }}
           else
             echo "No formatting changes needed."
           fi

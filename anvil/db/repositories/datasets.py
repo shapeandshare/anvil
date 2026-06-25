@@ -17,6 +17,7 @@ DatasetRepository
 """
 
 from collections.abc import Sequence
+from typing import Any
 
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -147,7 +148,7 @@ class DatasetRepository:
         await self._session.refresh(dataset)
         return dataset
 
-    async def update_fields(self, id: int, **kwargs) -> Dataset | None:
+    async def update_fields(self, id: int, **kwargs: Any) -> Dataset | None:
         """Update specific fields on a dataset by primary key.
 
         Parameters

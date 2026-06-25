@@ -12,6 +12,7 @@ SQLAlchemy repository pattern.
 """
 
 from collections.abc import Sequence
+from typing import Any
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -89,7 +90,7 @@ class ContentIngestSessionRepository:
         -------
         None
         """
-        values: dict = {"status": status}
+        values: dict[str, Any] = {"status": status}
         if problems is not None:
             values["problems_json"] = problems
         await self._session.execute(
@@ -173,7 +174,7 @@ class ContentIngestSessionRepository:
         result = await self._session.execute(
             select(IngestSession)
             .where(
-                IngestSession.status.notin_(["ACCEPTED", "FAILED"])  # type: ignore[operator]
+                IngestSession.status.notin_(["ACCEPTED", "FAILED"])
             )
             .order_by(IngestSession.created_at.desc())
         )
