@@ -1,3 +1,18 @@
+---
+title: 'ADR-008: Automated Semantic Versioning & Release'
+type: decision
+tags:
+  - type/decision
+  - domain/tooling
+status: accepted
+created: '2026-06-14'
+updated: '2026-06-14'
+aliases:
+  - automated-semver-release
+source: agent
+code-refs:
+  - pyproject.toml
+---
 # ADR-008: Automated Semantic Versioning & Release
 
 **Date**: 2026-06-14  

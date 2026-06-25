@@ -1,3 +1,12 @@
+---
+title: UI Link and Button Conventions
+type: reference
+tags:
+  - type/reference
+  - domain/ui
+created: '2026-06-14'
+updated: '2026-06-14'
+---
 # UI Link & Button Conventions
 
 **Established**: 2026-06-14  

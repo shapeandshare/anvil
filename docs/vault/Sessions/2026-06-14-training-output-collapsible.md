@@ -1,3 +1,16 @@
+---
+title: Training Output Collapsible
+type: session-log
+tags:
+  - type/session-log
+  - domain/ui
+  - domain/training
+created: '2026-06-14'
+updated: '2026-06-14'
+aliases:
+  - 2026-06-14-training-output-collapsible
+source: agent
+---
 ## Summary
 Made the training Output section collapsible with a live status indicator dot. The Output section on the training page (`/v1/training-page`) previously showed a full-height log panel with no way to collapse it and no visual cue for whether a training process was actively producing output.
 

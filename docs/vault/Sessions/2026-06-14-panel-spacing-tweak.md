@@ -1,3 +1,15 @@
+---
+title: 'Session: Panel Spacing Tweak'
+type: session-log
+tags:
+  - type/session-log
+  - domain/ui
+created: '2026-06-14'
+updated: '2026-06-14'
+aliases:
+  - 2026-06-14-panel-spacing-tweak
+source: agent
+---
 # Session: Panel Spacing Tweak
 
 **Date**: 2026-06-14

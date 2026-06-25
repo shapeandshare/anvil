@@ -1,3 +1,12 @@
+---
+title: Wizard-Tabs Reuse Pattern
+type: reference
+tags:
+  - type/reference
+  - domain/ui
+created: '2026-06-14'
+updated: '2026-06-14'
+---
 # wizard-tabs Reuse Pattern
 
 The `wizard-tabs` CSS classes in `archetypes.css` define a generic tabbed panel pattern that can be reused anywhere in the UI.

@@ -1,3 +1,19 @@
+---
+title: 'ADR-010: Hosted MLflow Support — Disable Local Server'
+type: decision
+tags:
+  - type/decision
+  - domain/mlops
+status: accepted
+created: '2026-06-14'
+updated: '2026-06-14'
+aliases:
+  - disable-local-mlflow-server
+source: agent
+code-refs:
+  - anvil/services/tracking/
+  - shared/tracking.mk
+---
 # ADR-010: Hosted MLflow support — disable local server
 
 **Status**: Accepted

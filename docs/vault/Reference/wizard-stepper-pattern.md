@@ -1,3 +1,12 @@
+---
+title: Wizard-Stepper Component Pattern
+type: reference
+tags:
+  - type/reference
+  - domain/ui
+created: '2026-06-14'
+updated: '2026-06-14'
+---
 ## Discovery: Wizard-Stepper Component Pattern
 
 The training page redesign introduced a **wizard-stepper** component — a reusable pattern for progressive multi-step forms within a single card.

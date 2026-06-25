@@ -1,48 +1,13 @@
-# Data Model: Deployment Backup & Restore
-
-**Feature**: 026-deployment-backup-restore | **Date**: 2026-06-21 | **Phase**: 1
-
-Derives the persisted entities, value types, and enums from the spec's Key Entities (spec §Key Entities) and Functional Requirements. Follows anvil conventions: ORM models inherit `Base, TimestampMixin`; value/result types are Pydantic `BaseModel`; fixed value sets are `StrEnum`; one class per file; types co-located in `anvil/services/backup/`.
-
 ---
-
-## 1. Persisted Entity (DB)
-
-### `BackupOperation` — ORM model
-
-**File**: `anvil/db/models/backup_operation.py`
-**Table**: `backup_operations`
-**Maps spec entity**: *BackupOperation* (and the persisted index of *BackupArchive*).
-
-| Column | Type | Constraints / Default | Notes |
-|---|---|---|---|
-| `id` | `int` | PK, autoincrement | |
-| `backup_id` | `str` | `String(64)`, unique, indexed | Public id, e.g. `20260621T143000Z-a1b2c3` |
-| `operation_type` | `str` | `String(20)`, default `BACKUP` | `BackupOperationType` value (`backup` / `restore` / `pre_restore_safety`) |
-| `status` | `str` | `String(20)`, default `CREATING` | `BackupStatus` value |
-| `archive_filename` | `str \| None` | `String(255)`, nullable | Filename within backup dir; null until archive written |
-| `archive_size_bytes` | `int` | `Integer`, default `0` | Compressed archive size |
-| `total_uncompressed_bytes` | `int` | `Integer`, default `0` | Sum of source file sizes |
-| `manifest_sha256` | `str \| None` | `String(64)`, nullable | Top-level manifest checksum |
-| `deployment_version` | `str \| None` | `String(50)`, nullable | `anvil.__version__` at creation |
-| `schema_revision` | `str \| None` | `String(64)`, nullable | Alembic head at creation |
-| `started_at` | `datetime \| None` | `DateTime`, nullable | Operation start |
-| `completed_at` | `datetime \| None` | `DateTime`, nullable | Operation end (success or fail) |
-| `error_message` | `str \| None` | `String(1000)`, nullable | Populated on failure |
-| `restored_from_backup_id` | `str \| None` | `String(64)`, nullable | For `restore` rows: which backup was restored |
-| `safety_snapshot_id` | `str \| None` | `String(64)`, nullable | For `restore` rows: the auto pre-restore snapshot's `backup_id` |
-| `created_at` | `datetime` | from `TimestampMixin` | |
-| `updated_at` | `datetime` | from `TimestampMixin` | |
-
-**Relationships**: none (flat operations log). The archive file on disk is the source of truth for contents; this table is the queryable index + operation history.
-
-**Validation rules** (enforced in service layer, not DB):
-- `backup_id` is generated, never client-supplied.
-- A row with `operation_type=pre_restore_safety` MUST NOT be deletable via the standard delete path (FR-020).
-- `status` transitions are constrained (see state machine below).
-
+title: 'Data Model: Deployment Backup and Restore'
+type: spec
+tags:
+  - type/spec
+  - domain/operations
+status: draft
+created: '2026-06-21'
+updated: '2026-06-21'
 ---
-
 ## 2. State Machine — `BackupStatus`
 
 ```

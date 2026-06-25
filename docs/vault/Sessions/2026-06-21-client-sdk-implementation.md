@@ -1,3 +1,15 @@
+---
+title: 'Session: Client SDK Implementation'
+type: session-log
+tags:
+  - type/session-log
+  - domain/architecture
+created: '2026-06-21'
+updated: '2026-06-21'
+aliases:
+  - 2026-06-21-client-sdk-implementation
+source: agent
+---
 # Session: Client SDK Implementation
 
 **Date**: 2026-06-21

@@ -1,3 +1,16 @@
+---
+title: Backend Registry Orphaned-Name Bug
+type: session-log
+tags:
+  - type/session-log
+  - domain/architecture
+  - domain/training
+created: '2026-06-18'
+updated: '2026-06-18'
+aliases:
+  - 2026-06-18-backend-registry-orphaned-name
+source: agent
+---
 ## Session: Backend registry orphaned-name bug — training silently killed before SSE stream
 
 **Date**: 2026-06-18

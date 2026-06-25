@@ -203,7 +203,7 @@ class GraphHealthRunner:
 
             import re
 
-            wikilink_pattern = re.compile(r"\[\[([^\]]+)\]\]")
+            wikilink_pattern = re.compile(r"\[\[([^\]|#]+)(?:[|#][^\]]+)?\]\]")
             outbound_stems = [
                 unicodedata.normalize("NFC", m.group(1))
                 for m in wikilink_pattern.finditer(body)

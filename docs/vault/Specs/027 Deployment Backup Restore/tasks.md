@@ -1,40 +1,13 @@
-# Tasks: Deployment Backup & Restore
-
-**Input**: Design documents from `/docs/vault/Specs/027 Deployment Backup Restore/`
-**Prerequisites**: plan.md, spec.md, research.md (R1–R14), data-model.md, contracts/ (api-v1-backup.md, cli-backup.md, backup-archive.md), quickstart.md
-
-**Tests**: REQUIRED — Constitution Article IV mandates TDD (Red-Green-Refactor). Test tasks are written FIRST and must FAIL before implementation.
-
-**Organization**: Tasks grouped by the 6 user stories from spec.md. Cross-cutting concerns from clarifications (FR-030 crash-safe restore journal, FR-031 audit logging, FR-032 quota auto-rotation, FR-001 snapshot exclusions) are folded into the user story they serve or into Foundational/Polish.
-
-## Format: `[ID] [P?] [Story?] Description`
-
-- **[P]**: Can run in parallel (different files, no dependencies on incomplete tasks)
-- **[Story]**: Maps to spec.md user stories (US1–US6)
-- All paths are repository-relative; the package root is `anvil/`.
-
-## Path Conventions
-
-- Package: `anvil/` (implicit namespace, relative imports only)
-- New domain sub-package: `anvil/services/backup/` (bare `__init__.py`)
-- Migrations: `anvil/_resources/migrations/` (top-level package resources, NOT under `db/`)
-- Tests: `tests/unit/...` and `tests/e2e/...`
-
 ---
-
-## Phase 1: Setup (Shared Infrastructure)
-
-**Purpose**: Configuration, package scaffolding, and dependency wiring that every story builds on.
-
-- [x] T001 Add backup config keys to `anvil/config.py` `get_config()`: `backup_dir` (env `ANVIL_BACKUP_DIR`, default `data/backups`), `backup_quota_bytes` (env `ANVIL_BACKUP_QUOTA_BYTES`, default `10 * 1024**3`), `backup_quota_warn_fraction` (env `ANVIL_BACKUP_QUOTA_WARN`, default `0.8`), `backup_retention_max_count` (env `ANVIL_BACKUP_RETENTION_MAX_COUNT`, default `None`), `backup_retention_max_age_days` (env `ANVIL_BACKUP_RETENTION_MAX_AGE_DAYS`, default `None`).
-- [x] T002 Create the `anvil/services/backup/` domain sub-package with a bare docstring-only `__init__.py` describing the backup bounded context (per Constitution Article VI/X).
-- [x] T003 [P] Create test package dir with bare `__init__.py`: `tests/unit/services/backup/__init__.py`.
-- [x] T004 [P] Register the CLI entry point in `pyproject.toml` `[project.scripts]`: `anvil-backup = "anvil.services.backup.cli:main"`.
-
-**Checkpoint**: Package scaffolding and config in place.
-
+title: 'Tasks: Deployment Backup and Restore'
+type: spec
+tags:
+  - type/spec
+  - domain/operations
+status: draft
+created: '2026-06-21'
+updated: '2026-06-21'
 ---
-
 ## Phase 2: Foundational (Blocking Prerequisites)
 
 **Purpose**: Enums, value types, ORM model, migration, repository, audit-enum extensions, and the shared `BackupService` skeleton + god-class/app wiring. **No user story can be implemented until this phase is complete.**

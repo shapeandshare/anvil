@@ -1,43 +1,13 @@
-# Tasks: Client SDK
-
-**Input**: Design documents from `docs/vault/Specs/026 Client SDK/`
-**Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/
-
-**Tests**: TDD is MANDATORY per Constitution Article IV (Red-Green-Refactor). Test tasks are
-included and MUST be written first and observed to FAIL before implementation. Coverage
-`fail_under` ratchet (currently 23) MUST NOT decrease.
-
-**Organization**: Tasks grouped by user story (spec priorities P1–P3) for independent delivery.
-
-## Format: `[ID] [P?] [Story] Description`
-
-- **[P]**: Can run in parallel (different files, no dependencies)
-- **[Story]**: US1–US6 maps to spec.md user stories
-- All paths are repo-relative; SDK lives under `anvil/client/`, tests under `tests/`.
-
-## Path Conventions
-
-- SDK package: `anvil/client/` (domain sub-packages + `_shared/` infrastructure)
-- Unit tests: `tests/unit/client/`
-- e2e tests (in-process via `httpx.ASGITransport(app=app)`): `tests/e2e/api/test_client_*.py`
-- Every `.py` file: one class (Constitution); bare docstring-only `__init__.py`; NumPy docstrings.
-
 ---
-
-## Phase 1: Setup (Shared Infrastructure)
-
-**Purpose**: Create the SDK package skeleton with constitution-compliant `__init__.py` files.
-
-- [x] T001 Create SDK package root `anvil/client/__init__.py` (bare docstring-only, per Article VI) describing the client SDK's purpose
-- [x] T002 [P] Create `anvil/client/_shared/__init__.py` (bare docstring-only) describing cross-domain SDK infrastructure
-- [x] T003 [P] Create `anvil/client/_shared/errors/__init__.py` (bare docstring-only) describing the typed exception hierarchy
-- [x] T004 [P] Ensure test directories `tests/unit/client/` and `tests/unit/client/_shared/` exist (created implicitly when the first test file lands). Do NOT add `__init__.py` to test directories — pytest uses rootdir-based discovery, consistent with the existing `tests/` layout
-- [x] T005 Verify SDK packaging: confirm `anvil.client*` is captured by existing `[tool.setuptools.packages.find] include = ["anvil*"]` and inherits top-level `anvil/py.typed` (no pyproject change expected; record finding in plan notes)
-
-**Checkpoint**: Empty, importable `anvil.client` package skeleton exists.
-
+title: 'Tasks: Client SDK'
+type: spec
+tags:
+  - type/spec
+  - domain/architecture
+status: draft
+created: '2026-06-21'
+updated: '2026-06-21'
 ---
-
 ## Phase 2: Foundational (Blocking Prerequisites)
 
 **Purpose**: The `_shared/` transport, config, envelope, errors, command base, and SSE event

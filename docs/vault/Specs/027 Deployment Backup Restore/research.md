@@ -1,27 +1,13 @@
-# Research: Deployment Backup & Restore
-
-**Feature**: 026-deployment-backup-restore | **Date**: 2026-06-21 | **Phase**: 0
-
-This document resolves all technical unknowns for the backup & restore feature. No `NEEDS CLARIFICATION` markers remained from the spec (all defaults documented in spec Assumptions); the research below validates the chosen approach against anvil's architecture and constraints.
-
 ---
-
-## R1 — Consistent SQLite snapshot under WAL mode
-
-**Decision**: Use the SQLite **Online Backup API** via `sqlite3.Connection.backup()` against the live DB file to produce a consistent copy, executed in a thread (`asyncio.to_thread`). Fallback/equivalent: issue `PRAGMA wal_checkpoint(TRUNCATE)` then copy the single `.db` file.
-
-**Rationale**:
-- anvil runs SQLite in **WAL mode** (`PRAGMA journal_mode=WAL` in `anvil/db/session.py`), so the live database spans three files: `anvil-state.db`, `anvil-state.db-wal`, `anvil-state.db-shm`. Naively copying only the `.db` file would miss uncommitted-to-main-DB pages in the `-wal` file → corruption.
-- `sqlite3.Connection.backup(dst)` produces a transactionally-consistent single-file copy even while the source is being written, with no manual checkpoint dance. It is stdlib, zero-dependency (Constitution Article I friendly).
-- The MLflow backend store (`mlruns/mlflow.db`) is also SQLite and is snapshotted the same way.
-
-**Alternatives considered**:
-- *Raw file copy of all three WAL files*: fragile — racy if a checkpoint runs mid-copy; rejected.
-- *`VACUUM INTO`*: produces a clean copy but rewrites/defragments and is slower on large DBs; the Online Backup API is simpler and sufficient.
-- *Stop the app, copy files, restart*: violates Pit of Success (backup should not require downtime); rejected for the backup path (restore *does* pause services, which is acceptable).
-
+title: 'Research: Deployment Backup and Restore'
+type: spec
+tags:
+  - type/spec
+  - domain/operations
+status: draft
+created: '2026-06-21'
+updated: '2026-06-21'
 ---
-
 ## R2 — Archive format & immutability
 
 **Decision**: Each backup is a single **`.tar.gz`** file named `backup-<UTC-timestamp>-<shortid>.tar.gz` (e.g. `backup-20260621T143000Z-a1b2c3.tar.gz`), written atomically (temp file in `data/backups/.tmp/` → `os.replace` into place). Files are never modified after creation.

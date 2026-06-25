@@ -1,3 +1,13 @@
+---
+title: 'Implementation Plan: Deployment Backup and Restore'
+type: spec
+tags:
+  - type/spec
+  - domain/operations
+status: draft
+created: '2026-06-21'
+updated: '2026-06-21'
+---
 # Implementation Plan: Deployment Backup & Restore
 
 **Branch**: `027-deployment-backup-restore` | **Date**: 2026-06-21 | **Spec**: [spec.md](./spec.md)

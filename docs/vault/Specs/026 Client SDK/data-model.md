@@ -1,75 +1,13 @@
-# Phase 1 Data Model: Client SDK
-
-**Feature**: 026-client-sdk | **Date**: 2026-06-21
-
-All structured types are Pydantic `BaseModel` subclasses (Constitution: `BaseModel` over
-dataclass). All enumerations are `StrEnum` (enums over magic strings). Every type lives in its
-own file (one-class-per-file). Annotations use PEP 604 unions (`X | None`) with
-`from __future__ import annotations` at file top.
-
-Two categories of types:
-1. **Infrastructure types** — SDK plumbing (`_shared/`).
-2. **Domain DTOs** — typed request/response payloads, co-located with their domain sub-package.
-
 ---
-
-## 1. Infrastructure Types (`anvil/client/_shared/`)
-
-### `ServerConfig` — `_shared/server_config.py`
-Connection configuration. Resolution per field: explicit arg > env var > default.
-
-| Field | Type | Default | Env Var | Notes |
-|---|---|---|---|---|
-| `base_url` | `str` | `"http://localhost:8080"` | `ANVIL_SERVER_URL` | Server root; no trailing slash |
-| `timeout` | `float` | `30.0` | `ANVIL_TIMEOUT` | Per-request seconds; `> 0` |
-| `retry_count` | `int` | `3` | `ANVIL_RETRY_COUNT` | `>= 0` |
-| `retry_backoff` | `float` | `0.5` | `ANVIL_RETRY_BACKOFF` | Exponential factor seconds; `>= 0` |
-
-- **Validation**: `timeout > 0`; `retry_count >= 0`; `retry_backoff >= 0`; `base_url` non-empty.
-- **Classmethod**: `from_env(**overrides) -> ServerConfig` applies the resolution order.
-
-### `Response[T]` — `_shared/response.py`
-Generic Pydantic model unwrapping the API envelope.
-
-| Field | Type | Notes |
-|---|---|---|
-| `data` | `T \| None` | Payload; `None` only on error envelopes |
-| `error` | `str \| None` | Server error message; `None` on success |
-
-- `T` is a `TypeVar`. Transport validates JSON into `Response[ConcreteModel]` and returns `.data`.
-
-### `HttpMethod` (StrEnum) — `_shared/http_method.py`
-`GET="get"`, `POST="post"`, `PUT="put"`, `DELETE="delete"`, `PATCH="patch"`.
-
-### `StreamEventType` (StrEnum) — `_shared/stream_event_type.py`
-`METRICS="metrics"`, `COMPLETE="complete"`, `ERROR="error"`, `DIVERGENCE="divergence"`,
-`HEARTBEAT="heartbeat"`, `EXPORT_ERROR="export_error"`.
-(Verified against `anvil/api/v1/training.py` emitted event names.)
-
-### `StreamEvent` — `_shared/stream_event.py`
-Typed SSE event.
-
-| Field | Type | Notes |
-|---|---|---|
-| `type` | `StreamEventType` | Parsed from the `event:` line |
-| `data` | `dict[str, Any]` | Parsed from the `data:` JSON line |
-
-### Exception hierarchy — `_shared/errors/`
-Plain exception classes (NOT `BaseModel`). Root `ApiError(Exception)` carries
-`status_code: int | None` and `message: str`.
-
-| Class | File | Trigger |
-|---|---|---|
-| `ApiError` | `api_error.py` | base for all SDK errors |
-| `AuthenticationError` | `authentication_error.py` | `401`, `403` |
-| `NotFoundError` | `not_found_error.py` | `404` |
-| `ValidationError` | `validation_error.py` | `422` |
-| `RateLimitError` | `rate_limit_error.py` | `429` (carries `retry_after: float \| None`) |
-| `ServerError` | `server_error.py` | `5xx` (preserves server `error` text — SC-004) |
-| `ConnectionError` | `connection_error.py` | transport-level failure / unreachable host |
-
+title: 'Phase 1 Data Model: Client SDK'
+type: spec
+tags:
+  - type/spec
+  - domain/architecture
+status: draft
+created: '2026-06-21'
+updated: '2026-06-21'
 ---
-
 ## 2. Domain DTOs
 
 > Field sets below reflect the verified anvil API responses (the standard

@@ -1,3 +1,15 @@
+---
+title: 'Session: Fix Stale Learning Content After GPT→Llama Migration'
+type: session-log
+tags:
+  - type/session-log
+  - domain/core
+created: '2026-06-14'
+updated: '2026-06-14'
+aliases:
+  - 2026-06-14-stale-learn-content-fix
+source: agent
+---
 # Session: Fix Stale Learning Content After GPT→Llama Migration
 
 **Date**: 2026-06-14

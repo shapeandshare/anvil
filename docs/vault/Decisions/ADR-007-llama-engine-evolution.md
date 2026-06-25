@@ -1,3 +1,19 @@
+---
+title: 'ADR-007: Llama Engine Evolution — SwiGLU, RoPE, Safetensors Export'
+type: decision
+tags:
+  - type/decision
+  - domain/core
+  - domain/infrastructure
+status: accepted
+created: '2026-06-14'
+updated: '2026-06-14'
+aliases:
+  - llama-engine-evolution
+source: agent
+code-refs:
+  - anvil/core/engine.py
+---
 # ADR-007: Llama Engine Evolution
 
 **Date**: 2026-06-14  

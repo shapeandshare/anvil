@@ -1,3 +1,15 @@
+---
+title: Hosted MLflow Support — Disable Local Server
+type: session-log
+tags:
+  - type/session-log
+  - domain/mlops
+created: '2026-06-14'
+updated: '2026-06-14'
+aliases:
+  - 2026-06-14-hosted-mlflow-support
+source: agent
+---
 ## Session: Hosted MLflow support — disable local server
 
 **Date**: 2026-06-14

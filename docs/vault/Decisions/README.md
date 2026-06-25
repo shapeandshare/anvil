@@ -1,3 +1,13 @@
+---
+title: Architecture Decision Records — Index
+type: reference
+tags:
+  - type/reference
+  - domain/architecture
+  - domain/governance
+created: '2026-06-10'
+updated: '2026-06-24'
+---
 # Architecture Decision Records — Index
 
 This index lists all ADRs in this repository. ADRs document significant architecture decisions, their rationale, and alternatives considered.

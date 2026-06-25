@@ -1,3 +1,12 @@
+---
+title: Stale Learning Content After GPT→Llama Migration
+type: reference
+tags:
+  - type/reference
+  - domain/core
+created: '2026-06-14'
+updated: '2026-06-14'
+---
 # Discovery: Stale Learning Content After GPT→Llama Migration
 
 **Date**: 2026-06-14

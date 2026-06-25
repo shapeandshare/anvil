@@ -1,3 +1,15 @@
+---
+title: 'Session: Collapsible Output/Logs Defaults'
+type: session-log
+tags:
+  - type/session-log
+  - domain/ui
+created: '2026-06-14'
+updated: '2026-06-14'
+aliases:
+  - 2026-06-14-collapsible-defaults
+source: agent
+---
 # Session: Collapsible Output/Logs Defaults
 
 **Date**: 2026-06-14

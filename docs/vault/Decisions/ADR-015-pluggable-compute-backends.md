@@ -1,3 +1,19 @@
+---
+title: 'ADR-015: Pluggable Compute Backend Abstraction'
+type: decision
+tags:
+  - type/decision
+  - domain/architecture
+  - domain/infrastructure
+status: accepted
+created: '2026-06-18'
+updated: '2026-06-18'
+aliases:
+  - pluggable-compute-backends
+source: agent
+code-refs:
+  - anvil/services/compute/
+---
 # ADR-015: Pluggable Compute Backend Abstraction
 
 ## Status

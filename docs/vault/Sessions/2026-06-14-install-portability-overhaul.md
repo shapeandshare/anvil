@@ -1,3 +1,15 @@
+---
+title: 'Session: Install Portability Overhaul'
+type: session-log
+tags:
+  - type/session-log
+  - domain/operations
+created: '2026-06-14'
+updated: '2026-06-14'
+aliases:
+  - 2026-06-14-install-portability-overhaul
+source: agent
+---
 # Session: Install Portability Overhaul
 
 **Date**: 2026-06-14

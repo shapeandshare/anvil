@@ -1,3 +1,19 @@
+---
+title: 'ADR-012: Derive MLflow Browser URL from HTTP Request Host Header'
+type: decision
+tags:
+  - type/decision
+  - domain/mlops
+  - domain/ui
+status: accepted
+created: '2026-06-15'
+updated: '2026-06-15'
+aliases:
+  - mlflow-browser-url-from-request-host
+source: agent
+code-refs:
+  - anvil/services/tracking/
+---
 # ADR-012: Derive MLflow browser URL from HTTP request Host header
 
 **Status**: Accepted
