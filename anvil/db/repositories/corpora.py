@@ -127,7 +127,7 @@ class CorpusRepository:
             the given ``id``.
         """
         result = await self._session.execute(delete(Corpus).where(Corpus.id == id))
-        return result.rowcount > 0
+        return result.rowcount > 0  # type: ignore[attr-defined, no-any-return]
 
     # ---- CorpusFile CRUD ----
 

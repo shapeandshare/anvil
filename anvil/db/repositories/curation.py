@@ -15,6 +15,7 @@ SampleRepository
 """
 
 from collections.abc import Sequence
+from typing import Any
 
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -181,10 +182,10 @@ class SampleRepository:
             .where(Sample.id.in_(sample_ids))
             .values(is_removed=True, removed_by_op_id=op_id)
         )
-        return result.rowcount
+        return result.rowcount  # type: ignore[attr-defined, no-any-return]
 
     async def soft_delete_by_dataset(
-        self, dataset_id: int, op_id: int, where_clause=None
+        self, dataset_id: int, op_id: int, where_clause: Any = None
     ) -> int:
         """Mark all active samples in a dataset as removed, optionally
         restricted by a WHERE clause.
@@ -215,7 +216,7 @@ class SampleRepository:
         if where_clause is not None:
             stmt = stmt.where(where_clause)
         result = await self._session.execute(stmt)
-        return result.rowcount
+        return result.rowcount  # type: ignore[attr-defined, no-any-return]
 
     async def count_active(self, dataset_id: int) -> int:
         """Count the number of active (non-removed) samples in a

@@ -12,9 +12,9 @@ from collections.abc import AsyncIterator
 from datetime import datetime
 from pathlib import Path
 
-import aiofiles
+import aiofiles  # type: ignore[import-untyped]
 
-from .interface import FileInfo, FileStore
+from .interface import FileInfo, FileStore  # type: ignore[attr-defined]
 
 
 class LocalFileStore(FileStore):
@@ -56,7 +56,7 @@ class LocalFileStore(FileStore):
         full.parent.mkdir(parents=True, exist_ok=True)
         return full
 
-    async def get(self, path: str) -> AsyncIterator[bytes]:
+    async def get(self, path: str) -> AsyncIterator[bytes]:  # type: ignore[override, misc]
         """Read a file as an asynchronous byte stream from disk.
 
         Parameters
@@ -141,7 +141,7 @@ class LocalFileStore(FileStore):
             directory. Returns an empty list if the directory does
             not exist.
         """
-        results = []
+        results: list[FileInfo] = []
         full_dir = (self.base_path / prefix).resolve()
         if not full_dir.exists():
             return results

@@ -140,7 +140,7 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     if cfg["mlflow_disable_local"]:
         _app.state.mlflow = None
     else:
-        mlflow_svc = MLflowService()  # type: ignore[no-untyped-call]
+        mlflow_svc = MLflowService()
         mlflow_svc.start()
         _app.state.mlflow = mlflow_svc
 

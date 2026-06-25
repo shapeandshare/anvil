@@ -37,16 +37,16 @@ class MLflowService:
         ``mlflow_port``, ``mlflow_uri``, and ``mlflow_backend_store_uri``.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         cfg = get_config()
         self.mlruns_dir = Path("mlruns")
         self.mlruns_dir.mkdir(parents=True, exist_ok=True)
         self.log_dir = Path(cfg["log_dir"])
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.log_file = self.log_dir / "mlflow.log"
-        self.process: subprocess.Popen | None = None
+        self.process: subprocess.Popen[bytes] | None = None
         self.port = cfg["mlflow_port"]
-        self._tracking_uri = cfg["mlflow_uri"]
+        self._tracking_uri: str = cfg["mlflow_uri"]
         self._backend_store_uri = cfg["mlflow_backend_store_uri"]
 
     def _free_port(self) -> None:

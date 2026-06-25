@@ -6,6 +6,10 @@ that were created and later dropped (experiments, registered_models,
 model_versions) since the project has zero deployments.
 """
 
+from __future__ import annotations
+
+from typing import Any
+
 revision: str = "001"
 down_revision: str | None = None
 branch_labels: str | None = None
@@ -15,7 +19,7 @@ import sqlalchemy as sa
 from alembic import op
 
 
-def _provenance_columns_named(table: str) -> list[sa.Column]:
+def _provenance_columns_named(table: str) -> list[sa.Column[Any]]:
     """Return provenance columns with explicit FK constraint name for *table*."""
     return [
         sa.Column("source_description", sa.String(1000), nullable=True),
