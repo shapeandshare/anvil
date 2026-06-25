@@ -22,7 +22,7 @@ import json
 import re
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from starlette.responses import StreamingResponse
@@ -320,7 +320,7 @@ async def list_sources(
 # ── Sessions ─────────────────────────────────────────────────────────────
 
 
-@router.post("/content/sessions")
+@router.post("/content/sessions", responses={404: {"description": "Session not found"}})
 async def open_session(
     body: SessionOpenBody,
     workbench: AnvilWorkbench = Depends(get_workbench),
@@ -753,7 +753,7 @@ async def composition_preview(
 
 @router.get("/content/stream/composition")
 async def stream_composition(
-    _workbench: AnvilWorkbench = Depends(get_workbench),
+    _workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> StreamingResponse:
     """SSE event stream for composition preview updates.
 
@@ -968,7 +968,7 @@ async def get_version_lineage(
 
 @router.get("/content/stream/injection")
 async def injection_event_stream(
-    _workbench: AnvilWorkbench = Depends(get_workbench),
+    _workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> StreamingResponse:
     """SSE event stream for ingestion session lifecycle events.
 
@@ -1192,7 +1192,7 @@ async def list_locks(
 
 @router.get("/content/stream/locks")
 async def stream_locks(
-    _workbench: AnvilWorkbench = Depends(get_workbench),
+    _workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> StreamingResponse:
     """SSE event stream for lock lifecycle notifications.
 
@@ -1313,7 +1313,7 @@ async def get_import_job(
 
 @router.get("/content/stream/import")
 async def stream_import(
-    _workbench: AnvilWorkbench = Depends(get_workbench),
+    _workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> StreamingResponse:
     """SSE event stream for import job progress updates.
 

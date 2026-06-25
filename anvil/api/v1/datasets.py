@@ -311,13 +311,19 @@ async def upload_dataset(
                     "total_size_bytes": dataset.total_size_bytes,
                 },
             )
-    except (OSError, ConnectionError, TimeoutError):
+    except OSError:
         pass
 
     return {"data": _serialize(dataset), "error": None}
 
 
-@router.delete("/datasets/{dataset_id}")
+@router.delete(
+    "/datasets/{dataset_id}",
+    responses={
+        404: {"description": "Dataset not found"},
+        409: {"description": "Dataset is demo-protected"},
+    },
+)
 async def delete_dataset(
     dataset_id: int,
     workbench: AnvilWorkbench = Depends(get_workbench),
@@ -370,7 +376,7 @@ async def delete_dataset(
                 dataset_id=dataset_id,
                 event_type="delete",
             )
-    except (OSError, ConnectionError, TimeoutError):
+    except OSError:
         pass
 
     return {"data": {"message": "Dataset deleted"}, "error": None}
@@ -459,13 +465,16 @@ async def clone_dataset(
                 event_type="create",
                 params={"name": new_dataset.name, "cloned_from": dataset_id},
             )
-    except (OSError, ConnectionError, TimeoutError):
+    except OSError:
         pass
 
     return {"data": _serialize(new_dataset), "error": None}
 
 
-@router.post("/datasets/{dataset_id}/import")
+@router.post(
+    "/datasets/{dataset_id}/import",
+    responses={404: {"description": "Dataset not found or import failed"}},
+)
 async def import_dataset(
     dataset_id: int,
     body: ImportBody,
@@ -521,7 +530,7 @@ async def import_dataset(
                 event_type="import",
                 params={"format": body.format},
             )
-    except (OSError, ConnectionError, TimeoutError):
+    except OSError:
         pass
 
     return {
@@ -535,7 +544,10 @@ async def import_dataset(
     }
 
 
-@router.post("/datasets/{dataset_id}/import-corpus")
+@router.post(
+    "/datasets/{dataset_id}/import-corpus",
+    responses={404: {"description": "Corpus not found or load failed"}},
+)
 async def import_dataset_from_corpus(
     dataset_id: int,
     body: ImportFromCorpusBody,
@@ -588,7 +600,10 @@ async def import_dataset_from_corpus(
     }
 
 
-@router.post("/datasets/from-corpus")
+@router.post(
+    "/datasets/from-corpus",
+    responses={404: {"description": "Corpus not found"}},
+)
 async def create_dataset_from_corpus(
     body: CreateFromCorpusBody,
     workbench: AnvilWorkbench = Depends(get_workbench),
@@ -731,7 +746,7 @@ async def create_dataset_from_corpus(
                     "corpus_id": body.corpus_id,
                 },
             )
-    except (OSError, ConnectionError, TimeoutError):
+    except OSError:
         pass
 
     return {"data": _serialize(new_dataset), "error": None}
@@ -908,7 +923,10 @@ async def update_sample(
     return {"data": {"sample_id": sample.id, "length": sample.length}, "error": None}
 
 
-@router.delete("/datasets/{dataset_id}/samples/{sample_id}")
+@router.delete(
+    "/datasets/{dataset_id}/samples/{sample_id}",
+    responses={404: {"description": "Sample not found"}},
+)
 async def delete_dataset_sample(
     dataset_id: int,
     sample_id: int,
@@ -948,7 +966,10 @@ async def delete_dataset_sample(
     return {"data": {"message": "Sample removed"}, "error": None}
 
 
-@router.post("/datasets/{dataset_id}/curate/dedup")
+@router.post(
+    "/datasets/{dataset_id}/curate/dedup",
+    responses={404: {"description": "Dataset not found"}},
+)
 async def curate_dedup(
     dataset_id: int,
     workbench: AnvilWorkbench = Depends(get_workbench),
@@ -992,7 +1013,7 @@ async def curate_dedup(
                 event_type="curate",
                 params={"operation": "dedup", "removed_count": result.samples_removed},
             )
-    except (OSError, ConnectionError, TimeoutError):
+    except OSError:
         pass
 
     return {
@@ -1006,7 +1027,10 @@ async def curate_dedup(
     }
 
 
-@router.post("/datasets/{dataset_id}/curate/filter")
+@router.post(
+    "/datasets/{dataset_id}/curate/filter",
+    responses={404: {"description": "Dataset not found"}},
+)
 async def curate_filter(
     dataset_id: int,
     body: FilterBody,
@@ -1054,7 +1078,7 @@ async def curate_filter(
                 event_type="curate",
                 params={"operation": "filter", "removed_count": result.samples_removed},
             )
-    except (OSError, ConnectionError, TimeoutError):
+    except OSError:
         pass
 
     return {
@@ -1068,7 +1092,10 @@ async def curate_filter(
     }
 
 
-@router.post("/datasets/{dataset_id}/curate/replace")
+@router.post(
+    "/datasets/{dataset_id}/curate/replace",
+    responses={404: {"description": "Dataset not found"}},
+)
 async def curate_replace(
     dataset_id: int,
     body: ReplaceBody,
@@ -1119,7 +1146,7 @@ async def curate_replace(
                 event_type="curate",
                 params={"operation": "replace"},
             )
-    except (OSError, ConnectionError, TimeoutError):
+    except OSError:
         pass
 
     return {
@@ -1133,7 +1160,10 @@ async def curate_replace(
     }
 
 
-@router.get("/datasets/{dataset_id}/metrics")
+@router.get(
+    "/datasets/{dataset_id}/metrics",
+    responses={404: {"description": "Dataset not found"}},
+)
 async def get_metrics(
     dataset_id: int,
     workbench: AnvilWorkbench = Depends(get_workbench),
