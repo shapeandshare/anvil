@@ -136,23 +136,39 @@ async def _resolve_experiment_name(
     Tries ``dataset_id`` first, then falls back to ``corpus_id``.
     """
     if not exp.get("dataset_name"):
-        ds_id = exp.get("dataset_id")
-        if ds_id:
-            try:
-                ds = await ds_repo.get(int(ds_id))
-                if ds:
-                    exp["dataset_name"] = ds.name
-            except (ValueError, OSError):
-                pass
+        name = await _resolve_name_from_ds(exp, ds_repo)
     else:
-        corp_id = exp.get("corpus_id")
-        if corp_id:
-            try:
-                corp = await corp_repo.get(int(corp_id))
-                if corp:
-                    exp["dataset_name"] = corp.name
-            except (ValueError, OSError):
-                pass
+        name = await _resolve_name_from_corpus(exp, corp_repo)
+    if name is not None:
+        exp["dataset_name"] = name
+
+
+async def _resolve_name_from_ds(
+    exp: dict[str, Any], ds_repo: Any
+) -> str | None:
+    """Resolve experiment name from its dataset_id."""
+    ds_id = exp.get("dataset_id")
+    if ds_id is None:
+        return None
+    try:
+        ds = await ds_repo.get(int(ds_id))
+    except (ValueError, OSError):
+        return None
+    return ds.name if ds else None
+
+
+async def _resolve_name_from_corpus(
+    exp: dict[str, Any], corp_repo: Any
+) -> str | None:
+    """Resolve experiment name from its corpus_id fallback."""
+    corp_id = exp.get("corpus_id")
+    if corp_id is None:
+        return None
+    try:
+        corp = await corp_repo.get(int(corp_id))
+    except (ValueError, OSError):
+        return None
+    return corp.name if corp else None
 
 
 def _set_artifact_flag(exp: dict[str, Any]) -> None:
