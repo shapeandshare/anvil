@@ -69,3 +69,7 @@ Six subcommands are exposed under `anvil db`:
 - The `ANVIL_DB_AUTO_MIGRATE` env var is read from `anvil/config.py` `get_config()` (cached via `@lru_cache`)
 - Existing `make setup` still runs `alembic upgrade heads` via the CLI for backward compatibility
 - All new code passes `mypy --strict`
+
+## See Also
+
+- [[Decisions/README|Decisions]]

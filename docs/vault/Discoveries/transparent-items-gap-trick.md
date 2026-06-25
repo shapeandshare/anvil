@@ -57,3 +57,7 @@ Any flex/grid container where children are spaced with `gap` and have `backgroun
 
 - `anvil/api/static/css/base.css` — `.theme-picker__item` fix (commit `e68da70` follow-up)
 - See [[Sessions/2026-06-19-theme-picker-transparency-recheck]]
+
+## See Also
+
+- [[Discoveries/Discoveries|Discoveries]]

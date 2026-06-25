@@ -68,6 +68,7 @@ A mode-safe ambient glow effect that adapts to both light and dark themes withou
 - Resonance theme (`anvil/api/static/css/themes/resonance.css`) — replaced a repeating-linear-gradient EQ bar with this radial glow pattern
 
 ## See Also
+- [[Discoveries/Discoveries|Discoveries]]
 
 - [[Reference/theme-creation-guide]] — the 3-step contract for theme CSS layers
 - [[Sessions/2026-06-20-resonance-bottom-effect-glow]] — the session that introduced this pattern

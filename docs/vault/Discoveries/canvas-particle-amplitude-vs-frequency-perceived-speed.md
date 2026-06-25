@@ -79,6 +79,7 @@ Key properties of this model:
 - `anvil/api/static/js/theme/particle-system.js` — the `leaf` effect (used by the Old Growth theme; registered name kept as `leaf` for backward-compatible `particleConfig` / saved prefs).
 
 ## Related
+- [[Discoveries/Discoveries|Discoveries]]
 
 - [[Reference/theme-creation-guide|Theme Creation Guide]] — particle effect contract
 - [[Sessions/2026-06-20-firefly-tuning-and-tide-shimmer|Session: Firefly Tuning + Tide Shimmer]]

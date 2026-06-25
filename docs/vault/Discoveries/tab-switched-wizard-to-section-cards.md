@@ -73,5 +73,6 @@ All data interaction logic: data loading, form validation, auto-tune, model stat
 - `anvil/api/static/css/archetypes.css` — all `ds-flow-section` rules including `.ds-flow-bubble--forge`
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - [[Sessions/2026-06-20-training-page-wizard-to-section-cards|Session: Training Page Wizard to Section Cards]]

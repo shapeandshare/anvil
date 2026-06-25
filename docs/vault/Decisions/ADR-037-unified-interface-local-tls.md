@@ -159,3 +159,7 @@ work locally** using only pip-installable components.
   (no regression to ADR-030 / FR-057).
 - Cross-referenced by spec 019 (this feature), and by spec 017 (ADR-035 is the
   first instance of the single-front-door proxy).
+
+## See Also
+
+- [[Decisions/README|Decisions]]

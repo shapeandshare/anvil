@@ -71,3 +71,7 @@ Negative:
 - The MLmodel MUST reference loader_module: anvil._pyfunc_model
 - The conda.yaml MUST list anvil, transformers, torch, safetensors, numpy, and pandas
 - register_source_model MUST default to artifact_path=""
+
+## See Also
+
+- [[Decisions/README|Decisions]]

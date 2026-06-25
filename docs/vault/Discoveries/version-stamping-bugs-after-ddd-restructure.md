@@ -53,3 +53,7 @@ The test asserted `anvil.__version__ == "0.1.0"` as a hardcoded string. This wou
 **Impact**: Brittle test requiring manual updates on every release
 
 **Fix**: Read version dynamically from `pyproject.toml` via `tomllib`
+
+## See Also
+
+- [[Discoveries/Discoveries|Discoveries]]

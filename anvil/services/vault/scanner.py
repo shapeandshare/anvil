@@ -178,6 +178,11 @@ class GraphHealthRunner:
             if should_exclude(note_path, self.vault_root):
                 continue
 
+            # Skip scaffold files (Specs/*/checklists/*, Specs/*/contracts/*)
+            # so they don't overwrite real notes with duplicate stems (e.g. README).
+            if _is_scaffold_path(note_path, self.vault_root):
+                continue
+
             stem = unicodedata.normalize("NFC", note_path.stem)
 
             try:

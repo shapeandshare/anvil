@@ -51,6 +51,7 @@ All three components now agree on the same path: `session.py`, `config.py`, and 
 - The `config.py` deprecation warning remains the single source of truth for migration guidance.
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `anvil/db/session.py` — the file where the stale default lived
 - `anvil/db/migration.py` — `MigrationService.__init__` already used `cfg["state_db_path"]`

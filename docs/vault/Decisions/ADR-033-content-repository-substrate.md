@@ -165,6 +165,7 @@ mode gains no new dependency.
   new `anvil/services/content/`).
 
 ## See Also
+- [[Decisions/README|Decisions]]
 
 [[ADR-030-saas-architecture|ADR-030: SaaS Architecture]], [[SaaSArchitecture]],
 [[ADR-032-greenfield-legacy-removal|ADR-032: Greenfield Legacy Removal]].

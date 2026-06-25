@@ -55,4 +55,5 @@ Two approaches:
 - Or ensure `.app-main` doesn't create a stacking context (don't use `isolation: isolate`)
 
 ## Related
+- [[Discoveries/Discoveries|Discoveries]]
 - [[Sessions/2026-06-23-hero-page-footer-stacking-and-layout]]

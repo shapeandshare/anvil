@@ -87,6 +87,7 @@ Adopt a **tiered infrastructure strategy** based on actual need, not hypothetica
 - Tier 2 depends on the engine being vectorized (torch) — no sense shopping for NVIDIA GPUs until the engine actually saturates them.
 
 ## See Also
+- [[Decisions/README|Decisions]]
 
 - [[Reference/InfraParadigms]] — Full vendor landscape table, 5-paradigms taxonomy, cross-cutting dimensions framework, and the grounding reality about anvil's single-token training loop bottleneck.
 - [[Reference/OpenQuestions]] — Engine batching as the highest-leverage prerequisite for GPU vendor adoption.

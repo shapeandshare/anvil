@@ -53,3 +53,7 @@ All existing multi-class files are being refactored to comply in a single sessio
 - `make lint` and `make typecheck` must pass after the refactoring
 - A grep for `^class ` in `anvil/` should show one class per file (modulo permitted exceptions)
 - Merge review gate: any new multi-class file flagged for rejection
+
+## See Also
+
+- [[Decisions/README|Decisions]]

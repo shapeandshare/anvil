@@ -45,3 +45,7 @@ The `anvil-emblem.svg` path was replaced with one derived from an SVGRepo refere
 - Filled badges (not outlined)
 - Safe area insets
 - 17px → 16px responsive base font
+
+## See Also
+
+- [[Reference/ArchitectureOverview|Architecture Overview]]

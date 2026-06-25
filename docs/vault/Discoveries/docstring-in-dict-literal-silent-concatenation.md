@@ -54,6 +54,7 @@ in-literal annotation; reserve triple-quoted strings for genuine module, class,
 and function docstrings.
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `anvil/api/v1/experiments.py` — `_HYPERPARAM_COERCERS` constant and
   `_hyperparams_from_mlflow`

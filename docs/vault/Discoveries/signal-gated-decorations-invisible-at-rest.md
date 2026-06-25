@@ -30,6 +30,7 @@ This is the same structural constraint documented in [[Discoveries/theme-presenc
 A practical corollary for reviewing or demoing a theme: evaluate it both with and without an active training session. A theme that reads well mid-run can be nearly invisible on a cold page, and vice versa.
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `anvil/api/static/js/themes/vinyl.js` — `buildTapeDeck()` inside the session-gated `mapping()`
 - `anvil/api/static/css/themes/vinyl.css` — the only always-on visual is the `.app-main::before` warm glow

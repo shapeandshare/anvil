@@ -83,6 +83,7 @@ rather than fourteen. The recurrence narrative is retained as an audit record of
 what happened before the squash.
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `anvil/db/migration.py` — `MigrationService.ensure_migrated()` / `upgrade()` entry points
 - `anvil/db/session.py` — DB session factory that connects to the same path

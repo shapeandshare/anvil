@@ -70,3 +70,7 @@ A separate workflow detects source code pushed to main without a version bump an
 - All YAML workflow files parse as valid YAML (verified)
 - Agentic checklist: 15/15 items pass (verified)
 - All 31 implementation tasks completed and marked `[X]`
+
+## See Also
+
+- [[Decisions/README|Decisions]]

@@ -68,3 +68,7 @@ This principle applies across all future optional features, not just GPU. Exampl
 - No `raise` or error response MAY be emitted solely because an optional capability's runtime dependency is absent
 - Review gate: any PR introducing a new optional dependency must demonstrate the fallback path in tests
 - Code review checklist item: "Does this feature have a silent fallback when its optional dependency is missing?"
+
+## See Also
+
+- [[Decisions/README|Decisions]]

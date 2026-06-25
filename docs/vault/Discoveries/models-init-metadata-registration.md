@@ -61,5 +61,6 @@ make test-e2e-full    # seed + run full API e2e suite
 ```
 
 ## See Also
+- [[Discoveries/Discoveries|Discoveries]]
 
 - [[Sessions/2026-06-21-api-e2e-suite]]

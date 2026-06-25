@@ -68,3 +68,7 @@ Replace the blanket ban with a **conditional-allow rule with a 4-point exception
 ## Status
 
 Amends Constitution Additional Constraints. Implemented by `scripts/ci/check_guarded_imports.py`, enforced by `.github/workflows/ci.yml`.
+
+## See Also
+
+- [[Decisions/README|Decisions]]

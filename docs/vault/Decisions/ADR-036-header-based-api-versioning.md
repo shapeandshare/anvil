@@ -124,3 +124,7 @@ layout.
 - The spec 017 auth middleware and the ADR-035 MLflow proxy route reference the
   new (non-`/v1/`) paths after 018 lands; before 018, they use the page-route
   registry.
+
+## See Also
+
+- [[Decisions/README|Decisions]]

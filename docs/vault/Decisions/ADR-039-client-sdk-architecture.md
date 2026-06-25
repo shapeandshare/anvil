@@ -170,3 +170,7 @@ The SDK covers the full API surface via 12 domain sub-packages:
 - `AnvilClient(base_url=...)` works without auth for health checks (FR-010).
 - `login(api_key)` / `logout()` supported (verified by inspection).
 - 43 unit tests pass; test-first TDD (Article IV).
+
+## See Also
+
+- [[Decisions/README|Decisions]]

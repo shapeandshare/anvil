@@ -54,6 +54,7 @@ The `\s*` flexibility (allowing trailing whitespace after `---`) was dropped bec
 The regex was the most concise way to express "match content between `---` delimiters." It worked correctly for all valid inputs. The vulnerability only manifests on adversarial or pathological inputs — large content with no closing frontmatter — making it easy to miss in normal testing.
 
 ## Related
+- [[Discoveries/Discoveries|Discoveries]]
 
 - [[Decisions/ADR-015-pluggable-compute-backends|ADR-015]] — none directly; this is a code-level security hardening
 - Classic ReDoS (Regular expression Denial of Service) pattern: `\s*\n` ambiguity + `.*?` with DOTALL

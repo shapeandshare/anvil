@@ -77,3 +77,7 @@ M47.32,7.32 L81.96,7.32 L99.28,17.32 L81.96,27.32 L47.32,27.32 L30,17.32 Z      
 | Multi-angle gradient | Organic/irregular shapes (glass, mosaic, fabric) | Low — CSS only |
 | SVG pattern | Regular geometric tiling (hex, diamond, honeycomb) | Medium — SVG URL encoding |
 | Multiple mask intersection | Precise cutout shapes | High — browser `mask-composite` support varies |
+
+## See Also
+
+- [[Discoveries/Discoveries|Discoveries]]

@@ -44,3 +44,7 @@ latest = sorted_versions[0]
 ### Why not `get_model_version_by_alias`?
 
 The codebase already uses `search_model_versions` in 4 other places (`tracking.py:1105`, `registry.py:194`, `registry.py:292`, migration script). Using `search_model_versions` + sort is consistent with the existing pattern and avoids introducing a new API surface. Aliases are not used anywhere in the project.
+
+## See Also
+
+- [[Discoveries/Discoveries|Discoveries]]

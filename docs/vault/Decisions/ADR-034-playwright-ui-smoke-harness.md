@@ -94,6 +94,7 @@ The initial suite targets Chromium only. Firefox and WebKit are available via Pl
 | Visual regression (Percy/Chromatic) | High maintenance; 27 themes would require frequent snapshot updates |
 
 ## References
+- [[Decisions/README|Decisions]]
 
 - [Spec](docs/vault/Specs/022 Playwright UI Smoke/spec.md)
 - [Plan](docs/vault/Specs/022 Playwright UI Smoke/plan.md)

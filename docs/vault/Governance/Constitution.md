@@ -11,3 +11,7 @@ updated: 2026-06-15
 The canonical constitution lives at **`.specify/memory/constitution.md`** (v1.2.0).
 
 All agents, PRs, and specs must comply with that document.
+
+## See Also
+
+- [[index|Vault]]

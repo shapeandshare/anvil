@@ -27,6 +27,7 @@ The fix filters `this._nodes` to only include nodes where `n.step <= this._curre
 Both `visibleNodes` and `visibleEdges` are used for layout and rendering instead of `this._nodes` and `this._edges`.
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `anvil/api/static/js/graph-view.js`
 - `anvil/api/templates/archetypes/graph.html`

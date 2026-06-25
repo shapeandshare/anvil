@@ -145,3 +145,7 @@ the local OWASP remediation behind one pattern.
   (port not published).
 - Cross-references: SaaS spec 014 FR-057/AD-13 and OWASP spec 017 FR-004 both
   point to this ADR as the binding pattern.
+
+## See Also
+
+- [[Decisions/README|Decisions]]

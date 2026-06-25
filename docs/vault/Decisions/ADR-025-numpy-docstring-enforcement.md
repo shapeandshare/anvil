@@ -122,3 +122,7 @@ SomeException
 - Code review MUST verify docstring compliance before merging.
 - `make lint` (which will run ruff `D` rules once enabled) MUST pass.
 - Type-error suppression (`# type: ignore`, `cast()`, `Any` abuse) remains forbidden — docstrings are NOT a substitute for proper type annotations.
+
+## See Also
+
+- [[Decisions/README|Decisions]]

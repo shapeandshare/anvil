@@ -48,3 +48,7 @@ oldgrowth proved the model of co-locating specs inside the vault as first-class 
 ## Change Log
 
 - 2026-06-22: Initial ADR.
+
+## See Also
+
+- [[Decisions/README|Decisions]]

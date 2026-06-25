@@ -104,3 +104,7 @@ additive-migration and deprecation discipline resumes.
   `cfg["db_path"]` references remain in executable code, the `Makefile`, or
   `shared/*.mk`.
 - Alembic reports exactly one head (`001`).
+
+## See Also
+
+- [[Decisions/README|Decisions]]

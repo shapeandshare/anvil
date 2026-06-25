@@ -110,3 +110,7 @@ BackupService ───────── holds BackupLock, progress queues
 - Requires Alembic revision `003` for the new `backup_operations` table.
 - `logs/` and `.env` are permanently excluded from backups (design
   decision, not configurable).
+
+## See Also
+
+- [[Decisions/README|Decisions]]

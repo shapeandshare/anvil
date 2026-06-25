@@ -41,3 +41,7 @@ The vast majority of violations were **lazy imports** (imports inside function b
 ## Enforcement
 
 The `AGENTS.md` behavioral principle now includes a standalone rule (#7 — Relative Imports Only) that explicitly bans absolute `anvil.` prefixed imports from within the package. This needs integration into the lint/CI pipeline (e.g., a `grep` check in CI) to prevent re-introduction.
+
+## See Also
+
+- [[Discoveries/Discoveries|Discoveries]]

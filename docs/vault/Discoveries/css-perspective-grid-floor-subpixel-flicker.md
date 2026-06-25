@@ -103,6 +103,7 @@ Ranked by impact: **(3) fading the far region** is the single biggest win
   and the `grid-derez` divergence keyframes.
 
 ## Related
+- [[Discoveries/Discoveries|Discoveries]]
 
 - [[Reference/theme-creation-guide|Theme Creation Guide]]
 - [[Discoveries/canvas-particle-amplitude-vs-frequency-perceived-speed|Particle Perceived Speed Trap]] — sibling motion-perception gotcha

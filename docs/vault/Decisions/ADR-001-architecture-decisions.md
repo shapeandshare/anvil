@@ -59,3 +59,7 @@ Initial bootstrapping of the anvil required decisions on technology stack, archi
 ## Compliance
 - Verified by architecture audit in `make lint` and CI pipeline
 - ADRs required for any deviation
+
+## See Also
+
+- [[Decisions/README|Decisions]]

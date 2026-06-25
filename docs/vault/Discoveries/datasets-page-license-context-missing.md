@@ -56,6 +56,7 @@ receive `licenses` in its template context. A pattern to watch for:
 context) are a red flag when the template iterates over server-side data.
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `anvil/api/v1/pages.py` — `datasets_page()` handler
 - `anvil/api/templates/datasets.html` — `#license-select` dropdown

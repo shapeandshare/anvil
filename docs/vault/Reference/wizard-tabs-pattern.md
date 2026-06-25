@@ -51,3 +51,7 @@ function switchTab(tabId) {
 - The `data-tab` attribute value must match the panel `id` exactly
 - No extra JS framework needed — vanilla DOM class toggling
 - Used on both the training page wizard and the data page manager
+
+## See Also
+
+- [[Reference/ArchitectureOverview|Architecture Overview]]

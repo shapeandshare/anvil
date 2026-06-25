@@ -91,6 +91,7 @@ ModalBackend does not and should not implement:
   architecture spec via a new ADR.
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `docs/vault/Decisions/ADR-015-pluggable-compute-backends`
 - `docs/vault/Decisions/ADR-030-saas-architecture.md`

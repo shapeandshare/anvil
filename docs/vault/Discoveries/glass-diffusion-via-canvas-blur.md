@@ -82,3 +82,7 @@ Since the particles are now blurred (rather than hidden), the shell background g
 - **Theme authors** do not need to change anything — the blur is applied uniformly across all canvas-based particle effects (snow, rain, ember, aurora, petal, biolum, ribbon, streak, ink, thread, matrix, leaf, prism, pulse, energy, flare, shard, debris, spray, bubble, spin, spark, confetti, etc.).
 - **CSS-only effects** (themes with `particleConfig: { type: 'css' }`, like Default, Ash, Static, Echo, Resonance, Unicorn, Vinyl) are unaffected by this change since `onEffectLevelChange` returns early for non-canvas configs.
 - When the canvas is later removed and recreated (theme switch), `ps.apply()` re-applies the blur via the added line at the end of the function.
+
+## See Also
+
+- [[Discoveries/Discoveries|Discoveries]]

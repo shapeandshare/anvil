@@ -67,3 +67,7 @@ All three endpoints that return MLflow links are updated to accept `fastapi.Requ
 - **Positive**: Works correctly for all access patterns: `localhost`, LAN IP, hostname, or custom domain.
 - **Neutral**: `set_resolved_mlflow_uri()` is kept but is now only callable programmatically (e.g. for testing or future tooling). It is no longer part of the startup path.
 - **Negative**: None — the `request` object is freely available in every FastAPI endpoint.
+
+## See Also
+
+- [[Decisions/README|Decisions]]

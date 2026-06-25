@@ -57,3 +57,7 @@ Rationale:
 - `DemoBootstrapService.bootstrap_all()` must call `get_by_name()` before every `create()`/`create_dataset()`
 - Test: `test_bootstrap_all_idempotent` verifies that the second run produces zero new entities
 - The `is_demo_entity()` static method provides a consistent check for the naming convention
+
+## See Also
+
+- [[Decisions/README|Decisions]]

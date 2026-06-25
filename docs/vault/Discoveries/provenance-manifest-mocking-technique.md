@@ -46,6 +46,7 @@ def _svc_with_provenance(session) -> DemoBootstrapService:
 The lookup strips `.txt` suffix before matching keys: `key = rel.removesuffix(".txt")`. So manifest keys for `.txt` files should NOT include the extension. For directory-based corpora, keys use the directory path directly (e.g., `"small/names"`).
 
 ## Related
+- [[Discoveries/Discoveries|Discoveries]]
 
 - Spec: `docs/vault/Specs/015 Demo Data Bootstrap/spec.md`
 - Implementation: `tests/test_bootstrap.py::_svc_with_provenance`

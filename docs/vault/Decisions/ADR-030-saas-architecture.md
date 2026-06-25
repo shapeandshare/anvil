@@ -144,5 +144,6 @@ See also: [[SaaSArchitecture]], [[SaaSSystemDiagrams]], [[SaaSSecurityAndFlowDia
 - The `packages/infra/` CDK stack must synth cleanly and pass `cdk diff` before any SaaS infrastructure change.
 
 ## See Also
+- [[Decisions/README|Decisions]]
 
 - Full architecture reference: `docs/vault/Reference/SaaSArchitecture.md`

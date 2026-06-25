@@ -42,6 +42,7 @@ The DX hardening feature created `anvil/workbench.py` with a fully-populated `An
 Architecture rules declared in governance must be verified against actual code patterns. A "declared-only" rule trains agents and contributors to treat governance as aspirational rather than binding.
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `anvil/cli.py` — original god class location (stub)
 - `anvil/workbench.py` — new god class with all services

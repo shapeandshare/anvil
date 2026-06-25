@@ -69,6 +69,7 @@ The fix is `BUMP_PAT` referenced at `docs/secrets.md` with setup instructions. B
 - `actions/create-github-app-token` is an alternative if a dedicated GitHub App is available — it produces an installation token that also triggers CI.
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `.github/workflows/release.yml` — `Create bump PR with auto-merge` step uses `secrets.BUMP_PAT`.
 - `.github/workflows/auto-bump.yml` — Same pattern for the safety-net workflow.

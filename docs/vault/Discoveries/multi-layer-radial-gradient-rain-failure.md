@@ -71,3 +71,7 @@ Use larger, fewer droplets with hard edges (single `radial-gradient` stop, like 
 - [[Reference/theme-creation-guide]]
 - [[Decisions/ADR-031-behavioral-theme-engine]]
 - [[Discoveries/css-multi-background-position-parallax]]
+
+## See Also
+
+- [[Discoveries/Discoveries|Discoveries]]

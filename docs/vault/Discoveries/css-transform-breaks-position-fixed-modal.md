@@ -69,6 +69,7 @@ Any future modal should use `{% block modals %}` in `base.html` rather than nest
 - [ ] Click handler on overlay that closes when `e.target === overlay` allows click-away dismissal
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `anvil/api/templates/base.html` — `{% block modals %}` at line 128
 - `anvil/api/templates/archetypes/training.html` — `{% block modals %}` override at line 1350, JS modal logic at lines 1020-1084

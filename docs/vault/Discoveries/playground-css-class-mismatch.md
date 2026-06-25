@@ -38,3 +38,7 @@ The `.example-label` (the "Try:" prefix) had no CSS definition at all.
 ## Impact
 
 The example prompt chips now render with proper inline-block layout, rounded corners, hover highlight, and cursor pointer — matching the design system.
+
+## See Also
+
+- [[Discoveries/Discoveries|Discoveries]]

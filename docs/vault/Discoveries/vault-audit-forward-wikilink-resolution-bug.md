@@ -31,6 +31,7 @@ A correct `build_filename_index()` helper already existed on the service but was
 Note for future agents: until this fix, the conventional advice "use full `[[Reference/Note|alias]]` paths" did **not** help, because the resolver strips the directory prefix (`wl.rsplit("/", 1)[-1]`) and matches on bare stem regardless. The real fix had to be in the resolver, not in link formatting.
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `anvil/services/vault/vault_audit.py` — `_run_mechanical_audit_sync` (index pre-build), `build_filename_index`
 - `tests/services/vault/test_vault_audit.py` — `test_forward_wikilink_resolves`

@@ -70,3 +70,7 @@ The model listing endpoint (`tracking.py`) already correctly reads the `anvil.ex
 ## Files affected
 
 - `anvil/api/v1/registry.py` — `_fmt_ts()` helper, all four model ID resolution blocks, version dict construction in `get_model` and `get_version`
+
+## See Also
+
+- [[Discoveries/Discoveries|Discoveries]]

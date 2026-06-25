@@ -43,3 +43,7 @@ We evolved the core engine from GPT-2 to Llama architecture:
 - **Dual-architecture support** (keep GPT-2 alive alongside Llama): Rejected — unnecessary complexity for an educational platform
 - **Interleaved/consecutive RoPE**: Rejected — would silently produce wrong logits when exported weights load in HF Llama
 - **Keeping embedding-level norm**: Rejected — no corresponding HF tensor; breaks architectural equivalence
+
+## See Also
+
+- [[Decisions/README|Decisions]]

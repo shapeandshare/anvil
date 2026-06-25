@@ -41,5 +41,6 @@ This shifts all nodes 20px right. Depth-0 nodes now have left edge at `60 - 50 =
 No more clipped left-edge nodes at any scrubber step. The layout remains comfortably within the section-card bounds at all depth levels.
 
 ## Related
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `anvil/api/static/js/graph-view.js` line 81

@@ -46,6 +46,7 @@ test:
 The `-k` filter approach does NOT work because pytest collects ALL test modules and conftest files first (including their module-level imports) before applying the filter, which still triggers the event loop issue.
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - Session: [[Sessions/2026-06-21-unit-test-coverage-fixes]]
 - [[Decisions/ADR-022-domain-driven-package-decomposition]]

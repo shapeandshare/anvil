@@ -125,6 +125,7 @@ Module-level overrides in `pyproject.toml` are preferred over inline suppression
 Modules without MLflow stubs issues had their overrides removed.
 
 ## Related
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `AGENTS.md` — Line 87: the rule being enforced
 - [[Governance/Constitution|Constitution]] — Section "Additional Constraints": the constitutional mandate

@@ -64,3 +64,7 @@ When `StrEnum("invalid")` raises `ValueError`, the error message format is `"'in
 - All DB → service boundaries where string columns feed into enum-typed parameters
 - API route handlers that receive string values from JSON requests
 - Config file parsers where raw strings need conversion to enum members
+
+## See Also
+
+- [[Discoveries/Discoveries|Discoveries]]

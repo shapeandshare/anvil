@@ -101,3 +101,7 @@ This ADR records the resolution of the remaining decisions and integration work.
 - **Skills**: On-disk at `.opencode/skills/ux-*/SKILL.md` with valid YAML frontmatter
 - **Checklist**: UX compliance section present in `.specify/templates/checklist-template.md`
 - **Tasks**: `make ux-lint`/`make ux-review` tasks present in `.specify/templates/tasks-template.md`
+
+## See Also
+
+- [[Decisions/README|Decisions]]

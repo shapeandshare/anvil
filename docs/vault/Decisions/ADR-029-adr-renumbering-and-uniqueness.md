@@ -61,3 +61,7 @@ Collisions break the "one number = one decision" contract and make wikilinks and
 ## Status
 
 Renumbering and link fixes applied. Uniqueness enforced by `scripts/ci/check_adr_unique.py`.
+
+## See Also
+
+- [[Decisions/README|Decisions]]

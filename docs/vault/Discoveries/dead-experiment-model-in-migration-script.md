@@ -33,6 +33,7 @@ A local `Experiment` model class was defined inline in the migration script usin
 - Also note: `ModelVersion` and `RegisteredModel` from `anvil/db/models/registry.py` are similarly absent (registry module is a docstring placeholder), causing additional F821 errors in the same script.
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `anvil/_resources/migrations/scripts/migrate_to_mlflow_primary.py`
 - `anvil/db/models/` (no `Experiment` model exists)

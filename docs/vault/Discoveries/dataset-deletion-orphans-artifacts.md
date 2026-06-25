@@ -30,6 +30,7 @@ updated: '2026-06-19'
 Feature `010-responsible-data-governance` closes this gap: `DatasetService.delete_dataset()` now enumerates `Sample.file_path` artifacts and deletes them via `LocalFileStore.delete()` before dropping rows.
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `anvil/services/datasets/datasets.py` — `delete_dataset()` method
 - `docs/vault/Specs/013 Responsible Data Governance/spec.md` — FR-021, SC-005

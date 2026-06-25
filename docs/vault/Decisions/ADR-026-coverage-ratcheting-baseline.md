@@ -55,3 +55,7 @@ The mechanism — `pytest-cov`'s existing `fail_under` — requires no new tooli
 ## Status
 
 Amends Constitution Article IV. Implemented by `pyproject.toml` `fail_under = 23` and enforced by `.github/workflows/ci.yml`.
+
+## See Also
+
+- [[Decisions/README|Decisions]]

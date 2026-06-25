@@ -63,3 +63,7 @@ Resets all step states, then:
 - Tab categories that are parallel/equal (use plain tabs, not wizard)
 - Forms where each step is a full page of content (use separate section-cards)
 - More than 4 steps on mobile (connectors collapse to 24px, bubbles to 28px)
+
+## See Also
+
+- [[Reference/ArchitectureOverview|Architecture Overview]]

@@ -191,6 +191,13 @@ GET /v1/learn/{topic}
                         or uses MLflow API for experiment data
 ```
 
+## Reference Notes
+
+- [[UserRequirements]] — Project charter and user requirements
+- [[design-divergence-resolution]] — Design divergence resolution history
+- [[ui-link-conventions]] — UI link and button conventions
+- [[wizard-tabs-pattern]] — Wizard tabs reuse pattern
+
 ## See Also
 
 - [[TrainingDataFlow]] — Detailed training loop with ASCII diagram

@@ -32,5 +32,6 @@ Both copies implement the same RoPE-attention + SwiGLU-MLP + RMSNorm + residual 
 - The `train()` function's embedded copy exists because the stdlib engine's `train()` needs direct access to the forward pass internals (Value graph, gradient tracking). A refactor should extract the shared forward pass into a method both paths can call, or parameterize the single forward pass for training vs inference mode.
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `anvil/core/engine.py` — `LlamaModel.forward()` (first copy) and `train()` (second copy)
