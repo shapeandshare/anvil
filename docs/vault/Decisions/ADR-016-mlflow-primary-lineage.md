@@ -116,6 +116,7 @@ This ensures backward compatibility with pre-migration saved models while moving
 10. `grep -r 'ModelRegistryService' anvil/` returns zero results
 
 ## See Also
+- [[Decisions/README|Decisions]]
 
 - [[Reference/MlflowIntegration]] — Updated MLflow architecture for primary lineage
 - [[Decisions/ADR-004-mlflow-3x-and-canonical-uri|ADR-004]] — MLflow 3.x migration

@@ -86,6 +86,7 @@ is strictly on/off — it no longer overrides the theme's own effect type. See
 [[Sessions/2026-06-23-particle-system-toggle-and-localstorage-fix]].
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `anvil/api/static/js/theme/particle-system.js` — `IDLE_SIGNAL`, `readSignal`, `readSignalChain`, canvas `position:fixed; z-index:0`, rain full-screen seed
 - `anvil/api/static/js/theme/theme-manager.js` — unconditional `ParticleSystem.apply`; `bindSession` no longer re-applies

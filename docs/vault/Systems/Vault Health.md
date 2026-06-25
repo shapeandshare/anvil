@@ -40,6 +40,7 @@ Run via Makefile targets using the project venv:
 | `make vault-audit-fast` | Skip networkx graph health pass |
 
 ## References
+- [[Systems/Systems|Systems]]
 
 - `scripts/ci/vault_audit.py` — Mechanical audit driver
 - `scripts/ci/graph_health/` — Optional networkx graph analysis

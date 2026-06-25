@@ -28,6 +28,7 @@ The fix uses JS to measure the tooltip's rendered bounding rect on mouseenter (a
 Two UI overflow patterns now documented in the vault: [[Reference/overflow-clipping-pattern]] (parent `overflow: hidden` clipping normal-flow children) and this one (CSS-only tooltips overflowing viewport boundaries). They share the same root cause — CSS alone cannot detect container/viewport overflow — but have different remediation strategies.
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `anvil/api/static/css/components.css` — `.tooltip-content` and `.tooltip-content::after` rules
 - `anvil/api/static/js/core.js` — `initTooltips()` function

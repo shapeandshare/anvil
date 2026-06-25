@@ -1,5 +1,5 @@
 ---
-title: ADR-039: Spec Migration to Vault
+title: 'ADR-039: Spec Migration to Vault'
 type: decision
 tags:
   - type/decision
@@ -9,6 +9,10 @@ created: 2026-06-22
 updated: 2026-06-22
 aliases:
   - ADR-039 Specs to Vault
+source: agent
+code-refs:
+  - specs/
+  - anvil/services/vault/
 ---
 
 # ADR-039: Migrate `specs/` Artifacts into `docs/vault/Specs/`
@@ -44,3 +48,7 @@ oldgrowth proved the model of co-locating specs inside the vault as first-class 
 ## Change Log
 
 - 2026-06-22: Initial ADR.
+
+## See Also
+
+- [[Decisions/README|Decisions]]

@@ -69,3 +69,7 @@ background: repeating-linear-gradient(
 ## Hyperspace Theme Application
 
 Applied in `anvil/api/static/css/themes/hyperspace.css` for the `::after` surface-rush effect — horizontal bars scroll upward at 4s per cycle (44px × 2 = 88px displacement, `linear` timing), with speed modulated by `--velocity` via `animation-duration`.
+
+## See Also
+
+- [[Discoveries/Discoveries|Discoveries]]

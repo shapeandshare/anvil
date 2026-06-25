@@ -86,6 +86,7 @@ When a new learning lesson is added, check which operational page it relates to 
 | `/v1/operations-page` | `/v1/learn/cloud-compute` |
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `.section-card--banner` in `anvil/api/static/css/archetypes.css`
 - Session log: `Sessions/2026-06-20-data-fundamentals-learning-lesson.md`

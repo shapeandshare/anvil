@@ -1,3 +1,18 @@
+---
+title: 'Isolation: Isolate — Stacking Context Effect on Sibling Paint Order'
+type: discovery
+tags:
+  - type/discovery
+  - domain/ui
+status: reviewed
+created: '2026-06-23'
+updated: '2026-06-23'
+aliases:
+  - isolation-isolate-stacking-context-paint-order
+source: agent
+code-refs:
+  - anvil/api/static/css/
+---
 # isolation: isolate — Stacking Context Effect on Sibling Paint Order
 
 **Type**: discovery  
@@ -40,4 +55,5 @@ Two approaches:
 - Or ensure `.app-main` doesn't create a stacking context (don't use `isolation: isolate`)
 
 ## Related
+- [[Discoveries/Discoveries|Discoveries]]
 - [[Sessions/2026-06-23-hero-page-footer-stacking-and-layout]]

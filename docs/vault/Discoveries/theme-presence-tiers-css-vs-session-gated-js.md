@@ -72,6 +72,7 @@ transformed ancestor, so a `position: fixed` pseudo-element on it is viewport-re
 and is not clipped by its `overflow`.
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `anvil/api/static/js/theme/theme-manager.js` — `bindMapping` / `bindSession`
 - `anvil/api/static/js/themes/unicorn.js` — session-gated sprite overlay

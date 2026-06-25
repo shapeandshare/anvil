@@ -1,3 +1,12 @@
+---
+title: Wizard-Stepper Component Pattern
+type: reference
+tags:
+  - type/reference
+  - domain/ui
+created: '2026-06-14'
+updated: '2026-06-14'
+---
 ## Discovery: Wizard-Stepper Component Pattern
 
 The training page redesign introduced a **wizard-stepper** component — a reusable pattern for progressive multi-step forms within a single card.
@@ -54,3 +63,7 @@ Resets all step states, then:
 - Tab categories that are parallel/equal (use plain tabs, not wizard)
 - Forms where each step is a full page of content (use separate section-cards)
 - More than 4 steps on mobile (connectors collapse to 24px, bubbles to 28px)
+
+## See Also
+
+- [[Reference/ArchitectureOverview|Architecture Overview]]

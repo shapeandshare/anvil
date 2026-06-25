@@ -69,5 +69,6 @@ Fake metrics for excited mode should include **all** signal fields that any them
 If a new theme mapping relies on a signal not in this list, excited 'on' will silently fail. Keep this list in sync when adding new signal-driven themes.
 
 ## Related
+- [[Discoveries/Discoveries|Discoveries]]
 
 - [[Sessions/2026-06-23-theme-picker-dropdown-z-index-and-excited-fix]]

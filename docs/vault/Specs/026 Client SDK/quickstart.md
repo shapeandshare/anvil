@@ -1,36 +1,13 @@
-# Quickstart: anvil Client SDK
-
-**Feature**: 026-client-sdk | How a developer uses the SDK once implemented.
-
-The SDK ships inside the `anvil` package — no extra install. Import from `anvil.client`.
-
 ---
-
-## 1. Connect (≤5 lines — SC-001)
-
-```python
-import asyncio
-from anvil.client import AnvilClient
-
-
-async def main() -> None:
-    async with AnvilClient(base_url="http://localhost:8080") as client:
-        health = await client.health.get()
-        print("server reachable:", health)
-
-
-asyncio.run(main())
-```
-
-With no arguments, `AnvilClient()` reads `ANVIL_SERVER_URL` (default `http://localhost:8080`):
-
-```python
-async with AnvilClient() as client:          # uses env/defaults
-    await client.health.get()
-```
-
+title: 'Quickstart: anvil Client SDK'
+type: spec
+tags:
+  - type/spec
+  - domain/architecture
+status: draft
+created: '2026-06-21'
+updated: '2026-06-21'
 ---
-
 ## 2. Authenticate
 
 ```python

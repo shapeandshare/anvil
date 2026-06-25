@@ -35,3 +35,7 @@ The project shipped `mlflow>=2.16,<3` with the tracking URI hardcoded as `sqlite
 - `mlflow.genai.datasets` works on self-hosted SQLite-backed OSS MLflow (NOT Databricks-only, verified)
 - HTTP server avoids multi-process SQLite write contention
 - `MICROGPT_MLFLOW_URI` env var now actually controls the tracking destination end-to-end
+
+## See Also
+
+- [[Decisions/README|Decisions]]

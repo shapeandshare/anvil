@@ -66,6 +66,7 @@ await page.waitForFunction(
 - Canvas content (`chart.js`) is secondary — the authoritative source is `#metric-step`/`#metric-loss`.
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - [ADR-034](../Decisions/ADR-034-playwright-ui-smoke-harness.md)
 - [Session: 2026-06-21 Playwright UI Smoke Harness](../Sessions/2026-06-21-playwright-ui-smoke-harness.md)

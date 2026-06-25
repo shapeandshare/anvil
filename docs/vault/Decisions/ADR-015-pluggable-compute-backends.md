@@ -1,3 +1,19 @@
+---
+title: 'ADR-015: Pluggable Compute Backend Abstraction'
+type: decision
+tags:
+  - type/decision
+  - domain/architecture
+  - domain/infrastructure
+status: accepted
+created: '2026-06-18'
+updated: '2026-06-18'
+aliases:
+  - pluggable-compute-backends
+source: agent
+code-refs:
+  - anvil/services/compute/
+---
 # ADR-015: Pluggable Compute Backend Abstraction
 
 ## Status
@@ -74,3 +90,7 @@ See [[Discoveries/modal-local-mode-boundary]] for the full gap analysis.
 - `make test` (100% `fail_under`), `make typecheck` (mypy strict), `make lint` must pass.
 - The `use_gpu` field is fully removed from all API payloads, CLI args, and DB columns (`engine_backend` retains its meaning).
 - New ADR review triggered before adding SkyPilot or Metaflow backends.
+
+## See Also
+
+- [[Decisions/README|Decisions]]

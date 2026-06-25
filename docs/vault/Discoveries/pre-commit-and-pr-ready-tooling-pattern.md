@@ -38,6 +38,7 @@ The pre-commit hook and `make pr-ready` target form a two-tier quality gate syst
 5. **`.githooks/` vs `pre-commit` framework** — This project uses bare `.githooks/` scripts with `core.hooksPath`, not the Python `pre-commit` framework. This keeps dependencies minimal (no `.pre-commit-config.yaml`, no hook runtime) and consistent with the existing `commit-msg` hook pattern. The trade-off is no per-hook caching or parallel execution — each hook is a single shell script.
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `.githooks/pre-commit` — pre-commit hook script
 - `.githooks/commit-msg` — conventional commit hook script

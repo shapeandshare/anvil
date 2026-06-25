@@ -130,3 +130,7 @@ package levels.
   or any `__init__.py` containing re-exports or imports, is reject-worthy.
 - `make lint` must continue to pass (ruff's `__init__.py` per-file ignores
   already accommodate docstring-only files).
+
+## See Also
+
+- [[Decisions/README|Decisions]]

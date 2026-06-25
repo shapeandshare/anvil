@@ -104,3 +104,7 @@ Verified by:
    against the installed container.
 4. Unit tests verify `MigrationService` and `DemoBootstrapService` resolve
    paths from inside the package.
+
+## See Also
+
+- [[Decisions/README|Decisions]]

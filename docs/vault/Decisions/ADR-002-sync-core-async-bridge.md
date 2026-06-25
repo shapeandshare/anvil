@@ -86,3 +86,7 @@ Training task:
 - The `train()` function in `anvil/core/engine.py` must remain pure sync with no asyncio imports
 - All SSE event production must go through `TrainingService._queues[run_id]` — never directly in route handlers
 - `run_coroutine_threadsafe` is the only allowed thread-to-async bridge
+
+## See Also
+
+- [[Decisions/README|Decisions]]

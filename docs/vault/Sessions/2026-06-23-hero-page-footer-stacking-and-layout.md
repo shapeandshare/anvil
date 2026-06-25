@@ -1,3 +1,15 @@
+---
+title: Hero Page Footer Stacking and Layout Fix
+type: session-log
+tags:
+  - type/session-log
+  - domain/ui
+created: '2026-06-23'
+updated: '2026-06-23'
+aliases:
+  - 2026-06-23-hero-page-footer-stacking-and-layout
+source: agent
+---
 # Hero Page Footer Stacking and Layout Fix
 
 **Type**: session-log  

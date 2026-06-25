@@ -47,6 +47,7 @@ Concrete instance: the theme-picker transparency bug was fixed in commit `e68da7
 See [[Sessions/2026-06-20-hyperspace-theme-warp-effects]].
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `anvil/api/templates/base.html` — version-less `<link>` tags and inline theme-layer loader
 - `anvil/api/app.py` — `StaticFiles` mount with default caching

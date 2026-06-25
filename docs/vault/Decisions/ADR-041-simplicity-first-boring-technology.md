@@ -102,3 +102,7 @@ This decision also propagates the principle to dependent artifacts:
   without recording it per §11.5.
 - The constitution Sync Impact Report records the 1.7.0 → 1.8.0 bump and the
   propagation status of every dependent artifact.
+
+## See Also
+
+- [[Decisions/README|Decisions]]

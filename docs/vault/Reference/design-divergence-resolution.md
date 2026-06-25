@@ -1,3 +1,13 @@
+---
+title: Design Divergence Resolution
+type: reference
+tags:
+  - type/reference
+  - domain/ui
+  - domain/governance
+created: '2026-06-14'
+updated: '2026-06-14'
+---
 During a design audit comparing DESIGN.md v2.0.0 against the live hero page and CSS implementation, we discovered several significant divergences. The hero page had introduced a "forge" sub-theme (orange/amber glow, ember particles, anvil icon, gradient text) that wasn't documented in the spec. The app shell had also diverged — the DESIGN.md described a bottom tab bar with large-title nav, but the actual implementation uses a top tab-strip nav bar with no bottom tab bar. Spacing tokens had expanded, ambient particles were present on every page, and button variants (gradient, forge) had been added.
 
 **Resolution**: The divergence was intentional — the forge theme is the new brand identity. DESIGN.md was updated to v2.1.0 to canonize the current state.
@@ -35,3 +45,7 @@ The `anvil-emblem.svg` path was replaced with one derived from an SVGRepo refere
 - Filled badges (not outlined)
 - Safe area insets
 - 17px → 16px responsive base font
+
+## See Also
+
+- [[Reference/ArchitectureOverview|Architecture Overview]]

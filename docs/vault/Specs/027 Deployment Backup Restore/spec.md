@@ -1,60 +1,13 @@
-# Feature Specification: Deployment Backup & Restore
-
-**Feature Branch**: `027-deployment-backup-restore`  
-**Created**: 2026-06-21  
-**Status**: Draft  
-**Input**: User description: "backup & restore - of complete anvil deployment state -- with easy to use documentation, in app information, ops buttons, wizards, etc, -- database and file system snap shooting"
-
-## Clarifications
-
-### Session 2026-06-21
-
-- Q: Should backup archives be encrypted at rest (they contain the full DB incl. secrets)? → A: No encryption in v1; rely on filesystem permissions (same trust boundary as live `data/`) and document that archives contain sensitive data.
-- Q: How should the system recover if the process crashes mid-restore (half-applied swap, orphan `.bak` dirs)? → A: Write a restore journal/marker before swapping; on startup detect an interrupted restore and roll back from the `.bak` sides, or surface a clear recovery prompt pointing to the pre-restore safety snapshot.
-- Q: Should backup/restore operations be written to the existing audit log? → A: Yes — emit `audit_event` entries for backup create, restore, delete, and safety-snapshot cleanup, in addition to the `backup_operations` history table.
-- Q: What happens when the storage quota is reached — block, or auto-rotate? → A: Auto-rotation — when a new backup would exceed the quota, automatically delete the oldest non-safety backups to make room, governed by a configurable retention policy (max count and/or max age). Only block if space is still insufficient after rotation.
-- Q: What exactly is included in a "complete deployment state" snapshot (logs? `.env`?)? → A: Data + experiment state only — `data/anvil-state.db`, `data/models/`, `data/datasets/`, `data/storage/`, `data/content/`, `mlruns/`. Exclude `logs/` (diagnostic) and `.env` (environment-specific config/secrets that should not be overwritten across environments).
-
-## User Scenarios & Testing *(mandatory)*
-
-### User Story 1 - One-Click Full Backup via Ops Dashboard (Priority: P1)
-
-As an anvil operator, I want to create a complete snapshot of the entire deployment state (database + all file stores) with a single click from the Operations dashboard, so that I can safely perform upgrades, experiments, or maintenance knowing I can restore the current state.
-
-**Why this priority**: This is the core value proposition — backup & restore of complete deployment state. Without this, the feature doesn't exist. Everything else (wizards, docs, scheduling) enhances this core capability.
-
-**Independent Test**: Can be fully tested by clicking the "Create Backup" button on the Operations page and verifying a backup archive appears in the backup storage directory with the correct timestamp and contents.
-
-**Acceptance Scenarios**:
-
-1. **Given** the anvil deployment is running with data in the database, trained models, uploaded datasets, and MLflow experiments, **When** the operator clicks "Create Backup" on the Operations page, **Then** a backup archive is created containing a database snapshot and filesystem snapshots, and a success notification appears.
-2. **Given** a previous backup was created, **When** the operator views the Operations page backup section, **Then** the backup appears in a list showing its timestamp, size, and status (completed/failed).
-3. **Given** the backup creation fails mid-process (e.g., disk full), **When** the failure occurs, **Then** the partial backup is cleaned up, an error notification appears, and no corrupted backup state remains.
-
 ---
-
-### User Story 2 - Guided Restore from Backup via Wizard (Priority: P1)
-
-As an anvil operator, I want to restore the full deployment state from a previously created backup using a step-by-step wizard, so that I can recover from data corruption, failed upgrades, or migrate to a new environment.
-
-**Why this priority**: Restore is the companion to backup — without restore, backup has no value. The wizard reduces risk by showing the operator exactly what will happen before any data is overwritten.
-
-**Independent Test**: Can be fully tested by creating a backup, making a known change to the deployment (e.g., adding a dataset), then using the restore wizard to revert and verifying the change is undone.
-
-**Acceptance Scenarios**:
-
-1. **Given** one or more backups exist, **When** the operator clicks "Restore" next to a backup entry, **Then** a restore wizard opens showing:
-   - Summary of backup contents (database size, files included, total size, timestamp, deployment version)
-   - Schema compatibility check result (green/pass or red/block)
-   - A warning that the current deployment state will be auto-backed up before restore proceeds.
-2. **Given** the restore wizard's summary step shows all details, **When** the operator reaches the confirmation step, **Then** they must type the word "RESTORE" into a text field to enable the "Start Restore" button (confirmation cannot be bypassed via `--force` in the CLI — `--force` only skips the service pause prompt, not the typed confirmation).
-3. **Given** the operator has confirmed the restore, **When** the system begins, **Then** it first automatically creates a backup of the current deployment state (a "pre-restore safety snapshot"), then proceeds with the restore.
-4. **Given** the pre-restore safety snapshot is complete, **When** the system applies the selected backup, **Then** it uses an atomic swap pattern: restore to a temporary directory, verify integrity, then swap into place. A progress indicator is shown throughout.
-5. **Given** a restore completes successfully, **Then** a confirmation message appears with a prompt to restart the application, including the ID of the auto-created pre-restore safety snapshot so the operator can undo if needed.
-6. **Given** a restore fails (e.g., corrupted backup archive), **When** the error occurs, **Then** the original deployment state is preserved intact (partial files are never left in place), the pre-restore safety snapshot is retained, and an error notification with recovery instructions is shown.
-
+title: 'Feature Specification: Deployment Backup and Restore'
+type: spec
+tags:
+  - type/spec
+  - domain/operations
+status: draft
+created: '2026-06-21'
+updated: '2026-06-21'
 ---
-
 ### User Story 3 - CLI Backup & Restore for Automation (Priority: P2)
 
 As a DevOps engineer or power user, I want to create backups and perform restores from the command line, so that I can incorporate backup/restore into automated scripts, CI/CD pipelines, and scheduled maintenance windows.

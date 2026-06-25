@@ -43,3 +43,7 @@ The behavior is limited to `anvil/core/autograd.py` and `anvil/core/engine.py` s
 ## Recommendation
 
 If these two files need NumPy-style docstrings, the modification should be done in a dedicated session where the revert trigger can be isolated and disabled. The docstring content is trivial (standard NumPy-style module, class, and method docstrings matching the convention in AGENTS.md).
+
+## See Also
+
+- [[Discoveries/Discoveries|Discoveries]]

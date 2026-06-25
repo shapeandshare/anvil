@@ -1,3 +1,12 @@
+---
+title: UI Link and Button Conventions
+type: reference
+tags:
+  - type/reference
+  - domain/ui
+created: '2026-06-14'
+updated: '2026-06-14'
+---
 # UI Link & Button Conventions
 
 **Established**: 2026-06-14  
@@ -23,3 +32,7 @@ Inline text links within prose sentences and table cells are fine — e.g. "No m
 - `training.html` — fixed 2 bare links
 - `experiment.html` — fixed 1 bare link
 - `playground.html` — already correct (used `btn btn-secondary btn-sm`)
+
+## See Also
+
+- [[Reference/ArchitectureOverview|Architecture Overview]]

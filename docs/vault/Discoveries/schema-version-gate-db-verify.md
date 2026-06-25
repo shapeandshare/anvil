@@ -59,6 +59,7 @@ File: `scripts/ci/check_migration_integrity.py`
 All `db-*` Makefile targets were using `$(PYTHON) -m anvil.cli db_main <command>` which was dead code — `cli.py` has no `if __name__ == "__main__"` guard. Fixed to use the `anvil-db` console script (declared in `pyproject.toml`).
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `anvil/db/schema_version.py` — `SCHEMA_VERSION` constant
 - `anvil/db/registry.py` — `get_expected_tables()` shared registry

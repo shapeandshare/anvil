@@ -49,6 +49,7 @@ Two edits to `.github/workflows/release.yml`:
 - If branch protection requires reviews/checks on the bump PR, auto-merge will block; the tag step's 120s poll then times out and tags `origin/main` at the pre-bump state. This is a branch-protection configuration concern, not a workflow-code defect.
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `.github/workflows/release.yml` — `Bump version and update changelog` and `Create bump PR with auto-merge` steps
 - [[Discoveries/version-stamping-bugs-after-ddd-restructure]] — related skip-bump empty-commit finding

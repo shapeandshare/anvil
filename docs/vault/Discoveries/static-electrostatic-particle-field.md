@@ -91,6 +91,7 @@ The `--snow` CSS variable (set by the JS module as `clamp01(stddev(loss_window) 
 This technique occupies a useful middle ground: more dynamic than fixed-pattern ember dots, but zero JS runtime cost.
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `anvil/api/static/css/themes/static.css` — `::before` particle field, `::after` noise overlay
 - `anvil/api/static/js/themes/static.js` — sets `--snow` from loss volatility

@@ -56,3 +56,7 @@ Applied to all 27 section-card headers across 12 template files:
 ## Rationale
 
 The about page's use of header emblems made sections feel more distinct and visually anchored. Extending the pattern universally creates visual consistency and improves scannability across all pages. No new CSS was needed — `.section-card__icon` was already defined in `archetypes.css`.
+
+## See Also
+
+- [[Discoveries/Discoveries|Discoveries]]

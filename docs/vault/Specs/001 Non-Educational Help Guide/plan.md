@@ -1,3 +1,13 @@
+---
+title: 'Implementation Plan: Non-Educational Help Guide'
+type: spec
+tags:
+  - type/spec
+  - domain/vault
+status: draft
+created: '2026-06-22'
+updated: '2026-06-22'
+---
 # Implementation Plan: Non-Educational Help Guide
 
 **Branch**: `opencode/lucky-canyon` | **Date**: 2026-06-22 | **Spec**: `specs/001-non-educational-help-guide/spec.md`

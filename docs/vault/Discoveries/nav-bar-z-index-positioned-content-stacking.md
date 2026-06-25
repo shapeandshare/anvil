@@ -55,6 +55,7 @@ The nav-bar should always stack above page content. Value 10 leaves room for con
 `z-index` is scoped to the nearest ancestor stacking context. Elements inside different stacking contexts can only be compared at the parent context level. `.nav-bar` creates a stacking context with `position: relative; z-index: 1`, and its children with higher `z-index` values (like `z-index: 60`) only outrank other children within the same context — they cannot escape above the nav-bar's own z-index in the parent context.
 
 ## Related
+- [[Discoveries/Discoveries|Discoveries]]
 
 - [[Sessions/2026-06-23-theme-picker-dropdown-z-index-and-excited-fix]]
 - [[Discoveries/isolation-isolate-stacking-context-paint-order]]

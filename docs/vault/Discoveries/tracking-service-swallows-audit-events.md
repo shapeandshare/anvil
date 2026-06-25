@@ -30,6 +30,7 @@ updated: '2026-06-19'
 The new `AuditService` in `anvil/services/governance/audit_service.py` deliberately **raises** on write failure — the caller's transaction is rolled back so silent data loss cannot happen. `AuditService` is used as the new canonical audit trail; `TrackingService` remains only for MLflow experiment metadata, not authoritative lifecycle records.
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `anvil/services/tracking/tracking.py` — `log_dataset_lifecycle_event()`
 - `anvil/services/governance/audit_service.py` — `record()` (raises on failure)

@@ -1,3 +1,13 @@
+---
+title: 'Implementation Plan: Client SDK'
+type: spec
+tags:
+  - type/spec
+  - domain/architecture
+status: draft
+created: '2026-06-21'
+updated: '2026-06-21'
+---
 # Implementation Plan: Client SDK
 
 **Branch**: `026-client-sdk` | **Date**: 2026-06-21 | **Spec**: [spec.md](./spec.md)

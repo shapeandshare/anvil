@@ -36,3 +36,7 @@ Two parallel model-record systems existed: MLflow auto-registered per-run as `an
 - 1 source → 1 registered model → N versions (clean versioning story)
 - Renaming a dataset/corpus does not fork its registered model (id-based key)
 - Registry is inspectable through standard MLflow UI
+
+## See Also
+
+- [[Decisions/README|Decisions]]

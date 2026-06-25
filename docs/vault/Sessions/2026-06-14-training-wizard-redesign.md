@@ -1,3 +1,16 @@
+---
+title: Training Wizard Redesign
+type: session-log
+tags:
+  - type/session-log
+  - domain/ui
+  - domain/training
+created: '2026-06-14'
+updated: '2026-06-14'
+aliases:
+  - 2026-06-14-training-wizard-redesign
+source: agent
+---
 ## Summary
 
 Redesigned the training page to reduce visual clutter by merging the "Select Data" and "Configure & Auto-Tune" section-cards into a single wizard card with a step stepper and tabs. The active runs list, loss chart, metrics, and output sections remain unchanged.

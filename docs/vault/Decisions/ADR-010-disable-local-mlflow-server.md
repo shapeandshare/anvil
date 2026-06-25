@@ -1,3 +1,19 @@
+---
+title: 'ADR-010: Hosted MLflow Support — Disable Local Server'
+type: decision
+tags:
+  - type/decision
+  - domain/mlops
+status: accepted
+created: '2026-06-14'
+updated: '2026-06-14'
+aliases:
+  - disable-local-mlflow-server
+source: agent
+code-refs:
+  - anvil/services/tracking/
+  - shared/tracking.mk
+---
 # ADR-010: Hosted MLflow support — disable local server
 
 **Status**: Accepted
@@ -34,3 +50,7 @@ Add an explicit `ANVIL_MLFLOW_DISABLE_LOCAL` env var (default `false`) that cont
 - **Positive**: The operations page shows `"external"` status, making the disabled state visible
 - **Positive**: Explicit-only opt-in avoids the footgun of auto-detecting LAN IPs as "remote"
 - **Negative**: Service management endpoints (start/stop/restart for MLflow) return 500 when local is disabled — user must manage the remote server separately
+
+## See Also
+
+- [[Decisions/README|Decisions]]

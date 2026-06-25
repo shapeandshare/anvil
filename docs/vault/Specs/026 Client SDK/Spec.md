@@ -1,49 +1,13 @@
-# Feature Specification: Client SDK
-
-**Feature Branch**: `026-client-sdk`  
-**Created**: 2026-06-21  
-**Status**: Draft  
-**Input**: User description: "Client SDK for connecting to the anvil server API — using a common namespace, client/command/abstract paradigm pattern from darkness and light repositories"
-
-## User Scenarios & Testing
-
-### User Story 1 - Install and Connect to anvil Server (Priority: P1)
-
-A developer installing the anvil Client SDK in their Python project can import the client, configure it with the server address, and establish a connection to the anvil API — verifying the server is reachable via a health check.
-
-**Why this priority**: Without basic connectivity, nothing else works. This is the foundation all other SDK functionality depends on.
-
-**Independent Test**: Can be fully tested by installing the SDK in a test environment, configuring it with a known anvil server URL, calling the health check, and confirming a "server is reachable" response.
-
-**Acceptance Scenarios**:
-
-1. **Given** a developer has `pip install`-ed the anvil SDK into their environment, **When** they import and instantiate the client with a valid server URL, **Then** they receive a configured client object ready to make requests.
-2. **Given** an instantiated client pointed at a running anvil server, **When** the developer calls `client.health()`, **Then** they receive a success response indicating the server is reachable.
-3. **Given** a client configured with an unreachable or invalid server URL, **When** the developer calls any API method, **Then** they receive a clear, actionable connection error — not a timeout or hang.
-4. **Given** a client, **When** the developer inspects the configuration, **Then** they can read back the server address, timeout, and retry settings they provided (or the defaults).
-
 ---
-
-### User Story 2 - Manage Datasets via the SDK (Priority: P1)
-
-A developer using the SDK can list, create, update, delete, and upload datasets — the complete lifecycle of a dataset resource — without needing to interact with the anvil web UI or craft raw HTTP requests.
-
-**Why this priority**: Datasets are a primary anvil resource; programmatic dataset management is the most common SDK use case for automation and CI/CD pipelines.
-
-**Independent Test**: Can be tested by creating a dataset via the SDK, confirming it appears in the dataset list, updating its metadata, uploading sample data, and deleting it — all through typed SDK method calls.
-
-**Acceptance Scenarios**:
-
-1. **Given** a connected client, **When** the developer calls `client.datasets.list()`, **Then** they receive a typed list of dataset summaries with id, name, description, sample count, and creation date.
-2. **Given** a connected client, **When** the developer calls `client.datasets.create(name, description)`, **Then** a new dataset record is created on the server and the returned object contains the new dataset's id.
-3. **Given** an existing dataset id, **When** the developer calls `client.datasets.get(id)`, **Then** the full dataset record (including metrics and metadata) is returned as a typed object.
-4. **Given** an existing dataset id, **When** the developer calls `client.datasets.update(id, name=..., description=...)`, **Then** the server record is updated and the updated record is returned.
-5. **Given** an existing dataset id, **When** the developer calls `client.datasets.upload(id, file_path)`, **Then** the file content is uploaded and ingested as dataset samples, and the updated dataset object is returned.
-6. **Given** an existing dataset id, **When** the developer calls `client.datasets.delete(id)`, **Then** the dataset is removed from the server and subsequent `get()` calls for that id return a "not found" error.
-7. **Given** a list of datasets, **When** the developer calls `client.datasets.search(query)`, **Then** results are filtered to datasets whose name or description matches the query string.
-
+title: 'Feature Specification: Client SDK'
+type: spec
+tags:
+  - type/spec
+  - domain/architecture
+status: draft
+created: '2026-06-21'
+updated: '2026-06-21'
 ---
-
 ### User Story 3 - Train Models Programmatically (Priority: P1)
 
 A developer using the SDK can start a training run with custom hyperparameters, monitor its progress via event streams, stop it if needed, and retrieve the trained model reference — all through typed SDK calls.

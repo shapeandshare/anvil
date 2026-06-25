@@ -45,6 +45,7 @@ Added to `script-src`, `style-src`, `img-src`, `font-src`, and `connect-src` as 
 When adding third-party resources that load external scripts/styles, the CSP must be updated to include the external origin. The conditional approach (relaxed for docs, strict for app) avoids weakening security for the application.
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `anvil/api/app.py` — `security_headers_middleware` CSP logic
 - `anvil/api/auth.py` — `EXEMPT_ROUTES` and `EXEMPT_PREFIXES`

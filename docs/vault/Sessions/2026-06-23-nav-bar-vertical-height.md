@@ -1,3 +1,15 @@
+---
+title: Nav-Bar Vertical Height Fix
+type: session-log
+tags:
+  - type/session-log
+  - domain/ui
+created: '2026-06-23'
+updated: '2026-06-23'
+aliases:
+  - 2026-06-23-nav-bar-vertical-height
+source: agent
+---
 # Nav-Bar Vertical Height Fix
 
 **Type**: session-log  

@@ -1,35 +1,13 @@
-# Tasks: Non-Educational Help Guide
-
-**Input**: Design documents from `specs/001-non-educational-help-guide/`
-**Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
-
-**Tests**: Included per TDD mandate (Constitution Article IV). Write tests before implementation (Red-Green-Refactor).
-
-**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
-
-## Format: `[ID] [P?] [Story] Description`
-
-- **[P]**: Can run in parallel (different files, no dependencies)
-- **[Story]**: Which user story this task belongs to (e.g., US1, US2, US3)
-- Include exact file paths in descriptions
-
-## Path Conventions
-
-All paths are relative to repository root:
-- `anvil/api/v1/` — Route handlers and data modules
-- `anvil/api/templates/` — Jinja2 templates
-- `tests/` — Test suite (e2e and unit)
-
 ---
-
-## Phase 1: Setup (Shared Infrastructure)
-
-**Purpose**: Project initialization — the existing project is already set up, no initialization needed.
-
-No setup tasks required. The project is a running FastAPI application; this feature adds a page route with no new infrastructure dependencies.
-
+title: 'Tasks: Non-Educational Help Guide'
+type: spec
+tags:
+  - type/spec
+  - domain/vault
+status: draft
+created: '2026-06-22'
+updated: '2026-06-22'
 ---
-
 ## Phase 2: Foundational (Blocking Prerequisites)
 
 **Purpose**: Core data model that MUST be complete before ANY user story can be implemented

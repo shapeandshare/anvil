@@ -1,3 +1,15 @@
+---
+title: Data Page Restructure — Tabs, Docs, Combined Table
+type: session-log
+tags:
+  - type/session-log
+  - domain/ui
+created: '2026-06-14'
+updated: '2026-06-14'
+aliases:
+  - 2026-06-14-data-page-tabs-docs-combined-table
+source: agent
+---
 # 2026-06-14: Data Page Restructure — Tabs, Docs, Combined Table
 
 **date**: 2026-06-14

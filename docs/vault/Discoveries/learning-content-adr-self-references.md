@@ -33,6 +33,7 @@ All 11 instances were removed and replaced with plain-language descriptions. The
 Any time learning content or user-facing docs are auto-generated, the generation context should be constrained to exclude internal project metadata (ADR numbers, spec FR numbers, vault file paths, `__init__` or import conventions). The glossary boundary is also unclear: some entries describe ML concepts (Value, KV Cache, RoPE) while others describe project-internal tooling (ADR, Vault, Constitution). Consider whether the latter belong in a developer onboarding doc rather than the user-facing glossary.
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `anvil/api/v1/learning.py` — lesson body strings at lines ~1240, ~1292, ~1376, ~1380, ~1408; glossary entries at ~1778, ~1782
 - `anvil/api/templates/archetypes/faq.html` — FAQ answers at lines ~86, ~188, ~207, ~224

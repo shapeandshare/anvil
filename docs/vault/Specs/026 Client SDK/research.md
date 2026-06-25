@@ -1,29 +1,13 @@
-# Phase 0 Research: Client SDK
-
-**Feature**: 026-client-sdk | **Date**: 2026-06-21
-
-This document resolves every technical decision needed to implement the SDK. The spec contained
-no `[NEEDS CLARIFICATION]` markers; this research records the rationale behind each design
-choice and the alternatives rejected, grounded in (a) the anvil constitution, (b) the existing
-codebase conventions, and (c) the darkness/light reference patterns.
-
 ---
-
-## R1 — HTTP transport library
-
-- **Decision**: Use `httpx.AsyncClient` as the transport, wrapped in a single `Transport` class.
-- **Rationale**:
-  - `httpx>=0.27,<1` is **already a direct dependency** in `pyproject.toml` — zero new deps (Constitution: lean dependencies).
-  - It is async-native, satisfying Article V (Async-First) with no sync surface.
-  - It supports SSE streaming via `client.stream(...)` + `response.aiter_lines()`, file upload via `files=`, and cookie persistence via its `cookies` jar — covering every spec requirement.
-  - The existing test suite already drives the FastAPI app through `httpx.ASGITransport(app=app)`, so the SDK can be tested in-process with the same proven mechanism.
-- **Alternatives considered**:
-  - `requests` (used by darkness): rejected — synchronous, violates Article V, and would add a new dependency.
-  - `aiohttp`: rejected — new dependency, heavier, and no in-process ASGI transport for testing.
-  - stdlib `urllib`/`http.client`: rejected — no async, no ergonomic streaming/multipart, more code to maintain.
-
+title: 'Phase 0 Research: Client SDK'
+type: spec
+tags:
+  - type/spec
+  - domain/architecture
+status: draft
+created: '2026-06-21'
+updated: '2026-06-21'
 ---
-
 ## R2 — Client architecture (facade / domain / command / transport)
 
 - **Decision**: Four-layer client architecture mirroring anvil's server-side layering (Article VII):

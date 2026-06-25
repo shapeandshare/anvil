@@ -43,6 +43,7 @@ Changed the Docker run command in `opencode.json` from env passthrough to inline
 These values are project constants defined in `shared/sonar.mk` and were already used inline in the `sonar-mcp` Makefile target (which worked). The `opencode.json` config simply hadn't been updated to match.
 
 ## Related
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `shared/sonar.mk` — source of truth for `SONAR_ORG` and `SONAR_PROJECT_KEY`
 - `opencode.json` — the MCP config that needed fixing

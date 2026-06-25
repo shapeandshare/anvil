@@ -1,3 +1,15 @@
+---
+title: Auto-Registration and Samples Removal
+type: session-log
+tags:
+  - type/session-log
+  - domain/training
+created: '2026-06-14'
+updated: '2026-06-14'
+aliases:
+  - auto-registration-and-samples-removal
+source: agent
+---
 ## Summary
 Two changes to the training pipeline:
 

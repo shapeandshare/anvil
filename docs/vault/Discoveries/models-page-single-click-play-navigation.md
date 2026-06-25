@@ -46,6 +46,7 @@ The "View" (detail page) and "Play" buttons remain as secondary actions for user
 The same pattern was applied to the model detail page (`model_detail.html`). The page previously had no Play button at all — after inspecting a model's architecture and version history, users had to navigate back to the models table to reach the playground. Added a `btn-primary "Play"` link below the model name/description that links to `/v1/inference-page?model_id={id}`, giving a direct path from detail inspection to interaction.
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `anvil/api/templates/archetypes/models.html:67` — model name link target changed
 - `anvil/api/templates/archetypes/playground.html:113-125` — URL param pre-selection logic

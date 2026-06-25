@@ -72,3 +72,7 @@ Key architectural choices:
 - **Article VII** (Layered): No DB — no Repository layer. Intentional exception documented.
 - **Article X** (DDD): `vault/` follows plural noun convention (§10.4)
 - **Add'l constraints**: Pydantic BaseModel, one-class-per-file, mypy strict, NumPy docstrings
+
+## See Also
+
+- [[Decisions/README|Decisions]]

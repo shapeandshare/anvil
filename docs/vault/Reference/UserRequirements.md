@@ -39,6 +39,7 @@ A consolidated requirements document capturing the original user intent from the
 - When the original intent is unclear, this is the authoritative source
 
 ## Related
+- [[Reference/ArchitectureOverview|Architecture Overview]]
 
 - [[Sessions/2026-06-10-spec-crafting|Spec Crafting Session]] — the session that produced this document
 - [[Reference/Glossary|Glossary]] — key terms defined in the requirements

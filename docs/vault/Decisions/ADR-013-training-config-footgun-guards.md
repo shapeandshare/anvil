@@ -78,3 +78,7 @@ Soft warnings (block_size, data source) are logged to the output pane but **not*
 - Any new training hyperparameter MUST be checked for invalid combinations in all three layers
 - Autotune must always produce safe values (it already does)
 - API validation MUST include actionable suggestions where possible
+
+## See Also
+
+- [[Decisions/README|Decisions]]

@@ -42,6 +42,7 @@ The first iteration was invisible — "no effects." Two compounding causes. Firs
 The original Ash declared `particleConfig: { type: 'ember' }`, which binds the shared **canvas** ember effect (see `anvil/api/static/js/theme/particle-system.js` and [[Reference/particle-effect-authoring]]). Renaming it to a made-up `type: 'soot'` did not throw: `particle-system.js` looks up `effects[config.type]`, finds nothing, and silently falls back to `setParticleAttr('default')` — i.e. no canvas, CSS pseudo-elements left visible (suppression is only enabled for `type: 'none'`). So an unregistered effect name behaves like `type: 'css'` by accident. This masks a real authoring mistake: if the entire effect is pseudo-element CSS, the config MUST say `type: 'css'`; an invented name implies a registered canvas effect that does not exist. The combination of dropping the real `ember` canvas effect and shipping an invisible dark-on-dark CSS layer is what produced the original "I don't see any effects."
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `anvil/api/static/css/themes/ash.css` — the four-band parallax field, `soot-fall` + `soot-sway` keyframes, and the divergence `ashfall` state
 - `anvil/api/static/js/themes/ash.js` — `--ash` signal mapping (loss → fall density) and the corrected `particleConfig: { type: 'css' }`

@@ -52,6 +52,7 @@ The developer wanted to return HTTP 409 ("already in progress") when a bootstrap
 3. **Use `asyncio.Lock.acquire()` with a timeout** — `await asyncio.wait_for(lock.acquire(), timeout=0)` to attempt a non-blocking acquire, catching `TimeoutError` to return 409.
 
 ## Related
+- [[Discoveries/Discoveries|Discoveries]]
 
 - TMR-019 in thread model review
 - Classical lock anti-pattern documented in Go `sync.Mutex` and Python `threading.Lock` best practices

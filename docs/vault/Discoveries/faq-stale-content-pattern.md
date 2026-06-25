@@ -81,3 +81,7 @@ There is no cross-reference check, no content audit process, and no automated ve
 - "Why does it say '8 interactive lessons'?" — updated to "14 interactive walkthroughs plus FAQ and Glossary", generalized "recent additions" to include graph, architecture, cloud compute. Fixed filename to `anvil/api/v1/learning.py`.
 - "Can I train on GPU, or only CPU?" — updated to "All three... three training backends" adding Cloud/Modal, reworded "pure Python (zero dependencies)" to "stdlib only, no framework."
 - "Why is it so slow?" — reworded "pure Python" to "stdlib only, no framework."
+
+## See Also
+
+- [[Discoveries/Discoveries|Discoveries]]

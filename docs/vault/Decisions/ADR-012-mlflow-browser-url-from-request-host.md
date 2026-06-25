@@ -1,3 +1,19 @@
+---
+title: 'ADR-012: Derive MLflow Browser URL from HTTP Request Host Header'
+type: decision
+tags:
+  - type/decision
+  - domain/mlops
+  - domain/ui
+status: accepted
+created: '2026-06-15'
+updated: '2026-06-15'
+aliases:
+  - mlflow-browser-url-from-request-host
+source: agent
+code-refs:
+  - anvil/services/tracking/
+---
 # ADR-012: Derive MLflow browser URL from HTTP request Host header
 
 **Status**: Accepted
@@ -51,3 +67,7 @@ All three endpoints that return MLflow links are updated to accept `fastapi.Requ
 - **Positive**: Works correctly for all access patterns: `localhost`, LAN IP, hostname, or custom domain.
 - **Neutral**: `set_resolved_mlflow_uri()` is kept but is now only callable programmatically (e.g. for testing or future tooling). It is no longer part of the startup path.
 - **Negative**: None — the `request` object is freely available in every FastAPI endpoint.
+
+## See Also
+
+- [[Decisions/README|Decisions]]

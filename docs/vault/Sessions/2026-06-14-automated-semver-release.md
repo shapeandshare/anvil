@@ -1,3 +1,15 @@
+---
+title: 'Session: Automated Semantic Versioning and Release'
+type: session-log
+tags:
+  - type/session-log
+  - domain/tooling
+created: '2026-06-14'
+updated: '2026-06-14'
+aliases:
+  - 2026-06-14-automated-semver-release
+source: agent
+---
 # Session: Automated Semantic Versioning & Release
 
 **Date**: 2026-06-14

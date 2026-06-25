@@ -116,3 +116,7 @@ DDD does not override Article VI (`__init__.py` Ownership Policy), one-class-per
 - Enforced at merge review — new sub-packages without an `__init__.py` or with a non-docstring `__init__.py` are reject-worthy under Article VI.
 - Vault audit will flag package directories that exceed the 12-module threshold as a recommendation (not a blocker) for evaluation.
 - ADR-021 (`__init__.py` Ownership Policy) remains the authority on `__init__.py` rules.
+
+## See Also
+
+- [[Decisions/README|Decisions]]

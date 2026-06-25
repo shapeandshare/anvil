@@ -1,3 +1,15 @@
+---
+title: Dark Mode Default
+type: session-log
+tags:
+  - type/session-log
+  - domain/ui
+created: '2026-06-14'
+updated: '2026-06-14'
+aliases:
+  - 2026-06-14-dark-mode-default
+source: agent
+---
 ## Summary
 Changed the default theme from OS-preference-respecting to always-dark. Previously, users with `prefers-color-scheme: light` would see the light theme on first visit. Now all users see dark mode by default, regardless of OS setting. The toggle still persists via `localStorage`, so users who switch to light keep their preference across visits.
 

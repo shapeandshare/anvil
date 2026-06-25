@@ -79,3 +79,7 @@ Verified by:
 1. `make lint` — the `@dataclass` grep check exits non-zero if any `@dataclass` decorator appears in `anvil/`.
 2. All 6 migrated files pass `black --check`, `isort --check`, and have zero new `ruff` errors.
 3. Code review: new PRs must use `BaseModel` for structured data.
+
+## See Also
+
+- [[Decisions/README|Decisions]]

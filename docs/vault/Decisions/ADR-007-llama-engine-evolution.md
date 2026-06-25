@@ -1,3 +1,19 @@
+---
+title: 'ADR-007: Llama Engine Evolution — SwiGLU, RoPE, Safetensors Export'
+type: decision
+tags:
+  - type/decision
+  - domain/core
+  - domain/infrastructure
+status: accepted
+created: '2026-06-14'
+updated: '2026-06-14'
+aliases:
+  - llama-engine-evolution
+source: agent
+code-refs:
+  - anvil/core/engine.py
+---
 # ADR-007: Llama Engine Evolution
 
 **Date**: 2026-06-14  
@@ -27,3 +43,7 @@ We evolved the core engine from GPT-2 to Llama architecture:
 - **Dual-architecture support** (keep GPT-2 alive alongside Llama): Rejected — unnecessary complexity for an educational platform
 - **Interleaved/consecutive RoPE**: Rejected — would silently produce wrong logits when exported weights load in HF Llama
 - **Keeping embedding-level norm**: Rejected — no corresponding HF tensor; breaks architectural equivalence
+
+## See Also
+
+- [[Decisions/README|Decisions]]

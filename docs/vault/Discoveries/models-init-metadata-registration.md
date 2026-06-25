@@ -1,3 +1,18 @@
+---
+title: Models __init__ Metadata Registration
+type: discovery
+tags:
+  - type/discovery
+  - domain/database
+status: reviewed
+created: '2026-06-23'
+updated: '2026-06-23'
+aliases:
+  - models-init-metadata-registration
+source: agent
+code-refs:
+  - anvil/db/models/
+---
 # Models `__init__` Metadata Registration
 
 **Type**: discovery
@@ -46,5 +61,6 @@ make test-e2e-full    # seed + run full API e2e suite
 ```
 
 ## See Also
+- [[Discoveries/Discoveries|Discoveries]]
 
 - [[Sessions/2026-06-21-api-e2e-suite]]

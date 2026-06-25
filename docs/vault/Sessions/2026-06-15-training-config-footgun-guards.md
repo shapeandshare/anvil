@@ -1,3 +1,15 @@
+---
+title: Training Config Footgun Guards
+type: session-log
+tags:
+  - type/session-log
+  - domain/training
+created: '2026-06-15'
+updated: '2026-06-15'
+aliases:
+  - 2026-06-15-training-config-footgun-guards
+source: agent
+---
 ## Session: Training config footgun guards — live UI warnings, backend validation, engine guards
 
 **Date**: 2026-06-15

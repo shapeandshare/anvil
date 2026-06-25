@@ -67,6 +67,27 @@ Non-obvious constraints, gaps, and conflicts discovered during agent sessions. E
 
 - [[Discoveries/regex-backtracking-yaml-frontmatter|Regex Backtracking in YAML Frontmatter Parsing]] — `re.DOTALL` + `.*?` + `\s*\n` in the frontmatter-stripping regex (`hygiene.py:347`) creates an O(n²) backtracking vector. Fixed by replacing with simple linear string operations (`str.startswith` + `str.find`).
 
+## Additional Discoveries
+
+- [[Discoveries/core-file-docstring-revert|Core Engine Files Persistently Revert Docstring Changes]] — Core Engine Files Persistently Revert Docstring Changes — Docstring changes in core engine files keep reverting due to pre-commit hook regeneration.
+- [[Discoveries/csp-blocks-swagger-redoc|CSP Blocks Swagger UI and ReDoc CDN Assets]] — CSP Blocks Swagger UI and ReDoc CDN Assets — Content Security Policy blocks Swagger and ReDoc CDN assets; custom CSP headers needed.
+- [[Discoveries/god-class-was-a-stub|AnvilWorkbench God Class Was a Stub]] — AnvilWorkbench God Class Was a Stub — The god class exposing all service methods was an empty stub with no method forwarding.
+- [[Discoveries/graph-canvas-node-left-clipping|Graph Canvas Node Left-Edge Clipping]] — Graph Canvas Node Left-Edge Clipping — Graph canvas nodes clip at the left edge; overflow or transform-origin fix needed.
+- [[Discoveries/graph-scrubber-ignored-by-draw|Graph Scrubber Ignored by Draw]] — Graph Scrubber Ignored by Draw — The graph scrubber position is ignored during redraw; timeline and cursor are out of sync.
+- [[Discoveries/learning-content-adr-self-references|Learning Content Contained Internal ADR/FR References]] — Learning Content ADR Self-References — Learning content ADRs reference themselves in `see_also` creating circular navigation paths.
+- [[Discoveries/learning-lesson-cta-banner-pattern|Learning Lesson CTA Banner Pattern]] — Learning Lesson CTA Banner Pattern — CTA banner pattern for learning lessons; consistent placement and styling for call-to-action banners.
+- [[Discoveries/mlflow-get-latest-versions-deprecation|MLflow get_latest_versions Deprecation]] — MLflow get_latest_versions Deprecation — MLflow's `get_latest_versions` API is deprecated; migration path to the registry API needed.
+- [[Discoveries/nav-bar-z-index-positioned-content-stacking|Nav-Bar Z-Index Competition with Page Content Positioned Elements]] — Nav-Bar Z-Index Competition with Page Content — Nav-bar z-index competes with positioned page content elements causing stacking issues.
+- [[Discoveries/provenance-manifest-mocking-technique|Provenance Manifest Mocking in Tests]] — Provenance Manifest Mocking in Tests — Technique for mocking provenance manifests in tests without actual database records.
+- [[Discoveries/router-decomposition-pattern|Router Decomposition Pattern]] — Router Decomposition Pattern — Pattern for decomposing large FastAPI routers into smaller, focused sub-routers per domain.
+- [[Discoveries/schema-version-gate-db-verify|Schema Version Gate, DB Verify CLI, and Migration Integrity CI Gate]] — Schema Version Gate, DB Verify CLI, and Migration Integrity — CI gate that verifies DB schema version matches migration state before deployment.
+- [[Discoveries/section-card-icon-convention|Section-Card Icon Convention]] — Section-Card Icon Convention — Convention for assigning icons to section cards based on their domain and semantic role.
+- [[Discoveries/sse-training-chart-dom-signals|SSE Training Chart — Assertable DOM Text Signals]] — SSE Training Chart — Assertable DOM Text Signals — SSE training chart uses assertable DOM text signals for testable chart state verification.
+- [[Discoveries/str-enum-boundary-conversion|StrEnum Boundary Conversion Pattern]] — StrEnum Boundary Conversion Pattern — Pattern for accepting str|StrEnum at API boundaries and converting to strict StrEnum internally.
+- [[Discoveries/theme-mapping-excited-fake-metrics-grad-norm|Excited Mode Fake Metrics Need grad_norm for Grad-Norm-Driven Mappings]] — Excited Mode Fake Metrics Need grad_norm — Excited theme mappings need fake grad_norm metric for grad-norm-driven visual effects to activate.
+- [[Discoveries/toctou-asyncio-lock-check-before-acquire|TOCTOU Race on asyncio.Lock Check-Before-Acquire]] — TOCTOU Race on asyncio.Lock Check-Before-Acquire — Time-of-check-time-of-use race condition when checking lock state before acquiring asyncio.Lock.
+
+
 ## Related MOCs
 
 - [[Sessions/2026-06-10-implementation|Sessions]] — Full session logs

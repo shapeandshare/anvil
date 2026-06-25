@@ -1,3 +1,15 @@
+---
+title: Fix MLflow Browser URL — Derive from Request Host Header
+type: session-log
+tags:
+  - type/session-log
+  - domain/mlops
+created: '2026-06-15'
+updated: '2026-06-15'
+aliases:
+  - 2026-06-15-mlflow-browser-url-fix
+source: agent
+---
 ## Session: Fix MLflow browser URL — derive from request Host header
 
 **Date**: 2026-06-15

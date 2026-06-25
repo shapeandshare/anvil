@@ -56,3 +56,7 @@ Branch protection on `main` requires the overall CI workflow to pass. The bump-s
 ## Status
 
 Implemented by `.github/workflows/ci.yml` and enforced by branch protection settings on `main`.
+
+## See Also
+
+- [[Decisions/README|Decisions]]

@@ -70,6 +70,7 @@ Removing `from __future__ import annotations` across 49 files eliminated:
 - Compatibility concern with tools (like Pydantic, SQLAlchemy) that use `get_type_hints()` to resolve annotations at runtime — eager evaluation is actually more predictable
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `AGENTS.md` rule #9 forbids both `TYPE_CHECKING` and `from __future__ import annotations`
 - All files in `anvil/db/models/`, `anvil/services/`, `scripts/ci/graph_health/`, and tests were cleaned

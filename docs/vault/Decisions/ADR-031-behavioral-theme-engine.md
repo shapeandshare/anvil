@@ -131,3 +131,7 @@ layering / wave-avoidance constraints:
 - Article V/VII: threading unchanged; run-status reconciled through the service.
 - Verified by `make lint`, `make typecheck`, `make test`, and the SC-001…SC-012
   QA matrix in `docs/vault/Specs/018 Theme Engine/quickstart.md`.
+
+## See Also
+
+- [[Decisions/README|Decisions]]

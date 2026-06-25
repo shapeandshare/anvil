@@ -47,6 +47,7 @@ The original router.py had three inline sections interspersed with the `include_
 - Lines ~553–1958: LEARNING_ARC data structure, learning content pages, inference/sampling routes
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `anvil/api/v1/router.py`
 - `anvil/api/v1/health_ops.py`

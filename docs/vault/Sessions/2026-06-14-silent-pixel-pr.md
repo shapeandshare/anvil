@@ -1,3 +1,15 @@
+---
+title: Silent Pixel PR
+type: session-log
+tags:
+  - type/session-log
+  - domain/ui
+created: '2026-06-14'
+updated: '2026-06-14'
+aliases:
+  - 2026-06-14-silent-pixel-pr
+source: agent
+---
 ## Summary
 
 Commit-and-PR session: bundled 40 files of accumulated changes (design system polish, favicon/apple-touch-icon assets, template refinements, service updates, test updates, vault doc refreshes) into a single commit and opened PR #38 against main.

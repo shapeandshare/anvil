@@ -1,3 +1,12 @@
+---
+title: Overflow Clipping Pattern
+type: reference
+tags:
+  - type/reference
+  - domain/ui
+created: '2026-06-14'
+updated: '2026-06-14'
+---
 # Overflow Clipping Pattern
 
 **Established**: 2026-06-14  
@@ -37,3 +46,7 @@ Each absolutely-positioned decorative child already had its own `overflow: hidde
 ## Principle
 
 `overflow: hidden` on a parent should not be used as a blanket containment strategy for absolutely-positioned decorations. Instead, apply `overflow: hidden` directly to the decoration containers that need it. This avoids unintended clipping of normal-flow children.
+
+## See Also
+
+- [[Reference/ArchitectureOverview|Architecture Overview]]

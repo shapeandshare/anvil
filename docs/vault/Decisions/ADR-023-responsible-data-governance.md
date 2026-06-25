@@ -132,3 +132,7 @@ We introduce a governance layer across four axes:
 - Gate enforcement: `GovernanceService.evaluate_submission()` unit tests in `test_gate.py` + API tests in `test_upload_gate.py`.
 - Article VII: all route handlers use `workbench: AnvilWorkbench = Depends(get_workbench)`, verified by import grep.
 - `make lint && make typecheck && make test` must pass (CI merge gate).
+
+## See Also
+
+- [[Decisions/README|Decisions]]

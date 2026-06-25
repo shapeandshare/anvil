@@ -62,3 +62,7 @@ A grep for `glow =` across the file found two occurrences:
 - **Line 1134** (`energy` effect) — was missing, now fixed ✅
 
 No other effects use `glow`.
+
+## See Also
+
+- [[Discoveries/Discoveries|Discoveries]]

@@ -1,3 +1,13 @@
+---
+title: 'Quickstart: Non-Educational Help Guide'
+type: spec
+tags:
+  - type/spec
+  - domain/vault
+status: draft
+created: '2026-06-22'
+updated: '2026-06-22'
+---
 # Quickstart: Non-Educational Help Guide
 
 **Phase**: 1 | **Date**: 2026-06-22

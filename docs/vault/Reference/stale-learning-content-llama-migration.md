@@ -1,3 +1,12 @@
+---
+title: Stale Learning Content After GPT→Llama Migration
+type: reference
+tags:
+  - type/reference
+  - domain/core
+created: '2026-06-14'
+updated: '2026-06-14'
+---
 # Discovery: Stale Learning Content After GPT→Llama Migration
 
 **Date**: 2026-06-14
@@ -48,3 +57,7 @@ The learning content enrichment (2026-06-13 session) and the Llama migration (AD
 ## Prevention
 
 Any future architecture migration or refactor should include a checklist item: **"Audit inline lesson content in `router.py` for stale descriptions."** The lesson steps (`EMBEDDING_STEPS`, `ATTENTION_STEPS`, `PARAMS_STEPS`, etc.) are string literals co-located with route definitions and are easily overlooked.
+
+## See Also
+
+- [[Reference/ArchitectureOverview|Architecture Overview]]

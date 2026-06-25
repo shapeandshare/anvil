@@ -74,6 +74,7 @@ The fix makes the pref's behavior obvious: it only controls whether particles ru
 not *which* particles run.
 
 ## References
+- [[Discoveries/Discoveries|Discoveries]]
 
 - `anvil/api/static/js/theme/particle-system.js` — `getEffectiveConfig`, `readPref`, `writePref`
 - `anvil/api/static/js/theme/theme-manager.js` — "Show particles" toggle wiring
