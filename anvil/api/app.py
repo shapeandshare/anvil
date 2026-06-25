@@ -105,30 +105,23 @@ def _setup_logging() -> None:
     )
 
 
-@asynccontextmanager
-async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
-    """Application lifespan context manager handling startup and shutdown.
+async def _init_database() -> None:
+    """Initialize the async SQLAlchemy engine and run schema migrations.
 
-    On startup:
-      0. Configures structured logging.
-      1. Initialises the async SQLAlchemy engine and runs Alembic migrations.
-      2. Starts the MLflow service (unless ``mlflow_disable_local`` is set).
-      3. Enables system metrics collection via ``TrackingService``.
-      4. Reconciles orphaned MLflow runs.
-      5. Bootstraps demo corpora and datasets (best-effort).
-      6. Warms up the demo model in a background thread.
+    Creates the engine, applies pending Alembic migrations, and verifies
+    the schema version.  Exits the process with ``sys.exit(1)`` on schema
+    version mismatch.
 
-    On shutdown:
-      1. Stops the MLflow service if it was started by this process.
+    Raises
+    ------
+    SystemExit
+        If the schema version check fails.
     """
-    _setup_logging()
     print("Setting up database...", flush=True)
     await init_engine()
     migration_svc = MigrationService()
     await migration_svc.ensure_migrated()
 
-    # Schema version gate — refuse to start if the DB was created by a
-    # squashed migration that predates the current schema.
     try:
         await migration_svc.ensure_schema_version()
     except (ValueError, RuntimeError) as exc:
@@ -136,7 +129,17 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
         print(f"FATAL: {exc}", flush=True)
         sys.exit(1)
 
-    cfg = get_config()
+
+def _start_mlflow_if_needed(_app: FastAPI, cfg: dict[str, object]) -> None:
+    """Start the MLflow sidecar process unless disabled in configuration.
+
+    Parameters
+    ----------
+    _app : FastAPI
+        The application instance -- receives ``mlflow`` in its state.
+    cfg : dict
+        The application configuration dictionary.
+    """
     if cfg["mlflow_disable_local"]:
         _app.state.mlflow = None
     else:
@@ -144,6 +147,13 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
         mlflow_svc.start()
         _app.state.mlflow = mlflow_svc
 
+
+async def _enable_tracking_and_reconcile() -> None:
+    """Enable system metrics and reconcile orphaned MLflow runs.
+
+    Both operations are best-effort; failures are logged but do not
+    block application startup.
+    """
     from ..services.tracking.tracking import TrackingService
 
     TrackingService.enable_system_metrics()
@@ -153,6 +163,12 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     except (ValueError, RuntimeError):
         logger.warning("Failed to reconcile orphaned MLflow runs", exc_info=True)
 
+
+async def _seed_license_catalog() -> None:
+    """Seed the approved-license catalog via the workbench governance layer.
+
+    Best-effort -- failures are logged but do not block startup.
+    """
     try:
         from ..db.session import AsyncSessionLocal
         from ..workbench import AnvilWorkbench
@@ -168,6 +184,13 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     except (ValueError, RuntimeError):
         logger.warning("License seeding failed during startup", exc_info=True)
 
+
+async def _bootstrap_demo_data() -> None:
+    """Bootstrap bundled demo corpora and datasets on first run.
+
+    Checks whether demo data already exists; if not, creates it from
+    the bundled ``data/demo/`` directory.  Best-effort.
+    """
     try:
         from ..db.repositories.corpora import CorpusRepository
         from ..db.repositories.datasets import DatasetRepository
@@ -200,6 +223,12 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     except (ValueError, RuntimeError, OSError):
         logger.warning("Demo bootstrap failed during startup", exc_info=True)
 
+
+def _warmup_demo_model() -> None:
+    """Warm up the demo inference model in a background daemon thread.
+
+    Best-effort -- failures are logged but do not block startup.
+    """
     print("Warming up demo model in background (may take ~30-60s)...", flush=True)
     try:
         import threading
@@ -216,18 +245,42 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     except (RuntimeError, OSError):
         logger.warning("Demo model warmup failed to start", exc_info=True)
 
-    # Initialise the process-lifetime BackupService (feature 026).
+
+async def _init_backup_service(_app: FastAPI) -> None:
+    """Initialise the process-lifetime BackupService and recover state.
+
+    Recovers from an interrupted restore if one was in progress (FR-030).
+    Best-effort -- failures are logged but do not block startup.
+    """
     try:
         from ..services.backup.backup_service import BackupService
 
         backup_svc = BackupService()
         _app.state.backup_service = backup_svc
         logger.info("BackupService initialised")
-
-        # Recover from an interrupted restore (FR-030).
         await backup_svc.recover_interrupted_restore()
     except (ValueError, RuntimeError, OSError):
         logger.warning("BackupService init or journal recovery failed", exc_info=True)
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
+    """Application lifespan context manager handling startup and shutdown.
+
+    Delegates each startup phase to a dedicated helper function for
+    maintainability.  On shutdown the MLflow sidecar is stopped if it
+    was started by this process.
+    """
+    _setup_logging()
+    await _init_database()
+
+    cfg = get_config()
+    _start_mlflow_if_needed(_app, cfg)
+    await _enable_tracking_and_reconcile()
+    await _seed_license_catalog()
+    await _bootstrap_demo_data()
+    _warmup_demo_model()
+    await _init_backup_service(_app)
 
     yield
     running_mlflow = getattr(_app.state, "mlflow", None)
