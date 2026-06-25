@@ -18,7 +18,7 @@
 
       <div class="faq-list">
         {% for term in terms %}
-        <div class="faq-item section-card" style="cursor: pointer; margin-bottom: var(--space-2);" onclick="toggleFaq(this)">
+        <div class="faq-item section-card" style="cursor: pointer; margin-bottom: var(--space-2);" onclick="toggleFaq(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleFaq(this)}" tabindex="0" role="button" aria-expanded="false">
           <div class="faq-question section-card__header" style="margin-bottom: 0; cursor: pointer;">
             <span class="section-card__title"><code>{{ term.name }}</code></span>
             <span class="faq-toggle text-mono type-caption-1" style="flex-shrink:0;">[+]</span>
@@ -42,6 +42,8 @@
 {% block scripts %}
 <script nonce="{{ request.state.csp_nonce }}">
 function toggleFaq(el) {
+  var expanded = el.getAttribute('aria-expanded') === 'true';
+  el.setAttribute('aria-expanded', !expanded);
   var answer = el.querySelector('.faq-answer');
   var toggle = el.querySelector('.faq-toggle');
   if (answer.style.display === 'none' || answer.style.display === '') {
