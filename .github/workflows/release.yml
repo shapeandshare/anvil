@@ -253,7 +253,16 @@ jobs:
             --base main \
             --head "${BRANCH}")
 
-          gh pr merge "${PR_URL}" --auto --squash
+          gh pr merge "${PR_URL}" --auto --squash || {
+            echo "Auto-merge enable returned non-zero. Verifying state..."
+            STATE=$(gh pr view "${PR_URL}" --json state,autoMergeRequest \
+              --jq 'if .state == "MERGED" or .autoMergeRequest != null then "ok" else "fail" end')
+            if [ "${STATE}" != "ok" ]; then
+              echo "FATAL: PR exists but auto-merge not enabled and PR not merged."
+              exit 1
+            fi
+            echo "(auto-merge/merge confirmed despite non-zero exit)"
+          }
           echo "Bump PR created and auto-merged: ${PR_URL}"
 
       # -----------------------------------------------------------------------

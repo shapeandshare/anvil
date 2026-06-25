@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "7f32739d99e70d8b",
+        "id": "13a3f802fb7377c3",
         "type": "tabs",
         "children": [
           {
-            "id": "9dedbf15b7865483",
+            "id": "562bb4061db74c75",
             "type": "leaf",
             "state": {
               "type": "graph",
@@ -176,6 +176,25 @@
       "bases:Create new base": false
     }
   },
-  "active": "9dedbf15b7865483",
-  "lastOpenFiles": []
+  "active": "562bb4061db74c75",
+  "lastOpenFiles": [
+    "Decisions/ADR-007-llama-engine-evolution.md",
+    "Decisions/ADR-039-specs-to-vault.md",
+    "Discoveries/str-enum-boundary-conversion.md",
+    "Specs/018 Theme Engine/contracts/signal-stream.md",
+    "Sessions/2026-06-24-sonarcloud-a11y-bugfix.md",
+    "Sessions/2026-06-24-pr-readiness-type-fixes.md",
+    "Specs/001 Non-Educational Help Guide/contracts/http-route.md",
+    "Specs/001 Non-Educational Help Guide/contracts/template-interface.md",
+    "Specs/001 Non-Educational Help Guide/checklists/requirements.md",
+    "Specs/001 Non-Educational Help Guide/tasks.md",
+    "Specs/001 Non-Educational Help Guide/spec.md",
+    "Specs/001 Non-Educational Help Guide/research.md",
+    "Specs/001 Non-Educational Help Guide/quickstart.md",
+    "Specs/001 Non-Educational Help Guide/plan.md",
+    "Specs/001 Non-Educational Help Guide/data-model.md",
+    "Specs/001 Non-Educational Help Guide/contracts",
+    "Specs/001 Non-Educational Help Guide/checklists",
+    "Specs/001 Non-Educational Help Guide"
+  ]
 }
