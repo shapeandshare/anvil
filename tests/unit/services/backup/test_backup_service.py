@@ -1,5 +1,6 @@
 """Tests for BackupService.create_backup — lock, rotation, failure."""
 
+import asyncio
 from collections.abc import Sequence
 from pathlib import PosixPath
 
@@ -17,24 +18,29 @@ class FakeRepo:
         self.operations: dict[str, BackupOperation] = {}
 
     async def get_all(self) -> Sequence[BackupOperation]:
+        await asyncio.sleep(0)
         return list(self.operations.values())
 
     async def add(self, operation: BackupOperation) -> BackupOperation:
+        await asyncio.sleep(0)
         self.operations[operation.backup_id] = operation
         return operation
 
     async def update_fields(
         self, backup_id: str, **kwargs: object
     ) -> BackupOperation | None:
+        await asyncio.sleep(0)
         if backup_id in self.operations:
             for k, v in kwargs.items():
                 setattr(self.operations[backup_id], k, v)
         return self.operations.get(backup_id)
 
     async def delete(self, backup_id: str) -> None:
+        await asyncio.sleep(0)
         self.operations.pop(backup_id, None)
 
     async def get_by_backup_id(self, backup_id: str) -> BackupOperation | None:
+        await asyncio.sleep(0)
         return self.operations.get(backup_id)
 
 

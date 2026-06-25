@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "13a3f802fb7377c3",
+        "id": "3406996b5068331e",
         "type": "tabs",
         "children": [
           {
-            "id": "562bb4061db74c75",
+            "id": "d1534d247c2580e1",
             "type": "leaf",
             "state": {
               "type": "graph",
@@ -176,8 +176,9 @@
       "bases:Create new base": false
     }
   },
-  "active": "562bb4061db74c75",
+  "active": "d1534d247c2580e1",
   "lastOpenFiles": [
+    "Specs/027 Deployment Backup Restore/contracts/api-v1-backup.md",
     "Decisions/ADR-007-llama-engine-evolution.md",
     "Decisions/ADR-039-specs-to-vault.md",
     "Discoveries/str-enum-boundary-conversion.md",

@@ -123,33 +123,45 @@ async def _enrich_experiments(
         corp_repo = CorpusRepository(session)
 
         for exp in experiments:
-            # Resolve dataset name from DB if not already set via MLflow tag
-            if not exp.get("dataset_name"):
-                ds_id = exp.get("dataset_id")
-                if ds_id:
-                    try:
-                        ds = await ds_repo.get(int(ds_id))
-                        if ds:
-                            exp["dataset_name"] = ds.name
-                    except (ValueError, OSError):
-                        pass
-            else:
-                # Fall back to corpus name if no dataset_id
-                corp_id = exp.get("corpus_id")
-                if corp_id:
-                    try:
-                        corp = await corp_repo.get(int(corp_id))
-                        if corp:
-                            exp["dataset_name"] = corp.name
-                    except (ValueError, OSError):
-                        pass
+            await _resolve_experiment_name(exp, ds_repo, corp_repo)
+            _set_artifact_flag(exp)
 
-            # Check artifact availability
-            exp["artifact_available"] = (
-                Path(f"data/models/experiment_{exp['id']}.json").exists()
-                if exp.get("id")
-                else False
-            )
+
+async def _resolve_experiment_name(
+    exp: dict[str, Any],
+    ds_repo: Any,
+    corp_repo: Any,
+) -> None:
+    """Resolve a human-readable dataset name for an experiment.
+    Tries ``dataset_id`` first, then falls back to ``corpus_id``.
+    """
+    if not exp.get("dataset_name"):
+        ds_id = exp.get("dataset_id")
+        if ds_id:
+            try:
+                ds = await ds_repo.get(int(ds_id))
+                if ds:
+                    exp["dataset_name"] = ds.name
+            except (ValueError, OSError):
+                pass
+    else:
+        corp_id = exp.get("corpus_id")
+        if corp_id:
+            try:
+                corp = await corp_repo.get(int(corp_id))
+                if corp:
+                    exp["dataset_name"] = corp.name
+            except (ValueError, OSError):
+                pass
+
+
+def _set_artifact_flag(exp: dict[str, Any]) -> None:
+    """Set the ``artifact_available`` flag on an experiment dict."""
+    exp["artifact_available"] = (
+        Path(f"data/models/experiment_{exp['id']}.json").exists()
+        if exp.get("id")
+        else False
+    )
 
 
 def _build_mlflow_url(

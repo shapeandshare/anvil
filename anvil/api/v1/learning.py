@@ -2420,7 +2420,9 @@ def _sample_tokens(
     return samples
 
 
-@router.post("/inference/sample")
+@router.post(
+    "/inference/sample", responses={400: {"description": "Invalid sampling parameters"}}
+)
 async def inference_sample(body: InferenceSampleBody) -> dict[str, Any]:
     """Generate text samples from a registered model.
 
