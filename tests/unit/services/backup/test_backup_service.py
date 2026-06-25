@@ -1,9 +1,11 @@
 """Tests for BackupService.create_backup — lock, rotation, failure."""
 
+from collections.abc import Sequence
 from pathlib import PosixPath
 
 import pytest
 
+from anvil.db.models.backup_operation import BackupOperation
 from anvil.services.backup.backup_service import BackupService
 from anvil.services.backup.create_backup_result import CreateBackupResult
 
@@ -11,26 +13,28 @@ from anvil.services.backup.create_backup_result import CreateBackupResult
 class FakeRepo:
     """Minimal repo mock for testing BackupService."""
 
-    def __init__(self):
-        self.operations = {}
+    def __init__(self) -> None:
+        self.operations: dict[str, BackupOperation] = {}
 
-    async def get_all(self):
+    async def get_all(self) -> Sequence[BackupOperation]:
         return list(self.operations.values())
 
-    async def add(self, op):
-        self.operations[op.backup_id] = op
-        return op
+    async def add(self, operation: BackupOperation) -> BackupOperation:
+        self.operations[operation.backup_id] = operation
+        return operation
 
-    async def update_fields(self, backup_id, **kwargs):
+    async def update_fields(
+        self, backup_id: str, **kwargs: object
+    ) -> BackupOperation | None:
         if backup_id in self.operations:
             for k, v in kwargs.items():
                 setattr(self.operations[backup_id], k, v)
         return self.operations.get(backup_id)
 
-    async def delete(self, backup_id):
+    async def delete(self, backup_id: str) -> None:
         self.operations.pop(backup_id, None)
 
-    async def get_by_backup_id(self, backup_id):
+    async def get_by_backup_id(self, backup_id: str) -> BackupOperation | None:
         return self.operations.get(backup_id)
 
 
