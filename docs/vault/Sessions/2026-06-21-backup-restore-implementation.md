@@ -3,7 +3,7 @@ title: Deployment Backup & Restore — Full Implementation
 type: session-log
 tags:
   - type/session-log
-  - domain/ops
+  - domain/operations
 created: '2026-06-21'
 updated: '2026-06-21'
 status: draft

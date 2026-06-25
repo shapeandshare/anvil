@@ -8,6 +8,8 @@ tags:
 title: Excited Mode Fake Metrics Need grad_norm for Grad-Norm-Driven Mappings
 type: discovery
 updated: '2026-06-23T00:00:00.000Z'
+code-refs:
+  - anvil/api/static/js/theme/theme-manager.js
 ---
 
 # Excited Mode Fake Metrics Need `grad_norm` for Grad-Norm-Driven Mappings

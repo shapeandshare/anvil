@@ -6,6 +6,7 @@ tags:
   - domain/ui
 created: '2026-06-23T00:00:00.000Z'
 updated: '2026-06-23T00:00:00.000Z'
+source: agent
 aliases:
   - Glass Diffusion via Canvas Blur
 related:

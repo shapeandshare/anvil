@@ -7,7 +7,6 @@ status: draft
 tags:
   - type/session-log
   - domain/vault
-  - domain/security
 title: 'Session: ReDoS Regex Fix in Vault Prediction'
 type: session-log
 updated: '2026-06-24'
