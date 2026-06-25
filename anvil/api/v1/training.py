@@ -17,7 +17,9 @@ import json
 import logging
 import os
 import tempfile
+from collections.abc import AsyncGenerator
 from pathlib import Path
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
@@ -26,6 +28,7 @@ from starlette.responses import StreamingResponse
 from ...gpu import GpuInfo, detect_gpu
 from ...services.compute.compute_backend_unavailable import ComputeBackendUnavailable
 from ...services.compute.resolve import resolve_backend
+from ...services.compute.result import ComputeResult
 from ...services.compute.training_engine import TrainingEngine
 from ...services.tracking.mps_metrics_collector import MPSMetricsCollector
 from ...services.tracking.mps_sampler_thread import MPSSamplerThread
@@ -99,7 +102,7 @@ class TrainConfig(BaseModel):
 router = APIRouter()
 svc = TrainingService()
 tracking_svc = TrackingService()
-_tasks: dict[int, asyncio.Task] = {}
+_tasks: dict[int, asyncio.Task[Any]] = {}
 """dict[int, asyncio.Task]: In-memory registry of active training tasks keyed by
 run ID."""
 MODELS_DIR = Path("data/models")
@@ -110,7 +113,7 @@ MODELS_DIR.mkdir(parents=True, exist_ok=True)
 def _validate_hparams(
     n_embd: int,
     n_head: int,
-    block_size: int,
+    _block_size: int,
 ) -> None:
     """Validate hyperparameter constraints for training.
 
@@ -246,10 +249,10 @@ def _estimate_memory(
 
 async def _setup_mlflow_run(
     config: TrainConfig,
-    run_id: int,
+    _run_id: int,
     engine_backend: TrainingEngine,
     device: str,
-    tracking_svc: TrackingService,
+    tracking_svc: TrackingService,  # pylint: disable=redefined-outer-name
     gpu_info: GpuInfo,
 ) -> tuple[str | None, int]:
     """Build hyperparams dict, start MLflow run, and allocate experiment ID.
@@ -322,7 +325,7 @@ async def _log_dataset_metadata(
     dataset_id: int | None,
     corpus_id: int | None,
     content_version_id: int | None,
-    tracking_svc: TrackingService,
+    tracking_svc: TrackingService,  # pylint: disable=redefined-outer-name
 ) -> None:
     """Log dataset, corpus, and content-version metadata as MLflow tags.
 
@@ -353,7 +356,7 @@ async def _log_dataset_metadata(
                     session=sess,
                 )
                 input_role = "training"
-            except Exception:
+            except Exception:  # pylint: disable=broad-exception-caught
                 pass
     elif mlflow_run_id and corpus_id:
         async with AsyncSessionLocal() as sess:
@@ -364,7 +367,7 @@ async def _log_dataset_metadata(
                     session=sess,
                 )
                 input_role = "corpus"
-            except Exception:
+            except Exception:  # pylint: disable=broad-exception-caught
                 pass
 
     if mlflow_run_id and input_digest:
@@ -412,7 +415,7 @@ async def _log_dataset_metadata(
                         "anvil.dataset.curation_version",
                         str(ds.curation_version or 0),
                     )
-            except Exception:
+            except Exception:  # pylint: disable=broad-exception-caught
                 pass
     elif mlflow_run_id and corpus_id:
         async with AsyncSessionLocal() as sess:
@@ -443,7 +446,7 @@ async def _log_dataset_metadata(
                             "anvil.corpus.language_map",
                             corpus.language_map,
                         )
-            except Exception:
+            except Exception:  # pylint: disable=broad-exception-caught
                 pass
 
     if mlflow_run_id and content_version_id is not None:
@@ -467,20 +470,16 @@ async def _log_dataset_metadata(
                         version.manifest_digest,
                     )
 
-                    client = tracking_svc._client
+                    client = tracking_svc._client  # pylint: disable=protected-access
                     if client:
-                        import json as _json
 
-                        def _log_manifest():
-                            import os as _os
-                            import tempfile as _tf
-
-                            with _tf.NamedTemporaryFile(
+                        def _log_manifest() -> None:
+                            with tempfile.NamedTemporaryFile(
                                 mode="w",
                                 suffix=".json",
                                 delete=False,
                             ) as f:
-                                _json.dump(
+                                json.dump(
                                     {
                                         "version_id": version.id,
                                         "version_number": version.version_number,
@@ -493,7 +492,7 @@ async def _log_dataset_metadata(
                                 )
                                 fpath = f.name
                             client.log_artifact(mlflow_run_id, fpath)
-                            _os.unlink(fpath)
+                            os.unlink(fpath)
 
                         await asyncio.get_event_loop().run_in_executor(
                             None,
@@ -506,12 +505,12 @@ async def _log_dataset_metadata(
                         corpus_ref=f"corpus:{version.corpus_id}",
                     )
                     await sess.commit()
-            except Exception:
+            except Exception:  # pylint: disable=broad-exception-caught
                 pass
 
 
 @router.post("/training/start")
-async def start_training(config: TrainConfig):
+async def start_training(config: TrainConfig) -> dict[str, Any]:
     """Start a new training run asynchronously.
 
     Validates hyperparameters (``n_embd``, ``n_head``, ``block_size``),
@@ -589,12 +588,14 @@ async def start_training(config: TrainConfig):
         loss : float
             Loss value at this step.
         """
+        if mlflow_run_id is None:
+            return
         asyncio.run_coroutine_threadsafe(
             tracking_svc.log_metric(mlflow_run_id, "loss", loss, step=step),
             event_loop,
         )
 
-    async def on_complete(result, config: dict):
+    async def on_complete(result: ComputeResult, _config: dict[str, Any]) -> None:
         """Handle training completion: persist artifacts, export safetensors, register model.
 
         Parameters
@@ -609,44 +610,52 @@ async def start_training(config: TrainConfig):
         uchars = result.uchars
         model = result.model
 
-        await tracking_svc.finish_run(mlflow_run_id)
-        await tracking_svc.log_final_metric(mlflow_run_id, "final_loss", final_loss)
-
-        await tracking_svc.set_tag(mlflow_run_id, "architectures", "LlamaForCausalLM")
+        if mlflow_run_id:
+            await tracking_svc.finish_run(mlflow_run_id)
+            await tracking_svc.log_final_metric(mlflow_run_id, "final_loss", final_loss)
+            await tracking_svc.set_tag(
+                mlflow_run_id, "architectures", "LlamaForCausalLM"
+            )
 
         # Local path: log artifacts, run safetensors export
         # Remote path: artifacts were logged inside the cloud job — skip
         if model is not None:
             with tempfile.TemporaryDirectory() as tmpdir:
                 samples_path = os.path.join(tmpdir, "samples.txt")
-                with open(samples_path, "w") as f:
+                with open(samples_path, "w", encoding="utf-8") as f:
                     f.write("\n".join(samples))
                 if mlflow_run_id:
                     try:
-                        client = tracking_svc._client
+                        client = (
+                            tracking_svc._client
+                        )  # pylint: disable=protected-access
                         if client:
                             loop = asyncio.get_event_loop()
                             await loop.run_in_executor(
                                 None,
-                                lambda: client.log_artifact(
+                                lambda: client.log_artifact(  # type: ignore[union-attr]
                                     mlflow_run_id, samples_path
                                 ),
                             )
-                    except Exception:
+                    except Exception:  # pylint: disable=broad-exception-caught
                         pass
 
                 model_path = os.path.join(tmpdir, "model.json")
-                model.save(model_path, uchars)
+                model.save(model_path, uchars)  # type: ignore[attr-defined]
                 if mlflow_run_id:
                     try:
-                        client = tracking_svc._client
+                        client = (
+                            tracking_svc._client
+                        )  # pylint: disable=protected-access
                         if client:
                             loop = asyncio.get_event_loop()
                             await loop.run_in_executor(
                                 None,
-                                lambda: client.log_artifact(mlflow_run_id, model_path),
+                                lambda: client.log_artifact(  # type: ignore[union-attr]
+                                    mlflow_run_id, model_path
+                                ),
                             )
-                    except Exception:
+                    except Exception:  # pylint: disable=broad-exception-caught
                         pass
 
                 # Auto-export safetensors after every successful local training
@@ -654,7 +663,7 @@ async def start_training(config: TrainConfig):
 
                 export_svc = SafetensorsExportService()
                 export_result = await asyncio.get_event_loop().run_in_executor(
-                    None, lambda: export_svc.export(model, tmpdir, uchars)
+                    None, lambda: export_svc.export(model, tmpdir, uchars)  # type: ignore[arg-type]
                 )
 
                 if export_result["error"]:
@@ -674,7 +683,9 @@ async def start_training(config: TrainConfig):
                 else:
                     if mlflow_run_id and export_result["safetensors_path"]:
                         try:
-                            client = tracking_svc._client
+                            client = (
+                                tracking_svc._client
+                            )  # pylint: disable=protected-access
                             if client:
                                 loop = asyncio.get_event_loop()
                                 await loop.run_in_executor(
@@ -715,7 +726,7 @@ async def start_training(config: TrainConfig):
                                             export_result["conda_path"],
                                         ),
                                     )
-                        except Exception:
+                        except Exception:  # pylint: disable=broad-exception-caught
                             logger.exception(
                                 "Failed to log safetensors artifacts to MLflow"
                             )
@@ -731,7 +742,7 @@ async def start_training(config: TrainConfig):
 
         if model is not None:
             experiment_model_path = MODELS_DIR / f"experiment_{experiment_id}.json"
-            model.save(str(experiment_model_path), uchars)
+            model.save(str(experiment_model_path), uchars)  # type: ignore[attr-defined]
 
         if mps_thread is not None:
             mps_thread.stop()
@@ -764,13 +775,13 @@ async def start_training(config: TrainConfig):
                     dataset_id=dataset_id,
                     corpus_id=corpus_id,
                 )
-            except Exception:
+            except Exception:  # pylint: disable=broad-exception-caught
                 logger.exception(
                     "Failed to register model for experiment %s",
                     experiment_id,
                 )
 
-    async def _run_training():
+    async def _run_training() -> None:
         """Coroutine wrapper that runs training and handles exceptions."""
         try:
             await svc.start_training(
@@ -779,7 +790,7 @@ async def start_training(config: TrainConfig):
                 on_complete=on_complete,
                 progress_callback_override=mlflow_progress_callback,
             )
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=broad-exception-caught
             # Notify the SSE client about the failure before cleaning up,
             # so the stream doesn't hang with heartbeats forever.
             q = svc.get_queue(run_id)
@@ -790,7 +801,8 @@ async def start_training(config: TrainConfig):
                         "data": json.dumps({"message": str(exc)}),
                     }
                 )
-            await tracking_svc.fail_run(mlflow_run_id, reason=str(exc))
+            if mlflow_run_id:
+                await tracking_svc.fail_run(mlflow_run_id, _reason=str(exc))
             if mlflow_run_id:
                 await tracking_svc.set_tag(mlflow_run_id, "anvil.status", "failed")
                 await tracking_svc.set_tag(mlflow_run_id, "anvil.error", str(exc))
@@ -800,7 +812,7 @@ async def start_training(config: TrainConfig):
     task = asyncio.create_task(_run_training())
     _tasks[run_id] = task
 
-    def _cleanup(t: asyncio.Task) -> None:
+    def _cleanup(_t: asyncio.Task[Any]) -> None:
         """Remove the task from ``_tasks`` dict on completion.
 
         Parameters
@@ -832,7 +844,7 @@ async def start_training(config: TrainConfig):
 
 
 @router.get("/training/{run_id}/status")
-async def training_run_status(run_id: int):
+async def training_run_status(run_id: int) -> dict[str, Any]:
     """Check whether a training run is still active on the server.
 
     Parameters
@@ -859,7 +871,7 @@ async def training_run_status(run_id: int):
 
 
 @router.get("/training/stream/{run_id}")
-async def stream_training(run_id: int):
+async def stream_training(run_id: int) -> StreamingResponse:
     """SSE event stream for a training run.
 
     Returns a ``StreamingResponse`` that emits Server-Sent Events as the
@@ -879,7 +891,7 @@ async def stream_training(run_id: int):
     queue = svc.get_queue(run_id)
     if queue is None:
 
-        async def _run_gone():
+        async def _run_gone() -> AsyncGenerator[str, None]:
             yield "event: error\ndata: " + json.dumps(
                 {"message": "Training run has already completed or was never started"}
             ) + "\n\n"
@@ -893,7 +905,7 @@ async def stream_training(run_id: int):
             },
         )
 
-    async def event_stream():
+    async def event_stream() -> AsyncGenerator[str, None]:
         """Generator that yields SSE-formatted events from the training queue."""
         while True:
             try:
@@ -915,7 +927,7 @@ async def stream_training(run_id: int):
 
 
 @router.get("/training/configs")
-async def list_configs():
+async def list_configs() -> dict[str, Any]:
     """List all saved training configurations.
 
     Returns
@@ -954,7 +966,7 @@ async def list_configs():
 
 
 @router.post("/training/{run_id}/stop")
-async def stop_training(run_id: int):
+async def stop_training(run_id: int) -> dict[str, Any]:
     """Stop an active training run.
 
     Signals the run to stop and pushes an error event to the SSE queue
@@ -983,7 +995,7 @@ async def stop_training(run_id: int):
 
 
 @router.get("/forward-pass/graph")
-async def forward_pass_graph():
+async def forward_pass_graph() -> dict[str, Any]:
     """Get the forward pass computation graph for the demo model.
 
     Loads the demo model and returns its computation graph structure
@@ -1001,9 +1013,9 @@ async def forward_pass_graph():
     """
     from ...services.inference.inference import InferenceService
 
-    svc = InferenceService()
+    inf_svc = InferenceService()
     try:
-        loaded = await svc.load_model()
+        loaded = await inf_svc.load_model()
     except (ValueError, FileNotFoundError) as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
-    return svc.forward_graph(loaded)
+    return inf_svc.forward_graph(loaded)

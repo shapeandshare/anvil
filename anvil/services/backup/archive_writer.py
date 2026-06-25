@@ -14,8 +14,10 @@ import os
 import sqlite3
 import tarfile
 import tempfile
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from ... import __version__ as anvil_version
 from .backup_manifest import BackupManifest
@@ -47,8 +49,8 @@ class ArchiveWriter:
         backup_id: str,
         roots: list[Path],
         operation_type: str = "backup",
-        progress_callback: object | None = None,
-    ) -> dict:
+        progress_callback: Callable[[int, str], None] | None = None,
+    ) -> dict[str, Any]:
         """Create a backup archive and return manifest metadata.
 
         Parameters
@@ -85,8 +87,8 @@ class ArchiveWriter:
         backup_id: str,
         roots: list[Path],
         operation_type: str,
-        progress_callback: object | None,
-    ) -> dict:
+        progress_callback: Callable[[int, str], None] | None,
+    ) -> dict[str, Any]:
         filename = f"backup-{backup_id}.tar.gz"
         tmp_path = self._tmp_dir / f"{filename}.part"
         final_path = self._backup_dir / filename
@@ -228,7 +230,7 @@ class ArchiveWriter:
         return h.hexdigest()
 
     @staticmethod
-    def _notify(cb: object, percent: int, step: str) -> None:
+    def _notify(cb: Callable[[int, str], None] | None, percent: int, step: str) -> None:
         """Call the progress callback if one was provided."""
         if cb is not None:
             try:

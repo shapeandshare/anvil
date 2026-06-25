@@ -12,6 +12,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from ...config import get_config
+from ...db.models.backup_operation import BackupOperation
+from ...db.repositories.backup_operations import BackupOperationRepository
 from .backup_lock import BackupLock
 from .backup_status import BackupStatus
 from .backup_storage_status import BackupStorageStatus
@@ -54,8 +56,8 @@ class BackupService:
         backup_dir: str | None = None,
         quota_bytes: int | None = None,
         warn_fraction: float | None = None,
-        retention_max_count: int | None = None,
-        retention_max_age_days: int | None = None,
+        _retention_max_count: int | None = None,
+        _retention_max_age_days: int | None = None,
     ) -> None:
         cfg = get_config()
         self._backup_dir = Path(backup_dir or cfg["backup_dir"])
@@ -83,7 +85,7 @@ class BackupService:
 
     async def create_backup(
         self,
-        repo: object,
+        repo: BackupOperationRepository,
     ) -> CreateBackupResult:
         """Create a full deployment backup.
 
@@ -97,7 +99,6 @@ class BackupService:
         CreateBackupResult
             The backup identifier and any rotated backup ids.
         """
-        from anvil.db.models.backup_operation import BackupOperation
         from anvil.services.backup.archive_writer import ArchiveWriter
         from anvil.services.backup.retention_policy import RetentionPolicy
         from anvil.services.backup.snapshot_planner import SnapshotPlanner
@@ -115,7 +116,7 @@ class BackupService:
             rotated_ids: list[str] = []
 
             if not plan.sufficient_space or not plan.within_quota:
-                existing = await repo.get_all()  # type: ignore[union-attr]
+                existing = await repo.get_all()
                 policy = RetentionPolicy(
                     self._quota_bytes,
                     self._retention_max_count,
@@ -125,7 +126,7 @@ class BackupService:
                     existing, plan.total_estimated_bytes
                 )
                 for rid in to_rotate:
-                    await repo.delete(rid)  # type: ignore[union-attr]
+                    await repo.delete(rid)
                     rotated_ids.append(rid)
 
                 plan = planner.plan(self._backup_dir, self._quota_bytes)
@@ -133,7 +134,7 @@ class BackupService:
                     raise RuntimeError(
                         f"Insufficient space after rotation: need "
                         f"{plan.required_free_bytes} bytes, "
-                        f"{plan.available_bytes} available"
+                        f"{plan.available_bytes} bytes available"
                     )
 
             op = BackupOperation(
@@ -141,7 +142,7 @@ class BackupService:
                 operation_type="backup",
                 status=BackupStatus.CREATING.value,
             )
-            await repo.add(op)  # type: ignore[union-attr]
+            await repo.add(op)
 
             queue: asyncio.Queue[ProgressEvent] = asyncio.Queue()
             self._queues[backup_id] = queue
@@ -161,7 +162,7 @@ class BackupService:
                         asyncio.get_event_loop(),
                     )
                     fut.result(timeout=5)
-                except Exception:
+                except (RuntimeError, TimeoutError, asyncio.CancelledError):
                     pass
 
             writer = ArchiveWriter(self._backup_dir)
@@ -172,7 +173,7 @@ class BackupService:
                 progress_callback=_progress,
             )
 
-            await repo.update_fields(  # type: ignore[union-attr]
+            await repo.update_fields(
                 backup_id,
                 status=BackupStatus.COMPLETED.value,
                 archive_filename=result["archive_filename"],
@@ -200,10 +201,8 @@ class BackupService:
 
         except Exception:
             try:
-                await repo.update_fields(  # type: ignore[union-attr]
-                    backup_id, status=BackupStatus.FAILED.value
-                )
-            except Exception:
+                await repo.update_fields(backup_id, status=BackupStatus.FAILED.value)
+            except Exception:  # pylint: disable=broad-exception-caught
                 pass
             self._queues.pop(backup_id, None)
             raise
@@ -212,10 +211,10 @@ class BackupService:
             self._lock.release()
 
     async def list_backups(
-        self, repo: object, include_safety: bool = True
+        self, repo: BackupOperationRepository, include_safety: bool = True
     ) -> list[BackupSummary]:
         """Return all backup operations as summaries."""
-        raw = await repo.get_all()  # type: ignore[union-attr]
+        raw = await repo.get_all()
         now_dt = datetime.now(UTC)
         summaries: list[BackupSummary] = []
         for op in raw:
@@ -246,9 +245,11 @@ class BackupService:
             )
         return summaries
 
-    async def get_backup(self, repo: object, backup_id: str) -> BackupSummary | None:
+    async def get_backup(
+        self, repo: BackupOperationRepository, backup_id: str
+    ) -> BackupSummary | None:
         """Return a single backup summary."""
-        op = await repo.get_by_backup_id(backup_id)  # type: ignore[union-attr]
+        op = await repo.get_by_backup_id(backup_id)
         if op is None:
             return None
         now_dt = datetime.now(UTC)
@@ -273,9 +274,11 @@ class BackupService:
 
     # ── Stub methods (implemented in later phases) ───────────────────────
 
-    async def storage_status(self, repo: object) -> BackupStorageStatus:
+    async def storage_status(
+        self, repo: BackupOperationRepository
+    ) -> BackupStorageStatus:
         """Return aggregate storage statistics."""
-        raw = await repo.get_all()  # type: ignore[union-attr]
+        raw = await repo.get_all()
         total = sum(getattr(op, "archive_size_bytes", 0) or 0 for op in raw)
         count = len(raw)
         datetime.now(UTC)
@@ -330,7 +333,9 @@ class BackupService:
             sufficient_space=True,
         )
 
-    async def restore(self, backup_id: str, confirm: str, repo: object) -> dict:
+    async def restore(
+        self, backup_id: str, confirm: str, repo: BackupOperationRepository
+    ) -> dict[str, str]:
         """Restore from a backup.
 
         Parameters
@@ -347,10 +352,6 @@ class BackupService:
         dict
             Keys: ``restore_operation_id``, ``safety_snapshot_id``.
         """
-        from datetime import datetime
-
-        from anvil.db.models.backup_operation import BackupOperation
-
         from .archive_reader import ArchiveReader
         from .restore_engine import RestoreEngine
         from .restore_journal import RestoreJournal
@@ -379,8 +380,6 @@ class BackupService:
         try:
             # Auto-create pre-restore safety snapshot (inline, without
             # acquiring the lock — we already hold it).
-            from anvil.db.models.backup_operation import BackupOperation
-
             from .archive_writer import ArchiveWriter
             from .snapshot_planner import SnapshotPlanner
 
@@ -394,7 +393,7 @@ class BackupService:
                 operation_type="pre_restore_safety",
                 status=BackupStatus.CREATING.value,
             )
-            await repo.add(safety_op)  # type: ignore[union-attr]
+            await repo.add(safety_op)
 
             writer = ArchiveWriter(self._backup_dir)
             archive_result = await writer.write(
@@ -402,7 +401,7 @@ class BackupService:
                 roots=plan.roots,
                 operation_type="pre_restore_safety",
             )
-            await repo.update_fields(  # type: ignore[union-attr]
+            await repo.update_fields(
                 safety_id,
                 status=BackupStatus.COMPLETED.value,
                 archive_filename=archive_result["archive_filename"],
@@ -415,13 +414,16 @@ class BackupService:
             safety_snapshot_id = safety_id
 
             restore_op = BackupOperation(
-                backup_id=f"restore-{backup_id}-{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}",
+                backup_id=(
+                    f"restore-{backup_id}-"
+                    f"{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}"
+                ),
                 operation_type="restore",
                 status=BackupStatus.CREATING.value,
                 restored_from_backup_id=backup_id,
                 safety_snapshot_id=safety_snapshot_id,
             )
-            await repo.add(restore_op)  # type: ignore[union-attr]
+            await repo.add(restore_op)
 
             journal_path = self._backup_dir / ".restore-journal.json"
             journal = RestoreJournal(journal_path)
@@ -445,7 +447,7 @@ class BackupService:
                         asyncio.get_event_loop(),
                     )
                     fut.result(timeout=5)
-                except Exception:
+                except (RuntimeError, TimeoutError, asyncio.CancelledError):
                     pass
 
             result = await engine.execute(
@@ -455,7 +457,7 @@ class BackupService:
             )
 
             if result.success:
-                await repo.update_fields(  # type: ignore[union-attr]
+                await repo.update_fields(
                     restore_op.backup_id,
                     status=BackupStatus.COMPLETED.value,
                     completed_at=datetime.now(UTC),
@@ -471,7 +473,7 @@ class BackupService:
                     )
                 )
             else:
-                await repo.update_fields(  # type: ignore[union-attr]
+                await repo.update_fields(
                     restore_op.backup_id,
                     status=BackupStatus.FAILED.value,
                     error_message=result.message,
@@ -498,9 +500,6 @@ class BackupService:
                 ),
             }
 
-        except Exception:
-            raise
-
         finally:
             self._lock.release()
 
@@ -520,7 +519,9 @@ class BackupService:
                 result.get("message"),
             )
 
-    async def verify(self, backup_id: str, repo: object) -> VerifyResult:
+    async def verify(
+        self, backup_id: str, repo: BackupOperationRepository
+    ) -> VerifyResult:
         """Verify integrity of a backup archive."""
         from .archive_reader import ArchiveReader
 
@@ -528,18 +529,19 @@ class BackupService:
         result = await reader.verify(backup_id)
         if not result.valid:
             try:
-                await repo.update_fields(  # type: ignore[union-attr]
-                    backup_id, status=BackupStatus.CORRUPTED.value
-                )
-            except Exception:
+                await repo.update_fields(backup_id, status=BackupStatus.CORRUPTED.value)
+            except Exception:  # pylint: disable=broad-exception-caught
                 pass
         return result
 
     async def delete_backup(
-        self, backup_id: str, repo: object, confirm_last: bool = False
+        self,
+        backup_id: str,
+        repo: BackupOperationRepository,
+        confirm_last: bool = False,
     ) -> None:
         """Delete a backup archive and its DB record."""
-        op = await repo.get_by_backup_id(backup_id)  # type: ignore[union-attr]
+        op = await repo.get_by_backup_id(backup_id)
         if op is None:
             raise ValueError(f"Backup not found: {backup_id}")
         if getattr(op, "operation_type", "") == "pre_restore_safety":
@@ -548,7 +550,7 @@ class BackupService:
                 "Use the safety-snapshot cleanup action (FR-020)."
             )
         # Check if this is the last restorable backup.
-        all_ops = await repo.get_all_restorable()  # type: ignore[union-attr]
+        all_ops = await repo.get_all_restorable()
         restorable = [
             b
             for b in all_ops
@@ -564,11 +566,11 @@ class BackupService:
         archive_path = self._backup_dir / f"backup-{backup_id}.tar.gz"
         if archive_path.exists():
             archive_path.unlink()
-        await repo.delete(backup_id)  # type: ignore[union-attr]
+        await repo.delete(backup_id)
 
-    async def cleanup_safety(self, repo: object) -> int:
+    async def cleanup_safety(self, repo: BackupOperationRepository) -> int:
         """Remove pre-restore safety snapshots and return count."""
-        all_ops = await repo.get_all()  # type: ignore[union-attr]
+        all_ops = await repo.get_all()
         safety = [
             b
             for b in all_ops
@@ -579,7 +581,7 @@ class BackupService:
             archive_path = self._backup_dir / f"backup-{op.backup_id}.tar.gz"
             if archive_path.exists():
                 archive_path.unlink()
-            await repo.delete(op.backup_id)  # type: ignore[union-attr]
+            await repo.delete(op.backup_id)
             count += 1
         return count
 

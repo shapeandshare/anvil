@@ -15,7 +15,7 @@ method satisfies ``ComputeBackendProtocol`` structurally.
 """
 
 from collections.abc import Callable
-from typing import Protocol
+from typing import Any, Protocol
 
 from .result import ComputeResult
 
@@ -55,7 +55,7 @@ class ComputeBackendProtocol(Protocol):
     async def run(
         self,
         docs: list[str],
-        config: dict,
+        config: dict[str, Any],
         *,
         progress_callback: ProgressCallback,
         stop_check: StopCheck,

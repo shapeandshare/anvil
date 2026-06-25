@@ -22,7 +22,7 @@ import uuid
 from collections.abc import AsyncIterator
 from pathlib import Path
 
-from aiofiles import open as async_open
+from aiofiles import open as async_open  # type: ignore[import-untyped]
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...db.models.content_blob import ContentBlob

@@ -6,6 +6,7 @@
 """Eval endpoints for v1 API."""
 
 import math
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
@@ -17,7 +18,7 @@ router = APIRouter()
 
 
 @router.post("/eval/perplexity")
-async def eval_perplexity(body: EvalPerplexityBody):
+async def eval_perplexity(body: EvalPerplexityBody) -> dict[str, Any]:
     """Compute perplexity of a model on a given text string.
 
     Loads the specified model version, tokenizes the input text, and computes
@@ -65,8 +66,8 @@ async def eval_perplexity(body: EvalPerplexityBody):
         ) from e
 
     n = min(model.block_size, len(tokens) - 1)
-    keys = [[] for _ in range(model.n_layer)]
-    values = [[] for _ in range(model.n_layer)]
+    keys: list[list[list[Any]]] = [[] for _ in range(model.n_layer)]
+    values: list[list[list[Any]]] = [[] for _ in range(model.n_layer)]
     losses = []
     for pos_id in range(n):
         token_id, target_id = tokens[pos_id], tokens[pos_id + 1]

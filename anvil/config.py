@@ -20,6 +20,7 @@ _resolved_mlflow_uri : str or None
 import os
 from functools import lru_cache
 from pathlib import Path
+from typing import Any
 
 from dotenv import load_dotenv
 from starlette.requests import Request
@@ -43,7 +44,7 @@ def set_resolved_mlflow_uri(uri: str) -> None:
     uri : str
         The full MLflow tracking URI (e.g. ``http://127.0.0.1:5001``).
     """
-    global _resolved_mlflow_uri
+    global _resolved_mlflow_uri  # pylint: disable=global-statement
     _resolved_mlflow_uri = uri
 
 
@@ -60,7 +61,8 @@ def get_mlflow_uri() -> str:
     """
     if _resolved_mlflow_uri is not None:
         return _resolved_mlflow_uri
-    return get_config()["mlflow_uri"]
+    uri: str = get_config()["mlflow_uri"]
+    return uri
 
 
 def get_mlflow_browser_uri(request: Request) -> str:
@@ -112,12 +114,12 @@ def _parse_port_from_uri(uri: str) -> int:
 
         parsed = urlparse(uri)
         return parsed.port or 5001
-    except Exception:
+    except (ValueError, TypeError):
         return 5001
 
 
 @lru_cache
-def get_config():
+def get_config() -> dict[str, Any]:
     """Return a cached dictionary of resolved application settings.
 
     Reads environmnent variables (with ``.env`` support via

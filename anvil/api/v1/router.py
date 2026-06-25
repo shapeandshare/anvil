@@ -56,16 +56,16 @@ MODELS_DIR = Path("data/models")
 
 @router.get("", response_class=HTMLResponse)
 @router.get("/", response_class=HTMLResponse)
-async def root(request: Request):
+async def root(request: Request) -> HTMLResponse:
     """Render the root training dashboard page."""
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "archetypes/training.html",
     )
 
 
 @router.get("/acceptable-use", response_class=HTMLResponse)
-async def acceptable_use_page(request: Request):
+async def acceptable_use_page(request: Request) -> HTMLResponse:
     """Render the acceptable-use policy page.
 
     Parameters
@@ -78,7 +78,7 @@ async def acceptable_use_page(request: Request):
     HTMLResponse
         Rendered ``acceptable_use.html`` template.
     """
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "acceptable_use.html",
     )

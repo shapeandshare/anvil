@@ -10,6 +10,8 @@ to report dataset metrics such as sample count, character distribution,
 and duplicate statistics.
 """
 
+from typing import Any
+
 
 class MetricsResult:
     """Aggregate statistics for a curated dataset.
@@ -37,7 +39,7 @@ class MetricsResult:
         total_chars: int,
         estimated_tokens: int,
         vocabulary_size: int,
-        length_distribution: dict,
+        length_distribution: dict[str, Any],
         duplicate_count: int,
     ):
         """Initialise the metrics result.

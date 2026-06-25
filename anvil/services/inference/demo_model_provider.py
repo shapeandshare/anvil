@@ -10,11 +10,16 @@ small Llama model for demo/inference purposes, plus module-level helpers
 for fallback corpus data and warm-up via the system pipeline.
 """
 
+# pylint: disable=protected-access
+# Intentional: module-level singleton attribute access from warmup functions.
+# pylint: disable=broad-exception-caught
+# Intentional: catch-all guards in fallback / startup code paths.
+
 import asyncio
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from ...core.engine import LlamaModel
 
@@ -159,7 +164,7 @@ def warmup_demo_via_system_pipeline() -> None:
 
             assert result.model is not None
 
-            model = result.model
+            model = cast(LlamaModel, result.model)
             uchars = result.uchars
 
             if mlflow_run_id:

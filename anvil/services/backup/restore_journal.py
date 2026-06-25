@@ -7,9 +7,12 @@
 phase begins (FR-030).
 """
 
+from __future__ import annotations
+
 import json
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any, cast
 
 
 class RestoreJournal:
@@ -72,16 +75,16 @@ class RestoreJournal:
         """Return ``True`` if a journal is present."""
         return self._path.exists()
 
-    def read(self) -> dict | None:
+    def read(self) -> dict[str, Any] | None:
         """Read and return the journal contents, or ``None`` if absent."""
         if not self._path.exists():
             return None
         try:
-            return json.loads(self._path.read_text())
+            return cast(dict[str, Any], json.loads(self._path.read_text()))
         except (json.JSONDecodeError, OSError):
             return None
 
-    def recover(self) -> dict:
+    def recover(self) -> dict[str, Any]:
         """Attempt recovery from an interrupted restore.
 
         Returns a dict with keys:
@@ -114,7 +117,7 @@ class RestoreJournal:
                         shutil.rmtree(live_path, ignore_errors=True)
                         live_path.unlink(missing_ok=True)
                     bak_path.rename(live_path)
-                except Exception:
+                except OSError:
                     all_rolled_back = False
 
         if all_rolled_back:

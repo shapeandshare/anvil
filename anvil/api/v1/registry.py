@@ -14,8 +14,10 @@ Model IDs are resolved via convention-based naming (``dataset-<id>`` or
 
 import asyncio
 from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
+from mlflow.exceptions import MlflowException
 from mlflow.tracking import MlflowClient
 
 from ...api.v1.schemas import RegisterModelBody
@@ -27,7 +29,7 @@ router = APIRouter()
 @router.post("/registry/models", status_code=201)
 async def register_model(
     body: RegisterModelBody,
-):
+) -> dict[str, Any]:
     """Register a trained model from a completed MLflow experiment.
 
     Extracts the experiment run information and registers the model artifact
@@ -110,7 +112,7 @@ async def register_model(
 @router.get("/registry/models")
 async def list_registered_models(
     search: str | None = Query(None),
-):
+) -> dict[str, Any]:
     """List all registered models in the MLflow Model Registry.
 
     Parameters
@@ -154,7 +156,7 @@ def _fmt_ts(ts: int | None) -> str | None:
 
 
 @router.get("/registry/models/{model_id}")
-async def get_model(model_id: str):
+async def get_model(model_id: str) -> dict[str, Any]:
     """Retrieve details for a specific registered model and all its versions.
 
     Resolves ``model_id`` to an MLflow registered model name using
@@ -187,7 +189,7 @@ async def get_model(model_id: str):
 
     # Resolve model_id to MLflow registered model name
     model_name = None
-    models: list[dict] = []
+    models: list[dict[str, Any]] = []
     try:
         id_as_int = int(model_id)
         # Integer: find by convention dataset-{id} or corpus-{id}
@@ -222,30 +224,33 @@ async def get_model(model_id: str):
         rm = await loop.run_in_executor(
             None, lambda: client.get_registered_model(model_name)
         )
-    except Exception:
+    except MlflowException:
         raise HTTPException(status_code=404, detail="Model not found") from None
 
     # Get all versions with run metadata
+    all_versions: list[Any] = []
     try:
-        all_versions = await loop.run_in_executor(
+        result = await loop.run_in_executor(
             None,
             lambda: client.search_model_versions(f"name='{model_name}'"),
         )
-    except Exception:
-        all_versions = []
+        all_versions = list(result)
+    except MlflowException:
+        pass
 
     versions_list = []
     for v in all_versions or []:
-        run_data = {"params": {}, "metrics": {}, "tags": {}}
+        run_data: dict[str, Any] = {"params": {}, "metrics": {}, "tags": {}}
         try:
             run = await loop.run_in_executor(
-                None, lambda rid=v.run_id: client.get_run(rid)
+                None,
+                lambda rid=v.run_id: client.get_run(rid),  # type: ignore[misc]
             )
             if run and run.data:
                 run_data["params"] = dict(run.data.params)
                 run_data["metrics"] = dict(run.data.metrics)
                 run_data["tags"] = dict(run.data.tags)
-        except Exception:
+        except MlflowException:
             pass
 
         # Resolve experiment_id from MLflow run tag (same pattern as
@@ -272,7 +277,7 @@ async def get_model(model_id: str):
                     ds = await ds_repo.get(int(ds_id_raw))
                     if ds:
                         dataset_name = ds.name
-            except Exception:
+            except (ValueError, OSError):
                 dataset_name = f"Dataset #{ds_id_raw}"
         elif corp_id_raw is not None:
             try:
@@ -284,7 +289,7 @@ async def get_model(model_id: str):
                     corp = await corp_repo.get(int(corp_id_raw))
                     if corp:
                         dataset_name = corp.name
-            except Exception:
+            except (ValueError, OSError):
                 dataset_name = f"Corpus #{corp_id_raw}"
 
         versions_list.append(
@@ -312,7 +317,7 @@ async def get_model(model_id: str):
 
 
 @router.get("/registry/models/{model_id}/versions/{version}")
-async def get_version(model_id: str, version: int):
+async def get_version(model_id: str, version: int) -> dict[str, Any]:
     """Retrieve details for a specific version of a registered model.
 
     Resolves ``model_id`` using convention-based lookup and fetches the
@@ -344,7 +349,7 @@ async def get_version(model_id: str, version: int):
 
     # Resolve model_id to MLflow registered model name
     model_name = None
-    models: list[dict] = []
+    models: list[dict[str, Any]] = []
     try:
         id_as_int = int(model_id)
         models = await tracking_svc.list_registered_models()
@@ -371,12 +376,14 @@ async def get_version(model_id: str, version: int):
 
     # Query MLflow for the specific version
     client = MlflowClient(get_mlflow_uri())
+    all_versions: list[Any] = []
     try:
-        all_versions = await loop.run_in_executor(
+        result = await loop.run_in_executor(
             None,
             lambda: client.search_model_versions(f"name='{model_name}'"),
         )
-    except Exception:
+        all_versions = list(result)
+    except MlflowException:
         raise HTTPException(status_code=404, detail="Model not found") from None
 
     target_version = None
@@ -389,17 +396,17 @@ async def get_version(model_id: str, version: int):
         raise HTTPException(status_code=404, detail="Version not found")
 
     # Get run data for this version
-    run_data = {"params": {}, "metrics": {}, "tags": {}}
+    run_data: dict[str, Any] = {"params": {}, "metrics": {}, "tags": {}}
     try:
         run = await loop.run_in_executor(
             None,
-            lambda rid=target_version.run_id: client.get_run(rid),
+            lambda rid=target_version.run_id: client.get_run(rid),  # type: ignore[misc]
         )
         if run and run.data:
             run_data["params"] = dict(run.data.params)
             run_data["metrics"] = dict(run.data.metrics)
             run_data["tags"] = dict(run.data.tags)
-    except Exception:
+    except MlflowException:
         pass
 
     # Resolve experiment_id from MLflow run tag.
@@ -425,7 +432,7 @@ async def get_version(model_id: str, version: int):
                 ds = await ds_repo.get(int(ds_id_raw))
                 if ds:
                     dataset_name = ds.name
-        except Exception:
+        except (ValueError, OSError):
             dataset_name = f"Dataset #{ds_id_raw}"
     elif corp_id_raw is not None:
         try:
@@ -437,7 +444,7 @@ async def get_version(model_id: str, version: int):
                 corp = await corp_repo.get(int(corp_id_raw))
                 if corp:
                     dataset_name = corp.name
-        except Exception:
+        except (ValueError, OSError):
             dataset_name = f"Corpus #{corp_id_raw}"
 
     return {
@@ -454,7 +461,7 @@ async def get_version(model_id: str, version: int):
 
 
 @router.delete("/registry/models/{model_id}/versions/{version}")
-async def delete_version(model_id: str, version: int):
+async def delete_version(model_id: str, version: int) -> dict[str, Any]:
     """Delete a specific version of a registered model.
 
     Parameters
@@ -481,7 +488,7 @@ async def delete_version(model_id: str, version: int):
 
     # Resolve model_id to MLflow registered model name
     model_name = None
-    models: list[dict] = []
+    models: list[dict[str, Any]] = []
     try:
         id_as_int = int(model_id)
         models = await tracking_svc.list_registered_models()
@@ -515,7 +522,7 @@ async def delete_version(model_id: str, version: int):
                 version=str(version),
             ),
         )
-    except Exception as e:
+    except MlflowException as e:
         raise HTTPException(
             status_code=404,
             detail=f"Version not found or could not be deleted: {e}",
@@ -525,7 +532,7 @@ async def delete_version(model_id: str, version: int):
 
 
 @router.delete("/registry/models/{model_id}")
-async def delete_model(model_id: str):
+async def delete_model(model_id: str) -> dict[str, Any]:
     """Delete a registered model and all its versions.
 
     Parameters
@@ -550,7 +557,7 @@ async def delete_model(model_id: str):
 
     # Resolve model_id to MLflow registered model name
     model_name = None
-    models: list[dict] = []
+    models: list[dict[str, Any]] = []
     try:
         id_as_int = int(model_id)
         models = await tracking_svc.list_registered_models()
@@ -581,7 +588,7 @@ async def delete_model(model_id: str):
             None,
             lambda: client.delete_registered_model(name=model_name),
         )
-    except Exception as e:
+    except MlflowException as e:
         raise HTTPException(
             status_code=404,
             detail=f"Model not found or could not be deleted: {e}",

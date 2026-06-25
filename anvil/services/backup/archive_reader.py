@@ -12,6 +12,7 @@ import hashlib
 import json
 import tarfile
 from pathlib import Path
+from typing import Any
 
 from .backup_manifest import BackupManifest
 from .verify_result import VerifyResult
@@ -131,7 +132,7 @@ class ArchiveReader:
     @staticmethod
     def _read_manifest_and_entries(
         path: Path,
-    ) -> tuple[BackupManifest, dict[str, dict]]:
+    ) -> tuple[BackupManifest, dict[str, Any]]:
         """Open archive, extract manifest, return (manifest, entries_map)."""
         with tarfile.open(path, "r:gz") as tar:
             manifest_member = tar.getmember("manifest.json")

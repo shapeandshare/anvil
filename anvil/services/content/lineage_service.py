@@ -12,7 +12,7 @@ lineage tracing from trained model back to source data.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from ...db.repositories.content_versions import ContentVersionRepository
@@ -71,7 +71,7 @@ class LineageService:
         )
         await self._version_repo.add_run_ref(ref)
 
-    async def lineage(self, version_id: int) -> list[dict]:
+    async def lineage(self, version_id: int) -> list[dict[str, Any]]:
         """Return the run lineage for a content version.
 
         Queries all ``VersionRunRef`` records linked to *version_id*

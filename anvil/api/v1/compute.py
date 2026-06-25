@@ -8,6 +8,8 @@
 Returns available compute backends for training (local CPU, local GPU, Modal, etc.).
 """
 
+from typing import Any
+
 from fastapi import APIRouter
 
 from ...services.compute.registry import available_backends
@@ -16,7 +18,7 @@ router = APIRouter()
 
 
 @router.get("/compute/backends")
-async def list_compute_backends():
+async def list_compute_backends() -> list[dict[str, Any]]:
     """List all registered compute backends with availability status.
 
     Returns

@@ -166,4 +166,4 @@ def _torch_factory() -> LocalTorchBackend:
     return LocalTorchBackend()
 
 
-register(RegistryBackend.LOCAL_TORCH, _torch_factory)
+register(RegistryBackend.LOCAL_TORCH, _torch_factory)  # type: ignore[arg-type]

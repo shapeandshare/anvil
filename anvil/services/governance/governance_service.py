@@ -241,18 +241,18 @@ class GovernanceService:
 
         entity: Dataset | Corpus | None = None
 
-        if target_type == AuditTargetType.DATASET.value:
-            from ...db.repositories.datasets import DatasetRepository
+        from ...db.repositories.corpora import CorpusRepository
+        from ...db.repositories.datasets import DatasetRepository
 
-            # TODO: wire through workbench.dataset_repo once provenance
-            # methods on the repo are added (T030).  For now construct
-            # inline — will be migrated at that point.
+        # TODO: wire through workbench.dataset_repo once provenance
+        # methods on the repo are added (T030).  For now construct
+        # inline — will be migrated at that point.
+        repo: DatasetRepository | CorpusRepository
+        if target_type == AuditTargetType.DATASET.value:
             repo = DatasetRepository(self._audit._repo._session)
             entity = await repo.get(target_id)
 
         elif target_type == AuditTargetType.CORPUS.value:
-            from ...db.repositories.corpora import CorpusRepository
-
             repo = CorpusRepository(self._audit._repo._session)
             entity = await repo.get(target_id)
 
@@ -275,7 +275,7 @@ class GovernanceService:
     async def validate_bundled(
         self,
         *,
-        source_description: str,
+        _source_description: str,
         license_identifier: str,
     ) -> tuple[bool, str | None]:
         """Validate a bundled sample's provenance (VR-P1).

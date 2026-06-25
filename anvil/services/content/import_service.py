@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import logging
+from typing import Any
 
 from ...db.models.content_import_job import ImportJob
 from ...db.repositories.content_corpora import ContentCorpusRepository
@@ -70,7 +71,7 @@ class ImportService:
         self,
         corpus_id: int,
         source_slug: str,
-        config: dict,
+        config: dict[str, Any],
     ) -> ImportJob:
         """Start a new declarative import job.
 

@@ -6,6 +6,7 @@
 """Atomic restore engine — extract, verify, journal, swap, rollback."""
 
 import shutil
+from collections.abc import Callable
 from pathlib import Path
 
 from .restore_journal import RestoreJournal
@@ -61,7 +62,7 @@ class RestoreEngine:
         self,
         backup_id: str,
         safety_snapshot_id: str,
-        progress_callback: object | None = None,
+        progress_callback: Callable[[int, str], None] | None = None,
     ) -> RestoreResult:
         """Run the full restore pipeline.
 
@@ -96,6 +97,9 @@ class RestoreEngine:
         if restore_tmp.exists():
             shutil.rmtree(restore_tmp, ignore_errors=True)
         restore_tmp.mkdir(parents=True, exist_ok=True)
+
+        # Determine managed roots from restore_tmp structure.
+        managed_dirs = ["data", "mlruns"]
 
         try:
             await reader.extract_to(backup_id, restore_tmp)
@@ -195,7 +199,7 @@ class RestoreEngine:
     # ── Helpers ──────────────────────────────────────────────────────────
 
     @staticmethod
-    def _notify(cb: object, percent: int, step: str) -> None:
+    def _notify(cb: Callable[[int, str], None] | None, percent: int, step: str) -> None:
         if cb is not None:
             try:
                 cb(percent, step)

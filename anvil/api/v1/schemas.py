@@ -12,6 +12,7 @@ dataset management endpoints.  No business logic -- validation only.
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -471,7 +472,7 @@ class ValidationReportOut(BaseModel):
     """
 
     ok: bool
-    problems: list[dict] = []
+    problems: list[dict[str, Any]] = []
 
 
 class CompositionSpecItem(BaseModel):
@@ -593,7 +594,7 @@ class ImportStart(BaseModel):
 
     corpus_id: int
     source: str
-    config: dict
+    config: dict[str, Any]
 
 
 class ImportJobOut(BaseModel):
@@ -791,7 +792,7 @@ class CreateEvalDatasetBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: str = Field(min_length=1, max_length=255)
-    tags: dict | None = None
+    tags: dict[str, Any] | None = None
 
 
 class AppendRecordsBody(BaseModel):
@@ -805,7 +806,7 @@ class AppendRecordsBody(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    records: list
+    records: list[Any]
 
 
 # ── Inference schemas (T006/T008) ─────────────────────────────────────

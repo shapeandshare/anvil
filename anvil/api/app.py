@@ -14,12 +14,14 @@ and security middleware.  Manages the full application lifecycle via an
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
 import secrets
 import sys
 import time
 from collections import defaultdict
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from importlib.metadata import version as _get_version
 from pathlib import Path
@@ -34,7 +36,7 @@ from starlette.requests import Request as StarletteRequest
 from starlette.responses import Response
 
 from ..config import get_config
-from ..db import models  # noqa: F401 — register ORM models with Base.metadata
+from ..db import models  # noqa: F401  # pylint: disable=unused-import
 from ..db.migration import MigrationService
 from ..db.session import init_engine
 from ..supervisor.services import MLflowService
@@ -104,7 +106,7 @@ def _setup_logging() -> None:
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan context manager handling startup and shutdown.
 
     On startup:
@@ -129,18 +131,18 @@ async def lifespan(app: FastAPI):
     # squashed migration that predates the current schema.
     try:
         await migration_svc.ensure_schema_version()
-    except Exception as exc:
+    except (ValueError, RuntimeError) as exc:
         logger.critical("Schema version check failed: %s", exc)
         print(f"FATAL: {exc}", flush=True)
         sys.exit(1)
 
     cfg = get_config()
     if cfg["mlflow_disable_local"]:
-        app.state.mlflow = None
+        _app.state.mlflow = None
     else:
-        mlflow_svc = MLflowService()
+        mlflow_svc = MLflowService()  # type: ignore[no-untyped-call]
         mlflow_svc.start()
-        app.state.mlflow = mlflow_svc
+        _app.state.mlflow = mlflow_svc
 
     from ..services.tracking.tracking import TrackingService
 
@@ -148,7 +150,7 @@ async def lifespan(app: FastAPI):
 
     try:
         await TrackingService().reconcile_orphans()
-    except Exception:
+    except (ValueError, RuntimeError):
         logger.warning("Failed to reconcile orphaned MLflow runs", exc_info=True)
 
     try:
@@ -163,7 +165,7 @@ async def lifespan(app: FastAPI):
                     "Seeded %d licenses into the approved-license catalog", count
                 )
             await session.commit()
-    except Exception:
+    except (ValueError, RuntimeError):
         logger.warning("License seeding failed during startup", exc_info=True)
 
     try:
@@ -195,7 +197,7 @@ async def lifespan(app: FastAPI):
                         result.datasets_created,
                     )
                 await session.commit()
-    except Exception:
+    except (ValueError, RuntimeError, OSError):
         logger.warning("Demo bootstrap failed during startup", exc_info=True)
 
     print("Warming up demo model in background (may take ~30-60s)...", flush=True)
@@ -211,7 +213,7 @@ async def lifespan(app: FastAPI):
             name="demo-model-warmup",
             daemon=True,
         ).start()
-    except Exception:
+    except (RuntimeError, OSError):
         logger.warning("Demo model warmup failed to start", exc_info=True)
 
     # Initialise the process-lifetime BackupService (feature 026).
@@ -219,16 +221,16 @@ async def lifespan(app: FastAPI):
         from ..services.backup.backup_service import BackupService
 
         backup_svc = BackupService()
-        app.state.backup_service = backup_svc
+        _app.state.backup_service = backup_svc
         logger.info("BackupService initialised")
 
         # Recover from an interrupted restore (FR-030).
         await backup_svc.recover_interrupted_restore()
-    except Exception:
+    except (ValueError, RuntimeError, OSError):
         logger.warning("BackupService init or journal recovery failed", exc_info=True)
 
     yield
-    running_mlflow = getattr(app.state, "mlflow", None)
+    running_mlflow = getattr(_app.state, "mlflow", None)
     if running_mlflow is not None:
         running_mlflow.stop()
 
@@ -433,7 +435,7 @@ async def rate_limit_middleware(
 
 
 @app.get("/", response_class=HTMLResponse)
-async def root_hero(request: Request):
+async def root_hero(request: Request) -> Response:
     """Render the root hero landing page.
 
     Parameters
@@ -447,7 +449,7 @@ async def root_hero(request: Request):
         The rendered ``archetypes/hero.html`` template with the anvil version.
     """
     csrf_token = _get_csrf_token_for_request(request)
-    return request.app.state.templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "archetypes/hero.html",
         context={
@@ -492,7 +494,7 @@ async def login_post(request: Request) -> Response:
     """
     try:
         body = await request.json()
-    except Exception:
+    except json.JSONDecodeError:
         return JSONResponse(
             status_code=400,
             content={"detail": "Invalid JSON body", "code": "BAD_REQUEST"},

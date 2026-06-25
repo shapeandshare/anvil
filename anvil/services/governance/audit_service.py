@@ -29,7 +29,7 @@ from .audit_target_type import AuditTargetType
 from .chain_verify_result import ChainVerifyResult
 
 
-def _canonical_json(obj: dict) -> str:
+def _canonical_json(obj: dict[str, object]) -> str:
     """Serialise *obj* to a deterministic, compact JSON string.
 
     Uses sorted keys and ``separators=(",", ":")`` to produce a

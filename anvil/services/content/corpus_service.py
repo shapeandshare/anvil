@@ -15,6 +15,7 @@ orchestrates the :class:`ContentCorpusRepository` and
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -311,7 +312,7 @@ class CorpusService:
 
     # ── Version diff ────────────────────────────────────────────────
 
-    async def version_diff(self, version_id: int) -> dict:
+    async def version_diff(self, version_id: int) -> dict[str, Any]:
         """Compute added/removed paths between a version and its
         immediate predecessor.
 

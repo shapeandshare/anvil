@@ -8,7 +8,19 @@
 Provides the ``TrackingService`` class for managing MLflow experiment runs,
 logging metrics and parameters, managing datasets and model registry,
 and recording dataset/corpus lifecycle events.
+
+.. note::
+
+   Broad ``except Exception`` is used pervasively because MLflow raises
+   a wide variety of exception types (network, server, auth, data) that
+   do not share a common base beyond ``Exception``. Narrowing to
+   ``mlflow.MlflowException`` at each site would introduce an import
+   dependency and still miss non-MLflow failures (e.g. socket errors).
+   The pattern is intentional: all such catches either enter degraded
+   mode or silently skip the failed operation.
 """
+
+# pylint: disable=broad-exception-caught
 
 import asyncio
 from collections.abc import Callable
@@ -111,13 +123,13 @@ class TrackingService:
         Calls ``mlflow.enable_system_metrics_logging()`` once. Safe
         to call multiple times.
         """
-        global _system_metrics_enabled
+        global _system_metrics_enabled  # pylint: disable=global-statement
         if _system_metrics_enabled:
             return
         try:
-            import mlflow
+            import mlflow as _mlflow_mod
 
-            mlflow.enable_system_metrics_logging()
+            _mlflow_mod.enable_system_metrics_logging()  # type: ignore[no-untyped-call]
             _system_metrics_enabled = True
         except Exception:
             pass
@@ -170,7 +182,7 @@ class TrackingService:
         loop = asyncio.get_event_loop()
 
         try:
-            client = await loop.run_in_executor(None, lambda: self._lazy_init())
+            client = await loop.run_in_executor(None, self._lazy_init)
             effective_run_name = (
                 run_name or f"run-{datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')}"
             )
@@ -188,11 +200,15 @@ class TrackingService:
             if params:
                 for k, v in params.items():
                     if v is not None:
-                        mlflow_params.append(mlflow.entities.Param(k, str(v)))
+                        mlflow_params.append(
+                            mlflow.entities.Param(k, str(v))  # type: ignore[no-untyped-call]
+                        )
             mlflow_params.append(
-                mlflow.entities.Param("engine_backend", engine_backend)
+                mlflow.entities.Param("engine_backend", engine_backend)  # type: ignore[no-untyped-call]
             )
-            mlflow_params.append(mlflow.entities.Param("device", device))
+            mlflow_params.append(
+                mlflow.entities.Param("device", device)  # type: ignore[no-untyped-call]
+            )
 
             if mlflow_params:
                 await loop.run_in_executor(
@@ -273,7 +289,7 @@ class TrackingService:
         except Exception:
             pass
 
-    async def fail_run(self, run_id: str, *, reason: str | None = None) -> None:
+    async def fail_run(self, run_id: str, *, _reason: str | None = None) -> None:
         """Mark an MLflow run as failed.
 
         Parameters
@@ -329,8 +345,8 @@ class TrackingService:
         tokenizer_path: str | None = None,
         mlmodel_path: str | None = None,
         conda_path: str | None = None,
-        samples: str | None = None,
-        vocab: Any = None,
+        _samples: str | None = None,
+        _vocab: Any = None,
     ) -> None:
         """Log file artifacts to an MLflow run.
 
@@ -433,7 +449,7 @@ class TrackingService:
                 assert client is not None
                 await asyncio.get_event_loop().run_in_executor(
                     None,
-                    lambda: client.log_input(
+                    lambda: client.log_input(  # type: ignore[union-attr]
                         run_id=run_id, dataset=mlflow_ds, context=role
                     ),
                 )
@@ -498,13 +514,13 @@ class TrackingService:
                 assert client is not None
                 await asyncio.get_event_loop().run_in_executor(
                     None,
-                    lambda: client.log_input(
+                    lambda: client.log_input(  # type: ignore[union-attr]
                         run_id=run_id, dataset=meta_ds, context="corpus"
                     ),
                 )
                 for artifact_path in artifact_paths:
                     await asyncio.get_event_loop().run_in_executor(
-                        None, lambda p=artifact_path: client.log_artifact(run_id, p)
+                        None, lambda p=artifact_path: client.log_artifact(run_id, p)  # type: ignore[misc]
                     )
                 return digest
             except Exception:
@@ -529,7 +545,7 @@ class TrackingService:
                     for artifact_path in artifact_paths:
                         await asyncio.get_event_loop().run_in_executor(
                             None,
-                            lambda p=artifact_path: client.log_artifact(run_id, p),
+                            lambda p=artifact_path: client.log_artifact(run_id, p),  # type: ignore[misc]
                         )
                     return digest
                 except Exception:
@@ -574,7 +590,9 @@ class TrackingService:
             lambda: _create_dataset_sync(name, tags),
         )
 
-    async def append_eval_records(self, *, name: str, records: list[dict]) -> int:
+    async def append_eval_records(
+        self, *, name: str, records: list[dict[str, Any]]
+    ) -> int:
         """Append evaluation records to a managed MLflow dataset.
 
         Parameters
@@ -664,7 +682,7 @@ class TrackingService:
                 for run in runs:
                     await loop.run_in_executor(
                         None,
-                        lambda rid=run.info.run_id: client.set_terminated(
+                        lambda rid=run.info.run_id: client.set_terminated(  # type: ignore[misc]
                             rid, status="KILLED"
                         ),
                     )
@@ -673,7 +691,7 @@ class TrackingService:
             pass
         return reconciled
 
-    async def get_safetensors_artifacts(self, run_id: str) -> dict:
+    async def get_safetensors_artifacts(self, run_id: str) -> dict[str, Any]:
         """Query MLflow for safetensors artifact info for a given run.
 
         Returns dict with keys:
@@ -685,7 +703,7 @@ class TrackingService:
             return {"available": False, "files": [], "error": None}
         loop = asyncio.get_event_loop()
         try:
-            await loop.run_in_executor(None, lambda: self._lazy_init())
+            await loop.run_in_executor(None, self._lazy_init)
             client = self._client
             if client is None:
                 return {
@@ -755,7 +773,7 @@ class TrackingService:
         dataset_id: int | None = None,
         corpus_id: int | None = None,
         artifact_path: str = "model.json",
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Register the model source in the MLflow Model Registry.
 
         Parameters
@@ -840,7 +858,7 @@ class TrackingService:
 
         loop = asyncio.get_event_loop()
         try:
-            await loop.run_in_executor(None, lambda: self._lazy_init())
+            await loop.run_in_executor(None, self._lazy_init)
         except Exception:
             self._degraded = True
             return ""
@@ -885,7 +903,7 @@ class TrackingService:
 
         loop = asyncio.get_event_loop()
         try:
-            await loop.run_in_executor(None, lambda: self._lazy_init())
+            await loop.run_in_executor(None, self._lazy_init)
         except Exception:
             self._degraded = True
             return ""
@@ -913,7 +931,7 @@ class TrackingService:
     async def list_experiments(
         self,
         max_results: int = 100,
-    ) -> list[dict]:
+    ) -> list[dict[str, Any]]:
         """Query all MLflow runs for the 'anvil' experiment.
 
         Returns list of dicts with keys matching the current GET /v1/experiments response shape.
@@ -922,7 +940,7 @@ class TrackingService:
             return []
         loop = asyncio.get_event_loop()
         try:
-            client = await loop.run_in_executor(None, lambda: self._lazy_init())
+            client = await loop.run_in_executor(None, self._lazy_init)
             if client is None or not self._experiment_id:
                 return []
         except Exception:
@@ -988,7 +1006,7 @@ class TrackingService:
     async def get_experiment(
         self,
         experiment_id: int,
-    ) -> dict | None:
+    ) -> dict[str, Any] | None:
         """Find an MLflow run by its anvil.experiment_id tag.
 
         Returns the same dict shape as list_experiments, plus extra detail fields,
@@ -998,7 +1016,7 @@ class TrackingService:
             return None
         loop = asyncio.get_event_loop()
         try:
-            client = await loop.run_in_executor(None, lambda: self._lazy_init())
+            client = await loop.run_in_executor(None, self._lazy_init)
             if client is None or not self._experiment_id:
                 return None
         except Exception:
@@ -1044,7 +1062,9 @@ class TrackingService:
             "tags": tags,
         }
 
-    async def list_registered_models(self, search: str | None = None) -> list[dict]:
+    async def list_registered_models(
+        self, search: str | None = None
+    ) -> list[dict[str, Any]]:
         """Query MLflow model registry for all registered models, enriched with run metadata.
 
         Returns a list of dicts, each with:
@@ -1060,7 +1080,7 @@ class TrackingService:
             return []
         loop = asyncio.get_event_loop()
         try:
-            client = await loop.run_in_executor(None, lambda: self._lazy_init())
+            client = await loop.run_in_executor(None, self._lazy_init)
             if client is None:
                 return []
         except Exception:
@@ -1084,7 +1104,7 @@ class TrackingService:
             try:
                 latest_versions = await loop.run_in_executor(
                     None,
-                    lambda name=rm.name: client.search_model_versions(f"name='{name}'"),
+                    lambda name=rm.name: client.search_model_versions(f"name='{name}'"),  # type: ignore[misc]
                 )
                 if not latest_versions:
                     continue
@@ -1098,7 +1118,7 @@ class TrackingService:
                 experiment_id = None
                 try:
                     run = await loop.run_in_executor(
-                        None, lambda rid=latest.run_id: client.get_run(rid)
+                        None, lambda rid=latest.run_id: client.get_run(rid)  # type: ignore[misc]
                     )
                     if run and run.data:
                         if run.data.metrics:
@@ -1112,7 +1132,7 @@ class TrackingService:
                 # Count total versions
                 all_versions = await loop.run_in_executor(
                     None,
-                    lambda name=rm.name: client.search_model_versions(f"name='{name}'"),
+                    lambda name=rm.name: client.search_model_versions(f"name='{name}'"),  # type: ignore[misc]
                 )
                 total_versions = len(list(all_versions)) if all_versions else 0
 
@@ -1143,7 +1163,7 @@ class TrackingService:
         return result
 
 
-def _create_dataset_sync(name: str, tags: dict | None) -> Any:
+def _create_dataset_sync(name: str, tags: dict[str, Any] | None) -> Any:
     """Synchronously create an MLflow managed evaluation dataset.
 
     Parameters
@@ -1163,7 +1183,7 @@ def _create_dataset_sync(name: str, tags: dict | None) -> Any:
     return create_dataset(name=name, tags=tags or {})
 
 
-def _append_records_sync(name: str, records: list[dict]) -> int:
+def _append_records_sync(name: str, records: list[dict[str, Any]]) -> int:
     """Synchronously append evaluation records to an MLflow dataset.
 
     Parameters

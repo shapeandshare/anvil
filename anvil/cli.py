@@ -34,6 +34,7 @@ import logging
 import os
 import signal
 import sys
+from typing import Any
 
 import uvicorn
 
@@ -61,7 +62,7 @@ class AnvilWorkbench:
         The training service instance.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._training = TrainingService()
 
     @property
@@ -97,8 +98,6 @@ def _load_docs(corpus_id: int | None = None) -> list[str]:
         If *corpus_id* is ``None`` and no demo corpus has been
         bootstrapped.
     """
-    import asyncio
-
     if corpus_id is not None:
 
         from .db.repositories.corpora import CorpusRepository
@@ -175,7 +174,7 @@ def main() -> None:
     serve()
 
 
-def serve():
+def serve() -> None:
     """Start the anvil web server via uvicorn.
 
     Reads configuration from ``get_config()``, writes a PID file to
@@ -200,7 +199,7 @@ def serve():
         pid_path.unlink(missing_ok=True)
 
 
-def train():
+def train() -> None:
     """Run a training session from CLI arguments.
 
     Parses command-line arguments for corpus/dataset selection,
@@ -245,7 +244,6 @@ def train():
 
     from .services.compute.resolve import resolve_backend
     from .services.tracking.tracking import TrackingService
-    from .services.training.training import TrainingService
 
     svc = TrainingService()
     tracking_svc = TrackingService()
@@ -263,7 +261,7 @@ def train():
         "dataset_id": args.dataset,
     }
 
-    async def _run():
+    async def _run() -> None:
         """Execute the training run with MLflow tracking and progress reporting.
 
         Starts an MLflow run, schedules training with callbacks for
@@ -284,7 +282,7 @@ def train():
 
         run_id = svc.reserve_run()
 
-        _progress_tasks: set[asyncio.Task] = set()
+        _progress_tasks: set[asyncio.Task[Any]] = set()
 
         def progress_cb(step: int, loss: float) -> None:
             """Log training metrics to MLflow asynchronously.
@@ -303,12 +301,12 @@ def train():
                 )
                 _progress_tasks.add(t)
                 t.add_done_callback(_progress_tasks.discard)
-            except Exception:
+            except Exception:  # pylint: disable=broad-exception-caught
                 pass
 
         final_loss_holder: list[float] = []
 
-        async def on_complete(result, cfg: dict) -> None:
+        async def on_complete(result: object, _cfg: dict[str, Any]) -> None:
             """Handle training completion: finalise MLflow run and export artifacts.
 
             Parameters
@@ -319,9 +317,9 @@ def train():
             cfg : dict
                 Training configuration dictionary.
             """
-            final_loss = result.final_loss or 0.0
-            model = result.model
-            uchars = result.uchars
+            final_loss = result.final_loss or 0.0  # type: ignore[attr-defined]
+            model = result.model  # type: ignore[attr-defined]
+            uchars = result.uchars  # type: ignore[attr-defined]
             final_loss_holder.append(final_loss)
             await tracking_svc.finish_run(mlflow_run_id)
             await tracking_svc.log_final_metric(mlflow_run_id, "final_loss", final_loss)
@@ -353,7 +351,7 @@ def train():
                         dataset_id=args.dataset,
                         corpus_id=args.corpus,
                     )
-                except Exception:
+                except Exception:  # pylint: disable=broad-exception-caught
                     logger.exception("Failed to register model for CLI training run")
 
             # Auto-export safetensors after every successful local training
@@ -375,7 +373,9 @@ def train():
                     else:
                         if mlflow_run_id and export_result["safetensors_path"]:
                             try:
-                                client = tracking_svc._client
+                                client = (
+                                    tracking_svc._client
+                                )  # pylint: disable=protected-access
                                 if client:
                                     loop = asyncio.get_event_loop()
                                     await loop.run_in_executor(
@@ -401,7 +401,7 @@ def train():
                                                 export_result["tokenizer_path"],
                                             ),
                                         )
-                            except Exception:
+                            except Exception:  # pylint: disable=broad-exception-caught
                                 logger.exception(
                                     "Failed to log safetensors artifacts to MLflow"
                                 )
@@ -414,7 +414,7 @@ def train():
                 progress_callback_override=progress_cb,
             )
         except Exception as e:
-            await tracking_svc.fail_run(mlflow_run_id, reason=str(e))
+            await tracking_svc.fail_run(mlflow_run_id, _reason=str(e))
             raise
 
         queue = svc.get_queue(run_id)
@@ -423,12 +423,12 @@ def train():
         while True:
             msg = await queue.get()
             if msg["event"] == "metrics":
-                data = json.loads(msg["data"])
+                data = json.loads(str(msg["data"]))
                 print(
                     f"step {data['step']:6d} | loss {data['loss']:.4f} | device {data.get('device', 'cpu')}"
                 )
             elif msg["event"] == "complete":
-                data = json.loads(msg["data"])
+                data = json.loads(str(msg["data"]))
                 print(
                     f"\nFinal loss: {data['final_loss']:.4f} (device: {data.get('device', 'cpu')})"
                 )
@@ -459,7 +459,7 @@ def show_api_key() -> None:
     print(key)
 
 
-def corpus_main():
+def corpus_main() -> None:
     """Manage training corpora via the CLI.
 
     Provides subcommands for creating, ingesting, listing, showing,
@@ -505,14 +505,12 @@ def corpus_main():
 
     args = parser.parse_args()
 
-    import asyncio
-
     from .db.repositories.corpora import CorpusRepository
     from .db.session import AsyncSessionLocal
     from .services.datasets.corpora import CorpusService
     from .services.datasets.corpus_loader import CorpusLoader
 
-    async def _run():
+    async def _run() -> None:
         """Execute the corpus management command.
 
         Dispatches to the appropriate ``CorpusService`` method based
@@ -544,7 +542,7 @@ def corpus_main():
                 )
 
             elif args.command == "list":
-                corpora = await svc.list()
+                corpora = await svc.list_all()
                 for c in corpora:
                     print(
                         f"{c.id:3d}  {c.name:30s}  "
@@ -554,17 +552,17 @@ def corpus_main():
                     )
 
             elif args.command == "show":
-                corpus = await svc.get(args.id)
-                if corpus is None:
+                show_result = await svc.get(args.id)
+                if show_result is None:
                     print(f"Corpus {args.id} not found")
                     return
-                print(f"ID:          {corpus.id}")
-                print(f"Name:        {corpus.name}")
-                print(f"Root:        {corpus.root_path}")
-                print(f"Strategy:    {corpus.chunking_strategy}")
-                print(f"Overlap:     {corpus.chunk_overlap}")
-                print(f"Files:       {corpus.file_count}")
-                print(f"Documents:   {corpus.document_count}")
+                print(f"ID:          {show_result.id}")
+                print(f"Name:        {show_result.name}")
+                print(f"Root:        {show_result.root_path}")
+                print(f"Strategy:    {show_result.chunking_strategy}")
+                print(f"Overlap:     {show_result.chunk_overlap}")
+                print(f"Files:       {show_result.file_count}")
+                print(f"Documents:   {show_result.document_count}")
 
             elif args.command == "delete":
                 ok = await svc.delete(args.id)
@@ -607,6 +605,7 @@ def _find_pid_by_port(port: int) -> list[int]:
             capture_output=True,
             text=True,
             timeout=5,
+            check=False,
         )
         if result.returncode != 0 or not result.stdout.strip():
             return []
@@ -620,6 +619,7 @@ def _find_pid_by_port(port: int) -> list[int]:
                     capture_output=True,
                     text=True,
                     timeout=3,
+                    check=False,
                 )
                 cmd = comm.stdout.strip().lower()
                 if any(kw in cmd for kw in ("python", "mlflow", "uvicorn")):
@@ -643,7 +643,7 @@ def _kill_pids(pids: list[int], sig: int = signal.SIGTERM) -> bool:
     return killed
 
 
-def stop():
+def stop() -> None:
     """Stop web and MLflow servers.
 
     Reads PID files from the log directory and sends ``SIGTERM`` to
@@ -720,7 +720,7 @@ def _wait_and_sigkill(pids: list[int], port: int) -> None:
             pass
 
 
-def bootstrap_datasets_main():
+def bootstrap_datasets_main() -> None:
     """Import bundled demo data (corpora and datasets) from ``data/demo/``."""
     parser = argparse.ArgumentParser(description="Bootstrap demo datasets")
     parser.add_argument(
@@ -735,7 +735,7 @@ def bootstrap_datasets_main():
     )
     args = parser.parse_args()
 
-    async def _run():
+    async def _run() -> None:
         """Execute the bootstrap process.
 
         Runs in dry-run or live mode, printing a summary of
@@ -816,8 +816,6 @@ def db_main(argv: list[str] | None = None) -> None:
     stamp_p.add_argument("revision", help="Revision hash to stamp")
 
     args = parser.parse_args(argv)
-
-    import asyncio
 
     from .db.migration import MigrationService
     from .db.migration_error import MigrationError

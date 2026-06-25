@@ -14,6 +14,7 @@ import csv
 import io
 import json
 from collections.abc import AsyncIterator
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -66,7 +67,7 @@ class DatasetImportService:
 
     async def preview_import(
         self, text: str | None = None, fmt: str = "txt", max_rows: int = 20
-    ) -> tuple[list[dict], list[dict]]:
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         """Parse text and return a preview without committing.
 
         Useful for showing the user what will be imported before the
@@ -373,7 +374,9 @@ class DatasetImportService:
             source_format="corpus",
         )
 
-    def _parse(self, text: str, fmt: str) -> tuple[list[ParsedSample], list[dict]]:
+    def _parse(
+        self, text: str, fmt: str
+    ) -> tuple[list[ParsedSample], list[dict[str, Any]]]:
         """Parse raw text into samples according to the format.
 
         Supports TXT, CSV, JSONL, JSON, paste, and corpus formats.
@@ -392,7 +395,7 @@ class DatasetImportService:
             Parsed samples and error dicts (each with ``"row"`` and
             ``"error"`` keys).
         """
-        errors: list[dict] = []
+        errors: list[dict[str, Any]] = []
         samples: list[ParsedSample] = []
         index = 0
 
@@ -447,7 +450,7 @@ class DatasetImportService:
                     if stripped:
                         samples.append(ParsedSample(stripped, index))
                         index += 1
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             errors.append({"row": -1, "error": f"Parse error: {e}"})
 
         return samples, errors

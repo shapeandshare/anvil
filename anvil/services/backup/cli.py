@@ -19,11 +19,17 @@ Usage
 Exit codes documented in ``contracts/cli-backup.md``.
 """
 
+from __future__ import annotations
+
 import argparse
 import asyncio
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ...workbench import AnvilWorkbench
 
 from ...config import get_config
 from ...services.governance.audit_action import AuditAction
@@ -105,10 +111,9 @@ async def _run(args: argparse.Namespace) -> None:
         await session.commit()
 
 
-async def _cmd_create(wb) -> None:
+async def _cmd_create(wb: AnvilWorkbench) -> None:
     """Create a backup and print result."""
     import os
-    from datetime import datetime
 
     from ...db.models.backup_operation import BackupOperation
     from .archive_writer import ArchiveWriter
@@ -163,11 +168,11 @@ async def _cmd_create(wb) -> None:
             actor="system",
             outcome=AuditOutcome.SUCCESS.value,
         )
-    except Exception:
+    except (OSError, KeyError):
         pass
 
 
-async def _cmd_list(args: argparse.Namespace, wb) -> None:
+async def _cmd_list(args: argparse.Namespace, wb: AnvilWorkbench) -> None:
     """List backups."""
     raw = await wb.backup_repo.get_all()
     if args.json:
@@ -198,25 +203,27 @@ async def _cmd_list(args: argparse.Namespace, wb) -> None:
         for op in raw:
             now = datetime.now(UTC)
             created = op.created_at
-            age = ""
+            age = 0
             if created:
                 if created.tzinfo is None:
                     created = created.replace(tzinfo=UTC)
                 delta = now - created
-                if delta.total_seconds() < 3600:
-                    age = f"{int(delta.total_seconds() // 60)}m"
-                elif delta.total_seconds() < 86400:
-                    age = f"{int(delta.total_seconds() // 3600)}h"
-                else:
-                    age = f"{int(delta.total_seconds() // 86400)}d"
+                age = int(delta.total_seconds())
             size_mb = (op.archive_size_bytes or 0) / 1048576
+            age_display = ""
+            if age >= 86400:
+                age_display = f"{age // 86400}d"
+            elif age >= 3600:
+                age_display = f"{age // 3600}h"
+            elif age >= 60:
+                age_display = f"{age // 60}m"
             print(
                 f"{op.backup_id:32s} {op.operation_type:20s} {op.status:12s} "
-                f"{size_mb:>6.0f}MB  {age}"
+                f"{size_mb:>6.0f}MB  {age_display}"
             )
 
 
-async def _cmd_show(args: argparse.Namespace, wb) -> None:
+async def _cmd_show(args: argparse.Namespace, wb: AnvilWorkbench) -> None:
     """Show a single backup."""
     op = await wb.backup_repo.get_by_backup_id(args.backup_id)
     if op is None:
@@ -231,7 +238,7 @@ async def _cmd_show(args: argparse.Namespace, wb) -> None:
     print(f"Created:         {op.created_at}")
 
 
-async def _cmd_status(wb) -> None:
+async def _cmd_status(wb: AnvilWorkbench) -> None:
     """Show backup storage status."""
     raw = await wb.backup_repo.get_all()
     total = sum(op.archive_size_bytes or 0 for op in raw)
@@ -248,16 +255,17 @@ async def _cmd_status(wb) -> None:
         print(f"Oldest:          {raw[-1].backup_id}")
 
 
-async def _cmd_restore(args: argparse.Namespace, wb) -> None:
+async def _cmd_restore(args: argparse.Namespace, wb: AnvilWorkbench) -> None:
     """Restore from a backup."""
     print("Creating pre-restore safety snapshot...", end=" ", flush=True)
     try:
-        result = await wb._session.bind._backup_service.restore(
+        # pylint: disable=protected-access
+        result = await wb._session.bind._backup_service.restore(  # type: ignore[union-attr]
             backup_id=args.backup_id,
             confirm="RESTORE",
             repo=wb.backup_repo,
         )
-    except Exception as exc:
+    except (OSError, ValueError, RuntimeError, KeyError) as exc:
         print(f"FAILED: {exc}")
         sys.exit(7)
     print(f"done ({result.get('safety_snapshot_id', '?')})")

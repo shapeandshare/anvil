@@ -13,6 +13,8 @@ Exposed through ``AnvilWorkbench`` via ``workbench.audit`` and
 
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from ...api.deps import get_workbench
@@ -22,7 +24,7 @@ from .schemas import TakedownBody
 router = APIRouter()
 
 
-def _serialise_audit_event(event) -> dict:
+def _serialise_audit_event(event: Any) -> dict[str, Any]:
     """Serialize an ``AuditEvent`` ORM instance to a plain dict.
 
     Parameters
@@ -56,7 +58,7 @@ async def list_audit_events(
     action_type: str | None = Query(None),
     limit: int = Query(200),
     offset: int = Query(0),
-):
+) -> dict[str, Any]:
     """List audit events with optional filters.
 
     Parameters
@@ -95,7 +97,7 @@ async def list_audit_events(
 @router.get("/governance/audit/verify")
 async def verify_audit_chain(
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """Verify the integrity of the entire audit hash chain.
 
     Parameters
@@ -119,11 +121,11 @@ async def verify_audit_chain(
     }
 
 
-@router.get("/governance/datasets/{id}/report")
+@router.get("/governance/datasets/{dataset_id}/report")
 async def dataset_governance_report(
-    id: int,
+    dataset_id: int,
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """Return a combined provenance and audit report for a dataset.
 
     Composes the provenance view with the audit trail filtered to that
@@ -146,17 +148,17 @@ async def dataset_governance_report(
     HTTPException
         If the dataset is not found (404).
     """
-    dataset = await workbench.dataset_repo.get(id)
+    dataset = await workbench.dataset_repo.get(dataset_id)
     if dataset is None:
         raise HTTPException(status_code=404, detail="Dataset not found")
 
     provenance = await workbench.governance.get_provenance(
         target_type="dataset",
-        target_id=id,
+        target_id=dataset_id,
     )
     audit_events = await workbench.audit.list_events(
         target_type="dataset",
-        target_id=str(id),
+        target_id=str(dataset_id),
     )
     return {
         "data": {
@@ -175,7 +177,7 @@ async def dataset_governance_report(
 @router.get("/governance/licenses")
 async def list_licenses(
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """List all approved licenses in the governance catalog.
 
     Parameters
@@ -207,12 +209,12 @@ async def list_licenses(
     }
 
 
-@router.post("/datasets/{id}/takedown")
+@router.post("/datasets/{dataset_id}/takedown")
 async def takedown_dataset(
-    id: int,
+    dataset_id: int,
     body: TakedownBody,
     workbench: AnvilWorkbench = Depends(get_workbench),
-):
+) -> dict[str, Any]:
     """Submit a takedown request for a dataset.
 
     Records the takedown event in the audit chain and marks the dataset
@@ -237,14 +239,14 @@ async def takedown_dataset(
     HTTPException
         If the dataset is not found (404).
     """
-    dataset = await workbench.dataset_repo.get(id)
+    dataset = await workbench.dataset_repo.get(dataset_id)
     if dataset is None:
         raise HTTPException(status_code=404, detail="Dataset not found")
 
     await workbench.audit.record(
         action_type="takedown",
         target_type="dataset",
-        target_id=str(id),
+        target_id=str(dataset_id),
         actor="system:takedown",
         outcome="success",
         reason=body.reason,

@@ -14,9 +14,11 @@ import asyncio
 import json
 import os
 from pathlib import Path
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import FileResponse
+from mlflow.exceptions import MlflowException
 from mlflow.tracking import MlflowClient
 
 from ...config import get_config, get_mlflow_browser_uri
@@ -32,11 +34,9 @@ GPU_MEMORY_METRIC = "system/gpu_memory_gb"
 GPU_UTIL_METRIC = "system/gpu_util_pct"
 """str: MLflow metric name for peak GPU utilization percentage."""
 
-"""Type coercers for reconstructing typed hyperparameters from MLflow params.
-
-Maps hyperparameter names to their target types for deserialization
-from string-valued MLflow parameter storage.
-"""
+# Type coercers for reconstructing typed hyperparameters from MLflow params.
+# Maps hyperparameter names to their target types for deserialization
+# from string-valued MLflow parameter storage.
 _HYPERPARAM_COERCERS: dict[str, type] = {
     "n_layer": int,
     "n_embd": int,
@@ -50,7 +50,7 @@ _HYPERPARAM_COERCERS: dict[str, type] = {
 }
 
 
-def _hyperparams_from_mlflow(params: dict[str, str]) -> dict:
+def _hyperparams_from_mlflow(params: dict[str, str]) -> dict[str, Any]:
     """Reconstruct typed hyperparameters from string-valued MLflow params.
 
     Used as a fallback when the experiment has no linked TrainingConfig row.
@@ -63,11 +63,11 @@ def _hyperparams_from_mlflow(params: dict[str, str]) -> dict:
 
     Returns
     -------
-    dict
+    dict[str, Any]
         Typed hyperparameters with string keys matching ``_HYPERPARAM_COERCERS``
         keys. Returns empty dict if no parameters match.
     """
-    result: dict = {}
+    result: dict[str, Any] = {}
     for key, caster in _HYPERPARAM_COERCERS.items():
         raw = params.get(key)
         if raw is None:
@@ -95,12 +95,12 @@ def _get_mlflow_experiment_id() -> str | None:
         client = MlflowClient(tracking_uri=get_config()["mlflow_uri"])
         exp = client.get_experiment_by_name("anvil")
         return exp.experiment_id if exp else None
-    except Exception:
+    except MlflowException:
         return None
 
 
 @router.get("/experiments")
-async def list_experiments(request: Request):
+async def list_experiments(request: Request) -> dict[str, Any]:
     """List all experiments with enrichment data.
 
     Retrieves all experiments from the tracking service and enriches them
@@ -143,18 +143,18 @@ async def list_experiments(request: Request):
                         ds = await ds_repo.get(int(ds_id))
                         if ds:
                             exp["dataset_name"] = ds.name
-                    except Exception:
+                    except (ValueError, OSError):
                         pass
-                else:
-                    # Fall back to corpus name if no dataset_id
-                    corp_id = exp.get("corpus_id")
-                    if corp_id:
-                        try:
-                            corp = await corp_repo.get(int(corp_id))
-                            if corp:
-                                exp["dataset_name"] = corp.name
-                        except Exception:
-                            pass
+            else:
+                # Fall back to corpus name if no dataset_id
+                corp_id = exp.get("corpus_id")
+                if corp_id:
+                    try:
+                        corp = await corp_repo.get(int(corp_id))
+                        if corp:
+                            exp["dataset_name"] = corp.name
+                    except (ValueError, OSError):
+                        pass
 
             # Check artifact availability
             exp["artifact_available"] = (
@@ -177,8 +177,8 @@ async def list_experiments(request: Request):
 
 @router.get("/experiments/compare")
 async def compare_experiments(
-    id: list[int] = Query(...),
-):
+    experiment_ids: list[int] = Query(...),
+) -> dict[str, Any]:
     """Compare multiple experiments by ID.
 
     Retrieves a summary of each specified experiment including status,
@@ -200,7 +200,7 @@ async def compare_experiments(
     """
     tracking_svc = TrackingService()
     experiments = []
-    for eid in id:
+    for eid in experiment_ids:
         exp = await tracking_svc.get_experiment(eid)
         if exp:
             experiments.append(
@@ -214,11 +214,11 @@ async def compare_experiments(
     return {"experiments": experiments}
 
 
-@router.get("/experiments/{id}")
+@router.get("/experiments/{experiment_id}")
 async def get_experiment(
-    id: int,
+    experiment_id: int,
     request: Request,
-):
+) -> dict[str, Any]:
     """Retrieve a single experiment with full details.
 
     Fetches comprehensive experiment data including model architecture,
@@ -248,7 +248,7 @@ async def get_experiment(
         404 if the experiment is not found.
     """
     tracking_svc = TrackingService()
-    exp = await tracking_svc.get_experiment(id)
+    exp = await tracking_svc.get_experiment(experiment_id)
     if exp is None:
         raise HTTPException(status_code=404, detail="Experiment not found")
 
@@ -258,7 +258,7 @@ async def get_experiment(
 
     # Model architecture from saved artifact
     model_architecture = None
-    model_path = Path(f"data/models/experiment_{id}.json")
+    model_path = Path(f"data/models/experiment_{experiment_id}.json")
     if model_path.exists():
         try:
             with open(model_path) as f:
@@ -277,7 +277,7 @@ async def get_experiment(
                 "block_size": block_size,
                 "num_params": gpt.num_params(),
             }
-        except Exception:
+        except (json.JSONDecodeError, OSError, ValueError, TypeError, KeyError):
             model_architecture = None
 
     # Hyperparameters from MLflow params
@@ -315,7 +315,7 @@ async def get_experiment(
             safetensors_artifacts = await tracking_svc.get_safetensors_artifacts(
                 mlflow_run_id
             )
-        except Exception:
+        except MlflowException:
             mlflow_data = None
 
     # Calculate duration
@@ -368,7 +368,7 @@ async def get_experiment(
                     ds = await ds_repo.get(int(ds_id))
                     if ds:
                         dataset_name = ds.name
-            except Exception:
+            except (ValueError, OSError):
                 pass
         else:
             corp_id = params.get("corpus_id")
@@ -382,7 +382,7 @@ async def get_experiment(
                         corp = await corp_repo.get(int(corp_id))
                         if corp:
                             dataset_name = corp.name
-                except Exception:
+                except (ValueError, OSError):
                     pass
 
     return {
@@ -411,8 +411,8 @@ async def get_experiment(
     }
 
 
-@router.get("/experiments/{id}/mlflow")
-async def get_experiment_mlflow(id: int, request: Request):
+@router.get("/experiments/{experiment_id}/mlflow")
+async def get_experiment_mlflow(experiment_id: int, request: Request) -> dict[str, Any]:
     """Retrieve full MLflow data for an experiment.
 
     Returns comprehensive MLflow run data including all parameters, metrics,
@@ -440,7 +440,7 @@ async def get_experiment_mlflow(id: int, request: Request):
         404 if the experiment is not found.
     """
     tracking_svc = TrackingService()
-    exp = await tracking_svc.get_experiment(id)
+    exp = await tracking_svc.get_experiment(experiment_id)
     if exp is None:
         raise HTTPException(status_code=404, detail="Experiment not found")
 
@@ -473,7 +473,7 @@ async def get_experiment_mlflow(id: int, request: Request):
         try:
             artifacts = client.list_artifacts(mlflow_run_id)
             artifact_paths = [a.path for a in artifacts]
-        except Exception:
+        except MlflowException:
             artifact_paths = []
 
         # T049: Query safetensors artifact info
@@ -496,7 +496,7 @@ async def get_experiment_mlflow(id: int, request: Request):
                 else None
             ),
         }
-    except Exception as e:
+    except MlflowException as e:
         return {
             "mlflow_run_id": mlflow_run_id,
             "params": {},
@@ -509,8 +509,8 @@ async def get_experiment_mlflow(id: int, request: Request):
         }
 
 
-@router.get("/experiments/{id}/metrics")
-async def get_experiment_metrics(id: int):
+@router.get("/experiments/{experiment_id}/metrics")
+async def get_experiment_metrics(experiment_id: int) -> dict[str, Any]:
     """Retrieve the loss metric history for an experiment.
 
     Returns step-by-step loss values recorded during training via MLflow.
@@ -534,7 +534,7 @@ async def get_experiment_metrics(id: int):
         404 if the experiment is not found.
     """
     tracking_svc = TrackingService()
-    exp = await tracking_svc.get_experiment(id)
+    exp = await tracking_svc.get_experiment(experiment_id)
     if exp is None:
         raise HTTPException(status_code=404, detail="Experiment not found")
 
@@ -547,12 +547,12 @@ async def get_experiment_metrics(id: int):
         metric_history = client.get_metric_history(mlflow_run_id, "loss")
         metrics = [{"step": m.step, "loss": m.value} for m in metric_history]
         return {"metrics": metrics, "mlflow_run_id": mlflow_run_id}
-    except Exception as e:
+    except MlflowException as e:
         return {"metrics": [], "mlflow_run_id": mlflow_run_id, "error": str(e)}
 
 
-@router.delete("/experiments/{id}")
-async def delete_experiment(id: int):
+@router.delete("/experiments/{experiment_id}")
+async def delete_experiment(experiment_id: int) -> dict[str, Any]:
     """Delete an experiment and its associated MLflow run.
 
     Removes the experiment from the tracking service and deletes the
@@ -576,7 +576,7 @@ async def delete_experiment(id: int):
         404 if the experiment is not found.
     """
     tracking_svc = TrackingService()
-    exp = await tracking_svc.get_experiment(id)
+    exp = await tracking_svc.get_experiment(experiment_id)
     if exp is None:
         raise HTTPException(status_code=404, detail="Experiment not found")
 
@@ -584,14 +584,18 @@ async def delete_experiment(id: int):
     if mlflow_run_id:
         loop = asyncio.get_event_loop()
         try:
-            client = tracking_svc._client or await loop.run_in_executor(
-                None, lambda: tracking_svc._lazy_init()
+            client = (
+                tracking_svc._client
+                or await loop.run_in_executor(  # pylint: disable=protected-access
+                    None,
+                    lambda: tracking_svc._lazy_init(),  # pylint: disable=protected-access,unnecessary-lambda
+                )
             )
             if client:
                 await loop.run_in_executor(
                     None, lambda: client.delete_run(mlflow_run_id)
                 )
-        except Exception:
+        except MlflowException:
             pass
     return {"status": "deleted"}
 
@@ -600,7 +604,7 @@ async def delete_experiment(id: int):
 async def list_artifacts(
     experiment_id: int,
     run_id: str,
-):
+) -> dict[str, Any]:
     """List all safetensors export artifacts for a given experiment and run.
 
     Returns availability status, file metadata, and classification for each
@@ -646,7 +650,7 @@ async def download_artifact(
     experiment_id: int,
     run_id: str,
     path: str = Query(..., description="Artifact file path to download"),
-):
+) -> FileResponse:
     """Download a single artifact file for a given experiment and run.
 
     Downloads an artifact from MLflow storage to a temporary location and
@@ -721,16 +725,16 @@ async def download_artifact(
             filename=filename,
             media_type="application/octet-stream",
         )
-    except HTTPException:
+    except HTTPException:  # pylint: disable=try-except-raise
         raise
-    except Exception as e:
+    except (MlflowException, OSError) as e:
         raise HTTPException(
             status_code=500, detail=f"Failed to download artifact: {e!s}"
         ) from e
 
 
 @router.post("/experiments/{experiment_id}/retry-export")
-async def retry_export(experiment_id: int):
+async def retry_export(experiment_id: int) -> dict[str, Any]:
     """Retry safetensors export from a finished experiment's model artifact.
 
     Exports the model from an existing ``model.json`` artifact to safetensors

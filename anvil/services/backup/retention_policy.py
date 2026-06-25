@@ -9,6 +9,18 @@ retention limits are exceeded.
 
 from collections.abc import Sequence
 from datetime import UTC, datetime
+from typing import Protocol
+
+
+class _BackupOpProtocol(Protocol):
+    """Minimal interface for backup operations inspected by the retention
+    policy.
+    """
+
+    backup_id: str
+    operation_type: str
+    archive_size_bytes: int
+    created_at: datetime
 
 
 class RetentionPolicy:
@@ -44,7 +56,7 @@ class RetentionPolicy:
 
     def select_for_rotation(
         self,
-        backups: Sequence[object],
+        backups: Sequence[_BackupOpProtocol],
         projected_size: int,
     ) -> list[str]:
         """Return backup ids (oldest first) whose deletion would bring
@@ -52,11 +64,9 @@ class RetentionPolicy:
 
         Parameters
         ----------
-        backups : Sequence[BackupOperation]
+        backups : Sequence[_BackupOpProtocol]
             All backup operations, ideally ordered by ``created_at``
-            descending (newest first).  Each must have ``backup_id``,
-            ``operation_type``, ``archive_size_bytes``, and
-            ``created_at`` attributes.
+            descending (newest first).
         projected_size : int
             Estimated size of the new backup being created.
 
@@ -97,12 +107,6 @@ class RetentionPolicy:
         # Age-based rotation.
         now = datetime.now(UTC)
         if self._max_age_days is not None:
-            (
-                sorted_eligible[0].created_at.replace(tzinfo=UTC)
-                if hasattr(sorted_eligible[0], "created_at")
-                and sorted_eligible[0].created_at is not None
-                else now
-            )
             for b in list(sorted_eligible):
                 created = getattr(b, "created_at", None)
                 if created is None:
