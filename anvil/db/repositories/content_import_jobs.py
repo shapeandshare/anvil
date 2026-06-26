@@ -10,9 +10,10 @@ Provides CRUD operations and status management for the ``ImportJob``
 entity via the async SQLAlchemy repository pattern.
 """
 
+from collections.abc import Sequence
 from typing import Any
 
-from sqlalchemy import update
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.content_import_job import ImportJob
@@ -46,6 +47,20 @@ class ContentImportJobRepository:
             record exists with the given ``id``.
         """
         return await self._session.get(ImportJob, id)
+
+    async def get_all(self) -> Sequence[ImportJob]:
+        """Retrieve all import jobs ordered by creation time (newest
+        first).
+
+        Returns
+        -------
+        Sequence[ImportJob]
+            All persisted ``ImportJob`` records.
+        """
+        result = await self._session.execute(
+            select(ImportJob).order_by(ImportJob.id.desc())
+        )
+        return result.scalars().all()
 
     async def add(self, job: ImportJob) -> ImportJob:
         """Persist a new import job and return it with a generated
