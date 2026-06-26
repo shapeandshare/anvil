@@ -1277,6 +1277,30 @@ async def start_import(
     }
 
 
+@router.get("/content/imports")
+async def list_import_jobs(
+    workbench: AnvilWorkbench = Depends(get_workbench),
+) -> dict[str, Any]:
+    """List all import jobs ordered by creation time (newest first).
+
+    Parameters
+    ----------
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
+
+    Returns
+    -------
+    dict
+        List of ``ImportJobOut`` records wrapped in
+        ``{"data": ..., "error": None}``.
+    """
+    jobs = await workbench.content_imports.list()
+    return {
+        "data": [_import_job_to_out(j).model_dump() for j in jobs],
+        "error": None,
+    }
+
+
 @router.get("/content/imports/{job_id}")
 async def get_import_job(
     job_id: int,

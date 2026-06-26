@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Sequence
 from typing import Any
 
 from ...db.models.content_import_job import ImportJob
@@ -146,3 +147,14 @@ class ImportService:
             record exists with the given ``id``.
         """
         return await self._import_repo.get(job_id)
+
+    async def list(self) -> Sequence[ImportJob]:
+        """Retrieve all import jobs ordered by creation time (newest
+        first).
+
+        Returns
+        -------
+        Sequence[ImportJob]
+            All persisted ``ImportJob`` records.
+        """
+        return await self._import_repo.get_all()
