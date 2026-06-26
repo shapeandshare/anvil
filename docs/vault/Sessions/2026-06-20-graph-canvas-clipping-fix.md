@@ -27,3 +27,9 @@ Fixed a UI layout bug where the animated computation graph on `/v1/learn/graph` 
 
 - `anvil/api/static/js/graph-view.js` — modified: line 81 `40` → `60`
 - `docs/vault/Discoveries/graph-canvas-node-left-clipping.md` — new discovery note
+
+## Related
+
+- [[Discoveries/graph-canvas-node-left-clipping|Graph Canvas Node Left-Edge Clipping]] — discovery note from this session
+- [[Discoveries/graph-scrubber-ignored-by-draw|Graph Scrubber Ignored by Draw]] — related graph fix discovery
+- [[Design/Design|Design]] — UI design system for canvas renderer layout

@@ -40,3 +40,9 @@ Replaced two deprecated `mlflow.tracking.client.MlflowClient.get_latest_versions
 - `anvil/services/tracking/tracking.py:1080-1089`
 - `anvil/services/inference/inference.py:194-202`
 - `docs/vault/Discoveries/mlflow-get-latest-versions-deprecation.md`
+
+## Related
+
+- [[Discoveries/mlflow-get-latest-versions-deprecation|MLflow get_latest_versions Deprecation]] — discovery note from this session
+- [[Reference/MlflowIntegration|MLflow Tracking]] — MLflow integration overview
+- [[Decisions/ADR-016-mlflow-primary-lineage|ADR-016: MLflow as Primary Lineage Source of Truth]] — related architecture decision

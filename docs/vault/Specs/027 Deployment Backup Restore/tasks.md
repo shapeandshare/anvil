@@ -8,6 +8,9 @@ status: draft
 created: '2026-06-21'
 updated: '2026-06-21'
 ---
+
+Back to [[Specs/027 Deployment Backup Restore/spec]].
+
 ## Phase 2: Foundational (Blocking Prerequisites)
 
 **Purpose**: Enums, value types, ORM model, migration, repository, audit-enum extensions, and the shared `BackupService` skeleton + god-class/app wiring. **No user story can be implemented until this phase is complete.**

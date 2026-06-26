@@ -43,3 +43,8 @@ The collapsible section pattern used across both pages:
 ```
 
 CSS is in `anvil/api/static/css/archetypes.css` (lines 603-660).
+
+## Related
+
+- [[Design/Design|Design]] — UI design system and component patterns
+- [[Reference/ArchitectureOverview|Architecture]] — app UI architecture context

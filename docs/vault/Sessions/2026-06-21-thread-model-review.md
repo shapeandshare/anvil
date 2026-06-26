@@ -83,3 +83,9 @@ PR #120 (merged `dc8992c` to main):
 - `anvil/api/v1/health_ops.py` (TMR-019 fix)
 - `tests/api/test_training_sse_signals.py` (tests for TMR-001)
 - `tests/test_bootstrap.py` (test for TMR-019)
+
+## Related
+
+- [[Decisions/ADR-002-sync-core-async-bridge|ADR-002: Sync Core, Async Bridge]] — threading model architecture decision
+- [[Reference/ArchitectureOverview|Architecture]] — codebase threading context
+- [[Specs/Specs|Specs]] — feature specification index

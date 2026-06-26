@@ -60,3 +60,9 @@ The 1378 "deletions" are from black reformatting (cosmetic only — quote style,
 - `LICENSE` — root project license file (was already correct)
 - `pyproject.toml` — project metadata (authors field)
 - All files under `anvil/`, `tests/`, `examples/`, `scripts/`, `specs/`
+
+## Related
+
+- [[Governance/Constitution|Governance]] — governance policies including licensing and attribution
+- [[Decisions/ADR-023-responsible-data-governance|ADR-023: Responsible Data Governance]] — related governance decision
+- [[Reference/ArchitectureOverview|Architecture]] — codebase structure and licensing context

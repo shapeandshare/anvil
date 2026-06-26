@@ -9,6 +9,9 @@ updated: 2026-06-13
 aliases:
 - ADR-005 — Source-keyed model registry consolidation
 source: agent
+related:
+  - '[[Decisions/ADR-016-mlflow-primary-lineage]]'
+  - '[[Reference/MlflowIntegration]]'
 code-refs:
 - anvil/services/tracking/tracking_service.py
 - anvil/db/models/registry.py

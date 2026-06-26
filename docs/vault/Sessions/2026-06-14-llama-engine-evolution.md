@@ -50,3 +50,10 @@ updated: '2026-06-14T00:00:00.000Z'
 - `tests/unit/core/test_engine.py` (edge-case tests added)
 - `tests/unit/services/test_export.py` (export tests)
 - `docs/vault/Decisions/ADR-007-llama-engine-evolution.md` (this ADR)
+
+## Related
+
+- [[Specs/Specs|Specs]] — feature specification index
+- [[Decisions/ADR-007-llama-engine-evolution|ADR-007: Llama Engine Evolution]] — architecture decision record
+- [[Reference/ArchitectureOverview|Architecture]] — core engine architecture context
+- [[Reference/SafetensorsExport|Safetensors & HF Interop]] — model export format documentation

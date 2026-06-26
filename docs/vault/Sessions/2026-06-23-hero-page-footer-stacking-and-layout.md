@@ -57,3 +57,9 @@ Debugged why the copyright footer appeared "under the content blocks" / "floatin
 
 ## Tags
 - `domain/ui` — CSS stacking, layout, footer
+
+## Related
+
+- [[Design/Design|Design]] — UI design system including hero page layout
+- [[Sessions/2026-06-19-version-footer-transparency|Version Footer Transparency]] — related footer fix session
+- [[Discoveries/transparent-items-gap-trick|Transparent Items with Gap Create See-Through Illusion]] — related CSS stacking discovery

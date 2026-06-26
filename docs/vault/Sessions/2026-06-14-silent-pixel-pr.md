@@ -32,3 +32,8 @@ Commit-and-PR session: bundled 40 files of accumulated changes (design system po
 ## Key decisions
 
 - No new architectural decisions. This was a bundling and delivery session for accumulated work.
+
+## Related
+
+- [[Design/Design|Design]] — UI design system updates bundled in this PR
+- [[Reference/ArchitectureOverview|Architecture]] — general architecture context

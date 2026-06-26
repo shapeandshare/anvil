@@ -62,3 +62,9 @@ Replaced the Forge theme's existing ambient heat glow + ember particle effect wi
 2. `anvil/api/static/css/themes/forge.css` — forge fire bed redesign
 3. `anvil/api/static/js/themes/forge.js` — particleConfig + previewHint
 4. `docs/vault/Reference/particle-effect-authoring.md` — catalog updated with spark description
+
+## Related
+
+- [[Design/Design|Design]] — UI design system including forge theme and particle effects
+- [[Reference/particle-effect-authoring|Particle Effect Authoring]] — particle system reference
+- [[Reference/theme-creation-guide|Theme Creation Guide]] — theme authoring reference

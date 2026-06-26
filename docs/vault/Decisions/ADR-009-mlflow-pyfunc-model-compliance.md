@@ -10,6 +10,8 @@ aliases:
 - ADR-009 — MLflow Pyfunc Model Compliance
 source: agent
 updated: '2026-06-18'
+related:
+  - '[[Decisions/ADR-016-mlflow-primary-lineage]]'
 code-refs:
 - anvil/_pyfunc_model.py
 - anvil/services/training/export.py

@@ -31,3 +31,7 @@ Increased vertical spacing between `.section-card` "boxes" on all pages from `va
 User request: "the boxes on all tha pages need more space between each other."
 
 The universal "box" component was identified as `.section-card` — the iOS-style card used as the primary content container across every page. The existing 4px gap was too tight, making stacked sections feel cramped.
+
+## Related
+
+- [[Design/Design|Design]] — UI design system including spacing tokens and section-card patterns

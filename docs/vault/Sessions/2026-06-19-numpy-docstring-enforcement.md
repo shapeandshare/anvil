@@ -68,3 +68,10 @@ Enforced NumPy-style docstrings across the entire anvil codebase (~100 Python so
 - 9x Sisyphus-Junior (unspecified-high category) for delegated docstring writing
 - Explore agents for file inventory and pattern analysis
 - Direct Edit tool for post-processing fixes
+
+## Related
+
+- [[Decisions/ADR-025-numpy-docstring-enforcement|ADR-025: NumPy Docstring Enforcement]] — architecture decision record
+- [[Discoveries/core-file-docstring-revert|Core Engine Files Persistently Revert Docstring Changes]] — discovery note from this session
+- [[Code/Code|Code]] — code architecture conventions
+- [[Governance/Constitution|Constitution]] — project governance

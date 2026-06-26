@@ -37,3 +37,8 @@ source: agent
 - anvil/api/static/favicon.svg (transparent bg, removed bg rect)
 - anvil/api/templates/base.html (menu bar Anvil tab icon SVG)
 - anvil/api/templates/archetypes/hero.html (hero forge icon SVG)
+
+## Related
+
+- [[Design/Design|Design]] — UI design system and visual consistency guidelines
+- [[Reference/ArchitectureOverview|Architecture]] — app shell and page chrome context

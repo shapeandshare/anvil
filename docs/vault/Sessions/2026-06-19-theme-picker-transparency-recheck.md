@@ -9,6 +9,8 @@ tags:
 title: 'Session: Theme Picker Transparency Re-check'
 type: session-log
 updated: '2026-06-19T02:00:00.000Z'
+related:
+  - '[[Discoveries/static-css-no-cache-busting]]'
 ---
 # Session: Theme Picker Transparency Re-check
 

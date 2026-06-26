@@ -59,3 +59,9 @@ Also cleaned up unused imports (`random`, `HTTPException`, `Sequence`) and fixed
 - `anvil/api/v1/pages.py` — page route owner (7 routes)
 - `anvil/api/v1/learning.py` — learn route owner (19 routes including models)
 - `anvil/api/static/js/core.js` — client-side navigation (`loadContent` function)
+
+## Related
+
+- [[Decisions/ADR-022-domain-driven-package-decomposition|ADR-022: Domain-Driven Package Decomposition]] — architecture decision record (routing restructuring context)
+- [[Design/Design|Design]] — UI design system for page routes
+- [[Reference/ArchitectureOverview|Architecture]] — API routing architecture context

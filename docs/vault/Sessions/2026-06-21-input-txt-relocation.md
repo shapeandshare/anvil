@@ -28,3 +28,8 @@ Investigated `input.txt` at the repo root — a 32K-line (~228KB) list of baby n
 ## Discovery
 
 The file was already committed at `examples/input.txt` in the git tree (identical content), so the `mv` operation resulted in no additional tracking delta beyond the root deletion. Likely a previous session had staged it there but the root copy was the one being worked against.
+
+## Related
+
+- [[Reference/TrainingDataFlow|Training Data Flow]] — training pipeline data sources context
+- [[Reference/ArchitectureOverview|Architecture]] — project structure and examples layout context

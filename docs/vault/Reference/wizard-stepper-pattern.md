@@ -6,6 +6,8 @@ tags:
   - domain/ui
 created: '2026-06-14'
 updated: '2026-06-14'
+related:
+  - '[[Reference/OpenQuestions]]'
 ---
 ## Discovery: Wizard-Stepper Component Pattern
 

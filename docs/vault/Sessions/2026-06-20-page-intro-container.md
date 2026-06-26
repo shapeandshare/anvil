@@ -41,3 +41,8 @@ Fixed free-floating intro text on the training page by styling `.page-intro` as 
 - **Shared component vs. page-specific**: Adding container styling to `.page-intro` (used across 11+ pages) was more maintainable than a training-page-only fix, since all other pages also benefit from a visually bounded intro
 - **Hero page exemption**: `.page-intro--centered` resets the container styles because the hero/landing page has its own distinct visual language and layout
 - **`section-card__content` class**: Used the existing design token for the text inside the Training Setup card, ensuring consistent font/size/color with other card content across the app
+
+## Related
+
+- [[Design/Design|Design]] — UI design system including page-intro and section-card components
+- [[Reference/ArchitectureOverview|Architecture]] — template layout and page structure context

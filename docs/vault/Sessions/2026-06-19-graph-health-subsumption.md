@@ -53,3 +53,10 @@ See `docs/vault/Decisions/ADR-034-vault-health-subsumption.md`
 
 - Write unit test files in `tests/services/vault/` (test directory created, no tests yet)
 - Full end-to-end validation: `make vault-audit` should produce identical output
+
+## Related
+
+- [[Specs/017 Graph Health Subsumption/017 Graph Health Subsumption|017 Graph Health Subsumption]] — feature specification
+- [[Decisions/ADR-034-vault-health-subsumption|ADR-034: Vault Health Subsumption]] — architecture decision record
+- [[Systems/Vault Health|Vault Health]] — vault tooling system
+- [[Systems/Vault Structure|Vault Structure]] — vault directory layout

@@ -8,6 +8,9 @@ status: draft
 created: '2026-06-21'
 updated: '2026-06-21'
 ---
+
+Back to [[Specs/026 Client SDK/Spec]].
+
 ## 2. Domain DTOs
 
 > Field sets below reflect the verified anvil API responses (the standard

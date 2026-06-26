@@ -50,3 +50,8 @@ This is the correct pattern: when using `.textContent` (which is safe and approp
 When using `.textContent` to display symbols/characters:
 - Use literal Unicode characters (✓, →, ★, etc.)
 - HTML entities (`&#10003;`, `&amp;`, `&lt;`) will render as raw text
+
+## Related
+
+- [[Design/Design|Design]] — UI design system and rendering conventions
+- [[Reference/ArchitectureOverview|Architecture]] — template rendering and JS patterns

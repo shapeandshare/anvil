@@ -26,3 +26,8 @@ Added: clickable header (section-card__header becomes a toggle), a green indicat
 - Output actions (register model, etc.) live inside the collapsible — they're semantically part of the output section and hiding them together avoids layout confusion
 - Keyboard accessible: Enter/Space to toggle, `aria-expanded` attribute tracks state
 - Indicator only turns `--active` when BOTH a streaming process is running AND `_outputHasContent` is true — avoids false "green means active" when a session connects but hasn't logged anything yet
+
+## Related
+
+- [[Design/Design|Design]] — UI design system including collapsible patterns
+- [[Reference/TrainingDataFlow|Training Data Flow]] — training pipeline context

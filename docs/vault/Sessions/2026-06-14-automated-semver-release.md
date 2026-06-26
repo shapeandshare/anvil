@@ -54,3 +54,10 @@ source: agent
 - `docs/secrets.md` (new — BUMP_PAT guide)
 - `AGENTS.md` (updated — new technologies)
 - `docs/vault/Specs/010 Automated Semver Release/` (20 artifacts across 7 phases)
+
+## Related
+
+- [[Specs/010 Automated Semver Release/010 Automated Semver Release|010 Automated Semver Release]] — feature specification
+- [[Decisions/ADR-008-automated-semver-release|ADR-008: Automated Semver Release]] — architecture decision record
+- [[Reference/ArchitectureOverview|Architecture]] — CI and release pipeline context
+- [[index|anvil Vault]] — vault index

@@ -67,3 +67,9 @@ Appended `&copy; 2026 Josh Burt. Released under the MIT License.` at the end of 
 - `README.md` — project front page
 - `CONTRIBUTING.md` — contributor guide
 - `docs/vault/Sessions/2026-06-20-copyright-header-attribution.md` — prior session (bulk source headers)
+
+## Related
+
+- [[Sessions/2026-06-20-copyright-header-attribution|Copyright Header Attribution]] — prior session (bulk source headers)
+- [[Design/Design|Design]] — UI design system including footer component
+- [[Governance/Constitution|Governance]] — governance policies for copyright and licensing

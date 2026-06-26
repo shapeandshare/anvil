@@ -79,3 +79,9 @@ Modified:
 - domain/architecture
 - domain/governance
 - status/draft
+
+## Related
+
+- [[Decisions/ADR-027-type-checking-conditional-allow|ADR-027: Type Checking Conditional Allow]] — related type-checking decision
+- [[Code/Code|Code]] — code architecture conventions for typing
+- [[Specs/012 Pip Installable Package/012 Pip Installable Package|012 Pip Installable Package]] — packaging feature specification

@@ -108,3 +108,9 @@ Order determined by `**Created**:` date in each spec.md, with alphabetical tiebr
 1. **Chronological ordering** — Specs numbered by creation date (oldest = lowest number). Same-day specs ordered alphabetically by feature name. This preserves the development timeline as the primary sort axis.
 2. **Branch names normalized** — `feature/` prefix removed from all branch names for consistency. The majority (22/25) already omitted it.
 3. **Historical session logs** — Vault session logs that reference old spec paths were updated because they reference spec *directories* (current artifacts), not git branches (historical artifacts). However, branch names in session log frontmatter/titles that refer to actual git branches were preserved — they are factual historical records.
+
+## Related
+
+- [[Specs/Specs|Specs]] — feature specification index (this session was about renumbering it)
+- [[Decisions/ADR-029-adr-renumbering-and-uniqueness|ADR-029: ADR Renumbering and Uniqueness]] — related renumbering decision
+- [[Systems/Vault Structure|Vault Structure]] — vault directory layout conventions

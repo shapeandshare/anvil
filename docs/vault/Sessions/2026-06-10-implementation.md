@@ -30,3 +30,10 @@ Full bootstrap implementation of the anvil repository. All 125 tasks completed a
 - Python 3.11 is required (3.9 on macOS defaults to Xcode CLT)
 - setuptools requires explicit `[tool.setuptools.packages.find]` with flat-layout
 - SSE via Starlette StreamingResponse works without external deps
+
+## Related
+
+- [[Sessions/2026-06-10-spec-crafting|Spec Crafting Session]] — companion spec crafting session
+- [[Specs/001 Bootstrap LLM Workbench/001 Bootstrap LLM Workbench|001 Bootstrap LLM Workbench]] — feature specification
+- [[Decisions/ADR-001-architecture-decisions|ADR-001: Architecture Decisions]] — foundation architecture decision
+- [[Governance/Constitution|Constitution]] — project constitution

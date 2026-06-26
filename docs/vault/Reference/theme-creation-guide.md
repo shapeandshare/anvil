@@ -9,6 +9,10 @@ type: reference
 updated: '2026-06-20'
 aliases:
   - Theme Creation Guide
+related:
+  - '[[Discoveries/canvas-particle-amplitude-vs-frequency-perceived-speed]]'
+  - '[[Discoveries/signal-gated-decorations-invisible-at-rest]]'
+  - '[[Discoveries/multi-layer-radial-gradient-rain-failure]]'
 ---
 # Theme Creation Guide
 

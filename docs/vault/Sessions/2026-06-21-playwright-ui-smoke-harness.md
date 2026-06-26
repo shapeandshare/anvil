@@ -68,3 +68,9 @@ During the critical review, three agents verified key claims against the actual 
 - [Plan](../../docs/vault/Specs/022 Playwright UI Smoke/plan.md)
 - [Tasks](../../docs/vault/Specs/022 Playwright UI Smoke/tasks.md)
 - [ADR-034](../Decisions/ADR-034-playwright-ui-smoke-harness.md)
+
+## Related
+
+- [[Specs/022 Playwright UI Smoke/022 Playwright UI Smoke|022 Playwright UI Smoke]] — feature specification
+- [[Decisions/ADR-034-playwright-ui-smoke-harness|ADR-034: Playwright UI Smoke Harness]] — architecture decision record
+- [[Specs/021 API E2E Suite/021 API E2E Suite|021 API E2E Suite]] — related testing specification

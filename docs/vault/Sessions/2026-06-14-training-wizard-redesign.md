@@ -45,3 +45,9 @@ The initial implementation set `span.style.display = 'none'` inline on completed
 - Card follows `section-card` pattern (iOS rounded surface with shadow)
 - Tab pills use `--radius-xl` (30px) matching iOS pill convention
 - All touch targets ≥ 44px where interactive
+
+## Related
+
+- [[Design/Design|Design]] — UI design system including wizard and tab patterns
+- [[Reference/TrainingDataFlow|Training Data Flow]] — training pipeline context
+- [[Reference/wizard-stepper-pattern|Wizard Stepper Pattern]] — reusable wizard component reference

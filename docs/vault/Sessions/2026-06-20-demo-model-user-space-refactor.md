@@ -56,3 +56,9 @@ anvil/services/inference/inference.py           | 94 +++++++++++-------
 anvil/services/tracking/tracking.py             | 14 +--
 tests/unit/services/test_inference.py           | 28 +++++--
 ```
+
+## Related
+
+- [[Reference/MlflowIntegration|MLflow Tracking]] — MLflow model registration and listing
+- [[Decisions/ADR-016-mlflow-primary-lineage|ADR-016: MLflow as Primary Lineage Source of Truth]] — related architecture decision
+- [[Reference/ArchitectureOverview|Architecture]] — inference service architecture context

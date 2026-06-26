@@ -8,6 +8,9 @@ status: draft
 created: '2026-06-21'
 updated: '2026-06-21'
 ---
+
+Back to [[Specs/026 Client SDK/Spec]].
+
 ### User Story 3 - Train Models Programmatically (Priority: P1)
 
 A developer using the SDK can start a training run with custom hyperparameters, monitor its progress via event streams, stop it if needed, and retrieve the trained model reference — all through typed SDK calls.

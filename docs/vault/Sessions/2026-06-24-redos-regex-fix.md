@@ -56,3 +56,9 @@ Removed the now-unused `import re` statement since `re` is no longer referenced 
 ## References
 
 - `anvil/services/vault/prediction.py`
+
+## Related
+
+- [[Discoveries/regex-backtracking-yaml-frontmatter|Regex Backtracking in YAML Frontmatter Parsing]] — related ReDoS discovery
+- [[Systems/Vault Health|Vault Health]] — vault tooling system
+- [[Decisions/ADR-034-vault-health-subsumption|ADR-034: Vault Health Subsumption]] — related vault tooling decision

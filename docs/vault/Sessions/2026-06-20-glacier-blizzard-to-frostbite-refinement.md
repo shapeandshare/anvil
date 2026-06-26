@@ -57,3 +57,9 @@ Multi-angle `repeating-linear-gradient` layers on overlapping pseudo-elements cr
 
 - `anvil/api/static/css/themes/glacier.css` — replaced sleet streaks with frostbite vignette; boosted frost glow
 - `anvil/api/static/js/theme/particle-system.js` — boosted `snow` effect counts, sizes, opacity, drift, and bottom cover
+
+## Related
+
+- [[Design/Design|Design]] — UI design system including theme and particle effects
+- [[Reference/theme-creation-guide|Theme Creation Guide]] — theme authoring reference
+- [[Discoveries/canvas-particle-amplitude-vs-frequency-perceived-speed|Canvas Particle Amplitude vs Frequency]] — related particle system discovery
