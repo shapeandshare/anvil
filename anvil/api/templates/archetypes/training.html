@@ -59,6 +59,12 @@
     <div id="runs-list"></div>
   </div>
 
+  {# ── Past Experiments (attach) ── #}
+  <div class="training-runs section-card" id="past-experiments-panel" style="display:none;--stagger-i: 0">
+    <div class="section-card__header"><span class="section-card__icon">&#128203;</span><h2 class="section-card__title">Past Experiments</h2></div>
+    <div id="past-experiments-list"></div>
+  </div>
+
   <!-- ── Section 1: Select Data ── -->
   <div class="section-card ds-flow-section" id="tab-data" data-step="1" style="--stagger-i: 1">
     <div class="ds-flow-header">
@@ -1245,6 +1251,140 @@ var gpuToggle = document.getElementById('compute_backend');
     renderRunsList(window.coreSession.getActiveRuns());
   };
 
+  /* ── Past Experiments (attach) ── */
+  function loadPastExperiments() {
+    fetch('/v1/experiments').then(function(r) { return r.json(); }).then(function(data) {
+      var exps = data.experiments || [];
+      var pastExps = exps.filter(function(exp) {
+        return exp.status === 'finished' || exp.status === 'failed' || exp.status === 'error';
+      });
+      renderPastExperiments(pastExps);
+    }).catch(function() {});
+  }
+
+  function renderPastExperiments(exps) {
+    var panel = document.getElementById('past-experiments-panel');
+    var list = document.getElementById('past-experiments-list');
+    if (exps.length === 0) { panel.style.display = 'none'; return; }
+    panel.style.display = '';
+
+    var html = '<div style="display:flex;flex-direction:column;gap:var(--space-1);">';
+    exps.forEach(function(exp) {
+      var lossStr = exp.final_loss != null ? exp.final_loss.toFixed(4) : '\u2014';
+      var statusClass = exp.status === 'finished'
+        ? (exp.final_loss < 0.5 ? 'badge-green' : exp.final_loss < 1.0 ? 'badge-yellow' : 'badge-red')
+        : 'badge-red';
+      html += '<div class="rec-card type-caption-1" style="display:flex;align-items:center;gap:var(--space-2);padding:6px 10px;border:1px solid var(--border);border-radius:4px;">'
+        + '<span class="badge ' + statusClass + '">' + exp.status + '</span>'
+        + '<span style="font-family:var(--font-mono);color:var(--info);">#' + exp.id + '</span>'
+        + '<span style="color:var(--text-dim);">' + escHtml(exp.dataset_name || '\u2014') + '</span>'
+        + '<span style="color:var(--accent-cyan);">loss: ' + lossStr + '</span>'
+        + '<span class="type-caption-2 text-muted">' + (exp.engine_backend || '\u2014') + '</span>'
+        + '<span style="flex:1;"></span>'
+        + '<button class="btn btn-sm btn-accent attach-btn" data-exp="' + exp.id + '">attach</button>'
+        + '</div>';
+    });
+    html += '</div>';
+    list.innerHTML = html;
+  }
+
+  window.attachExperiment = function(expId) {
+    fetch('/v1/experiments/' + expId).then(function(r) {
+      if (!r.ok) throw new Error(r.statusText);
+      return r.json();
+    }).then(function(exp) {
+      /* 1. Restore hyperparameters into config form */
+      var hp = exp.hyperparameters || {};
+      if (hp.n_embd) document.getElementById('n_embd').value = hp.n_embd;
+      if (hp.n_layer) document.getElementById('n_layer').value = hp.n_layer;
+      if (hp.n_head) document.getElementById('n_head').value = hp.n_head;
+      if (hp.block_size) document.getElementById('block_size').value = hp.block_size;
+      if (hp.num_steps) document.getElementById('num_steps').value = hp.num_steps;
+      if (hp.learning_rate) document.getElementById('learning_rate').value = hp.learning_rate;
+      if (hp.temperature) document.getElementById('temperature').value = hp.temperature;
+
+      /* 2. Restore compute backend selector from MLflow params */
+      var mlflowParams = exp.mlflow && exp.mlflow.params ? exp.mlflow.params : {};
+      if (mlflowParams.compute_backend) {
+        document.getElementById('compute_backend').value = mlflowParams.compute_backend;
+      }
+
+      /* 3. Restore corpus/dataset selectors if cache has the entry */
+      if (mlflowParams.corpus_id && corpusCache[mlflowParams.corpus_id]) {
+        corpusSelect.value = mlflowParams.corpus_id;
+      }
+      if (mlflowParams.dataset_id && datasetCache[mlflowParams.dataset_id]) {
+        datasetSelect.value = mlflowParams.dataset_id;
+      }
+
+      updateDataContext();
+      updateModelStats();
+
+      /* 4. Destroy any current SSE session and reset milestone state */
+      if (session) { session.destroy(); session = null; }
+      _lastMilestone = null;
+
+      /* 5. Prepare chart and output */
+      initChart();
+      if (chart) chart.clear();
+      lossDisplay.textContent = '';
+      document.getElementById('metric-step').textContent = '\u2014';
+      document.getElementById('metric-loss').textContent = '\u2014';
+      document.getElementById('metric-device').textContent = exp.device || '\u2014';
+      document.getElementById('metric-elapsed').textContent = '\u2014';
+      document.getElementById('metric-Throughput').textContent = '\u2014';
+      document.getElementById('metric-eta').textContent = '\u2014';
+      _outputHasContent = false;
+      outputActions.innerHTML = '';
+
+      /* 6. Load loss curve from MLflow metric history */
+      fetch('/v1/experiments/' + expId + '/metrics').then(function(r) {
+        if (!r.ok) throw new Error(r.statusText);
+        return r.json();
+      }).then(function(metricsData) {
+        var points = metricsData.metrics || [];
+        if (points.length > 0 && chart) {
+          chart.loadPoints(points);
+          var last = points[points.length - 1];
+          document.getElementById('metric-step').textContent = last.step || '\u2014';
+          document.getElementById('metric-loss').textContent = last.loss != null ? last.loss.toFixed(4) : '\u2014';
+          document.getElementById('metric-elapsed').textContent = exp.duration_seconds != null ? formatDuration(exp.duration_seconds) : '\u2014';
+
+          log('');
+          log('\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550');
+          log(' Attached to experiment #' + expId);
+          log(' Final loss: ' + (exp.final_loss != null ? exp.final_loss.toFixed(4) : '?'));
+          log(' ' + points.length + ' steps \u00b7 ' + (exp.dataset_name || '\u2014') + ' \u00b7 ' + (exp.engine_backend || '\u2014'));
+          log('\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550');
+        }
+      }).catch(function() {
+        log('> Could not load metrics for experiment #' + expId);
+      });
+
+      /* 7. Final state updates */
+      updateState('done');
+
+      /* 8. Show training phase based on final loss (only for finished experiments) */
+      updateTrainingPhase(exp.final_loss);
+      var phaseEl = document.getElementById('training-phase');
+      if (phaseEl) {
+        phaseEl.style.display = exp.final_loss != null ? '' : 'none';
+        var prevBadge = phaseEl.parentNode && phaseEl.parentNode.querySelector('.milestone-badge');
+        if (prevBadge) prevBadge.remove();
+      }
+
+      /* 9. Refresh output actions (register model, view experiments, mlflow link) */
+      if (exp.final_loss != null) {
+        refreshOutputActions({
+          experiments: [exp],
+          mlflow_url: exp.mlflow ? (exp.mlflow.run_url || null) : null,
+        });
+      }
+    }).catch(function(err) {
+      log('> Failed to attach to experiment #' + expId + ': ' + err.message);
+    });
+  };
+
   /* ── Run selector clicks (delegated) ── */
   document.addEventListener('click', function(e) {
     var runId, runs;
@@ -1260,6 +1400,14 @@ var gpuToggle = document.getElementById('compute_backend');
       runId = dismissBtn.getAttribute('data-run');
       removeActiveRun(runId);
       renderRunsList(window.coreSession.getActiveRuns());
+      return;
+    }
+    var attachBtn = e.target.closest('.attach-btn');
+    if (attachBtn) {
+      var expId = parseInt(attachBtn.getAttribute('data-exp'));
+      if (!isNaN(expId)) {
+        window.attachExperiment(expId);
+      }
     }
   });
 
@@ -1332,6 +1480,9 @@ var gpuToggle = document.getElementById('compute_backend');
   if (!session) {
     updateState('idle');
   }
+
+  /* Load past experiments list for attach */
+  loadPastExperiments();
 
 /* ── Compute backend availability check ── */
   fetch('/v1/compute/backends').then(function(r) { return r.json(); }).then(function(backends) {
