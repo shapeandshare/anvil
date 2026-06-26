@@ -52,3 +52,9 @@ Two atomic changes:
 
 - **No ADR warranted** — this is a straightforward UI ergonomics enhancement following existing URL param patterns. No architectural impact.
 - **Chose URL params over sessionStorage** — URL params are shareable (bookmarkable), work with browser back/forward, and match the existing `?run_id=` pattern. Session storage would be invisible and not shareable.
+
+## Related
+
+- [[Design/Design|Design]] — UI design system including model registry and inference page patterns
+- [[Reference/MlflowIntegration|MLflow Tracking]] — model registry integration context
+- [[Reference/ArchitectureOverview|Architecture]] — SPA routing and page linking context

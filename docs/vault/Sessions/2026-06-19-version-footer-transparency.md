@@ -50,3 +50,8 @@ distracting."
 
 - `anvil/api/static/css/base.css` — `.site-footer` rule
 - `anvil/api/templates/base.html` — footer markup
+
+## Related
+
+- [[Design/Design|Design]] — UI design system including footer layout and theme tokens
+- [[Reference/ArchitectureOverview|Architecture]] — app chrome and page structure context

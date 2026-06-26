@@ -12,6 +12,9 @@ aliases:
   - ADR-030
 status: status/draft
 source: agent
+related:
+  - '[[Decisions/ADR-015-pluggable-compute-backends]]'
+  - '[[Reference/DualBackend]]'
 code-refs:
   - docs/vault/Specs/016 SaaS Architecture/spec.md
   - docs/vault/Reference/SaaSArchitecture.md

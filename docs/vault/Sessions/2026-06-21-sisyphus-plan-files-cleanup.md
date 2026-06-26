@@ -46,3 +46,9 @@ Reviewed the three orphaned plans in `.sisyphus/plans/`, determined their comple
 ## Key Takeaway
 
 The custom dataset feature plan was complete and could serve as a template for future plan closure criteria. The compute backends plan had one DoD item (DB migration) that was rendered unnecessary by architectural evolution toward MLflow-as-metadata-store.
+
+## Related
+
+- [[Specs/Specs|Specs]] — feature specification index
+- [[Reference/ArchitectureOverview|Architecture]] — compute backends architecture context
+- [[Systems/Systems|Systems]] — project infrastructure systems

@@ -28,6 +28,13 @@ Full Spec Kit flow for behavioral theme engine feature: specify → clarify → 
 - **Four themes**: default (unchanged), forge (dark, ember/warm), oldgrowth (single-mode CRT, mono), aurora (dual-mode). Self-contained CSS layers + JS modules.
 - **Neutral signal instrumentation** (TDD, 15 tests): `CoreStepObservation`→`Pydantic StepMetrics`; widened `metrics` (grad_norm, exact tokens_per_sec via `ThroughputTracker`); new `divergence` event (halts NaN runs via `DivergenceError`, reconciled status) and `milestone` cadence marker; engines/protocol/backends/service/route/sse.js wired.
 - **Expressive mappings**: forge (loss→cooling-metal, throughput→glow, quench/divergence states), oldgrowth (client-derived disturbance from grad_norm+loss volatility, scanline overlay), aurora (loss→calm, throughput→flow). All gated by effect level.
+
+## Related
+
+- [[Specs/018 Theme Engine/018 Theme Engine|018 Theme Engine]] — feature specification
+- [[Decisions/ADR-031-behavioral-theme-engine|ADR-031: Behavioral Theme Engine]] — architecture decision record
+- [[Design/Design|Design]] — UI design system including theme engine
+- [[Reference/theme-creation-guide|Theme Creation Guide]] — theme authoring reference
 - **Accessibility**: centralized reduced-motion/effects/visibility gating, picker toggles, reduced-motion resets in every theme layer.
 - **Spec artifacts**: `docs/vault/Specs/018 Theme Engine/` (spec, plan, research, data-model, 3 contracts, tasks, checklist) + **ADR-031**.
 

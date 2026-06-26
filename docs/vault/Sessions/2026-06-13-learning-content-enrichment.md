@@ -35,3 +35,10 @@ Implements 7 new learning features for anvil: autograd backprop visualization, p
 - Widgets follow existing pattern (constructor takes container, _render() builds HTML, _fetch() calls API)
 - Demo model fallback ensures widgets work without training
 - Adam optimizer state captured via callback (Option B — real logged data)
+
+## Related
+
+- [[Specs/007 Learning Content Enrichment/007 Learning Content Enrichment|007 Learning Content Enrichment]] — feature specification
+- [[Reference/ProgressiveWalkthroughs|Progressive Walkthroughs]] — learning arc progression reference
+- [[Reference/ArchitectureOverview|Architecture]] — core engine and learning content context
+- [[Sessions/2026-06-10-spec-crafting|Spec Crafting Session]] — foundational session

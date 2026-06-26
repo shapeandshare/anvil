@@ -50,3 +50,10 @@ The net effect: every merge got a patch bump regardless of conventional commit t
 - `tests/unit/vault/test_bump_version.py` (added 7 tests for _bump + changelog labels)
 - `docs/vault/Specs/010 Automated Semver Release/contracts/workflow-trigger-contract.md` (updated)
 - `scripts/README.md` (updated reference)
+
+## Related
+
+- [[Specs/010 Automated Semver Release/010 Automated Semver Release|010 Automated Semver Release]] — release automation feature specification
+- [[Decisions/ADR-008-automated-semver-release|ADR-008: Automated Semver Release]] — architecture decision record
+- [[Decisions/ADR-028-ci-merge-gate-enforcement|ADR-028: CI Merge Gate Enforcement]] — related CI decision
+- [[Discoveries/release-workflow-git-identity-and-cz-commit|Release Workflow Git Identity and cz bump Commit Ownership]] — related discovery

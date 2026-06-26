@@ -62,3 +62,9 @@ Ran 4 parallel explore agents to map:
 - `anvil/api/templates/acceptable_use.html` — acceptable use policy template (linked)
 - `anvil/services/governance/governance_service.py` — `GovernanceService.list_licenses()`
 - `anvil/api/static/css/tokens.css` — design system tokens
+
+## Related
+
+- [[Design/Design|Design]] — UI design system used for about page layout
+- [[Governance/Constitution|Governance]] — governance policies referenced on the about page
+- [[Specs/016 SaaS Architecture/016 SaaS Architecture|016 SaaS Architecture]] — related architecture specification

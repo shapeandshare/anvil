@@ -8,6 +8,9 @@ status: draft
 created: '2026-06-21'
 updated: '2026-06-21'
 ---
+
+Back to [[Specs/027 Deployment Backup Restore/spec]].
+
 ### User Story 3 - CLI Backup & Restore for Automation (Priority: P2)
 
 As a DevOps engineer or power user, I want to create backups and perform restores from the command line, so that I can incorporate backup/restore into automated scripts, CI/CD pipelines, and scheduled maintenance windows.

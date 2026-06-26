@@ -56,3 +56,9 @@ The project scored **6/10** on install portability. Strengths included good READ
 - `requirements.lock` (deleted)
 - `Dockerfile` (new)
 - `Makefile` (docker target added)
+
+## Related
+
+- [[Decisions/ADR-018-packaging-resource-relocation|ADR-018: Packaging Resources Inside Wheel]] — related packaging decisions
+- [[Reference/ArchitectureOverview|Architecture]] — deployment and infrastructure context
+- [[Specs/Specs|Specs]] — feature specification index

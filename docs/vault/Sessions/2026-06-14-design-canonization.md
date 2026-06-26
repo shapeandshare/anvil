@@ -25,3 +25,8 @@ Audited DESIGN.md v2.0.0 against the live hero page and CSS implementation. Foun
 - Ambient particles and radial gradient are now documented features present on all pages
 - Hero card infinite bounce is canon (departure from restrained 150ms hover model)
 - Gradient buttons (`btn-accent`, `btn--forge`) are official button variants
+
+## Related
+
+- [[Design/Design|Design]] — design system and canon
+- [[Reference/design-divergence-resolution|Design Divergence Resolution]] — divergence history reference

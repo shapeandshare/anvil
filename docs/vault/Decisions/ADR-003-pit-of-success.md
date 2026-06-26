@@ -10,10 +10,12 @@ aliases:
 - 'ADR-003 — Pit of Success: Opt-In Optional Capabilities with Silent Fallback'
 source: agent
 code-refs:
-- anvil/gpu.py
-- anvil/core/torch_engine.py
-- anvil/services/training/training_service.py
-- .specify/memory/constitution.md
+  - anvil/gpu.py
+  - anvil/core/torch_engine.py
+  - anvil/services/training/training_service.py
+  - .specify/memory/constitution.md
+related:
+  - '[[Decisions/ADR-013-training-config-footgun-guards]]'
 ---
 
 # ADR-003: Pit of Success — Opt-In Optional Capabilities with Silent Fallback

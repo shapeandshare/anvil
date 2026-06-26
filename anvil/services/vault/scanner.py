@@ -209,10 +209,34 @@ class GraphHealthRunner:
             import re
 
             wikilink_pattern = re.compile(r"\[\[([^\]|#]+)(?:[|#][^\]]+)?\]\]")
-            outbound_stems = [
+            outbound_stems: list[str] = [
                 unicodedata.normalize("NFC", m.group(1))
                 for m in wikilink_pattern.finditer(body)
             ]
+
+            # Also extract wikilinks from the related: frontmatter field
+            related = fm.get("related")
+            if isinstance(related, list):
+                for item in related:
+                    if isinstance(item, str):
+                        outbound_stems.extend(
+                            unicodedata.normalize("NFC", m.group(1))
+                            for m in wikilink_pattern.finditer(item)
+                        )
+            elif isinstance(related, str):
+                outbound_stems.extend(
+                    unicodedata.normalize("NFC", m.group(1))
+                    for m in wikilink_pattern.finditer(related)
+                )
+
+            # Deduplicate while preserving order
+            seen: set[str] = set()
+            unique_stems: list[str] = []
+            for s in outbound_stems:
+                if s not in seen:
+                    seen.add(s)
+                    unique_stems.append(s)
+            outbound_stems = unique_stems
 
             created: date | None = self._parse_date(fm.get("created"))
             updated: date | None = self._parse_date(fm.get("updated"))

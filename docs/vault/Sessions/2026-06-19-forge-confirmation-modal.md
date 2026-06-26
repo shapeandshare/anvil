@@ -64,3 +64,8 @@ status: draft
 - `anvil/api/static/css/components.css` — `.modal-overlay`, `.modal-dialog`, modal BEM component classes
 - `anvil/api/templates/archetypes/training.html` — modal HTML (line 173), `showTrainConfirmModal()` (line 1041), click handlers (line 1257, 1275)
 - `anvil/api/static/css/tokens.css` — design system tokens consumed by modal CSS
+
+## Related
+
+- [[Design/Design|Design]] — UI design system including modal component patterns
+- [[Reference/ArchitectureOverview|Architecture]] — training page and app architecture context

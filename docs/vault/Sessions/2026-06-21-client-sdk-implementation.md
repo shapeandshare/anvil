@@ -46,3 +46,9 @@ Implemented a full Client SDK (`anvil.client`) for the anvil server API. The SDK
 - Add e2e tests for remaining domains (datasets, training, experiments, registry, auth)
 - Run `make vault-audit` after venv rebuild
 - Add SDK section to README.md
+
+## Related
+
+- [[Specs/026 Client SDK/Spec|026 Client SDK]] — feature specification
+- [[Decisions/ADR-039-client-sdk-architecture|ADR-039: Client SDK Architecture]] — architecture decision record
+- [[Reference/ArchitectureOverview|Architecture]] — API architecture context

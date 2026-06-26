@@ -57,3 +57,9 @@ Banners use `--stagger-i: 0` and existing section-cards below them are increment
 - `anvil/api/templates/archetypes/data-fundamentals.html` — new lesson template
 - `anvil/api/v1/learning.py` — `DATA_FUNDAMENTALS_STEPS`, updated arcs, route
 - `anvil/api/templates/datasets.html`, `training.html`, `playground.html`, `models.html`, `experiment.html`, `operations.html` — banner additions
+
+## Related
+
+- [[Design/Design|Design]] — UI design system including banner component pattern
+- [[Reference/ProgressiveWalkthroughs|Progressive Walkthroughs]] — learning arc progression context
+- [[Specs/007 Learning Content Enrichment/007 Learning Content Enrichment|007 Learning Content Enrichment]] — learning content feature specification

@@ -11,6 +11,8 @@ updated: '2026-06-15'
 aliases:
   - mlflow-browser-url-from-request-host
 source: agent
+related:
+  - '[[Reference/MlflowIntegration]]'
 code-refs:
   - anvil/services/tracking/
 ---

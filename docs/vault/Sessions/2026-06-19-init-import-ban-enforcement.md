@@ -55,3 +55,9 @@ The `__init__.py` Ownership Policy (enacted later on 2026-06-19) replaces "No `_
 - domain/architecture
 - domain/governance
 - status/draft
+
+## Related
+
+- [[Decisions/ADR-021-init-py-ownership-policy|ADR-021: __init__.py Ownership Policy]] — architecture decision record
+- [[Decisions/ADR-022-domain-driven-package-decomposition|ADR-022: Domain-Driven Package Decomposition]] — related architecture decision record
+- [[Code/Code|Code]] — code architecture notes
