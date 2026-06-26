@@ -1,0 +1,141 @@
+<!--
+  ~ Copyright © 2026 Josh Burt
+  ~
+  ~ This source code is licensed under the MIT license found in the
+  ~ LICENSE file in the root directory of this source tree.
+-->
+
+{% extends "base.html" %}
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/archetypes.css">
+{% for t in themes if t.css_layer %}
+<link rel="stylesheet" href="{{ t.css_layer }}">
+{% endfor %}
+<style>
+.theme-gallery { display: flex; flex-direction: column; gap: var(--space-4); max-width: 860px; margin: 0 auto; padding: var(--space-6) var(--space-3); }
+.theme-gallery__header { margin-bottom: var(--space-2); }
+.theme-gallery__title { font-family: var(--font-body); font-size: var(--text-title-2); font-weight: 700; color: var(--text); margin-bottom: var(--space-2); }
+.theme-gallery__subtitle { font-family: var(--font-body); font-size: var(--text-callout); color: var(--text-tertiary); line-height: 1.5; }
+.theme-card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; }
+.theme-card__body { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }
+.theme-card__header { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.theme-card__name { font-family: var(--font-body); font-size: var(--text-headline); font-weight: 600; color: var(--text); }
+.theme-card__badge { font-family: var(--font-body); font-size: var(--text-footnote); font-weight: 500; padding: 2px 8px; border-radius: var(--radius-xl); background: var(--surface-2); color: var(--text-tertiary); }
+.theme-card__desc { font-family: var(--font-body); font-size: var(--text-callout); color: var(--text-secondary); line-height: 1.5; margin: 0; }
+.theme-previews { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+.theme-preview { border-radius: var(--radius); overflow: hidden; border: 1px solid var(--separator); }
+.theme-preview__label { display: flex; align-items: center; justify-content: space-between; padding: var(--space-1) var(--space-3); font-family: var(--font-body); font-size: var(--text-footnote); font-weight: 500; background: var(--surface-2); color: var(--text-tertiary); border-bottom: 1px solid var(--separator); }
+.theme-preview__swatch { min-height: 100px; display: flex; flex-direction: column; gap: 6px; padding: var(--space-3); }
+.theme-preview__swatch-row { display: flex; gap: 6px; align-items: center; }
+.theme-preview__color { width: 28px; height: 28px; border-radius: var(--radius-sm); border: 1px solid rgba(128,128,128,0.15); flex-shrink: 0; }
+.theme-preview__label-text { font-family: var(--font-mono); font-size: 10px; color: var(--text-tertiary); line-height: 1.3; }
+.theme-excited-desc { font-family: var(--font-body); font-size: var(--text-footnote); color: var(--accent); margin: 0; }
+.theme-card__footer { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+@media (max-width: 600px) {
+  .theme-previews { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="theme-gallery">
+  <div class="theme-gallery__header" style="--stagger-i: 0">
+    <h1 class="theme-gallery__title">Theme Gallery</h1>
+    <p class="theme-gallery__subtitle">
+      Every theme responds to live training signals — loss, throughput, gradient spikes.
+      Each card shows the quiet state alongside the <strong>excited</strong> state,
+      where training activity drives motion, color shifts, and particle effects.
+    </p>
+  </div>
+
+  {% for theme in themes %}
+  <section class="theme-card" style="--stagger-i: {{ loop.index0 }}">
+    <div class="theme-card__body">
+      <div class="theme-card__header">
+        <h2 class="theme-card__name">{{ theme.display_name }}</h2>
+        {% for m in theme.modes %}
+        <span class="theme-card__badge">{{ mode_labels.get(m, m) }}</span>
+        {% endfor %}
+        {% if theme.particles %}
+        <span class="theme-card__badge">&#9675; {{ theme.particles }}</span>
+        {% endif %}
+      </div>
+      <p class="theme-card__desc">{{ theme.preview_hint }}.</p>
+
+      <div class="theme-previews">
+        {# Normal state #}
+<div class="theme-preview" data-skin="{{ theme.id }}" data-theme="dark">
+<div class="theme-preview__label">
+<span>Normal</span>
+<span>data-skin="{{ theme.id }}"</span>
+          </div>
+          <div class="theme-preview__swatch" style="background: var(--bg);">
+            <div class="theme-preview__swatch-row">
+              <span class="theme-preview__color" style="background: var(--accent);"></span>
+              <span class="theme-preview__label-text">accent</span>
+              <span class="theme-preview__color" style="background: var(--accent-green);"></span>
+              <span class="theme-preview__label-text">green</span>
+              <span class="theme-preview__color" style="background: var(--accent-red);"></span>
+              <span class="theme-preview__label-text">red</span>
+            </div>
+            <div class="theme-preview__swatch-row">
+              <span class="theme-preview__color" style="background: var(--surface);"></span>
+              <span class="theme-preview__label-text">surface</span>
+              <span class="theme-preview__color" style="background: var(--surface-2);"></span>
+              <span class="theme-preview__label-text">surface-2</span>
+              <span class="theme-preview__color" style="background: var(--text);"></span>
+              <span class="theme-preview__label-text">text</span>
+            </div>
+            <div class="theme-preview__swatch-row">
+              <span class="theme-preview__color" style="background: var(--text-secondary);"></span>
+              <span class="theme-preview__label-text">text-secondary</span>
+              <span class="theme-preview__color" style="background: var(--text-tertiary);"></span>
+              <span class="theme-preview__label-text">text-tertiary</span>
+            </div>
+          </div>
+        </div>
+
+        {# Excited state #}
+        <div class="theme-preview" data-skin="{{ theme.id }}" data-theme="dark" data-excited="on"
+             style="--rpm: 1; --warmth: 1; --level: 0.051; --throughput: 1; --output: 0.949; --neon: 0.949; --flow: 1; --prog: 0.949; --heat: 1; --velocity: 1; --focus: 0.949; --surge: 1; --calm: 0.949; --ring: 0.949; --clearing: 0.949; --clarity: 0.949;">
+          <div class="theme-preview__label">
+            <span>Excited</span>
+            <span>data-excited="on"</span>
+          </div>
+          <div class="theme-preview__swatch" style="background: var(--bg);">
+            <div class="theme-preview__swatch-row">
+              <span class="theme-preview__color" style="background: var(--accent);"></span>
+              <span class="theme-preview__label-text">accent</span>
+              <span class="theme-preview__color" style="background: var(--accent-green);"></span>
+              <span class="theme-preview__label-text">green</span>
+              <span class="theme-preview__color" style="background: var(--accent-red);"></span>
+              <span class="theme-preview__label-text">red</span>
+            </div>
+            <div class="theme-preview__swatch-row">
+              <span class="theme-preview__color" style="background: var(--surface);"></span>
+              <span class="theme-preview__label-text">surface</span>
+              <span class="theme-preview__color" style="background: var(--surface-2);"></span>
+              <span class="theme-preview__label-text">surface-2</span>
+              <span class="theme-preview__color" style="background: var(--text);"></span>
+              <span class="theme-preview__label-text">text</span>
+            </div>
+            <div class="theme-preview__swatch-row">
+              <span class="theme-preview__color" style="background: var(--accent-orange);"></span>
+              <span class="theme-preview__label-text">orange</span>
+              <span class="theme-preview__color" style="background: var(--accent-purple);"></span>
+              <span class="theme-preview__label-text">purple</span>
+              <span class="theme-preview__color" style="background: var(--accent-cyan);"></span>
+              <span class="theme-preview__label-text">cyan</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="theme-card__footer">
+        <p class="theme-excited-desc">&#9654; {{ theme.excited_desc }}</p>
+      </div>
+    </div>
+  </section>
+  {% endfor %}
+</div>
+{% endblock %}
