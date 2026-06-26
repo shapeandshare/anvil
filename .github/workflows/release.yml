@@ -235,15 +235,14 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           # anvil-vault bump modifies files in-place. Create a commit,
-          # branch, and amend the message to include [skip ci] for
-          # loop prevention.
+          # branch, with a descriptive message. No [skip ci] needed:
+          # the release workflow's path filter (anvil/** only) already
+          # prevents loop-triggering when the bump PR merges.
           git checkout -b "${BRANCH}"
           git add pyproject.toml CHANGELOG.md
           git commit -m "chore: bump version to v${VERSION}
 
-          Automated version bump from release workflow.
-
-          [skip ci]"
+          Automated version bump from release workflow."
 
           git push origin "${BRANCH}"
 
