@@ -254,6 +254,3 @@ async def about_page(
         "about.html",
         {"licenses": licenses},
     )
-
-
-
