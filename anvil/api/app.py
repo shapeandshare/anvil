@@ -63,7 +63,9 @@ MLFLOW_EXPERIMENT_NAME = "anvil"
 # Rate limiting (in-process sliding window)
 _rate_limit_store: dict[str, list[float]] = defaultdict(list)
 _RATE_LIMIT_PER_MINUTE = int(os.getenv("ANVIL_RATE_LIMIT", "100"))
-_LOGIN_RATE_LIMIT_PER_MINUTE = 10
+_LOGIN_RATE_LIMIT_PER_MINUTE = int(
+    os.getenv("ANVIL_LOGIN_RATE_LIMIT", "100")
+)
 _LOGIN_FAILURE_DELAY = 1.0  # seconds
 
 # CORS configuration
