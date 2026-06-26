@@ -1279,7 +1279,7 @@ async def start_import(
 
 @router.get("/content/imports")
 async def list_import_jobs(
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, Any]:
     """List all import jobs ordered by creation time (newest first).
 
