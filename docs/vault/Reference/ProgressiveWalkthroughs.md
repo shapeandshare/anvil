@@ -10,6 +10,8 @@ aliases:
   - progressive-examples
   - train-scripts
   - walkthrough-progression
+related:
+  - '[[Reference/Hyperparameters]]'
 ---
 
 # Progressive Walkthroughs: train0 → train5

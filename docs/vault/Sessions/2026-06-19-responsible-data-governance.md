@@ -79,3 +79,10 @@ status: draft
 | `anvil/db/repositories/` | +2 | `audit_events.py`, `licenses.py` |
 | `tests/unit/services/governance/` | +2 | Unit tests for hash-chain + license seed |
 | `anvil/_resources/migrations/versions/` | +1 | `014_add_governance.py` |
+
+## Related
+
+- [[Specs/013 Responsible Data Governance/013 Responsible Data Governance|013 Responsible Data Governance]] — feature specification
+- [[Decisions/ADR-023-responsible-data-governance|ADR-023: Responsible Data Governance]] — architecture decision record
+- [[Governance/Constitution|Governance]] — governance policies and principles
+- [[Discoveries/dataset-deletion-orphans-artifacts|Dataset Deletion Orphans File Artifacts]] — discovery note from this session

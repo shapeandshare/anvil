@@ -56,3 +56,10 @@ updated: '2026-06-18'
 - `anvil/db/repositories/corpora.py` — added `get_by_name()`
 - `anvil/db/repositories/datasets.py` — added `get_by_name()`
 - `AGENTS.md` — updated active technologies
+
+## Related
+
+- [[Specs/009 Bootstrap Datasets/009 Bootstrap Datasets|009 Bootstrap Datasets]] — feature specification
+- [[Decisions/ADR-011-name-based-demo-bootstrap-idempotency|ADR-011: Name-Based Demo Bootstrap Idempotency]] — architecture decision record
+- [[Reference/TrainingDataFlow|Training Data Flow]] — training pipeline context
+- [[Reference/MlflowIntegration|MLflow Tracking]] — MLflow integration overview

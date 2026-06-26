@@ -53,3 +53,9 @@ wired to fetch and pass it.
 - `anvil/api/templates/datasets.html` — `#license-select` dropdown
 - `anvil/services/governance/governance_service.py` — `GovernanceService.list_licenses()`
 - `anvil/db/models/license_entry.py` — `LicenseEntry` ORM model
+
+## Related
+
+- [[Discoveries/datasets-page-license-context-missing|Datasets Page License Context Missing]] — discovery note from this session
+- [[Governance/Constitution|Governance]] — governance policies and licensing
+- [[Design/Design|Design]] — UI design system for dataset page forms

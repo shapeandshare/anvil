@@ -71,3 +71,9 @@ tables). Produced two handoff-ready implementation plans, split cleanly at the *
 - `tests/system/conftest.py`, `Makefile` `test-system` target — reused compose lifecycle
 - `anvil/api/v1/` — 14 routers enumerated in the API plan
 - `anvil/api/static/js/sse.js`, `chart.js` — SSE + live chart (browser-plan targets)
+
+## Related
+
+- [[Specs/021 API E2E Suite/021 API E2E Suite|021 API E2E Suite]] — API e2e test specification
+- [[Specs/022 Playwright UI Smoke/022 Playwright UI Smoke|022 Playwright UI Smoke]] — Playwright UI smoke test specification
+- [[Reference/linting-and-testing-tooling|Linting, Formatting, and Testing Tooling]] — testing infrastructure reference

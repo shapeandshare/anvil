@@ -55,3 +55,9 @@ When a CSS element sets `overflow-x` to a non-`visible` value (e.g., `auto`), br
 
 ## Tags
 - `domain/ui` — CSS layout, nav-bar, overflow scroll containment
+
+## Related
+
+- [[Design/Design|Design]] — UI design system including nav-bar component
+- [[Discoveries/nav-bar-z-index-positioned-content-stacking|Nav-Bar Z-Index Competition with Page Content]] — related nav-bar discovery
+- [[Reference/ArchitectureOverview|Architecture]] — app shell layout context

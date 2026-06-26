@@ -8,6 +8,9 @@ status: draft
 created: '2026-06-22'
 updated: '2026-06-22'
 ---
+
+Back to [[Specs/001 Non-Educational Help Guide/spec]].
+
 ## Phase 2: Foundational (Blocking Prerequisites)
 
 **Purpose**: Core data model that MUST be complete before ANY user story can be implemented

@@ -8,6 +8,9 @@ status: draft
 created: '2026-06-21'
 updated: '2026-06-21'
 ---
+
+Back to [[Specs/026 Client SDK/Spec]].
+
 # Implementation Plan: Client SDK
 
 **Branch**: `026-client-sdk` | **Date**: 2026-06-21 | **Spec**: [spec.md](./spec.md)

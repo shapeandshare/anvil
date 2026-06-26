@@ -8,6 +8,9 @@ status: draft
 created: '2026-06-22'
 updated: '2026-06-22'
 ---
+
+Back to [[Specs/001 Non-Educational Help Guide/spec]].
+
 ### User Story 3 - Access help content without leaving the workspace (Priority: P2)
 
 A user is on the Datasets page and wants quick clarification on what "chunking strategy" means. They click a help icon or link near the relevant UI section and are taken directly to the relevant part of the help page, or see a tooltip/explanation inline. This bridges the gap between the workspace page and the help content.

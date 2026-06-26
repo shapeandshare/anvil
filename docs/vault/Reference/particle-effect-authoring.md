@@ -11,6 +11,7 @@ aliases:
   - Particle Effect Authoring
 related:
   - '[[Reference/theme-creation-guide]]'
+  - '[[Discoveries/css-multi-background-position-parallax]]'
 code-refs:
   - anvil/api/static/js/theme/particle-system.js
   - anvil/api/static/js/themes/tide.js

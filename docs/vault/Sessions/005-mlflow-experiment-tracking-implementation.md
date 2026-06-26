@@ -42,3 +42,10 @@ Phases 1-10 executed across 9 parallel/sequential implementation agents.
 
 ## Known Pre-Existing Issue
 Coverage is at ~60% (was 56.24% on main before this branch). `fail_under=100` was already failing on main; this feature improved coverage but did not fix the pre-existing deficit in unrelated modules (supervisor, corpus_loader, dataset_curation, etc.).
+
+## Related
+
+- [[Specs/006 MLflow Experiment Tracking/006 MLflow Experiment Tracking|006 MLflow Experiment Tracking]] — feature specification
+- [[Decisions/ADR-004-mlflow-3x-and-canonical-uri|ADR-004: MLflow 3.x and Canonical URI]] — architecture decision record
+- [[Decisions/ADR-005-source-keyed-registry-consolidation|ADR-005: Source-Keyed Registry Consolidation]] — architecture decision record
+- [[Reference/MlflowIntegration|MLflow Tracking]] — MLflow integration overview

@@ -96,3 +96,10 @@ Fixed `db_migration` type error in `health_ops.py` (`svc.current()` returns `str
 - `anvil/db/migration.py`
 - `scripts/ci/check_migration_integrity.py`
 - PR #168: https://github.com/shapeandshare/anvil/pull/168
+
+## Related
+
+- [[Discoveries/schema-version-gate-db-verify|Schema Version Gate, DB Verify CLI, and Migration Integrity CI Gate]] — discovery note from this session
+- [[Discoveries/csp-blocks-swagger-redoc|CSP Blocks Swagger UI and ReDoc CDN Assets]] — discovery note from this session
+- [[Decisions/ADR-024-auto-db-migration|ADR-024: Auto DB Schema]] — related database migration decision
+- [[Reference/ArchitectureOverview|Architecture]] — database migration and schema context

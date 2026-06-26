@@ -65,3 +65,9 @@ Already up to date:
 | Bootstrap service | `anvil/services/demo/demo_bootstrap.py:121` | ✓ Idempotent |
 
 No changes needed — all guard and re-trigger mechanisms are correctly implemented and verified.
+
+## Related
+
+- [[Specs/015 Demo Data Bootstrap/015 Demo Data Bootstrap|015 Demo Data Bootstrap]] — feature specification
+- [[Specs/009 Bootstrap Datasets/009 Bootstrap Datasets|009 Bootstrap Datasets]] — related bootstrap feature
+- [[Reference/ArchitectureOverview|Architecture]] — startup lifecycle and service architecture context

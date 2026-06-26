@@ -8,6 +8,9 @@ status: draft
 created: '2026-06-22'
 updated: '2026-06-22'
 ---
+
+Back to [[Specs/001 Non-Educational Help Guide/spec]].
+
 # Research: Non-Educational Help Guide
 
 **Phase**: 0 | **Date**: 2026-06-22

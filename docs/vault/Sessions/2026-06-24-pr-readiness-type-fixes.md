@@ -70,3 +70,9 @@ Compute backends, governance, content, tracking, training, export — all got ge
 - `db/repositories/*` (14) — SQLAlchemy `Result.rowcount` → `len(result.all())` pattern
 - `storage/local.py` (5), `supervisor/services.py` (2) — aiofiles stubs, Popen types
 - `_resources/migrations/*` (8), `client/*` (1) — Migration typing, transport
+
+## Related
+
+- [[Reference/linting-and-testing-tooling|Linting, Formatting, and Testing Tooling]] — tooling for type checking
+- [[Code/Code|Code]] — code architecture and typing conventions
+- [[Decisions/ADR-027-type-checking-conditional-allow|ADR-027: Type Checking Conditional Allow]] — related typing decision

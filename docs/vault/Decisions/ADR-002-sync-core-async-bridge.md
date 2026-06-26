@@ -9,6 +9,8 @@ updated: 2026-06-12
 aliases:
 - ADR-002 — Sync Core Engine / Async SSE Bridge
 source: agent
+related:
+  - '[[Reference/DualBackend]]'
 code-refs:
 - anvil/core/engine.py
 - anvil/services/training/training_service.py

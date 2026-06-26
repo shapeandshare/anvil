@@ -9,11 +9,13 @@ updated: 2026-06-10
 aliases:
 - ADR-001 — Architecture Decisions for Bootstrap LLM Workbench
 source: agent
+related:
+  - '[[Design/Design]]'
 code-refs:
-- pyproject.toml
-- AGENTS.md
-- .specify/memory/constitution.md
-- anvil/api/
+  - pyproject.toml
+  - AGENTS.md
+  - .specify/memory/constitution.md
+  - anvil/api/
 ---
 
 # ADR-001: Bootstrap Implementation Architecture

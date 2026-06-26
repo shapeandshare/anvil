@@ -84,3 +84,9 @@ Full `make test-system` loop passes 35/35 consistently:
 - domain/operations
 - domain/database
 - status/reviewed
+
+## Related
+
+- [[Specs/012 Pip Installable Package/012 Pip Installable Package|012 Pip Installable Package]] — feature specification
+- [[Decisions/ADR-018-packaging-resource-relocation|ADR-018: Packaging Resources Inside Wheel]] — architecture decision record
+- [[Reference/ArchitectureOverview|Architecture]] — deployment infrastructure context

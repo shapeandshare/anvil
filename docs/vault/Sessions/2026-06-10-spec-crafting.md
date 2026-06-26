@@ -62,3 +62,10 @@ Complete bootstrap of the anvil repository through iterative spec crafting and f
 - `.specify/memory/constitution.md`, `AGENTS.md`, `docs/vault/` — governance and agentic harness
 - 10 passing tests (unit + e2e HTTP + DB CRUD + training)
 - `docs/user-requirements.md` — consolidated user requirements reference
+
+## Related
+
+- [[Sessions/2026-06-10-implementation|Bootstrap Implementation]] — companion implementation session
+- [[Specs/001 Bootstrap LLM Workbench/001 Bootstrap LLM Workbench|001 Bootstrap LLM Workbench]] — feature specification
+- [[Decisions/ADR-001-architecture-decisions|ADR-001: Architecture Decisions]] — foundation architecture decision
+- [[Governance/Constitution|Constitution]] — project constitution (crafted during this session)

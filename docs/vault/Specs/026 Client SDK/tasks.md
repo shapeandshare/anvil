@@ -8,6 +8,9 @@ status: draft
 created: '2026-06-21'
 updated: '2026-06-21'
 ---
+
+Back to [[Specs/026 Client SDK/Spec]].
+
 ## Phase 2: Foundational (Blocking Prerequisites)
 
 **Purpose**: The `_shared/` transport, config, envelope, errors, command base, and SSE event

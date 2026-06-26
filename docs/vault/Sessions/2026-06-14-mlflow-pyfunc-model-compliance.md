@@ -79,3 +79,10 @@ In a prior turn, the download endpoint was refactored from a single hardcoded `G
 
 - `register_source_model` was defaulting to `artifact_path="model.json"`, meaning the Model Registry pointed at the legacy format only. This was a silent design gap — the safetensors were logged as run artifacts but the registry didn't reference them.
 - The `mlflow.pyfunc.PythonModel` interface requires `predict()` to return a `pd.DataFrame`. The wrapper converts input strings → token IDs → model forward pass → argmax decoding → output strings.
+
+## Related
+
+- [[Decisions/ADR-009-mlflow-pyfunc-model-compliance|ADR-009: MLflow Pyfunc Model Compliance]] — architecture decision record
+- [[Reference/MlflowIntegration|MLflow Tracking]] — MLflow integration overview
+- [[Reference/SafetensorsExport|Safetensors & HF Interop]] — model export format documentation
+- [[Specs/006 MLflow Experiment Tracking/006 MLflow Experiment Tracking|006 MLflow Experiment Tracking]] — feature specification

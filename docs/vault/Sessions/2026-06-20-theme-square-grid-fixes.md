@@ -66,3 +66,9 @@ Fixed two themes whose rigid square-grid atmospheric overlays (Stained Glass: 90
 ## Tests
 - `tests/system/test_theme_engine.py` — 45 passed, 1 pre-existing failure (`test_effect_controls_in_picker`: missing `theme-reduce-effects` in HTML template), 1 Docker infra failure (container not running)
 - Consistency check across all 25 theme CSS/JS pairs — no mismatches
+
+## Related
+
+- [[Design/Design|Design]] — UI design system including stained-glass and hologram themes
+- [[Reference/theme-creation-guide|Theme Creation Guide]] — theme authoring reference
+- [[Discoveries/css-grid-overlay-replacement-techniques|CSS Techniques for Replacing Rigid Grid Overlays]] — related CSS discovery

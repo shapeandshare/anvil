@@ -64,3 +64,9 @@ updated: '2026-06-19'
 - The provenance manifest `_provenance_manifest` is loaded from `_resources.files("anvil")` (installed package), not from `DEMO_DIR`. Test fixtures that mock `DEMO_DIR` also need to inject the manifest directly.
 - The provenance lookup strips `.txt` suffix from relative paths before key lookup: `key = rel.removesuffix(".txt")`. Manifest keys should NOT include `.txt`.
 - Several existing tests (`test_bootstrap.py`) had stale `anvil.services.demo_bootstrap` monkeypatch paths from before the 012 DDD restructure — the module moved to `anvil.services.demo.demo_bootstrap`.
+
+## Related
+
+- [[Specs/015 Demo Data Bootstrap/015 Demo Data Bootstrap|015 Demo Data Bootstrap]] — feature specification
+- [[Decisions/ADR-011-name-based-demo-bootstrap-idempotency|ADR-011: Name-Based Demo Bootstrap Idempotency]] — architecture decision record
+- [[Reference/ArchitectureOverview|Architecture]] — startup lifecycle and service architecture context

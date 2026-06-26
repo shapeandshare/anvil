@@ -96,3 +96,10 @@ ADR-035 introduced for MLflow.
   scheme-aware URL builders, and healthcheck/SSE/test updates for HTTPS.
 - Sequence relative to spec 017 implementation and spec 018 (`/v1/` removal moves
   proxy sub-paths off `/v1/`).
+
+## Related
+
+- [[Specs/024 Unified Interface Local TLS/024 Unified Interface Local TLS|024 Unified Interface Local TLS]] — feature specification
+- [[Decisions/ADR-037-unified-interface-local-tls|ADR-037: Unified Single-Origin Interface and Local TLS]] — architecture decision record
+- [[Decisions/ADR-035-mlflow-reverse-proxy|ADR-035: MLflow Reverse Proxy]] — related infrastructure decision
+- [[Decisions/ADR-036-header-based-api-versioning|ADR-036: Header-Based API Versioning]] — related API decision

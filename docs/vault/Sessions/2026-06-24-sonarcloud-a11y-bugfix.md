@@ -74,6 +74,12 @@ Removed dead `burstTimers` array (declared at L350, iterated at L742, reset at L
 - `anvil/api/static/js/widgets/memory-divergence.js` — 1 expression simplification
 - `anvil/api/static/js/themes/unicorn.js` — 1 dead code removal
 
+## Related
+
+- [[Reference/linting-and-testing-tooling|Linting, Formatting, and Testing Tooling]] — SonarCloud integration reference
+- [[Sessions/2026-06-20-sonarcloud-tooling|SonarCloud Tooling Integration]] — prior SonarCloud session
+- [[Design/Design|Design]] — UI design system and accessibility standards
+
 ## References
 
 - `anvil/api/templates/datasets.html`

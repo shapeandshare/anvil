@@ -78,3 +78,9 @@ Vault:
 - domain/architecture
 - domain/governance
 - status/draft
+
+## Related
+
+- [[Discoveries/str-enum-boundary-conversion|StrEnum Boundary Conversion Pattern]] — discovery note from this session
+- [[Code/Code|Code]] — code architecture conventions
+- [[Governance/Constitution|Constitution]] — project governance and conventions

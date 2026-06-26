@@ -59,3 +59,9 @@ The official SonarSource/sonarqube-mcp-server is configured in `opencode.json` a
 2. **Separate CI job, not merged into lint**: SonarCloud analysis takes longer and has different failure semantics (API upload vs local lint). It runs as a parallel CI gate job.
 3. **Dual local/Docker scanner**: `sonar-scan` uses the native CLI (brew), `sonar-scan-docker` uses the Docker image — covers both local-first and CI environments.
 4. **Official SonarSource MCP server**: Chose the Docker-based official server over the Python `mcp-sonarcloud` alternative since it has broader tool coverage and active maintenance.
+
+## Related
+
+- [[Reference/linting-and-testing-tooling|Linting, Formatting, and Testing Tooling]] — CI tooling reference
+- [[Decisions/ADR-028-ci-merge-gate-enforcement|ADR-028: CI Merge Gate Enforcement]] — related architecture decision
+- [[Systems/Systems|Systems]] — tooling and infrastructure systems

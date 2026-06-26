@@ -48,3 +48,9 @@ During verification, discovered a `playful-pixel` Docker compose stack was runni
 ## Files Changed
 
 - `anvil/api/templates/archetypes/training.html` — added node workflow (+45 lines)
+
+## Related
+
+- [[Design/Design|Design]] — UI design system including flow diagram patterns
+- [[Reference/TrainingDataFlow|Training Data Flow]] — training pipeline context
+- [[Reference/ArchitectureOverview|Architecture]] — training page architecture context

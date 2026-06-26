@@ -44,3 +44,8 @@ var link = e.target.closest('.tab-item, .hero-card, .hero-cta, .hero-secondary')
 
 ## Discovery
 - The client-side nav router in core.js uses a whitelist-based approach (opt-in selectors) rather than intercepting all internal `<a>` tags. This means any new page navigation element added to templates must be added to this whitelist or it will hard-refresh.
+
+## Related
+
+- [[Design/Design|Design]] — UI design system and navigation patterns
+- [[Reference/ArchitectureOverview|Architecture]] — app shell and client-side routing context

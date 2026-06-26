@@ -87,3 +87,9 @@ After all agents completed (3 succeeded, 4 partially completed), a cleanup pass 
 ## Related Artifacts
 
 - PR #150 — https://github.com/shapeandshare/anvil/pull/150
+
+## Related
+
+- [[Reference/linting-and-testing-tooling|Linting, Formatting, and Testing Tooling]] — testing infrastructure reference
+- [[Specs/Specs|Specs]] — feature specification index
+- [[Decisions/ADR-026-coverage-ratcheting-baseline|ADR-026: Coverage Ratcheting Baseline]] — coverage policy decision

@@ -70,3 +70,9 @@ Applied unique header emblems to every `section-card` across the UI for visual c
 
 ### Discoveries
 - `docs/vault/Discoveries/section-card-icon-convention.md`
+
+## Related
+
+- [[Design/Design|Design]] — UI design system including section-card icons and layout patterns
+- [[Discoveries/section-card-icon-convention|Section-Card Icon Convention]] — discovery note from this session
+- [[Reference/ArchitectureOverview|Architecture]] — app shell and page layout context

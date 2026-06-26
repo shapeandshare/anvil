@@ -24,3 +24,7 @@ Changed the default theme from OS-preference-respecting to always-dark. Previous
 
 ## Rationale
 The CSS tokens already declared dark as the `:root` default (see `tokens.css` line 2 comment: "Dark Mode — Default"), but the JS was overriding it to light on light-OS machines. This change aligns the runtime behavior with the CSS intent.
+
+## Related
+
+- [[Design/Design|Design]] — UI design system including dark/light mode tokens

@@ -8,6 +8,9 @@ status: draft
 created: '2026-06-21'
 updated: '2026-06-21'
 ---
+
+Back to [[Specs/026 Client SDK/Spec]].
+
 ## R2 — Client architecture (facade / domain / command / transport)
 
 - **Decision**: Four-layer client architecture mirroring anvil's server-side layering (Article VII):

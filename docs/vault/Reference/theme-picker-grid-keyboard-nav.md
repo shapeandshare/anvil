@@ -10,6 +10,8 @@ tags:
 aliases:
   - Theme Picker Grid Pattern
   - Picker Keyboard Navigation
+related:
+  - '[[Reference/theme-creation-guide]]'
 ---
 
 # Theme Picker Grid + Keyboard Navigation Pattern

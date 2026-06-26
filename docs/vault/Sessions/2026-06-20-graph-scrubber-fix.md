@@ -33,3 +33,9 @@ Fixed a bug where the `/v1/learn/graph` computation graph visualizer did not res
 
 - `anvil/api/static/js/graph-view.js` — modified: `draw()` now filters by `_currentStep`
 - `docs/vault/Discoveries/graph-scrubber-ignored-by-draw.md` — new discovery note
+
+## Related
+
+- [[Discoveries/graph-scrubber-ignored-by-draw|Graph Scrubber Ignored by Draw]] — discovery note from this session
+- [[Discoveries/graph-canvas-node-left-clipping|Graph Canvas Node Left-Edge Clipping]] — related graph fix discovery
+- [[Design/Design|Design]] — UI design system for computation graph renderer

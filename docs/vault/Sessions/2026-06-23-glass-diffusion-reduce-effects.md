@@ -51,3 +51,9 @@ The first attempt used a DOM overlay div with `backdrop-filter: blur()`. This ca
 4. Using `::after` on `.app-shell` was also ruled out because pseudo-elements paint after all DOM children at the same z-index, blurring everything including content.
 
 The winning approach — filter the canvas directly — is dramatically simpler: two lines of JS, no new DOM elements, no z-index changes.
+
+## Related
+
+- [[Discoveries/glass-diffusion-via-canvas-blur|Glass Diffusion via Canvas Blur]] — discovery note from this session
+- [[Reference/theme-creation-guide|Theme Creation Guide]] — theme authoring reference for accessibility
+- [[Design/Design|Design]] — UI design system including accessibility patterns

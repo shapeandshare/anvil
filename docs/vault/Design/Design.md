@@ -8,6 +8,9 @@ created: 2026-06-18
 updated: 2026-06-18
 aliases:
   - Design
+related:
+  - '[[Code/Code]]'
+  - '[[Specs/Specs]]'
 ---
 
 # Design

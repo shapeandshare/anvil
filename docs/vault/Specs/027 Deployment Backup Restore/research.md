@@ -8,6 +8,9 @@ status: draft
 created: '2026-06-21'
 updated: '2026-06-21'
 ---
+
+Back to [[Specs/027 Deployment Backup Restore/spec]].
+
 ## R2 — Archive format & immutability
 
 **Decision**: Each backup is a single **`.tar.gz`** file named `backup-<UTC-timestamp>-<shortid>.tar.gz` (e.g. `backup-20260621T143000Z-a1b2c3.tar.gz`), written atomically (temp file in `data/backups/.tmp/` → `os.replace` into place). Files are never modified after creation.

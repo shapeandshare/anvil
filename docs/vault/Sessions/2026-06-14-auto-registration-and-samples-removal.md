@@ -30,3 +30,9 @@ Two changes to the training pipeline:
 - Auto-registration is fully automatic — the manual `POST /v1/registry/models` endpoint exists only as a fallback/retry. The `on_complete` callback in both API and CLI paths handles registration using the dataset's name as the MLflow model name.
 - Generated samples are no longer stored in the experiment DB record. The `generated_samples` column remains for existing data but is no longer written to or returned by the API.
 - Samples are still generated and logged as `samples.txt` artifacts in MLflow — the removal is only from the training page UI and associated storage/API paths.
+
+## Related
+
+- [[Reference/TrainingDataFlow|Training Data Flow]] — training completion flow documentation
+- [[Reference/MlflowIntegration|MLflow Tracking]] — MLflow model registration integration
+- [[Specs/Specs|Specs]] — feature specification index
