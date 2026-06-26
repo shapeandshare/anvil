@@ -143,9 +143,7 @@ async def _resolve_experiment_name(
         exp["dataset_name"] = name
 
 
-async def _resolve_name_from_ds(
-    exp: dict[str, Any], ds_repo: Any
-) -> str | None:
+async def _resolve_name_from_ds(exp: dict[str, Any], ds_repo: Any) -> str | None:
     """Resolve experiment name from its dataset_id."""
     ds_id = exp.get("dataset_id")
     if ds_id is None:
@@ -157,9 +155,7 @@ async def _resolve_name_from_ds(
     return ds.name if ds else None
 
 
-async def _resolve_name_from_corpus(
-    exp: dict[str, Any], corp_repo: Any
-) -> str | None:
+async def _resolve_name_from_corpus(exp: dict[str, Any], corp_repo: Any) -> str | None:
     """Resolve experiment name from its corpus_id fallback."""
     corp_id = exp.get("corpus_id")
     if corp_id is None:
