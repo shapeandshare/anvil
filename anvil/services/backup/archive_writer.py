@@ -50,6 +50,7 @@ class ArchiveWriter:
         roots: list[Path],
         operation_type: str = "backup",
         progress_callback: Callable[[int, str], None] | None = None,
+        schema_revision: str = "",
     ) -> dict[str, Any]:
         """Create a backup archive and return manifest metadata.
 
@@ -63,6 +64,10 @@ class ArchiveWriter:
             ``"backup"`` or ``"pre_restore_safety"``.
         progress_callback : callable or None
             Called with ``(percent, step_label)`` during archiving.
+        schema_revision : str
+            Alembic HEAD revision hash at the time of creation.
+            Stored in the manifest for schema-compatibility checks
+            during restore (FR-023).
 
         Returns
         -------
@@ -78,6 +83,7 @@ class ArchiveWriter:
             roots,
             operation_type,
             progress_callback,
+            schema_revision,
         )
 
     # ── Synchronous implementation (runs in a thread) ────────────────────
@@ -88,6 +94,7 @@ class ArchiveWriter:
         roots: list[Path],
         operation_type: str,
         progress_callback: Callable[[int, str], None] | None,
+        schema_revision: str = "",
     ) -> dict[str, Any]:
         filename = f"backup-{backup_id}.tar.gz"
         tmp_path = self._tmp_dir / f"{filename}.part"
@@ -144,7 +151,7 @@ class ArchiveWriter:
                 created_at=datetime.now(UTC),
                 operation_type=operation_type,
                 deployment_version=anvil_version,
-                schema_revision="",  # caller can set via return value
+                schema_revision=schema_revision,
                 total_uncompressed_bytes=total_bytes,
                 entries=entries,
             )
@@ -178,7 +185,7 @@ class ArchiveWriter:
             "total_uncompressed_bytes": total_bytes,
             "manifest_sha256": manifest_sha256,
             "deployment_version": anvil_version,
-            "schema_revision": "",
+            "schema_revision": schema_revision,
         }
 
     # ── Helpers ──────────────────────────────────────────────────────────

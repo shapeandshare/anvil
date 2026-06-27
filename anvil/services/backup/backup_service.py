@@ -24,6 +24,30 @@ from .restore_preview import RestorePreview
 from .verify_result import VerifyResult
 
 
+def _get_alembic_head() -> str:
+    """Return the current Alembic HEAD revision hash, or ``""``.
+
+    Reads the Alembic migration files to determine the schema revision
+    that the codebase expects.  This is a pure-filesystem operation —
+    no database connection is needed.
+    """
+    try:
+        from alembic.config import Config as AlembicConfig
+        from alembic.script import ScriptDirectory
+
+        package_root = Path(__file__).resolve().parent.parent.parent
+        resources = package_root / "_resources"
+        ini = str(resources / "alembic.ini")
+        mig_dir = str(resources / "migrations")
+        cfg = AlembicConfig(ini)
+        cfg.set_main_option("script_location", mig_dir)
+        script = ScriptDirectory.from_config(cfg)
+        head = script.get_current_head()
+        return head or ""
+    except Exception:  # pylint: disable=broad-exception-caught
+        return ""
+
+
 class BackupService:
     """Orchestrates backup creation, restore, verification, and cleanup.
 
@@ -166,11 +190,13 @@ class BackupService:
                     pass
 
             writer = ArchiveWriter(self._backup_dir)
+            head_revision = _get_alembic_head()
             result = await writer.write(
                 backup_id=backup_id,
                 roots=plan.roots,
                 operation_type="backup",
                 progress_callback=_progress,
+                schema_revision=head_revision,
             )
 
             await repo.update_fields(
@@ -297,6 +323,7 @@ class BackupService:
 
     async def restore_preview(self, backup_id: str) -> RestorePreview:
         """Return restore preview for a given backup."""
+        from ... import __version__ as anvil_version
         from .archive_reader import ArchiveReader
         from .schema_compat_checker import check_schema_compatibility
         from .snapshot_planner import SnapshotPlanner
@@ -309,8 +336,8 @@ class BackupService:
         compat, compat_detail = check_schema_compatibility(
             manifest_schema_revision=manifest.schema_revision,
             manifest_deployment_version=manifest.deployment_version,
-            current_schema_revision=None,
-            current_deployment_version=None,
+            current_schema_revision=_get_alembic_head(),
+            current_deployment_version=anvil_version,
         )
 
         planner = SnapshotPlanner()
@@ -360,6 +387,10 @@ class BackupService:
         if confirm != "RESTORE":
             raise ValueError("Confirmation token must be 'RESTORE'")
 
+        from ... import __version__ as anvil_version
+
+        head_revision = _get_alembic_head()
+
         # Check schema compatibility.
         reader = ArchiveReader(self._backup_dir)
         manifest = await reader.load_manifest(backup_id)
@@ -368,8 +399,8 @@ class BackupService:
         compat, compat_detail = check_schema_compatibility(
             manifest_schema_revision=manifest.schema_revision,
             manifest_deployment_version=manifest.deployment_version,
-            current_schema_revision=None,
-            current_deployment_version=None,
+            current_schema_revision=head_revision,
+            current_deployment_version=anvil_version,
         )
         if compat.value == "blocked":
             raise PermissionError(compat_detail)
@@ -400,6 +431,7 @@ class BackupService:
                 backup_id=safety_id,
                 roots=plan.roots,
                 operation_type="pre_restore_safety",
+                schema_revision=head_revision,
             )
             await repo.update_fields(
                 safety_id,
