@@ -305,7 +305,7 @@
     dom.setText(cells[0], pidText);
 
     var linkHtml = (svc.status === 'running' && svc.port)
-      ? ' <a href="' + (svc.mlflow_url || ('http://' + window.location.hostname + ':' + svc.port)) + '" target="_blank" class="type-caption-2">[open]</a>'
+      ? ' <a href="' + (svc.mlflow_url || (window.location.protocol + '//' + window.location.hostname + ':' + svc.port)) + '" target="_blank" class="type-caption-2">[open]</a>'
       : '';
     dom.setCellHtml(tr, 1, (svc.name || '?') + linkHtml);
 
