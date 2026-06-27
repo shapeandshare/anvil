@@ -46,7 +46,7 @@
   height: 10vmin;
   transform: translate(-50%, -50%);
   pointer-events: none;
-  z-index: 41;
+  z-index: 1;
   border: 2px solid rgba(74, 200, 230, calc(0.05 + var(--ping, 0) * 0.30));
   border-radius: 50%;
   opacity: calc(0.2 + var(--ping, 0) * 0.6);
