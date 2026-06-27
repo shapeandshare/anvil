@@ -59,7 +59,7 @@
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 5;
+  z-index: 1;
   overflow: hidden;
 }
 
@@ -145,7 +145,7 @@
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 4;
+  z-index: 1;
   overflow: hidden;
 }
 
@@ -262,4 +262,12 @@
   [data-skin="unicorn"] .unicorn-ambient {
     display: none;
   }
+}
+
+/* ── Glass Content Blocks ── */
+[data-skin="unicorn"] .hero-card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-color: var(--glass-border);
 }

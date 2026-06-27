@@ -222,7 +222,7 @@ CSS pseudo-elements:
 
 Full rationale: [[Discoveries/particle-canvas-always-on-idle-baseline]].
 
-## Existing Themes (27 total as of 2026-06-20)
+## Existing Themes (26 total as of 2026-06-26)
 
 | ID | Display | Signal | Modes |
 |----|---------|--------|-------|
@@ -242,17 +242,35 @@ Full rationale: [[Discoveries/particle-canvas-always-on-idle-baseline]].
 | stormfront | Storm Front | grad_norm/loss | light/dark |
 | emberdrift | Ember Drift | loss/TPS | single |
 | resonance | Resonance | grad_norm/loss (+ audio) | light/dark |
-| inkwash | Inkwash | loss | light/dark |
 | arcade | Arcade | loss/milestone | light/dark |
 | pulse | Pulse | TPS | light/dark |
 | solarflare | Solar Flare | grad_norm | single |
 | deepsea | Deep Sea | loss | light/dark |
 | static | Static | loss volatility | single |
-| vinyl | Vinyl | TPS + loss | light/dark |
+
 | echo | Echo | grad_norm + milestone | single |
 | prism | Prism | loss/milestone | light/dark |
 | loom | Loom | TPS | light/dark |
 | ash | Ash | loss | single |
 
+## Perspective Grid Floor Pattern
+
+When building a scrolling perspective grid floor, use a two-element DOM structure rather than a single pseudo-element:
+
+```html
+<div class="hyper-grid" aria-hidden="true">
+  <div class="hyper-grid__floor"></div>
+</div>
+```
+
+- **Outer element** — holds `position: fixed`, `perspective() rotateX()` transform, mask-image, and opacity. Never animates.
+- **Inner element** — holds the background grid pattern. Animates `translateY` to scroll.
+
+**Why not background-position?** Animating `background-position` on a perspective-transformed element produces no visible screen-space movement. The foreshortening compresses background texture scroll to sub-pixel displacement at the far end of the plane. `translateY` on an inner child moves the element itself inside the projected space — this is visible. See [[Discoveries/css-background-position-dead-on-perspective-transform]].
+
+**Why not a pseudo-element?** `.app-shell` has `overflow: hidden/auto`, which creates a new scroll container that contains `position: fixed` pseudo-elements on it — they render relative to the shell, not the viewport, and changes to them are invisible. Place the DOM element before `.app-shell` in `base.html`. See [[Discoveries/overflow-hidden-ancestor-breaks-position-fixed-pseudo-element]].
+
+**rotateX tuning**: higher angles (70°+) = steeper overhead = horizon moves DOWN = floor covers LESS screen. Lower angles (40–50°) = shallower = horizon near center = floor covers MORE screen. Counter-intuitive.
+
 ---
-*See also: [[Decisions/ADR-031-behavioral-theme-engine]], [[Reference/theme-picker-grid-keyboard-nav]], [[Reference/css-data-uri-animated-svg-sprite]], [[Reference/particle-effect-authoring]], [[Discoveries/theme-presence-tiers-css-vs-session-gated-js]], [[Discoveries/css-perspective-grid-floor-subpixel-flicker]], [[Sessions/2026-06-20-nine-new-themes]], [[Sessions/2026-06-20-unicorn-theme-and-prism-vibrancy]], [[Sessions/2026-06-20-unicorn-mascot-flying-sprites]], [[Sessions/2026-06-20-grid-theme-and-flicker-fix]]*
+*See also: [[Decisions/ADR-031-behavioral-theme-engine]], [[Reference/theme-picker-grid-keyboard-nav]], [[Reference/css-data-uri-animated-svg-sprite]], [[Reference/particle-effect-authoring]], [[Discoveries/theme-presence-tiers-css-vs-session-gated-js]], [[Discoveries/css-perspective-grid-floor-subpixel-flicker]], [[Discoveries/css-background-position-dead-on-perspective-transform]], [[Discoveries/overflow-hidden-ancestor-breaks-position-fixed-pseudo-element]], [[Sessions/2026-06-20-nine-new-themes]], [[Sessions/2026-06-20-unicorn-theme-and-prism-vibrancy]], [[Sessions/2026-06-20-unicorn-mascot-flying-sprites]], [[Sessions/2026-06-20-grid-theme-and-flicker-fix]], [[Sessions/2026-06-26-hyperspace-grid-floor-animation-fix]]*

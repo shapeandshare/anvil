@@ -44,7 +44,7 @@
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 40;
+  z-index: 0;
   background: repeating-linear-gradient(
     to bottom,
     rgba(0, 0, 0, 0) 0,
@@ -61,7 +61,7 @@
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 41;
+  z-index: 1;
   background: radial-gradient(
     120% 120% at 50% 50%,
     transparent 55%,

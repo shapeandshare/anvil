@@ -20,12 +20,12 @@
       root.style.setProperty(name, value);
     }
 
-    setVar('--flare', '0');
+    setVar('--flare', '0.5');
 
     unsubs.push(bus.on('metrics', function (m) {
       if (!m || paused) return;
       if (m.grad_norm != null && isFinite(m.grad_norm)) {
-        setVar('--flare', clamp01(m.grad_norm).toFixed(3));
+        setVar('--flare', clamp01(0.5 + m.grad_norm * 0.5).toFixed(3));
       }
     }));
     unsubs.push(bus.on('divergence', function () {

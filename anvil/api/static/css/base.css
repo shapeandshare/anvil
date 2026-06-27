@@ -277,10 +277,11 @@ body {
   margin-top: auto;
   text-align: center;
   padding: var(--space-4) var(--space-3) calc(var(--space-4) + env(safe-area-inset-bottom));
-  font-size: var(--font-size-xs);
+  font-size: var(--text-footnote);
   color: var(--text-tertiary);
-  border-top: 1px solid var(--border-subtle);
-  background: var(--bg);
+  background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--bg) 60%, transparent));
+  position: relative;
+  z-index: 2; /* sit above fixed-position theme effects (particle canvas, ::before, ::after) */
 }
 
 /* ── Ambient Background Particles (default theme only) ── */

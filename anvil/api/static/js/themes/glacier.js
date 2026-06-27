@@ -22,19 +22,30 @@
       root.style.setProperty(name, value);
     }
 
+    // --freeze drives snow intensity (loss-based convergence).
+    // __glacierStorm drives blizzard/hail — JS global, no CSP issues.
     setVar('--freeze', '0.3');
+    window.__glacierStorm = false;
 
     unsubs.push(bus.on('metrics', function (m) {
       if (!m || paused) return;
+      window.__glacierStorm = true;
       if (typeof m.loss === 'number' && isFinite(m.loss)) {
         setVar('--freeze', clamp01(1 - m.loss / L0).toFixed(3));
       }
     }));
-    unsubs.push(bus.on('divergence', function () { setVar('--freeze', '0'); }));
+    unsubs.push(bus.on('divergence', function () {
+      setVar('--freeze', '0');
+      window.__glacierStorm = false;
+    }));
+    unsubs.push(bus.on('complete', function () {
+      window.__glacierStorm = false;
+    }));
 
     return function teardown() {
       unsubs.forEach(function (u) { u(); });
       root.style.removeProperty('--freeze');
+      window.__glacierStorm = false;
     };
   }
 
@@ -45,6 +56,6 @@
     modes: ['light', 'dark'],
     cssLayer: '/static/css/themes/glacier.css',
     mapping: glacierMapping,
-    particleConfig: { type: 'snow', params: {} },
+    particleConfig: { type: 'glacier', params: {} },
   });
 })();

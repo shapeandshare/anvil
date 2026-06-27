@@ -26,9 +26,12 @@
 
     unsubs.push(bus.on('metrics', function (m) {
       if (!m || paused) return;
+      var raw;
       if (typeof m.loss === 'number' && isFinite(m.loss)) {
-        // High loss = heavy soot fall
-        setVar('--ash', clamp01(m.loss / L0).toFixed(3));
+        // Offset so any training loss produces ash ≥ 0.5 — always
+        // noticeably denser and faster than idle (0.3).
+        raw = clamp01(m.loss / L0);
+        setVar('--ash', (0.5 + raw * 0.5).toFixed(3));
       }
     }));
     unsubs.push(bus.on('divergence', function () {

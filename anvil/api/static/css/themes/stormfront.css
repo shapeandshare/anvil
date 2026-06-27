@@ -78,7 +78,7 @@
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 41;
+  z-index: 1;
   background: rgba(220, 235, 255, 0.85);
   opacity: 0;
   animation: storm-lightning calc(9s - var(--charge, 0) * 7.5s) ease-out infinite;

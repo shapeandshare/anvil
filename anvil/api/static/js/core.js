@@ -213,6 +213,9 @@
         if (!newMain || !currentMain) return;
         currentMain.innerHTML = newMain.innerHTML;
 
+        /* 1a. Strip any login-page-only class applied by login.html inline script */
+        document.documentElement.classList.remove('page-login');
+
         /* 1b. Swap modals content ({% block modals %}, outside <main>) */
         var newModals = doc.querySelector('#modals-container');
         var currentModals = document.querySelector('#modals-container');

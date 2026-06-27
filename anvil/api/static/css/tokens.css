@@ -48,6 +48,7 @@
   --bg-input:       var(--surface-2);
   --border:         var(--separator);
   --border-sub:     var(--separator);
+  --border-subtle:  var(--separator);
   --text-dim:       var(--text-tertiary);
   --text-bright:    #ffffff;
   --font:           var(--font-body);

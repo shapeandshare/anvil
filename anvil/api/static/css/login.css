@@ -12,16 +12,20 @@
   justify-content: center;
   min-height: calc(100vh - var(--nav-height, 56px));
   padding: var(--space-6, 2rem);
+  position: relative;
+  z-index: 2; /* sit above fixed-position theme effects (canvas, ::before, ::after) */
 }
 
 .login-card {
-  background: var(--surface, #1c1c1e);
+  background: var(--glass-bg, rgba(28, 28, 30, 0.85));
   border-radius: var(--radius-lg, 16px);
-  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border: 1px solid var(--glass-border, rgba(255,255,255,0.08));
   box-shadow: var(--shadow-lg);
   width: 100%;
   max-width: 400px;
   padding: var(--space-8, 3rem);
+  backdrop-filter: var(--glass-blur, saturate(180%) blur(20px));
+  -webkit-backdrop-filter: var(--glass-blur, saturate(180%) blur(20px));
 }
 
 .login-card__header {
@@ -119,4 +123,46 @@
 .login-card__submit:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* ── Theme Overrides ── */
+/* Echo: pulsing ring at z-index 41 renders on top of the login card.
+   Lower it to z-index 0, thicken the border, and add a diffuse glow. */
+[data-skin="echo"] .app-main:has(.login-page)::after {
+  z-index: 0;
+  border-width: 6px;
+  box-shadow: 0 0 70px 30px rgba(74, 200, 230, 0.15);
+}
+/* Hide fixed-position pseudo-elements that render on top of the login card.
+   Grid: horizon beam and grid floor.
+   Hyperspace: wireframe (.app-shell::after), starfield, and surface rush — all
+   at z-index 0 with position: fixed, painted after the login card in the
+   stacking context, so they visually overlap it. */
+[data-skin="grid"] .app-main:has(.login-page)::after,
+[data-skin="grid"] .app-main:has(.login-page)::before,
+[data-skin="hyperspace"] .app-main:has(.login-page)::after,
+[data-skin="hyperspace"] .app-main:has(.login-page)::before {
+  display: none;
+}
+
+/* Unicorn: body-level overlays (unicorn-overlay z-index 5, unicorn-ambient z-index 4)
+   paint above .app-shell (z-index 2). Only active while html.page-login is set — that
+   class is added by login.html's inline script and stripped by core.js loadContent on
+   every client-side navigation, so these can never leak to other pages. */
+html.page-login[data-skin="unicorn"] .app-shell {
+  z-index: 6;
+}
+html.page-login[data-skin="unicorn"] .app-shell ~ .unicorn-ambient {
+  filter: brightness(2);
+}
+html.page-login[data-skin="unicorn"] .app-shell ~ .unicorn-overlay {
+  filter: brightness(2);
+}
+html.page-login[data-skin="unicorn"] .app-main::before {
+  opacity: 0.35;
+}
+/* Hide sprites/rainbows on login — training-only effects */
+html.page-login[data-skin="unicorn"] .app-shell ~ .unicorn-overlay .unicorn-floater,
+html.page-login[data-skin="unicorn"] .app-shell ~ .unicorn-overlay .unicorn-rainbow {
+  display: none;
 }

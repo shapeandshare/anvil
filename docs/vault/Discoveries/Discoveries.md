@@ -5,7 +5,7 @@ tags:
   - type/moc
   - domain/vault
 created: 2026-06-18T00:00:00.000Z
-updated: '2026-06-21T18:00:00.000Z'
+updated: '2026-06-26T22:00:00.000Z'
 aliases:
   - Discoveries
 ---
@@ -66,6 +66,34 @@ Non-obvious constraints, gaps, and conflicts discovered during agent sessions. E
 ## Discoveries from this session (2026-06-24 — Regex backtracking vulnerability)
 
 - [[Discoveries/regex-backtracking-yaml-frontmatter|Regex Backtracking in YAML Frontmatter Parsing]] — `re.DOTALL` + `.*?` + `\s*\n` in the frontmatter-stripping regex (`hygiene.py:347`) creates an O(n²) backtracking vector. Fixed by replacing with simple linear string operations (`str.startswith` + `str.find`).
+
+## Discoveries from this session (2026-06-26 — Theme decorative layer z-index convention)
+
+- [[Discoveries/theme-decorative-layer-z-index-convention|Theme Decorative Layer Z-Index Convention]] — Theme `.app-main::before`/`::after` pseudo-elements used arbitrary z-index values (0–41) with no convention, causing decorative overlays to paint above hero page content. Established a strict convention: `::before` at z-index 0 (background gradients/sparkles), `::after` at z-index 1 (animated overlays), content at z-index 2+. Corner-positioned elements are exempted case-by-case. Enforced across all 22 themes.
+
+## Discoveries from this session (2026-06-26 — Tectonic overlay removal)
+
+- [[Discoveries/particle-effect-strict-mode-undeclared-shake|Debris Effect Strict-Mode Undeclared Variable (shake)]] — Same bug class as the `glow` discovery: the `debris` particle effect assigned to `shake` without declaring it via `var`, throwing `ReferenceError` in strict mode. Caught when switching to the Tectonic theme after its overlay was removed.
+
+## Discoveries from this session (2026-06-26 — Echo theme login stacking)
+
+- [[Discoveries/echo-theme-login-page-stacking-and-visual-enhancement|Echo Theme — Login Page Stacking & Visual Enhancement]] — The echo theme's pulsing sonar ring (`.app-main::after` at `z-index: 41`) rendered on top of the login card. Fixed by lowering to `z-index: 0` and enhancing with a thicker border and box-shadow glow so it remains visible behind the card without overlapping it.
+
+## Discoveries from this session (2026-06-26 — Solarflare training baseline lift)
+
+- [[Discoveries/solarflare-training-baseline-lift|Solarflare Training Baseline Lift]] — The solarflare theme's `--flare` baseline was lifted from 0 to 0.5 and the flare particle effect's BASE was raised from 20→60 (MAX 120→250), so idle now renders 155 particles (was 70) and training peaks at 250 (was 120). The glow hotspot particles (gated on `sig > 0.4`) are now visible in all states.
+
+## Discoveries from this session (2026-06-26 — Vinyl theme removal)
+
+- [[Discoveries/theme-removal-pattern-complete-excision|Theme Removal Pattern — Complete Excision from the Theme Engine]] — Removing the vinyl theme revealed the five-layer surface area every behavioral theme touches: CSS file, JS file, base.html script tag, theme-manager excited overrides, and test fixture list. Each layer must be cleared for a complete excision.
+
+## Discoveries from this session (2026-06-26 — Aurora starfield via CSP-safe DOM element)
+
+- [[Discoveries/csp-blocks-dynamic-style-injection|CSP Blocks Dynamic &lt;style&gt; Injection — Use Real DOM Elements Instead]] — Dynamically injected `<style>` nodes are blocked by CSP nonce restrictions; real DOM elements with inline `style.cssText` bypass this. Also documented: theme manager loads before theme files, so `mapping` callbacks may never fire for the active theme.
+
+## Discoveries from this session (2026-06-26 — Hyperspace surface rush login stacking)
+
+- [[Discoveries/hyperspace-surface-rush-login-stacking|Hyperspace Surface Rush Overlaps Login Page]] — The hyperspace theme's `position: fixed; z-index: 0` pseudo-elements on `.app-main` (which has `z-index: auto`) paint after child content in the parent stacking context, causing the surface rush effect to render on top of the login card. Fixed by suppressing `.app-main::before`/`::after` when `.login-page` is present, following the grid theme pattern.
 
 ## Additional Discoveries
 

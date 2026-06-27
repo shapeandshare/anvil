@@ -411,6 +411,210 @@
     return { start: start, stop: stop, update: update, resize: resize };
   });
 
+// ── Glacier Effect (combined snow + hail + blizzard) ──
+  // Driven by CSS vars --freeze (snow intensity) and --storm (hail/blizzard
+  // intensity). At low storm: gentle snowflakes. During training (storm > 0):
+  // sharp hail chunks fall at speed, snow intensifies into a blizzard with
+  // strong wind shear, and a whiteout haze builds at the top.
+  registerEffect('glacier', function (_cvs, _context, _params, env) {
+    var SNOW_BASE = 200;
+    var SNOW_MAX = 700;
+    var HAIL_BASE = 0;
+    var HAIL_MAX = 500;
+    var MAX_STORM_BOOST_PCT = 0.7;
+
+    // Storm state is communicated via window.__glacierStorm (set by glacierMapping
+    // on bus.on('metrics'), cleared on complete/divergence/teardown).
+    // Using a JS global instead of a CSS var avoids CSP or timing edge cases.
+    function readStorm() {
+      return window.__glacierStorm ? 1 : 0;
+    }
+    var flakes = [];
+    var hail = [];
+    var w = 0, h = 0;
+    var driftPhase = 0;
+    var freeze = 0;
+    var storm = 0;
+    var isPaused = env.paused;
+    var i, f, hh, radius, targetSnow, targetHail, drift, windGust, cover;
+    var windGustPhase = 0;
+
+    function createFlake(x, y) {
+      radius = 1.5 + vrand() * 3.5;
+      return {
+        x: x != null ? x : vrand() * w * 1.3 - w * 0.15,
+        y: y != null ? y : -radius * 2 - vrand() * h * 0.5,
+        r: radius,
+        speed: 0.2 + vrand() * 0.3,
+        opacity: 0.45 + vrand() * 0.5,
+        phase: vrand() * Math.PI * 2,
+        wobbleAmp: 0.3 + vrand() * 0.8,
+        wobbleFreq: 0.002 + vrand() * 0.005,
+        drift: -0.08 + vrand() * 0.16,
+      };
+    }
+
+    function createHail(x, y) {
+      return {
+        x: x != null ? x : vrand() * w * 1.3 - w * 0.15,
+        y: y != null ? y : -10 - vrand() * h * 0.3,
+        speed: 6 + vrand() * 8,
+        opacity: 0.8 + vrand() * 0.2,
+        phase: vrand() * Math.PI * 2,
+        wobbleAmp: 0.1 + vrand() * 0.2,
+        wobbleFreq: 0.002 + vrand() * 0.004,
+        drift: -0.2 + vrand() * 0.4,
+        width: 6 + vrand() * 10,
+        height: 6 + vrand() * 12,
+      };
+    }
+
+    function init(width, height) {
+      w = width;
+      h = height;
+      flakes = [];
+      hail = [];
+      for (i = 0; i < SNOW_BASE; i++) {
+        flakes.push(createFlake(null, null));
+      }
+    }
+
+    function resize(width, height) {
+      w = width;
+      h = height;
+    }
+
+    function start(width, height) {
+      w = width;
+      h = height;
+      init(w, h);
+      isPaused = false;
+      freeze = readSignal('--freeze');
+      storm = readStorm();
+    }
+
+    function stop() {
+      flakes = [];
+      hail = [];
+    }
+
+    function update(timestamp, width, height, context) {
+      if (isPaused) return;
+      w = width;
+      h = height;
+
+      freeze = readSignal('--freeze');
+      storm = readStorm();
+
+      // ── Snow counts ──
+      targetSnow = Math.round(SNOW_BASE + freeze * (SNOW_MAX - SNOW_BASE));
+      if (storm > 0) {
+        targetSnow = Math.round(targetSnow + storm * (SNOW_MAX * MAX_STORM_BOOST_PCT));
+      }
+      while (flakes.length < targetSnow) {
+        flakes.push(createFlake(null, null));
+      }
+      while (flakes.length > targetSnow) {
+        flakes.pop();
+      }
+
+      // ── Hail counts (only during storm) ──
+      targetHail = Math.round(HAIL_BASE + storm * (HAIL_MAX - HAIL_BASE));
+      while (hail.length < targetHail) {
+        hail.push(createHail(null, null));
+      }
+      while (hail.length > targetHail) {
+        hail.pop();
+      }
+
+      if (timestamp) {
+        driftPhase = timestamp * 0.001;
+        windGustPhase = timestamp * 0.0008;
+      }
+
+      // Chaotic wind gusts intensify with storm
+      windGust = storm * (
+        Math.sin(windGustPhase * 1.1) * 0.6 +
+        Math.sin(windGustPhase * 2.3 + 1.7) * 0.4 +
+        Math.sin(windGustPhase * 3.7 + 3.1) * 0.2
+      );
+
+      // ── Snowflakes ──
+      // Storm multiplies fall speed — snow whips sideways and down fast
+      for (i = 0; i < flakes.length; i++) {
+        f = flakes[i];
+        if (f.y > h + 15) {
+          f.x = vrand() * w * 1.3 - w * 0.15;
+          f.y = -f.r * 2 - vrand() * 50;
+          f.speed = 0.2 + vrand() * 0.3;
+          f.opacity = 0.45 + vrand() * 0.5;
+        }
+
+        drift = Math.sin(driftPhase * f.wobbleFreq * 10 + f.phase) * f.wobbleAmp
+              + f.drift * (1 + freeze * 1.2 + storm * 2)
+              + windGust * 3;
+        f.x += drift * 0.5;
+        f.y += f.speed * (0.3 + freeze * 0.7 + storm * 1.8);
+
+        context.beginPath();
+        context.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+        context.fillStyle = storm > 0.5
+          ? 'rgba(240, 245, 255, ' + (f.opacity * (1 + storm * 0.2)).toFixed(2) + ')'
+          : 'rgba(255, 255, 255, ' + f.opacity.toFixed(2) + ')';
+        context.fill();
+      }
+
+      // ── Hail Chunks ──
+      // Big angular ice blocks with bright blue-white flash
+      for (i = 0; i < hail.length; i++) {
+        hh = hail[i];
+        if (hh.y > h + 15) {
+          hh.x = vrand() * w * 1.3 - w * 0.15;
+          hh.y = -hh.height - vrand() * 50;
+          hh.speed = 6 + vrand() * 8;
+          hh.opacity = 0.8 + vrand() * 0.2;
+        }
+
+        drift = Math.sin(driftPhase * hh.wobbleFreq * 10 + hh.phase) * hh.wobbleAmp
+              + hh.drift * (1 + storm * 0.8)
+              + windGust * 2;
+        hh.x += drift * 0.4;
+        hh.y += hh.speed * (1 + storm * 0.6);
+
+        context.save();
+        context.translate(hh.x, hh.y);
+        context.rotate(hh.phase);
+        // Ice-blue body
+        context.fillStyle = 'rgba(160, 210, 250, ' + hh.opacity.toFixed(2) + ')';
+        context.fillRect(-hh.width / 2, -hh.height / 2, hh.width, hh.height);
+        // Bright edge highlight
+        context.fillStyle = 'rgba(220, 240, 255, ' + (hh.opacity * 0.7).toFixed(2) + ')';
+        context.fillRect(-hh.width / 2, -hh.height / 2, hh.width * 0.5, hh.height * 0.25);
+        context.restore();
+        // Soft glow
+        context.beginPath();
+        context.arc(hh.x, hh.y, Math.max(hh.width, hh.height) * 0.7, 0, Math.PI * 2);
+        context.fillStyle = 'rgba(200, 230, 255, ' + (hh.opacity * 0.12).toFixed(2) + ')';
+        context.fill();
+      }
+
+      // ── Snow cover at bottom ──
+      if (freeze > 0.2) {
+        cover = (freeze - 0.2) * (0.12 + storm * 0.2);
+        context.fillStyle = 'rgba(255, 255, 255, ' + cover.toFixed(3) + ')';
+        context.fillRect(0, h - 10, w, 10);
+      }
+
+      // ── Blizzard whiteout haze ──
+      if (storm > 0.1) {
+        context.fillStyle = 'rgba(190, 215, 235, ' + (storm * 0.18).toFixed(3) + ')';
+        context.fillRect(0, 0, w, h * 0.4);
+      }
+    }
+
+    return { start: start, stop: stop, update: update, resize: resize };
+  });
+
   // ── Rain Effect (fast angled streaks, wind-driven) ──
   // Driven by CSS var --charge (set by Stormfront mapping from grad_norm).
   registerEffect('rain', function (_cvs, _context, _params, env) {
@@ -535,6 +739,149 @@
       if (charge > 0.2) {
         context.fillStyle = 'rgba(160, 200, 245, ' + (charge * 0.12).toFixed(3) + ')';
         context.fillRect(0, h - 8, w, 8);
+      }
+    }
+
+    return { start: start, stop: stop, update: update, resize: resize };
+  });
+
+  // ── Black Rain Effect (dark streaks falling through ash) ──
+  // Used by the Ash theme during training. Driven by --ash — higher ash = more
+  // rain, faster fall, darker streaks. Modeled after the rain effect but with
+  // charcoal-grey color, more vertical trajectory, and visible against dark
+  // backgrounds.
+  registerEffect('black-rain', function (_cvs, _context, _params, env) {
+    var BASE_COUNT = 200;
+    var MAX_COUNT = 700;
+    var drops = [];
+    var w = 0, h = 0;
+    var gustPhase = 0;
+    var windTarget = 0;
+    var ash = 0;
+    var isPaused = env.paused;
+    var i, d, lenVal, speedVal, targetCount, windStrength, windX, windVel, vx, vy, vmag, dx, dy, alpha, thickness;
+
+    function createDrop(x, y) {
+      lenVal = 10 + vrand() * 18;
+      speedVal = 2.5 + vrand() * 3.5;
+      return {
+        x: x != null ? x : vrand() * w * 1.5 - w * 0.25,
+        y: y != null ? y : -lenVal - vrand() * h * 0.3,
+        length: lenVal,
+        speed: speedVal,
+        opacity: 0.35 + vrand() * 0.55,
+        windPhase: vrand() * Math.PI * 2,
+        windAmp: 0.3 + vrand() * 0.5,
+        width: 0.8 + vrand() * 1.0,
+      };
+    }
+
+    function init(width, height) {
+      w = width;
+      h = height;
+      drops = [];
+      for (i = 0; i < BASE_COUNT; i++) {
+        drops.push(createDrop(vrand() * w * 1.5 - w * 0.25, vrand() * h * 1.2 - h * 0.2));
+      }
+    }
+
+    function resize(width, height) {
+      w = width;
+      h = height;
+    }
+
+    function start(width, height) {
+      w = width;
+      h = height;
+      init(w, h);
+      isPaused = false;
+      ash = readSignal('--ash');
+    }
+
+    function stop() {
+      drops = [];
+    }
+
+    function update(timestamp, width, height, context) {
+      if (isPaused) return;
+      w = width;
+      h = height;
+
+      // Only render rain during training. The dedicated signal `--ash-rain`
+      // is set by ash.js ONLY inside the metrics/divergence handlers — never
+      // at idle, never as a CSS custom property. If it's absent from the
+      // inline style, there's no active training.
+      var rawRain = document.documentElement.style.getPropertyValue('--ash-rain');
+      if (rawRain === '' || rawRain == null) {
+        context.clearRect(0, 0, w, h);
+        return;
+      }
+      ash = parseFloat(rawRain);
+      if (!isFinite(ash)) { ash = 0; }
+
+      targetCount = Math.round(BASE_COUNT + ash * (MAX_COUNT - BASE_COUNT));
+      while (drops.length < targetCount) {
+        drops.push(createDrop(null, null));
+      }
+      while (drops.length > targetCount) {
+        drops.pop();
+      }
+
+      if (timestamp) {
+        gustPhase = timestamp * 0.001;
+      }
+      windTarget = Math.sin(gustPhase * 0.25) * 0.3
+                 + Math.sin(gustPhase * 0.5 + 1.3) * 0.2;
+
+      windStrength = windTarget * (0.3 + ash * 0.5);
+
+      for (i = 0; i < drops.length; i++) {
+        d = drops[i];
+        if (d.y > h + 10) {
+          d.x = vrand() * w * 1.5 - w * 0.25;
+          d.y = -d.length - vrand() * 20;
+          d.speed = 2.5 + vrand() * 3.5;
+          d.opacity = 0.35 + vrand() * 0.55;
+        }
+
+        windX = Math.sin(gustPhase * 0.2 + d.windPhase) * d.windAmp * windStrength * 1.5;
+        windVel = windStrength * d.speed * 0.3;
+
+        vx = windVel + windX * 0.04;
+        vy = d.speed * (0.8 + ash * 0.8);
+
+        d.x += vx;
+        d.y += vy;
+
+        // Horizontal wrap so wind never bares the windward side
+        if (d.x > w + 50) d.x -= w + 100;
+        else if (d.x < -50) d.x += w + 100;
+
+        // Streak along actual travel vector
+        vmag = Math.sqrt(vx * vx + vy * vy) || 1;
+        dx = (vx / vmag) * d.length;
+        dy = (vy / vmag) * d.length;
+
+        thickness = d.width * (0.5 + ash * 0.5);
+        alpha = d.opacity * (0.3 + ash * 0.7);
+
+        // Dark streak with subtle warm-brown tint for visibility on dark bg
+        context.beginPath();
+        context.moveTo(d.x, d.y);
+        context.lineTo(d.x + dx, d.y + dy);
+        context.strokeStyle = 'rgba(55, 48, 40, ' + alpha.toFixed(2) + ')';
+        context.lineWidth = thickness;
+        context.lineCap = 'round';
+        context.stroke();
+
+        // Softer highlight core for depth
+        context.beginPath();
+        context.moveTo(d.x, d.y);
+        context.lineTo(d.x + dx * 0.6, d.y + dy * 0.6);
+        context.strokeStyle = 'rgba(80, 70, 58, ' + (alpha * 0.35).toFixed(2) + ')';
+        context.lineWidth = thickness * 0.4;
+        context.lineCap = 'round';
+        context.stroke();
       }
     }
 
@@ -1056,34 +1403,6 @@ var i, q, tc, cx, cy, dx, dy;
     return { start: start, stop: stop, update: update, resize: resize };
   });
 
-  // ── Prism Effect (spectrum light motes) ──
-  // Driven by --prism + --hue (Prism theme).
-  registerEffect('prism', function (_cvs, _context, _params, env) {
-    var BASE = 40, MAX = 150; var p = [], w = 0, h = 0, sig = 0, hueShift = 0, ip = env.paused;
-    var i, q, tc, glow;
-    function create(x, y) { return { x: x != null ? x : vrand() * w, y: y != null ? y : vrand() * h, r: 0.8 + vrand() * 2.5, s: 0.1 + vrand() * 0.3, o: 0.15 + vrand() * 0.4, ph: vrand() * 6.28, hueOff: vrand() * 360 }; }
-    function init(width, height) { w = width; h = height; p = []; for (i = 0; i < BASE; i++) p.push(create(null, null)); }
-    function resize(width, height) { w = width; h = height; }
-    function start(width, height) { w = width; h = height; init(w, h); ip = false; sig = readSignal('--prism'); hueShift = parseFloat(document.documentElement.style.getPropertyValue('--hue')) || 0; }
-    function stop() { p = []; }
-    function update(ts, width, height, c) {
-      if (ip) return; w = width; h = height;
-      sig = readSignal('--prism');
-      hueShift = parseFloat(document.documentElement.style.getPropertyValue('--hue')) || 0;
-      tc = Math.round(BASE + sig * (MAX - BASE));
-      while (p.length < tc) p.push(create(null, null));
-      while (p.length > tc) p.pop();
-      for (i = 0; i < p.length; i++) {
-        q = p[i]; q.x += Math.sin(ts * 0.001 + q.ph) * 0.3; q.y += Math.cos(ts * 0.0008 + q.ph) * 0.2;
-        if (q.x < -10 || q.x > w + 10 || q.y < -10 || q.y > h + 10) { q.x = vrand() * w; q.y = vrand() * h; }
-        hue = (q.hueOff + hueShift + ts * 0.02) % 360;
-        c.beginPath(); c.arc(q.x, q.y, q.r * (0.3 + sig * 0.7), 0, 6.28);
-        c.fillStyle = 'hsla(' + Math.round(hue) + ', 90%, ' + Math.round(55 + sig * 25) + '%, ' + (q.o * (0.1 + sig * 0.6)).toFixed(2) + ')';
-        c.fill();
-      }
-    }
-    return { start: start, stop: stop, update: update, resize: resize };
-  });
 
   // ── Pulse Effect (heartbeat pulsing dots) ──
   // Driven by --beat (Pulse theme).
@@ -1149,7 +1468,7 @@ var i, q, tc, cx, cy, dx, dy;
   // ── Flare Effect (solar eruption particles) ──
   // Driven by --flare (Solar Flare theme).
   registerEffect('flare', function (_cvs, _context, _params, env) {
-    var BASE = 20, MAX = 120; var p = [], w = 0, h = 0, sig = 0, ip = env.paused;
+    var BASE = 60, MAX = 250; var p = [], w = 0, h = 0, sig = 0, ip = env.paused;
     var i, q, tc, glow;
     function create(x, y) { var a = -1.5 - vrand() * 0.8; return { x: x != null ? x : vrand() * w, y: y != null ? y : h + 10, r: 1 + vrand() * 3, s: 0.5 + vrand() * 1.5, o: 0.3 + vrand() * 0.6, a: a, spread: (vrand() - 0.5) * 0.8 }; }
     function init(width, height) { w = width; h = height; p = []; for (i = 0; i < BASE; i++) p.push(create(null, null)); }
@@ -1210,7 +1529,7 @@ var i, q, tc, cx, cy, dx, dy;
   // Driven by --tremor (Tectonic theme).
   registerEffect('debris', function (_cvs, _context, _params, env) {
     var BASE = 15, MAX = 80; var p = [], w = 0, h = 0, sig = 0, ip = env.paused;
-    var i, q, tc, glow;
+    var i, q, tc, glow, shake;
     function create(x, y) { return { x: x != null ? x : vrand() * w, y: y != null ? y : h * 0.5 + vrand() * h * 0.5, s: 2 + vrand() * 5, o: 0.2 + vrand() * 0.5, ph: vrand() * 6.28, jx: (vrand() - 0.5) * 2, jy: (vrand() - 0.5) * 2 }; }
     function init(width, height) { w = width; h = height; p = []; for (i = 0; i < BASE; i++) p.push(create(null, null)); }
     function resize(width, height) { w = width; h = height; }
