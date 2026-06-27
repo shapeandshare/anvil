@@ -1,0 +1,33 @@
+---
+title: Grid theme login horizon fix
+type: session-log
+tags:
+  - type/session-log
+  - domain/ui
+  - status/draft
+created: '2026-06-26'
+updated: '2026-06-26'
+aliases:
+  - Grid login horizon beam session
+source: 2026-06-26 session
+---
+# Grid theme login horizon fix
+
+## Work Done
+
+- Investigated a visual bug where the grid theme's glowing horizon beam (`app-main::after`) cuts across the login card.
+- Traced root cause to `grid.css` lines 93–117: a fixed-position 2px `::after` pseudo-element at `top: 40vh` with a glowing cyan gradient.
+- Added override in `login.css` to hide both the horizon beam and grid floor pseudo-elements when `.login-page` is present inside `.app-main`, using `:has()` scoping.
+
+## Discoveries
+
+- [[Discoveries/Grid theme horizon beam on login page]]
+
+## Files Changed
+
+- `anvil/api/static/css/login.css` — added grid theme override block
+
+## Tags
+
+- `domain/ui`
+- `type/discovery`: cross-theme decoration conflict with login page layout
