@@ -7,12 +7,23 @@ console error monitoring, and test data seeding helpers.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import time
 from pathlib import Path
 
 import httpx
 import pytest
+
+BROWSER_TEST_API_KEY = "browser-test-anvil-key-00000000"
+"""Fixed API key used for browser smoke tests.
+
+Must match ``ANVIL_API_KEY`` in the Docker compose environment so both
+the test runner and the container agree on credentials.
+"""
+
+# Set a known key BEFORE any module-level code calls get_api_key_store().
+os.environ.setdefault("ANVIL_API_KEY", BROWSER_TEST_API_KEY)
 
 from anvil.api.deps import get_api_key_store
 
@@ -100,10 +111,11 @@ def base_url() -> str:
 
 
 @pytest.fixture(scope="session")
-def browser_context_args() -> dict:
+def browser_context_args(base_url: str) -> dict:
     """Default Playwright browser context options."""
     return {
         "ignore_https_errors": True,
+        "base_url": base_url,
         "viewport": {"width": 1280, "height": 720},
     }
 
@@ -200,12 +212,31 @@ def _login(page):
 
     POSTs the API key to /login, stores the session cookie in the
     browser context, so subsequent page navigations are authenticated.
+
+    Retries once on transient connection errors (socket hang up).
     """
-    response = page.request.post(
-        "/login",
-        data=json.dumps({"api_key": TEST_API_KEY}),
-        headers={"Content-Type": "application/json"},
-    )
+    import time as _time
+
+    last_exc = None
+    for attempt in range(2):
+        try:
+            response = page.request.post(
+                "/login",
+                data=json.dumps({"api_key": TEST_API_KEY}),
+                headers={"Content-Type": "application/json"},
+            )
+            if response.ok:
+                break
+            last_exc = AssertionError(
+                f"Login failed: {response.status} {response.status_text}"
+            )
+        except Exception as exc:
+            last_exc = exc
+            if attempt == 0:
+                _time.sleep(3)
+    else:
+        raise last_exc  # type: ignore[misc]
+
     assert response.ok, f"Login failed: {response.status} {response.status_text}"
 
     # Extract the Set-Cookie header and replay it into the browser context

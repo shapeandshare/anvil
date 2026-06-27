@@ -96,6 +96,20 @@ async def backup_status(
     return status.model_dump(mode="json")  # type: ignore[no-any-return]
 
 
+@router.post("/backup/cleanup-safety")
+async def cleanup_safety(
+    request: Request,
+    wb: Annotated[AnvilWorkbench, Depends(get_workbench)],
+) -> dict[str, Any]:
+    """Remove all pre-restore safety snapshots (FR-020).
+
+    Returns the count of deleted snapshots.
+    """
+    svc = request.app.state.backup_service
+    count = await svc.cleanup_safety(repo=wb.backup_repo)
+    return {"deleted_count": count}
+
+
 @router.get("/backup/stream/{operation_id}")
 async def stream_backup_progress(
     operation_id: str, request: Request

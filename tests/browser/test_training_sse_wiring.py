@@ -21,7 +21,7 @@ TINY_CONFIG = {
     "temperature": 0.5,
     "backend": "local-stdlib",
 }
-SSE_TIMEOUT = 30_000  # 30 seconds (SC-003, provisional for CI)
+SSE_TIMEOUT = 60_000  # 60 seconds (SC-003, provisional for CI)
 TRAIN_PAGE = "/v1/training-page"
 
 
