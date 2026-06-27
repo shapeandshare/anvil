@@ -353,7 +353,7 @@
       phase = 'convergence'; label = 'Phase 3 &middot; Convergence &mdash; refining predictions';
     }
     phaseEl.className = 'phase-label phase-label--' + phase;
-    phaseEl.innerHTML = label;
+    dom.setHtml(phaseEl, label);
 
     /* Milestone celebration */
     if (_lastMilestone !== phase) {
@@ -364,7 +364,7 @@
       else { return; }
       var badge = document.createElement('span');
       badge.className = 'milestone-badge ' + badgeClass;
-      badge.innerHTML = badgeText;
+      dom.setHtml(badge, badgeText);
       phaseEl.parentNode.insertBefore(badge, phaseEl.nextSibling);
       setTimeout(function() { if (badge.parentNode) badge.parentNode.removeChild(badge); }, 4000);
     }
@@ -431,7 +431,7 @@ function updateMetrics(d) {
     if (!html) {
       html = '<div class="ds-card-empty">Select a corpus or dataset above.</div>';
     }
-    dataContextEl.innerHTML = html;
+    dom.setHtml(dataContextEl, html);
     updateModelStats(cid, did);
   }
 
@@ -554,7 +554,7 @@ function updateMetrics(d) {
         + '</div>';
     }
 
-    modelStatsEl.innerHTML = html;
+    dom.setHtml(modelStatsEl, html);
 
     /* Warn if training block_size exceeds corpus chunk size */
     var bsWarn = document.getElementById('bs-mismatch-warn');
@@ -579,7 +579,7 @@ function updateMetrics(d) {
       }
     }
     if (msgs.length > 0) {
-      attnWarn.innerHTML = msgs.join('<br>');
+      dom.setHtml(attnWarn, msgs.join('<br>'));
       attnWarn.style.display = 'block';
     } else {
       attnWarn.style.display = 'none';
@@ -589,14 +589,14 @@ function updateMetrics(d) {
     var oomWarn = document.getElementById('oom-warn');
     if (useGpu && availMb != null && peakMb / availMb >= 0.9) {
       var pct = (peakMb / availMb * 100);
-      oomWarn.innerHTML = '&#9888;&#65039; <strong>OOM risk:</strong> estimated peak memory '
+      dom.setHtml(oomWarn, '&#9888;&#65039; <strong>OOM risk:</strong> estimated peak memory '
         + peakMb.toFixed(0) + ' MB uses ' + pct.toFixed(0) + '% of available '
         + availMb.toFixed(0) + ' MB. Reduce n_embd, n_layer, n_head, or block_size '
         + 'or switch to Local (CPU) in the Compute Backend selector.'
         + '<br><span class="type-caption-2">weights '
         + weightsMb.toFixed(0) + ' &middot; grads ' + gradsMb.toFixed(0)
         + ' &middot; optim ' + optimMb.toFixed(0) + ' &middot; KV cache '
-        + kvCacheMb.toFixed(0) + ' MB</span>';
+        + kvCacheMb.toFixed(0) + ' MB</span>');
       oomWarn.style.display = 'block';
     } else {
       oomWarn.style.display = 'none';
@@ -634,7 +634,7 @@ cmHtml = '<div class="type-caption-1 text-muted">Detecting GPU…</div>';
         cmHtml = '<div class="type-caption-1 text-muted">CPU mode &middot; '
           + formatParams(totalParams) + ' params, peak ~' + peakMb.toFixed(0) + ' MB (limited by system RAM)</div>';
       }
-      configMem.innerHTML = cmHtml;
+      dom.setHtml(configMem, cmHtml);
     }
   }
 
@@ -850,34 +850,46 @@ var gpuToggle = document.getElementById('compute_backend');
     if (runIds.length === 0) { document.getElementById('runs-panel').style.display = 'none'; return; }
     document.getElementById('runs-panel').style.display = '';
 
-    var html = '<div style="display:flex;flex-direction:column;gap:var(--space-1);">';
-    runIds.forEach(function(id) {
-      var r = runs[id];
-      var statusClass = 'badge-cyan';
-      if (r.status === 'streaming') statusClass = 'badge-green';
-      else if (r.status === 'done') statusClass = 'badge';
-      else if (r.status === 'errored') statusClass = 'badge-red';
-      var steps = r.metrics ? r.metrics.length : 0;
-      var lastLoss = steps > 0 ? r.metrics[r.metrics.length - 1].loss : null;
-      var timeAgo = r.startedAt ? Math.floor((Date.now() - r.startedAt) / 1000) + 's ago' : '';
-      var isCurrent = session && String(session.runId) === id && session.state !== 'idle';
-      html += '<div class="rec-card type-caption-1" style="display:flex;align-items:center;gap:var(--space-2);padding:6px 10px;border:1px solid var(--border);border-radius:4px;">'
-        + '<span class="badge ' + statusClass + '">' + r.status + '</span>'
-        + '<span style="font-family:var(--font-mono);color:var(--info);">' + id.slice(0,12) + '</span>'
-        + '<span style="color:var(--text-dim);">' + steps + ' steps</span>'
-        + (lastLoss != null ? '<span style="color:var(--accent-cyan);">loss: ' + lastLoss.toFixed(4) + '</span>' : '')
-        + '<span class="type-caption-2 text-muted">' + timeAgo + '</span>'
-        + '<span style="flex:1;"></span>';
-      if (!isCurrent && (r.status === 'streaming' || r.status === 'connecting')) {
-        html += '<button class="btn btn-sm btn-accent reconnect-btn" data-run="' + id + '">reconnect</button>';
+    var items = runIds.map(function(id) { return { id: id, data: runs[id] }; });
+    dom.syncList(list, items,
+      function(item) { return item.id; },
+      function(item) {
+        var div = document.createElement('div');
+        div.className = 'rec-card type-caption-1';
+        div.style.cssText = 'display:flex;align-items:center;gap:var(--space-2);padding:6px 10px;border:1px solid var(--border);border-radius:4px;';
+        _fillRunCard(div, item);
+        return div;
+      },
+      function(div, item) {
+        _fillRunCard(div, item);
       }
-      if (r.status === 'done' || r.status === 'errored') {
-        html += '<button class="btn btn-sm btn-secondary dismiss-btn" data-run="' + id + '">dismiss</button>';
-      }
-      html += '</div>';
-    });
-    html += '</div>';
-    list.innerHTML = html;
+    );
+  }
+
+  function _fillRunCard(div, item) {
+    var r = item.data;
+    var id = item.id;
+    var statusClass = 'badge-cyan';
+    if (r.status === 'streaming') statusClass = 'badge-green';
+    else if (r.status === 'done') statusClass = 'badge';
+    else if (r.status === 'errored') statusClass = 'badge-red';
+    var steps = r.metrics ? r.metrics.length : 0;
+    var lastLoss = steps > 0 ? r.metrics[r.metrics.length - 1].loss : null;
+    var timeAgo = r.startedAt ? Math.floor((Date.now() - r.startedAt) / 1000) + 's ago' : '';
+    var isCurrent = session && String(session.runId) === id && session.state !== 'idle';
+    var content = '<span class="badge ' + statusClass + '" data-field="status">' + r.status + '</span>'
+      + '<span style="font-family:var(--font-mono);color:var(--info);" data-field="runid">' + id.slice(0,12) + '</span>'
+      + '<span style="color:var(--text-dim);" data-field="steps">' + steps + ' steps</span>'
+      + (lastLoss != null ? '<span style="color:var(--accent-cyan);" data-field="loss">loss: ' + lastLoss.toFixed(4) + '</span>' : '<span data-field="loss" style="display:none;"></span>')
+      + '<span class="type-caption-2 text-muted" data-field="time">' + timeAgo + '</span>'
+      + '<span style="flex:1;" data-field="spacer"></span>';
+    if (!isCurrent && (r.status === 'streaming' || r.status === 'connecting')) {
+      content += '<button class="btn btn-sm btn-accent reconnect-btn" data-run="' + id + '">reconnect</button>';
+    }
+    if (r.status === 'done' || r.status === 'errored') {
+      content += '<button class="btn btn-sm btn-secondary dismiss-btn" data-run="' + id + '">dismiss</button>';
+    }
+    dom.setHtml(div, content);
   }
 
   function reconnectToRun(runId, saved) {
@@ -1071,7 +1083,7 @@ var gpuToggle = document.getElementById('compute_backend');
       html += '<a class="btn btn-secondary" href="' + (expData.mlflow_url || '#') + '" target="_blank">mlflow &rarr;</a>';
       html += '</div>';
 
-      outputActions.innerHTML = html;
+      dom.setHtml(outputActions, html);
     }
   }
 
@@ -1146,7 +1158,7 @@ var gpuToggle = document.getElementById('compute_backend');
 
   window.startTraining = async function startTraining() {
     if (session) { session.destroy(); session = null; }
-    outputActions.innerHTML = '';
+    dom.setHtml(outputActions, '');
     lossDisplay.textContent = '';
     _outputHasContent = false;
     updateOutputIndicator('idle');
@@ -1268,24 +1280,34 @@ var gpuToggle = document.getElementById('compute_backend');
     if (exps.length === 0) { panel.style.display = 'none'; return; }
     panel.style.display = '';
 
-    var html = '<div style="display:flex;flex-direction:column;gap:var(--space-1);">';
-    exps.forEach(function(exp) {
-      var lossStr = exp.final_loss != null ? exp.final_loss.toFixed(4) : '\u2014';
-      var statusClass = exp.status === 'finished'
-        ? (exp.final_loss < 0.5 ? 'badge-green' : exp.final_loss < 1.0 ? 'badge-yellow' : 'badge-red')
-        : 'badge-red';
-      html += '<div class="rec-card type-caption-1" style="display:flex;align-items:center;gap:var(--space-2);padding:6px 10px;border:1px solid var(--border);border-radius:4px;">'
-        + '<span class="badge ' + statusClass + '">' + exp.status + '</span>'
-        + '<span style="font-family:var(--font-mono);color:var(--info);">#' + exp.id + '</span>'
-        + '<span style="color:var(--text-dim);">' + escHtml(exp.dataset_name || '\u2014') + '</span>'
-        + '<span style="color:var(--accent-cyan);">loss: ' + lossStr + '</span>'
-        + '<span class="type-caption-2 text-muted">' + (exp.engine_backend || '\u2014') + '</span>'
-        + '<span style="flex:1;"></span>'
-        + '<button class="btn btn-sm btn-accent attach-btn" data-exp="' + exp.id + '">attach</button>'
-        + '</div>';
-    });
-    html += '</div>';
-    list.innerHTML = html;
+    dom.syncList(list, exps,
+      function(exp) { return String(exp.id); },
+      function(exp) {
+        var div = document.createElement('div');
+        div.className = 'rec-card type-caption-1';
+        div.style.cssText = 'display:flex;align-items:center;gap:var(--space-2);padding:6px 10px;border:1px solid var(--border);border-radius:4px;';
+        _fillExpCard(div, exp);
+        return div;
+      },
+      function(div, exp) {
+        _fillExpCard(div, exp);
+      }
+    );
+  }
+
+  function _fillExpCard(div, exp) {
+    var lossStr = exp.final_loss != null ? exp.final_loss.toFixed(4) : '\u2014';
+    var statusClass = exp.status === 'finished'
+      ? (exp.final_loss < 0.5 ? 'badge-green' : exp.final_loss < 1.0 ? 'badge-yellow' : 'badge-red')
+      : 'badge-red';
+    var content = '<span class="badge ' + statusClass + '" data-field="status">' + exp.status + '</span>'
+      + '<span style="font-family:var(--font-mono);color:var(--info);" data-field="id">#' + exp.id + '</span>'
+      + '<span style="color:var(--text-dim);" data-field="dataset">' + escHtml(exp.dataset_name || '\u2014') + '</span>'
+      + '<span style="color:var(--accent-cyan);" data-field="loss">loss: ' + lossStr + '</span>'
+      + '<span class="type-caption-2 text-muted" data-field="backend">' + (exp.engine_backend || '\u2014') + '</span>'
+      + '<span style="flex:1;" data-field="spacer"></span>'
+      + '<button class="btn btn-sm btn-accent attach-btn" data-exp="' + exp.id + '">attach</button>';
+    dom.setHtml(div, content);
   }
 
   window.attachExperiment = function(expId) {
@@ -1335,7 +1357,7 @@ var gpuToggle = document.getElementById('compute_backend');
       document.getElementById('metric-Throughput').textContent = '\u2014';
       document.getElementById('metric-eta').textContent = '\u2014';
       _outputHasContent = false;
-      outputActions.innerHTML = '';
+      dom.setHtml(outputActions, '');
 
       /* 6. Load loss curve from MLflow metric history */
       fetch('/v1/experiments/' + expId + '/metrics').then(function(r) {
@@ -1512,7 +1534,7 @@ var gpuToggle = document.getElementById('compute_backend');
     else if (gpuInfo && !gpuInfo.available) parts.push('GPU: ' + (gpuInfo.reason || 'unavailable'));
     if (modalInfo && modalInfo.available) parts.push('Modal ready');
     if (parts.length === 0) parts.push('no backends detected');
-    statusEl.innerHTML = '<span style="color:var(--text-muted);font-size:0.62rem;">' + parts.join(' · ') + '</span>';
+    dom.setHtml(statusEl, '<span style="color:var(--text-muted);font-size:0.62rem;">' + parts.join(' · ') + '</span>');
 
     /* Also fetch GPU details for memory estimation */
     fetch('/v1/health/detailed').then(function(r) {
@@ -1526,7 +1548,7 @@ var gpuToggle = document.getElementById('compute_backend');
       updateModelStats(corpusSelect.value, datasetSelect.value);
     });
   }).catch(function() {
-    document.getElementById('gpu-status').innerHTML = '<span class="text-muted">Could not detect compute backends</span>';
+    dom.setHtml(document.getElementById('gpu-status'), '<span class="text-muted">Could not detect compute backends</span>');
     /* Fallback: still try to get GPU info from health */
     fetch('/v1/health/detailed').then(function(r) {
       if (!r.ok) throw new Error(r.statusText);

@@ -57,7 +57,11 @@
             <input type="number" id="num-samples" class="form-input" value="5" min="1" max="50">
           </label>
         </div>
-        <div id="model-info" class="model-info-text" style="display:none;"></div>
+        <div id="model-info" class="model-info-text" style="display:none;">
+          loss: <span id="mi-loss" class="accent-cyan"></span>
+          | versions: <span id="mi-versions" class="accent-green"></span>
+          | created: <span id="mi-created" class="text-dim"></span>
+        </div>
         <div class="example-prompts">
           <span class="example-label">Try:</span>
           <span class="example-prompt" data-prompt="Hello, my name is">Hello, my name is</span>
@@ -80,7 +84,29 @@
       <span class="section-card__icon">&#8505;</span>
       <div class="section-card__title" data-title="MODEL INFO">&#9888; MODEL INFO</div>
     </div>
-    <div class="section-card__content" id="model-info-card-body"></div>
+    <div class="section-card__content" id="model-info-card-body">
+      <div id="mic-header" style="display:none;">
+        <div class="section-card__header" style="padding:0 0 var(--space-2) 0;">
+          <span class="section-card__title" id="mic-name"></span>
+          <span id="mic-version" style="color:var(--text-dim);font-family:var(--font-mono)"></span>
+        </div>
+      </div>
+      <div class="section-card__metrics" id="mic-metrics" style="display:none;">
+        <div class="section-card__metric">
+          <span class="section-card__metric-label">Loss</span>
+          <span class="section-card__metric-value" id="mic-loss" style="color:var(--accent-cyan)"></span>
+        </div>
+      </div>
+      <div id="mic-arch" style="display:none;margin-top:var(--space-3);padding-top:var(--space-2);border-top:1px solid var(--border);">
+        <h4 class="section-card__title" style="font-size:0.8em;margin-bottom:var(--space-2)">Architecture</h4>
+        <table class="grouped-list"><tbody id="mic-arch-tbody"></tbody></table>
+      </div>
+      <div id="mic-hp" style="display:none;margin-top:var(--space-3);padding-top:var(--space-2);border-top:1px solid var(--border);">
+        <h4 class="section-card__title" style="font-size:0.8em;margin-bottom:var(--space-2)">Training Config</h4>
+        <table class="grouped-list"><tbody id="mic-hp-tbody"></tbody></table>
+      </div>
+      <div class="section-card__actions" id="mic-actions" style="display:none;margin-top:var(--space-2);"></div>
+    </div>
   </div>
 
   <div class="section-card" id="inference-output-panel" style="--stagger-i: 2; display:none;">
@@ -122,18 +148,45 @@
   var outputPanel = document.getElementById('inference-output-panel');
   var outputEl = document.getElementById('inference-output');
 
+  function modelOptKey(m) { return 'm_' + (m.id != null ? String(m.id) : m.name); }
+
+  function createModelOpt(m) {
+    var opt = document.createElement('option');
+    if (m._placeholder) {
+      opt.value = m.value || '';
+      opt.textContent = m.label || '';
+    } else {
+      opt.value = modelKey(m);
+      var loss = m.final_loss != null ? m.final_loss.toFixed(4) : '?';
+      opt.textContent = m.name + ' — loss: ' + loss;
+    }
+    return opt;
+  }
+
+  function updateModelOpt(opt, m) {
+    if (m._placeholder) {
+      dom.setAttr(opt, 'value', m.value || '');
+      dom.setText(opt, m.label || '');
+    } else {
+      dom.setAttr(opt, 'value', modelKey(m));
+      var loss = m.final_loss != null ? m.final_loss.toFixed(4) : '?';
+      dom.setText(opt, m.name + ' — loss: ' + loss);
+    }
+  }
+
   function loadModels() {
     fetch('/v1/inference/models').then(function(r) { return r.json(); }).then(function(data) {
       if (data.models.length === 0) {
-        modelSelect.innerHTML = '<option value="">No models registered</option>';
+        dom.setHtml(modelSelect, '<option value="">No models registered</option>');
         return;
       }
       modelsData = data.models;
-      modelSelect.innerHTML = '<option value="">— select a model —</option>'
-        + data.models.map(function(m) {
-            var loss = m.final_loss != null ? m.final_loss.toFixed(4) : '?';
-            return '<option value="' + modelKey(m) + '">' + m.name + ' — loss: ' + loss + '</option>';
-          }).join('');
+
+      var items = [{ _placeholder: true, value: '', label: '— select a model —' }].concat(modelsData);
+      dom.syncList(modelSelect, items, function(it) {
+        return it._placeholder ? '_placeholder' : modelOptKey(it);
+      }, createModelOpt, updateModelOpt);
+
       updateVersionSelect();
       updateModelInfo();
       updateModelInfoCard();
@@ -153,7 +206,7 @@
         }
       }
     }).catch(function() {
-      modelSelect.innerHTML = '<option value="">Failed to load models</option>';
+      dom.setHtml(modelSelect, '<option value="">Failed to load models</option>');
     });
   }
 
@@ -163,11 +216,24 @@
     var model = findModelByKey(key);
     if (model && model.total_versions > 1) {
       versionLabel.style.display = '';
-      versionSelect.innerHTML = '';
+      var versions = [];
       for (var v = 1; v <= model.total_versions; v++) {
-        var sel = v === (model.latest_version || 1) ? ' selected' : '';
-        versionSelect.innerHTML += '<option value="' + v + '"' + sel + '>v' + v + '</option>';
+        versions.push({ v: v, selected: v === (model.latest_version || 1) });
       }
+      dom.syncList(versionSelect, versions, function(it) { return 'v' + it.v; },
+        function createVerOpt(it) {
+          var opt = document.createElement('option');
+          opt.value = String(it.v);
+          opt.textContent = 'v' + it.v;
+          if (it.selected) opt.selected = true;
+          return opt;
+        },
+        function updateVerOpt(opt, it) {
+          dom.setAttr(opt, 'value', String(it.v));
+          dom.setText(opt, 'v' + it.v);
+          if (opt.selected !== it.selected) opt.selected = it.selected;
+        }
+      );
     } else {
       versionLabel.style.display = 'none';
     }
@@ -180,14 +246,15 @@
     var model = findModelByKey(key);
     if (!model) { modelInfoEl.style.display = 'none'; return; }
     modelInfoEl.style.display = 'block';
-    modelInfoEl.innerHTML = 'loss: <span class="accent-cyan">' + (model.final_loss != null ? model.final_loss.toFixed(4) : '?')
-      + '</span> | versions: <span class="accent-green">' + model.total_versions
-      + '</span> | created: <span class="text-dim">' + (model.created_at || '?') + '</span>';
+
+    dom.setText(document.getElementById('mi-loss'),
+      model.final_loss != null ? model.final_loss.toFixed(4) : '?');
+    dom.setText(document.getElementById('mi-versions'), String(model.total_versions));
+    dom.setText(document.getElementById('mi-created'), model.created_at || '?');
   }
 
   window.updateModelInfoCard = function() {
     var card = document.getElementById('model-info-card');
-    var body = document.getElementById('model-info-card-body');
     var key = modelSelect.value;
     if (!key) { card.style.display = 'none'; return; }
 
@@ -196,40 +263,42 @@
 
     card.style.display = '';
 
-    var html = '';
-
-    // Model name + version
+    // Version
     var version = versionLabel.style.display !== 'none'
       ? parseInt(versionSelect.value)
       : (model.latest_version || 1);
 
-    html += '<div class="section-card__header">';
-    html += '  <span class="section-card__title">' + escHtml(model.name) + '</span>';
-    html += '  <span style="color:var(--text-dim);font-family:var(--font-mono)">v' + version + '</span>';
-    html += '</div>';
+    // Header
+    document.getElementById('mic-header').style.display = '';
+    dom.setText(document.getElementById('mic-name'), model.name);
+    dom.setText(document.getElementById('mic-version'), 'v' + version);
 
-    // Stats row
-    html += '<div class="section-card__metrics">';
+    // Metrics
+    var metricsEl = document.getElementById('mic-metrics');
     if (model.final_loss != null) {
-      html += '  <div class="section-card__metric"><span class="section-card__metric-label">Loss</span><span class="section-card__metric-value" style="color:var(--accent-cyan)">' + model.final_loss.toFixed(4) + '</span></div>';
+      metricsEl.style.display = '';
+      dom.setText(document.getElementById('mic-loss'), model.final_loss.toFixed(4));
+    } else {
+      metricsEl.style.display = 'none';
     }
-    html += '</div>';
 
     // Architecture table
+    var archEl = document.getElementById('mic-arch');
+    var archTbody = document.getElementById('mic-arch-tbody');
     var arch = model.architecture;
     if (arch) {
-      html += '<div style="margin-top:var(--space-3);padding-top:var(--space-2);border-top:1px solid var(--border)"><h4 class="section-card__title" style="font-size:0.8em;margin-bottom:var(--space-2)">Architecture</h4>';
-      html += '<table class="grouped-list"><tbody>';
+      archEl.style.display = '';
       var archFields = [
         ['vocab_size', 'Vocabulary'], ['num_params', 'Parameters'],
         ['n_layer', 'Layers'], ['n_embd', 'Embed Dim'],
         ['n_head', 'Heads'], ['block_size', 'Context']
       ];
+      var archItems = [];
       archFields.forEach(function(f) {
         var val = arch[f[0]];
         if (val == null) return;
-        var display = f[0] === 'num_params' ? val.toLocaleString() : val;
-        html += '<tr><td style="color:var(--text-dim);width:40%">' + f[1] + '</td><td style="font-family:var(--font-mono);text-align:right">' + display + '</td></tr>';
+        var display = f[0] === 'num_params' ? val.toLocaleString() : String(val);
+        archItems.push({ key: f[0], label: f[1], value: display });
       });
       if (arch.num_params != null) {
         var infFp32 = 4;
@@ -241,18 +310,36 @@
         var infDisplay = infMemMb >= 1024
           ? (infMemMb / 1024).toFixed(2) + ' GB'
           : infMemMb.toFixed(1) + ' MB';
-        html += '<tr><td style="color:var(--text-dim);width:40%">Inference Memory</td>'
-          + '<td style="font-family:var(--font-mono);text-align:right" title="weights + KV cache (no gradients/optimizer needed for inference)">~'
-          + infDisplay + '</td></tr>';
+        archItems.push({ key: 'inf_mem', label: 'Inference Memory', value: '~' + infDisplay,
+          title: 'weights + KV cache (no gradients/optimizer needed for inference)' });
       }
-      html += '</tbody></table></div>';
+      dom.syncTableBody(archTbody, archItems,
+        function(it) { return it.key; },
+        function(it) {
+          var tr = document.createElement('tr');
+          tr.innerHTML = '<td style="color:var(--text-dim);width:40%">' + it.label + '</td>'
+            + '<td style="font-family:var(--font-mono);text-align:right"' + (it.title ? ' title="' + it.title + '"' : '') + '>' + it.value + '</td>';
+          return tr;
+        },
+        function(tr, it) {
+          dom.setCellText(tr, 0, it.label);
+          var valCell = dom.cell(tr, 1);
+          dom.setText(valCell, it.value);
+          if (it.title) dom.setAttr(valCell, 'title', it.title);
+          else dom.setAttr(valCell, 'title', null);
+        }
+      );
+    } else {
+      archEl.style.display = 'none';
     }
 
     // Hyperparams table
+    var hpEl = document.getElementById('mic-hp');
+    var hpTbody = document.getElementById('mic-hp-tbody');
     var hp = model.hyperparameters;
     if (hp && Object.keys(hp).length > 0) {
-      html += '<div style="margin-top:var(--space-3);padding-top:var(--space-2);border-top:1px solid var(--border)"><h4 class="section-card__title" style="font-size:0.8em;margin-bottom:var(--space-2)">Training Config</h4>';
-      html += '<table class="grouped-list"><tbody>';
+      hpEl.style.display = '';
+      var hpItems = [];
       var hpFields = [
         ['num_steps', 'Steps'], ['learning_rate', 'LR'],
         ['temperature', 'Temp'], ['beta1', '\u03b2\u2081'], ['beta2', '\u03b2\u2082']
@@ -260,24 +347,40 @@
       hpFields.forEach(function(f) {
         var val = hp[f[0]];
         if (val == null) return;
-        html += '<tr><td style="color:var(--text-dim);width:40%">' + f[1] + '</td><td style="font-family:var(--font-mono);text-align:right">' + val + '</td></tr>';
+        hpItems.push({ key: f[0], label: f[1], value: String(val) });
       });
-      html += '</tbody></table></div>';
+      dom.syncTableBody(hpTbody, hpItems,
+        function(it) { return it.key; },
+        function(it) {
+          var tr = document.createElement('tr');
+          tr.innerHTML = '<td style="color:var(--text-dim);width:40%">' + it.label + '</td>'
+            + '<td style="font-family:var(--font-mono);text-align:right">' + it.value + '</td>';
+          return tr;
+        },
+        function(tr, it) {
+          dom.setCellText(tr, 0, it.label);
+          dom.setCellText(tr, 1, it.value);
+        }
+      );
+    } else {
+      hpEl.style.display = 'none';
     }
 
     // MLflow + experiment links
+    var actionsEl = document.getElementById('mic-actions');
     if (model.mlflow_run_url || model.experiment_id) {
-      html += '<div class="section-card__actions">';
+      actionsEl.style.display = '';
+      var actionsHtml = '';
       if (model.mlflow_run_url) {
-        html += '<a href="' + escHtml(model.mlflow_run_url) + '" target="_blank" class="btn btn-secondary btn-sm">Open in MLflow \u2192</a>';
+        actionsHtml += '<a href="' + escHtml(model.mlflow_run_url) + '" target="_blank" class="btn btn-secondary btn-sm">Open in MLflow \u2192</a>';
       }
       if (model.experiment_id) {
-        html += '<a href="/v1/experiments-page?run_id=' + model.experiment_id + '" class="btn btn-secondary btn-sm">View Experiment \u2192</a>';
+        actionsHtml += '<a href="/v1/experiments-page?run_id=' + model.experiment_id + '" class="btn btn-secondary btn-sm">View Experiment \u2192</a>';
       }
-      html += '</div>';
+      dom.setHtml(actionsEl, actionsHtml);
+    } else {
+      actionsEl.style.display = 'none';
     }
-
-    body.innerHTML = html;
   };
 
   modelSelect.addEventListener('change', function() {
@@ -313,7 +416,7 @@
     generateBtn.disabled = true;
     statusEl.textContent = 'Generating...';
     outputPanel.style.display = 'block';
-    outputEl.innerHTML = '<div class="loading-pulse">Generating samples...</div>';
+    dom.setHtml(outputEl, '<div class="loading-pulse">Generating samples...</div>');
 
     try {
       var resp = await window.apiFetch('/v1/inference/sample', {
@@ -331,12 +434,12 @@
       if (!resp.ok) throw new Error(data.detail || 'Generation failed');
 
       statusEl.textContent = data.samples.length + ' samples generated';
-      outputEl.innerHTML = data.samples.map(function(s) {
+      dom.setHtml(outputEl, data.samples.map(function(s) {
         return '<div class="sample-block"><span class="sample-marker">[SAMPLE]</span> ' + escHtml(s) + '</div>';
-      }).join('');
+      }).join(''));
     } catch (err) {
       statusEl.textContent = 'Error: ' + err.message;
-      outputEl.innerHTML = '<div class="error-block">' + escHtml(err.message) + '</div>';
+      dom.setHtml(outputEl, '<div class="error-block">' + escHtml(err.message) + '</div>');
     }
     generateBtn.disabled = false;
   });
