@@ -371,8 +371,8 @@
   }
 
 function updateMetrics(d) {
-    document.getElementById('metric-step').textContent = d.step || '—';
-    document.getElementById('metric-loss').textContent = d.loss ? d.loss.toFixed(4) : '—';
+    document.getElementById('metric-step').textContent = d.step != null ? String(d.step) : '—';
+    document.getElementById('metric-loss').textContent = d.loss != null ? d.loss.toFixed(4) : '—';
     document.getElementById('metric-device').textContent = d.device || '—';
     if (d.steps_per_sec != null) {
       document.getElementById('metric-Throughput').textContent = d.steps_per_sec.toFixed(1) + ' st/s';
@@ -917,7 +917,7 @@ var gpuToggle = document.getElementById('compute_backend');
       chart.loadPoints(saved.metrics);
       var last = saved.metrics[saved.metrics.length - 1];
       if (last) {
-        document.getElementById('metric-step').textContent = last.step || '—';
+        document.getElementById('metric-step').textContent = last.step != null ? String(last.step) : '—';
         document.getElementById('metric-loss').textContent = last.loss != null ? last.loss.toFixed(4) : '—';
       }
     }
@@ -1368,7 +1368,7 @@ var gpuToggle = document.getElementById('compute_backend');
         if (points.length > 0 && chart) {
           chart.loadPoints(points);
           var last = points[points.length - 1];
-          document.getElementById('metric-step').textContent = last.step || '\u2014';
+          document.getElementById('metric-step').textContent = last.step != null ? String(last.step) : '\u2014';
           document.getElementById('metric-loss').textContent = last.loss != null ? last.loss.toFixed(4) : '\u2014';
           document.getElementById('metric-elapsed').textContent = exp.duration_seconds != null ? formatDuration(exp.duration_seconds) : '\u2014';
 
