@@ -560,7 +560,7 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
             var resp = await apiFetch('/v1/backup/cleanup-safety', { method: 'POST' });
             var text = await resp.text();
             var data;
-            try { data = JSON.parse(text); } catch (e) {
+            try { data = JSON.parse(text); } catch {
               toast('Server returned ' + resp.status + ': ' + text.slice(0, 120), 'error');
               setBtnLoading('btn-backup-cleanup-safety', false);
               return;
@@ -799,8 +799,8 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
   document.getElementById('services-list').addEventListener('click', function(e) {
     var btn = e.target.closest('[data-svc-action]');
     if (!btn) return;
-    var action = btn.getAttribute('data-svc-action');
-    var name = btn.getAttribute('data-svc-name');
+    var action = btn.dataset.svcAction;
+    var name = btn.dataset.svcName;
     if (!action || !name) return;
     if (action === 'kill-port') {
       ops.killPort(name);
@@ -813,8 +813,8 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
   document.getElementById('backup-list-container').addEventListener('click', function(e) {
     var btn = e.target.closest('[data-backup-action]');
     if (!btn) return;
-    var action = btn.getAttribute('data-backup-action');
-    var id = btn.getAttribute('data-backup-id');
+    var action = btn.dataset.backupAction;
+    var id = btn.dataset.backupId;
     if (!action || !id) return;
     if (action === 'verify') backup.verify(id);
     else if (action === 'restore') backup.previewRestore(id);
