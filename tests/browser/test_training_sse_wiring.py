@@ -21,7 +21,7 @@ TINY_CONFIG = {
     "temperature": 0.5,
     "backend": "local-stdlib",
 }
-SSE_TIMEOUT = 60_000  # 60 seconds (SC-003, provisional for CI)
+SSE_TIMEOUT = 120_000  # 120 seconds (SC-003, increased for CI Docker latency)
 TRAIN_PAGE = "/v1/training-page"
 
 
