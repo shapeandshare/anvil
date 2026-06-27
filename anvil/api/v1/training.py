@@ -626,9 +626,7 @@ async def start_training(config: TrainConfig) -> dict[str, Any]:
                     f.write("\n".join(samples))
                 if mlflow_run_id:
                     try:
-                        client = (
-                            tracking_svc._client
-                        )  # pylint: disable=protected-access
+                        client = tracking_svc._client  # pylint: disable=protected-access
                         if client:
                             loop = asyncio.get_event_loop()
                             await loop.run_in_executor(
@@ -644,9 +642,7 @@ async def start_training(config: TrainConfig) -> dict[str, Any]:
                 model.save(model_path, uchars)  # type: ignore[attr-defined]
                 if mlflow_run_id:
                     try:
-                        client = (
-                            tracking_svc._client
-                        )  # pylint: disable=protected-access
+                        client = tracking_svc._client  # pylint: disable=protected-access
                         if client:
                             loop = asyncio.get_event_loop()
                             await loop.run_in_executor(
@@ -663,7 +659,8 @@ async def start_training(config: TrainConfig) -> dict[str, Any]:
 
                 export_svc = SafetensorsExportService()
                 export_result = await asyncio.get_event_loop().run_in_executor(
-                    None, lambda: export_svc.export(model, tmpdir, uchars)  # type: ignore[arg-type]
+                    None,
+                    lambda: export_svc.export(model, tmpdir, uchars),  # type: ignore[arg-type]
                 )
 
                 if export_result["error"]:
@@ -683,9 +680,7 @@ async def start_training(config: TrainConfig) -> dict[str, Any]:
                 else:
                     if mlflow_run_id and export_result["safetensors_path"]:
                         try:
-                            client = (
-                                tracking_svc._client
-                            )  # pylint: disable=protected-access
+                            client = tracking_svc._client  # pylint: disable=protected-access
                             if client:
                                 loop = asyncio.get_event_loop()
                                 await loop.run_in_executor(
@@ -812,15 +807,15 @@ async def start_training(config: TrainConfig) -> dict[str, Any]:
     task = asyncio.create_task(_run_training())
     _tasks[run_id] = task
 
-    def _cleanup(_t: asyncio.Task[Any]) -> None:
-        """Remove the task from ``_tasks`` dict on completion.
+    async def _orphan_queue_release() -> None:
+        """Release queue 120s after training task completes (SSE may never connect)."""
+        await asyncio.sleep(120)
+        svc.release_queue(run_id)
 
-        Parameters
-        ----------
-        t : asyncio.Task
-            The completed or cancelled task.
-        """
+    def _cleanup(_t: asyncio.Task[Any]) -> None:
+        """Remove the task from ``_tasks`` dict on completion."""
         _tasks.pop(run_id, None)
+        asyncio.create_task(_orphan_queue_release())
 
     task.add_done_callback(_cleanup)
 
@@ -892,9 +887,15 @@ async def stream_training(run_id: int) -> StreamingResponse:
     if queue is None:
 
         async def _run_gone() -> AsyncGenerator[str, None]:
-            yield "event: error\ndata: " + json.dumps(
-                {"message": "Training run has already completed or was never started"}
-            ) + "\n\n"
+            yield (
+                "event: error\ndata: "
+                + json.dumps(
+                    {
+                        "message": "Training run has already completed or was never started"
+                    }
+                )
+                + "\n\n"
+            )
 
         return StreamingResponse(
             _run_gone(),
@@ -906,15 +907,22 @@ async def stream_training(run_id: int) -> StreamingResponse:
         )
 
     async def event_stream() -> AsyncGenerator[str, None]:
-        """Generator that yields SSE-formatted events from the training queue."""
-        while True:
-            try:
-                msg = await asyncio.wait_for(queue.get(), timeout=30)
-                yield f"event: {msg['event']}\ndata: {msg['data']}\n\n"
-                if msg["event"] in ("complete", "error", "divergence"):
-                    break
-            except TimeoutError:
-                yield "event: heartbeat\ndata: {}\n\n"
+        """Generator that yields SSE-formatted events from the training queue.
+
+        Cleans up the queue object once the stream ends (terminal event
+        consumed, heartbeat timeout, or client disconnect).
+        """
+        try:
+            while True:
+                try:
+                    msg = await asyncio.wait_for(queue.get(), timeout=30)
+                    yield f"event: {msg['event']}\ndata: {msg['data']}\n\n"
+                    if msg["event"] in ("complete", "error", "divergence"):
+                        break
+                except TimeoutError:
+                    yield "event: heartbeat\ndata: {}\n\n"
+        finally:
+            svc.release_queue(run_id)
 
     return StreamingResponse(
         event_stream(),

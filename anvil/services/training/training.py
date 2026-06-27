@@ -586,12 +586,13 @@ class TrainingService:
                     "data": json.dumps({"message": "Training stopped by user"}),
                 }
             )
+            # Queue stays in _queues for SSE stream to consume.
             raise
         except DivergenceError:
             self._diverged_runs.add(run_id)
+            # Divergence event already pushed in progress_callback.
             raise
         finally:
-            self._queues.pop(run_id, None)
             self._stop_events.pop(run_id, None)
 
         # ── emit complete SSE event ───────────────────────────────────
@@ -611,6 +612,11 @@ class TrainingService:
         if on_complete:
             await on_complete(result, config)
 
+        # NOTE: queue is NOT popped from _queues here.  It stays in the
+        # dict so that the SSE stream endpoint (get_queue) can find it
+        # even when the run finishes before the SSE EventSource connects.
+        # The SSE handler is responsible for releasing the queue once
+        # the stream has consumed all events.
         return run_id
 
     def get_queue(self, run_id: int) -> asyncio.Queue[dict[str, object]] | None:
@@ -627,3 +633,17 @@ class TrainingService:
             The event queue, or ``None`` if the run does not exist.
         """
         return self._queues.get(run_id)
+
+    def release_queue(self, run_id: int) -> None:
+        """Remove the SSE event queue for a completed or orphaned run.
+
+        Called by the SSE stream handler after the stream has consumed
+        all events, or by the orphan-queue cleanup task if the client
+        never connected.
+
+        Parameters
+        ----------
+        run_id : int
+            The local run ID to clean up.
+        """
+        self._queues.pop(run_id, None)
