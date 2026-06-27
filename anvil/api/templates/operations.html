@@ -433,7 +433,7 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
   loadResources();
 
   /* ── Backup & Restore ── */
-  window.backup = {
+  globalThis.backup = {
     _activeOperationId: null,
     _eventSource: null,
 
@@ -476,7 +476,7 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
         html += '<span class="info-key">oldest</span><span class="info-val">' + oldest + '</span>';
         html += '</div>';
         el.innerHTML = html;
-      } catch(e) {
+      } catch {
         el.innerHTML = '<span class="text-muted type-subhead">Could not load backup status.</span>';
       }
     },
@@ -527,7 +527,7 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
         async function() {
           setBtnLoading('btn-backup-create', true);
           try {
-            var resp = await window.apiFetch('/v1/backup', { method: 'POST' });
+            var resp = await apiFetch('/v1/backup', { method: 'POST' });
             var data = await resp.json();
             if (resp.ok) {
               toast('Backup started: ' + data.backup_id, 'info');
@@ -540,7 +540,7 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
             } else {
               toast(data.detail || 'Failed to create backup', 'error');
             }
-          } catch(e) {
+          } catch {
             toast('Network error creating backup', 'error');
           }
           setBtnLoading('btn-backup-create', false);
@@ -557,7 +557,7 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
         async function() {
           setBtnLoading('btn-backup-cleanup-safety', true);
           try {
-            var resp = await window.apiFetch('/v1/backup/cleanup-safety', { method: 'POST' });
+            var resp = await apiFetch('/v1/backup/cleanup-safety', { method: 'POST' });
             var data = await resp.json();
             if (resp.ok) {
               toast('Cleaned up ' + data.deleted_count + ' safety snapshot(s)', 'success');
@@ -565,7 +565,7 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
             } else {
               toast(data.detail || 'Cleanup failed', 'error');
             }
-          } catch(e) {
+          } catch {
             toast('Network error during cleanup', 'error');
           }
           setBtnLoading('btn-backup-cleanup-safety', false);
@@ -602,7 +602,7 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
 
       es.addEventListener('error', function(e) {
         var msg = 'Operation encountered an error';
-        try { var data = JSON.parse(e.data); msg = data.message || msg; } catch(_) {}
+        try { var data = JSON.parse(e.data); msg = data.message || msg; } catch { /* ignore unparseable error data */ }
         es.close();
         backup._eventSource = null;
         backup._activeOperationId = null;
@@ -658,7 +658,7 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
         }
         html += '</tbody></table></div>';
         container.innerHTML = html;
-      } catch(e) {
+      } catch {
         container.innerHTML = '<span class="text-muted type-subhead">Could not load backup list.</span>';
       }
     },
@@ -671,7 +671,7 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
     verify: async function(backupId) {
       setBtnLoading('btn-verify-' + backupId, true);
       try {
-        var resp = await window.apiFetch('/v1/backup/' + encodeURIComponent(backupId) + '/verify', { method: 'POST' });
+        var resp = await apiFetch('/v1/backup/' + encodeURIComponent(backupId) + '/verify', { method: 'POST' });
         var data = await resp.json();
         if (resp.ok && data.valid) {
           toast('Backup verified: valid (' + data.checked_count + ' entries)', 'success');
@@ -680,7 +680,7 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
         } else {
           toast(data.detail || 'Verification failed', 'error');
         }
-      } catch(e) {
+      } catch {
         toast('Network error during verification', 'error');
       }
       setBtnLoading('btn-verify-' + backupId, false);
@@ -696,10 +696,10 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
         var msg = 'This will restore the deployment from backup <strong class="cmd">' + backupId + '</strong>.';
         msg += '<br><br><span class="text-muted">Version: ' + (preview.deployment_version || 'N/A') + ' | Schema: ' + (preview.schema_revision || 'N/A');
         msg += ' | Entries: ' + preview.entry_count + ' | Size: ' + backup.formatBytes(preview.archive_size_bytes) + '</span>';
-        if (preview.compatibility !== 'ok') {
-          msg += '<br><br><span style="color:var(--accent-red);">&#9888; ' + preview.compatibility_detail + '</span>';
-        } else {
+        if (preview.compatibility === 'ok') {
           msg += '<br><br><span class="text-muted">' + preview.compatibility_detail + '</span>';
+        } else {
+          msg += '<br><br><span style="color:var(--accent-red);">&#9888; ' + preview.compatibility_detail + '</span>';
         }
         msg += '<br><br><span style="font-size:var(--text-footnote);color:var(--accent-orange);">A pre-restore safety snapshot will be auto-created before restoring.</span>';
 
@@ -711,7 +711,7 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
           async function() {
             setBtnLoading('btn-restore-' + backupId, true);
             try {
-              var resp2 = await window.apiFetch('/v1/backup/' + encodeURIComponent(backupId) + '/restore', {
+              var resp2 = await apiFetch('/v1/backup/' + encodeURIComponent(backupId) + '/restore', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ confirm: 'RESTORE' })
@@ -730,13 +730,13 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
               } else {
                 toast(data2.detail || 'Restore failed', 'error');
               }
-            } catch(e) {
+            } catch {
               toast('Network error during restore', 'error');
             }
             setBtnLoading('btn-restore-' + backupId, false);
           }
         );
-      } catch(e) {
+      } catch {
         toast('Network error loading preview', 'error');
       }
     },
@@ -750,7 +750,7 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
         async function() {
           setBtnLoading('btn-delete-' + backupId, true);
           try {
-            var resp = await window.apiFetch('/v1/backup/' + encodeURIComponent(backupId) + '?confirm_last=true', { method: 'DELETE' });
+            var resp = await apiFetch('/v1/backup/' + encodeURIComponent(backupId) + '?confirm_last=true', { method: 'DELETE' });
             if (resp.ok) {
               toast('Backup deleted: ' + backupId, 'success');
               backup.loadAll();
@@ -762,7 +762,7 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
             } else {
               toast('Failed to delete backup', 'error');
             }
-          } catch(e) {
+          } catch {
             toast('Network error during delete', 'error');
           }
           setBtnLoading('btn-delete-' + backupId, false);
