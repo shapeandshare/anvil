@@ -61,3 +61,6 @@ Modified:
 - [[Decisions/ADR-031-behavioral-theme-engine]]
 - [[Sessions/2026-06-19-theme-gallery-expansion]]
 - [[Sessions/2026-06-20-nine-new-themes]]
+- [[Sessions/2026-06-26-prism-theme-enhancements-and-removal]]
+
+> **Note**: The Prism theme was removed on 2026-06-26 per user request. See the linked session log for the full enhancement-to-removal history.
