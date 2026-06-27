@@ -7,12 +7,23 @@ console error monitoring, and test data seeding helpers.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import time
 from pathlib import Path
 
 import httpx
 import pytest
+
+BROWSER_TEST_API_KEY = "browser-test-anvil-key-00000000"
+"""Fixed API key used for browser smoke tests.
+
+Must match ``ANVIL_API_KEY`` in the Docker compose environment so both
+the test runner and the container agree on credentials.
+"""
+
+# Set a known key BEFORE any module-level code calls get_api_key_store().
+os.environ.setdefault("ANVIL_API_KEY", BROWSER_TEST_API_KEY)
 
 from anvil.api.deps import get_api_key_store
 
