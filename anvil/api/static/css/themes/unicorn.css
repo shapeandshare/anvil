@@ -263,3 +263,11 @@
     display: none;
   }
 }
+
+/* ── Glass Content Blocks ── */
+[data-skin="unicorn"] .hero-card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-color: var(--glass-border);
+}
