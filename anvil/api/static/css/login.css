@@ -18,7 +18,7 @@
   background: var(--surface, #1c1c1e);
   border-radius: var(--radius-lg, 16px);
   border: 1px solid var(--border, rgba(255,255,255,0.08));
-  box-shadow: var(--shadow-elevated, 0 8px 32px rgba(0,0,0,0.4));
+  box-shadow: var(--shadow-lg);
   width: 100%;
   max-width: 400px;
   padding: var(--space-8, 3rem);
@@ -66,11 +66,11 @@
 }
 
 .login-card__input {
-  background: var(--surface-raised, #2c2c2e);
-  border: 1px solid var(--border, rgba(255,255,255,0.1));
+  background: var(--surface-2);
+  border: 1px solid var(--border);
   border-radius: var(--radius-md, 10px);
   padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
-  color: var(--text, #ffffff);
+  color: var(--text);
   font-size: var(--font-size-base, 1rem);
   font-family: var(--font-mono, "SF Mono", "JetBrains Mono", monospace);
   transition: border-color 0.15s ease;
@@ -83,7 +83,7 @@
 }
 
 .login-card__input::placeholder {
-  color: var(--text-tertiary, rgba(255,255,255,0.3));
+  color: var(--text-tertiary);
 }
 
 .login-card__error {
