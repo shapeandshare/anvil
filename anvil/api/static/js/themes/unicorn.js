@@ -337,6 +337,7 @@
     var reducedMotion = !!(effectLevel && (effectLevel.level === 'muted' || effectLevel.reducedMotion));
     var paused = !!(effectLevel && effectLevel.level === 'paused');
     var diverged = false;
+    var hasSession = !!bus.session();  // Only spawn sprites during active training
 
     var unsubs = [];
     var overlay = null;
@@ -380,7 +381,7 @@
 
     /* ── Spawn Methods ── */
     function spawnUnicorn(burstMode) {
-      if (diverged || !overlay) return;
+      if (diverged || !overlay || !hasSession) return;
       var count = overlay.querySelectorAll('.unicorn-floater').length;
       var max = burstMode ? MAX_UNICORNS + 3 : MAX_UNICORNS;
       if (count >= max) return;
@@ -429,7 +430,7 @@
     }
 
     function spawnRainbow(burstMode) {
-      if (diverged || !overlay || reducedMotion) return;
+      if (diverged || !overlay || !hasSession || reducedMotion) return;
       var count = overlay.querySelectorAll('.unicorn-rainbow').length;
       var max = burstMode ? MAX_RAINBOWS + 2 : MAX_RAINBOWS;
       if (count >= max) return;
@@ -515,7 +516,7 @@
 
     /* ── Burst ── */
     function burst(count, rainbowCount) {
-      if (diverged || legible || paused || reducedMotion) return;
+      if (diverged || !hasSession || legible || paused || reducedMotion) return;
       ensureOverlay();
       root.setAttribute('data-unicorn-burst', 'true');
       if (burstTimer) clearTimeout(burstTimer);
@@ -672,9 +673,11 @@
     if (!legible && !paused) {
       ensureOverlay();
       if (!reducedMotion) {
-        // Spawn a few initial unicorns
-        for (ii = 0; ii < 3; ii++) {
-          spawnUnicorn(false);
+        // Spawn initial unicorns only during active training
+        if (hasSession) {
+          for (ii = 0; ii < 3; ii++) {
+            spawnUnicorn(false);
+          }
         }
         // Spawn initial clouds
         for (ii = 0; ii < 2; ii++) {
@@ -683,9 +686,11 @@
         startAnimation();
         startSpawnTimers();
       } else {
-        // reduced/muted: spawn static unicorns (no animation)
-        for (ii = 0; ii < 3; ii++) {
-          spawnUnicorn(false);
+        // reduced/muted: spawn static unicorns (no animation) — only during training
+        if (hasSession) {
+          for (ii = 0; ii < 3; ii++) {
+            spawnUnicorn(false);
+          }
         }
         // Spawn static clouds
         for (ii = 0; ii < 2; ii++) {
