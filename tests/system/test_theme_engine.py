@@ -35,17 +35,14 @@ THEME_IDS = [
     "stormfront",
     "emberdrift",
     "resonance",
-    "inkwash",
     "arcade",
     "ash",
     "deepsea",
     "echo",
     "loom",
-    "prism",
     "pulse",
     "solarflare",
     "static",
-    "vinyl",
 ]
 THEME_SCRIPTS = [
     "/static/js/theme/theme-registry.js",

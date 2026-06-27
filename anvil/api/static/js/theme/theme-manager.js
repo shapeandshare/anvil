@@ -155,9 +155,7 @@ function teardownMapping() {
       return;
     }
     var dur = mode === 'on' ? '2s' : '120s';
-    var css =
-      '[data-skin="vinyl"] .vinyl-reel { animation-duration: ' + dur + ' !important; }' +
-      '[data-skin="vinyl"] .vinyl-vu-needle { transition-duration: 0.05s !important; }' +
+var css =
       '[data-skin="bloom"] .app-main::after { animation-duration: ' + dur + ' !important; }' +
       '[data-skin="solarflare"] .app-main::after { animation-duration: ' + dur + ' !important; }' +
       '[data-skin="tide"] .app-main::after { animation-duration: ' + dur + ' !important; }' +

@@ -248,7 +248,7 @@ Full rationale: [[Discoveries/particle-canvas-always-on-idle-baseline]].
 | solarflare | Solar Flare | grad_norm | single |
 | deepsea | Deep Sea | loss | light/dark |
 | static | Static | loss volatility | single |
-| vinyl | Vinyl | TPS + loss | light/dark |
+
 | echo | Echo | grad_norm + milestone | single |
 | prism | Prism | loss/milestone | light/dark |
 | loom | Loom | TPS | light/dark |
