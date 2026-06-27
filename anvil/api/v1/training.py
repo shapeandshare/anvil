@@ -626,7 +626,9 @@ async def start_training(config: TrainConfig) -> dict[str, Any]:
                     f.write("\n".join(samples))
                 if mlflow_run_id:
                     try:
-                        client = tracking_svc._client  # pylint: disable=protected-access
+                        client = (
+                            tracking_svc._client
+                        )  # pylint: disable=protected-access
                         if client:
                             loop = asyncio.get_event_loop()
                             await loop.run_in_executor(
@@ -642,7 +644,9 @@ async def start_training(config: TrainConfig) -> dict[str, Any]:
                 model.save(model_path, uchars)  # type: ignore[attr-defined]
                 if mlflow_run_id:
                     try:
-                        client = tracking_svc._client  # pylint: disable=protected-access
+                        client = (
+                            tracking_svc._client
+                        )  # pylint: disable=protected-access
                         if client:
                             loop = asyncio.get_event_loop()
                             await loop.run_in_executor(
@@ -680,7 +684,9 @@ async def start_training(config: TrainConfig) -> dict[str, Any]:
                 else:
                     if mlflow_run_id and export_result["safetensors_path"]:
                         try:
-                            client = tracking_svc._client  # pylint: disable=protected-access
+                            client = (
+                                tracking_svc._client
+                            )  # pylint: disable=protected-access
                             if client:
                                 loop = asyncio.get_event_loop()
                                 await loop.run_in_executor(
