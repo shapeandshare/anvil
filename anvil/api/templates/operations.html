@@ -66,6 +66,54 @@
 </div>
 
 <div class="section-card" style="--stagger-i: 3">
+  <div class="section-card__header">
+    <span class="section-card__icon">&#128230;</span>
+    <h2 class="section-card__title">Backup &amp; Restore</h2>
+  </div>
+  <div style="margin-bottom:var(--space-3);">
+    <div class="type-footnote" style="color:var(--accent);font-weight:600;margin-bottom:var(--space-1);">Deployment State Protection</div>
+    <div>Create full-deployment backups including the database, models, datasets, and configuration. Restore from a backup to recover the application state. Pre-restore safety snapshots are auto-created before every restore.</div>
+  </div>
+
+  {# ── Backup status card ── #}
+  <div id="backup-status-card">
+    <span class="text-muted type-subhead">Loading backup status&hellip;</span>
+  </div>
+
+  {# ── Backup progress ── #}
+  <div id="backup-progress" style="display:none;margin:var(--space-3) 0;">
+    <div class="section-card" style="margin:0;">
+      <div class="section-card__header">
+        <span class="section-card__icon">&#9889;</span>
+        <h2 class="section-card__title" id="backup-progress-title">Operation in progress&hellip;</h2>
+      </div>
+      <div style="padding:var(--space-3) var(--space-4);">
+        <div style="display:flex;align-items:center;gap:var(--space-3);">
+          <div class="spinner"></div>
+          <div>
+            <div id="backup-progress-step" class="type-subhead" style="color:var(--text-secondary);">Initializing&hellip;</div>
+            <div style="margin-top:var(--space-1);">
+              <div class="meter" style="width:200px;height:6px;"><span id="backup-progress-bar" style="width:0%;display:block;height:100%;background:var(--accent);border-radius:3px;transition:width 0.3s ease;"></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Backup actions bar ── #}
+  <div class="ops-actions-bar" style="margin-bottom:var(--space-3);">
+    <button class="btn btn-secondary" onclick="backup.create()" id="btn-backup-create">&#128190; Create Backup</button>
+    <button class="btn btn-secondary" onclick="backup.cleanupSafety()" id="btn-backup-cleanup-safety">&#128465; Cleanup Safety Snapshots</button>
+  </div>
+
+  {# ── Backup list ── #}
+  <div id="backup-list-container">
+    <div class="empty-state">No backups yet. Use <strong class="cmd">Create Backup</strong> above or <strong class="cmd">anvil-backup create</strong> from the terminal.</div>
+  </div>
+</div>
+
+<div class="section-card" style="--stagger-i: 4">
   <div class="section-card__header section-card__header--clickable" id="logs-header" role="button" tabindex="0" aria-expanded="false" aria-controls="logs-body" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleLogs()}">
     <span class="section-card__icon">&#128196;</span>
     <h2 class="section-card__title">Service Logs — tail -f</h2>
@@ -383,6 +431,342 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
 
   setInterval(loadResources, 10000);
   loadResources();
+
+  /* ── Backup & Restore ── */
+  window.backup = {
+    _activeOperationId: null,
+    _eventSource: null,
+
+    formatBytes: function(b) {
+      if (b === 0) return '0 B';
+      var units = ['B', 'KB', 'MB', 'GB', 'TB'];
+      var i = Math.floor(Math.log(b) / Math.log(1024));
+      return (b / Math.pow(1024, i)).toFixed(i < 2 ? 0 : 1) + ' ' + units[i];
+    },
+
+    ageDisplay: function(secs) {
+      if (secs < 60) return 'just now';
+      if (secs < 3600) return Math.floor(secs / 60) + 'm';
+      if (secs < 86400) return Math.floor(secs / 3600) + 'h';
+      return Math.floor(secs / 86400) + 'd';
+    },
+
+    formatDate: function(iso) {
+      if (!iso) return '—';
+      var d = new Date(iso);
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    },
+
+    loadStatus: async function() {
+      var el = document.getElementById('backup-status-card');
+      if (!el) return;
+      try {
+        var resp = await fetch('/v1/backup/status');
+        if (!resp.ok) { el.innerHTML = '<span class="text-muted type-subhead">Could not load backup status.</span>'; return; }
+        var s = await resp.json();
+        var pct = Math.round(s.quota_used_fraction * 100);
+        var gaugeClass = s.over_threshold ? 'color:var(--accent-orange);' : '';
+        var latest = s.latest_backup_at ? backup.formatDate(s.latest_backup_at) : '—';
+        var oldest = s.oldest_backup_at ? backup.formatDate(s.oldest_backup_at) : '—';
+        var html = '<div class="info-grid">';
+        html += '<span class="info-key">backups</span><span class="info-val">' + s.backup_count + '</span>';
+        html += '<span class="info-key">total size</span><span class="info-val">' + backup.formatBytes(s.total_bytes) + ' <span class="text-muted type-caption-2">of ' + backup.formatBytes(s.quota_bytes) + ' quota</span></span>';
+        html += '<span class="info-key">usage</span><span class="info-val"><div class="meter" style="width:120px;"><span style="width:' + pct + '%;display:block;height:100%;background:' + (s.over_threshold ? 'var(--accent-orange)' : 'var(--accent)') + ';border-radius:3px;"></span></div> <span style="' + gaugeClass + 'font-family:var(--font-mono);font-size:var(--text-footnote);">' + pct + '%</span></span>';
+        html += '<span class="info-key">latest</span><span class="info-val">' + latest + '</span>';
+        html += '<span class="info-key">oldest</span><span class="info-val">' + oldest + '</span>';
+        html += '</div>';
+        el.innerHTML = html;
+      } catch(e) {
+        el.innerHTML = '<span class="text-muted type-subhead">Could not load backup status.</span>';
+      }
+    },
+
+    confirmModal: function(title, message, confirmLabel, confirmClass, callback) {
+      var existing = document.querySelector('.modal-overlay');
+      if (existing) existing.remove();
+
+      var overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+      overlay.innerHTML = '<div class="modal-dialog">'
+        + '<div class="modal-dialog__header">'
+        + '<div class="modal-dialog__icon" style="background:color-mix(in srgb, ' + (confirmClass === 'red' ? 'var(--accent-red)' : 'var(--accent-orange)') + ' 15%,transparent);color:' + (confirmClass === 'red' ? 'var(--accent-red)' : 'var(--accent-orange)') + ';">&#9878;</div>'
+        + '<h3 class="modal-dialog__title">' + title + '</h3></div>'
+        + '<div class="modal-dialog__body"><p class="modal-dialog__message">' + message + '</p></div>'
+        + '<div class="modal-dialog__actions">'
+        + '<button type="button" class="modal-dialog__btn modal-dialog__btn--cancel" id="modal-cancel">Cancel</button>'
+        + '<button type="button" class="modal-dialog__btn modal-dialog__btn--confirm" style="' + (confirmClass === 'red' ? 'color:var(--accent-red);' : '') + '" id="modal-confirm">' + confirmLabel + '</button>'
+        + '</div></div>';
+
+      document.body.appendChild(overlay);
+      document.getElementById('modal-cancel').focus();
+
+      var close = function() {
+        overlay.classList.add('modal-overlay--closing');
+        setTimeout(function() { overlay.remove(); }, 250);
+      };
+
+      document.getElementById('modal-cancel').addEventListener('click', close);
+      document.getElementById('modal-confirm').addEventListener('click', function() {
+        close();
+        callback();
+      });
+      overlay.addEventListener('click', function(e) { if (e.target === overlay) close(); });
+      document.addEventListener('keydown', function handler(e) {
+        if (e.key === 'Escape') { close(); document.removeEventListener('keydown', handler); }
+      });
+    },
+
+    create: async function() {
+      backup.confirmModal(
+        'Create Backup',
+        'This will create a full deployment backup including the database, models, datasets, and configuration. The process may take a moment.',
+        'Create Backup',
+        'orange',
+        async function() {
+          setBtnLoading('btn-backup-create', true);
+          try {
+            var resp = await window.apiFetch('/v1/backup', { method: 'POST' });
+            var data = await resp.json();
+            if (resp.ok) {
+              toast('Backup started: ' + data.backup_id, 'info');
+              backup._activeOperationId = data.backup_id;
+              backup._startSSE(data.backup_id);
+            } else if (resp.status === 409) {
+              toast(data.detail || 'Another operation is already in progress', 'error');
+            } else if (resp.status === 507) {
+              toast(data.detail || 'Insufficient storage space', 'error');
+            } else {
+              toast(data.detail || 'Failed to create backup', 'error');
+            }
+          } catch(e) {
+            toast('Network error creating backup', 'error');
+          }
+          setBtnLoading('btn-backup-create', false);
+        }
+      );
+    },
+
+    cleanupSafety: async function() {
+      backup.confirmModal(
+        'Cleanup Safety Snapshots',
+        'This will remove all pre-restore safety snapshots. Safety snapshots are created automatically before every restore. Only remove them if you are sure you no longer need them.',
+        'Cleanup',
+        'orange',
+        async function() {
+          setBtnLoading('btn-backup-cleanup-safety', true);
+          try {
+            var resp = await window.apiFetch('/v1/backup/cleanup-safety', { method: 'POST' });
+            var data = await resp.json();
+            if (resp.ok) {
+              toast('Cleaned up ' + data.deleted_count + ' safety snapshot(s)', 'success');
+              backup.loadAll();
+            } else {
+              toast(data.detail || 'Cleanup failed', 'error');
+            }
+          } catch(e) {
+            toast('Network error during cleanup', 'error');
+          }
+          setBtnLoading('btn-backup-cleanup-safety', false);
+        }
+      );
+    },
+
+    _startSSE: function(operationId) {
+      if (backup._eventSource) backup._eventSource.close();
+      var progressEl = document.getElementById('backup-progress');
+      var stepEl = document.getElementById('backup-progress-step');
+      var barEl = document.getElementById('backup-progress-bar');
+      var titleEl = document.getElementById('backup-progress-title');
+      if (progressEl) progressEl.style.display = 'block';
+
+      var es = new EventSource('/v1/backup/stream/' + encodeURIComponent(operationId));
+      backup._eventSource = es;
+
+      es.addEventListener('progress', function(e) {
+        var data = JSON.parse(e.data);
+        if (stepEl) stepEl.textContent = data.current_step || 'Working&hellip;';
+        if (barEl) barEl.style.width = Math.round(data.percent) + '%';
+        if (titleEl) titleEl.textContent = (data.operation_type === 'restore' ? 'Restore' : 'Backup') + ' in progress&hellip;';
+      });
+
+      es.addEventListener('complete', function(e) {
+        es.close();
+        backup._eventSource = null;
+        backup._activeOperationId = null;
+        if (progressEl) progressEl.style.display = 'none';
+        toast('Operation completed successfully', 'success');
+        backup.loadAll();
+      });
+
+      es.addEventListener('error', function(e) {
+        var msg = 'Operation encountered an error';
+        try { var data = JSON.parse(e.data); msg = data.message || msg; } catch(_) {}
+        es.close();
+        backup._eventSource = null;
+        backup._activeOperationId = null;
+        if (progressEl) progressEl.style.display = 'none';
+        toast(msg, 'error');
+        backup.loadAll();
+      });
+    },
+
+    loadBackups: async function() {
+      var container = document.getElementById('backup-list-container');
+      if (!container) return;
+      try {
+        var resp = await fetch('/v1/backup');
+        if (!resp.ok) { container.innerHTML = '<span class="text-muted type-subhead">Could not load backup list.</span>'; return; }
+        var backups = await resp.json();
+        if (!backups || backups.length === 0) {
+          container.innerHTML = '<div class="empty-state">No backups yet. Use <strong class="cmd">Create Backup</strong> above or <strong class="cmd">anvil-backup create</strong> from the terminal.</div>';
+          return;
+        }
+        var html = '<div class="table-scroll"><table class="grouped-list">';
+        html += '<thead><tr><th>Backup ID</th><th>Type</th><th>Status</th><th>Size</th><th>Age</th><th>Actions</th></tr></thead><tbody>';
+        for (var i = 0; i < backups.length; i++) {
+          var b = backups[i];
+          var typeBadge = b.is_safety_snapshot ? '<span class="badge badge-yellow">safety</span>' : '<span class="badge badge-cyan">backup</span>';
+          var statusBadge = '';
+          if (b.status === 'completed') statusBadge = '<span class="badge badge-green">completed</span>';
+          else if (b.status === 'failed') statusBadge = '<span class="badge badge-red">failed</span>';
+          else if (b.status === 'corrupted') statusBadge = '<span class="badge badge-red">corrupted</span>';
+          else statusBadge = '<span class="badge badge-yellow">' + b.status + '</span>';
+          var actionsHtml = '';
+          if (b.status === 'completed') {
+            actionsHtml += '<button class="btn btn-secondary btn-sm" onclick="backup.verify(\'' + b.backup_id + '\')" title="Verify integrity">&#9989;</button> ';
+            if (!b.is_safety_snapshot) {
+              actionsHtml += '<button class="btn btn-secondary btn-sm" onclick="backup.previewRestore(\'' + b.backup_id + '\')" title="Restore">&#128259;</button> ';
+              actionsHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-red);border-color:var(--accent-red);" onclick="backup.deleteBackup(\'' + b.backup_id + '\')" title="Delete">&#128465;</button>';
+            }
+          }
+          html += '<tr class="row-entrance" style="--row-i:' + i + '">'
+            + '<td class="cell-mono">' + b.backup_id + '</td>'
+            + '<td class="cell-nowrap">' + typeBadge + '</td>'
+            + '<td class="cell-nowrap">' + statusBadge + '</td>'
+            + '<td class="cell-nowrap">' + backup.formatBytes(b.archive_size_bytes) + '</td>'
+            + '<td class="cell-nowrap text-muted">' + backup.ageDisplay(b.age_seconds) + '</td>'
+            + '<td class="cell-nowrap">' + actionsHtml + '</td>'
+            + '</tr>';
+        }
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+      } catch(e) {
+        container.innerHTML = '<span class="text-muted type-subhead">Could not load backup list.</span>';
+      }
+    },
+
+    loadAll: function() {
+      backup.loadStatus();
+      backup.loadBackups();
+    },
+
+    verify: async function(backupId) {
+      setBtnLoading('btn-verify-' + backupId, true);
+      try {
+        var resp = await window.apiFetch('/v1/backup/' + encodeURIComponent(backupId) + '/verify', { method: 'POST' });
+        var data = await resp.json();
+        if (resp.ok && data.valid) {
+          toast('Backup verified: valid (' + data.checked_count + ' entries)', 'success');
+        } else if (resp.ok && !data.valid) {
+          toast('Backup corrupted: ' + (data.mismatched ? data.mismatched.length + ' mismatched entries' : 'integrity check failed'), 'error');
+        } else {
+          toast(data.detail || 'Verification failed', 'error');
+        }
+      } catch(e) {
+        toast('Network error during verification', 'error');
+      }
+      setBtnLoading('btn-verify-' + backupId, false);
+      backup.loadAll();
+    },
+
+    previewRestore: async function(backupId) {
+      try {
+        var resp = await fetch('/v1/backup/' + encodeURIComponent(backupId) + '/preview');
+        var preview = await resp.json();
+        if (!resp.ok) { toast(preview.detail || 'Could not load restore preview', 'error'); return; }
+
+        var msg = 'This will restore the deployment from backup <strong class="cmd">' + backupId + '</strong>.';
+        msg += '<br><br><span class="text-muted">Version: ' + (preview.deployment_version || 'N/A') + ' | Schema: ' + (preview.schema_revision || 'N/A');
+        msg += ' | Entries: ' + preview.entry_count + ' | Size: ' + backup.formatBytes(preview.archive_size_bytes) + '</span>';
+        if (preview.compatibility !== 'ok') {
+          msg += '<br><br><span style="color:var(--accent-red);">&#9888; ' + preview.compatibility_detail + '</span>';
+        } else {
+          msg += '<br><br><span class="text-muted">' + preview.compatibility_detail + '</span>';
+        }
+        msg += '<br><br><span style="font-size:var(--text-footnote);color:var(--accent-orange);">A pre-restore safety snapshot will be auto-created before restoring.</span>';
+
+        backup.confirmModal(
+          'Restore Backup',
+          msg,
+          'RESTORE',
+          'red',
+          async function() {
+            setBtnLoading('btn-restore-' + backupId, true);
+            try {
+              var resp2 = await window.apiFetch('/v1/backup/' + encodeURIComponent(backupId) + '/restore', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ confirm: 'RESTORE' })
+              });
+              var data2 = await resp2.json();
+              if (resp2.ok) {
+                toast('Restore started (safety snapshot: ' + data2.safety_snapshot_id + ')', 'info');
+                backup._activeOperationId = data2.safety_snapshot_id;
+                backup._startSSE(data2.safety_snapshot_id);
+              } else if (resp2.status === 400) {
+                toast(data2.detail || 'Confirmation required', 'error');
+              } else if (resp2.status === 409) {
+                toast(data2.detail || 'Operation blocked (another in progress or schema incompatible)', 'error');
+              } else if (resp2.status === 507) {
+                toast(data2.detail || 'Insufficient storage space', 'error');
+              } else {
+                toast(data2.detail || 'Restore failed', 'error');
+              }
+            } catch(e) {
+              toast('Network error during restore', 'error');
+            }
+            setBtnLoading('btn-restore-' + backupId, false);
+          }
+        );
+      } catch(e) {
+        toast('Network error loading preview', 'error');
+      }
+    },
+
+    deleteBackup: async function(backupId) {
+      backup.confirmModal(
+        'Delete Backup',
+        'Are you sure you want to delete backup <strong class="cmd">' + backupId + '</strong>? This action cannot be undone.',
+        'Delete',
+        'red',
+        async function() {
+          setBtnLoading('btn-delete-' + backupId, true);
+          try {
+            var resp = await window.apiFetch('/v1/backup/' + encodeURIComponent(backupId) + '?confirm_last=true', { method: 'DELETE' });
+            if (resp.ok) {
+              toast('Backup deleted: ' + backupId, 'success');
+              backup.loadAll();
+            } else if (resp.status === 400) {
+              var data = await resp.json();
+              toast(data.detail || 'Cannot delete last restorable backup', 'error');
+            } else if (resp.status === 403) {
+              toast('Safety snapshots cannot be deleted here', 'error');
+            } else {
+              toast('Failed to delete backup', 'error');
+            }
+          } catch(e) {
+            toast('Network error during delete', 'error');
+          }
+          setBtnLoading('btn-delete-' + backupId, false);
+        }
+      );
+    }
+  };
+
+  setInterval(backup.loadAll, 15000);
+  setTimeout(backup.loadAll, 500);
 
   /* ── Logs collapsible toggle ── */
   var logsHeader = document.getElementById('logs-header');
