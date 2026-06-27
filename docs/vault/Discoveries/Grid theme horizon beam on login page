@@ -1,0 +1,52 @@
+---
+title: Grid theme horizon beam on login page
+type: discovery
+tags:
+  - type/discovery
+  - domain/ui
+  - status/draft
+created: '2026-06-26'
+updated: '2026-06-26'
+aliases:
+  - Grid login horizon bar
+  - grid-theme-login-overlap
+source: >-
+  2026-06-26 session — user reported login panel has a light horizontal bar
+  across it in the grid theme
+code-refs:
+  - anvil/api/static/css/themes/grid.css
+  - anvil/api/static/css/login.css
+---
+# Grid theme horizon beam on login page
+
+## Summary
+
+The grid theme's decorative "horizon" beam (`[data-skin="grid"] .app-main::after`) — a fixed-position 2px glowing line at `top: 40vh` — cuts across the vertically-centered login card on the login page. The grid floor (`::before`) also uses `z-index: 0` and can partially show behind the card.
+
+## Root Cause
+
+`grid.css` (lines 93–117) defines two fixed-position pseudo-elements on `.app-main`:
+
+- **`::after`** — a glowing cyan horizon beam at `top: 40vh` with a horizontal gradient and pulsing animation (`grid-horizon`).
+- **`::before`** — a perspective grid floor anchored at the bottom with animated scrolling grid lines (`grid-floor`).
+
+These are designed for content pages where `.app-main` has enough internal content to position them out of the visible card area. On the login page, the `.login-card` is vertically centered via flexbox, placing it at roughly `50vh + nav-height`, which the horizon beam crosses.
+
+## Fix
+
+Added an override in `login.css` (which only loads on the login page) that hides both pseudo-elements when `.login-page` is present inside `.app-main`:
+
+```css
+[data-skin="grid"] .app-main:has(.login-page)::after,
+[data-skin="grid"] .app-main:has(.login-page)::before {
+  display: none;
+}
+```
+
+The `:has()` scoping prevents affecting other pages — the grid theme's effects remain on all content pages.
+
+## Implications
+
+- This is a theme-specific override. If other themes add similar decorative pseudo-elements, they may also need login-page overrides.
+- The fix is purely visual — the beam and grid floor are `pointer-events: none` decorations, so hiding them has no functional impact.
+- `:has()` is well-supported in modern browsers (Chrome 105+, Safari 15.4+, Firefox 103+) and the project targets modern web runtimes.
