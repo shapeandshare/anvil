@@ -212,12 +212,31 @@ def _login(page):
 
     POSTs the API key to /login, stores the session cookie in the
     browser context, so subsequent page navigations are authenticated.
+
+    Retries once on transient connection errors (socket hang up).
     """
-    response = page.request.post(
-        "/login",
-        data=json.dumps({"api_key": TEST_API_KEY}),
-        headers={"Content-Type": "application/json"},
-    )
+    import time as _time
+
+    last_exc = None
+    for attempt in range(2):
+        try:
+            response = page.request.post(
+                "/login",
+                data=json.dumps({"api_key": TEST_API_KEY}),
+                headers={"Content-Type": "application/json"},
+            )
+            if response.ok:
+                break
+            last_exc = AssertionError(
+                f"Login failed: {response.status} {response.status_text}"
+            )
+        except Exception as exc:
+            last_exc = exc
+            if attempt == 0:
+                _time.sleep(3)
+    else:
+        raise last_exc  # type: ignore[misc]
+
     assert response.ok, f"Login failed: {response.status} {response.status_text}"
 
     # Extract the Set-Cookie header and replay it into the browser context
