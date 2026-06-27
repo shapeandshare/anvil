@@ -17,7 +17,7 @@ import math
 import random
 from collections.abc import Callable, Iterator
 from types import ModuleType
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from torch import Tensor as torch_Tensor
@@ -320,7 +320,7 @@ class TorchLlamaModel:
 
         # Final RMSNorm with learned scale before lm_head
         x = F.rms_norm(x, normalized_shape=(self.n_embd,), eps=1e-5) * self.rms_final
-        logits = F.linear(x, self.lm_head)
+        logits = cast(torch_Tensor, F.linear(x, self.lm_head))
         return logits
 
     def to(self, device: str | torch_device) -> TorchLlamaModel:
