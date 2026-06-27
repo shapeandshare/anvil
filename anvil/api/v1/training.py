@@ -821,7 +821,8 @@ async def start_training(config: TrainConfig) -> dict[str, Any]:
     def _cleanup(_t: asyncio.Task[Any]) -> None:
         """Remove the task from ``_tasks`` dict on completion."""
         _tasks.pop(run_id, None)
-        asyncio.create_task(_orphan_queue_release())
+        orphan_task = asyncio.create_task(_orphan_queue_release())
+        orphan_task.add_done_callback(lambda _t: None)
 
     task.add_done_callback(_cleanup)
 

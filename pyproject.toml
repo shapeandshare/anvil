@@ -108,7 +108,7 @@ convention = "numpy"
 "anvil/api/v1/eval.py" = ["ASYNC240"]
 "anvil/api/v1/experiments.py" = ["ASYNC240", "ASYNC230"]
 "anvil/api/v1/router.py" = ["ASYNC221", "ASYNC240", "B904"]
-"anvil/api/v1/training.py" = ["ASYNC230", "RUF006"]
+"anvil/api/v1/training.py" = ["ASYNC230"]
 "anvil/services/inference/inference.py" = ["ASYNC240"]
 
 [tool.ruff.format]
