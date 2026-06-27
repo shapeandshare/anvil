@@ -29,9 +29,11 @@ _torch_mod: ModuleType | None = None  # Imported torch module (or None)
 _F_mod: ModuleType | None = None  # Imported torch.nn.functional module (or None)
 
 try:
-    import torch as _torch_mod
-    import torch.nn.functional as _F_mod
+    import torch as _torch_import
+    import torch.nn.functional as _F_import
 
+    _torch_mod = _torch_import
+    _F_mod = _F_import
     _TORCH_AVAILABLE = True
 except ImportError:
     pass
@@ -319,7 +321,7 @@ class TorchLlamaModel:
         # Final RMSNorm with learned scale before lm_head
         x = F.rms_norm(x, normalized_shape=(self.n_embd,), eps=1e-5) * self.rms_final
         logits = F.linear(x, self.lm_head)
-        return logits  # type: ignore[no-any-return]
+        return logits
 
     def to(self, device: str | torch_device) -> TorchLlamaModel:
         """Move all model parameters and buffers to a device.

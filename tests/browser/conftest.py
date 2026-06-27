@@ -100,10 +100,11 @@ def base_url() -> str:
 
 
 @pytest.fixture(scope="session")
-def browser_context_args() -> dict:
+def browser_context_args(base_url: str) -> dict:
     """Default Playwright browser context options."""
     return {
         "ignore_https_errors": True,
+        "base_url": base_url,
         "viewport": {"width": 1280, "height": 720},
     }
 
