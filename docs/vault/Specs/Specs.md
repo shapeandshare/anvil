@@ -43,6 +43,22 @@ Start here to see what has been specified, what is in progress, and what shipped
 - [[Specs/023 Header API Versioning/023 Header API Versioning|023 Header API Versioning]]
 - [[Specs/024 Unified Interface Local TLS/024 Unified Interface Local TLS|024 Unified Interface Local TLS]]
 - [[Specs/025 UX Rules Integration/025 UX Rules Integration|025 UX Rules Integration]]
+- [[Specs/028 SaaS Abstraction Framework/028 SaaS Abstraction Framework|028 SaaS Abstraction Framework]]
+- [[Specs/029 SaaS Dev Stack/029 SaaS Dev Stack|029 SaaS Dev Stack]]
+- [[Specs/030 SaaS Authentication/030 SaaS Authentication|030 SaaS Authentication]]
+- [[Specs/031 SaaS Multi-Tenancy RBAC/031 SaaS Multi-Tenancy RBAC|031 SaaS Multi-Tenancy RBAC]]
+- [[Specs/032 SaaS Training Pipeline/032 SaaS Training Pipeline|032 SaaS Training Pipeline]]
+- [[Specs/033 SaaS CDK Infrastructure/033 SaaS CDK Infrastructure|033 SaaS CDK Infrastructure]]
+- [[Specs/034 SaaS One-Command Deploy/034 SaaS One-Command Deploy|034 SaaS One-Command Deploy]]
+- [[Specs/035 SaaS CLI Remote/035 SaaS CLI Remote|035 SaaS CLI Remote]]
+- [[Specs/036 SaaS Observability MLflow Proxy/036 SaaS Observability MLflow Proxy|036 SaaS Observability MLflow Proxy]]
+- [[Specs/037 SaaS Resilience DR/037 SaaS Resilience DR|037 SaaS Resilience DR]]
+
+## SaaS Decomposition (016 → 028–037)
+
+Spec [[Specs/016 SaaS Architecture/016 SaaS Architecture|016 SaaS Architecture]] was superseded and
+split into the ten per-feature specs above. Shared architecture decisions live in
+[[Reference/SaaSArchitectureDecisions|SaaS Architecture Decisions (AD-1..AD-17)]].
 
 ## Conventions
 

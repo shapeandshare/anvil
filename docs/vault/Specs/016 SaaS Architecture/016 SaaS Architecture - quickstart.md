@@ -3,13 +3,21 @@ title: 016 SaaS Architecture - quickstart
 type: quickstart
 tags:
   - type/spec
+  - status/superseded
 spec-refs:
   - docs/vault/Specs/016 SaaS Architecture/
 related:
   - '[[016 SaaS Architecture]]'
-created: ~
-updated: ~
+  - '[[Reference/SaaSArchitectureDecisions]]'
+status: superseded
+created: '2026-06-19'
+updated: '2026-06-27'
 ---
+
+> [!WARNING] Superseded — This artifact is retained for historical reference.
+> Quickstart flows have been lifted into per-feature quickstart docs (028–037).
+> See [[Specs/016 SaaS Architecture/016 SaaS Architecture|016 index]].
+
 # Quickstart: SaaS Architecture Development
 
 ## Prerequisites
