@@ -115,6 +115,10 @@ Non-obvious constraints, gaps, and conflicts discovered during agent sessions. E
 - [[Discoveries/theme-mapping-excited-fake-metrics-grad-norm|Excited Mode Fake Metrics Need grad_norm for Grad-Norm-Driven Mappings]] — Excited Mode Fake Metrics Need grad_norm — Excited theme mappings need fake grad_norm metric for grad-norm-driven visual effects to activate.
 - [[Discoveries/toctou-asyncio-lock-check-before-acquire|TOCTOU Race on asyncio.Lock Check-Before-Acquire]] — TOCTOU Race on asyncio.Lock Check-Before-Acquire — Time-of-check-time-of-use race condition when checking lock state before acquiring asyncio.Lock.
 
+## Discoveries from this session
+
+- [[Discoveries/training-sse-queue-released-on-disconnect|Training SSE Queue Released Prematurely on Client Disconnect]] — SSE `event_stream()` generator unconditionally released the training queue on client disconnect, making the run unreachable after page refresh.
+
 
 ## Related MOCs
 
