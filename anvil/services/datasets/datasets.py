@@ -22,6 +22,7 @@ from ..governance.audit_action import AuditAction
 from ..governance.audit_outcome import AuditOutcome
 
 if TYPE_CHECKING:
+    from ...workspace.workspace_paths import WorkspacePaths
     from ..governance.audit_service import AuditService
 
 
@@ -33,7 +34,12 @@ class DatasetService:
     MLflow lifecycle event hooks.
     """
 
-    def __init__(self, repo: DatasetRepository, store: LocalFileStore | None = None):
+    def __init__(
+        self,
+        repo: DatasetRepository,
+        store: LocalFileStore | None = None,
+        paths: WorkspacePaths | None = None,
+    ):
         """Initialise the dataset service.
 
         Parameters
@@ -41,11 +47,21 @@ class DatasetService:
         repo : DatasetRepository
             Repository for dataset persistence.
         store : LocalFileStore, optional
-            File store for reading sample content. Defaults to a new
-            ``LocalFileStore`` at ``"data/datasets"``.
+            File store for reading sample content.  When ``None`` and
+            *paths* is provided the store is rooted at
+            ``paths.datasets_dir``, otherwise it falls back to
+            ``"data/datasets"``.
+        paths : WorkspacePaths, optional
+            When provided with no explicit *store*, the store is created
+            from ``paths.datasets_dir``.
         """
         self._repo = repo
-        self._store = store or LocalFileStore("data/datasets")
+        if store is not None:
+            self._store = store
+        elif paths is not None:
+            self._store = LocalFileStore(str(paths.datasets_dir))
+        else:
+            self._store = LocalFileStore("data/datasets")
 
     async def list_datasets(self) -> Sequence[Dataset]:
         """Return all datasets.

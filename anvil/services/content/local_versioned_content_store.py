@@ -71,12 +71,18 @@ class LocalVersionedContentStore(VersionedContentStore):
 
     def __init__(
         self,
-        content_dir: str = "data/content",
+        content_dir: str | None = None,
         *,
         db_session: AsyncSession,
         validation_service: ValidationService | None = None,
     ) -> None:
-        self._content_dir = Path(content_dir)
+        if content_dir is None:
+            from ...config import get_config
+
+            resolved_content_dir: str = get_config()["content_dir"]
+        else:
+            resolved_content_dir = content_dir
+        self._content_dir = Path(resolved_content_dir)
         self._blobs_dir = self._content_dir / "blobs"
         self._staging_dir = self._content_dir / "staging"
         self._canonical_dir = self._content_dir / "canonical"

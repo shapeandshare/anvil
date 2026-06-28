@@ -11,7 +11,9 @@ lifecycles (start, stop, status) and standalone helper functions
 PID-file-based process tracking.
 
 Module-level constant ``_PID_DIR`` controls the default directory
-where PID files are stored.
+where PID files are stored.  It is resolved from
+``get_config()["log_dir"]`` so that ``ANVIL_LOG_DIR`` and
+``ANVIL_WORKSPACE_DIR`` are honoured automatically.
 """
 
 import os
@@ -19,8 +21,12 @@ import signal
 import subprocess
 from pathlib import Path
 
+from ..config import get_config
+
 # Default directory for PID files created by write_pid / kill_pid_file.
-_PID_DIR = "logs"
+# Resolved from config so that ANVIL_LOG_DIR and ANVIL_WORKSPACE_DIR
+# are honoured.
+_PID_DIR: str = get_config()["log_dir"]
 
 
 def write_pid(name: str, pid_dir: str = _PID_DIR) -> Path:
@@ -125,8 +131,9 @@ class ProcessSupervisor:
         does not exist. Defaults to ``"logs"``.
     """
 
-    def __init__(self, log_dir: str = "logs"):
-        self.log_dir = Path(log_dir)
+    def __init__(self, log_dir: str | None = None):
+        resolved_log_dir = log_dir if log_dir is not None else get_config()["log_dir"]
+        self.log_dir = Path(resolved_log_dir)
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self._processes: dict[str, subprocess.Popen[bytes]] = {}
 

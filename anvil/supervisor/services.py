@@ -11,6 +11,8 @@ zombie-port cleanup logic to gracefully handle orphaned processes on
 restart.
 """
 
+from __future__ import annotations
+
 import os
 import signal
 import subprocess
@@ -19,6 +21,7 @@ import time
 from pathlib import Path
 
 from ..config import get_config
+from ..workspace.workspace_paths import WorkspacePaths
 
 
 class MLflowService:
@@ -35,11 +38,21 @@ class MLflowService:
         Application configuration dictionary (retrieved via
         :func:`~anvil.config.get_config`). Uses keys ``log_dir``,
         ``mlflow_port``, ``mlflow_uri``, and ``mlflow_backend_store_uri``.
+    workspace_paths : WorkspacePaths or None, optional
+        If provided, the MLflow runs directory (``mlruns_dir``) is
+        derived from this value object instead of defaulting to
+        ``./mlruns`` relative to CWD.
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        workspace_paths: WorkspacePaths | None = None,
+    ) -> None:
         cfg = get_config()
-        self.mlruns_dir = Path("mlruns")
+        if workspace_paths is not None:
+            self.mlruns_dir = workspace_paths.mlruns_dir
+        else:
+            self.mlruns_dir = Path("mlruns")
         self.mlruns_dir.mkdir(parents=True, exist_ok=True)
         self.log_dir = Path(cfg["log_dir"])
         self.log_dir.mkdir(parents=True, exist_ok=True)

@@ -9,21 +9,23 @@ Reads configuration values from the environment and ``.env`` file.
 Exposes ``get_config()`` as the primary API — a cached callable that
 returns a flat dictionary of resolved settings.
 
-Module-level Constants
-----------------------
-_resolved_mlflow_uri : str or None
-    Optional runtime override for the MLflow tracking URI. Set via
-    :func:`set_resolved_mlflow_uri` when the supervisor resolves a
-    dynamic URI that differs from the static config default.
+When ``ANVIL_WORKSPACE_DIR`` is set, path defaults are overlaid from
+``WorkspacePaths`` derived from the workspace root (feature-028).
+Environment-variable overrides always take highest precedence.
 """
+
+from __future__ import annotations
 
 import os
 from functools import lru_cache
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from dotenv import load_dotenv
 from starlette.requests import Request
+
+if TYPE_CHECKING:
+    from .workspace.workspace_paths import WorkspacePaths
 
 load_dotenv()
 
@@ -93,22 +95,7 @@ def get_mlflow_browser_uri(request: Request) -> str:
 
 
 def _parse_port_from_uri(uri: str) -> int:
-    """Extract the port number from an MLflow URI.
-
-    Handles URIs such as ``http://127.0.0.1:5001`` and returns the
-    port component, defaulting to ``5001`` on failure.
-
-    Parameters
-    ----------
-    uri : str
-        A fully qualified URI string.
-
-    Returns
-    -------
-    int
-        The port number extracted from the URI, or ``5001`` as a
-        fallback.
-    """
+    """Extract the port number from an MLflow URI. ..."""
     try:
         from urllib.parse import urlparse
 
@@ -116,6 +103,23 @@ def _parse_port_from_uri(uri: str) -> int:
         return parsed.port or 5001
     except (ValueError, TypeError):
         return 5001
+
+
+def _workspace_paths() -> WorkspacePaths | None:
+    """Return a ``WorkspacePaths`` instance if ``ANVIL_WORKSPACE_DIR`` is set.
+
+    Returns ``None`` when no workspace is configured (the default
+    single-instance boot path).
+
+    The import is deferred to avoid circular imports during package
+    initialisation.
+    """
+    ws = os.getenv("ANVIL_WORKSPACE_DIR")
+    if not ws:
+        return None
+    from .workspace.workspace_paths import WorkspacePaths  # delayed
+
+    return WorkspacePaths(Path(ws).resolve())
 
 
 @lru_cache
@@ -165,22 +169,35 @@ def get_config() -> dict[str, Any]:
         Path("data/anvil-state.db").resolve()
     )
 
+    # ── Workspace-driven path defaults ──────────────────────────────
+    # When ANVIL_WORKSPACE_DIR is set, the boot file (instance.json)
+    # and WorkspacePaths provide per-instance path defaults.
+    # Environment-variable overrides take highest precedence.
+    wp = _workspace_paths()
+    _ws_state_db = str(wp.state_db_path) if wp else state_db_path
+    _ws_log_dir = str(wp.log_dir) if wp else "logs"
+    _ws_backup_dir = str(wp.backup_dir) if wp else str(Path("data/backups"))
+    _ws_content_dir = str(wp.content_dir) if wp else "data/content"
+    _ws_mlflow_backend = (
+        wp.mlflow_backend_store_uri
+        if wp
+        else "sqlite:///" + str(Path("mlruns/mlflow.db").resolve())
+    )
+
     return {
         "port": int(os.getenv("ANVIL_PORT", "8080")),
-        "state_db_path": state_db_path,
-        "log_dir": os.getenv("ANVIL_LOG_DIR", "logs"),
+        "state_db_path": os.getenv("ANVIL_STATE_DB_PATH") or _ws_state_db,
+        "log_dir": os.getenv("ANVIL_LOG_DIR", _ws_log_dir),
         "mlflow_uri": default_mlflow_uri,
         "mlflow_port": _parse_port_from_uri(default_mlflow_uri),
-        "mlflow_backend_store_uri": "sqlite:///"
-        + str(Path("mlruns/mlflow.db").resolve()),
+        "mlflow_backend_store_uri": _ws_mlflow_backend,
         "mlflow_disable_local": mlflow_disable_local,
         "db_auto_migrate": os.getenv("ANVIL_DB_AUTO_MIGRATE", "true").lower()
         in ("true", "1", "yes"),
         "storage_backend": os.getenv("ANVIL_STORAGE_BACKEND", "local"),
         "device": os.getenv("ANVIL_DEVICE", ""),
-        "content_dir": os.getenv("ANVIL_CONTENT_DIR", "data/content"),
-        # Backup & Restore (feature 026)
-        "backup_dir": os.getenv("ANVIL_BACKUP_DIR", str(Path("data/backups"))),
+        "content_dir": os.getenv("ANVIL_CONTENT_DIR", _ws_content_dir),
+        "backup_dir": os.getenv("ANVIL_BACKUP_DIR", _ws_backup_dir),
         "backup_quota_bytes": int(
             os.getenv("ANVIL_BACKUP_QUOTA_BYTES", str(10 * 1024**3))
         ),
@@ -193,4 +210,5 @@ def get_config() -> dict[str, Any]:
         "backup_retention_max_age_days": (
             int(v) if (v := os.getenv("ANVIL_BACKUP_RETENTION_MAX_AGE_DAYS")) else None
         ),
+        "workspace_root": str(wp.root) if wp else "",
     }
