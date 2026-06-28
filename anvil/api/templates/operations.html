@@ -741,8 +741,9 @@
         if (barEl) barEl.style.width = Math.round(data.percent) + '%';
         if (titleEl) titleEl.textContent = (data.operation_type === 'restore' ? 'Restore' : 'Backup') + ' in progress\u2026';
         // Update the live progress chip in the table row
-        if (data.backup_id && data.operation_type !== 'restore') {
-          backup._updateProgressRow(data.backup_id, data.percent, data.current_step);
+        var rowId = data.safety_snapshot_id || data.backup_id;
+        if (rowId) {
+          backup._updateProgressRow(rowId, data.percent, data.current_step);
         }
       });
 
@@ -755,8 +756,9 @@
         // Finalize the table row status before refreshing
         try {
           var data = JSON.parse(e.data);
-          if (data && data.backup_id) {
-            var tr = backup._getRowByBackupId(data.backup_id);
+          var lookupId = data && (data.safety_snapshot_id || data.backup_id);
+          if (lookupId) {
+            var tr = backup._getRowByBackupId(lookupId);
             if (tr && tr.cells[2]) {
               var badge = tr.cells[2].querySelector('.badge');
               if (badge) dom.updateBadge(badge, 'completed', 'badge-green');
@@ -779,8 +781,9 @@
         backup._activeOperationId = null;
         if (progressEl) progressEl.style.display = 'none';
         // Finalize the table row status to failed before refreshing
-        if (errorData && errorData.backup_id) {
-          var tr = backup._getRowByBackupId(errorData.backup_id);
+        var errLookupId = errorData && (errorData.safety_snapshot_id || errorData.backup_id);
+        if (errLookupId) {
+          var tr = backup._getRowByBackupId(errLookupId);
           if (tr && tr.cells[2]) {
             var badge = tr.cells[2].querySelector('.badge');
             if (badge) dom.updateBadge(badge, 'failed', 'badge-red');
