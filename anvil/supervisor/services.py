@@ -13,6 +13,7 @@ restart.
 
 from __future__ import annotations
 
+import asyncio
 import os
 import signal
 import subprocess
@@ -176,6 +177,28 @@ class MLflowService:
         try:
             os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
             self.process.wait(timeout=10)
+        except (ProcessLookupError, subprocess.TimeoutExpired):
+            try:
+                os.killpg(os.getpgid(self.process.pid), signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+        finally:
+            self.process = None
+            pid_file.unlink(missing_ok=True)
+
+    async def async_stop(self) -> None:
+        """Async variant of :meth:`stop` — wraps the blocking wait in a thread.
+
+        Use this from async context (e.g. FastAPI route handlers) to avoid
+        blocking the event loop for up to 10 seconds during MLflow shutdown.
+        """
+        pid_file = self.log_dir / "mlflow.pid"
+        if self.process is None or self.process.poll() is not None:
+            pid_file.unlink(missing_ok=True)
+            return
+        try:
+            os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
+            await asyncio.to_thread(self.process.wait, timeout=10)
         except (ProcessLookupError, subprocess.TimeoutExpired):
             try:
                 os.killpg(os.getpgid(self.process.pid), signal.SIGKILL)

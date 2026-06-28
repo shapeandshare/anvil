@@ -181,6 +181,24 @@ jobs:
       - name: Run vault audit
         run: make vault-audit
 
+  # ── Constitution mechanical checks gate ──
+  constitution-check:
+    name: Constitution Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: bump-scope-guard
+    if: needs.bump-scope-guard.outputs.scope != 'version-only'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Setup environment
+        run: make setup
+      - name: Run constitution checks
+        run: make constitution-check
+
   # ── Browser smoke test (NON-blocking for v1) ──
   browser-smoke:
     name: Browser Smoke
@@ -207,7 +225,7 @@ jobs:
     name: Gate Status
     runs-on: ubuntu-latest
     timeout-minutes: 3
-    needs: [bump-scope-guard, format, lint, typecheck, test, sonar-scan, vault-audit]
+    needs: [bump-scope-guard, format, lint, typecheck, test, sonar-scan, vault-audit, constitution-check]
     if: always()
     steps:
       - name: Summarize gate results
@@ -223,4 +241,5 @@ jobs:
           echo "| test | ${{ needs.test.result }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| sonar-scan | ${{ needs.sonar-scan.result }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| vault-audit | ${{ needs.vault-audit.result }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| constitution-check | ${{ needs.constitution-check.result }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"

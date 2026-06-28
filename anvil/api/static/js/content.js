@@ -21,11 +21,22 @@
     return s.length > len ? s.slice(0, len) + '…' : s;
   }
 
-  function toast(msg, type) {
+  /* ── Toast notification history ── */
+  window._toastHistory = [];
+
+  function toast(msg, type, duration) {
     type = type || 'info';
-    let duration = 3000;
+    duration = duration || (type === 'error' ? 10000 : 3000);
     let container = document.getElementById('toast-container');
     if (!container) return;
+
+    // Record in history
+    window._toastHistory.push({
+      ts: Date.now(),
+      type: type,
+      message: msg
+    });
+
     let el = document.createElement('div');
     el.className = 'toast toast-' + type;
     el.textContent = msg;

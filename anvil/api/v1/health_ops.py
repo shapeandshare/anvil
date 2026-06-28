@@ -295,7 +295,7 @@ async def restart_all_services(request: Request) -> dict[str, Any]:
     mlflow = getattr(request.app.state, "mlflow", None)
     if mlflow is not None:
         if mlflow.is_running:
-            mlflow.stop()
+            await mlflow.async_stop()
         mlflow.start()
         results["mlflow"] = "restarted"
     else:
@@ -377,7 +377,7 @@ async def stop_service(name: str, request: Request) -> dict[str, Any]:
         if mlflow is None:
             raise HTTPException(status_code=400, detail="MLflow not initialized")
         if mlflow.is_running:
-            mlflow.stop()
+            await mlflow.async_stop()
         return {"status": "stopped", "name": "mlflow"}
     raise HTTPException(status_code=404, detail=f"Unknown service: {name}")
 
@@ -403,7 +403,7 @@ async def restart_service(name: str, request: Request) -> dict[str, Any]:
         if mlflow is None:
             raise HTTPException(status_code=400, detail="MLflow not initialized")
         if mlflow.is_running:
-            mlflow.stop()
+            await mlflow.async_stop()
         mlflow.start()
         return {"status": "restarted", "name": "mlflow"}
     raise HTTPException(status_code=404, detail=f"Unknown service: {name}")
