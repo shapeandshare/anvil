@@ -137,6 +137,10 @@ a:hover { text-decoration: underline; }
 .badge-magenta { background: var(--accent-purple); }
 .badge-red { background: var(--accent-red); }
 
+/* ── Animated pulse for in-progress badges (backup/restore SSE) ── */
+.badge__pulse { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: currentColor; margin-right: 5px; vertical-align: middle; animation: badge-pulse 1.2s ease-in-out infinite; }
+@keyframes badge-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.35; transform: scale(0.7); } }
+
 .info-grid { display: grid; grid-template-columns: auto 1fr; gap: var(--space-1) var(--space-4); font-family: var(--font-body); font-size: var(--text-subhead); margin: var(--space-1) 0; }
 .info-grid .info-key { color: var(--text-tertiary); font-size: var(--text-footnote); white-space: nowrap; }
 .info-grid .info-val { color: var(--text); font-size: var(--text-subhead); }
