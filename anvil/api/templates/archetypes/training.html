@@ -1178,6 +1178,11 @@ var gpuToggle = document.getElementById('compute_backend');
     if (cid) config.corpus_id = parseInt(cid);
     if (did) config.dataset_id = parseInt(did);
 
+    var baseModelRef = core.getUrlParams().get('base_model_ref');
+    if (baseModelRef) {
+      config.base_model_ref = parseInt(baseModelRef);
+    }
+
     log('> Starting training with: ' + JSON.stringify(config));
 
     /* Log block_size mismatch warning if applicable */
@@ -1505,6 +1510,37 @@ var gpuToggle = document.getElementById('compute_backend');
 
   /* Load past experiments list for attach */
   loadPastExperiments();
+
+  /* ── Warm-start pre-fill (FR-003a) ── */
+  var baseModelRef = core.getUrlParams().get('base_model_ref');
+  if (baseModelRef) {
+    window.apiFetch('/v1/registry/models/' + baseModelRef)
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(modelData) {
+        if (!modelData || !modelData.versions || modelData.versions.length === 0) {
+          return;
+        }
+        /* Latest version carries the architecture this base was trained with */
+        var latest = modelData.versions[0];
+        var hp = latest.hyperparameters || {};
+        if (hp.n_embd) document.getElementById('n_embd').value = hp.n_embd;
+        if (hp.n_head) document.getElementById('n_head').value = hp.n_head;
+        if (hp.n_layer) document.getElementById('n_layer').value = hp.n_layer;
+        if (hp.block_size) document.getElementById('block_size').value = hp.block_size;
+        if (hp.learning_rate) document.getElementById('learning_rate').value = hp.learning_rate;
+        /* Architecture dims are inherited from the base checkpoint — lock them */
+        ['n_embd', 'n_head', 'n_layer', 'block_size'].forEach(function(id) {
+          var el = document.getElementById(id);
+          if (el) {
+            el.setAttribute('readonly', true);
+            el.title = 'Inherited from base model (warm-start)';
+          }
+        });
+        updateDataContext();
+        updateModelStats();
+      })
+      .catch(function() {});
+  }
 
 /* ── Compute backend availability check ── */
   fetch('/v1/compute/backends').then(function(r) { return r.json(); }).then(function(backends) {
