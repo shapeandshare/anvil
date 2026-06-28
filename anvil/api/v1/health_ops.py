@@ -21,14 +21,14 @@ from typing import Annotated, Any
 import psutil
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from anvil import __version__ as anvil_version
-from anvil.api.auth import SESSION_COOKIE_NAME, generate_csrf_token
-from anvil.api.deps import get_workbench
-from anvil.config import get_config, get_mlflow_browser_uri
-from anvil.db.migration import MigrationService
-from anvil.db.schema_version import SCHEMA_VERSION
-from anvil.gpu import detect_gpu
-from anvil.workbench import AnvilWorkbench
+from ... import __version__ as anvil_version
+from ..auth import SESSION_COOKIE_NAME, generate_csrf_token
+from ..deps import get_workbench
+from ...config import get_config, get_mlflow_browser_uri
+from ...db.migration import MigrationService
+from ...db.schema_version import SCHEMA_VERSION
+from ...gpu import detect_gpu
+from ...workbench import AnvilWorkbench
 
 router = APIRouter()
 

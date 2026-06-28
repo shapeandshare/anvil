@@ -20,7 +20,7 @@ from fastapi import APIRouter, HTTPException, Query
 from mlflow.exceptions import MlflowException
 from mlflow.tracking import MlflowClient
 
-from ...api.v1.schemas import RegisterModelBody
+from .schemas_misc import RegisterModelBody
 from ...config import get_mlflow_uri
 from ...db.repositories.corpora import CorpusRepository
 from ...db.repositories.datasets import DatasetRepository
