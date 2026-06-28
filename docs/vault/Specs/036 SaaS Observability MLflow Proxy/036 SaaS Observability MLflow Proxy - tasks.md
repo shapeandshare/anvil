@@ -79,19 +79,25 @@ status: draft
 
 ---
 
-## Phase 5: MLflow Reverse Proxy
+## Phase 5: MLflow Reverse Proxy (SaaS layers on top of Spec 056)
 
-- [ ] T027 Implement `/v1/mlflow-proxy/{path:path}` route at `anvil/api/v1/mlflow_proxy.py` — `httpx.AsyncClient` forward-proxy, streams responses
-- [ ] T028 Enforce Cognito JWT authentication + RBAC authorization on proxy route — same middleware as other `/v1/*` endpoints; unauthenticated requests return 401 (FR-057a)
-- [ ] T029 Update `MLflowService.start()` in `anvil/supervisor/services.py` — add `--static-prefix=/v1/mlflow-proxy` CLI flag; bind MLflow to loopback only (FR-057g)
-- [ ] T030 Revise `get_mlflow_browser_uri(request)` in `anvil/config.py` — return `{request.base_url}v1/mlflow-proxy` in both modes; use CloudFront-aware scheme in SaaS (`X-Forwarded-Proto`); local upstream is loopback (FR-057c, ADR-035)
-- [ ] T031 Handle MLflow SPA URL conventions: absolute AJAX paths resolved via `--static-prefix`; no body rewriting needed (FR-057b mechanism a)
-- [ ] T032 Configure proxy timeout for long-lived artifact downloads — 60s for UI pages, 300s for artifact downloads; propagate `Transfer-Encoding: chunked` (FR-057d)
-- [ ] T033 Wire `ANVIL_MLFLOW_INTERNAL_URI` env var — SaaS default `http://mlflow.svc.local:5000`, local default `http://127.0.0.1:5001`; fail-fast on missing value in SaaS mode (FR-057e)
-- [ ] T034 Tag MLflow experiments with `org_id` at creation time in the experiment-creation service call (FR-057f)
-- [ ] T035 Write Playwright integration test for MLflow proxy — authenticated `GET /v1/mlflow-proxy/` returns MLflow experiments list; AJAX calls succeed (FR-057g verification)
+> **Dependency**: The generic proxy route, `httpx` streaming, registry, loopback
+> bind, `--static-prefix`, and `get_mlflow_browser_uri` are delivered by
+> [[Specs/056 Reverse-Proxy Registry/056 Reverse-Proxy Registry - tasks|Spec 056]]
+> (T001–T007). The tasks below now layer ONLY the SaaS-specific concerns. T027,
+> T029, T031, T032 are SUPERSEDED by Spec 056 and retained as cross-references.
 
-**Gate**: MLflow UI loads through proxy; AJAX calls succeed; unauthenticated requests return 401; Playwright check passes.
+- [ ] T027 **SUPERSEDED by Spec 056 T001/T002** — the `/v1/mlflow-proxy/{path:path}` route + `httpx.AsyncClient` streaming are the generic mechanism owned by 056. (Was: implement the route in `anvil/api/v1/mlflow_proxy.py`.)
+- [ ] T028 Enforce **Cognito JWT authentication + RBAC authorization** on the (056-provided) proxy route — apply the SaaS auth middleware so unauthenticated requests return 401 (FR-057a). *SaaS-specific; not in 056.*
+- [ ] T029 **SUPERSEDED by Spec 056 T005** — `MLflowService.start()` `--static-prefix` + loopback bind are owned by 056. SaaS adds only the Cloud Map upstream via `ANVIL_MLFLOW_INTERNAL_URI` (T033).
+- [ ] T030 Provide the **CloudFront-aware** branch of `get_mlflow_browser_uri(request)` — SaaS scheme via `X-Forwarded-Proto` (FR-057c). *Layers on 056 T006, which provides the scheme-aware unified-origin builder.*
+- [ ] T031 **SUPERSEDED by Spec 056 T005/T006** — MLflow SPA absolute-path handling via `--static-prefix` is part of 056's mechanism (FR-057b mechanism a).
+- [ ] T032 **SUPERSEDED by Spec 056 T001** — long-lived streaming + chunked pass-through are part of 056's registry (per-upstream timeouts: 60s UI, 300s artifact downloads). SaaS sets the timeout *values* via config (FR-057d).
+- [ ] T033 Set the SaaS value of `ANVIL_MLFLOW_INTERNAL_URI` (Cloud Map default `http://mlflow.svc.local:5000`); fail-fast on missing value in SaaS mode (FR-057e). *The env var is read by 056 T004; this task supplies the SaaS default + fail-fast.*
+- [ ] T034 Tag MLflow experiments with `org_id` at creation time in the experiment-creation service call (FR-057f). *SaaS-specific; not in 056.*
+- [ ] T035 Write Playwright integration test for the SaaS-authenticated MLflow proxy — Cognito-authenticated `GET /v1/mlflow-proxy/` returns the experiments list; AJAX calls succeed (FR-057g verification). *Complements 056 T004t, which covers the local-auth path.*
+
+**Gate**: MLflow UI loads through the (056-provided) proxy under SaaS Cognito auth; AJAX calls succeed; unauthenticated requests return 401; `org_id` tagging verified; Playwright check passes.
 
 ---
 

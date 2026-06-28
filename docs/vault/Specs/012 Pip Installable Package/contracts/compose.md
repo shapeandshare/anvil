@@ -4,6 +4,13 @@
 
 Defines the contract for the new root `compose.yaml`. Single service, in-process MLflow (Q2), persistent named volume (Q4).
 
+> **Port-publishing superseded (2026-06-28)**: The `"5001:5001"` publish line and
+> requirement R-C2 below are SUPERSEDED by Spec 024 / Spec 056 (ADR-037 single-origin
+> front door). Once Spec 056 lands, MLflow binds loopback-only and its port is NOT
+> published — `ports:` MUST list only `"8080:8080"`, and MLflow is reachable solely via
+> the authenticated `/v1/mlflow-proxy/`. The `5001` line is retained below for historical
+> contract context only. See `docs/vault/Specs/056 Reverse-Proxy Registry/`.
+
 ## Structure (normative)
 
 ```yaml
@@ -35,7 +42,7 @@ volumes:
 ## Requirements
 
 - R-C1: Exactly one service (`anvil`); MLflow runs in-process inside it (Q2) — no separate MLflow service.
-- R-C2: Ports 8080 and 5001 published (FR-008).
+- R-C2: Port 8080 published. ~~5001 published~~ — **SUPERSEDED by Spec 024/056**: MLflow port 5001 is NOT published (loopback-only behind `/v1/mlflow-proxy/`). (FR-008, as amended.)
 - R-C3: Runtime workspace backed by a **named volume** so state persists across restarts (FR-011a, Q4).
 - R-C4: Healthcheck polls `/v1/health`; `docker compose up --wait` blocks until healthy (VR-O1).
 - R-C5: No `version:` top-level key (Compose Spec).

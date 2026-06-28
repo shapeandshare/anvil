@@ -53,6 +53,19 @@ Start here to see what has been specified, what is in progress, and what shipped
 - [[Specs/035 SaaS CLI Remote/035 SaaS CLI Remote|035 SaaS CLI Remote]]
 - [[Specs/036 SaaS Observability MLflow Proxy/036 SaaS Observability MLflow Proxy|036 SaaS Observability MLflow Proxy]]
 - [[Specs/037 SaaS Resilience DR/037 SaaS Resilience DR|037 SaaS Resilience DR]]
+- [[Specs/056 Reverse-Proxy Registry/056 Reverse-Proxy Registry|056 Reverse-Proxy Registry]]
+
+## Reverse-Proxy / Single-Origin Consolidation (ADR-035 → ADR-037 → 056)
+
+Spec [[Specs/056 Reverse-Proxy Registry/056 Reverse-Proxy Registry|056 Reverse-Proxy Registry]]
+is the single foundational owner of the reverse-proxy layer (a registry of mounted
+upstreams under one authenticated origin). It generalizes the one-off MLflow proxy
+([[Decisions/ADR-035-mlflow-reverse-proxy|ADR-035]], superseded) per
+[[Decisions/ADR-037-unified-interface-local-tls|ADR-037]]. Specs
+[[Specs/020 OWASP Remediation/020 OWASP Remediation|020]],
+[[Specs/024 Unified Interface Local TLS/024 Unified Interface Local TLS|024]] (TLS half),
+and [[Specs/036 SaaS Observability MLflow Proxy/036 SaaS Observability MLflow Proxy|036]]
+(SaaS-specific layers) reference 056 rather than re-specifying the proxy mechanism.
 
 ## SaaS Decomposition (016 → 028–037)
 

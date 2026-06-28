@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "anvil"
-version = "0.3.2"
+version = "0.3.3"
 description = "Train and experiment with small LLMs from scratch"
 requires-python = ">=3.11"
 license = "MIT"
@@ -113,6 +113,8 @@ convention = "numpy"
 "anvil/db/repositories/instance_registry.py" = ["ASYNC240"]
 "anvil/services/backup/cli.py" = ["ASYNC240"]
 "anvil/services/inference/inference.py" = ["ASYNC240"]
+"anvil/services/compute/local_stdlib_backend.py" = ["ASYNC240"]
+"anvil/services/compute/local_torch_backend.py" = ["ASYNC230"]
 "anvil/services/instances/instance_lifecycle_service.py" = ["ASYNC220", "ASYNC240"]
 "anvil/services/instances/workspace_lock.py" = ["ASYNC240"]
 "anvil/workspace/workspace_paths.py" = ["D102"]

@@ -396,6 +396,73 @@ class TorchLlamaModel:
         return sd
 
 
+def load_torch_weights_from_lists(
+    model: TorchLlamaModel,
+    weights: dict[str, list[Any]],
+) -> None:
+    """Load plain-list weights into a ``TorchLlamaModel`` for warm-start.
+
+    Copies trained weights (as nested Python lists of floats, matching the
+    layout produced by :meth:`TorchLlamaModel.export_weights` and stored in
+    ``LlamaModel`` checkpoints) into the model's ``nn.Parameter`` tensors. Keys
+    and shapes are validated; any mismatch raises ``ValueError``. No transpose
+    is needed — the stdlib matrix layout ``(out_features, in_features)`` already
+    matches ``torch.nn.functional.linear``.
+
+    Parameters
+    ----------
+    model : TorchLlamaModel
+        Target model whose parameters will be overwritten in place. Must be
+        constructed with the same architecture dimensions as ``weights``.
+    weights : dict of str to list
+        Weight dictionary keyed by parameter name (``wte``, ``lm_head``,
+        ``rms_final``, ``layer{i}.attn_wq``, ``layer{i}.rms_1``, etc.) with
+        plain-list (float) values.
+
+    Raises
+    ------
+    RuntimeError
+        If PyTorch is not installed.
+    ValueError
+        If the weight keys or any tensor shape do not match the model.
+    """
+    if torch is None:
+        raise RuntimeError("torch is not installed")
+
+    params: dict[str, torch_Parameter] = {
+        "wte": model.wte,
+        "lm_head": model.lm_head,
+        "rms_final": model.rms_final,
+    }
+    for li in range(model.n_layer):
+        params[f"layer{li}.attn_wq"] = model.attn_wq[li]
+        params[f"layer{li}.attn_wk"] = model.attn_wk[li]
+        params[f"layer{li}.attn_wv"] = model.attn_wv[li]
+        params[f"layer{li}.attn_wo"] = model.attn_wo[li]
+        params[f"layer{li}.mlp_gate"] = model.mlp_gate[li]
+        params[f"layer{li}.mlp_up"] = model.mlp_up[li]
+        params[f"layer{li}.mlp_down"] = model.mlp_down[li]
+        params[f"layer{li}.rms_1"] = model.rms_1[li]
+        params[f"layer{li}.rms_2"] = model.rms_2[li]
+
+    expected = set(params)
+    actual = set(weights)
+    if expected != actual:
+        missing = sorted(expected - actual)
+        extra = sorted(actual - expected)
+        raise ValueError(f"Checkpoint key mismatch: missing={missing}, extra={extra}")
+
+    with torch.no_grad():
+        for key, param in params.items():
+            tensor = torch.tensor(weights[key], dtype=param.dtype, device=param.device)
+            if tuple(tensor.shape) != tuple(param.shape):
+                raise ValueError(
+                    f"Shape mismatch for {key}: expected {tuple(param.shape)}, "
+                    f"got {tuple(tensor.shape)}"
+                )
+            param.copy_(tensor)
+
+
 def train_torch(
     docs: list[str],
     device: str = "cpu",
@@ -410,6 +477,7 @@ def train_torch(
     temperature: float = 0.5,
     progress_callback: Callable[..., None] | None = None,
     stop_check: Callable[[], bool] | None = None,
+    model: TorchLlamaModel | None = None,
 ) -> tuple[dict[str, list[list[float]]], float, list[str], list[str]]:
     """Train a ``TorchLlamaModel`` on a list of documents using PyTorch.
 
@@ -448,6 +516,12 @@ def train_torch(
         Called after each step as ``progress_callback(step, loss)``.
     stop_check : callable, optional
         Called before each step. Returns ``True`` to halt early.
+    model : TorchLlamaModel, optional
+        Pre-trained model to warm-start from. When provided, vocabulary
+        and architecture dimensions are inherited from this model,
+        docs are scanned for OOV characters, and a fresh Adam optimizer
+        is created. When ``None`` (default), a new model is created
+        from scratch.
 
     Returns
     -------
@@ -472,12 +546,51 @@ def train_torch(
     torch.manual_seed(42)
     device_obj = torch.device(device)
 
-    uchars = sorted(set("".join(docs)))
-    BOS = len(uchars)
-    vocab_size = len(uchars) + 1
+    if model is not None:
+        # Warm-start path: reuse the passed-in model
+        if not hasattr(model, "chars"):
+            raise ValueError(
+                "model must have 'chars' attribute set "
+                "(set by backend after training)"
+            )
+        if model.vocab_size != len(model.chars) + 1:
+            raise ValueError(
+                f"model.vocab_size ({model.vocab_size}) != "
+                f"len(model.chars) + 1 ({len(model.chars) + 1})"
+            )
 
-    model = TorchLlamaModel(vocab_size, n_embd, n_head, n_layer, block_size)
-    model.to(device_obj)
+        uchars = model.chars
+        BOS = len(uchars)
+        vocab_size = model.vocab_size
+        block_size = model.block_size
+        n_layer = model.n_layer
+        n_embd = model.n_embd
+        n_head = model.n_head
+
+        # Pre-scan docs for OOV characters not in model's vocabulary
+        known = set(uchars)
+        oov_matches: dict[str, int] = {}
+        for doc in docs:
+            for ch in doc:
+                if ch not in known:
+                    oov_matches[ch] = oov_matches.get(ch, 0) + 1
+        if oov_matches:
+            oov_sample = next(iter(oov_matches))
+            oov_total = sum(oov_matches.values())
+            raise ValueError(
+                f"Docs contain {oov_total} character(s) not in model "
+                f"vocabulary: {sorted(oov_matches)} "
+                f"(sample: {oov_sample!r})"
+            )
+
+        model.to(device_obj)
+    else:
+        uchars = sorted(set("".join(docs)))
+        BOS = len(uchars)
+        vocab_size = len(uchars) + 1
+
+        model = TorchLlamaModel(vocab_size, n_embd, n_head, n_layer, block_size)
+        model.to(device_obj)
 
     optim = torch.optim.Adam(
         model.parameters(), lr=learning_rate, betas=(beta1, beta2), eps=1e-8
