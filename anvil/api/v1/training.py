@@ -556,7 +556,18 @@ async def _log_dataset_metadata(
                 pass
 
 
-@router.post("/training/start")
+@router.post(
+    "/training/start",
+    responses={
+        422: {
+            "description": (
+                "Validation failure: n_head > n_embd, n_embd not divisible by "
+                "n_head, odd head_dim, compute backend unavailable, OOM "
+                "estimate, or architecture conflict during warm-start."
+            ),
+        },
+    },
+)
 async def start_training(config: TrainConfig) -> dict[str, Any]:
     """Start a new training run asynchronously.
 

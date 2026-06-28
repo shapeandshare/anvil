@@ -97,7 +97,7 @@ def _get_mps_memory() -> float | None:
     try:
         import psutil
     except ImportError:
-        psutil = None  # type: ignore[assignment]
+        psutil = None
 
     if psutil is None:
         return None

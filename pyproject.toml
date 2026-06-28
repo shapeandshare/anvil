@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "anvil"
-version = "0.3.3"
+version = "0.3.4"
 description = "Train and experiment with small LLMs from scratch"
 requires-python = ">=3.11"
 license = "MIT"
@@ -50,6 +50,9 @@ anvil = [
 ]
 
 [project.optional-dependencies]
+finetune = [
+    "huggingface_hub>=0.24,<2",
+]
 gpu = [
     "torch>=2.0,<3",
     "nvidia-ml-py>=12,<13",
@@ -84,6 +87,8 @@ anvil-db = "anvil.cli:db_main"
 anvil-vault = "anvil.services.vault.cli:main"
 anvil-show-api-key = "anvil.cli:show_api_key"
 anvil-backup = "anvil.services.backup.cli:main"
+anvil-import = "anvil.cli:import_main"
+anvil-import-status = "anvil.cli:import_status_main"
 anvil-instance = "anvil.services.instances.cli:main"
 
 [tool.ruff]
