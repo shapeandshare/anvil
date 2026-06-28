@@ -126,12 +126,12 @@ class LocalTorchBackend:
                 n_layer=base_model.n_layer,
                 block_size=base_model.block_size,
             )
-            # Transfer the base model's trained weights into the torch model
+            # Transfer the base model's weights into the torch model
             # so training genuinely continues (FR-002 parity), rather than
-            # restarting from random init. The checkpoint stores weights as
-            # plain float lists under "state_dict".
-            with checkpoint_path.open(encoding="utf-8") as f:
-                checkpoint = json.load(f)
+            # restarting from random init.
+            checkpoint = await asyncio.to_thread(
+                lambda: json.loads(checkpoint_path.read_text(encoding="utf-8"))
+            )
             load_torch_weights_from_lists(train_model, checkpoint["state_dict"])
             train_model.chars = list(base_model.chars)  # type: ignore[attr-defined]
 
@@ -147,8 +147,10 @@ class LocalTorchBackend:
                     n_layer=config.get("n_layer", 1),
                     block_size=config.get("block_size", 16),
                     learning_rate=config.get("learning_rate", 0.01),
-                    beta1=config.get("beta1", 0.85),
-                    beta2=config.get("beta2", 0.99),
+                    adam_betas=(
+                        config.get("beta1", 0.85),
+                        config.get("beta2", 0.99),
+                    ),
                     temperature=config.get("temperature", 0.5),
                     progress_callback=progress_callback,
                     stop_check=stop_check,
