@@ -10,10 +10,10 @@ MLflow server supports genai datasets, is server-backed, and what
 version of MLflow is running.
 """
 
-from pydantic import BaseModel
-
 import importlib
+
 import mlflow as _mlflow_mod
+from pydantic import BaseModel
 
 
 class TrackingCapabilities(BaseModel):
