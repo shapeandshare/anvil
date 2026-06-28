@@ -376,6 +376,58 @@ class TestStartTrainingPhases:
         queue = svc.get_queue(run_id)
         assert queue is None or queue.empty()  # cleaned up
 
+    async def test_backend_failure_emits_error_event(self, svc):
+        """Backend returning FAILED emits error event, not complete, and skips on_complete."""
+        fake_backend = FakeBackend(
+            result=FakeComputeResult(
+                status=ComputeStatus.FAILED,
+                error_message="something broke",
+                final_loss=None,
+                model=None,
+            )
+        )
+
+        collected: list[dict] = []
+        original_put = asyncio.Queue.put
+
+        def _tracking_put(q, msg):
+            collected.append(msg)
+            return original_put(q, msg)
+
+        on_complete = AsyncMock()
+
+        with (
+            patch(
+                "anvil.services.training.training.resolve_backend",
+                return_value={"engine": "stdlib", "device": "cpu", "backend": "local"},
+            ),
+            patch(
+                "anvil.services.training.training.get_backend",
+                return_value=fake_backend,
+            ),
+            patch.object(svc, "_load_docs", return_value=["doc"]),
+            patch.object(asyncio.Queue, "put", _tracking_put),
+        ):
+            run_id = await svc.start_training(
+                {"compute_backend": "local-cpu", "num_steps": 2},
+                on_complete=on_complete,
+            )
+
+        event_names = [m["event"] for m in collected]
+        assert "error" in event_names, f"Expected error event, got {event_names}"
+        assert "complete" not in event_names, (
+            f"Expected no complete event on FAILED, got {event_names}"
+        )
+
+        # Find the error event and verify it carries the error message
+        error_events = [m for m in collected if m["event"] == "error"]
+        assert len(error_events) >= 1
+        error_data = json.loads(error_events[0]["data"])
+        assert "something broke" in error_data["message"]
+
+        # on_complete should NOT be called when backend fails
+        on_complete.assert_not_awaited()
+
     async def test_reserve_run_and_queue_mechanics_unchanged(self, svc):
         """The reserve_run/stop_run/queue mechanics remain unchanged."""
         run_id = svc.reserve_run()
