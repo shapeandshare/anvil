@@ -18,7 +18,7 @@ tags:
   - domain/ui
   - status/draft
 created: '2026-06-26'
-updated: '2026-06-26'
+updated: '2026-06-28'
 ---
 When the solarflare theme was first implemented, its `--flare` CSS variable
 defaulted to `0` and the canvas flare particle effect had `BASE=20, MAX=120`.
@@ -63,11 +63,28 @@ baseline lifted to `0.5`, they are now visible in **every state**: idle, trainin
 baseline, and full training. Previously they only appeared mid-run when
 `grad_norm` pushed `--flare` above 0.4.
 
+## CSS gap: `--flare` initial value left at 0 (fixed 2026-06-28)
+
+The JS baseline was lifted to `'0.5'` but the CSS initial value in `solarflare.css` was
+**not** updated — it stayed at `--flare: 0`. This caused a timing-race bug:
+
+1. The theme CSS loads (asynchronously via `<link>`) before the body JS executes
+2. The `flare-burst` animation starts with `--flare: 0` → all keyframe opacities
+   compute to 0 via `calc(0 × ...)` → invisible animation
+3. When JS eventually sets `--flare: 0.5`, CSS `calc(var(...))` in `@keyframes`
+   does **not** reliably re-evaluate mid-animation in all browsers — keyframes
+   stay frozen at their originally computed values (opacity 0)
+
+**Fix**: `--flare: 0` → `--flare: 0.5` in `solarflare.css` line 33. Now the
+animation is visible from cycle 1 regardless of CSS-load-vs-JS timing, matching
+the JS baseline that `solarFlareMapping` sets immediately.
+
 ## Code references
 
 - `anvil/api/static/js/themes/solarflare.js` — `solarFlareMapping` baseline and metrics formula
 - `anvil/api/static/js/theme/particle-system.js` — `registerEffect('flare', ...)` BASE/MAX constants
 - `anvil/api/static/js/theme/particle-system.js` — `IDLE_SIGNAL = 0.5`, `readSignal()` unset detection
+- `anvil/api/static/css/themes/solarflare.css` — `--flare` initial value (was `0`, now `0.5`)
 
 ## Related
 

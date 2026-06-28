@@ -30,7 +30,7 @@
   --shadow-md:      0 2px 10px rgba(0, 0, 0, 0.6);
   --shadow-lg:      0 8px 28px rgba(0, 0, 0, 0.7);
 
-  --flare: 0;
+  --flare: 0.5;
 }
 
 @media (prefers-reduced-motion: reduce) {
