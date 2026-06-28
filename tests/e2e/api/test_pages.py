@@ -5,11 +5,12 @@
 
 """E2E render-smoke tests for all HTML page routes."""
 
+import httpx
 import pytest
 
 
 @pytest.mark.asyncio
-async def test_root(client):
+async def test_root(client: httpx.AsyncClient) -> None:
     """GET / returns the training dashboard page (200, HTML)."""
     r = await client.get("/")
     assert r.status_code == 200
@@ -18,7 +19,7 @@ async def test_root(client):
 
 
 @pytest.mark.asyncio
-async def test_root_with_slash(client):
+async def test_root_with_slash(client: httpx.AsyncClient) -> None:
     """GET '' (root with trailing slash) returns the training dashboard."""
     r = await client.get("/")
     assert r.status_code == 200
@@ -26,7 +27,7 @@ async def test_root_with_slash(client):
 
 
 @pytest.mark.asyncio
-async def test_acceptable_use_page(client):
+async def test_acceptable_use_page(client: httpx.AsyncClient) -> None:
     """GET /v1/acceptable-use renders the acceptable-use policy page."""
     r = await client.get("/v1/acceptable-use")
     assert r.status_code == 200
@@ -35,7 +36,7 @@ async def test_acceptable_use_page(client):
 
 
 @pytest.mark.asyncio
-async def test_training_page(client):
+async def test_training_page(client: httpx.AsyncClient) -> None:
     """GET /v1/training-page renders the training configuration page."""
     r = await client.get("/v1/training-page")
     assert r.status_code == 200
@@ -44,7 +45,7 @@ async def test_training_page(client):
 
 
 @pytest.mark.asyncio
-async def test_experiments_page(client):
+async def test_experiments_page(client: httpx.AsyncClient) -> None:
     """GET /v1/experiments-page renders the experiment history page."""
     r = await client.get("/v1/experiments-page")
     assert r.status_code == 200
@@ -53,7 +54,7 @@ async def test_experiments_page(client):
 
 
 @pytest.mark.asyncio
-async def test_datasets_page(client):
+async def test_datasets_page(client: httpx.AsyncClient) -> None:
     """GET /v1/datasets-page renders the dataset management page."""
     r = await client.get("/v1/datasets-page")
     assert r.status_code == 200
@@ -62,7 +63,7 @@ async def test_datasets_page(client):
 
 
 @pytest.mark.asyncio
-async def test_operations_page(client):
+async def test_operations_page(client: httpx.AsyncClient) -> None:
     """GET /v1/operations-page renders the operations dashboard."""
     r = await client.get("/v1/operations-page")
     assert r.status_code == 200
@@ -71,7 +72,7 @@ async def test_operations_page(client):
 
 
 @pytest.mark.asyncio
-async def test_inference_page(client):
+async def test_inference_page(client: httpx.AsyncClient) -> None:
     """GET /v1/inference-page renders the inference/playground page."""
     r = await client.get("/v1/inference-page")
     assert r.status_code == 200
@@ -81,7 +82,7 @@ async def test_inference_page(client):
 
 
 @pytest.mark.asyncio
-async def test_content_page(client):
+async def test_content_page(client: httpx.AsyncClient) -> None:
     """GET /v1/content-page renders the content library page."""
     r = await client.get("/v1/content-page")
     assert r.status_code == 200
@@ -90,7 +91,7 @@ async def test_content_page(client):
 
 
 @pytest.mark.asyncio
-async def test_about_page(client):
+async def test_about_page(client: httpx.AsyncClient) -> None:
     """GET /v1/about renders the about page with version and all sections."""
     from anvil import __version__
 
@@ -108,7 +109,7 @@ async def test_about_page(client):
 
 
 @pytest.mark.asyncio
-async def test_learn_index(client):
+async def test_learn_index(client: httpx.AsyncClient) -> None:
     """GET /v1/learn renders the learning hub index with all lessons listed."""
     r = await client.get("/v1/learn")
     assert r.status_code == 200
@@ -122,7 +123,7 @@ async def test_learn_index(client):
 
 
 @pytest.mark.asyncio
-async def test_learn_graph(client):
+async def test_learn_graph(client: httpx.AsyncClient) -> None:
     """GET /v1/learn/graph renders the forward pass computation graph page."""
     r = await client.get("/v1/learn/graph")
     assert r.status_code == 200
@@ -131,7 +132,7 @@ async def test_learn_graph(client):
 
 
 @pytest.mark.asyncio
-async def test_learn_data_fundamentals(client):
+async def test_learn_data_fundamentals(client: httpx.AsyncClient) -> None:
     """GET /v1/learn/data-fundamentals renders the data fundamentals lesson."""
     r = await client.get("/v1/learn/data-fundamentals")
     assert r.status_code == 200
@@ -140,7 +141,7 @@ async def test_learn_data_fundamentals(client):
 
 
 @pytest.mark.asyncio
-async def test_learn_tokenization(client):
+async def test_learn_tokenization(client: httpx.AsyncClient) -> None:
     """GET /v1/learn/tokenization renders the tokenization lesson."""
     r = await client.get("/v1/learn/tokenization")
     assert r.status_code == 200
@@ -149,7 +150,7 @@ async def test_learn_tokenization(client):
 
 
 @pytest.mark.asyncio
-async def test_learn_embeddings(client):
+async def test_learn_embeddings(client: httpx.AsyncClient) -> None:
     """GET /v1/learn/embeddings renders the embeddings lesson."""
     r = await client.get("/v1/learn/embeddings")
     assert r.status_code == 200
@@ -158,7 +159,7 @@ async def test_learn_embeddings(client):
 
 
 @pytest.mark.asyncio
-async def test_learn_sampling(client):
+async def test_learn_sampling(client: httpx.AsyncClient) -> None:
     """GET /v1/learn/sampling renders the sampling lesson."""
     r = await client.get("/v1/learn/sampling")
     assert r.status_code == 200
@@ -167,7 +168,7 @@ async def test_learn_sampling(client):
 
 
 @pytest.mark.asyncio
-async def test_learn_training_loop(client):
+async def test_learn_training_loop(client: httpx.AsyncClient) -> None:
     """GET /v1/learn/training-loop renders the training loop lesson."""
     r = await client.get("/v1/learn/training-loop")
     assert r.status_code == 200
@@ -176,7 +177,7 @@ async def test_learn_training_loop(client):
 
 
 @pytest.mark.asyncio
-async def test_learn_autograd(client):
+async def test_learn_autograd(client: httpx.AsyncClient) -> None:
     """GET /v1/learn/autograd renders the autograd lesson."""
     r = await client.get("/v1/learn/autograd")
     assert r.status_code == 200
@@ -185,7 +186,7 @@ async def test_learn_autograd(client):
 
 
 @pytest.mark.asyncio
-async def test_learn_loss(client):
+async def test_learn_loss(client: httpx.AsyncClient) -> None:
     """GET /v1/learn/loss renders the cross-entropy loss lesson."""
     r = await client.get("/v1/learn/loss")
     assert r.status_code == 200
@@ -194,7 +195,7 @@ async def test_learn_loss(client):
 
 
 @pytest.mark.asyncio
-async def test_learn_parameters(client):
+async def test_learn_parameters(client: httpx.AsyncClient) -> None:
     """GET /v1/learn/parameters renders the model parameters lesson."""
     r = await client.get("/v1/learn/parameters")
     assert r.status_code == 200
@@ -203,7 +204,7 @@ async def test_learn_parameters(client):
 
 
 @pytest.mark.asyncio
-async def test_learn_adam(client):
+async def test_learn_adam(client: httpx.AsyncClient) -> None:
     """GET /v1/learn/adam renders the Adam optimizer lesson."""
     r = await client.get("/v1/learn/adam")
     assert r.status_code == 200
@@ -212,7 +213,7 @@ async def test_learn_adam(client):
 
 
 @pytest.mark.asyncio
-async def test_learn_architecture(client):
+async def test_learn_architecture(client: httpx.AsyncClient) -> None:
     """GET /v1/learn/architecture renders the transformer architecture lesson."""
     r = await client.get("/v1/learn/architecture")
     assert r.status_code == 200
@@ -221,7 +222,7 @@ async def test_learn_architecture(client):
 
 
 @pytest.mark.asyncio
-async def test_learn_export(client):
+async def test_learn_export(client: httpx.AsyncClient) -> None:
     """GET /v1/learn/export renders the model export lesson."""
     r = await client.get("/v1/learn/export")
     assert r.status_code == 200
@@ -230,7 +231,7 @@ async def test_learn_export(client):
 
 
 @pytest.mark.asyncio
-async def test_learn_chunking(client):
+async def test_learn_chunking(client: httpx.AsyncClient) -> None:
     """GET /v1/learn/chunking renders the chunking strategies lesson."""
     r = await client.get("/v1/learn/chunking")
     assert r.status_code == 200
@@ -241,7 +242,7 @@ async def test_learn_chunking(client):
 
 
 @pytest.mark.asyncio
-async def test_learn_content_versioning(client):
+async def test_learn_content_versioning(client: httpx.AsyncClient) -> None:
     """GET /v1/learn/content-versioning renders the content versioning lesson."""
     r = await client.get("/v1/learn/content-versioning")
     assert r.status_code == 200
@@ -252,7 +253,7 @@ async def test_learn_content_versioning(client):
 
 
 @pytest.mark.asyncio
-async def test_learn_experiment_tracking(client):
+async def test_learn_experiment_tracking(client: httpx.AsyncClient) -> None:
     """GET /v1/learn/experiment-tracking renders the experiment tracking lesson."""
     r = await client.get("/v1/learn/experiment-tracking")
     assert r.status_code == 200
@@ -263,7 +264,7 @@ async def test_learn_experiment_tracking(client):
 
 
 @pytest.mark.asyncio
-async def test_learn_governance(client):
+async def test_learn_governance(client: httpx.AsyncClient) -> None:
     """GET /v1/learn/governance renders the data governance lesson."""
     r = await client.get("/v1/learn/governance")
     assert r.status_code == 200
@@ -274,7 +275,7 @@ async def test_learn_governance(client):
 
 
 @pytest.mark.asyncio
-async def test_learn_memory_divergence(client):
+async def test_learn_memory_divergence(client: httpx.AsyncClient) -> None:
     """GET /v1/learn/memory-divergence renders the memory and divergence lesson."""
     r = await client.get("/v1/learn/memory-divergence")
     assert r.status_code == 200
@@ -285,7 +286,7 @@ async def test_learn_memory_divergence(client):
 
 
 @pytest.mark.asyncio
-async def test_learn_faq(client):
+async def test_learn_faq(client: httpx.AsyncClient) -> None:
     """GET /v1/learn/faq renders the FAQ page."""
     r = await client.get("/v1/learn/faq")
     assert r.status_code == 200
@@ -294,7 +295,7 @@ async def test_learn_faq(client):
 
 
 @pytest.mark.asyncio
-async def test_learn_glossary(client):
+async def test_learn_glossary(client: httpx.AsyncClient) -> None:
     """GET /v1/learn/glossary renders the glossary page."""
     r = await client.get("/v1/learn/glossary")
     assert r.status_code == 200
@@ -303,7 +304,7 @@ async def test_learn_glossary(client):
 
 
 @pytest.mark.asyncio
-async def test_learn_cloud_compute(client):
+async def test_learn_cloud_compute(client: httpx.AsyncClient) -> None:
     """GET /v1/learn/cloud-compute renders the cloud compute lesson."""
     r = await client.get("/v1/learn/cloud-compute")
     assert r.status_code == 200
@@ -312,7 +313,46 @@ async def test_learn_cloud_compute(client):
 
 
 @pytest.mark.asyncio
-async def test_models_page(client):
+async def test_learn_fine_tuning_intro(client: httpx.AsyncClient) -> None:
+    """GET /v1/learn/fine-tuning-intro renders the fine-tuning introduction lesson."""
+    r = await client.get("/v1/learn/fine-tuning-intro")
+    assert r.status_code == 200
+    assert "text/html" in r.headers["content-type"]
+    assert "What Is Fine-Tuning?" in r.text
+    assert "coming-soon-badge" in r.text
+
+
+@pytest.mark.asyncio
+async def test_learn_warmstart_vs_lora(client: httpx.AsyncClient) -> None:
+    """GET /v1/learn/warmstart-vs-lora renders the warm-start vs LoRA lesson."""
+    r = await client.get("/v1/learn/warmstart-vs-lora")
+    assert r.status_code == 200
+    assert "text/html" in r.headers["content-type"]
+    assert (
+        "Warm-Start vs LoRA" in r.text
+        or "Warm-Start vs PEFT" in r.text
+        or "Parameter-Efficient" in r.text
+    )
+    assert 'data-widget="lora"' in r.text
+    assert "/static/js/widgets/lora.js" in r.text
+    assert "coming-soon-badge" in r.text
+
+
+@pytest.mark.asyncio
+async def test_learn_finetune_vs_prompt_vs_rag(client: httpx.AsyncClient) -> None:
+    """GET /v1/learn/finetune-vs-prompt-vs-rag renders the decision comparison lesson."""
+    r = await client.get("/v1/learn/finetune-vs-prompt-vs-rag")
+    assert r.status_code == 200
+    assert "text/html" in r.headers["content-type"]
+    assert "Side-by-Side Comparison" in r.text
+    assert "learn-comparison-table" in r.text
+    assert "Strengths" in r.text
+    assert "Weaknesses" in r.text
+    assert "Best For" in r.text
+
+
+@pytest.mark.asyncio
+async def test_models_page(client: httpx.AsyncClient) -> None:
     """GET /v1/models-page renders the model registry page."""
     r = await client.get("/v1/models-page")
     assert r.status_code == 200
@@ -321,7 +361,7 @@ async def test_models_page(client):
 
 
 @pytest.mark.asyncio
-async def test_model_detail_page(client):
+async def test_model_detail_page(client: httpx.AsyncClient) -> None:
     """GET /v1/model-detail/999 renders the model detail page (no error)."""
     r = await client.get("/v1/model-detail/999")
     assert r.status_code == 200

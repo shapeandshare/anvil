@@ -444,6 +444,10 @@ SomeException
 - Per-instance SQLite app DB (WAL) under each workspace; a host-level global registry SQLite DB at `~/.anvil/registry.db`; per-workspace `instance.json` boot file (JSON on disk). (opencode/witty-meadow)
 - Python 3.11+ (PEP 604 unions, `StrEnum`, `from __future__ import annotations`) + FastAPI, async SQLAlchemy + aiosqlite, Jinja2, `safetensors`, `numpy` (existing); `transformers`/`tokenizers` (new — behind `[finetune]` extra only) (043-subword-tokenizer-abstraction)
 - `LocalFileStore` (model artifacts + co-located tokenizer files); SQLite (app DB for metadata) (043-subword-tokenizer-abstraction)
+- Python 3.11+ (existing repo convention) + FastAPI, Jinja2, existing widget JS framework — no new dependencies (opencode/cosmic-eagle)
+- N/A — static content pages (opencode/cosmic-eagle)
+- Python 3.11+ + FastAPI, async SQLAlchemy, Jinja2, MLflow (existing — no new deps) (014-model-warm-start)
+- MLflow Model Registry (registered_models / model_versions tables) — lineage via tags (014-model-warm-start)
 
 ## Recent Changes
 - 025-ux-rules-integration: Added Python 3.11+ (existing repo convention) + Stdlib only — `ux_lint.py` (re/ sys/ os/), `ux_review.py` (stdlib + urllib for OpenAI-compatible API calls)

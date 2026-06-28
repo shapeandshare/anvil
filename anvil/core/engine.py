@@ -573,15 +573,46 @@ def train(
         of generated strings, and ``uchars`` is the sorted unique chars.
     """
     random.seed(42)
-    uchars = sorted(set("".join(docs)))
-    BOS = len(uchars)
-    vocab_size = len(uchars) + 1
 
     if model is None:
+        uchars = sorted(set("".join(docs)))
+        BOS = len(uchars)
+        vocab_size = len(uchars) + 1
         model = LlamaModel(vocab_size, n_embd, n_head, n_layer, block_size)
         m = [0.0] * len(model.params)
         v = [0.0] * len(model.params)
     else:
+        if model.chars is not None:
+            # Warm-start: inherit vocabulary from base model
+            uchars = list(model.chars)
+            BOS = len(uchars)
+            vocab_size = model.vocab_size
+            block_size = model.block_size
+            # Check for OOV characters in the new docs
+            vocab_set = set(model.chars)
+            unsupported: set[str] = set()
+            for doc in docs:
+                for ch in doc:
+                    if ch not in vocab_set:
+                        unsupported.add(ch)
+            if unsupported:
+                sample = sorted(unsupported)[:5]
+                raise ValueError(
+                    f"Document contains {len(unsupported)} character(s) "
+                    f"not in base vocabulary: {sample}"
+                )
+        else:
+            # Backward compat: compute from docs, verify against model
+            uchars = sorted(set("".join(docs)))
+            BOS = len(uchars)
+            vocab_size = model.vocab_size
+            block_size = model.block_size
+            if model.vocab_size != len(uchars) + 1:
+                raise ValueError(
+                    f"Model vocab_size={model.vocab_size} does not match "
+                    f"computed vocab_size={len(uchars) + 1} from docs. "
+                    "Save and reload the model with chars metadata."
+                )
         m = [0.0] * len(model.params)
         v = [0.0] * len(model.params)
 

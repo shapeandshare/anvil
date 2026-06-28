@@ -1,6 +1,14 @@
+---
+title: Training fix — torch_Tensor TYPE_CHECKING bug + Solar Flare pulsing flash CSS fix
+type: session-log
+tags:
+  - type/session-log
+created: '2026-06-28'
+updated: '2026-06-28'
+aliases: Training fix torch_Tensor typecheck solar-flare
+source: agent
+---
 # Session: Training fix — torch_Tensor TYPE_CHECKING bug + Solar Flare pulsing flash CSS fix
-
-**Created**: 2026-06-28
 **Updated**: 2026-06-28
 **Tags**: `type/session-log`, `domain/training`, `domain/core`, `domain/ui`
 

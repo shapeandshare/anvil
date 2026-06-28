@@ -464,9 +464,8 @@ class InferenceService:
             loaded.model.forward(tid, pos_id, keys, values)
 
         last_pos = len(ids)
-        dummy_tid = (
-            ids[-1] if ids else (loaded.bos_id if loaded.bos_id is not None else 0)
-        )
+        fallback_id = loaded.bos_id if loaded.bos_id is not None else 0
+        dummy_tid = ids[-1] if ids else fallback_id
         logits = loaded.model.forward(dummy_tid, last_pos - 1, keys, values)
 
         raw_logits: list[float] = [logit.data for logit in logits]
@@ -762,9 +761,10 @@ class InferenceService:
         scale. Same response schema as :meth:`backward_graph`.
         """
         ids = loaded.tokenizer.encode(text)
+        seed_fallback = loaded.bos_id if loaded.bos_id is not None else 0
         seed_id = next(
             (t for t in ids if not _is_bos(t, loaded.bos_id)),
-            ids[0] if ids else (loaded.bos_id if loaded.bos_id is not None else 0),
+            ids[0] if ids else seed_fallback,
         )
         wte = loaded.model._get_matrix("wte")
         row = [v.data for v in wte[seed_id]]

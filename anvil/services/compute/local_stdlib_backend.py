@@ -13,7 +13,10 @@ Auto-registers as ``"local-stdlib"`` in the compute registry at module
 import time.
 """
 
+from __future__ import annotations
+
 import asyncio
+from pathlib import Path
 from typing import Any
 
 from ...core.engine import LlamaModel, train
@@ -122,11 +125,24 @@ class LocalStdlibBackend:
         """
         loop = asyncio.get_event_loop()
 
+        base_model_ref = config.get("base_model_ref")
+        loaded_model: LlamaModel | None = None
+        if base_model_ref is not None:
+            model_path = Path(f"data/models/experiment_{base_model_ref}.json")
+            if not model_path.exists():
+                raise RuntimeError(
+                    f"Base model checkpoint not found: {model_path}. "
+                    f"Experiment {base_model_ref} may not have been "
+                    f"trained or exported."
+                )
+            loaded_model = LlamaModel.load(str(model_path))
+
         try:
             model, final_loss, samples, uchars = await loop.run_in_executor(
                 None,
                 lambda: train(
                     docs,
+                    model=loaded_model,
                     num_steps=config.get("num_steps", 1000),
                     n_embd=config.get("n_embd", 16),
                     n_head=config.get("n_head", 4),

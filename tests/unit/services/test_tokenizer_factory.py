@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import json
-import os
 import tempfile
 
 import pytest
@@ -35,12 +33,15 @@ class TestTokenizerFactory:
 
     def test_unsupported_serialization(self) -> None:
         """Unsupported serialization type raises TokenizerLoadError."""
-        with pytest.raises(TokenizerLoadError, match="Unsupported serialization type"):
-            create_tokenizer(
-                tokenizer_family="subword",
-                serialization_type="wordpiece",
-                artifact_dir="/tmp",
-            )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with pytest.raises(
+                TokenizerLoadError, match="Unsupported serialization type"
+            ):
+                create_tokenizer(
+                    tokenizer_family="subword",
+                    serialization_type="wordpiece",
+                    artifact_dir=tmpdir,
+                )
 
     def test_hf_fast_missing_file(self) -> None:
         """Missing tokenizer.json raises TokenizerLoadError."""

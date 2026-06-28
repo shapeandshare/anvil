@@ -24,6 +24,7 @@
         <h3 class="model-name" id="md-name"></h3>
         <p id="md-description" class="text-dim" style="display:none;"></p>
         <a id="md-play-link" href="#" class="btn btn-primary btn-sm" style="margin-top:var(--space-2);">Play</a>
+        <a id="md-continue-training-link" href="#" class="btn btn-accent btn-sm" style="margin-top:var(--space-2);">Continue Training</a>
       </div>
       <div class="metrics-grid">
         <div class="metric"><span class="metric-label">Versions</span><span class="metric-value" id="md-versions"></span></div>
@@ -107,6 +108,9 @@
 
       // Play link
       document.getElementById('md-play-link').href = '/v1/inference-page?model_id=' + modelId;
+
+      // Continue Training link
+      document.getElementById('md-continue-training-link').href = '/v1/training-page?base_model_ref=' + modelId;
 
       // Metrics
       dom.setText(document.getElementById('md-versions'), String(data.versions.length));
