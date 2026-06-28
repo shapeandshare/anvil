@@ -312,8 +312,13 @@ class GraphHealthRunner:
 
         Returns
         -------
-        nx.DiGraph
+        nx.DiGraph or None
+            The graph, or ``None`` if networkx is not available.
         """
+        if nx is None:
+            self.graph = None
+            return None
+
         G = nx.DiGraph()
         for stem, meta in self.notes.items():
             G.add_node(stem, file_path=str(meta.path))
