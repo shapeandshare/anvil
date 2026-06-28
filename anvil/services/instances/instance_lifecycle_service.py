@@ -17,6 +17,7 @@ all CLI and (future) API actions delegate here.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import re
@@ -26,23 +27,21 @@ import socket
 import subprocess
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ...db.models.instance_record import InstanceRecord
 from ...db.repositories.instance_registry import (
     InstanceRegistryRepository,
     create_registry_session,
 )
+from ...workspace.boot_config import BootConfig
 from ..governance.audit_action import AuditAction
 from ..governance.audit_outcome import AuditOutcome
+from ..governance.audit_service import AuditService
 from ..governance.audit_target_type import AuditTargetType
 from .instance_status import InstanceStatus
 from .workspace_lock import WorkspaceLock
-
-if TYPE_CHECKING:
-    from ...db.models.instance_record import InstanceRecord
-    from ..governance.audit_service import AuditService
 
 logger = logging.getLogger(__name__)
 
@@ -272,8 +271,6 @@ class InstanceLifecycleService:
 
         # 7. Write boot config.
         state_db_path = str(workspace_root / "data" / "anvil-state.db")
-        from ...workspace.boot_config import BootConfig
-
         boot = BootConfig(
             name=name,
             workspace_root=str(workspace_root),
@@ -284,9 +281,7 @@ class InstanceLifecycleService:
         boot.write(workspace_root / "instance.json")
 
         # 8. Register in global registry.
-        from ...db.models.instance_record import InstanceRecord as InstanceModel
-
-        record = InstanceModel(
+        record = InstanceRecord(
             name=name,
             workspace_root=str(workspace_root),
             web_port=resolved_web_port,
@@ -632,6 +627,4 @@ def _process_exists(pid: int) -> bool:
 
 async def asyncio_sleep(seconds: float) -> None:
     """Async-compatible sleep (avoids top-level ``import asyncio``)."""
-    import asyncio
-
     await asyncio.sleep(seconds)

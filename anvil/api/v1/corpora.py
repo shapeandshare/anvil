@@ -28,6 +28,7 @@ from ...api.v1.schemas import (
     ResolvePathBody,
 )
 from ...services.datasets.chunking_strategy import ChunkingStrategy
+from ...services.datasets.corpus_loader import CorpusLoader
 from ...services.tracking.tracking import TrackingService
 from ...workbench import AnvilWorkbench
 
@@ -579,8 +580,6 @@ async def analyze_path(body: AnalyzePathBody) -> dict[str, Any]:
     root_path = body.path.strip()
     inc = body.include_patterns
     exc = body.exclude_patterns
-
-    from ...services.datasets.corpus_loader import CorpusLoader
 
     loader = CorpusLoader()
     try:

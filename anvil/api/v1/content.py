@@ -28,6 +28,8 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from starlette.responses import StreamingResponse
 
 from ...api.deps import get_workbench
+from ...db.models.content_source import ContentSource
+from ...services.content.ingest_status import IngestStatus
 from ...workbench import AnvilWorkbench
 from .schemas import (
     AcceptOut,
@@ -262,8 +264,6 @@ async def create_source(
     HTTPException
         If validation fails (422).
     """
-    from ...db.models.content_source import ContentSource
-
     try:
         source = ContentSource(
             slug=body.slug,
@@ -417,8 +417,6 @@ async def stage_file(
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    from ...services.content.ingest_status import IngestStatus
-
     if session.status != IngestStatus.OPEN:
         raise HTTPException(
             status_code=422,
@@ -514,8 +512,6 @@ async def accept_session(
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    from ...services.content.ingest_status import IngestStatus
-
     if session.status not in (IngestStatus.OPEN, IngestStatus.VALIDATING):
         raise HTTPException(
             status_code=422,
@@ -589,8 +585,6 @@ async def abandon_session(
     session = await workbench.content_ingest_session_repo.get(session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
-
-    from ...services.content.ingest_status import IngestStatus
 
     await workbench.content_ingest_session_repo.update_status(
         session_id, IngestStatus.FAILED

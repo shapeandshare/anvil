@@ -11,7 +11,9 @@ transformer with RoPE, SwiGLU MLP, RMSNorm, and KV-cache attention.
 
 from __future__ import annotations
 
+import json
 import math
+import os
 import random
 from collections.abc import Callable
 from typing import Any, TypeGuard
@@ -296,9 +298,6 @@ class LlamaModel:
         chars : list of str or None, optional
             Optional character mapping to include in the saved data.
         """
-        import json
-        import os
-
         os.makedirs(os.path.dirname(path), exist_ok=True)
         serialized: dict[str, list[list[float]] | list[float]] = {}
         for k in self.state_dict:
@@ -340,8 +339,6 @@ class LlamaModel:
         ValueError
             If the file contains an old GPT-2 format checkpoint.
         """
-        import json
-
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
 

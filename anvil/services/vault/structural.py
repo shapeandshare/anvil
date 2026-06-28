@@ -17,6 +17,11 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import networkx as nx
 
+try:
+    import networkx as nx
+except ImportError:
+    nx = None
+
 from ._types import NoteMetadata, StructuralMetrics, TopologicalMetrics
 from .connectivity import _is_spec_subfile
 
@@ -220,8 +225,6 @@ def _find_broken_cycles(G: nx.DiGraph) -> list[list[str]]:
     list[list[str]]
         List of cycles, where each cycle is a list of note stems.
     """
-    import networkx as nx
-
     broken_cycles: list[list[str]] = []
 
     try:

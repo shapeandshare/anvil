@@ -12,6 +12,7 @@ in ``asyncio.to_thread()``.
 
 from __future__ import annotations
 
+import asyncio
 import re
 import unicodedata
 from datetime import date, datetime
@@ -489,8 +490,6 @@ class VaultAuditService:
         MechanicalReport
             Audit findings organized by severity.
         """
-        import asyncio
-
         return await asyncio.to_thread(self._run_mechanical_audit_sync)
 
     def _run_mechanical_audit_sync(self) -> MechanicalReport:

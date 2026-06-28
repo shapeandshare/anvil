@@ -31,7 +31,7 @@ from .training_engine import TrainingEngine
 #: every call.  Set once at module load time.
 _MODAL_AVAILABLE: bool = False
 try:
-    import modal  # noqa: F401
+    import modal
 
     _MODAL_AVAILABLE = True
 except ImportError:
@@ -120,9 +120,11 @@ class ModalBackend:
         if self._function_factory is not None:
             remote_fn = self._function_factory()
         else:
-            import modal as _modal_lib  # lazy import -- only needed without injected factory
-
-            remote_fn = self._build_remote_function(_modal_lib)
+            # import-placement:allow -- modal is imported at module level above
+            assert (
+                _MODAL_AVAILABLE
+            ), "modal package required when no function factory provided"
+            remote_fn = self._build_remote_function(modal)  # type: ignore[possibly-unbound]
 
         # --- submit ---
         call = await loop.run_in_executor(None, lambda: remote_fn.spawn(docs, config))
@@ -226,10 +228,13 @@ class ModalBackend:
                 Dictionary with ``artifact_uris`` and ``mlflow_run_id``
                 keys for downstream metadata registration.
             """
+            # import-placement:allow -- Modal remote function runs in cloud
             import os
 
+            # import-placement:allow -- Modal remote function runs in cloud
             import mlflow
 
+            # import-placement:allow -- Modal remote function runs in cloud
             from ...core.torch_engine import train_torch
 
             mlflow_tracking_uri = os.environ.get(
@@ -269,6 +274,7 @@ class ModalBackend:
                 mlflow.log_metric("final_loss", final_loss)
 
                 # Log samples as an artifact
+                # import-placement:allow -- Modal remote function runs in cloud
                 import tempfile
 
                 with tempfile.TemporaryDirectory() as tmpdir:
@@ -278,11 +284,13 @@ class ModalBackend:
                     mlflow.log_artifact(samples_path)
 
                 # Log model artifacts from the exported weights
+                # import-placement:allow -- Modal remote function runs in cloud
                 from ..export import SafetensorsExportService
 
                 export_svc = SafetensorsExportService()
                 with tempfile.TemporaryDirectory() as tmpdir:
                     # Build a CPU LlamaModel from the exported weights
+                    # import-placement:allow -- Modal remote function runs in cloud
                     from ...core.engine import LlamaModel
 
                     model = LlamaModel(
@@ -292,6 +300,7 @@ class ModalBackend:
                         n_layer=config.get("n_layer", 1),
                         block_size=config.get("block_size", 16),
                     )
+                    # import-placement:allow -- Modal remote function runs in cloud
                     from .local import _load_weights_into_model
 
                     _load_weights_into_model(model, _weights)

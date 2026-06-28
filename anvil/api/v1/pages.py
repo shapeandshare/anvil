@@ -19,6 +19,7 @@ from fastapi.responses import HTMLResponse
 from ...api.deps import get_workbench
 from ...db.models.license_entry import LicenseEntry
 from ...workbench import AnvilWorkbench
+from .learning import _arc_context as _ctx
 from .learning import related_lessons
 
 router = APIRouter()
@@ -197,8 +198,6 @@ def _arc_context(key: str) -> dict[str, Any]:
         for navigation within the progressive learning content, or an
         empty dict if the key is not found.
     """
-    from .learning import _arc_context as _ctx
-
     return _ctx(key)
 
 

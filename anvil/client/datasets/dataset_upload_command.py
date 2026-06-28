@@ -16,6 +16,11 @@ from pathlib import Path
 from .._shared.abstract_command import AbstractCommand
 from .._shared.http_method import HttpMethod
 
+try:
+    import aiofiles  # type: ignore[import-untyped]
+except ImportError:
+    aiofiles = None
+
 
 class DatasetUploadCommand(AbstractCommand):
     """Upload a file into a dataset — ``POST /v1/datasets/upload`` (multipart)."""
@@ -35,7 +40,9 @@ class DatasetUploadCommand(AbstractCommand):
         dict[str, object]
             The server response confirming the upload.
         """
-        import aiofiles  # type: ignore[import-untyped]
+        if aiofiles is None:
+            msg = "aiofiles is required for file uploads. Install with: pip install aiofiles"
+            raise ImportError(msg)
 
         async with aiofiles.open(file_path, "rb") as f:
             content = await f.read()

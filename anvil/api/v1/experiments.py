@@ -23,6 +23,9 @@ from mlflow.tracking import MlflowClient
 
 from ...config import get_config, get_mlflow_browser_uri
 from ...core.engine import LlamaModel
+from ...db.repositories.corpora import CorpusRepository
+from ...db.repositories.datasets import DatasetRepository
+from ...db.session import AsyncSessionLocal
 from ...services.tracking.tracking import TrackingService
 from ...services.training.memory_estimator import estimate_training_memory
 
@@ -114,10 +117,6 @@ async def _enrich_experiments(
     experiments : list[dict[str, Any]]
         List of experiment dicts to enrich in place.
     """
-    from ...db.repositories.corpora import CorpusRepository
-    from ...db.repositories.datasets import DatasetRepository
-    from ...db.session import AsyncSessionLocal
-
     async with AsyncSessionLocal() as session:
         ds_repo = DatasetRepository(session)
         corp_repo = CorpusRepository(session)
@@ -420,8 +419,6 @@ async def get_experiment(
         ds_id = params.get("dataset_id")
         if ds_id:
             try:
-                from ...db.repositories.datasets import DatasetRepository
-                from ...db.session import AsyncSessionLocal
 
                 async with AsyncSessionLocal() as sess:
                     ds_repo = DatasetRepository(sess)
@@ -434,8 +431,6 @@ async def get_experiment(
             corp_id = params.get("corpus_id")
             if corp_id:
                 try:
-                    from ...db.repositories.corpora import CorpusRepository
-                    from ...db.session import AsyncSessionLocal
 
                     async with AsyncSessionLocal() as sess:
                         corp_repo = CorpusRepository(sess)

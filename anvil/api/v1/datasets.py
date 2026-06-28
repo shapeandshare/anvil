@@ -40,6 +40,8 @@ from anvil.db.repositories.curation import SampleRepository
 from anvil.db.repositories.curation_operation_repository import (
     CurationOperationRepository,
 )
+from anvil.services.chunking.window_chunker import FixedSizeWindowChunker
+from anvil.services.datasets.corpus_loader import CorpusLoader
 from anvil.services.governance.audit_action import AuditAction
 from anvil.services.governance.audit_outcome import AuditOutcome
 from anvil.services.tracking.tracking import TrackingService
@@ -665,8 +667,6 @@ async def create_dataset_from_corpus(
     inc = json.loads(corpus.include_patterns) if corpus.include_patterns else None
     exc = json.loads(corpus.exclude_patterns) if corpus.exclude_patterns else None
 
-    from anvil.services.datasets.corpus_loader import CorpusLoader
-
     loader = CorpusLoader()
     load_result = loader.ingest(
         root_path=corpus.root_path,
@@ -710,8 +710,6 @@ async def create_dataset_from_corpus(
         elif body.chunking_strategy == "file":
             docs.append(text)
         else:
-            from anvil.services.chunking.window_chunker import FixedSizeWindowChunker
-
             bs = body.block_size  # validated non-None for windowed above
             assert bs is not None
             chunker = FixedSizeWindowChunker(

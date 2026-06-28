@@ -276,6 +276,30 @@ Coverage is reported via `pytest --cov=anvil --cov-report=term-missing`. Current
         def build(self, name: str) -> Chunker: ...
     ```
 
+14. **No Lazy Imports** — All ``import`` and ``from ... import`` statements MUST
+    appear at the **top of the file** (module level, before any class/function
+    definition). Indented imports inside function or method bodies are
+    forbidden, with exactly three exceptions:
+
+    Exceptions (verified by ``check_import_placement.py``):
+    - ``TYPE_CHECKING`` blocks — ONLY for genuine circular import cycles that
+      cannot be resolved by restructuring. The ``if TYPE_CHECKING:`` line MUST
+      carry a ``# cycle:`` comment documenting the cycle.
+    - ``try`` / ``except ImportError`` — ONLY for optional third-party
+      dependencies not listed in the package's core dependencies. The
+      ``except`` line MUST name ``ImportError`` specifically.
+    - ``# import-placement:allow`` — Last-resort escape hatch on the line
+      immediately preceding the import. MUST include a justification comment.
+
+    **Internal (project-own) modules MUST NEVER be lazy-imported.** If a module
+    is needed, import it at the top of the file — even if that means
+    restructuring code to avoid circular imports. Deferred imports are
+    complexity, not simplicity (Principle 13 / Constitution Article XI).
+
+    Enforced by ``check_import_placement.py`` — zero violations allowed.
+    Run via ``make lint``. This replaces the old "imports at top by default"
+    guideline.
+
 ## Vault Enrichment Protocol
 
 ### During a session:
@@ -300,7 +324,7 @@ Coverage is reported via `pytest --cov=anvil --cov-report=term-missing`. Current
 - Core engine (`anvil/core/`) has ZERO pip dependencies
 - All file paths use relative imports within the package
 - Constants grouped together in dedicated modules
-- Imports at top of file by default. Lazy/conditional imports allowed ONLY for runtime capability detection (e.g. platform-specific GPU support, optional dependency probing) — reviewed case by case
+- Imports at the TOP of the file only — see Principle 14 (No Lazy Imports). Enforced by ``check_import_placement.py`` via ``make lint``. Zero violations allowed.
 - One class per file. Classes for all logic (no loose functions)
 - Favor Pydantic `BaseModel` over `dataclasses.dataclass`
 - `mypy --strict` enforced. Plus `enable_error_code = ["ignore-without-code", "possibly-undefined", "redundant-cast", "redundant-expr"]` and `warn_unused_ignores = true` in `pyproject.toml`. No type-error suppression (`# type: ignore`, `cast()`, `Any` abuse). Strict explicit typing on all function signatures.

@@ -13,7 +13,28 @@ classification.
 from __future__ import annotations
 
 import argparse
+import asyncio
+import os as _os
 import sys
+
+from .build_notes import main as build_notes_main
+from .bump_version import bump_main
+from .bump_version import main as bump_version_main
+from .check_adr_unique import main as check_adr_unique_main
+from .check_bump_scope import main as check_bump_scope_main
+from .check_core_deps import main as check_core_deps_main
+from .check_guarded_imports import main as check_guarded_imports_main
+from .check_import_placement import main as check_import_placement_main
+from .check_init_py_ownership import main as check_init_py_ownership_main
+from .check_layer_boundaries import main as check_layer_boundaries_main
+from .check_nesting_depth import main as check_nesting_depth_main
+from .check_one_class import main as check_one_class_main
+from .check_py_typed import main as check_py_typed_main
+from .check_relative_imports import main as check_relative_imports_main
+from .check_version import main as check_version_main
+from .detect_increment import main as detect_increment_main
+from .migrate_specs import run as migrate_specs_run
+from .vault_health_service import VaultHealthService
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -270,9 +291,6 @@ def _cmd_audit(args: argparse.Namespace) -> None:
     args : argparse.Namespace
         Parsed CLI arguments.
     """
-    import asyncio
-
-    from .vault_health_service import VaultHealthService
 
     async def _run() -> None:
         svc = VaultHealthService(vault_dir=args.vault_dir)
@@ -331,12 +349,8 @@ def _cmd_check_adrs(args: argparse.Namespace) -> None:
     args : argparse.Namespace
         Parsed CLI arguments.
     """
-    import os as _os
-
     _os.environ.setdefault("ANVIL_DECISIONS_DIR", args.decisions_dir)
-    from .check_adr_unique import main as adr_main
-
-    adr_main()
+    check_adr_unique_main()
 
 
 def _cmd_check_guarded_imports(args: argparse.Namespace) -> None:
@@ -347,12 +361,8 @@ def _cmd_check_guarded_imports(args: argparse.Namespace) -> None:
     args : argparse.Namespace
         Parsed CLI arguments.
     """
-    import os as _os
-
     _os.environ["ANVIL_ROOT"] = args.source_dir
-    from .check_guarded_imports import main as guarded_main
-
-    guarded_main()
+    check_guarded_imports_main()
 
 
 def _cmd_check_bump_scope(args: argparse.Namespace) -> None:
@@ -363,12 +373,8 @@ def _cmd_check_bump_scope(args: argparse.Namespace) -> None:
     args : argparse.Namespace
         Parsed CLI arguments.
     """
-    import os as _os
-
     _os.environ["GITHUB_WORKSPACE"] = args.repo_root
-    from .check_bump_scope import main as bump_main
-
-    bump_main()
+    check_bump_scope_main()
 
 
 def _cmd_bump_patch(args: argparse.Namespace) -> None:
@@ -379,9 +385,7 @@ def _cmd_bump_patch(args: argparse.Namespace) -> None:
     args : argparse.Namespace
         Parsed CLI arguments.
     """
-    from .bump_version import main
-
-    main()
+    bump_version_main()
 
 
 def _cmd_bump(args: argparse.Namespace) -> None:
@@ -392,30 +396,22 @@ def _cmd_bump(args: argparse.Namespace) -> None:
     args : argparse.Namespace
         Parsed CLI arguments.
     """
-    from .bump_version import bump_main
-
     bump_main(increment=args.increment)
 
 
 def _cmd_detect_increment(args: argparse.Namespace) -> None:
     """Handle the ``detect-increment`` subcommand."""
-    from .detect_increment import main
-
-    main()
+    detect_increment_main()
 
 
 def _cmd_check_version(args: argparse.Namespace) -> None:
     """Handle the ``check-version`` subcommand."""
-    from .check_version import main
-
-    main()
+    check_version_main()
 
 
 def _cmd_build_notes(args: argparse.Namespace) -> None:
     """Handle the ``build-notes`` subcommand."""
-    from .build_notes import main
-
-    main()
+    build_notes_main()
 
 
 def _cmd_migrate_specs(args: argparse.Namespace) -> None:
@@ -426,10 +422,8 @@ def _cmd_migrate_specs(args: argparse.Namespace) -> None:
     args : argparse.Namespace
         Parsed CLI arguments.
     """
-    from .migrate_specs import run
-
     sys.exit(
-        run(
+        migrate_specs_run(
             vault_dir=args.vault_dir,
             specs_dir=args.specs_dir,
             dry_run=args.dry_run,
@@ -441,64 +435,44 @@ def _cmd_migrate_specs(args: argparse.Namespace) -> None:
 
 def _cmd_check_init_py(args: argparse.Namespace) -> None:
     """Handle the ``check-init-py`` subcommand."""
-    from .check_init_py_ownership import main
-
-    main()
+    check_init_py_ownership_main()
 
 
 def _cmd_check_relative_imports(args: argparse.Namespace) -> None:
     """Handle the ``check-relative-imports`` subcommand."""
-    from .check_relative_imports import main
-
-    main()
+    check_relative_imports_main()
 
 
 def _cmd_check_one_class(args: argparse.Namespace) -> None:
     """Handle the ``check-one-class`` subcommand."""
-    import os as _os
-
     _os.environ["ANVIL_ROOT"] = getattr(args, "source_dir", "anvil")
-    from .check_one_class import main
-
-    main()
+    check_one_class_main()
 
 
 def _cmd_check_import_placement(args: argparse.Namespace) -> None:
     """Handle the ``check-import-placement`` subcommand."""
-    from .check_import_placement import main
-
-    main()
+    check_import_placement_main()
 
 
 def _cmd_check_nesting(args: argparse.Namespace) -> None:
     """Handle the ``check-nesting`` subcommand."""
-    from .check_nesting_depth import main
-
-    main()
+    check_nesting_depth_main()
 
 
 def _cmd_check_py_typed(args: argparse.Namespace) -> None:
     """Handle the ``check-py-typed`` subcommand."""
-    from .check_py_typed import main
-
-    main()
+    check_py_typed_main()
 
 
 def _cmd_check_core_deps(args: argparse.Namespace) -> None:
     """Handle the ``check-core-deps`` subcommand."""
-    import os as _os
-
     _os.environ["ANVIL_ROOT"] = getattr(args, "source_dir", "anvil/core")
-    from .check_core_deps import main
-
-    main()
+    check_core_deps_main()
 
 
 def _cmd_check_layers(args: argparse.Namespace) -> None:
     """Handle the ``check-layers`` subcommand."""
-    from .check_layer_boundaries import main
-
-    main()
+    check_layer_boundaries_main()
 
 
 if __name__ == "__main__":

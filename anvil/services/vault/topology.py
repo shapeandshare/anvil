@@ -16,6 +16,11 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import networkx as nx
 
+try:
+    import networkx as nx
+except ImportError:
+    nx = None
+
 from ._types import NoteMetadata, TopologicalMetrics
 
 
@@ -37,8 +42,6 @@ def compute_topological(
     TopologicalMetrics
         All topology calculations.
     """
-    import networkx as nx
-
     metrics = TopologicalMetrics()
 
     # --- PageRank authority ---

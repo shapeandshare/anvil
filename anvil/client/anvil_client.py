@@ -32,6 +32,19 @@ if TYPE_CHECKING:
     from .services.services_client import ServicesClient
     from .training.training_client import TrainingClient
 
+from .compute.compute_client import ComputeClient
+from .content.content_client import ContentClient
+from .corpora.corpora_client import CorporaClient
+from .datasets.datasets_client import DatasetsClient
+from .eval.eval_client import EvalClient
+from .experiments.experiments_client import ExperimentsClient
+from .governance.governance_client import GovernanceClient
+from .health.health_client import HealthClient
+from .inference.inference_client import InferenceClient
+from .registry.registry_client import RegistryClient
+from .services.services_client import ServicesClient
+from .training.training_client import TrainingClient
+
 
 class AnvilClient:
     """Top-level async facade for the anvil server API.
@@ -114,8 +127,6 @@ class AnvilClient:
             Domain client for server health operations.
         """
         if self._health is None:
-            from .health.health_client import HealthClient
-
             self._health = HealthClient(self._transport)
         return self._health
 
@@ -131,8 +142,6 @@ class AnvilClient:
             Domain client for dataset operations.
         """
         if self._datasets is None:
-            from .datasets.datasets_client import DatasetsClient
-
             self._datasets = DatasetsClient(self._transport)
         return self._datasets
 
@@ -148,8 +157,6 @@ class AnvilClient:
             Domain client for training (start, stop, status, SSE stream).
         """
         if self._training is None:
-            from .training.training_client import TrainingClient
-
             self._training = TrainingClient(self._transport)
         return self._training
 
@@ -164,8 +171,6 @@ class AnvilClient:
         ExperimentsClient
         """
         if self._experiments is None:
-            from .experiments.experiments_client import ExperimentsClient
-
             self._experiments = ExperimentsClient(self._transport)
         return self._experiments
 
@@ -181,8 +186,6 @@ class AnvilClient:
             Domain client for listing models and sampling text.
         """
         if self._inference is None:
-            from .inference.inference_client import InferenceClient
-
             self._inference = InferenceClient(self._transport)
         return self._inference
 
@@ -197,8 +200,6 @@ class AnvilClient:
         RegistryClient
         """
         if self._registry is None:
-            from .registry.registry_client import RegistryClient
-
             self._registry = RegistryClient(self._transport)
         return self._registry
 
@@ -211,8 +212,6 @@ class AnvilClient:
         CorporaClient
         """
         if self._corpora is None:
-            from .corpora.corpora_client import CorporaClient
-
             self._corpora = CorporaClient(self._transport)
         return self._corpora
 
@@ -225,8 +224,6 @@ class AnvilClient:
         EvalClient
         """
         if self._eval is None:
-            from .eval.eval_client import EvalClient
-
             self._eval = EvalClient(self._transport)
         return self._eval
 
@@ -239,8 +236,6 @@ class AnvilClient:
         ComputeClient
         """
         if self._compute is None:
-            from .compute.compute_client import ComputeClient
-
             self._compute = ComputeClient(self._transport)
         return self._compute
 
@@ -253,8 +248,6 @@ class AnvilClient:
         ServicesClient
         """
         if self._services is None:
-            from .services.services_client import ServicesClient
-
             self._services = ServicesClient(self._transport)
         return self._services
 
@@ -267,8 +260,6 @@ class AnvilClient:
         GovernanceClient
         """
         if self._governance is None:
-            from .governance.governance_client import GovernanceClient
-
             self._governance = GovernanceClient(self._transport)
         return self._governance
 
@@ -281,8 +272,6 @@ class AnvilClient:
         ContentClient
         """
         if self._content is None:
-            from .content.content_client import ContentClient
-
             self._content = ContentClient(self._transport)
         return self._content
 

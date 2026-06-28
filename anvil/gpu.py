@@ -5,6 +5,9 @@
 
 """GPU detection and device selection for anvil."""
 
+import platform
+import subprocess
+
 from pydantic import BaseModel, Field
 
 from .services._shared.device_type import DeviceType
@@ -73,12 +76,8 @@ def detect_gpu() -> GpuInfo:
 
 def _get_mps_device_name() -> str:
     """Return a human-readable name for the MPS device."""
-    import platform
-
     machine = platform.machine()
     if machine == "arm64":
-        import subprocess
-
         try:
             result = subprocess.run(
                 ["sysctl", "-n", "machdep.cpu.brand_string"],
@@ -95,8 +94,13 @@ def _get_mps_device_name() -> str:
 
 def _get_mps_memory() -> float | None:
     """Return total system memory in GB as a proxy for MPS-usable memory."""
-    import psutil
+    try:
+        import psutil
+    except ImportError:
+        psutil = None  # type: ignore[assignment]
 
+    if psutil is None:
+        return None
     mem: int = psutil.virtual_memory().total
     return mem / (1024**3)
 

@@ -17,6 +17,22 @@ import time
 from collections.abc import Awaitable, Callable
 from typing import Any
 
+from sqlalchemy import text
+
+from ...db.repositories.content_versions import ContentVersionRepository
+from ...db.repositories.corpora import CorpusRepository
+from ...db.repositories.datasets import DatasetRepository
+from ...db.session import AsyncSessionLocal
+from ...services.content.local_versioned_content_store import LocalVersionedContentStore
+from ...services.content.version_ref import VersionRef
+from ...storage.local import LocalFileStore
+
+# ── Docs loading dependencies (previously lazy) ─────────────────────────
+from ..chunking.base import Chunker
+from ..chunking.file_chunker import FileAsDocChunker
+from ..chunking.line_chunker import LineAsDocChunker
+from ..chunking.window_chunker import FixedSizeWindowChunker
+
 # Side-effect imports: each module registers its backends at module level.
 from ..compute import local_stdlib_backend  # noqa: F401 — registers local-stdlib
 from ..compute import local_torch_backend  # noqa: F401 — registers local-torch
@@ -28,6 +44,11 @@ from ..compute.registry import get_backend
 from ..compute.resolve import resolve_backend
 from ..compute.result import ComputeResult
 from ..compute.training_engine import TrainingEngine
+from ..datasets.chunking_strategy import ChunkingStrategy
+from ..datasets.corpora import CorpusService
+from ..datasets.corpus_loader import CorpusLoader
+from ..datasets.datasets import DatasetService
+from ..demo.demo_bootstrap import DEFAULT_CORPUS_NAME, DemoBootstrapService
 from .divergence_error import DivergenceError
 from .step_metrics import StepMetrics
 from .stop_requested import StopRequested
@@ -286,10 +307,6 @@ class TrainingService:
             return self._load_docs_from_version(content_version_id)
 
         if dataset_id is not None:
-            from ...db.repositories.datasets import DatasetRepository
-            from ...db.session import AsyncSessionLocal
-            from ...storage.local import LocalFileStore
-            from ..datasets.datasets import DatasetService
 
             async def _load() -> list[str]:
                 async with AsyncSessionLocal() as session:
@@ -301,12 +318,6 @@ class TrainingService:
             return asyncio.run(_load())
 
         # Fallback: use default demo corpus when no corpus/dataset specified
-        from ...db.repositories.corpora import CorpusRepository
-        from ...db.session import AsyncSessionLocal
-        from ..datasets.corpora import CorpusService
-        from ..datasets.corpus_loader import CorpusLoader
-        from ..demo.demo_bootstrap import DEFAULT_CORPUS_NAME, DemoBootstrapService
-
         async def _load_default() -> list[str]:
             async with AsyncSessionLocal() as session:
                 repo = CorpusRepository(session)
@@ -346,8 +357,6 @@ class TrainingService:
         RuntimeError
             If the version cannot be resolved.
         """
-        from ...db.repositories.content_versions import ContentVersionRepository
-        from ...db.session import AsyncSessionLocal
 
         async def _load() -> list[str]:
             async with AsyncSessionLocal() as session:
@@ -359,13 +368,7 @@ class TrainingService:
                     )
                 entries = await ver_repo.get_entries(content_version_id)
 
-                from ...services.content.local_versioned_content_store import (
-                    LocalVersionedContentStore,
-                )
-
                 store = LocalVersionedContentStore(db_session=session)
-
-                from ...services.content.version_ref import VersionRef
 
                 version_ref = VersionRef(
                     manifest_digest=version.manifest_digest,
@@ -378,12 +381,6 @@ class TrainingService:
                 strategy = chunk_cfg.get("strategy", "windowed")
                 block_size = chunk_cfg.get("block_size", 16)
                 overlap = chunk_cfg.get("chunk_overlap", 0.5)
-
-                from ..chunking.base import Chunker
-                from ..chunking.file_chunker import FileAsDocChunker
-                from ..chunking.line_chunker import LineAsDocChunker
-                from ..chunking.window_chunker import FixedSizeWindowChunker
-                from ..datasets.chunking_strategy import ChunkingStrategy
 
                 chunker: Chunker
                 if strategy == ChunkingStrategy.FILE:
@@ -438,10 +435,6 @@ class TrainingService:
         int
             A new unique experiment ID.
         """
-        from sqlalchemy import text
-
-        from ...db.session import AsyncSessionLocal
-
         async with AsyncSessionLocal() as session:
             result = await session.execute(
                 text(

@@ -24,7 +24,21 @@ import httpx
 from pydantic import BaseModel, ConfigDict
 from pydantic import ValidationError as PydanticValidationError
 
+from anvil.client._shared.errors.api_error import ApiError
+from anvil.client._shared.errors.authentication_error import AuthenticationError
+from anvil.client._shared.errors.connection_error import ConnectionError
+from anvil.client._shared.errors.not_found_error import NotFoundError
+from anvil.client._shared.errors.rate_limit_error import RateLimitError
+from anvil.client._shared.errors.server_error import ServerError
+from anvil.client._shared.errors.validation_error import ValidationError
 from anvil.client._shared.server_config import ServerConfig
+from anvil.client._shared.stream_event import StreamEvent
+from anvil.client._shared.stream_event_type import StreamEventType
+
+try:
+    import aiofiles  # type: ignore[import-untyped]
+except ImportError:
+    aiofiles = None
 
 logger = logging.getLogger(__name__)
 
@@ -158,10 +172,6 @@ class Transport:
                     await asyncio.sleep(backoff)
                     continue
                 # pylint: disable=redefined-builtin
-                from anvil.client._shared.errors.connection_error import ConnectionError
-
-                # pylint: enable=redefined-builtin
-
                 raise ConnectionError(str(exc)) from exc
 
             status = response.status_code
@@ -237,9 +247,6 @@ class Transport:
         ApiError
             On non-2xx response from the stream endpoint.
         """
-        from anvil.client._shared.stream_event import StreamEvent
-        from anvil.client._shared.stream_event_type import StreamEventType
-
         headers: dict[str, str] = {}
         if self._api_key:
             headers["X-API-Key"] = self._api_key
@@ -302,7 +309,9 @@ class Transport:
         response.raise_for_status()
 
         if dest:
-            import aiofiles  # type: ignore[import-untyped]
+            if aiofiles is None:
+                msg = "aiofiles is required for file downloads. Install with: pip install aiofiles"
+                raise ImportError(msg)
 
             content = response.content
             async with aiofiles.open(str(dest), "wb") as f:
@@ -316,13 +325,6 @@ class Transport:
 
     def _raise_for_status(self, status: int, message: str) -> None:
         """Map an HTTP status code to a typed ApiError exception and raise it."""
-        from anvil.client._shared.errors.api_error import ApiError
-        from anvil.client._shared.errors.authentication_error import AuthenticationError
-        from anvil.client._shared.errors.not_found_error import NotFoundError
-        from anvil.client._shared.errors.rate_limit_error import RateLimitError
-        from anvil.client._shared.errors.server_error import ServerError
-        from anvil.client._shared.errors.validation_error import ValidationError
-
         if status in (401, 403):
             raise AuthenticationError(message, status_code=status)
         if status == 404:

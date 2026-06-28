@@ -11,6 +11,7 @@ from collections.abc import Sequence
 
 from ...db.models.content_lock import CheckoutLock
 from ...db.repositories.content_locks import ContentLockRepository
+from .lock_state import LockState
 
 
 class LockService:
@@ -57,8 +58,6 @@ class LockService:
             The persisted lock with generated ``id`` and
             server-side ``acquired_at`` populated.
         """
-        from .lock_state import LockState
-
         lock = CheckoutLock(scope=scope, holder=holder, state=LockState.HELD)
         return await self._repo.add(lock)
 

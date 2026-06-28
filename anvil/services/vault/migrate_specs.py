@@ -591,7 +591,6 @@ def _fix_existing_files(vault_specs_dir: Path) -> None:
         if root_note.exists():
             content = root_note.read_text(encoding="utf-8")
             modified = content.replace("created: ''", "created: ~")
-            import re
 
             modified = re.sub(
                 r"(\[\[[^]|]+)\.md(\|[^]]+\]\])",

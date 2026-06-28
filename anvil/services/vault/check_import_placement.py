@@ -6,12 +6,16 @@
 """Import-placement checker: flags imports that appear after module-level
 class/function definitions.
 
-Enforces the architecture rule that imports must be at the top of the
-file. Lazy/conditional imports inside function/method bodies are allowed
-ONLY for runtime capability detection (e.g., platform-specific GPU
-support, optional dependency probing).
+Enforces the hard rule (AGENTS.md Principle 14) that ALL imports must be
+at the top of the file.  Internal/project-own modules MUST NEVER be
+lazy-imported.
 
-Scans all ``.py`` files under ``anvil/``. Exits 0 if no violations,
+The only allowlisted contexts for deferred imports:
+- ``TYPE_CHECKING`` blocks (genuine circular import cycles only)
+- ``try`` / ``except ImportError`` blocks (optional third-party deps)
+- ``# import-placement:allow`` comment (last resort, with justification)
+
+Scans all ``.py`` files under ``anvil/``.  Exits 0 if no violations,
 1 if any lazy import is found outside an allowlisted context.
 """
 

@@ -11,6 +11,7 @@ and converted to :class:`pydantic.BaseModel` per project convention.
 
 from __future__ import annotations
 
+import json
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any
@@ -381,6 +382,26 @@ class MechanicalReport(BaseModel):
             self.skipped.append(finding)
 
 
+def _convert_types(obj: object) -> object:
+    """Convert non-serializable types for JSON serialization.
+
+    Parameters
+    ----------
+    obj : object
+        Object to convert.
+
+    Returns
+    -------
+    object
+        JSON-serializable representation.
+    """
+    if isinstance(obj, (Path, date, datetime)):
+        return str(obj)
+    if isinstance(obj, set):
+        return sorted(obj)
+    return obj
+
+
 class GraphHealthReport(BaseModel):
     """Aggregate output from all analysis passes.
 
@@ -427,14 +448,5 @@ class GraphHealthReport(BaseModel):
         str
             JSON string.
         """
-        import json
-
-        def _convert(obj: object) -> object:
-            if isinstance(obj, (Path, date, datetime)):
-                return str(obj)
-            if isinstance(obj, set):
-                return sorted(obj)
-            return obj
-
         raw = self.model_dump()
-        return json.dumps(raw, indent=2, default=_convert)
+        return json.dumps(raw, indent=2, default=_convert_types)

@@ -16,6 +16,11 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import networkx as nx
 
+try:
+    import networkx as nx
+except ImportError:
+    nx = None
+
 from ._types import ConnectivityMetrics, NoteMetadata
 
 # Exempt note types and names for orphan/dead-end detection
@@ -48,8 +53,6 @@ def compute_connectivity(
     ConnectivityMetrics
         All connectivity calculations.
     """
-    import networkx as nx
-
     metrics = ConnectivityMetrics()
 
     # --- Orphan detection ---

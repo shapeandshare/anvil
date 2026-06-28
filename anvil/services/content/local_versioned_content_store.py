@@ -18,6 +18,8 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import os
+import shutil
 import uuid
 from collections.abc import AsyncIterator
 from pathlib import Path
@@ -25,6 +27,7 @@ from pathlib import Path
 from aiofiles import open as async_open  # type: ignore[import-untyped]
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ...config import get_config
 from ...db.models.content_blob import ContentBlob
 from ...db.models.content_entry import ContentEntry
 from ...db.models.content_version import ContentVersion
@@ -77,8 +80,6 @@ class LocalVersionedContentStore(VersionedContentStore):
         validation_service: ValidationService | None = None,
     ) -> None:
         if content_dir is None:
-            from ...config import get_config
-
             resolved_content_dir: str = get_config()["content_dir"]
         else:
             resolved_content_dir = content_dir
@@ -772,8 +773,6 @@ async def _rmtree(path: Path) -> None:
     path : Path
         Root of the directory tree to remove.
     """
-    import shutil
-
     loop = asyncio.get_running_loop()
     await loop.run_in_executor(None, shutil.rmtree, str(path), True)
 
@@ -793,8 +792,6 @@ async def _async_scandir_recursive(
     Path
         Paths to regular files within the tree.
     """
-    import os
-
     loop = asyncio.get_running_loop()
 
     def _scan() -> list[Path]:

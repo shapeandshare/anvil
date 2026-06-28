@@ -17,6 +17,7 @@ import re
 from collections.abc import AsyncGenerator, Sequence
 from typing import TYPE_CHECKING, Any
 
+import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.expression import ColumnElement
 
@@ -204,8 +205,6 @@ class DatasetCurationService:
         if dataset is None:
             raise ValueError(f"Dataset {self._dataset_id} not found")
 
-        import sqlalchemy as sa
-
         samples_before = await self._sample_repo.count_active(self._dataset_id)
         conditions: list[ColumnElement[bool]] = [sa.not_(Sample.is_removed)]
         if min_length is not None:
@@ -301,8 +300,6 @@ class DatasetCurationService:
         dataset = await self._dataset_repo.get(self._dataset_id)
         if dataset is None:
             raise ValueError(f"Dataset {self._dataset_id} not found")
-
-        import sqlalchemy as sa
 
         flags = 0 if case_sensitive else re.IGNORECASE
         compiled = re.compile(pattern, flags)
@@ -459,8 +456,6 @@ class DatasetCurationService:
             estimated tokens, vocabulary size, length distribution,
             and duplicate count.
         """
-        import sqlalchemy as sa
-
         result = await self._session.execute(
             sa.select(Sample).where(
                 Sample.dataset_id == self._dataset_id,

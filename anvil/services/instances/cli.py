@@ -21,16 +21,15 @@ Exit codes
 1 — general error / missing command
 """
 
-from __future__ import annotations
-
 import argparse
 import asyncio
+import json
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from ...workbench import AnvilWorkbench
+from ...db.repositories.instance_registry import create_registry_session
+from ...db.session import AsyncSessionLocal
+from ...workbench import AnvilWorkbench
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -120,10 +119,6 @@ def main(argv: list[str] | None = None) -> None:
 
 async def _run(args: argparse.Namespace) -> None:
     """Execute the requested subcommand."""
-    from ...db.repositories.instance_registry import create_registry_session
-    from ...db.session import AsyncSessionLocal
-    from ...workbench import AnvilWorkbench
-
     registry_session = await create_registry_session()
 
     async with AsyncSessionLocal() as session:
@@ -212,8 +207,6 @@ async def _cmd_list(args: argparse.Namespace, wb: AnvilWorkbench) -> None:
         return
 
     if args.json:
-        import json
-
         print(json.dumps(instances, indent=2, default=str))
         return
 
