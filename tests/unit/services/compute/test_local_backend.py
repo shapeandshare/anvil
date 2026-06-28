@@ -126,7 +126,7 @@ class TestLocalStdlibBackend:
     async def test_stop_check_before_start(
         self, stdlib_backend, tiny_docs, tiny_config
     ):
-        """If stop_check is True before any step, train() raises UnboundLocalError on loss."""
+        """If stop_check is True before any step, training returns zero-loss result."""
 
         def stop_check() -> bool:
             return True
@@ -138,10 +138,10 @@ class TestLocalStdlibBackend:
             stop_check=stop_check,
         )
 
-        # train() doesn't define `loss` if the loop never runs, so it
-        # raises UnboundLocalError which the backend catches as FAILED.
-        assert result.status == ComputeStatus.FAILED
-        assert result.error_message is not None
+        # train() initialises loss as Value(0.0) before the loop, so
+        # returning immediately with zero steps produces a valid result.
+        assert result.status == ComputeStatus.COMPLETED
+        assert result.model is not None
 
     async def test_registered_in_registry(self):
         """LocalStdlibBackend is auto-registered in the compute registry."""

@@ -516,7 +516,7 @@ def train(
     beta1: float = 0.85,
     beta2: float = 0.99,
     temperature: float = 0.5,
-    progress_callback: Callable[[int, float, int, None], Any] | None = None,
+    progress_callback: Callable[..., Any] | None = None,
     optimizer_state_callback: (
         Callable[[int, list[float], list[float], list[float]], Any] | None
     ) = None,
@@ -553,7 +553,7 @@ def train(
     temperature : float, optional
         Sampling temperature. Defaults to 0.5.
     progress_callback : callable or None, optional
-        Called each step with ``(step, loss, tokens, grad_norm)``.
+        Called each step with ``(step, loss, *, tokens, grad_norm)``.
     optimizer_state_callback : callable or None, optional
         Called each step with ``(step, m, v, grads)``.
     stop_check : callable or None, optional
@@ -644,7 +644,7 @@ def train(
         for p in model.params:
             p.grad = 0
         if progress_callback:
-            progress_callback(step, loss.data, n, None)
+            progress_callback(step, loss.data, tokens=n, grad_norm=None)
 
     samples = []
     for _ in range(20):
