@@ -33,6 +33,14 @@ class ConfigSetting(BaseModel):
         yet applied (the process is still using the prior value).
     editable : bool
         ``True`` when the setting can be overridden via the UI.
+    display_name : str
+        Human-readable label for the UI.
+    description : str
+        Brief description of what this setting controls.
+    env_var : str
+        The environment variable name (e.g. ``ANVIL_DEVICE``).
+    default_value : str
+        The code-level default when no env or override is set.
     """
 
     key: str
@@ -41,3 +49,7 @@ class ConfigSetting(BaseModel):
     apply_class: ApplyClass = ApplyClass.APPLIES_LIVE
     pending_restart: bool = Field(default=False)
     editable: bool = Field(default=True)
+    display_name: str = Field(default="")
+    description: str = Field(default="")
+    env_var: str = Field(default="")
+    default_value: str = Field(default="")

@@ -239,11 +239,16 @@ async def config_page(request: Request) -> HTMLResponse:
     Returns
     -------
     HTMLResponse
-        Rendered ``config.html`` template.
+        Rendered ``config.html`` template with related learning context.
     """
     return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "config.html",
+        {
+            "related_lessons": related_lessons(
+                "runtime-config", "cloud-compute", "faq", "glossary"
+            ),
+        },
     )
 
 

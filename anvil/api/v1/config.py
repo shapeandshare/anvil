@@ -61,6 +61,10 @@ async def list_config(
             apply_class=s.apply_class.value,
             pending_restart=s.pending_restart,
             editable=s.editable,
+            display_name=s.display_name,
+            description=s.description,
+            env_var=s.env_var,
+            default_value=s.default_value,
         )
         for s in settings
     ]
@@ -101,6 +105,10 @@ async def list_pending_restart(
             apply_class=s.apply_class.value,
             pending_restart=s.pending_restart,
             editable=s.editable,
+            display_name=s.display_name,
+            description=s.description,
+            env_var=s.env_var,
+            default_value=s.default_value,
         )
         for s in settings
         if s.pending_restart
@@ -141,6 +149,10 @@ async def get_config(
         apply_class=setting.apply_class.value,
         pending_restart=setting.pending_restart,
         editable=setting.editable,
+        display_name=setting.display_name,
+        description=setting.description,
+        env_var=setting.env_var,
+        default_value=setting.default_value,
     )
 
 
@@ -212,6 +224,10 @@ async def update_config(
         apply_class=result.apply_class.value,
         pending_restart=result.pending_restart,
         editable=result.editable,
+        display_name=result.display_name,
+        description=result.description,
+        env_var=result.env_var,
+        default_value=result.default_value,
     )
 
 
@@ -267,4 +283,8 @@ async def reset_config(
         apply_class=result.apply_class.value,
         pending_restart=result.pending_restart,
         editable=result.editable,
+        display_name=result.display_name,
+        description=result.description,
+        env_var=result.env_var,
+        default_value=result.default_value,
     )

@@ -116,9 +116,7 @@ class RestoreEngine:
             # do NOT hardcode, because the archive structure depends on
             # which roots were present at backup time (FR-030).
             managed_dirs: list[str] = [
-                p.name
-                for p in sorted(restore_tmp.iterdir())
-                if p.is_dir()
+                p.name for p in sorted(restore_tmp.iterdir()) if p.is_dir()
             ]
 
             journal_roots: list[str] = []
@@ -188,11 +186,11 @@ class RestoreEngine:
 
         except Exception as exc:
             # Rollback on any failure.
-            managed_dirs = [
-                p.name
-                for p in sorted(restore_tmp.iterdir())
-                if p.is_dir()
-            ] if restore_tmp.exists() else []
+            managed_dirs = (
+                [p.name for p in sorted(restore_tmp.iterdir()) if p.is_dir()]
+                if restore_tmp.exists()
+                else []
+            )
             for md in managed_dirs:
                 live = Path.cwd() / md
                 bak = Path(str(live) + ".bak")

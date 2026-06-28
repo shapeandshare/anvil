@@ -306,6 +306,10 @@ class RuntimeConfigService:
                         entry, source, value, boot_snapshot
                     ),
                     editable=entry.editable,
+                    display_name=entry.display_name,
+                    description=entry.description,
+                    env_var=entry.env_var,
+                    default_value=entry.default_value,
                 )
             )
         return results
@@ -344,6 +348,10 @@ class RuntimeConfigService:
                 entry, source, value, boot_snapshot
             ),
             editable=entry.editable,
+            display_name=entry.display_name,
+            description=entry.description,
+            env_var=entry.env_var,
+            default_value=entry.default_value,
         )
 
     def _compute_pending_restart(
