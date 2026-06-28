@@ -527,6 +527,63 @@
     _activeOperationId: null,
     _eventSource: null,
 
+    // ── Live progress row helpers ──
+
+    _getRowByBackupId: function(backupId) {
+      var tbody = document.getElementById('backup-tbody');
+      if (!tbody) return null;
+      var escaped = backupId.replace(/"/g, '\\"');
+      var rows = tbody.querySelectorAll('tr[data-key="' + escaped + '"]');
+      return rows.length > 0 ? rows[0] : null;
+    },
+
+    _findOrCreateRow: function(backupId) {
+      var existing = backup._getRowByBackupId(backupId);
+      if (existing) return existing;
+
+      var tbody = document.getElementById('backup-tbody');
+      if (!tbody) return null;
+
+      // Remove empty-state row if present (placeholder from loadBackups)
+      var emptyEl = tbody.querySelector('.empty-state');
+      if (emptyEl) {
+        var emptyRow = emptyEl.closest('tr');
+        if (emptyRow) emptyRow.remove();
+      }
+
+      var tr = document.createElement('tr');
+      tr.setAttribute('data-key', backupId);
+      tr.innerHTML = '<td class="cell-mono">' + backupId + '</td>'
+        + '<td class="cell-nowrap"><span class="badge badge-cyan">backup</span></td>'
+        + '<td class="cell-nowrap"><span class="badge badge-yellow"><span class="badge__pulse"></span>creating</span></td>'
+        + '<td class="cell-nowrap">\u2014</td>'
+        + '<td class="cell-nowrap text-muted">just now</td>'
+        + '<td class="cell-nowrap"></td>';
+      tbody.insertBefore(tr, tbody.firstChild);
+      dom.animateEntrance(tr, 0);
+      return tr;
+    },
+
+    _updateProgressRow: function(backupId, percent, step) {
+      var tr = backup._getRowByBackupId(backupId);
+      if (!tr) {
+        tr = backup._findOrCreateRow(backupId);
+        if (!tr) return;
+      }
+
+      var statusCell = tr.cells[2];
+      if (!statusCell) return;
+
+      var pct = Math.round(percent);
+      var stepText = step || 'Working\u2026';
+      // Step text is server-controlled (hardcoded in ArchiveWriter/RestoreEngine)
+      // so innerHTML is safe here.
+      var statusHtml = '<span class="badge badge-yellow"><span class="badge__pulse"></span>' + pct + '% \u2014 ' + stepText + '</span>';
+      if (statusCell.innerHTML !== statusHtml) {
+        statusCell.innerHTML = statusHtml;
+      }
+    },
+
     formatBytes: function(b) {
       if (b === 0) return '0 B';
       var units = ['B', 'KB', 'MB', 'GB', 'TB'];
@@ -617,6 +674,7 @@
             if (resp.ok) {
               toast('Backup started: ' + data.backup_id, 'info');
               backup._activeOperationId = data.backup_id;
+              backup._findOrCreateRow(data.backup_id);
               backup._startSSE(data.backup_id);
             } else if (resp.status === 409) {
               toast(data.detail || 'Another operation is already in progress', 'error');
@@ -680,6 +738,10 @@
         if (stepEl) stepEl.textContent = data.current_step || 'Working\u2026';
         if (barEl) barEl.style.width = Math.round(data.percent) + '%';
         if (titleEl) titleEl.textContent = (data.operation_type === 'restore' ? 'Restore' : 'Backup') + ' in progress\u2026';
+        // Update the live progress chip in the table row
+        if (data.backup_id && data.operation_type !== 'restore') {
+          backup._updateProgressRow(data.backup_id, data.percent, data.current_step);
+        }
       });
 
       es.addEventListener('complete', function(e) {
@@ -687,17 +749,37 @@
         backup._eventSource = null;
         backup._activeOperationId = null;
         if (progressEl) progressEl.style.display = 'none';
+        // Finalize the table row status before refreshing
+        try {
+          var data = JSON.parse(e.data);
+          if (data && data.backup_id) {
+            var tr = backup._getRowByBackupId(data.backup_id);
+            if (tr && tr.cells[2]) {
+              var badge = tr.cells[2].querySelector('.badge');
+              if (badge) dom.updateBadge(badge, 'completed', 'badge-green');
+            }
+          }
+        } catch (_) {}
         toast('Operation completed successfully', 'success');
         backup.loadAll();
       });
 
       es.addEventListener('error', function(e) {
         var msg = 'Operation encountered an error';
-        try { var data = JSON.parse(e.data); msg = data.message || msg; } catch {}
+        var errorData = null;
+        try { errorData = JSON.parse(e.data); msg = errorData.message || msg; } catch {}
         es.close();
         backup._eventSource = null;
         backup._activeOperationId = null;
         if (progressEl) progressEl.style.display = 'none';
+        // Finalize the table row status to failed before refreshing
+        if (errorData && errorData.backup_id) {
+          var tr = backup._getRowByBackupId(errorData.backup_id);
+          if (tr && tr.cells[2]) {
+            var badge = tr.cells[2].querySelector('.badge');
+            if (badge) dom.updateBadge(badge, 'failed', 'badge-red');
+          }
+        }
         toast(msg, 'error');
         backup.loadAll();
       });
