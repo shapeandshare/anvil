@@ -20,7 +20,6 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-
 #: Directories to skip during walk (not counted as package levels).
 _SKIP_DIRS: set[str] = {
     "__pycache__",

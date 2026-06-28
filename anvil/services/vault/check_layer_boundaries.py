@@ -115,9 +115,7 @@ _FORBIDDEN_TARGETS: dict[str, list[str]] = {
 }
 
 # Regex to extract the imported module from ``import X`` or ``from X import Y``.
-_IMPORT_RE = re.compile(
-    r"^\s*(?:import\s+(\S+)|from\s+(\S+)\s+import\s+)"
-)
+_IMPORT_RE = re.compile(r"^\s*(?:import\s+(\S+)|from\s+(\S+)\s+import\s+)")
 
 
 def _classify_file(filepath: str) -> str | None:
@@ -139,9 +137,7 @@ def _classify_file(filepath: str) -> str | None:
     return None
 
 
-def _check_imports(
-    source: str, filepath: str, layer: str
-) -> list[LayerViolation]:
+def _check_imports(source: str, filepath: str, layer: str) -> list[LayerViolation]:
     """Check all import lines against forbidden targets for the layer.
 
     Parameters
@@ -212,9 +208,7 @@ def scan_file(filepath: Path) -> ScanResult:
         source = filepath.read_text()
     except OSError as e:
         result.issues.append(
-            LayerViolation(
-                str(filepath), 0, result.layer, "", f"Cannot read: {e}"
-            )
+            LayerViolation(str(filepath), 0, result.layer, "", f"Cannot read: {e}")
         )
         return result
 

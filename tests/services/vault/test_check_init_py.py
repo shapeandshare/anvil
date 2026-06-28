@@ -73,9 +73,7 @@ class TestInitPyIsBare:
     def test_copyright_and_docstring(self, tmp_path: Path) -> None:
         p = tmp_path / "__init__.py"
         p.write_text(
-            "# Copyright notice\n"
-            "# License header\n"
-            '"""My package docstring."""\n'
+            "# Copyright notice\n" "# License header\n" '"""My package docstring."""\n'
         )
         assert _init_py_is_bare(p) is True
 
@@ -175,7 +173,14 @@ class TestScanDirectory:
             (d / "file.txt").write_text("content\n")
             # No __init__.py — should not produce violations
         results = scan_directory(tmp_path)
-        data_results = [r for r in results if any(name in r.dirpath for name in ("static", "templates", "data", "_resources"))]
+        data_results = [
+            r
+            for r in results
+            if any(
+                name in r.dirpath
+                for name in ("static", "templates", "data", "_resources")
+            )
+        ]
         assert len(data_results) == 0
 
     def test_known_data_dirs_spurious_init_py(self, tmp_path: Path) -> None:
@@ -186,7 +191,9 @@ class TestScanDirectory:
         results = scan_directory(tmp_path)
         assert len(results) == 4
         for scan in results:
-            assert any("must not contain __init__.py" in v.message for v in scan.violations)
+            assert any(
+                "must not contain __init__.py" in v.message for v in scan.violations
+            )
 
     def test_non_package_dir_no_issue(self, tmp_path: Path) -> None:
         d = tmp_path / "assets"

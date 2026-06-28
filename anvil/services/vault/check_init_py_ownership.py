@@ -28,22 +28,23 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-
 # Directories that are data-only and MUST NOT contain ``__init__.py``.
-_DATA_DIRS: frozenset[str] = frozenset({
-    "static",
-    "templates",
-    "data",
-    "_resources",
-    "_meta",
-    ".obsidian",
-    "addons",
-    "__pycache__",
-    "mlruns",
-    "logs",
-    "backups",
-    "migrations",
-})
+_DATA_DIRS: frozenset[str] = frozenset(
+    {
+        "static",
+        "templates",
+        "data",
+        "_resources",
+        "_meta",
+        ".obsidian",
+        "addons",
+        "__pycache__",
+        "mlruns",
+        "logs",
+        "backups",
+        "migrations",
+    }
+)
 
 
 @dataclass  # noqa: dataclass
@@ -195,8 +196,7 @@ def scan_directory(root: Path) -> list[PackageScan]:
                 scan.violations.append(
                     InitPyViolation(
                         str(dirpath),
-                        f"Missing __init__.py in package directory "
-                        f"'{dirpath}'",
+                        f"Missing __init__.py in package directory " f"'{dirpath}'",
                     )
                 )
             elif not _init_py_is_bare(init_path):

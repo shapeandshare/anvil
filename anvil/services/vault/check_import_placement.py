@@ -187,9 +187,7 @@ def scan_file(filepath: Path) -> ScanResult:
         source = filepath.read_text()
     except OSError as e:
         # Treat unreadable as a violation to surface the issue
-        result.violations.append(
-            LazyImport(f"(cannot read: {e})", str(filepath), 0)
-        )
+        result.violations.append(LazyImport(f"(cannot read: {e})", str(filepath), 0))
         return result
 
     result.violations = _scan_source_for_imports(source, str(filepath))

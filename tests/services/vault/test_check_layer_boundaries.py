@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-from anvil.services.vault.check_layer_boundaries import (
-    _check_imports,
-    _classify_file,
-)
+from anvil.services.vault.check_layer_boundaries import _check_imports, _classify_file
 
 
 class TestClassifyFile:
@@ -160,9 +157,7 @@ class TestCheckImports:
 
     def test_violation_line_numbers(self) -> None:
         source = (
-            "import os\n"
-            "import sys\n"
-            "from anvil.services.training import run\n"
+            "import os\n" "import sys\n" "from anvil.services.training import run\n"
         )
         issues = _check_imports(source, self.ROUTE_PATH, "routes")
         assert len(issues) == 1

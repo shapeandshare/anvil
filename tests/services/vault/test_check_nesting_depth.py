@@ -172,8 +172,15 @@ class TestScanDirectory:
         pkg1 = root / "pkg1"
         pkg1.mkdir()
         (pkg1 / "__init__.py").write_text("")
-        for skipped in ("__pycache__", ".git", "mlruns", "logs", "_meta",
-                        ".obsidian", "addons"):
+        for skipped in (
+            "__pycache__",
+            ".git",
+            "mlruns",
+            "logs",
+            "_meta",
+            ".obsidian",
+            "addons",
+        ):
             d = root / skipped
             d.mkdir()
             (d / "__init__.py").write_text("")

@@ -62,7 +62,7 @@ class TestCheckPyTyped:
         """
         pyproject = tmp_path / "pyproject.toml"
         pyproject.write_text(
-            "[tool.setuptools.package-data]\nanvil = [\"py.typed\"]\n",
+            '[tool.setuptools.package-data]\nanvil = ["py.typed"]\n',
             encoding="utf-8",
         )
 
@@ -101,7 +101,7 @@ class TestCheckPyTyped:
 
         pyproject = tmp_path / "pyproject.toml"
         pyproject.write_text(
-            "[tool.setuptools.package-data]\nanvil = [\"py.typed\"]\n",
+            '[tool.setuptools.package-data]\nanvil = ["py.typed"]\n',
             encoding="utf-8",
         )
 

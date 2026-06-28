@@ -124,9 +124,7 @@ def scan_file(filepath: Path) -> ScanResult:
 
         # Check for absolute ``anvil.`` import
         if _ABSOLUTE_IMPORT_RE.match(stripped):
-            result.violations.append(
-                AbsoluteImport(str(filepath), i, stripped)
-            )
+            result.violations.append(AbsoluteImport(str(filepath), i, stripped))
 
     return result
 
@@ -162,8 +160,10 @@ def main() -> None:
     total_violations = 0
     for r in results:
         for v in r.violations:
-            print(f"ERROR: {v.file}:{v.line} Absolute 'anvil.' import found. "
-                  f"Use relative import instead: {v.line_text}")
+            print(
+                f"ERROR: {v.file}:{v.line} Absolute 'anvil.' import found. "
+                f"Use relative import instead: {v.line_text}"
+            )
             total_violations += 1
 
     if total_violations:

@@ -238,7 +238,7 @@ class TestImportInDocstringSkipped:
 
     def test_module_docstring(self) -> None:
         source = (
-            '\"\"\"Module docstring mentioning from anvil.module import X.\"\"\"\n'
+            '"""Module docstring mentioning from anvil.module import X."""\n'
             "from .real import X\n"
         )
         p = Path(_write_tmp(source))

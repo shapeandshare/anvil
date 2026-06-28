@@ -32,12 +32,7 @@ class TestScanSourceForImports:
 
     def test_lazy_import_after_def_fail(self) -> None:
         source = (
-            "import os\n"
-            "\n"
-            "def foo() -> None:\n"
-            "    pass\n"
-            "\n"
-            "import sys\n"
+            "import os\n" "\n" "def foo() -> None:\n" "    pass\n" "\n" "import sys\n"
         )
         violations = _scan_source_for_imports(source, "test.py")
         assert len(violations) == 1
@@ -104,14 +99,7 @@ class TestScanSourceForImports:
         assert violations[0].statement == "import sys"
 
     def test_class_definition_triggers(self) -> None:
-        source = (
-            "import os\n"
-            "\n"
-            "class MyClass:\n"
-            "    pass\n"
-            "\n"
-            "import sys\n"
-        )
+        source = "import os\n" "\n" "class MyClass:\n" "    pass\n" "\n" "import sys\n"
         violations = _scan_source_for_imports(source, "test.py")
         assert len(violations) == 1
         assert violations[0].line == 6
@@ -126,12 +114,7 @@ class TestScanFile:
 
     def lazy_file(self) -> str:
         return (
-            "import os\n"
-            "\n"
-            "def foo() -> None:\n"
-            "    pass\n"
-            "\n"
-            "import sys\n"
+            "import os\n" "\n" "def foo() -> None:\n" "    pass\n" "\n" "import sys\n"
         )
 
     def test_clean_file_no_violations(self, tmp_path: Path) -> None:
