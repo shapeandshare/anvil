@@ -115,10 +115,6 @@ def _workspace_paths() -> WorkspacePaths | None:
     ws = os.getenv("ANVIL_WORKSPACE_DIR")
     if not ws:
         return None
-    # import-placement:allow
-    # cycle: config -> workspace_paths -> config (circular import during init)
-    from .workspace.workspace_paths import WorkspacePaths
-
     return WorkspacePaths(Path(ws).resolve())
 
 

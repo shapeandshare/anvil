@@ -26,7 +26,7 @@ class ImportJob(Base, TimestampMixin):
     """A declarative import job configuration.
 
     Maps to the ``content_import_jobs`` table.  Each row represents an
-    import job that pulls content from a source into a corpus.  Jobs
+    A job that pulls content from a source into a corpus.  Jobs
     are associated with an optional ingest session that handles the
     staging and validation lifecycle.
 
