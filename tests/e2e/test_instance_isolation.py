@@ -20,15 +20,9 @@ from pathlib import Path
 import pytest
 import pytest_asyncio
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import (
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from anvil.services.instances.instance_lifecycle_service import (
-    InstanceLifecycleService,
-)
+from anvil.services.instances.instance_lifecycle_service import InstanceLifecycleService
 
 _CREATE_TABLE_SQL: str = """\
 CREATE TABLE IF NOT EXISTS instance_records (

@@ -173,7 +173,9 @@ async def test_config_applies_live_no_pending(client):
 @pytest.mark.asyncio
 async def test_mlflow_restart_pending_flag(client):
     """Setting an MLFLOW_RESTART key marks pending_restart=True."""
-    r = await client.put("/v1/config/mlflow_uri", json={"value": "http://127.0.0.1:9999"})
+    r = await client.put(
+        "/v1/config/mlflow_uri", json={"value": "http://127.0.0.1:9999"}
+    )
     assert r.status_code == 200
     data = r.json()
     assert data["apply_class"] == "mlflow_restart"

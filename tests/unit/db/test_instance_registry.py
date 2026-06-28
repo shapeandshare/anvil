@@ -17,11 +17,7 @@ from pathlib import Path
 import pytest
 import pytest_asyncio
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import (
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from anvil.db.models.instance_record import InstanceRecord
 from anvil.db.repositories.instance_registry import InstanceRegistryRepository

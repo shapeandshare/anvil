@@ -21,16 +21,10 @@ from unittest.mock import AsyncMock, patch
 import pytest
 import pytest_asyncio
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import (
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from anvil.db.repositories.instance_registry import InstanceRegistryRepository
-from anvil.services.instances.instance_lifecycle_service import (
-    InstanceLifecycleService,
-)
+from anvil.services.instances.instance_lifecycle_service import InstanceLifecycleService
 from anvil.services.instances.instance_status import InstanceStatus
 
 # Must match the DDL in instance_registry.py.
@@ -621,9 +615,10 @@ async def test_destroy_emits_audit(audit_session: AsyncSession) -> None:
 async def test_start_stop_restart_emit_audit(audit_session: AsyncSession) -> None:
     """start(), stop(), restart() each emit their respective audit
     events when AuditService is wired."""
+    from unittest.mock import patch
+
     from anvil.db.repositories.audit_events import AuditEventRepository
     from anvil.services.governance.audit_service import AuditService
-    from unittest.mock import patch
 
     audit_repo = AuditEventRepository(audit_session)
     audit = AuditService(audit_repo)

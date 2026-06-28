@@ -22,15 +22,9 @@ from unittest.mock import patch
 import pytest
 import pytest_asyncio
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import (
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from anvil.services.instances.instance_lifecycle_service import (
-    InstanceLifecycleService,
-)
+from anvil.services.instances.instance_lifecycle_service import InstanceLifecycleService
 from anvil.services.instances.instance_status import InstanceStatus
 
 _CREATE_TABLE_SQL: str = """\

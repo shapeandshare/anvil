@@ -46,12 +46,10 @@ if TYPE_CHECKING:
     from .services.datasets.dataset_import import DatasetImportService
     from .services.datasets.datasets import DatasetService
     from .services.demo.demo_bootstrap import DemoBootstrapService
-    from .services.runtime_config.runtime_config_service import RuntimeConfigService
     from .services.governance.audit_service import AuditService
     from .services.governance.governance_service import GovernanceService
-    from .services.instances.instance_lifecycle_service import (
-        InstanceLifecycleService,
-    )
+    from .services.instances.instance_lifecycle_service import InstanceLifecycleService
+    from .services.runtime_config.runtime_config_service import RuntimeConfigService
     from .services.training.training import TrainingService
     from .storage.local import LocalFileStore
     from .workspace.workspace_paths import WorkspacePaths

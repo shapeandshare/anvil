@@ -13,8 +13,8 @@ resolved as children of ``root``.
 
 from __future__ import annotations
 
-from pathlib import Path
 from collections.abc import Mapping
+from pathlib import Path
 
 
 class WorkspacePaths:

@@ -780,7 +780,9 @@ async def start_training(config: TrainConfig) -> dict[str, Any]:
             )
 
         if model is not None:
-            experiment_model_path = _get_models_dir() / f"experiment_{experiment_id}.json"
+            experiment_model_path = (
+                _get_models_dir() / f"experiment_{experiment_id}.json"
+            )
             model.save(str(experiment_model_path), uchars)  # type: ignore[attr-defined]
 
         if mps_thread is not None:

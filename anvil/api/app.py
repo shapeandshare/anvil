@@ -306,10 +306,13 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
             "workspace_root": str(ws_root),
             "web_port": int(os.environ.get("ANVIL_PORT", str(boot_cfg.web_port))),
             "mlflow_port": int(
-                os.environ.get("ANVIL_MLFLOW_URI", f"http://127.0.0.1:{boot_cfg.mlflow_port}")
-                .rsplit(":", 1)[-1]
+                os.environ.get(
+                    "ANVIL_MLFLOW_URI", f"http://127.0.0.1:{boot_cfg.mlflow_port}"
+                ).rsplit(":", 1)[-1]
             ),
-            "state_db_path": os.environ.get("ANVIL_STATE_DB_PATH", boot_cfg.state_db_path),
+            "state_db_path": os.environ.get(
+                "ANVIL_STATE_DB_PATH", boot_cfg.state_db_path
+            ),
         }
 
     await _init_database()
