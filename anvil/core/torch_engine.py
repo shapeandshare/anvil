@@ -20,7 +20,6 @@ from types import ModuleType
 from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
-    from torch import Tensor as torch_Tensor
     from torch import device as torch_device
     from torch.nn import Parameter as torch_Parameter
 
@@ -31,6 +30,9 @@ _F_mod: ModuleType | None = None  # Imported torch.nn.functional module (or None
 try:
     import torch as _torch_import
     import torch.nn.functional as _F_import
+
+    # Import torch.Tensor at runtime — used in cast() calls (not annotation-only).
+    from torch import Tensor as torch_Tensor
 
     _torch_mod = _torch_import
     _F_mod = _F_import

@@ -40,6 +40,7 @@ from ..compute import modal_backend  # noqa: F401 — registers modal
 
 # ── compute backend framework ──────────────────────────────────────────
 from ..compute.compute_backend_result import ComputeBackendResult
+from ..compute.compute_status import ComputeStatus
 from ..compute.registry import get_backend
 from ..compute.resolve import resolve_backend
 from ..compute.result import ComputeResult
@@ -587,6 +588,18 @@ class TrainingService:
             raise
         finally:
             self._stop_events.pop(run_id, None)
+
+        # ── check backend result status ──────────────────────────────
+        if result.status == ComputeStatus.FAILED:
+            await queue.put(
+                {
+                    "event": "error",
+                    "data": json.dumps(
+                        {"message": result.error_message or "Training failed"}
+                    ),
+                }
+            )
+            return run_id
 
         # ── emit complete SSE event ───────────────────────────────────
         await queue.put(
