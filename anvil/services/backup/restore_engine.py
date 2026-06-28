@@ -13,7 +13,6 @@ from pathlib import Path
 from .archive_reader import ArchiveReader
 from .restore_journal import RestoreJournal
 
-
 #: Name of the staging directory at the project root (outside managed
 #: roots such as ``data/`` so that swapping a root does not orphan the
 #: staging directory).
