@@ -110,7 +110,7 @@ def create_tokenizer(
                 "HuggingFace fast tokenizer requires the [finetune] extra",
                 cause="Run: pip install anvil[finetune]",
             )
-        except Exception as exc:
+        except Exception as exc:  # NOSONAR — intentional error wrapping for user-facing TokenizerLoadError
             raise TokenizerLoadError(  # noqa: B904
                 f"Failed to load HF fast tokenizer from {tokenizer_path}",
                 file_path=str(tokenizer_path),
@@ -144,7 +144,7 @@ def create_tokenizer(
                 "SentencePiece tokenizer requires the [finetune] extra",
                 cause="Run: pip install anvil[finetune]",
             )
-        except Exception as exc:
+        except Exception as exc:  # NOSONAR — intentional error wrapping for user-facing TokenizerLoadError
             raise TokenizerLoadError(  # noqa: B904
                 f"Failed to load SentencePiece tokenizer from {sp_file}",
                 file_path=str(sp_file),
