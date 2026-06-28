@@ -66,9 +66,9 @@ class MigrationService:
         self._db_url = db_url or f"sqlite+aiosqlite:///{cfg['state_db_path']}"
         self._alembic_cfg = self._build_config(alembic_ini_path)
 
-    # ------------------------------------------------------------------
+    ####################################################################
     # Internal helpers
-    # ------------------------------------------------------------------
+    ####################################################################
 
     def _build_config(self, ini_path: str) -> AlembicConfig:
         """Load Alembic config and override DB URL and script location.
@@ -123,9 +123,9 @@ class MigrationService:
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, fn, *args, **kwargs)
 
-    # ------------------------------------------------------------------
+    ####################################################################
     # Public API
-    # ------------------------------------------------------------------
+    ####################################################################
 
     async def upgrade(self) -> tuple[str | None, str | None]:
         """Apply all pending migrations to HEAD.
@@ -309,9 +309,9 @@ class MigrationService:
         else:
             await self.verify_schema()
 
-    # ------------------------------------------------------------------
+    ####################################################################
     # Schema version (PRAGMA user_version) support
-    # ------------------------------------------------------------------
+    ####################################################################
 
     async def get_schema_version(self) -> int:
         """Read ``PRAGMA user_version`` from the SQLite database.
@@ -382,9 +382,9 @@ class MigrationService:
                 "Fix: rm data/anvil-state.db && make run"
             )
 
-    # ------------------------------------------------------------------
+    ####################################################################
     # Table integrity check
-    # ------------------------------------------------------------------
+    ####################################################################
 
     @staticmethod
     async def verify_table_integrity(
@@ -420,9 +420,9 @@ class MigrationService:
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, _check)
 
-    # ------------------------------------------------------------------
+    ####################################################################
     # Private helpers
-    # ------------------------------------------------------------------
+    ####################################################################
 
     @staticmethod
     def _rev_is_ahead(current: str, head: str, script: ScriptDirectory) -> bool:

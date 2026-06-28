@@ -13,9 +13,9 @@ SONAR_PROJECT_KEY := shapeandshare_anvil
 SONAR_ORG := shapeandshare
 SONARCLOUD_API := https://sonarcloud.io/api
 
-# ---------------------------------------------------------------------------
+#############################################################################
 # Prerequisite checks
-# ---------------------------------------------------------------------------
+#############################################################################
 
 .PHONY: sonar-check
 sonar-check: ## Verify sonar-scanner CLI is installed
@@ -44,9 +44,9 @@ sonar-check-env-mcp:
 		exit 1; \
 	}
 
-# ---------------------------------------------------------------------------
+#############################################################################
 # Scanner
-# ---------------------------------------------------------------------------
+#############################################################################
 
 .PHONY: sonar-scan
 sonar-scan: $(VENV_DIR)/activate sonar-check sonar-check-env ## Run SonarCloud static analysis (requires coverage.xml from make test)
@@ -63,9 +63,9 @@ sonar-scan-docker: sonar-check-env ## Run SonarCloud analysis via Docker (no loc
 		-v "$(PWD):/usr/src" \
 		sonarsource/sonar-scanner-cli
 
-# ---------------------------------------------------------------------------
+#############################################################################
 # API queries (read-only, requires SONAR_TOKEN)
-# ---------------------------------------------------------------------------
+#############################################################################
 
 .PHONY: sonar-status
 sonar-status: sonar-check-env ## Fetch quality gate status
@@ -91,9 +91,9 @@ sonar-measures: sonar-check-env ## Fetch quality metrics (loc, bugs, coverage, d
 		"$(SONARCLOUD_API)/measures/component?component=$(SONAR_PROJECT_KEY)&metricKeys=ncloc,bugs,vulnerabilities,code_smells,coverage,duplicated_lines_density,security_hotspots,reliability_rating,security_rating,sqale_rating" | \
 		python3 -m json.tool
 
-# ---------------------------------------------------------------------------
+#############################################################################
 # MCP server (local Docker for OpenCode / Claude / Cursor integration)
-# ---------------------------------------------------------------------------
+#############################################################################
 
 MCP_SONAR_IMAGE := mcp/sonarqube
 
@@ -111,9 +111,9 @@ sonar-mcp-check: ## Verify MCP config in opencode.json
 	@test -f opencode.json || { echo "ERROR: opencode.json not found"; exit 1; }
 	@python3 -c "import json; cfg=json.load(open('opencode.json')); mcp=cfg.get('mcp',{}); enabled='sonarcloud' in mcp and mcp['sonarcloud'].get('enabled'); print('OK: sonarcloud MCP is enabled in opencode.json' if enabled else 'WARNING: sonarcloud MCP not found or disabled in opencode.json')"
 
-# ---------------------------------------------------------------------------
+#############################################################################
 # Comprehensive scan: test (with coverage) + sonar analysis
-# ---------------------------------------------------------------------------
+#############################################################################
 
 .PHONY: sonar-full
 sonar-full: test sonar-scan ## Run tests with coverage, then run SonarCloud analysis

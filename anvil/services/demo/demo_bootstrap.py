@@ -113,9 +113,9 @@ class DemoBootstrapService:
         self._license_repo: LicenseRepository | None = None
         self._load_manifest()
 
-    # ------------------------------------------------------------------
+    ####################################################################
     # Manifest loading
-    # ------------------------------------------------------------------
+    ####################################################################
 
     def _load_manifest(self) -> None:
         """Load ``provenance.json`` from the bundled demo directory."""
@@ -136,9 +136,9 @@ class DemoBootstrapService:
         key = rel.removesuffix(".txt")
         return self._provenance_manifest.get(key)
 
-    # ------------------------------------------------------------------
+    ####################################################################
     # Public API
-    # ------------------------------------------------------------------
+    ####################################################################
 
     async def bootstrap_all(self) -> BootstrapResult:
         """Import all demo corpora and datasets into the database.
@@ -242,9 +242,9 @@ class DemoBootstrapService:
         """
         return await self._dataset_repo.get_by_name(f"{DEMO_NAME_PREFIX}{name}")
 
-    # ------------------------------------------------------------------
+    ####################################################################
     # Internal helpers
-    # ------------------------------------------------------------------
+    ####################################################################
 
     async def _bootstrap_corpus(self, item: Path, result: BootstrapResult) -> bool:
         """Import a single demo directory as a corpus.
