@@ -17,8 +17,9 @@ code-refs:
   - anvil/supervisor/services.py
   - anvil/config.py
   - anvil/api/app.py
-  - docs/vault/Specs/016 SaaS Architecture/spec.md
-  - docs/vault/Specs/020 OWASP Remediation/spec.md
+  - docs/vault/Specs/016 SaaS Architecture/016 SaaS Architecture - spec.md
+  - docs/vault/Specs/020 OWASP Remediation/020 OWASP Remediation - spec.md
+  - docs/vault/Specs/056 Reverse-Proxy Registry/056 Reverse-Proxy Registry - spec.md
 tags:
   - type/decision
   - domain/architecture
@@ -33,7 +34,15 @@ superseded-by: '[[Decisions/ADR-037-unified-interface-local-tls]]'
 
 ## Status
 
-proposed
+superseded
+
+> [!warning] SUPERSEDED by [[Decisions/ADR-037-unified-interface-local-tls|ADR-037]].
+> ADR-035 introduced the MLflow reverse proxy as a **one-off**. ADR-037 generalizes
+> it into a **registry of mounted upstreams** under a single authenticated origin.
+> The proxy mechanism described here is now owned and implemented by
+> [[Specs/056 Reverse-Proxy Registry/056 Reverse-Proxy Registry|Spec 056 — Reverse-Proxy Registry]]
+> (with MLflow as its first registered upstream). The decision below is retained
+> for audit trail; treat ADR-037 + Spec 056 as the binding pattern.
 
 ## Context
 
