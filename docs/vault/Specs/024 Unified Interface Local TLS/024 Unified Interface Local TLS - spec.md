@@ -89,12 +89,19 @@ As a maintainer, I want the local single-origin + TLS model to mirror the SaaS d
 
 ### Functional Requirements
 
-- **FR-001**: anvil MUST expose a single externally reachable origin (one host, one port, one scheme). All bundled functionality — web UI, API, MLflow, and any future managed service — MUST be reachable only through that origin.
-- **FR-002**: Secondary/bundled services (MLflow now; others later) MUST bind to loopback only, MUST NOT publish their host ports, and MUST be reachable solely via the app's reverse-proxy sub-paths under the unified origin.
-- **FR-003**: The reverse-proxy layer MUST be a registry of mounted upstreams (not a one-off), so additional managed services can be mounted under the unified origin without bespoke per-service wiring. (Generalizes ADR-035.)
+> **Ownership note (2026-06-28)**: FR-001, FR-002, and FR-003 (single origin,
+> loopback-only upstreams, proxy registry) are now OWNED and implemented by
+> [[Specs/056 Reverse-Proxy Registry/056 Reverse-Proxy Registry|Spec 056 — Reverse-Proxy Registry]]
+> (056 FR-001/FR-002/FR-003). They are retained here for context because local TLS
+> (this spec's focus) terminates at the same single front door. Implement them via
+> 056; this spec's deliverables are FR-004..FR-010 (TLS).
+
+- **FR-001**: *(Owned by Spec 056 FR-001.)* anvil MUST expose a single externally reachable origin (one host, one port, one scheme). All bundled functionality — web UI, API, MLflow, and any future managed service — MUST be reachable only through that origin.
+- **FR-002**: *(Owned by Spec 056 FR-002.)* Secondary/bundled services (MLflow now; others later) MUST bind to loopback only, MUST NOT publish their host ports, and MUST be reachable solely via the app's reverse-proxy sub-paths under the unified origin.
+- **FR-003**: *(Owned by Spec 056 FR-003.)* The reverse-proxy layer MUST be a registry of mounted upstreams (not a one-off), so additional managed services can be mounted under the unified origin without bespoke per-service wiring. (Generalizes ADR-035 per ADR-037.)
 - **FR-004**: anvil MUST serve TLS locally using a certificate auto-generated on first run, with no external tooling required (pip-install-only). Generation MUST use the `cryptography` library (promoted to a direct dependency) and cover localhost, 127.0.0.1, and the host's LAN address via SANs.
 - **FR-005**: The generated private key and certificate MUST be stored with restrictive permissions (`0600`) under the data directory and reused across restarts; regeneration MUST be possible on demand.
-- **FR-006**: Browser-facing URL and scheme derivation (e.g. `get_mlflow_browser_uri` and any link/redirect builders) MUST be scheme-aware — honoring `https` and `X-Forwarded-Proto` — and MUST emit the unified-origin path, never a bare secondary-service host:port.
+- **FR-006**: Browser-facing URL and scheme derivation (e.g. `get_mlflow_browser_uri` and any link/redirect builders) MUST be scheme-aware — honoring `https` and `X-Forwarded-Proto` — and MUST emit the unified-origin path, never a bare secondary-service host:port. *(The unified-origin URL builder is provided by [[Specs/056 Reverse-Proxy Registry/056 Reverse-Proxy Registry|Spec 056]] FR-007; this spec ensures it is scheme-aware once local TLS is active.)*
 - **FR-007**: TLS MUST be configurable (e.g. `ANVIL_TLS`) with a sensible default; the chosen default and any opt-out MUST be documented.
 - **FR-008**: The local and SaaS deployments MUST share the same app-level single-origin front-door and proxy-registry code; mode-specific differences (cert source, upstream addresses, auth scheme, TLS termination point) MUST be confined to configuration and `anvil/_saas/` overrides — no divergent front-door logic.
 - **FR-009**: Enabling local HTTPS MUST be coordinated so dependent consumers do not break: the Docker/compose healthcheck, browser SSE, the CLI, and tests MUST target the unified (HTTPS) origin or a designated exempt path.
@@ -115,7 +122,7 @@ As a maintainer, I want the local single-origin + TLS model to mirror the SaaS d
 - **SC-002**: On a clean `pip install` with no external tooling, `https://localhost:<port>` loads over TLS from the auto-generated cert. Verified by an integration test on a clean environment.
 - **SC-003**: The MLflow UI (and any registered service) loads under the unified origin via its proxy sub-path; the direct `:5001` route is not externally reachable. Verified by an integration test.
 - **SC-004**: All browser-facing URLs emit `https` and the unified-origin path (no bare secondary host:port). Verified by code review + an integration test.
-- **SC-005**: Adding a new managed service to the proxy registry exposes it under the unified origin with no change to how external consumers connect. Verified by a registry-level test using a stub upstream.
+- **SC-005**: *(Owned/verified by [[Specs/056 Reverse-Proxy Registry/056 Reverse-Proxy Registry|Spec 056]] SC-004.)* Adding a new managed service to the proxy registry exposes it under the unified origin with no change to how external consumers connect. Verified by a registry-level test using a stub upstream.
 - **SC-006**: Security controls from spec 017 (HSTS, Secure cookies) are effective locally because the connection is TLS. Verified by inspecting response headers and cookie flags over HTTPS.
 - **SC-007**: Local and SaaS use the same front-door/proxy code; a diff shows mode differences confined to config and `anvil/_saas/`. Verified by code review.
 

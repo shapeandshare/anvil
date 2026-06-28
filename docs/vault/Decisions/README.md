@@ -49,7 +49,7 @@ This index lists all ADRs in this repository. ADRs document significant architec
 | ADR-032 | Greenfield Legacy and Backward-Compatibility Removal | Draft | 2026-06-20 |
 | ADR-033 | Content Repository Substrate -- Pure-Python Local, LakeFS for SaaS | Proposed | 2026-06-20 |
 | ADR-034 | Vault Health Subsumption into Anvil | Draft | 2026-06-21 |
-| ADR-035 | MLflow Reverse Proxy -- Authenticated, Port-Closed Access in Local and SaaS | Proposed | 2026-06-21 |
+| ADR-035 | MLflow Reverse Proxy -- Authenticated, Port-Closed Access in Local and SaaS | Superseded (by ADR-037; impl. Spec 056) | 2026-06-21 |
 | ADR-036 | Header-Based API Versioning and URL Path De-Versioning | Proposed | 2026-06-21 |
 | ADR-037 | Unified Single-Origin Interface and Working Local TLS | Proposed | 2026-06-21 |
 | ADR-038 | UX Rules Integration | Accepted | 2026-06-21 |
