@@ -20,6 +20,6 @@ async def test_health_endpoint(client):
 @pytest.mark.asyncio
 async def test_app_imports():
     """Verify the app module imports without errors in default mode."""
-    from anvil.api.app import app  # noqa: F811
+    from anvil.api.app import app
 
     assert app is not None

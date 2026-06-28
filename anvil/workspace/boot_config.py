@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, ValidationInfo, field_validator
 
 
 class BootConfig(BaseModel):
@@ -47,7 +47,7 @@ class BootConfig(BaseModel):
 
     @field_validator("state_db_path", mode="before")
     @classmethod
-    def _default_state_db_path(cls, v: str, info) -> str:
+    def _default_state_db_path(cls, v: str, info: ValidationInfo) -> str:
         if v:
             return v
         root = info.data.get("workspace_root", ".")

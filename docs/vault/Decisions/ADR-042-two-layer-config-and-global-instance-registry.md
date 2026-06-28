@@ -8,6 +8,12 @@ tags:
 status: draft
 created: '2026-06-27'
 updated: '2026-06-27'
+aliases:
+  - adr-042-two-layer-config
+source: agent
+code-refs:
+  - anvil/services/runtime_config/runtime_config_service.py
+  - anvil/db/repositories/instance_registry.py
 ---
 
 # ADR-042: Two-Layer Config Model and Global Instance Registry

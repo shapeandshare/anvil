@@ -4,7 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 """Tests for :mod:`anvil.services.vault.check_one_class` — one-class-per-file
-checker."""
+checker.
+"""
 
 from __future__ import annotations
 
