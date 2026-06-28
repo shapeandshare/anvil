@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
-from anvil.client._shared.stream_event_type import StreamEventType
+from .stream_event_type import StreamEventType
 
 
 class StreamEvent(BaseModel):
