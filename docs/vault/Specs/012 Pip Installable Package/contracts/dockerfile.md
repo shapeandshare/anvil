@@ -34,7 +34,7 @@ CMD ["anvil"]
 - R-D1: The runtime stage MUST NOT `COPY` the anvil source tree — only the `.whl` from the builder (FR-007).
 - R-D2: After install, `anvil` and all other console scripts MUST be on `PATH` (FR-005).
 - R-D3: The container MUST run as a non-root user with a writable workspace (FR-011, read-only edge case).
-- R-D4: `EXPOSE 8080 5001` (web + in-process MLflow).
+- R-D4: ~~`EXPOSE 8080 5001`~~ → **SUPERSEDED by Spec 024/056**: `EXPOSE 8080` only. MLflow binds loopback and is reached via `/v1/mlflow-proxy/`; its port is not exposed (ADR-037 single-origin). See `docs/vault/Specs/056 Reverse-Proxy Registry/`.
 - R-D5: `CMD` MUST launch via the `anvil` console script (FR-009), which triggers lifespan: auto-migrate + MLflow start + demo bootstrap.
 - R-D6: Migrations bundled in the wheel MUST resolve and apply (no repo-root `alembic.ini`/`migrations/` dependency).
 - R-D7: `.dockerignore` MUST exclude runtime artifacts and VCS metadata: `data/` (runtime DB/output), `logs/`, `mlruns/`, `.git/`. The previous `!data/demo/` negation MUST be removed — demo/seed content now lives inside the `anvil` package and is bundled by the wheel, so it is no longer needed in the build context.
