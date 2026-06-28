@@ -28,6 +28,7 @@ if TYPE_CHECKING:
     from .governance.governance_client import GovernanceClient
     from .health.health_client import HealthClient
     from .inference.inference_client import InferenceClient
+    from .models.models_client import ModelsClient
     from .registry.registry_client import RegistryClient
     from .services.services_client import ServicesClient
     from .training.training_client import TrainingClient
@@ -41,6 +42,7 @@ from .experiments.experiments_client import ExperimentsClient
 from .governance.governance_client import GovernanceClient
 from .health.health_client import HealthClient
 from .inference.inference_client import InferenceClient
+from .models.models_client import ModelsClient
 from .registry.registry_client import RegistryClient
 from .services.services_client import ServicesClient
 from .training.training_client import TrainingClient
@@ -98,6 +100,7 @@ class AnvilClient:
         self._services: ServicesClient | None = None
         self._governance: GovernanceClient | None = None
         self._content: ContentClient | None = None
+        self._models: ModelsClient | None = None
 
     # -- config readback (US-1 acceptance) ------------------------------------
 
@@ -274,6 +277,18 @@ class AnvilClient:
         if self._content is None:
             self._content = ContentClient(self._transport)
         return self._content
+
+    @property
+    def models(self) -> ModelsClient:
+        """Access external model import and registry operations.
+
+        Returns
+        -------
+        ModelsClient
+        """
+        if self._models is None:
+            self._models = ModelsClient(self._transport)
+        return self._models
 
     # -- auth (US5) -----------------------------------------------------------
 

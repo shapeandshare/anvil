@@ -33,6 +33,13 @@ The canonical metadata record for an externally-sourced model. Stored in a new `
 **Identity**: `(source_type, source_identifier, revision_sha)` is the canonical identity triple.
 Same triple → idempotent (return existing entry).
 
+> **Idempotency timing**: The dedup check runs in `run_import` AFTER metadata resolution, against the
+> source-*resolved* `revision_sha` (not the user-requested `revision`). This is required because a
+> source may resolve a symbolic revision (e.g. `main`) to a concrete SHA, and the local source always
+> resolves to `"local"`. Checking before resolution would miss duplicates whose stored `revision_sha`
+> differs from the requested `revision`. A duplicate import still creates a distinct `ModelImportJob`
+> (audit trail) but reuses the existing `ExternalModel`.
+
 ### ModelImportJob
 
 Tracks the async import lifecycle. Stored in a new `model_import_jobs` table.
@@ -47,6 +54,7 @@ Tracks the async import lifecycle. Stored in a new `model_import_jobs` table.
 | `status` | `ModelImportJobStatus` enum → `String(20)` | `queued`, `resolving`, `complete`, `failed` |
 | `source_type` | `str` (String(20)) | Source type passed at creation |
 | `source_identifier` | `str` (String(255)) | Source identifier passed at creation |
+| `revision` | `str` (String(255)) | Source revision requested at creation (default `main`) |
 | `error_code` | `str \| None` (String(50), nullable) | Typed error code if failed |
 | `error_message` | `str \| None` (Text, nullable) | Human-readable error detail |
 | `external_model_id` | `int \| None` (FK → `external_models.id`, `ondelete="SET NULL"`) | Set on completion |

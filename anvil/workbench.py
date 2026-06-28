@@ -38,6 +38,8 @@ from .db.repositories.instance_registry import (
 )
 from .db.repositories.licenses import LicenseRepository
 from .db.repositories.runtime_config import RuntimeConfigRepository
+from .db.repositories.external_models import ExternalModelRepository
+from .db.repositories.model_import_jobs import ModelImportJobRepository
 from .services.content.composition_service import CompositionService
 from .services.content.corpus_service import CorpusService as ContentCorpusService
 from .services.content.import_service import ImportService
@@ -63,6 +65,10 @@ from .services.instances.instance_lifecycle_service import InstanceLifecycleServ
 from .services.runtime_config.runtime_config_service import RuntimeConfigService
 from .services.tracking.tracking import TrackingService
 from .services.training.training import TrainingService
+from .services.model_import.hf_source import HfHubSource
+from .services.model_import.local_source import LocalSource
+from .services.model_import.model_import_service import ModelImportService
+from .services._shared.import_types import SourceType
 from .storage.local import LocalFileStore
 from .workspace.workspace_paths import WorkspacePaths
 
@@ -140,6 +146,10 @@ class AnvilWorkbench:
         # Runtime config (feature 037).
         self._runtime_config_repo: RuntimeConfigRepository | None = None
         self._runtime_config: RuntimeConfigService | None = None
+        # Model import (feature 040).
+        self._external_model_repo: ExternalModelRepository | None = None
+        self._model_import_job_repo: ModelImportJobRepository | None = None
+        self._model_imports: ModelImportService | None = None
 
     # ── Stateless service accessors ─────────────────────────────────────
 
@@ -478,6 +488,36 @@ class AnvilWorkbench:
         if self._runtime_config is None:
             self._runtime_config = RuntimeConfigService(self.runtime_config_repo)
         return self._runtime_config
+
+    # ── Model import accessors (feature 040) ───────────────────────────
+
+    @property
+    def external_model_repo(self) -> ExternalModelRepository:
+        """Lazily-initialised ``ExternalModelRepository`` bound to *session*."""
+        if self._external_model_repo is None:
+            self._external_model_repo = ExternalModelRepository(self._session)
+        return self._external_model_repo
+
+    @property
+    def model_import_job_repo(self) -> ModelImportJobRepository:
+        """Lazily-initialised ``ModelImportJobRepository`` bound to *session*."""
+        if self._model_import_job_repo is None:
+            self._model_import_job_repo = ModelImportJobRepository(self._session)
+        return self._model_import_job_repo
+
+    @property
+    def model_imports(self) -> ModelImportService:
+        """Lazily-initialised ``ModelImportService`` wired to *session*."""
+        if self._model_imports is None:
+            self._model_imports = ModelImportService(
+                self.external_model_repo,
+                self.model_import_job_repo,
+                {
+                    SourceType.HUGGINGFACE: HfHubSource(),
+                    SourceType.LOCAL: LocalSource(),
+                },
+            )
+        return self._model_imports
 
     # ── Session lifecycle ───────────────────────────────────────────────
 

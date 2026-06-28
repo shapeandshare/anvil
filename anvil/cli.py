@@ -48,6 +48,8 @@ from .db.migration import MigrationService
 from .db.migration_error import MigrationError
 from .db.repositories.corpora import CorpusRepository
 from .db.repositories.datasets import DatasetRepository
+from .db.repositories.external_models import ExternalModelRepository
+from .db.repositories.model_import_jobs import ModelImportJobRepository
 from .db.session import AsyncSessionLocal
 from .services.compute.compute_backend import ComputeBackend
 from .services.compute.resolve import resolve_backend
@@ -58,6 +60,10 @@ from .services.demo.demo_bootstrap import DEFAULT_CORPUS_NAME, DemoBootstrapServ
 from .services.tracking.tracking import TrackingService
 from .services.training.export import SafetensorsExportService
 from .services.training.training import TrainingService
+from .services._shared.import_types import SourceType
+from .services.model_import.hf_source import HfHubSource
+from .services.model_import.local_source import LocalSource
+from .services.model_import.model_import_service import ModelImportService
 from .supervisor.supervisor import kill_pid_file, write_pid
 
 logger = logging.getLogger(__name__)
@@ -847,5 +853,65 @@ def db_main(argv: list[str] | None = None) -> None:
         except MigrationError as exc:
             print(f"Error: {exc}", file=sys.stderr)
             sys.exit(1)
+
+    asyncio.run(_run())
+
+
+def import_main() -> None:
+    """Import an external model via the CLI."""
+    parser = argparse.ArgumentParser(
+        description="Import a model from an external source"
+    )
+    parser.add_argument("source", help="Source type: huggingface or local")
+    parser.add_argument("identifier", help="Source-specific model identifier")
+    parser.add_argument("--name", help="Display name (auto-derived if omitted)")
+    parser.add_argument("--revision", default="main", help="Source revision")
+    args = parser.parse_args()
+
+    async def _run() -> None:
+        async with AsyncSessionLocal() as session:
+            repo = ExternalModelRepository(session)
+            job_repo = ModelImportJobRepository(session)
+            svc = ModelImportService(
+                repo,
+                job_repo,
+                {
+                    SourceType.HUGGINGFACE: HfHubSource(),
+                    SourceType.LOCAL: LocalSource(),
+                },
+            )
+            job_id = await svc.submit_import(
+                source=args.source,
+                identifier=args.identifier,
+                revision=args.revision,
+                name=args.name,
+            )
+            await svc.run_import(job_id)
+            await session.commit()
+            print(f"Import complete. Job ID: {job_id}")
+
+    asyncio.run(_run())
+
+
+def import_status_main() -> None:
+    """Check the status of an import job via the CLI."""
+    parser = argparse.ArgumentParser(description="Check import job status")
+    parser.add_argument("job_id", type=int, help="Import job ID")
+    args = parser.parse_args()
+
+    async def _run() -> None:
+        async with AsyncSessionLocal() as session:
+            repo = ExternalModelRepository(session)
+            job_repo = ModelImportJobRepository(session)
+            svc = ModelImportService(repo, job_repo, {})
+            job = await svc.get_job_status(args.job_id)
+            if job is None:
+                print(f"Import job {args.job_id} not found", file=sys.stderr)
+                sys.exit(1)
+            print(f"Status: {job.status}")
+            if job.error_code:
+                print(f"Error: [{job.error_code}] {job.error_message}")
+            if job.external_model_id:
+                print(f"External model ID: {job.external_model_id}")
 
     asyncio.run(_run())
