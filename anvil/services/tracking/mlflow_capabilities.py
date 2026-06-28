@@ -10,6 +10,9 @@ MLflow server supports genai datasets, is server-backed, and what
 version of MLflow is running.
 """
 
+import importlib
+
+import mlflow as _mlflow_mod
 from pydantic import BaseModel
 
 
@@ -49,15 +52,9 @@ def detect_capabilities(tracking_uri: str) -> TrackingCapabilities:
         Detected capabilities including genai dataset support, server
         backend flag, and MLflow version.
     """
-    try:
-        # import-placement:allow -- version-dependent sub-module probe
-        import mlflow.genai.datasets
+    genai_ok = importlib.util.find_spec("mlflow.genai.datasets") is not None
 
-        genai_ok = True
-    except ImportError:
-        genai_ok = False
-
-    version = mlflow.__version__
+    version = _mlflow_mod.__version__
 
     server_backed = tracking_uri.startswith("http://") or tracking_uri.startswith(
         "https://"
