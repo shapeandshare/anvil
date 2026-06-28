@@ -526,6 +526,7 @@
   globalThis.backup = {
     _activeOperationId: null,
     _eventSource: null,
+    _operationResolved: false,
 
     formatBytes: function(b) {
       if (b === 0) return '0 B';
@@ -666,6 +667,7 @@
 
     _startSSE: function(operationId) {
       if (backup._eventSource) backup._eventSource.close();
+      backup._operationResolved = false;
       var progressEl = document.getElementById('backup-progress');
       var stepEl = document.getElementById('backup-progress-step');
       var barEl = document.getElementById('backup-progress-bar');
@@ -686,12 +688,16 @@
         es.close();
         backup._eventSource = null;
         backup._activeOperationId = null;
+        backup._operationResolved = true;
         if (progressEl) progressEl.style.display = 'none';
         toast('Operation completed successfully', 'success');
         backup.loadAll();
       });
 
       es.addEventListener('error', function(e) {
+        // Browser fires 'error' after a successful 'complete' when the
+        // server closes the SSE connection — skip if already resolved.
+        if (backup._operationResolved) return;
         var msg = 'Operation encountered an error';
         try { var data = JSON.parse(e.data); msg = data.message || msg; } catch {}
         es.close();
