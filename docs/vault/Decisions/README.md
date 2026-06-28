@@ -49,13 +49,14 @@ This index lists all ADRs in this repository. ADRs document significant architec
 | ADR-032 | Greenfield Legacy and Backward-Compatibility Removal | Draft | 2026-06-20 |
 | ADR-033 | Content Repository Substrate -- Pure-Python Local, LakeFS for SaaS | Proposed | 2026-06-20 |
 | ADR-034 | Vault Health Subsumption into Anvil | Draft | 2026-06-21 |
-| ADR-035 | MLflow Reverse Proxy -- Authenticated, Port-Closed Access in Local and SaaS | Proposed | 2026-06-21 |
+| ADR-035 | MLflow Reverse Proxy -- Authenticated, Port-Closed Access in Local and SaaS | Superseded (by ADR-037; impl. Spec 056) | 2026-06-21 |
 | ADR-036 | Header-Based API Versioning and URL Path De-Versioning | Proposed | 2026-06-21 |
 | ADR-037 | Unified Single-Origin Interface and Working Local TLS | Proposed | 2026-06-21 |
 | ADR-038 | UX Rules Integration | Accepted | 2026-06-21 |
 | ADR-039 | Client SDK Architecture | Accepted | 2026-06-21 |
 | ADR-040 | Full-Deployment Backup & Restore | Accepted | 2026-06-21 |
 | ADR-041 | Simplicity First (Boring Technology) | Accepted | 2026-06-22 |
+| ADR-043 | Warm-Start Vocabulary Inheritance and MLflow Tag Lineage | Draft | 2026-06-28 |
 
 **Status**: Draft → Reviewed → Canonical (human-only). See `_meta/tags.md` for lifecycle.
 
@@ -103,4 +104,5 @@ This index lists all ADRs in this repository. ADRs document significant architec
 - [[Decisions/ADR-039-specs-to-vault|ADR-039-specs-to-vault]] — ADR-039: Migrate `specs/` Artifacts into `docs/vault/Specs/`
 - [[Decisions/ADR-040-deployment-backup-restore|ADR-040-deployment-backup-restore]] — ADR-040: Full-Deployment Backup & Restore
 - [[Decisions/ADR-041-simplicity-first-boring-technology|ADR-041-simplicity-first-boring-technology]] — ADR-041: Simplicity First (Boring Technology)
+- [[Decisions/ADR-043-warm-start-vocabulary-inheritance|ADR-043-warm-start-vocabulary-inheritance]] — ADR-043: Warm-Start Vocabulary Inheritance and MLflow Tag Lineage
 - [[Decisions/ADR-template|ADR-template]]

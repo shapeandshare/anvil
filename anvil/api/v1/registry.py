@@ -288,6 +288,17 @@ async def get_model(model_id: str) -> dict[str, Any]:
             {
                 "version": int(v.version),
                 "experiment_id": experiment_id,
+                "lineage": {
+                    tag_key.replace("anvil.", ""): tag_val
+                    for tag_key, tag_val in run_data["tags"].items()
+                    if tag_key
+                    in (
+                        "anvil.warm_start",
+                        "anvil.base_model_ref",
+                        "anvil.specialization_corpus",
+                    )
+                }
+                or None,
                 "dataset_name": dataset_name,
                 "final_loss": run_data["metrics"].get("final_loss"),
                 "hyperparameters": (
