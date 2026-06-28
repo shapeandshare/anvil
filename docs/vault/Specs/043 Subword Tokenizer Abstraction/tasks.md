@@ -1,3 +1,11 @@
+---
+title: Tasks — Subword Tokenizer Abstraction
+type: spec
+tags:
+  - type/spec
+created: '2026-06-28'
+updated: '2026-06-28'
+---
 # Tasks: Subword Tokenizer Abstraction
 
 **Input**: Design documents from `docs/vault/Specs/043 Subword Tokenizer Abstraction/`

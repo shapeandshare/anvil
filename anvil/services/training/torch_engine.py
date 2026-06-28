@@ -548,18 +548,19 @@ def train_torch(
 
     if model is not None:
         # Warm-start path: reuse the passed-in model
-        if not hasattr(model, "chars"):
+        model_chars = getattr(model, "chars")  # noqa: B009
+        if model_chars is None:
             raise ValueError(
                 "model must have 'chars' attribute set "
                 "(set by backend after training)"
             )
-        if model.vocab_size != len(model.chars) + 1:
+        if model.vocab_size != len(model_chars) + 1:
             raise ValueError(
                 f"model.vocab_size ({model.vocab_size}) != "
-                f"len(model.chars) + 1 ({len(model.chars) + 1})"
+                f"len(model.chars) + 1 ({len(model_chars) + 1})"
             )
 
-        uchars = model.chars
+        uchars = model_chars
         BOS = len(uchars)
         vocab_size = model.vocab_size
         block_size = model.block_size

@@ -1,3 +1,11 @@
+---
+title: Quickstart — Subword Tokenizer Abstraction
+type: spec
+tags:
+  - type/spec
+created: '2026-06-28'
+updated: '2026-06-28'
+---
 # Quickstart: Subword Tokenizer Abstraction
 
 ## What this feature does

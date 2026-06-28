@@ -1,3 +1,11 @@
+---
+title: Implementation Plan — Subword Tokenizer Abstraction
+type: spec
+tags:
+  - type/spec
+created: '2026-06-28'
+updated: '2026-06-28'
+---
 # Implementation Plan: Subword Tokenizer Abstraction
 
 **Branch**: `043-subword-tokenizer-abstraction` | **Date**: 2026-06-28 | **Spec**: [[spec.md]]

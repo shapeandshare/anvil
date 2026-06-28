@@ -1,3 +1,11 @@
+---
+title: Research — Subword Tokenizer Abstraction
+type: spec
+tags:
+  - type/spec
+created: '2026-06-28'
+updated: '2026-06-28'
+---
 # Research: Subword Tokenizer Abstraction
 
 **Phase 0 output** — resolves technical unknowns for plan.md

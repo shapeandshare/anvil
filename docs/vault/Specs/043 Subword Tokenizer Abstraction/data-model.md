@@ -1,3 +1,11 @@
+---
+title: Data Model — Subword Tokenizer Abstraction
+type: spec
+tags:
+  - type/spec
+created: '2026-06-28'
+updated: '2026-06-28'
+---
 # Data Model: Subword Tokenizer Abstraction
 
 ## Entities
