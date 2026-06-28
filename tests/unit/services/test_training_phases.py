@@ -415,9 +415,9 @@ class TestStartTrainingPhases:
 
         event_names = [m["event"] for m in collected]
         assert "error" in event_names, f"Expected error event, got {event_names}"
-        assert "complete" not in event_names, (
-            f"Expected no complete event on FAILED, got {event_names}"
-        )
+        assert (
+            "complete" not in event_names
+        ), f"Expected no complete event on FAILED, got {event_names}"
 
         # Find the error event and verify it carries the error message
         error_events = [m for m in collected if m["event"] == "error"]
