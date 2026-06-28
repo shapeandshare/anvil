@@ -442,6 +442,120 @@ class DatasetCurationService:
             samples_after=samples_before - 1,
         )
 
+    async def get_sample(self, sample_id: int) -> Sample | None:
+        """Retrieve a single sample by its primary key.
+
+        Parameters
+        ----------
+        sample_id : int
+            Primary key of the sample to retrieve.
+
+        Returns
+        -------
+        Sample or None
+            The matching ``Sample`` instance, or ``None`` if not found.
+        """
+        return await self._sample_repo.get(sample_id)
+
+    async def update_sample_text(
+        self, sample_id: int, new_text: str, content_hash: str
+    ) -> Sample:
+        """Replace a sample's text, update metadata, and record a curation
+        operation.
+
+        Writes the new text to the file store, updates the sample's
+        length and content hash, and records an ``"individual_edit"``
+        curation operation.
+
+        Parameters
+        ----------
+        sample_id : int
+            Primary key of the sample to update.
+        new_text : str
+            Replacement text content.
+        content_hash : str
+            SHA-256 hex digest of *new_text*.
+
+        Returns
+        -------
+        Sample
+            The updated sample instance.
+
+        Raises
+        ------
+        ValueError
+            If the sample is not found or does not belong to this dataset.
+        """
+        sample = await self._sample_repo.get(sample_id)
+        if sample is None or sample.dataset_id != self._dataset_id:
+            raise ValueError(
+                f"Sample {sample_id} not found in dataset {self._dataset_id}"
+            )
+
+        async def _stream(text: str) -> AsyncGenerator[bytes, None]:
+            yield text.encode("utf-8")
+
+        await self._store.put(sample.file_path, _stream(new_text))
+        sample.length = len(new_text)
+        sample.content_hash = content_hash
+
+        samples_before = await self._sample_repo.count_active(self._dataset_id)
+        op = CurationOperation(
+            dataset_id=self._dataset_id,
+            operation_type="individual_edit",
+            parameters=None,
+            sample_count_before=samples_before,
+            sample_count_after=samples_before,
+        )
+        await self._op_repo.add(op)
+        return sample
+
+    async def get_active_samples(
+        self,
+        offset: int = 0,
+        limit: int = 50,
+        search: str | None = None,
+    ) -> tuple[Sequence[Sample], int]:
+        """Retrieve paginated active samples for this dataset.
+
+        Parameters
+        ----------
+        offset : int
+            Number of records to skip. Defaults to ``0``.
+        limit : int
+            Maximum records to return. Defaults to ``50``.
+        search : str, optional
+            Optional content-hash prefix filter.
+
+        Returns
+        -------
+        tuple[Sequence[Sample], int]
+            ``(samples, total_count)``.
+        """
+        return await self._sample_repo.get_active_by_dataset(
+            self._dataset_id, offset, limit, search
+        )
+
+    async def get_active_texts(self) -> Sequence[Sample]:
+        """Retrieve all active samples for this dataset ordered by index.
+
+        Returns
+        -------
+        Sequence[Sample]
+            All active ``Sample`` records.
+        """
+        return await self._sample_repo.get_active_texts(self._dataset_id)
+
+    async def get_operations(self) -> Sequence[CurationOperation]:
+        """Retrieve all curation operations for this dataset.
+
+        Returns
+        -------
+        Sequence[CurationOperation]
+            Operations ordered by creation date descending.
+        """
+        return await self._op_repo.get_by_dataset(self._dataset_id)
+
     async def get_metrics(self) -> MetricsResult:
         """Compute aggregate statistics for the dataset.
 

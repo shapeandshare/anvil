@@ -16,41 +16,30 @@ import asyncio
 import hashlib
 import json
 from collections.abc import AsyncGenerator
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile
 from starlette.requests import Request
 from starlette.responses import StreamingResponse
 from starlette.templating import _TemplateResponse as TemplateResponse
 
-from anvil.api.deps import get_workbench
-from anvil.api.v1.schemas import (
+from ..deps import get_workbench
+from .schemas_dataset import (
     CloneDatasetBody,
     CreateDatasetBody,
     CreateFromCorpusBody,
     FilterBody,
     ImportBody,
-    ImportFromCorpusBody,
     ReplaceBody,
     UpdateDatasetBody,
     UpdateSampleBody,
 )
-from anvil.db.models.curation_operation import CurationOperation as CurationOpModel
-from anvil.db.models.dataset import Dataset
-from anvil.db.repositories.curation import SampleRepository
-from anvil.db.repositories.curation_operation_repository import (
-    CurationOperationRepository,
-)
-from anvil.services.chunking.window_chunker import FixedSizeWindowChunker
-from anvil.services.datasets.corpus_loader import CorpusLoader
-from anvil.services.governance.audit_action import AuditAction
-from anvil.services.governance.audit_outcome import AuditOutcome
-from anvil.services.tracking.tracking import TrackingService
-from anvil.workbench import AnvilWorkbench
+from .schemas_misc import ImportFromCorpusBody
+from ...workbench import AnvilWorkbench
 
 from .learning import related_lessons
 
 router = APIRouter()
-tracking_svc = TrackingService()
 
 
 @router.get("/datasets/{dataset_id}/curate")
@@ -95,13 +84,13 @@ async def curate_dataset_page(
     )
 
 
-def _serialize(d: Dataset) -> dict[str, object]:
+def _serialize(d: Any) -> dict[str, object]:
     """Serialize a dataset ORM object to a plain dict.
 
     Parameters
     ----------
-    d : Dataset
-        The dataset ORM instance.
+    d : Any
+        A dataset-like object with ORM attribute access (duck-typed).
 
     Returns
     -------
@@ -276,23 +265,22 @@ async def upload_dataset(
     lines = [line.strip() for line in text.splitlines() if line.strip()]
     vocab = len(set("".join(lines)))
 
-    dataset = Dataset(
+    dataset = await workbench.datasets.create_dataset(
         name=file.filename or "untitled",
-        filename=file.filename or "untitled",
-        file_path="",
-        vocabulary_size=vocab,
-        document_count=len(lines),
     )
-    workbench.session.add(dataset)
+    dataset.filename = file.filename or "untitled"
+    dataset.vocabulary_size = vocab
+    dataset.document_count = len(lines)
+    dataset.sample_count = len(lines)
     await workbench.session.commit()
     await workbench.session.refresh(dataset)
 
     await workbench.audit.record(
-        action_type=AuditAction.UPLOAD.value,
+        action_type=AnvilWorkbench.AuditAction.UPLOAD.value,
         target_type="dataset",
         target_id=str(dataset.id),
         actor="system",
-        outcome=AuditOutcome.SUCCESS.value,
+        outcome=AnvilWorkbench.AuditOutcome.SUCCESS.value,
         params={
             "name": dataset.name,
             "vocabulary_size": dataset.vocabulary_size,
@@ -302,8 +290,8 @@ async def upload_dataset(
 
     # Track dataset creation in MLflow
     try:
-        if not tracking_svc.is_degraded:
-            await tracking_svc.log_dataset_lifecycle_event(
+        if not workbench.tracking.is_degraded:
+            await workbench.tracking.log_dataset_lifecycle_event(
                 dataset_id=dataset.id,
                 event_type="create",
                 params={
@@ -373,8 +361,8 @@ async def delete_dataset(
         raise HTTPException(status_code=409, detail=str(e)) from e
 
     try:
-        if not tracking_svc.is_degraded:
-            await tracking_svc.log_dataset_lifecycle_event(
+        if not workbench.tracking.is_degraded:
+            await workbench.tracking.log_dataset_lifecycle_event(
                 dataset_id=dataset_id,
                 event_type="delete",
             )
@@ -431,8 +419,8 @@ async def clone_dataset(
             detail=f"Dataset name '{name}' already exists",
         )
 
-    sample_repo = SampleRepository(workbench.session)
-    source_samples = await sample_repo.get_active_texts(dataset_id)
+    curation_svc = workbench.dataset_curation(dataset_id)
+    source_samples = await curation_svc.get_active_texts()
     if not source_samples:
         raise HTTPException(
             status_code=422,
@@ -461,8 +449,8 @@ async def clone_dataset(
     await workbench.session.refresh(new_dataset)
 
     try:
-        if not tracking_svc.is_degraded:
-            await tracking_svc.log_dataset_lifecycle_event(
+        if not workbench.tracking.is_degraded:
+            await workbench.tracking.log_dataset_lifecycle_event(
                 dataset_id=new_dataset.id,
                 event_type="create",
                 params={"name": new_dataset.name, "cloned_from": dataset_id},
@@ -517,17 +505,17 @@ async def import_dataset(
         raise HTTPException(status_code=404, detail=str(e)) from e
 
     await workbench.audit.record(
-        action_type=AuditAction.IMPORT.value,
+        action_type=AnvilWorkbench.AuditAction.IMPORT.value,
         target_type="dataset",
         target_id=str(dataset_id),
         actor="system",
-        outcome=AuditOutcome.SUCCESS.value,
+        outcome=AnvilWorkbench.AuditOutcome.SUCCESS.value,
         params={"format": body.format, "rows_imported": result.rows_imported},
     )
 
     try:
-        if not tracking_svc.is_degraded:
-            await tracking_svc.log_dataset_lifecycle_event(
+        if not workbench.tracking.is_degraded:
+            await workbench.tracking.log_dataset_lifecycle_event(
                 dataset_id=dataset_id,
                 event_type="import",
                 params={"format": body.format},
@@ -667,57 +655,14 @@ async def create_dataset_from_corpus(
     inc = json.loads(corpus.include_patterns) if corpus.include_patterns else None
     exc = json.loads(corpus.exclude_patterns) if corpus.exclude_patterns else None
 
-    loader = CorpusLoader()
-    load_result = loader.ingest(
-        root_path=corpus.root_path,
-        include_patterns=inc,
-        exclude_patterns=exc,
+    docs = await workbench.corpora.scan_and_chunk(
+        corpus_id=body.corpus_id,
         chunking_strategy=body.chunking_strategy,
         chunk_overlap=body.chunk_overlap,
         block_size=body.block_size,
+        include_patterns=inc,
+        exclude_patterns=exc,
     )
-
-    def _read_file(fp: str) -> str:
-        """Read a file's content as UTF-8 text.
-
-        Parameters
-        ----------
-        fp : str
-            Path to the file.
-
-        Returns
-        -------
-        str
-            The file contents as a string.
-        """
-        with open(fp, encoding="utf-8") as f:
-            return f.read()
-
-    docs = []
-    for f in load_result.files:
-        file_path = f["relative_path"]
-        full_path = corpus.root_path.rstrip("/") + "/" + file_path.lstrip("/")
-        try:
-            text = await asyncio.to_thread(_read_file, full_path)
-        except (FileNotFoundError, UnicodeDecodeError):
-            continue
-
-        if body.chunking_strategy == "line":
-            for line in text.splitlines():
-                stripped = line.strip()
-                if stripped:
-                    docs.append(stripped)
-        elif body.chunking_strategy == "file":
-            docs.append(text)
-        else:
-            bs = body.block_size  # validated non-None for windowed above
-            assert bs is not None
-            chunker = FixedSizeWindowChunker(
-                block_size=bs,
-                overlap=body.chunk_overlap,
-            )
-            for chunk in chunker.chunk(text):
-                docs.append(chunk)
 
     new_dataset = await workbench.datasets.create_dataset(
         name=name,
@@ -734,8 +679,8 @@ async def create_dataset_from_corpus(
     await workbench.session.refresh(new_dataset)
 
     try:
-        if not tracking_svc.is_degraded:
-            await tracking_svc.log_dataset_lifecycle_event(
+        if not workbench.tracking.is_degraded:
+            await workbench.tracking.log_dataset_lifecycle_event(
                 dataset_id=new_dataset.id,
                 event_type="create",
                 params={
@@ -822,8 +767,8 @@ async def list_samples(
         ``length``, ``content_hash``, plus ``total``, ``offset``, ``limit``,
         and ``"error": None``.
     """
-    repo = SampleRepository(workbench.session)
-    samples, total = await repo.get_active_by_dataset(dataset_id, offset, limit, search)
+    curation_svc = workbench.dataset_curation(dataset_id)
+    samples, total = await curation_svc.get_active_samples(offset, limit, search)
     result = []
     for s in samples:
         text_bytes = b""
@@ -883,39 +828,15 @@ async def update_sample(
     HTTPException
         If the sample is not found (404) or does not belong to the dataset.
     """
-    repo = SampleRepository(workbench.session)
-    sample = await repo.get(sample_id)
+    curation_svc = workbench.dataset_curation(dataset_id)
+    sample = await curation_svc.get_sample(sample_id)
     if sample is None or sample.dataset_id != dataset_id:
         raise HTTPException(status_code=404, detail="Sample not found")
 
-    async def _text_stream(text: str) -> AsyncGenerator[bytes, None]:
-        """Convert string to UTF-8 byte chunks for storage.
-
-        Parameters
-        ----------
-        text : str
-            The text content to encode.
-
-        Yields
-        ------
-        bytes
-            UTF-8 encoded chunks of the input text.
-        """
-        yield text.encode("utf-8")
-
-    await workbench.store.put(sample.file_path, _text_stream(body.text))
-    sample.length = len(body.text)
-    sample.content_hash = hashlib.sha256(body.text.encode("utf-8")).hexdigest()
-
-    op_repo = CurationOperationRepository(workbench.session)
-    op = CurationOpModel(
-        dataset_id=dataset_id,
-        operation_type="individual_edit",
-        parameters=None,
-        sample_count_before=0,
-        sample_count_after=0,
+    content_hash = hashlib.sha256(body.text.encode("utf-8")).hexdigest()
+    sample = await curation_svc.update_sample_text(
+        sample_id, body.text, content_hash
     )
-    await op_repo.add(op)
     await workbench.session.commit()
 
     return {"data": {"sample_id": sample.id, "length": sample.length}, "error": None}
@@ -1005,8 +926,8 @@ async def curate_dedup(
     await workbench.session.commit()
 
     try:
-        if not tracking_svc.is_degraded:
-            await tracking_svc.log_dataset_lifecycle_event(
+        if not workbench.tracking.is_degraded:
+            await workbench.tracking.log_dataset_lifecycle_event(
                 dataset_id=dataset_id,
                 event_type="curate",
                 params={"operation": "dedup", "removed_count": result.samples_removed},
@@ -1070,8 +991,8 @@ async def curate_filter(
     await workbench.session.commit()
 
     try:
-        if not tracking_svc.is_degraded:
-            await tracking_svc.log_dataset_lifecycle_event(
+        if not workbench.tracking.is_degraded:
+            await workbench.tracking.log_dataset_lifecycle_event(
                 dataset_id=dataset_id,
                 event_type="curate",
                 params={"operation": "filter", "removed_count": result.samples_removed},
@@ -1138,8 +1059,8 @@ async def curate_replace(
     await workbench.session.commit()
 
     try:
-        if not tracking_svc.is_degraded:
-            await tracking_svc.log_dataset_lifecycle_event(
+        if not workbench.tracking.is_degraded:
+            await workbench.tracking.log_dataset_lifecycle_event(
                 dataset_id=dataset_id,
                 event_type="curate",
                 params={"operation": "replace"},
@@ -1300,8 +1221,8 @@ async def list_operations(
         ``parameters``, ``sample_count_before``, ``sample_count_after``,
         ``created_at``, and ``"error": None``.
     """
-    repo = CurationOperationRepository(workbench.session)
-    ops = await repo.get_by_dataset(dataset_id)
+    curation_svc = workbench.dataset_curation(dataset_id)
+    ops = await curation_svc.get_operations()
     return {
         "data": {
             "operations": [
