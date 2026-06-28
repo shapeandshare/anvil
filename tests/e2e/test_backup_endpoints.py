@@ -130,3 +130,32 @@ async def test_restore_happy_path(client):
     data = rr.json()
     assert "safety_snapshot_id" in data
     assert data["status"] == "completed"
+
+
+@pytest.mark.asyncio
+async def test_cleanup_safety(client):
+    """Cleanup-safety removes safety snapshots but leaves real backups intact."""
+    # Create a real backup.
+    r1 = await client.post("/v1/backup")
+    assert r1.status_code == 202
+
+    # Run restore, which auto-creates a safety snapshot.
+    lst = await client.get("/v1/backup")
+    bids = [b["backup_id"] for b in lst.json()]
+    assert len(bids) >= 1
+    rr = await client.post(f"/v1/backup/{bids[0]}/restore", json={"confirm": "RESTORE"})
+    assert rr.status_code == 202, f"restore failed: {rr.text}"
+    data = rr.json()
+    safety_id = data["safety_snapshot_id"]
+
+    # Now cleanup safety snapshots.
+    cr = await client.post("/v1/backup/cleanup-safety")
+    assert cr.status_code == 200, f"cleanup failed: {cr.text}"
+    cdata = cr.json()
+    assert cdata["deleted_count"] >= 1, f"expected >=1 safety snapshots, got {cdata}"
+
+    # Verify safety snapshot is gone but backup remains.
+    lst2 = await client.get("/v1/backup")
+    remaining = [b["backup_id"] for b in lst2.json()]
+    assert safety_id not in remaining
+    assert bids[0] in remaining

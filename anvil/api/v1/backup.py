@@ -96,17 +96,29 @@ async def backup_status(
     return status.model_dump(mode="json")  # type: ignore[no-any-return]
 
 
-@router.post("/backup/cleanup-safety")
+@router.post("/backup/cleanup-safety", response_model=None)
 async def cleanup_safety(
     request: Request,
     wb: Annotated[AnvilWorkbench, Depends(get_workbench)],
-) -> dict[str, Any]:
+) -> dict[str, Any] | JSONResponse:
     """Remove all pre-restore safety snapshots (FR-020).
 
     Returns the count of deleted snapshots.
     """
-    svc = request.app.state.backup_service
-    count = await svc.cleanup_safety(repo=wb.backup_repo)
+    svc = getattr(request.app.state, "backup_service", None)
+    if svc is None:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "detail": "Backup service not available (not initialized during startup)"
+            },
+        )
+    try:
+        count = await svc.cleanup_safety(repo=wb.backup_repo)
+    except (ValueError, RuntimeError, OSError) as exc:
+        return JSONResponse(
+            status_code=500, content={"detail": str(exc), "code": type(exc).__name__}
+        )
     return {"deleted_count": count}
 
 
@@ -164,6 +176,27 @@ async def get_backup(
     if summary is None:
         return JSONResponse(status_code=404, content={"detail": "Backup not found"})
     return summary.model_dump(mode="json")  # type: ignore[no-any-return]
+
+
+@router.get("/backup/{backup_id}/preview", response_model=None)
+async def preview_restore(
+    backup_id: str,
+    request: Request,
+    wb: Annotated[AnvilWorkbench, Depends(get_workbench)],
+) -> dict[str, Any] | JSONResponse:
+    """Return restore preview for a given backup (FR-024).
+
+    Fetches the backup manifest and returns deployment version, schema
+    revision, compatibility assessment, entry count, and size.  Called
+    by the operations page before showing the restore confirmation
+    modal.
+    """
+    svc = request.app.state.backup_service
+    try:
+        preview = await svc.restore_preview(backup_id)
+    except ValueError as exc:
+        return JSONResponse(status_code=404, content={"detail": str(exc)})
+    return preview.model_dump(mode="json")  # type: ignore[no-any-return]
 
 
 @router.post("/backup/{backup_id}/verify")

@@ -58,10 +58,10 @@
     <h2 class="section-card__title">System Actions</h2>
   </div>
   <div class="ops-actions-bar">
-    <button class="btn btn-secondary" onclick="ops.restartAll()" id="btn-restart-all">⟳ Restart All</button>
-    <button class="btn btn-secondary" onclick="ops.clearAllLogs()" id="btn-clear-logs">✕ Clear Logs</button>
-    <button class="btn btn-secondary" onclick="ops.healthCheck()" id="btn-health">◉ Health Check</button>
-    <button class="btn btn-secondary" onclick="ops.rebootstrapDemo()" id="btn-rebootstrap-demo">↻ Re-bootstrap Demo</button>
+    <button class="btn btn-secondary" id="btn-restart-all">⟳ Restart All</button>
+    <button class="btn btn-secondary" id="btn-clear-logs">✕ Clear Logs</button>
+    <button class="btn btn-secondary" id="btn-health">◉ Health Check</button>
+    <button class="btn btn-secondary" id="btn-rebootstrap-demo">↻ Re-bootstrap Demo</button>
   </div>
 </div>
 
@@ -103,8 +103,8 @@
 
   {# ── Backup actions bar ── #}
   <div class="ops-actions-bar" style="margin-bottom:var(--space-3);">
-    <button class="btn btn-secondary" onclick="backup.create()" id="btn-backup-create">&#128190; Create Backup</button>
-    <button class="btn btn-secondary" onclick="backup.cleanupSafety()" id="btn-backup-cleanup-safety">&#128465; Cleanup Safety Snapshots</button>
+    <button class="btn btn-secondary" id="btn-backup-create">&#128190; Create Backup</button>
+    <button class="btn btn-secondary" id="btn-backup-cleanup-safety">&#128465; Cleanup Safety Snapshots</button>
   </div>
 
   {# ── Backup list ── #}
@@ -298,16 +298,16 @@
       servicesHtml += '<td class="text-muted">' + (s.memory || '-') + '</td>';
       servicesHtml += '<td>';
       if (isRunning) {
-servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-red);border-color:var(--accent-red);" id="btn-' + s.name + '-stop" data-label="■ Stop" onclick="ops.action(\'' + s.name + '\',\'stop\')">■ Stop</button> ';
-        servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-warn);border-color:var(--accent-warn);" id="btn-' + s.name + '-restart" data-label="⟳" onclick="ops.action(\'' + s.name + '\',\'restart\')">⟳</button>';
+servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-red);border-color:var(--accent-red);" id="btn-' + s.name + '-stop" data-label="■ Stop" data-svc-action="stop" data-svc-name="' + s.name + '">■ Stop</button> ';
+        servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-warn);border-color:var(--accent-warn);" id="btn-' + s.name + '-restart" data-label="⟳" data-svc-action="restart" data-svc-name="' + s.name + '">⟳</button>';
         if (s.port) {
-          servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-red);border-color:var(--accent-red);opacity:0.5;" id="btn-' + s.name + '-killport" data-label="✕ Port" onclick="ops.killPort(\'' + s.name + '\')" title="Force-kill process on port ' + s.port + '">✕ Port</button>';
+          servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-red);border-color:var(--accent-red);opacity:0.5;" id="btn-' + s.name + '-killport" data-label="✕ Port" data-svc-action="kill-port" data-svc-name="' + s.name + '" title="Force-kill process on port ' + s.port + '">✕ Port</button>';
         }
       } else {
-        servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-green);border-color:var(--accent-green);" id="btn-' + s.name + '-start" data-label="▶ Start" onclick="ops.action(\'' + s.name + '\',\'start\')">▶ Start</button> ';
-        servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-warn);border-color:var(--accent-warn);opacity:0.4;" id="btn-' + s.name + '-restart" data-label="⟳" onclick="ops.action(\'' + s.name + '\',\'restart\')" disabled>⟳</button>';
+        servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-green);border-color:var(--accent-green);" id="btn-' + s.name + '-start" data-label="▶ Start" data-svc-action="start" data-svc-name="' + s.name + '">▶ Start</button> ';
+        servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-warn);border-color:var(--accent-warn);opacity:0.4;" id="btn-' + s.name + '-restart" data-label="⟳" data-svc-action="restart" data-svc-name="' + s.name + '" disabled>⟳</button>';
         if (s.port) {
-          servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-red);border-color:var(--accent-red);" id="btn-' + s.name + '-killport" data-label="✕ Port" onclick="ops.killPort(\'' + s.name + '\')" title="Force-kill process on port ' + s.port + '">✕ Port</button>';
+          servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-red);border-color:var(--accent-red);" id="btn-' + s.name + '-killport" data-label="✕ Port" data-svc-action="kill-port" data-svc-name="' + s.name + '" title="Force-kill process on port ' + s.port + '">✕ Port</button>';
         }
       }
       servicesHtml += '</td>';
@@ -558,15 +558,21 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
           setBtnLoading('btn-backup-cleanup-safety', true);
           try {
             var resp = await apiFetch('/v1/backup/cleanup-safety', { method: 'POST' });
-            var data = await resp.json();
+            var text = await resp.text();
+            var data;
+            try { data = JSON.parse(text); } catch {
+              toast('Server returned ' + resp.status + ': ' + text.slice(0, 120), 'error');
+              setBtnLoading('btn-backup-cleanup-safety', false);
+              return;
+            }
             if (resp.ok) {
               toast('Cleaned up ' + data.deleted_count + ' safety snapshot(s)', 'success');
               backup.loadAll();
             } else {
-              toast(data.detail || 'Cleanup failed', 'error');
+              toast(data.detail || 'Cleanup failed (HTTP ' + resp.status + ')', 'error');
             }
           } catch {
-            toast('Network error during cleanup', 'error');
+            toast('Network error — could not reach server', 'error');
           }
           setBtnLoading('btn-backup-cleanup-safety', false);
         }
@@ -623,10 +629,10 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
 
     _actionsHtml: function(backupId, status, isSafetySnapshot) {
       if (status !== 'completed') return '';
-      var html = '<button class="btn btn-secondary btn-sm" onclick="backup.verify(\'' + backupId + '\')" title="Verify integrity">&#9989;</button> ';
+      var html = '<button class="btn btn-secondary btn-sm" id="btn-verify-' + backupId + '" data-backup-action="verify" data-backup-id="' + backupId + '" title="Verify integrity">&#9989;</button> ';
       if (!isSafetySnapshot) {
-        html += '<button class="btn btn-secondary btn-sm" onclick="backup.previewRestore(\'' + backupId + '\')" title="Restore">&#128259;</button> ';
-        html += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-red);border-color:var(--accent-red);" onclick="backup.deleteBackup(\'' + backupId + '\')" title="Delete">&#128465;</button>';
+        html += '<button class="btn btn-secondary btn-sm" id="btn-restore-' + backupId + '" data-backup-action="restore" data-backup-id="' + backupId + '" title="Restore">&#128259;</button> ';
+        html += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-red);border-color:var(--accent-red);" id="btn-delete-' + backupId + '" data-backup-action="delete" data-backup-id="' + backupId + '" title="Delete">&#128465;</button>';
       }
       return html;
     },
@@ -773,6 +779,47 @@ servicesHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--acc
 
   setInterval(backup.loadAll, 15000);
   setTimeout(backup.loadAll, 500);
+
+  /* ── Event delegation for CSP-safe button interactions ── */
+  // Static action buttons (replace onclick= attributes blocked by CSP)
+  var staticBtnMap = {
+    'btn-restart-all': ops.restartAll,
+    'btn-clear-logs': ops.clearAllLogs,
+    'btn-health': ops.healthCheck,
+    'btn-rebootstrap-demo': ops.rebootstrapDemo,
+    'btn-backup-create': backup.create,
+    'btn-backup-cleanup-safety': backup.cleanupSafety,
+  };
+  Object.keys(staticBtnMap).forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('click', staticBtnMap[id]);
+  });
+
+  // Dynamic service-control buttons (delegated on #services-list)
+  document.getElementById('services-list').addEventListener('click', function(e) {
+    var btn = e.target.closest('[data-svc-action]');
+    if (!btn) return;
+    var action = btn.dataset.svcAction;
+    var name = btn.dataset.svcName;
+    if (!action || !name) return;
+    if (action === 'kill-port') {
+      ops.killPort(name);
+    } else {
+      ops.action(name, action);
+    }
+  });
+
+  // Dynamic backup-list action buttons (delegated on #backup-list-container)
+  document.getElementById('backup-list-container').addEventListener('click', function(e) {
+    var btn = e.target.closest('[data-backup-action]');
+    if (!btn) return;
+    var action = btn.dataset.backupAction;
+    var id = btn.dataset.backupId;
+    if (!action || !id) return;
+    if (action === 'verify') backup.verify(id);
+    else if (action === 'restore') backup.previewRestore(id);
+    else if (action === 'delete') backup.deleteBackup(id);
+  });
 
   /* ── Logs collapsible toggle ── */
   var logsHeader = document.getElementById('logs-header');
