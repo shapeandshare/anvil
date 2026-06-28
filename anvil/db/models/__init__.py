@@ -9,5 +9,4 @@ Each module in this package defines a single ORM model class
 representing a persistent entity in the anvil application database.
 """
 
-from . import external_model
-from . import model_import_job
+from . import external_model, model_import_job

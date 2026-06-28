@@ -37,9 +37,7 @@ def main() -> None:
 
     for forbidden in ("huggingface_hub",):
         if forbidden in sys.modules:
-            failures.append(
-                f"{forbidden} was loaded by the stdlib core engine path"
-            )
+            failures.append(f"{forbidden} was loaded by the stdlib core engine path")
 
     # 3. The ModelSource implementations (with safe hf_source import-guard
     #    code) must compile without huggingface_hub installed.
@@ -48,14 +46,10 @@ def main() -> None:
 
         # The import itself must not load huggingface_hub.
         if "huggingface_hub" in sys.modules:
-            failures.append(
-                "Importing HfHubSource triggered huggingface_hub load"
-            )
+            failures.append("Importing HfHubSource triggered huggingface_hub load")
 
         # The availability check must return False.
-        from anvil.services.model_import.hf_source import (
-            _huggingface_hub_available,
-        )
+        from anvil.services.model_import.hf_source import _huggingface_hub_available
 
         if _huggingface_hub_available():
             failures.append(

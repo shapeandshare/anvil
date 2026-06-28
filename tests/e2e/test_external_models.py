@@ -16,9 +16,7 @@ from unittest.mock import patch
 
 import pytest
 
-from anvil.services._shared.import_types import (
-    ModelMetadata,
-)
+from anvil.services._shared.import_types import ModelMetadata
 
 
 @pytest.fixture(autouse=True)

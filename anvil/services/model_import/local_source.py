@@ -13,10 +13,7 @@ from typing import Any
 
 import anyio
 
-from .._shared.import_types import (
-    ModelMetadata,
-    ModelSourceError,
-)
+from .._shared.import_types import ModelMetadata, ModelSourceError
 
 
 class LocalSource:

@@ -75,14 +75,10 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        "ix_model_import_jobs_status", "model_import_jobs", ["status"]
-    )
+    op.create_index("ix_model_import_jobs_status", "model_import_jobs", ["status"])
 
 
 def downgrade() -> None:
-    op.drop_index(
-        "ix_model_import_jobs_status", table_name="model_import_jobs"
-    )
+    op.drop_index("ix_model_import_jobs_status", table_name="model_import_jobs")
     op.drop_table("model_import_jobs")
     op.drop_table("external_models")
