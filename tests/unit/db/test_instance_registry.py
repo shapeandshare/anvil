@@ -144,9 +144,7 @@ async def test_deregister_removes_row(
 ) -> None:
     """Deregistering removes the row from the registry."""
     repo = InstanceRegistryRepository(registry_session)
-    await repo.register(
-        _make_record(tmp_path, "to-delete", "del", 9200, 6200)
-    )
+    await repo.register(_make_record(tmp_path, "to-delete", "del", 9200, 6200))
     await registry_session.commit()
 
     await repo.deregister("to-delete")
@@ -163,15 +161,11 @@ async def test_duplicate_name_raises_value_error(
 ) -> None:
     """Registering a duplicate name raises a ValueError collision."""
     repo = InstanceRegistryRepository(registry_session)
-    await repo.register(
-        _make_record(tmp_path, "unique", "uniq-1", 9300, 6300)
-    )
+    await repo.register(_make_record(tmp_path, "unique", "uniq-1", 9300, 6300))
     await registry_session.commit()
 
     with pytest.raises(ValueError, match="already exists"):
-        await repo.register(
-            _make_record(tmp_path, "unique", "uniq-2", 9301, 6301)
-        )
+        await repo.register(_make_record(tmp_path, "unique", "uniq-2", 9301, 6301))
 
 
 @pytest.mark.asyncio
@@ -181,9 +175,7 @@ async def test_find_port_conflict_detects_collision(
 ) -> None:
     """find_port_conflict returns a record when a port is taken."""
     repo = InstanceRegistryRepository(registry_session)
-    await repo.register(
-        _make_record(tmp_path, "port-owner", "port", 9400, 6400)
-    )
+    await repo.register(_make_record(tmp_path, "port-owner", "port", 9400, 6400))
     await registry_session.commit()
 
     conflict = await repo.find_port_conflict(9400, 9999)
