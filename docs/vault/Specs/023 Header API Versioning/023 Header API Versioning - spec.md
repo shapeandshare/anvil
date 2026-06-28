@@ -64,7 +64,7 @@ As the maintainer of the auth middleware, I want API (JSON) routes and server-re
 
 - What happens to a bookmarked `/v1/...` URL after migration? It 404s with no redirect (acceptable — zero deployments, greenfield per ADR-032).
 - How are SSE endpoints affected? Their paths lose `/v1/` but otherwise behave identically; the auth cookie-fallback (spec 017 FR-025) still applies.
-- How does the MLflow proxy path interact? The proxy route (ADR-035) moves from `/v1/mlflow-proxy/` to `/mlflow-proxy/`; `--static-prefix` and `get_mlflow_browser_uri` update accordingly.
+- How does the MLflow proxy path interact? The proxy route moves from `/v1/mlflow-proxy/` to `/mlflow-proxy/`; `--static-prefix` and `get_mlflow_browser_uri` update accordingly. The proxy is owned by [[Specs/056 Reverse-Proxy Registry/056 Reverse-Proxy Registry|Spec 056]], whose FR-013 mandates a single source-of-truth mount-prefix constant precisely so this de-versioning is a one-line change.
 - What if spec 017 (auth) ships before this? The auth contract uses an explicit page-route registry that works under `/v1/`; after 018 it simplifies to namespace-based classification.
 - Does the Docker healthcheck break? The healthcheck target path updates (e.g. `/health`); it must be changed in the same migration.
 
@@ -77,7 +77,7 @@ As the maintainer of the auth middleware, I want API (JSON) routes and server-re
 - **FR-003**: The system MUST support optional API version negotiation via a single HTTP request header. Absent the header, requests target the current (and only) version. An unsupported version MUST yield a clear 400.
 - **FR-004**: API (JSON) routes and server-rendered page routes MUST be placed in clearly separable namespaces (or an explicit registry) so authentication can classify them without relying on the shared prefix or `Accept`-header heuristics.
 - **FR-005**: All internal consumers MUST be updated atomically in the same change: Jinja2 template links, static JS `fetch`/`EventSource` URLs, the Docker/compose healthcheck target, the CLI (if it references HTTP paths), tests, and the MLflow proxy route + `get_mlflow_browser_uri`.
-- **FR-006**: The spec 017 auth middleware and the ADR-035 MLflow proxy MUST be updated to reference the new version-free paths once this feature lands.
+- **FR-006**: The spec 020 auth middleware and the [[Specs/056 Reverse-Proxy Registry/056 Reverse-Proxy Registry|Spec 056]] MLflow proxy MUST be updated to reference the new version-free paths once this feature lands. (Per 056 FR-013 the proxy mount prefix is a single constant, so this is a one-line edit there.)
 - **FR-007**: Documentation (README route table, DESIGN.md if applicable, vault references) MUST be updated to reflect version-free paths and the header-negotiation scheme.
 
 ### Key Entities
