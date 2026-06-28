@@ -21,9 +21,7 @@ def test_warm_start_subset_corpus_keeps_base_vocab(tmp_path):
     """
     # Train base model on full corpus
     base_docs = ["abcde"]
-    base_model, _, _, base_uchars = train(
-        base_docs, num_steps=3, n_embd=8, n_head=2
-    )
+    base_model, _, _, base_uchars = train(base_docs, num_steps=3, n_embd=8, n_head=2)
 
     # Save and reload to set model.chars
     save_path = str(tmp_path / "base.json")
@@ -37,9 +35,9 @@ def test_warm_start_subset_corpus_keeps_base_vocab(tmp_path):
     )
 
     # uchars should match model.chars exactly (order preserved, NOT re-sorted)
-    assert warm_uchars == loaded_model.chars, (
-        f"warm_uchars={warm_uchars} != loaded_model.chars={loaded_model.chars}"
-    )
+    assert (
+        warm_uchars == loaded_model.chars
+    ), f"warm_uchars={warm_uchars} != loaded_model.chars={loaded_model.chars}"
 
     # vocab_size should be inherited from model
     assert warm_model.vocab_size == len(loaded_model.chars) + 1
@@ -59,9 +57,7 @@ def test_warm_start_oov_char_raises_error(tmp_path):
     is raised with a message mentioning the unsupported char.
     """
     base_docs = ["abcde"]
-    base_model, _, _, base_uchars = train(
-        base_docs, num_steps=3, n_embd=8, n_head=2
-    )
+    base_model, _, _, base_uchars = train(base_docs, num_steps=3, n_embd=8, n_head=2)
     save_path = str(tmp_path / "base.json")
     base_model.save(save_path, chars=base_uchars)
     loaded_model = LlamaModel.load(save_path)
@@ -110,9 +106,7 @@ def test_warm_start_initial_loss_below_from_scratch(tmp_path):
     """
     # Train base model on "abcde" for few steps
     base_docs = ["abcde"]
-    base_model, _, _, base_uchars = train(
-        base_docs, num_steps=5, n_embd=8, n_head=2
-    )
+    base_model, _, _, base_uchars = train(base_docs, num_steps=5, n_embd=8, n_head=2)
 
     # Save and reload to set model.chars
     save_path = str(tmp_path / "base.json")
@@ -127,7 +121,10 @@ def test_warm_start_initial_loss_below_from_scratch(tmp_path):
             fs_initial[0] = loss
 
     train(
-        ["abcde"], num_steps=10, n_embd=8, n_head=2,
+        ["abcde"],
+        num_steps=10,
+        n_embd=8,
+        n_head=2,
         progress_callback=_fs_cb,
     )
 
@@ -139,16 +136,16 @@ def test_warm_start_initial_loss_below_from_scratch(tmp_path):
             ws_initial[0] = loss
 
     train(
-        ["abcde"], model=loaded_model, num_steps=10, n_embd=8, n_head=2,
+        ["abcde"],
+        model=loaded_model,
+        num_steps=10,
+        n_embd=8,
+        n_head=2,
         progress_callback=_ws_cb,
     )
 
-    assert fs_initial[0] is not None, (
-        "from-scratch progress_callback was never called"
-    )
-    assert ws_initial[0] is not None, (
-        "warm-start progress_callback was never called"
-    )
+    assert fs_initial[0] is not None, "from-scratch progress_callback was never called"
+    assert ws_initial[0] is not None, "warm-start progress_callback was never called"
     # Warm-start should have lower initial loss than from-scratch
     assert ws_initial[0] < fs_initial[0], (
         f"warm-start step-0 loss {ws_initial[0]:.4f} is NOT below "
@@ -156,9 +153,7 @@ def test_warm_start_initial_loss_below_from_scratch(tmp_path):
     )
 
 
-@pytest.mark.skipif(
-    not torch_available(), reason="torch not installed"
-)
+@pytest.mark.skipif(not torch_available(), reason="torch not installed")
 def test_warm_start_parity_between_engines(tmp_path):
     """Stdlib warm-start works correctly when torch is available.
 
@@ -171,9 +166,7 @@ def test_warm_start_parity_between_engines(tmp_path):
     """
     # Train base model with stdlib
     base_docs = ["abcde"]
-    base_model, _, _, base_uchars = train(
-        base_docs, num_steps=3, n_embd=8, n_head=2
-    )
+    base_model, _, _, base_uchars = train(base_docs, num_steps=3, n_embd=8, n_head=2)
 
     # Save and reload to set model.chars
     save_path = str(tmp_path / "base.json")
@@ -182,13 +175,17 @@ def test_warm_start_parity_between_engines(tmp_path):
 
     # Warm-start on subset corpus — stdlib engine
     warm_model, _, _, warm_uchars = train(
-        ["abc"], model=loaded_model, num_steps=3, n_embd=8, n_head=2,
+        ["abc"],
+        model=loaded_model,
+        num_steps=3,
+        n_embd=8,
+        n_head=2,
     )
 
     # Verify vocab inheritance (structural parity with torch path)
-    assert warm_uchars == loaded_model.chars, (
-        f"warm_uchars={warm_uchars} != loaded_model.chars={loaded_model.chars}"
-    )
+    assert (
+        warm_uchars == loaded_model.chars
+    ), f"warm_uchars={warm_uchars} != loaded_model.chars={loaded_model.chars}"
     assert warm_model.vocab_size == len(loaded_model.chars) + 1
 
 

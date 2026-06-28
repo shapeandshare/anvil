@@ -450,15 +450,11 @@ def load_torch_weights_from_lists(
     if expected != actual:
         missing = sorted(expected - actual)
         extra = sorted(actual - expected)
-        raise ValueError(
-            f"Checkpoint key mismatch: missing={missing}, extra={extra}"
-        )
+        raise ValueError(f"Checkpoint key mismatch: missing={missing}, extra={extra}")
 
     with torch.no_grad():
         for key, param in params.items():
-            tensor = torch.tensor(
-                weights[key], dtype=param.dtype, device=param.device
-            )
+            tensor = torch.tensor(weights[key], dtype=param.dtype, device=param.device)
             if tuple(tensor.shape) != tuple(param.shape):
                 raise ValueError(
                     f"Shape mismatch for {key}: expected {tuple(param.shape)}, "

@@ -22,8 +22,7 @@ from pathlib import Path
 from typing import Any
 
 from ...core.engine import LlamaModel
-from ..training.torch_engine import TorchLlamaModel
-from ..training.torch_engine import load_torch_weights_from_lists
+from ..training.torch_engine import TorchLlamaModel, load_torch_weights_from_lists
 from ..training.torch_engine import torch_available as _torch_available
 from ..training.torch_engine import train_torch
 from .compute_backend_result import ComputeBackendResult
@@ -112,9 +111,7 @@ class LocalTorchBackend:
         train_model: TorchLlamaModel | None = None
 
         if base_model_ref is not None:
-            checkpoint_path = Path(
-                f"data/models/experiment_{base_model_ref}.json"
-            )
+            checkpoint_path = Path(f"data/models/experiment_{base_model_ref}.json")
             base_model = LlamaModel.load(str(checkpoint_path))
             if base_model.chars is None:
                 msg = (

@@ -710,9 +710,7 @@ async def start_training(config: TrainConfig) -> dict[str, Any]:
 
             # Record warm-start lineage (FR-003)
             if config.base_model_ref is not None:
-                await tracking_svc.set_tag(
-                    mlflow_run_id, "anvil.warm_start", "true"
-                )
+                await tracking_svc.set_tag(mlflow_run_id, "anvil.warm_start", "true")
                 await tracking_svc.set_tag(
                     mlflow_run_id, "anvil.base_model_ref", str(config.base_model_ref)
                 )
