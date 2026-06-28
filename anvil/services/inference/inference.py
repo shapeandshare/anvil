@@ -13,6 +13,7 @@ Follows layer discipline: services consume repositories, routes call services.
 from __future__ import annotations
 
 import asyncio
+import logging
 import math
 from pathlib import Path
 from typing import Any
@@ -20,10 +21,28 @@ from typing import Any
 from mlflow.tracking import MlflowClient
 
 from ...config import get_mlflow_uri
+from ...core._tokenizer_base import Tokenizer
 from ...core.autograd import Value
 from ...core.engine import LlamaModel, softmax
 from ..tracking.tracking import TrackingService
 from .loaded_model import LoadedModel
+from .tokenizer_factory import create_tokenizer
+
+logger = logging.getLogger("anvil.services.inference.tokenizer")
+
+
+def _is_bos(token_id: int, bos_id: int | None) -> bool:
+    """Check if a token ID is the BOS token, handling ``None`` safely."""
+    return bos_id is not None and token_id == bos_id
+
+
+def _token_label(token_id: int, chars: list[str], bos_id: int | None) -> str:
+    """Return a human-readable label for a token ID."""
+    if _is_bos(token_id, bos_id):
+        return "<BOS>"
+    if 0 <= token_id < len(chars):
+        return chars[token_id]
+    return "<?>"
 
 
 def _top_k_logits(logits: list[float], k: int | None) -> list[float]:
@@ -126,7 +145,7 @@ class InferenceService:
 
     def __init__(self) -> None:
         """Initialise the inference service with an empty model cache."""
-        self._cache: dict[tuple[int, int], tuple[LlamaModel, list[str]]] = {}
+        self._cache: dict[tuple[int, int], tuple[LlamaModel, Tokenizer]] = {}
         self._default_id: int | None = None
 
     async def load_model(
@@ -164,8 +183,8 @@ class InferenceService:
         version = version if version is not None else 1
         cache_key = (model_id, version)
         if cache_key in self._cache:
-            gpt_model, chars = self._cache[cache_key]
-            return LoadedModel(gpt_model, chars, model_id, version, "cached")
+            gpt_model, tokenizer = self._cache[cache_key]
+            return LoadedModel(gpt_model, tokenizer, model_id, version, "cached")
 
         # Primary path: load from saved experiment artifact
         model_path = Path(f"data/models/experiment_{model_id}.json")
@@ -174,8 +193,14 @@ class InferenceService:
             if gpt_model.chars is None:
                 raise ValueError("Model has no character mapping")
             name = f"experiment-{model_id}"
-            self._cache[cache_key] = (gpt_model, gpt_model.chars)
-            return LoadedModel(gpt_model, gpt_model.chars, model_id, version, name)
+            tokenizer = create_tokenizer(
+                tokenizer_family=gpt_model.tokenizer_family,
+                serialization_type=gpt_model.serialization_type,
+                chars=gpt_model.chars,
+                artifact_dir=str(model_path.parent),
+            )
+            self._cache[cache_key] = (gpt_model, tokenizer)
+            return LoadedModel(gpt_model, tokenizer, model_id, version, name)
 
         # Fallback: try loading from MLflow Model Registry
         tracking_svc = TrackingService()
@@ -213,9 +238,16 @@ class InferenceService:
                         gpt_model = LlamaModel.load(str(model_file))
                         if gpt_model.chars is None:
                             raise ValueError("Model has no character mapping")
-                        self._cache[cache_key] = (gpt_model, gpt_model.chars)
+                        local_dir_path = Path(local_dir)
+                        tokenizer = create_tokenizer(
+                            tokenizer_family=gpt_model.tokenizer_family,
+                            serialization_type=gpt_model.serialization_type,
+                            chars=gpt_model.chars,
+                            artifact_dir=str(local_dir_path),
+                        )
+                        self._cache[cache_key] = (gpt_model, tokenizer)
                         return LoadedModel(
-                            gpt_model, gpt_model.chars, model_id, version, model_name
+                            gpt_model, tokenizer, model_id, version, model_name
                         )
             except Exception:  # pylint: disable=broad-exception-caught
                 pass
@@ -280,7 +312,7 @@ class InferenceService:
         text : str
             Input text to tokenise.
         loaded : LoadedModel
-            The loaded model and vocabulary.
+            The loaded model and tokenizer.
 
         Returns
         -------
@@ -288,18 +320,24 @@ class InferenceService:
             Dict with ``"model"``, ``"tokens"`` (list of char/ID
             pairs), ``"vocab_size"``, and ``"bos_id"``.
         """
-        ids = loaded.vocab.encode(text)
+        logger.info(
+            "Encode: model=%s, family=%s, text_len=%d",
+            loaded.name,
+            getattr(loaded.model, "tokenizer_family", "?"),
+            len(text),
+        )
+        ids = loaded.tokenizer.encode(text)
         return {
             "model": loaded.info(),
             "tokens": [
                 {
-                    "char": loaded.chars[i] if i != loaded.vocab.bos_id else "<BOS>",
+                    "char": _token_label(i, loaded.chars, loaded.bos_id),
                     "id": i,
                 }
                 for i in ids
             ],
-            "vocab_size": loaded.vocab.vocab_size,
-            "bos_id": loaded.vocab.bos_id,
+            "vocab_size": loaded.tokenizer.vocab_size,
+            "bos_id": loaded.bos_id,
         }
 
     def embeddings(self, text: str, loaded: LoadedModel) -> dict[str, Any]:
@@ -320,14 +358,14 @@ class InferenceService:
             Dict with ``"model"``, ``"tokens"``, ``"vectors"``,
             ``"n_embd"``, and ``"projection"`` (2D coordinates).
         """
-        ids = loaded.vocab.encode(text)
+        ids = loaded.tokenizer.encode(text)
         wte = loaded.model._get_matrix("wte")
         vectors = []
         labels = []
         for _i, tid in enumerate(ids):
             row = [v.data for v in wte[tid]]
             vectors.append(row)
-            label = loaded.chars[tid] if tid != loaded.vocab.bos_id else "<BOS>"
+            label = _token_label(tid, loaded.chars, loaded.bos_id)
             labels.append({"char": label, "id": tid})
 
         projection = _project_to_2d(vectors)
@@ -363,7 +401,7 @@ class InferenceService:
             ``"n_head"``, ``"weights"``, and ``"rope"`` (cos/sin
             tables and head dimension).
         """
-        ids = loaded.vocab.encode(text)
+        ids = loaded.tokenizer.encode(text)
         max_len = min(loaded.model.block_size, 256)
         ids = ids[:max_len]
 
@@ -371,8 +409,7 @@ class InferenceService:
         weights = result["attention"]
 
         token_labels = [
-            {"char": loaded.chars[i] if i != loaded.vocab.bos_id else "<BOS>", "id": i}
-            for i in ids
+            {"char": _token_label(i, loaded.chars, loaded.bos_id), "id": i} for i in ids
         ]
 
         return {
@@ -419,7 +456,7 @@ class InferenceService:
             ``"temperature"``, ``"prompt"``, ``"vocab_size"``,
             ``"top_k"``, and ``"top_k_effective"``.
         """
-        ids = loaded.vocab.encode(prompt)
+        ids = loaded.tokenizer.encode(prompt)
         n_layers = loaded.model.n_layer
         keys: list[list[list[Value]]] = [[] for _ in range(n_layers)]
         values: list[list[list[Value]]] = [[] for _ in range(n_layers)]
@@ -427,12 +464,14 @@ class InferenceService:
             loaded.model.forward(tid, pos_id, keys, values)
 
         last_pos = len(ids)
-        dummy_tid = ids[-1] if ids else loaded.vocab.bos_id
+        dummy_tid = (
+            ids[-1] if ids else (loaded.bos_id if loaded.bos_id is not None else 0)
+        )
         logits = loaded.model.forward(dummy_tid, last_pos - 1, keys, values)
 
         raw_logits: list[float] = [logit.data for logit in logits]
         scaled: list[float] = [r / temperature for r in raw_logits]
-        vocab_size = loaded.vocab.vocab_size
+        vocab_size = loaded.tokenizer.vocab_size
 
         # Determine top-k threshold and compute in_top_k / truncated
         resolved_top_k: int = vocab_size if top_k is None or top_k <= 0 else top_k
@@ -463,7 +502,7 @@ class InferenceService:
 
         all_tokens = []
         for i in range(vocab_size):
-            char = loaded.chars[i] if i != loaded.vocab.bos_id else "<BOS>"
+            char = _token_label(i, loaded.chars, loaded.bos_id)
             all_tokens.append(
                 {
                     "char": char,
@@ -511,7 +550,7 @@ class InferenceService:
         n_layers = loaded.model.n_layer
         keys: list[list[list[Value]]] = [[] for _ in range(n_layers)]
         values: list[list[list[Value]]] = [[] for _ in range(n_layers)]
-        tid = loaded.vocab.bos_id
+        tid = loaded.bos_id if loaded.bos_id is not None else 0
         logits = loaded.model.forward(tid, 0, keys, values)
 
         nodes: list[dict[str, Any]] = []
@@ -605,7 +644,7 @@ class InferenceService:
             local grads, depth), ``"edges"``, and ``"metadata"``
             (total nodes/edges, max depth, input tokens, loss value).
         """
-        ids = loaded.vocab.encode(text)
+        ids = loaded.tokenizer.encode(text)
         n = min(len(ids) - 1, loaded.model.block_size)
         ids = ids[: n + 1]
 
@@ -696,8 +735,7 @@ class InferenceService:
 
         max_depth = max((n.get("depth", 0) for n in nodes), default=0)
         token_labels = [
-            {"char": loaded.chars[i] if i != loaded.vocab.bos_id else "<BOS>", "id": i}
-            for i in ids
+            {"char": _token_label(i, loaded.chars, loaded.bos_id), "id": i} for i in ids
         ]
 
         return {
@@ -723,10 +761,10 @@ class InferenceService:
         forward + backward pass, so every value and gradient is real at a legible
         scale. Same response schema as :meth:`backward_graph`.
         """
-        ids = loaded.vocab.encode(text)
+        ids = loaded.tokenizer.encode(text)
         seed_id = next(
-            (t for t in ids if t != loaded.vocab.bos_id),
-            ids[0] if ids else loaded.vocab.bos_id,
+            (t for t in ids if not _is_bos(t, loaded.bos_id)),
+            ids[0] if ids else (loaded.bos_id if loaded.bos_id is not None else 0),
         )
         wte = loaded.model._get_matrix("wte")
         row = [v.data for v in wte[seed_id]]
@@ -807,8 +845,7 @@ class InferenceService:
 
         max_depth = max(depth.values(), default=0)
         token_labels = [
-            {"char": loaded.chars[i] if i != loaded.vocab.bos_id else "<BOS>", "id": i}
-            for i in ids
+            {"char": _token_label(i, loaded.chars, loaded.bos_id), "id": i} for i in ids
         ]
 
         return {
@@ -845,7 +882,7 @@ class InferenceService:
             ``"losses"`` (per-token loss values), ``"average_loss"``,
             ``"random_baseline"``, and ``"vocab_size"``.
         """
-        ids = loaded.vocab.encode(text)
+        ids = loaded.tokenizer.encode(text)
         n = min(len(ids) - 1, loaded.model.block_size)
         ids = ids[: n + 1]
 
@@ -860,11 +897,10 @@ class InferenceService:
             losses.append(round(loss_t.data, 6))
 
         average_loss = round(sum(losses) / n, 6) if n > 0 else 0.0
-        random_baseline = round(-math.log(1.0 / loaded.vocab.vocab_size), 6)
+        random_baseline = round(-math.log(1.0 / loaded.tokenizer.vocab_size), 6)
 
         token_labels = [
-            {"char": loaded.chars[i] if i != loaded.vocab.bos_id else "<BOS>", "id": i}
-            for i in ids
+            {"char": _token_label(i, loaded.chars, loaded.bos_id), "id": i} for i in ids
         ]
 
         return {
@@ -873,7 +909,7 @@ class InferenceService:
             "losses": losses,
             "average_loss": average_loss,
             "random_baseline": random_baseline,
-            "vocab_size": loaded.vocab.vocab_size,
+            "vocab_size": loaded.tokenizer.vocab_size,
         }
 
     def model_params(self, loaded: LoadedModel) -> dict[str, Any]:

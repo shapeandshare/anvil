@@ -104,21 +104,33 @@ def export_state_dict(model: LlamaModel) -> dict[str, list[Any]]:
     return hf_sd
 
 
-def generate_config(model: LlamaModel) -> dict[str, Any]:
+def generate_config(
+    model: LlamaModel,
+    tokenizer_family: str | None = None,
+    serialization_type: str | None = None,
+) -> dict[str, Any]:
     """Generate a ``LlamaConfig``-compatible JSON dict from model hyperparameters.
 
     Parameters
     ----------
     model : LlamaModel
         The trained model whose hyperparameters to serialise.
+    tokenizer_family : str or None
+        The tokenizer family to record in the config. Falls back to
+        ``model.tokenizer_family`` if available, otherwise ``"char"``.
+    serialization_type : str or None
+        The tokenizer serialization type. Falls back to
+        ``model.serialization_type`` if available, otherwise
+        ``"char_json"``.
 
     Returns
     -------
     dict[str, Any]
         Configuration dict with keys matching HuggingFace's
-        ``LlamaConfig`` (``hidden_size``, ``intermediate_size``,
-        ``num_hidden_layers``, etc.).
+        ``LlamaConfig`` plus tokenizer metadata.
     """
+    family = tokenizer_family or getattr(model, "tokenizer_family", "char")
+    ser_type = serialization_type or getattr(model, "serialization_type", "char_json")
     return {
         "model_type": "llama",
         "vocab_size": model.vocab_size,
@@ -141,6 +153,8 @@ def generate_config(model: LlamaModel) -> dict[str, Any]:
         "head_dim": model.head_dim,
         "rope_theta": 10000.0,
         "rope_scaling": None,
+        "tokenizer_family": family,
+        "serialization_type": ser_type,
     }
 
 
@@ -217,7 +231,12 @@ class SafetensorsExportService:
     """Converts a trained Llama model to safetensors checkpoint artifacts."""
 
     def export(
-        self, model: LlamaModel, output_dir: str | Path, chars: list[str]
+        self,
+        model: LlamaModel,
+        output_dir: str | Path,
+        chars: list[str],
+        tokenizer_family: str | None = None,
+        serialization_type: str | None = None,
     ) -> dict[str, str | None]:
         """Run full export: safetensors + config + tokenizer + MLflow MLmodel.
 
@@ -248,7 +267,11 @@ class SafetensorsExportService:
             )
 
             # 3. Write config.json
-            config = generate_config(model)
+            config = generate_config(
+                model,
+                tokenizer_family=tokenizer_family,
+                serialization_type=serialization_type,
+            )
             config_path = output_dir / "config.json"
             with open(config_path, "w") as f:
                 json.dump(config, f, indent=2)
@@ -324,7 +347,15 @@ class SafetensorsExportService:
         try:
             model = LlamaModel.load(model_path)
             chars = model.chars or []
-            return self.export(model, output_dir, chars)
+            tokenizer_family = getattr(model, "tokenizer_family", "char")
+            serialization_type = getattr(model, "serialization_type", "char_json")
+            return self.export(
+                model,
+                output_dir,
+                chars,
+                tokenizer_family=tokenizer_family,
+                serialization_type=serialization_type,
+            )
         except Exception as e:  # pylint: disable=broad-exception-caught
             return {
                 "safetensors_path": None,

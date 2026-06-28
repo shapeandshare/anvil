@@ -73,6 +73,11 @@ dev = [
     "commitizen>=3.0,<4",
     "pytest-playwright>=0.5,<1",
 ]
+finetune = [
+    "tokenizers>=0.15,<1",
+    "sentencepiece>=0.1.99,<1",
+    "transformers>=4.30.0,<5",
+]
 
 [project.scripts]
 anvil = "anvil.cli:main"

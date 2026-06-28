@@ -14,8 +14,10 @@ known.
 
 from __future__ import annotations
 
+from ._tokenizer_base import Tokenizer
 
-class Vocabulary:
+
+class Vocabulary(Tokenizer):
     """Reconstructable character vocabulary with BOS-wrapped encoding.
 
     Matches ``Tokenizer`` encode/decode semantics exactly (BOS-wrapped),
@@ -37,9 +39,31 @@ class Vocabulary:
             vocabulary. The order determines the token IDs.
         """
         self.chars = chars
-        self.bos_id = len(chars)
-        self.vocab_size = len(chars) + 1
+        self._bos_id = len(chars)
+        self._vocab_size = len(chars) + 1
         self._char_to_id = {ch: i for i, ch in enumerate(chars)}
+
+    @property
+    def bos_id(self) -> int | None:
+        """BOS token ID for this vocabulary.
+
+        Returns
+        -------
+        int
+            The BOS token index (``len(chars)``).
+        """
+        return self._bos_id
+
+    @property
+    def vocab_size(self) -> int:
+        """Vocabulary size including the BOS token.
+
+        Returns
+        -------
+        int
+            ``len(chars) + 1``.
+        """
+        return self._vocab_size
 
     @classmethod
     def from_chars(cls, chars: list[str]) -> Vocabulary:
@@ -98,4 +122,6 @@ class Vocabulary:
         str
             The reconstructed string.
         """
-        return "".join(self.chars[i] for i in ids if i != self.bos_id)
+        return "".join(
+            self.chars[i] for i in ids if i != self.bos_id and 0 <= i < len(self.chars)
+        )
