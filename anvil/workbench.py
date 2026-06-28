@@ -14,45 +14,53 @@ dependency for request-scoped usage.
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-if TYPE_CHECKING:
-    from .db.repositories.backup_operations import BackupOperationRepository
-    from .db.repositories.content_blobs import ContentBlobRepository
-    from .db.repositories.content_corpora import ContentCorpusRepository
-    from .db.repositories.content_import_jobs import ContentImportJobRepository
-    from .db.repositories.content_ingest_sessions import ContentIngestSessionRepository
-    from .db.repositories.content_locks import ContentLockRepository
-    from .db.repositories.content_sources import ContentSourceRepository
-    from .db.repositories.content_versions import ContentVersionRepository
-    from .db.repositories.corpora import CorpusRepository
-    from .db.repositories.datasets import DatasetRepository
-    from .db.repositories.instance_registry import InstanceRegistryRepository
-    from .db.repositories.runtime_config import RuntimeConfigRepository
-    from .services.content.composition_service import CompositionService
-    from .services.content.corpus_service import CorpusService as ContentCorpusService
-    from .services.content.import_service import ImportService
-    from .services.content.ingestion_service import IngestionService
-    from .services.content.lineage_service import LineageService
-    from .services.content.lock_service import LockService
-    from .services.content.versioned_content_store import VersionedContentStore
-    from .services.datasets.corpora import CorpusService
-    from .services.datasets.dataset_curation import DatasetCurationService
-    from .services.datasets.dataset_export import DatasetExportService
-    from .services.datasets.dataset_import import DatasetImportService
-    from .services.datasets.datasets import DatasetService
-    from .services.demo.demo_bootstrap import DemoBootstrapService
-    from .services.governance.audit_service import AuditService
-    from .services.governance.governance_service import GovernanceService
-    from .services.instances.instance_lifecycle_service import InstanceLifecycleService
-    from .services.runtime_config.runtime_config_service import RuntimeConfigService
-    from .services.training.training import TrainingService
-    from .storage.local import LocalFileStore
-    from .workspace.workspace_paths import WorkspacePaths
+from .config import get_config
+from .db.repositories.audit_events import AuditEventRepository
+from .db.repositories.backup_operations import BackupOperationRepository
+from .db.repositories.content_blobs import ContentBlobRepository
+from .db.repositories.content_corpora import ContentCorpusRepository
+from .db.repositories.content_import_jobs import ContentImportJobRepository
+from .db.repositories.content_ingest_sessions import ContentIngestSessionRepository
+from .db.repositories.content_locks import ContentLockRepository
+from .db.repositories.content_sources import ContentSourceRepository
+from .db.repositories.content_versions import ContentVersionRepository
+from .db.repositories.corpora import CorpusRepository
+from .db.repositories.datasets import DatasetRepository
+from .db.repositories.instance_registry import (
+    InstanceRegistryRepository,
+    create_registry_session,
+)
+from .db.repositories.licenses import LicenseRepository
+from .db.repositories.runtime_config import RuntimeConfigRepository
+from .services.content.composition_service import CompositionService
+from .services.content.corpus_service import CorpusService as ContentCorpusService
+from .services.content.import_service import ImportService
+from .services.content.ingestion_service import IngestionService
+from .services.content.lineage_service import LineageService
+from .services.content.local_versioned_content_store import LocalVersionedContentStore
+from .services.content.lock_service import LockService
+from .services.content.validation_service import ValidationService
+from .services.content.versioned_content_store import VersionedContentStore
+from .services.datasets.corpora import CorpusService
+from .services.datasets.corpus_loader import CorpusLoader
+from .services.datasets.dataset_curation import DatasetCurationService
+from .services.datasets.dataset_export import DatasetExportService
+from .services.datasets.dataset_import import DatasetImportService
+from .services.datasets.datasets import DatasetService
+from .services.demo.demo_bootstrap import DemoBootstrapService
+from .services.governance.audit_service import AuditService
+from .services.governance.governance_service import GovernanceService
+from .services.instances.instance_lifecycle_service import InstanceLifecycleService
+from .services.runtime_config.runtime_config_service import RuntimeConfigService
+from .services.training.training import TrainingService
+from .storage.local import LocalFileStore
+from .workspace.workspace_paths import WorkspacePaths
 
 __all__ = ["AnvilWorkbench"]
 
@@ -127,8 +135,6 @@ class AnvilWorkbench:
     def training(self) -> TrainingService:
         """Return the stateless ``TrainingService``."""
         if self._training is None:
-            from .services.training.training import TrainingService
-
             self._training = TrainingService()
         return self._training
 
@@ -138,8 +144,6 @@ class AnvilWorkbench:
     def dataset_repo(self) -> DatasetRepository:
         """Lazily-initialised ``DatasetRepository`` bound to *session*."""
         if self._dataset_repo is None:
-            from .db.repositories.datasets import DatasetRepository
-
             self._dataset_repo = DatasetRepository(self._session)
         return self._dataset_repo
 
@@ -147,8 +151,6 @@ class AnvilWorkbench:
     def corpus_repo(self) -> CorpusRepository:
         """Lazily-initialised ``CorpusRepository`` bound to *session*."""
         if self._corpus_repo is None:
-            from .db.repositories.corpora import CorpusRepository
-
             self._corpus_repo = CorpusRepository(self._session)
         return self._corpus_repo
 
@@ -156,8 +158,6 @@ class AnvilWorkbench:
     def store(self) -> LocalFileStore:
         """Lazily-initialised ``LocalFileStore`` rooted at the datasets dir."""
         if self._store is None:
-            from .storage.local import LocalFileStore
-
             datasets_path = (
                 str(self._paths.datasets_dir)
                 if self._paths is not None
@@ -172,8 +172,6 @@ class AnvilWorkbench:
     def datasets(self) -> DatasetService:
         """Return a ``DatasetService`` wired to *session*."""
         if self._datasets is None:
-            from .services.datasets.datasets import DatasetService
-
             self._datasets = DatasetService(self.dataset_repo, self.store)
         return self._datasets
 
@@ -181,9 +179,6 @@ class AnvilWorkbench:
     def corpora(self) -> CorpusService:
         """Return a ``CorpusService`` wired to *session*."""
         if self._corpora is None:
-            from .services.datasets.corpora import CorpusService
-            from .services.datasets.corpus_loader import CorpusLoader
-
             self._corpora = CorpusService(self.corpus_repo, CorpusLoader())
         return self._corpora
 
@@ -193,15 +188,11 @@ class AnvilWorkbench:
         This is a factory — not a property — because each import is scoped
         to one dataset and carries mutable state.
         """
-        from .services.datasets.dataset_import import DatasetImportService
-
         return DatasetImportService(self._session, dataset_id, self.store)
 
     def dataset_curation(self, dataset_id: int) -> DatasetCurationService:
         """Return a ``DatasetCurationService`` for a specific dataset."""
         if self._dataset_curation is None:
-            from .services.datasets.dataset_curation import DatasetCurationService
-
             self._dataset_curation = DatasetCurationService(
                 self._session, dataset_id, self.store
             )
@@ -210,8 +201,6 @@ class AnvilWorkbench:
     def dataset_export(self, dataset_id: int) -> DatasetExportService:
         """Return a ``DatasetExportService`` for a specific dataset."""
         if self._dataset_export is None:
-            from .services.datasets.dataset_export import DatasetExportService
-
             self._dataset_export = DatasetExportService(
                 self._session, dataset_id, self.store
             )
@@ -221,8 +210,6 @@ class AnvilWorkbench:
     def demo(self) -> DemoBootstrapService:
         """Return a ``DemoBootstrapService`` wired to *session*."""
         if self._demo is None:
-            from .services.demo.demo_bootstrap import DemoBootstrapService
-
             self._demo = DemoBootstrapService(self._session)
         return self._demo
 
@@ -232,9 +219,6 @@ class AnvilWorkbench:
     def audit(self) -> AuditService:
         """Return the hash-chained ``AuditService`` wired to *session*."""
         if self._audit is None:
-            from .db.repositories.audit_events import AuditEventRepository
-            from .services.governance.audit_service import AuditService
-
             self._audit = AuditService(AuditEventRepository(self._session))
         return self._audit
 
@@ -242,9 +226,6 @@ class AnvilWorkbench:
     def governance(self) -> GovernanceService:
         """Return the ``GovernanceService`` wired to *session*."""
         if self._governance is None:
-            from .db.repositories.licenses import LicenseRepository
-            from .services.governance.governance_service import GovernanceService
-
             self._governance = GovernanceService(
                 LicenseRepository(self._session),
                 self.audit,
@@ -259,8 +240,6 @@ class AnvilWorkbench:
         *session*.
         """
         if self._content_corpus_repo is None:
-            from .db.repositories.content_corpora import ContentCorpusRepository
-
             self._content_corpus_repo = ContentCorpusRepository(self._session)
         return self._content_corpus_repo
 
@@ -270,8 +249,6 @@ class AnvilWorkbench:
         *session*.
         """
         if self._content_source_repo is None:
-            from .db.repositories.content_sources import ContentSourceRepository
-
             self._content_source_repo = ContentSourceRepository(self._session)
         return self._content_source_repo
 
@@ -281,8 +258,6 @@ class AnvilWorkbench:
         *session*.
         """
         if self._content_version_repo is None:
-            from .db.repositories.content_versions import ContentVersionRepository
-
             self._content_version_repo = ContentVersionRepository(self._session)
         return self._content_version_repo
 
@@ -294,10 +269,6 @@ class AnvilWorkbench:
         to *session*.
         """
         if self._content_ingest_session_repo is None:
-            from .db.repositories.content_ingest_sessions import (
-                ContentIngestSessionRepository,
-            )
-
             self._content_ingest_session_repo = ContentIngestSessionRepository(
                 self._session
             )
@@ -309,8 +280,6 @@ class AnvilWorkbench:
         *session*.
         """
         if self._content_blob_repo is None:
-            from .db.repositories.content_blobs import ContentBlobRepository
-
             self._content_blob_repo = ContentBlobRepository(self._session)
         return self._content_blob_repo
 
@@ -320,8 +289,6 @@ class AnvilWorkbench:
         *session*.
         """
         if self._content_import_job_repo is None:
-            from .db.repositories.content_import_jobs import ContentImportJobRepository
-
             self._content_import_job_repo = ContentImportJobRepository(self._session)
         return self._content_import_job_repo
 
@@ -331,8 +298,6 @@ class AnvilWorkbench:
         *session*.
         """
         if self._content_lock_repo is None:
-            from .db.repositories.content_locks import ContentLockRepository
-
             self._content_lock_repo = ContentLockRepository(self._session)
         return self._content_lock_repo
 
@@ -345,11 +310,6 @@ class AnvilWorkbench:
         for a future SaaS-backed ``VersionedContentStore``.
         """
         if self._content_store is None:
-            from .config import get_config
-            from .services.content.local_versioned_content_store import (
-                LocalVersionedContentStore,
-            )
-
             self._content_store = LocalVersionedContentStore(
                 content_dir=get_config()["content_dir"],
                 db_session=self._session,
@@ -360,9 +320,7 @@ class AnvilWorkbench:
     def content_corpora(self) -> ContentCorpusService:
         """Return the content ``CorpusService`` wired to *session*."""
         if self._content_corpora is None:
-            from .services.content.corpus_service import CorpusService
-
-            self._content_corpora = CorpusService(
+            self._content_corpora = ContentCorpusService(
                 self.content_corpus_repo,
                 self.content_source_repo,
                 self.content_version_repo,
@@ -375,9 +333,6 @@ class AnvilWorkbench:
     def content_ingestion(self) -> IngestionService:
         """Return the content ``IngestionService`` wired to *session*."""
         if self._content_ingestion is None:
-            from .services.content.ingestion_service import IngestionService
-            from .services.content.validation_service import ValidationService
-
             self._content_ingestion = IngestionService(
                 self.content_ingest_session_repo,
                 self.content_version_repo,
@@ -397,8 +352,6 @@ class AnvilWorkbench:
         and ``freeze`` operations for weighted composition versions.
         """
         if self._content_composition is None:
-            from .services.content.composition_service import CompositionService
-
             self._content_composition = CompositionService(
                 store=self.content_store,
                 version_repo=self.content_version_repo,
@@ -416,8 +369,6 @@ class AnvilWorkbench:
         version snapshots.  Lazily-initialised on first access.
         """
         if self._content_lineage is None:
-            from .services.content.lineage_service import LineageService
-
             self._content_lineage = LineageService(self.content_version_repo)
         return self._content_lineage
 
@@ -425,8 +376,6 @@ class AnvilWorkbench:
     def content_imports(self) -> ImportService:
         """Lazily-initialised ``ImportService`` wired to *session*."""
         if self._content_imports is None:
-            from .services.content.import_service import ImportService
-
             self._content_imports = ImportService(
                 import_job_repo=self.content_import_job_repo,
                 session_repo=self.content_ingest_session_repo,
@@ -445,8 +394,6 @@ class AnvilWorkbench:
         list active) backed by the ``ContentLockRepository``.
         """
         if self._content_locks is None:
-            from .services.content.lock_service import LockService
-
             self._content_locks = LockService(self.content_lock_repo)
         return self._content_locks
 
@@ -458,8 +405,6 @@ class AnvilWorkbench:
         *session*.
         """
         if self._backup_repo is None:
-            from .db.repositories.backup_operations import BackupOperationRepository
-
             self._backup_repo = BackupOperationRepository(self._session)
         return self._backup_repo
 
@@ -471,10 +416,6 @@ class AnvilWorkbench:
         *session*.
         """
         if self._instances is None:
-            from .services.instances.instance_lifecycle_service import (
-                InstanceLifecycleService,
-            )
-
             self._instances = InstanceLifecycleService(
                 self._session,
                 registry_session=self._registry_session,
@@ -488,16 +429,9 @@ class AnvilWorkbench:
         the global registry session.
         """
         if self._instance_registry is None:
-            from .db.repositories.instance_registry import (
-                InstanceRegistryRepository,
-                create_registry_session,
-            )
-
             # Create registry session lazily if the caller did not
             # provide one.
             if self._registry_session is None:
-                import asyncio
-
                 self._registry_session = asyncio.run(create_registry_session())
             self._instance_registry = InstanceRegistryRepository(self._registry_session)
         return self._instance_registry
@@ -510,8 +444,6 @@ class AnvilWorkbench:
         *session*.
         """
         if self._runtime_config_repo is None:
-            from .db.repositories.runtime_config import RuntimeConfigRepository
-
             self._runtime_config_repo = RuntimeConfigRepository(self._session)
         return self._runtime_config_repo
 
@@ -519,10 +451,6 @@ class AnvilWorkbench:
     def runtime_config(self) -> RuntimeConfigService:
         """Lazily-initialised ``RuntimeConfigService`` wired to *session*."""
         if self._runtime_config is None:
-            from .services.runtime_config.runtime_config_service import (
-                RuntimeConfigService,
-            )
-
             self._runtime_config = RuntimeConfigService(self.runtime_config_repo)
         return self._runtime_config
 

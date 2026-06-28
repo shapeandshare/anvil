@@ -22,6 +22,8 @@ from fastapi.responses import HTMLResponse
 from anvil.api.v1.schemas import InferenceSampleBody
 from anvil.core.autograd import Value
 from anvil.core.engine import LlamaModel, softmax
+from anvil.services.inference.inference import InferenceService
+from anvil.services.tracking.tracking import TrackingService
 
 router = APIRouter()
 
@@ -2507,8 +2509,6 @@ async def list_inference_models() -> dict[str, Any]:
         Dict with ``models`` (list of model dicts) and optionally a
         ``message`` if no models are registered.
     """
-    from anvil.services.tracking.tracking import TrackingService
-
     tracking_svc = TrackingService()
     models = await tracking_svc.list_registered_models()
     if not models:
@@ -2631,8 +2631,6 @@ def _sample_next_token(
     int
         Sampled token index.
     """
-    from anvil.core.autograd import Value
-
     scaled = [logit / temperature for logit in logits]
 
     if top_k is not None and 0 < top_k < model.vocab_size:
@@ -2871,8 +2869,6 @@ async def inference_sample(body: InferenceSampleBody) -> dict[str, Any]:
         invalid.
     """
     top_k, top_p = _validate_sampling_params(body)
-
-    from anvil.services.inference.inference import InferenceService
 
     inf_svc = InferenceService()
     try:

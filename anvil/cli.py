@@ -33,15 +33,30 @@ import json
 import logging
 import os
 import signal
+import subprocess
 import sys
+import tempfile
+import time
 from typing import Any
 
 import uvicorn
 
+from . import __version__
 from .api.api_key_store import ApiKeyStore
 from .config import get_config
+from .db.migration import MigrationService
+from .db.migration_error import MigrationError
+from .db.repositories.corpora import CorpusRepository
+from .db.repositories.datasets import DatasetRepository
+from .db.session import AsyncSessionLocal
 from .services.compute.compute_backend import ComputeBackend
+from .services.compute.resolve import resolve_backend
 from .services.datasets.chunking_strategy import ChunkingStrategy
+from .services.datasets.corpora import CorpusService
+from .services.datasets.corpus_loader import CorpusLoader
+from .services.demo.demo_bootstrap import DEFAULT_CORPUS_NAME, DemoBootstrapService
+from .services.tracking.tracking import TrackingService
+from .services.training.export import SafetensorsExportService
 from .services.training.training import TrainingService
 from .supervisor.supervisor import kill_pid_file, write_pid
 
@@ -100,11 +115,6 @@ def _load_docs(corpus_id: int | None = None) -> list[str]:
     """
     if corpus_id is not None:
 
-        from .db.repositories.corpora import CorpusRepository
-        from .db.session import AsyncSessionLocal
-        from .services.datasets.corpora import CorpusService
-        from .services.datasets.corpus_loader import CorpusLoader
-
         async def _load() -> list[str]:
             """Load documents for the specified corpus ID.
 
@@ -119,9 +129,6 @@ def _load_docs(corpus_id: int | None = None) -> list[str]:
                 return await svc.load_docs(corpus_id)
 
         return asyncio.run(_load())
-
-    from .db.session import AsyncSessionLocal
-    from .services.demo.demo_bootstrap import DEFAULT_CORPUS_NAME, DemoBootstrapService
 
     async def _load_default() -> list[str]:
         """Load documents from the default demo corpus.
@@ -143,10 +150,6 @@ def _load_docs(corpus_id: int | None = None) -> list[str]:
                     f"No demo corpus found. Run 'anvil bootstrap-datasets' first "
                     f"to import demo data (expected corpus: {DEFAULT_CORPUS_NAME})"
                 )
-            from .db.repositories.corpora import CorpusRepository
-            from .services.datasets.corpora import CorpusService
-            from .services.datasets.corpus_loader import CorpusLoader
-
             repo = CorpusRepository(session)
             loader = CorpusLoader()
             svc = CorpusService(repo, loader)
@@ -167,8 +170,6 @@ def main() -> None:
         show_api_key()
         return
     if "--version" in sys.argv:
-        from . import __version__
-
         print(__version__)
         return
     serve()
@@ -241,9 +242,6 @@ def train() -> None:
     args, _ = parser.parse_known_args()
 
     compute_backend = args.backend or "auto"
-
-    from .services.compute.resolve import resolve_backend
-    from .services.tracking.tracking import TrackingService
 
     svc = TrainingService()
     tracking_svc = TrackingService()
@@ -326,18 +324,12 @@ def train() -> None:
             if mlflow_run_id:
                 registry_name = None
                 if args.dataset is not None:
-                    from .db.repositories.datasets import DatasetRepository
-                    from .db.session import AsyncSessionLocal
-
                     async with AsyncSessionLocal() as sess:
                         ds_repo = DatasetRepository(sess)
                         ds = await ds_repo.get(args.dataset)
                         if ds:
                             registry_name = ds.name
                 elif args.corpus is not None:
-                    from .db.repositories.corpora import CorpusRepository
-                    from .db.session import AsyncSessionLocal
-
                     async with AsyncSessionLocal() as sess:
                         corp_repo = CorpusRepository(sess)
                         corpus = await corp_repo.get(args.corpus)
@@ -357,10 +349,6 @@ def train() -> None:
             # Auto-export safetensors after every successful local training
             # (remote jobs export inside the cloud — Q-B corrected)
             if model is not None:
-                import tempfile
-
-                from .services.training.export import SafetensorsExportService
-
                 export_svc = SafetensorsExportService()
                 with tempfile.TemporaryDirectory() as tmpdir:
                     export_result = await asyncio.get_event_loop().run_in_executor(
@@ -505,11 +493,6 @@ def corpus_main() -> None:
 
     args = parser.parse_args()
 
-    from .db.repositories.corpora import CorpusRepository
-    from .db.session import AsyncSessionLocal
-    from .services.datasets.corpora import CorpusService
-    from .services.datasets.corpus_loader import CorpusLoader
-
     async def _run() -> None:
         """Execute the corpus management command.
 
@@ -597,8 +580,6 @@ def _find_pid_by_port(port: int) -> list[int]:
     list of int
         PIDs of matching processes, or an empty list.
     """
-    import subprocess
-
     try:
         result = subprocess.run(
             ["lsof", "-ti", f":{port}", "-sTCP:LISTEN"],
@@ -693,8 +674,6 @@ def _wait_and_sigkill(pids: list[int], port: int) -> None:
 
     Verifies the port is actually free afterward.
     """
-    import time
-
     deadline = time.monotonic() + 2.0
     while time.monotonic() < deadline:
         time.sleep(0.3)
@@ -742,46 +721,43 @@ def bootstrap_datasets_main() -> None:
         created/skipped corpora and datasets. On errors in live
         mode the session is rolled back.
         """
-        from .db.session import AsyncSessionLocal
-        from .services.demo.demo_bootstrap import DemoBootstrapService
-
         async with AsyncSessionLocal() as session:
             svc = DemoBootstrapService(session)
 
-            if args.dry_run:
-                print("Dry-run mode — scanning data/demo/...")
-                bootstrap = await svc.bootstrap_all()
-                if bootstrap.errors:
-                    for err in bootstrap.errors:
-                        print(f"  ⚠ {err}")
-                print(
-                    f"\nWould create: {bootstrap.corpora_created} corpora, {bootstrap.datasets_created} datasets"
-                )
-                print(
-                    f"Would skip:   {bootstrap.corpora_skipped} corpora, {bootstrap.datasets_skipped} datasets"
-                )
-                return
-
+        if args.dry_run:
+            print("Dry-run mode — scanning data/demo/...")
             bootstrap = await svc.bootstrap_all()
-            if bootstrap.corpora_created > 0 or bootstrap.datasets_created > 0:
-                print("Bootstrapping demo data from data/demo/...")
-
-            for err in bootstrap.errors:
-                print(f"  ⚠ {err}")
-
-            print(
-                f"\nSummary: {bootstrap.corpora_created} corpora created, "
-                f"{bootstrap.datasets_created} datasets created, "
-                f"{bootstrap.corpora_skipped + bootstrap.datasets_skipped} skipped, "
-                f"{len(bootstrap.errors)} errors"
-            )
-            print(f"Done in {bootstrap.total_time_ms / 1000:.1f}s")
-
             if bootstrap.errors:
-                await session.rollback()
-                sys.exit(1)
-            await session.commit()
-            sys.exit(0)
+                for err in bootstrap.errors:
+                    print(f"  ⚠ {err}")
+            print(
+                f"\nWould create: {bootstrap.corpora_created} corpora, {bootstrap.datasets_created} datasets"
+            )
+            print(
+                f"Would skip:   {bootstrap.corpora_skipped} corpora, {bootstrap.datasets_skipped} datasets"
+            )
+            return
+
+        bootstrap = await svc.bootstrap_all()
+        if bootstrap.corpora_created > 0 or bootstrap.datasets_created > 0:
+            print("Bootstrapping demo data from data/demo/...")
+
+        for err in bootstrap.errors:
+            print(f"  ⚠ {err}")
+
+        print(
+            f"\nSummary: {bootstrap.corpora_created} corpora created, "
+            f"{bootstrap.datasets_created} datasets created, "
+            f"{bootstrap.corpora_skipped + bootstrap.datasets_skipped} skipped, "
+            f"{len(bootstrap.errors)} errors"
+        )
+        print(f"Done in {bootstrap.total_time_ms / 1000:.1f}s")
+
+        if bootstrap.errors:
+            await session.rollback()
+            sys.exit(1)
+        await session.commit()
+        sys.exit(0)
 
     asyncio.run(_run())
 
@@ -816,9 +792,6 @@ def db_main(argv: list[str] | None = None) -> None:
     stamp_p.add_argument("revision", help="Revision hash to stamp")
 
     args = parser.parse_args(argv)
-
-    from .db.migration import MigrationService
-    from .db.migration_error import MigrationError
 
     async def _run() -> None:
         """Execute the database migration command.

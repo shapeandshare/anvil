@@ -17,8 +17,10 @@ from typing import Any, TypeVar
 from alembic import command
 from alembic.config import Config as AlembicConfig
 from alembic.script import ScriptDirectory
+from sqlalchemy import create_engine, text
 
 from ..config import get_config
+from ..db.registry import get_expected_tables
 from .migration_error import MigrationError
 from .schema_version import SCHEMA_VERSION
 
@@ -157,8 +159,6 @@ class MigrationService:
         - The DB revision is **ahead** of the code revision (possible downgrade scenario).
         - The DB revision is **behind** the code revision (pending migrations).
         """
-        from alembic.script import ScriptDirectory
-
         script = ScriptDirectory.from_config(self._alembic_cfg)
         head_rev = script.get_current_head()
 
@@ -196,15 +196,12 @@ class MigrationService:
         # We need to capture the output of `alembic current` — unfortunately
         # alembic.command.current() prints to stdout rather than returning a value.
         # We read the alembic_version table directly instead.
-        from sqlalchemy import create_engine
 
         # Use a sync engine for this simple query (run in executor)
         def _get_current() -> str | None:
             sync_url = self._db_url.replace("+aiosqlite", "")
             engine = create_engine(sync_url)
             try:
-                from sqlalchemy import text
-
                 with engine.connect() as conn:
                     row = conn.execute(
                         text("SELECT version_num FROM alembic_version")
@@ -221,8 +218,6 @@ class MigrationService:
         """Return migration history as a list of ``{revision, down_revision, message}``."""
 
         def _get_history() -> list[dict[str, str]]:
-            from alembic.script import ScriptDirectory
-
             script = ScriptDirectory.from_config(self._alembic_cfg)
             result: list[dict[str, str]] = []
             for rev in script.walk_revisions("base", "heads"):
@@ -284,8 +279,6 @@ class MigrationService:
         """
 
         def _create() -> str:
-            from alembic.script import ScriptDirectory
-
             script = ScriptDirectory.from_config(self._alembic_cfg)
             command.revision(self._alembic_cfg, autogenerate=True, message=message)
             # The newly created file is at the HEAD
@@ -331,8 +324,6 @@ class MigrationService:
         """
 
         def _get() -> int:
-            from sqlalchemy import create_engine
-
             sync_url = self._db_url.replace("+aiosqlite", "")
             engine = create_engine(sync_url)
             try:
@@ -354,8 +345,6 @@ class MigrationService:
         """
 
         def _set() -> None:
-            from sqlalchemy import create_engine
-
             sync_url = self._db_url.replace("+aiosqlite", "")
             engine = create_engine(sync_url)
             try:
@@ -410,12 +399,8 @@ class MigrationService:
         db_url : str, optional
             SQLAlchemy database URL. Defaults to config.
         """
-        from sqlalchemy import create_engine, text
-
         if db_url is None:
             db_url = f"sqlite+aiosqlite:///{get_config()['state_db_path']}"
-
-        from ..db.registry import get_expected_tables
 
         expected = get_expected_tables()
 
@@ -431,8 +416,6 @@ class MigrationService:
                 return sorted(expected - actual)
             finally:
                 engine.dispose()
-
-        import asyncio
 
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, _check)

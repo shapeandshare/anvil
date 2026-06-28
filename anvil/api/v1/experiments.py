@@ -27,6 +27,7 @@ from ...db.repositories.corpora import CorpusRepository
 from ...db.repositories.datasets import DatasetRepository
 from ...db.session import AsyncSessionLocal
 from ...services.tracking.tracking import TrackingService
+from ...services.training.export import SafetensorsExportService as ExportService
 from ...services.training.memory_estimator import estimate_training_memory
 
 router = APIRouter()
@@ -829,8 +830,6 @@ async def retry_export(experiment_id: int) -> dict[str, Any]:
 
     output_dir = Path(f"data/models/export_{experiment_id}")
     output_dir.mkdir(parents=True, exist_ok=True)
-
-    from ...services.training.export import SafetensorsExportService as ExportService
 
     loop = asyncio.get_event_loop()
     export_svc = ExportService()
