@@ -98,9 +98,6 @@ class RestoreEngine:
             shutil.rmtree(restore_tmp, ignore_errors=True)
         restore_tmp.mkdir(parents=True, exist_ok=True)
 
-        # Determine managed roots from restore_tmp structure.
-        managed_dirs = ["data", "mlruns"]
-
         try:
             await reader.extract_to(backup_id, restore_tmp)
             self._notify(progress_callback, 60, "Verifying extracted files")
@@ -115,8 +112,15 @@ class RestoreEngine:
 
             self._notify(progress_callback, 75, "Swapping files (atomic)")
 
-            # Determine managed roots from restore_tmp structure.
-            managed_dirs = ["data", "mlruns"]
+            # Derive managed roots from the ACTUAL extracted content —
+            # do NOT hardcode, because the archive structure depends on
+            # which roots were present at backup time (FR-030).
+            managed_dirs: list[str] = [
+                p.name
+                for p in sorted(restore_tmp.iterdir())
+                if p.is_dir()
+            ]
+
             journal_roots: list[str] = []
             for md in managed_dirs:
                 restored = restore_tmp / md
@@ -124,6 +128,16 @@ class RestoreEngine:
                 bak = Path(str(live) + ".bak")
                 if restored.exists():
                     journal_roots.append(str(live))
+
+            if not journal_roots:
+                return RestoreResult(
+                    success=False,
+                    safety_snapshot_id=safety_snapshot_id,
+                    message=(
+                        "No root directories found in extracted backup — "
+                        "archive appears empty."
+                    ),
+                )
 
             # Write journal before swapping.
             self._journal.write(
@@ -144,9 +158,9 @@ class RestoreEngine:
                 if live.exists():
                     if bak.exists():
                         shutil.rmtree(bak, ignore_errors=True)
-                    live.rename(bak)
+                    shutil.move(str(live), str(bak))
                 # Move restored into place.
-                restored.rename(live)
+                shutil.move(str(restored), str(live))
 
             self._notify(progress_callback, 90, "Cleaning up")
 
@@ -174,6 +188,11 @@ class RestoreEngine:
 
         except Exception as exc:
             # Rollback on any failure.
+            managed_dirs = [
+                p.name
+                for p in sorted(restore_tmp.iterdir())
+                if p.is_dir()
+            ] if restore_tmp.exists() else []
             for md in managed_dirs:
                 live = Path.cwd() / md
                 bak = Path(str(live) + ".bak")
@@ -183,7 +202,7 @@ class RestoreEngine:
                             shutil.rmtree(live, ignore_errors=True)
                         else:
                             live.unlink(missing_ok=True)
-                    bak.rename(live)
+                    shutil.move(str(bak), str(live))
 
             return RestoreResult(
                 success=False,
