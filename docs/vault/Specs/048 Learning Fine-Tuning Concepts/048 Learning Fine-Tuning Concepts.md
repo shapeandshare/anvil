@@ -3,7 +3,7 @@ title: 048 Learning Fine-Tuning Concepts
 type: spec
 tags:
   - type/spec
-  - domain/learning
+  - domain/content
   - domain/ui
 spec-refs:
   - docs/vault/Specs/048 Learning Fine-Tuning Concepts/

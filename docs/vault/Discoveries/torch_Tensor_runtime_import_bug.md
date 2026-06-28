@@ -1,6 +1,16 @@
+---
+title: torch_Tensor Hidden Behind TYPE_CHECKING
+type: discovery
+tags:
+  - type/discovery
+created: '2026-06-28'
+updated: '2026-06-28'
+aliases: torch_Tensor runtime import bug
+source: agent
+code-refs:
+  - anvil/services/inference/demo_model_provider.py
+---
 # torch_Tensor Hidden Behind TYPE_CHECKING
-
-**Created**: 2026-06-28
 **Updated**: 2026-06-28
 **Status**: draft
 **Tags**: `type/discovery`, `domain/core`, `domain/training`

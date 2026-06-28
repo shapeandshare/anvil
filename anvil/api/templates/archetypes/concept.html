@@ -84,6 +84,7 @@
 <script src="/static/js/widgets/experiment-tracking.js"></script>
 <script src="/static/js/widgets/governance.js"></script>
 <script src="/static/js/widgets/memory-divergence.js"></script>
+<script src="/static/js/widgets/lora.js"></script>
 <script nonce="{{ request.state.csp_nonce }}">
 (function() {
   /* ── Widget Classes Registry ── */
@@ -104,6 +105,7 @@
     experimentTracking: window.ExperimentTrackingWidget,
     governance: window.GovernanceWidget,
     memoryDivergence: window.MemoryDivergenceWidget,
+    lora: window.LoraWidget,
   };
 
   /* ── Init all widgets (rendered outside carousel, always visible) ── */

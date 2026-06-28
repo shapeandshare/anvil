@@ -104,7 +104,7 @@ def _is_data_dir(dirpath: Path) -> bool:
     bool
     """
     return any(
-        parent.name in _DATA_DIRS for parent in [dirpath] + list(dirpath.parents)
+        parent.name in _DATA_DIRS for parent in [dirpath, *list(dirpath.parents)]
     )
 
 

@@ -174,13 +174,6 @@ class AnvilWorkbench:
             self._inference = InferenceService()
         return self._inference
 
-    @property
-    def tracking(self) -> TrackingService:
-        """Return the stateless ``TrackingService``."""
-        if self._tracking is None:
-            self._tracking = TrackingService()
-        return self._tracking
-
     # ── Repository helpers ──────────────────────────────────────────────
 
     @property

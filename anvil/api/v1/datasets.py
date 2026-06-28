@@ -12,7 +12,6 @@ operations (dedup, filter, regex replace), and export to standard formats.
 
 from __future__ import annotations
 
-import asyncio
 import hashlib
 import json
 from collections.abc import AsyncGenerator

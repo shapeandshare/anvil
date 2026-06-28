@@ -446,6 +446,10 @@ SomeException
 - SQLite (anvil-state.db, WAL mode) via async SQLAlchemy + existing Alembic migrations; (040-external-model-registry)
 - Python 3.11+ + FastAPI, async SQLAlchemy, Jinja2, MLflow (existing — no new deps) (039-model-warm-start)
 - MLflow Model Registry — lineage via tags (039-model-warm-start)
+- Python 3.11+ (existing repo convention) + FastAPI, Jinja2, existing widget JS framework — no new dependencies (opencode/cosmic-eagle)
+- N/A — static content pages (opencode/cosmic-eagle)
+- Python 3.11+ + FastAPI, async SQLAlchemy, Jinja2, MLflow (existing — no new deps) (014-model-warm-start)
+- MLflow Model Registry (registered_models / model_versions tables) — lineage via tags (014-model-warm-start)
 
 ## Recent Changes
 - 025-ux-rules-integration: Added Python 3.11+ (existing repo convention) + Stdlib only — `ux_lint.py` (re/ sys/ os/), `ux_review.py` (stdlib + urllib for OpenAI-compatible API calls)
