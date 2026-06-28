@@ -3,86 +3,20 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-"""Shared types for the model-import domain.
+# Copyright © 2026 Josh Burt
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
 
-Enumerations, data transfer objects, and exception types shared
-across the model-import service, API, CLI, and SDK layers.
+"""Data types for the model-import domain.
+
+``ModelMetadata`` data transfer object and ``ModelSourceError`` exception
+shared across the model-import service, API, CLI, and SDK layers.
 """
 
 from __future__ import annotations
 
-from enum import StrEnum
-
 from pydantic import BaseModel
-
-
-class SourceType(StrEnum):
-    """Origin source of an external model.
-
-    Attributes
-    ----------
-    HUGGINGFACE : str
-        HuggingFace Hub repository (``"huggingface"``).
-    LOCAL : str
-        Local file or directory path (``"local"``).
-    """
-
-    HUGGINGFACE = "huggingface"
-    LOCAL = "local"
-
-
-class RunnableStatus(StrEnum):
-    """Whether an external model is eligible for local execution.
-
-    Attributes
-    ----------
-    RUNNABLE : str
-        Model is eligible for fine-tune and inference (``"runnable"``).
-    TRACK_ONLY : str
-        Model is metadata-only; cannot be executed (``"track_only"``).
-    """
-
-    RUNNABLE = "runnable"
-    TRACK_ONLY = "track_only"
-
-
-class AssetState(StrEnum):
-    """Availability of a model's downloaded assets.
-
-    Attributes
-    ----------
-    METADATA_ONLY : str
-        No assets downloaded; only metadata exists (``"metadata_only"``).
-    ASSETS_AVAILABLE : str
-        Weights, tokenizer, and config have been downloaded (``"assets_available"``).
-    ASSETS_PENDING : str
-        Asset download is in progress (``"assets_pending"``).
-    """
-
-    METADATA_ONLY = "metadata_only"
-    ASSETS_AVAILABLE = "assets_available"
-    ASSETS_PENDING = "assets_pending"
-
-
-class ModelImportJobStatus(StrEnum):
-    """Lifecycle state of an asynchronous model-import job.
-
-    Attributes
-    ----------
-    QUEUED : str
-        Job created; not yet started (``"queued"``).
-    RESOLVING : str
-        Metadata resolution is in progress (``"resolving"``).
-    COMPLETE : str
-        Metadata resolved and ``ExternalModel`` entry created (``"complete"``).
-    FAILED : str
-        Resolution failed with a typed error code (``"failed"``).
-    """
-
-    QUEUED = "queued"
-    RESOLVING = "resolving"
-    COMPLETE = "complete"
-    FAILED = "failed"
 
 
 class ModelMetadata(BaseModel):

@@ -10,7 +10,9 @@ from __future__ import annotations
 from sqlalchemy import Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from ...services._shared.import_types import AssetState, RunnableStatus, SourceType
+from ...services._shared.asset_state import AssetState
+from ...services._shared.runnable_status import RunnableStatus
+from ...services._shared.source_type import SourceType
 from ..base import Base
 from ..timestamp_mixin import TimestampMixin
 

@@ -13,11 +13,8 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from anvil.db.base import Base
 from anvil.db.repositories.external_models import ExternalModelRepository
 from anvil.db.repositories.model_import_jobs import ModelImportJobRepository
-from anvil.services._shared.import_types import (
-    ModelMetadata,
-    ModelSourceError,
-    SourceType,
-)
+from anvil.services._shared.import_types import ModelMetadata, ModelSourceError
+from anvil.services._shared.source_type import SourceType
 from anvil.services.model_import.model_import_service import ModelImportService
 
 

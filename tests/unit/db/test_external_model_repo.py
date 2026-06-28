@@ -14,7 +14,8 @@ from anvil.db.base import Base
 from anvil.db.models.external_model import ExternalModel
 from anvil.db.repositories.external_models import ExternalModelRepository
 from anvil.db.session import AsyncSessionLocal, async_engine
-from anvil.services._shared.import_types import AssetState, RunnableStatus
+from anvil.services._shared.asset_state import AssetState
+from anvil.services._shared.runnable_status import RunnableStatus
 
 
 @pytest.fixture

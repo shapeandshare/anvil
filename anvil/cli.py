@@ -51,7 +51,7 @@ from .db.repositories.datasets import DatasetRepository
 from .db.repositories.external_models import ExternalModelRepository
 from .db.repositories.model_import_jobs import ModelImportJobRepository
 from .db.session import AsyncSessionLocal
-from .services._shared.import_types import SourceType
+from .services._shared.source_type import SourceType
 from .services.compute.compute_backend import ComputeBackend
 from .services.compute.resolve import resolve_backend
 from .services.datasets.chunking_strategy import ChunkingStrategy

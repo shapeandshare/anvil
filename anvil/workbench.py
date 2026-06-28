@@ -40,7 +40,7 @@ from .db.repositories.instance_registry import (
 from .db.repositories.licenses import LicenseRepository
 from .db.repositories.model_import_jobs import ModelImportJobRepository
 from .db.repositories.runtime_config import RuntimeConfigRepository
-from .services._shared.import_types import SourceType
+from .services._shared.source_type import SourceType
 from .services.content.composition_service import CompositionService
 from .services.content.corpus_service import CorpusService as ContentCorpusService
 from .services.content.import_service import ImportService

@@ -12,7 +12,8 @@ from datetime import datetime
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from ...services._shared.import_types import ModelImportJobStatus, SourceType
+from ...services._shared.model_import_job_status import ModelImportJobStatus
+from ...services._shared.source_type import SourceType
 from ..base import Base
 from ..timestamp_mixin import TimestampMixin
 
