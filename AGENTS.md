@@ -300,6 +300,31 @@ Coverage is reported via `pytest --cov=anvil --cov-report=term-missing`. Current
     Run via ``make lint``. This replaces the old "imports at top by default"
     guideline.
 
+15. **Solid Comment Separators** — Section-comment separators MUST use
+    solid ``#`` lines, not dashes. This means:
+
+    .. code-block:: python
+
+       ####################################################################
+       # Section header
+       ####################################################################
+
+    Not:
+
+    .. code-block:: python
+
+       # ------------------------------------------------------------------
+       # Section header
+       # ------------------------------------------------------------------
+
+    Rationale: solid ``#`` lines are visually unambiguous — they cannot be
+    confused with docstring section underlines (``---``\ , ``===``) or
+    horizontal rules. The line length should match the surrounding context
+    (``# `` prefix + header text length is a good reference point).
+
+    Enforced at merge review — any new or edited comment separator using
+    dashes instead of solid ``#`` must be corrected.
+
 ## Vault Enrichment Protocol
 
 ### During a session:

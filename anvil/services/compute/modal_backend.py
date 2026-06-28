@@ -179,9 +179,9 @@ class ModalBackend:
 
             await asyncio.sleep(2)
 
-    # ------------------------------------------------------------------
+    ####################################################################
     # _build_remote_function
-    # ------------------------------------------------------------------
+    ####################################################################
     @staticmethod
     def _build_remote_function(modal_module: Any) -> Any:
         """Construct the Modal function that runs training in the cloud.
