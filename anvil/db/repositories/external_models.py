@@ -106,9 +106,7 @@ class ExternalModelRepository:
         )
         return result.scalar_one_or_none()
 
-    async def update_fields(
-        self, id: int, **kwargs: Any
-    ) -> ExternalModel | None:
+    async def update_fields(self, id: int, **kwargs: Any) -> ExternalModel | None:
         """Update one or more fields on an external model entry.
 
         Parameters
@@ -140,6 +138,4 @@ class ExternalModelRepository:
         id : int
             Model primary key.
         """
-        await self._session.execute(
-            delete(ExternalModel).where(ExternalModel.id == id)
-        )
+        await self._session.execute(delete(ExternalModel).where(ExternalModel.id == id))

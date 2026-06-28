@@ -60,9 +60,7 @@ class ModelsClient:
             name=name,
         )
 
-    async def get_import_status(
-        self, job_id: int
-    ) -> dict[str, object]:
+    async def get_import_status(self, job_id: int) -> dict[str, object]:
         """Poll the status of an import job.
 
         Parameters

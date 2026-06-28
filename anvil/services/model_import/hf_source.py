@@ -11,10 +11,7 @@ import asyncio
 import os
 from typing import TYPE_CHECKING
 
-from .._shared.import_types import (
-    ModelMetadata,
-    ModelSourceError,
-)
+from .._shared.import_types import ModelMetadata, ModelSourceError
 
 if TYPE_CHECKING:
     from huggingface_hub.hf_api import ModelInfo
@@ -82,6 +79,7 @@ def _huggingface_hub_available() -> bool:
     """Check whether the ``huggingface_hub`` package is installed."""
     try:
         import huggingface_hub  # noqa: F401
+
         return True
     except ImportError:
         return False
@@ -159,14 +157,16 @@ async def _do_resolve(
         display_name=info.id or identifier,
         architecture_family=arch_family,
         parameter_count=param_count or 0,
-        license=getattr(info, "cardData", {}).get("license", "unknown")
-        if hasattr(info, "cardData")
-        else "unknown",
-        tokenizer_family=info.config.get("tokenizer_config", {}).get(
-            "tokenizer_class", "unknown"
-        )
-        if isinstance(info.config, dict)
-        else "unknown",
+        license=(
+            getattr(info, "cardData", {}).get("license", "unknown")
+            if hasattr(info, "cardData")
+            else "unknown"
+        ),
+        tokenizer_family=(
+            info.config.get("tokenizer_config", {}).get("tokenizer_class", "unknown")
+            if isinstance(info.config, dict)
+            else "unknown"
+        ),
         revision_sha=info.sha or revision,
         config_json=str(info.config) if info.config is not None else None,
     )

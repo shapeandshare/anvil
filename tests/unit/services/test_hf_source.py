@@ -15,10 +15,7 @@ from unittest.mock import patch
 
 import pytest
 
-from anvil.services._shared.import_types import (
-    ModelMetadata,
-    ModelSourceError,
-)
+from anvil.services._shared.import_types import ModelMetadata, ModelSourceError
 from anvil.services.model_import.hf_source import HfHubSource
 
 

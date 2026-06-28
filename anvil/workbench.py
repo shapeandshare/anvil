@@ -32,14 +32,15 @@ from .db.repositories.content_sources import ContentSourceRepository
 from .db.repositories.content_versions import ContentVersionRepository
 from .db.repositories.corpora import CorpusRepository
 from .db.repositories.datasets import DatasetRepository
+from .db.repositories.external_models import ExternalModelRepository
 from .db.repositories.instance_registry import (
     InstanceRegistryRepository,
     create_registry_session,
 )
 from .db.repositories.licenses import LicenseRepository
-from .db.repositories.runtime_config import RuntimeConfigRepository
-from .db.repositories.external_models import ExternalModelRepository
 from .db.repositories.model_import_jobs import ModelImportJobRepository
+from .db.repositories.runtime_config import RuntimeConfigRepository
+from .services._shared.import_types import SourceType
 from .services.content.composition_service import CompositionService
 from .services.content.corpus_service import CorpusService as ContentCorpusService
 from .services.content.import_service import ImportService
@@ -62,13 +63,12 @@ from .services.governance.audit_service import AuditService
 from .services.governance.governance_service import GovernanceService
 from .services.inference.inference import InferenceService
 from .services.instances.instance_lifecycle_service import InstanceLifecycleService
-from .services.runtime_config.runtime_config_service import RuntimeConfigService
-from .services.tracking.tracking import TrackingService
-from .services.training.training import TrainingService
 from .services.model_import.hf_source import HfHubSource
 from .services.model_import.local_source import LocalSource
 from .services.model_import.model_import_service import ModelImportService
-from .services._shared.import_types import SourceType
+from .services.runtime_config.runtime_config_service import RuntimeConfigService
+from .services.tracking.tracking import TrackingService
+from .services.training.training import TrainingService
 from .storage.local import LocalFileStore
 from .workspace.workspace_paths import WorkspacePaths
 

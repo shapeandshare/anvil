@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Sequence
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 
 from ...db.models.external_model import ExternalModel
 from ...db.models.model_import_job import ModelImportJob
@@ -185,9 +185,11 @@ class ModelImportService:
             license=metadata.license,
             tokenizer_family=metadata.tokenizer_family,
             revision_sha=metadata.revision_sha,
-            runnable_status=str(RunnableStatus.RUNNABLE)
-            if is_runnable
-            else str(RunnableStatus.TRACK_ONLY),
+            runnable_status=(
+                str(RunnableStatus.RUNNABLE)
+                if is_runnable
+                else str(RunnableStatus.TRACK_ONLY)
+            ),
             runnable_reason=runnable_reason,
             asset_availability=str(AssetState.METADATA_ONLY),
             config_json=metadata.config_json,
@@ -236,9 +238,7 @@ class ModelImportService:
         """
         return await self._model_import_job_repo.get(job_id)
 
-    async def get_external_model(
-        self, model_id: int
-    ) -> ExternalModel | None:
+    async def get_external_model(self, model_id: int) -> ExternalModel | None:
         """Return an external model by primary key.
 
         Parameters

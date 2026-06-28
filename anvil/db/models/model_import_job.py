@@ -53,33 +53,21 @@ class ModelImportJob(Base, TimestampMixin):
 
     __tablename__ = "model_import_jobs"
 
-    id: Mapped[int] = mapped_column(
-        Integer, primary_key=True, autoincrement=True
-    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     status: Mapped[str] = mapped_column(
         String(20), nullable=False, default=ModelImportJobStatus.QUEUED
     )
     source_type: Mapped[str] = mapped_column(
         String(20), nullable=False, default=SourceType.HUGGINGFACE
     )
-    source_identifier: Mapped[str] = mapped_column(
-        String(255), nullable=False
-    )
-    revision: Mapped[str] = mapped_column(
-        String(255), nullable=False, default="main"
-    )
-    error_code: Mapped[str | None] = mapped_column(
-        String(50), nullable=True
-    )
+    source_identifier: Mapped[str] = mapped_column(String(255), nullable=False)
+    revision: Mapped[str] = mapped_column(String(255), nullable=False, default="main")
+    error_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     external_model_id: Mapped[int | None] = mapped_column(
         Integer,
         ForeignKey("external_models.id", ondelete="SET NULL"),
         nullable=True,
     )
-    started_at: Mapped[datetime | None] = mapped_column(
-        DateTime, nullable=True
-    )
-    finished_at: Mapped[datetime | None] = mapped_column(
-        DateTime, nullable=True
-    )
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

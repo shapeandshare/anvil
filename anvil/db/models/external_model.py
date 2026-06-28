@@ -7,15 +7,10 @@
 
 from __future__ import annotations
 
-
 from sqlalchemy import Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from ...services._shared.import_types import (
-    AssetState,
-    RunnableStatus,
-    SourceType,
-)
+from ...services._shared.import_types import AssetState, RunnableStatus, SourceType
 from ..base import Base
 from ..timestamp_mixin import TimestampMixin
 
@@ -62,31 +57,21 @@ class ExternalModel(Base, TimestampMixin):
 
     __tablename__ = "external_models"
 
-    id: Mapped[int] = mapped_column(
-        Integer, primary_key=True, autoincrement=True
-    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     display_name: Mapped[str] = mapped_column(String(255), nullable=False)
     source_type: Mapped[str] = mapped_column(
         String(20), nullable=False, default=SourceType.HUGGINGFACE
     )
-    source_identifier: Mapped[str] = mapped_column(
-        String(255), nullable=False
-    )
-    architecture_family: Mapped[str] = mapped_column(
-        String(100), nullable=False
-    )
+    source_identifier: Mapped[str] = mapped_column(String(255), nullable=False)
+    architecture_family: Mapped[str] = mapped_column(String(100), nullable=False)
     parameter_count: Mapped[int] = mapped_column(Integer, nullable=False)
     license: Mapped[str] = mapped_column(String(100), nullable=False)
-    tokenizer_family: Mapped[str] = mapped_column(
-        String(100), nullable=False
-    )
+    tokenizer_family: Mapped[str] = mapped_column(String(100), nullable=False)
     revision_sha: Mapped[str] = mapped_column(String(255), nullable=False)
     runnable_status: Mapped[str] = mapped_column(
         String(20), nullable=False, default=RunnableStatus.RUNNABLE
     )
-    runnable_reason: Mapped[str | None] = mapped_column(
-        Text, nullable=True
-    )
+    runnable_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     asset_availability: Mapped[str] = mapped_column(
         String(20), nullable=False, default=AssetState.METADATA_ONLY
     )

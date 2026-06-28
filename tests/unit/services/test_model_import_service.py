@@ -32,9 +32,7 @@ class _FakeSource:
 
     async def resolve_metadata(self, identifier, *, revision="main", token=None):
         if self._fail:
-            raise ModelSourceError(
-                code="not_found", message="nope", source=self.name
-            )
+            raise ModelSourceError(code="not_found", message="nope", source=self.name)
         return ModelMetadata(
             display_name=identifier,
             architecture_family=self._arch,
