@@ -12,6 +12,9 @@ version of MLflow is running.
 
 from pydantic import BaseModel
 
+import importlib
+import mlflow as _mlflow_mod
+
 
 class TrackingCapabilities(BaseModel):
     """Capabilities detected for the MLflow tracking server.
@@ -49,17 +52,9 @@ def detect_capabilities(tracking_uri: str) -> TrackingCapabilities:
         Detected capabilities including genai dataset support, server
         backend flag, and MLflow version.
     """
-    import mlflow
+    genai_ok = importlib.util.find_spec("mlflow.genai.datasets") is not None
 
-    try:
-        # import-placement:allow -- version-dependent sub-module probe
-        import mlflow.genai.datasets
-
-        genai_ok = True
-    except ImportError:
-        genai_ok = False
-
-    version = mlflow.__version__
+    version = _mlflow_mod.__version__
 
     server_backed = tracking_uri.startswith("http://") or tracking_uri.startswith(
         "https://"

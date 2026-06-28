@@ -77,6 +77,9 @@ class TorchLlamaModel:
     - Causal multi-head attention with key/value caching
     """
 
+    chars: list[str] | None = None
+    """Character vocabulary set by the compute backend after training."""
+
     def __init__(
         self,
         vocab_size: int,
@@ -550,6 +553,10 @@ def train_torch(
                 "model must have 'chars' attribute set "
                 "(set by backend after training)"
             )
+        # In the warm-start path the backend always sets model.chars to
+        # a concrete list before calling train_torch.
+        assert model.chars is not None  # nosec — runtime guard below
+
         if model.vocab_size != len(model.chars) + 1:
             raise ValueError(
                 f"model.vocab_size ({model.vocab_size}) != "

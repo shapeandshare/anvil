@@ -133,7 +133,7 @@ class LocalTorchBackend:
                 lambda: json.loads(checkpoint_path.read_text(encoding="utf-8"))
             )
             load_torch_weights_from_lists(train_model, checkpoint["state_dict"])
-            train_model.chars = list(base_model.chars)  # type: ignore[attr-defined]
+            train_model.chars = list(base_model.chars)
 
         try:
             raw_weights, final_loss, samples, uchars = await loop.run_in_executor(
