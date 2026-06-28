@@ -1840,7 +1840,11 @@ async def learn_index(request: Request) -> HTMLResponse:
     return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]  # type: ignore[no-any-return]
         request,
         "archetypes/learn-index.html",
-        {"lessons": LEARNING_ARC_LESSONS, "additional": LEARNING_ARC_ADDITIONAL, "ops": OPS_ARC},
+        {
+            "lessons": LEARNING_ARC_LESSONS,
+            "additional": LEARNING_ARC_ADDITIONAL,
+            "ops": OPS_ARC,
+        },
     )
 
 
