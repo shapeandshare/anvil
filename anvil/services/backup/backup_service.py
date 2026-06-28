@@ -84,6 +84,7 @@ class BackupService:
         _retention_max_age_days: int | None = None,
     ) -> None:
         cfg = get_config()
+        self._loop = asyncio.get_running_loop()
         self._backup_dir = Path(backup_dir or cfg["backup_dir"])
         self._quota_bytes = quota_bytes or cfg["backup_quota_bytes"]
         self._warn_fraction = warn_fraction or cfg["backup_quota_warn_fraction"]
@@ -183,7 +184,7 @@ class BackupService:
                                 current_step=step,
                             )
                         ),
-                        asyncio.get_event_loop(),
+                        self._loop,
                     )
                     fut.result(timeout=5)
                 except (RuntimeError, TimeoutError, asyncio.CancelledError):
@@ -476,7 +477,7 @@ class BackupService:
                                 current_step=step,
                             )
                         ),
-                        asyncio.get_event_loop(),
+                        self._loop,
                     )
                     fut.result(timeout=5)
                 except (RuntimeError, TimeoutError, asyncio.CancelledError):
