@@ -217,6 +217,24 @@ LEARNING_ARC = [
         "path": "/v1/learn/cloud-compute",
         "desc": "Run training on external compute with Modal, Modal GPUs, MLflow artifact sync, and the submitted/poll/complete lifecycle.",
     },
+    {
+        "key": "backup",
+        "title": "Backup & Restore",
+        "path": "/v1/learn/backup",
+        "desc": "What gets backed up, how to restore, storage quotas, and the safety-snapshot lifecycle.",
+    },
+    {
+        "key": "configuration",
+        "title": "Configuration Reference",
+        "path": "/v1/learn/configuration",
+        "desc": "All environment variables, config defaults, and where settings are resolved from.",
+    },
+    {
+        "key": "service-management",
+        "title": "Service Management",
+        "path": "/v1/learn/service-management",
+        "desc": "Starting, stopping, and monitoring the web server, MLflow sidecar, and background processes.",
+    },
 ]
 
 
@@ -241,10 +259,34 @@ LEARNING_ARC_ADDITIONAL = [
     },
 ]
 
-# LEARNING_ARC_LESSONS is derived from LEARNING_ARC by excluding ADDITIONAL items.
+# LEARNING_ARC_LESSONS is derived from LEARNING_ARC by excluding ADDITIONAL and OPS items.
 _ADDITIONAL_KEYS = frozenset(item["key"] for item in LEARNING_ARC_ADDITIONAL)
+
+OPS_ARC = [
+    {
+        "key": "backup",
+        "title": "Backup & Restore",
+        "path": "/v1/learn/backup",
+        "desc": "What gets backed up, how to restore, storage quotas, and the safety-snapshot lifecycle.",
+    },
+    {
+        "key": "configuration",
+        "title": "Configuration Reference",
+        "path": "/v1/learn/configuration",
+        "desc": "All environment variables, config defaults, and where settings are resolved from.",
+    },
+    {
+        "key": "service-management",
+        "title": "Service Management",
+        "path": "/v1/learn/service-management",
+        "desc": "Starting, stopping, and monitoring the web server, MLflow sidecar, and background processes.",
+    },
+]
+
+_OPS_KEYS = frozenset(item["key"] for item in OPS_ARC)
+_EXCLUDED_KEYS = _ADDITIONAL_KEYS | _OPS_KEYS
 LEARNING_ARC_LESSONS = [
-    item for item in LEARNING_ARC if item["key"] not in _ADDITIONAL_KEYS
+    item for item in LEARNING_ARC if item["key"] not in _EXCLUDED_KEYS
 ]
 
 
@@ -1565,6 +1607,232 @@ MEMORY_DIVERGENCE_STEPS = [
     },
 ]
 
+BACKUP_STEPS = [
+    {
+        "key": "what-is-a-backup",
+        "title": "What is a Backup?",
+        "body": (
+            "A backup is a compressed <b>snapshot of your entire deployment state</b>. "
+            "It captures everything anvil needs to resume operations after a crash, "
+            "data loss, or botched upgrade: the SQLite database, trained models, "
+            "datasets, content blobs, and MLflow experiment records. Backups live "
+            "under <code>data/backups/</code> as <code>.tar.gz</code> archives and "
+            "are managed through the <b>Operations</b> dashboard or the "
+            "<code>anvil-backup</code> CLI. Each backup is crash-safe: the archive "
+            "is written to a temporary file, verified, then atomically renamed into "
+            "place."
+        ),
+    },
+    {
+        "key": "what-is-backed-up",
+        "title": "What is Backed Up?",
+        "body": (
+            "The <code>SnapshotPlanner</code> defines exactly which paths are included. "
+            "Every backup captures the following deployment state:"
+            "<ul>"
+            "<li><code>data/anvil-state.db</code> — the app database (models, experiments, "
+            "datasets, corpora, governance, content lineage)</li>"
+            "<li><code>data/models/</code> — exported safetensors, configs, and tokenizers</li>"
+            "<li><code>data/datasets/</code> — uploaded and curated training data</li>"
+            "<li><code>data/storage/</code> — general file blobs</li>"
+            "<li><code>data/content/</code> — content-addressed versioned blobs and manifests</li>"
+            "<li><code>mlruns/</code> — MLflow experiment database and artifact store</li>"
+            "</ul>"
+            "These six roots are the <b>entire persistent state</b> of your anvil deployment. "
+            "Everything else (source code, configuration, virtual environment) is assumed "
+            "reinstallable via <code>pip install anvil</code>."
+        ),
+    },
+    {
+        "key": "what-is-not-backed-up",
+        "title": "What is NOT Backed Up?",
+        "body": (
+            "Two paths are deliberately excluded:"
+            "<ul>"
+            "<li><code>logs/</code> — diagnostic log files. These are ephemeral and "
+            "regenerated on restart. They are not part of deployment state.</li>"
+            "<li><code>.env</code> — environment-specific secrets and configuration. "
+            "You must back these up separately (e.g., in your secret store or "
+            "infrastructure repo).</li>"
+            "</ul>"
+            "Your <code>data/backups/</code> directory itself is also excluded from "
+            "backup — it would create a recursive loop. If you need to move backups "
+            "to external storage, copy the archive files manually."
+        ),
+    },
+    {
+        "key": "where-backups-live",
+        "title": "Where Backups Live",
+        "body": (
+            "Backups are stored as <code>.tar.gz</code> archives in the "
+            "<code>data/backups/</code> directory (configurable via the "
+            "<code>ANVIL_BACKUP_DIR</code> environment variable). Each archive is named "
+            "<code>backup-{id}.tar.gz</code> where <code>{id}</code> is a timestamp-based "
+            "identifier like <code>20260627T143022Z-a3f7c2</code>. "
+            "Alongside each archive, a <b>manifest</b> file records the deployment version, "
+            "schema revision, entry listing, and checksums. Backups are self-describing: "
+            "you can inspect any archive without the running application."
+        ),
+    },
+    {
+        "key": "storage-quotas",
+        "title": "Storage Quotas &amp; Auto-Rotation",
+        "body": (
+            "Backup storage is capped by a configurable <b>quota</b> (default: 10 GB, "
+            "set via <code>ANVIL_BACKUP_QUOTA_BYTES</code>). When a new backup would "
+            "exceed the quota, the <code>RetentionPolicy</code> selects older backups "
+            "for rotation (deletion) to make room. The policy has two dimensions:"
+            "<ul>"
+            "<li><b>Max count</b> (<code>ANVIL_BACKUP_RETENTION_MAX_COUNT</code>)"
+            " — hard limit on the number of retained backups</li>"
+            "<li><b>Max age</b> (<code>ANVIL_BACKUP_RETENTION_MAX_AGE_DAYS</code>)"
+            " — backups older than this threshold are rotation candidates</li>"
+            "</ul>"
+            "A warning threshold at 80% of quota (configurable via "
+            "<code>ANVIL_BACKUP_QUOTA_WARN</code>) triggers an alert on the Operations "
+            "dashboard. <b>Safety snapshots</b> (created automatically before restore) "
+            "are exempt from automatic rotation — they must be manually cleaned up "
+            "via the cleanup-safety endpoint or the Operations dashboard."
+        ),
+    },
+    {
+        "key": "creating-a-backup",
+        "title": "Creating a Backup",
+        "body": (
+            "Backups can be created from the Operations dashboard or via the CLI:"
+            "<br><br>"
+            "<b>From the dashboard</b>: Navigate to <b>Operations &rarr; Backups</b> "
+            "and click <b>Create Backup</b>. Progress streams via SSE so you "
+            "see each step as it completes."
+            "<br><br>"
+            "<b>From the CLI</b>:<br>"
+            "<code>anvil-backup create</code>"
+            "<br><br>"
+            "Creating a backup acquires a process-wide <code>BackupLock</code>. "
+            "If another backup or restore is already running, the request is "
+            "rejected with HTTP 409. Progress steps: plan snapshot &rarr; check "
+            "space/quota &rarr; archive roots &rarr; compute checksums &rarr; "
+            "record in DB."
+        ),
+    },
+    {
+        "key": "restoring-a-backup",
+        "title": "Restoring from a Backup",
+        "body": (
+            "Restore is a multi-step process with built-in safety nets:"
+            "<ol>"
+            "<li><b>Preview</b> — before restoring, the system shows the backup's "
+            "deployment version, schema revision, compatibility assessment, entry "
+            "count, and required free space. If the schema has changed incompatibly "
+            "between the backup and the running version, the restore is blocked.</li>"
+            "<li><b>Safety snapshot</b> — the system automatically creates a "
+            "<code>pre_restore_safety</code> snapshot of your current state before "
+            "touching anything. This gives you a rollback point.</li>"
+            "<li><b>Confirm</b> — you must type <code>RESTORE</code> to confirm. "
+            "This is a deliberate gate (FR-021) to prevent accidental overwrites.</li>"
+            "<li><b>Extract &amp; journal</b> — the archive is extracted file by "
+            "file. A <code>RestoreJournal</code> tracks each step so a crash during "
+            "restore can be recovered on next startup.</li>"
+            "</ol>"
+            "On success, the restored state is live immediately. The safety snapshot "
+            "is retained so you can go back if something feels wrong."
+        ),
+    },
+    {
+        "key": "verification",
+        "title": "Integrity Verification",
+        "body": (
+            "Every backup can be independently verified for integrity. The verify "
+            "operation (<code>anvil-backup verify &lt;id&gt;</code> or the Verify "
+            "button on the Operations dashboard) performs:"
+            "<ul>"
+            "<li><b>SHA-256 checksum</b> — the archive's manifest hash is recomputed "
+            "and compared against the stored manifest_sha256</li>"
+            "<li><b>Entry validation</b> — each file in the manifest is checked for "
+            "readability and correct size</li>"
+            "<li><b>Archive integrity</b> — the <code>.tar.gz</code> structure is "
+            "validated</li>"
+            "</ul>"
+            "If verification fails, the backup is marked as <code>corrupted</code> in "
+            "the database. You should create a fresh backup or try an older known-good "
+            "one."
+        ),
+    },
+    {
+        "key": "safety-snapshots",
+        "title": "Safety Snapshots",
+        "body": (
+            "A <b>safety snapshot</b> is a special backup type created automatically "
+            "before every restore operation. They are tagged with "
+            "<code>operation_type = pre_restore_safety</code> and are treated "
+            "differently from regular backups:"
+            "<ul>"
+            "<li>They are <b>not deletable</b> through the normal delete path — "
+            "you must use the dedicated cleanup-safety action</li>"
+            "<li>They are <b>exempt from auto-rotation</b> — the retention policy "
+            "will never delete them</li>"
+            "<li>They are <b>not shown</b> in the main backup list on the Operations "
+            "dashboard (they appear in the safety snapshots section)</li>"
+            "</ul>"
+            "To clean up all safety snapshots, use the Operations dashboard or "
+            "the API: <code>POST /v1/backup/cleanup-safety</code>. This removes both "
+            "the archives and their database records."
+        ),
+    },
+    {
+        "key": "cli-reference",
+        "title": "CLI Reference",
+        "body": (
+            "The <code>anvil-backup</code> CLI provides a complete interface to the "
+            "backup system without the web UI:"
+            "<br><br>"
+            "<code>anvil-backup create</code> &mdash; create a new backup"
+            "<br>"
+            "<code>anvil-backup list</code> &mdash; list all backups"
+            "<br>"
+            "<code>anvil-backup show &lt;id&gt;</code> &mdash; show backup details"
+            "<br>"
+            "<code>anvil-backup verify &lt;id&gt;</code> &mdash; verify archive integrity"
+            "<br>"
+            "<code>anvil-backup restore &lt;id&gt;</code> &mdash; restore from a backup"
+            "<br>"
+            "<code>anvil-backup delete &lt;id&gt;</code> &mdash; delete a backup "
+            "(add <code>--confirm-last</code> if it's the last restorable backup)"
+            "<br>"
+            "<code>anvil-backup status</code> &mdash; show storage status and quota usage"
+            "<br><br>"
+            "All CLI commands connect to the same <code>BackupService</code> as the "
+            "web API and share the same lock, so you can safely mix CLI and dashboard "
+            "operations."
+        ),
+    },
+    {
+        "key": "configuration-options",
+        "title": "Configuration Options",
+        "body": (
+            "The backup system respects several environment variables:"
+            "<br><br>"
+            "<code>ANVIL_BACKUP_DIR</code> &mdash; archive output directory "
+            "(default: <code>data/backups</code>)"
+            "<br>"
+            "<code>ANVIL_BACKUP_QUOTA_BYTES</code> &mdash; hard storage cap "
+            "(default: 10 GB, <code>10737418240</code>)"
+            "<br>"
+            "<code>ANVIL_BACKUP_QUOTA_WARN</code> &mdash; warning threshold fraction "
+            "(default: <code>0.8</code>)"
+            "<br>"
+            "<code>ANVIL_BACKUP_RETENTION_MAX_COUNT</code> &mdash; max retained backups "
+            "(default: no limit)"
+            "<br>"
+            "<code>ANVIL_BACKUP_RETENTION_MAX_AGE_DAYS</code> &mdash; max backup age "
+            "before rotation (default: no limit)"
+            "<br><br>"
+            "All configuration is read from <code>config.get_config()</code> which "
+            "merges <code>.env</code> and environment variables."
+        ),
+    },
+]
+
 
 @router.get("/learn", response_class=HTMLResponse)
 async def learn_index(request: Request) -> HTMLResponse:
@@ -1572,7 +1840,11 @@ async def learn_index(request: Request) -> HTMLResponse:
     return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]  # type: ignore[no-any-return]
         request,
         "archetypes/learn-index.html",
-        {"lessons": LEARNING_ARC_LESSONS, "additional": LEARNING_ARC_ADDITIONAL},
+        {
+            "lessons": LEARNING_ARC_LESSONS,
+            "additional": LEARNING_ARC_ADDITIONAL,
+            "ops": OPS_ARC,
+        },
     )
 
 
@@ -2021,6 +2293,16 @@ async def cloud_compute_concept_page(request: Request) -> HTMLResponse:
         request,
         "archetypes/concept.html",
         {"steps": CLOUD_COMPUTE_STEPS, **_arc_context("cloud-compute")},
+    )
+
+
+@router.get("/learn/backup", response_class=HTMLResponse)
+async def backup_concept_page(request: Request) -> HTMLResponse:
+    """Render the backup & restore walkthrough page with interactive steps."""
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
+        request,
+        "archetypes/concept.html",
+        {"steps": BACKUP_STEPS, **_arc_context("backup")},
     )
 
 

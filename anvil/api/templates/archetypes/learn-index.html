@@ -41,6 +41,20 @@
       {% endfor %}
     </ul>
     {% endif %}
+
+    {% if ops %}
+    <h3 class="learn-section-heading learn-section-heading--ops">Operations</h3>
+    <ul class="learn-arc-list learn-arc-list--plain">
+      {% for item in ops %}
+      <li class="learn-arc-item">
+        <a href="{{ item.path }}" class="learn-arc-item-link">
+          <span class="learn-arc-item-title">{{ item.title }}</span>
+          <span class="learn-arc-item-desc">{{ item.desc }}</span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
   </div>
 </div>
 
