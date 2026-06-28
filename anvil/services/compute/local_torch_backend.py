@@ -14,10 +14,16 @@ Auto-registers as ``"local-torch"`` in the compute registry at module
 import time.
 """
 
+from __future__ import annotations
+
 import asyncio
+import json
+from pathlib import Path
 from typing import Any
 
 from ...core.engine import LlamaModel
+from ..training.torch_engine import TorchLlamaModel
+from ..training.torch_engine import load_torch_weights_from_lists
 from ..training.torch_engine import torch_available as _torch_available
 from ..training.torch_engine import train_torch
 from .compute_backend_result import ComputeBackendResult
@@ -101,6 +107,37 @@ class LocalTorchBackend:
         loop = asyncio.get_event_loop()
         device = config.get("device", "cpu")
 
+        # ── warm-start: resolve base model checkpoint ──────────────────
+        base_model_ref = config.get("base_model_ref")
+        train_model: TorchLlamaModel | None = None
+
+        if base_model_ref is not None:
+            checkpoint_path = Path(
+                f"data/models/experiment_{base_model_ref}.json"
+            )
+            base_model = LlamaModel.load(str(checkpoint_path))
+            if base_model.chars is None:
+                msg = (
+                    f"Base model experiment_{base_model_ref}.json "
+                    f"has no character vocabulary"
+                )
+                raise ValueError(msg)
+            train_model = TorchLlamaModel(
+                vocab_size=base_model.vocab_size,
+                n_embd=base_model.n_embd,
+                n_head=base_model.n_head,
+                n_layer=base_model.n_layer,
+                block_size=base_model.block_size,
+            )
+            # Transfer the base model's trained weights into the torch model
+            # so training genuinely continues (FR-002 parity), rather than
+            # restarting from random init. The checkpoint stores weights as
+            # plain float lists under "state_dict".
+            with checkpoint_path.open(encoding="utf-8") as f:
+                checkpoint = json.load(f)
+            load_torch_weights_from_lists(train_model, checkpoint["state_dict"])
+            train_model.chars = list(base_model.chars)  # type: ignore[attr-defined]
+
         try:
             raw_weights, final_loss, samples, uchars = await loop.run_in_executor(
                 None,
@@ -118,17 +155,27 @@ class LocalTorchBackend:
                     temperature=config.get("temperature", 0.5),
                     progress_callback=progress_callback,
                     stop_check=stop_check,
+                    model=train_model,
                 ),
             )
 
             # Wrap GPU weights into a CPU LlamaModel for downstream compatibility
-            model = LlamaModel(
-                vocab_size=len(uchars) + 1,
-                n_embd=config.get("n_embd", 16),
-                n_head=config.get("n_head", 4),
-                n_layer=config.get("n_layer", 1),
-                block_size=config.get("block_size", 16),
-            )
+            if train_model is not None:
+                model = LlamaModel(
+                    vocab_size=train_model.vocab_size,
+                    n_embd=train_model.n_embd,
+                    n_head=train_model.n_head,
+                    n_layer=train_model.n_layer,
+                    block_size=train_model.block_size,
+                )
+            else:
+                model = LlamaModel(
+                    vocab_size=len(uchars) + 1,
+                    n_embd=config.get("n_embd", 16),
+                    n_head=config.get("n_head", 4),
+                    n_layer=config.get("n_layer", 1),
+                    block_size=config.get("block_size", 16),
+                )
             _load_weights_into_model(model, raw_weights)
 
         except Exception as exc:
