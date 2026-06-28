@@ -5,7 +5,6 @@ tags:
   - type/session-log
   - domain/ui
   - domain/operations
-  - domain/performance
 created: '2026-06-27'
 updated: '2026-06-27'
 status: draft
