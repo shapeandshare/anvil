@@ -45,7 +45,18 @@ Production operability for the SaaS deployment. Three observability pillars (log
 ## Decisions
 
 - [[Reference/SaaSArchitectureDecisions|SaaS Architecture Decisions]] (AD-12, AD-13)
-- [[Decisions/ADR-035-mlflow-reverse-proxy|ADR-035]] — MLflow proxy unification across local + SaaS
+- [[Decisions/ADR-035-mlflow-reverse-proxy|ADR-035]] — MLflow proxy (superseded by ADR-037)
+- [[Decisions/ADR-037-unified-interface-local-tls|ADR-037]] — generic single-origin proxy registry
+
+> **Proxy mechanism ownership (2026-06-28)**: The generic reverse-proxy mechanism
+> (route, `httpx` streaming, registry, loopback bind, `--static-prefix`,
+> `get_mlflow_browser_uri`) is OWNED by
+> [[Specs/056 Reverse-Proxy Registry/056 Reverse-Proxy Registry|Spec 056 — Reverse-Proxy Registry]].
+> Spec 036's MLflow-proxy requirements (FR-057a–g) and Phase 5 tasks now layer ONLY
+> the **SaaS-specific** concerns on top of 056's deliverable: Cognito JWT + RBAC
+> enforcement on the proxied route (FR-057a), `org_id` experiment tagging (FR-057f),
+> the Cloud Map upstream address (FR-057e), and CloudFront-aware scheme derivation
+> (FR-057c). The route/streaming/registry/`--static-prefix` themselves come from 056.
 
 ## References
 
