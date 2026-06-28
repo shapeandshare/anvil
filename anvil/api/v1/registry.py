@@ -20,12 +20,12 @@ from fastapi import APIRouter, HTTPException, Query
 from mlflow.exceptions import MlflowException
 from mlflow.tracking import MlflowClient
 
-from ...api.v1.schemas import RegisterModelBody
 from ...config import get_mlflow_uri
 from ...db.repositories.corpora import CorpusRepository
 from ...db.repositories.datasets import DatasetRepository
 from ...db.session import AsyncSessionLocal
 from ...services.tracking.tracking import TrackingService
+from .schemas_misc import RegisterModelBody
 
 router = APIRouter()
 

@@ -1,3 +1,4 @@
+# one-class:allow — ScanResult/result types are tightly coupled to the checker
 # Copyright © 2026 Josh Burt
 #
 # This source code is licensed under the MIT license found in the
@@ -85,19 +86,26 @@ def _has_py_files(dirpath: Path) -> bool:
         return False
 
 
-def _is_data_dir(dirname: str) -> bool:
-    """Check if *dirname* is a known data-only directory.
+def _is_data_dir(dirpath: Path) -> bool:
+    """Check if *dirpath* or any ancestor is a known data-only directory.
+
+    A directory is considered data-only if its own name or the name of any
+    ancestor directory is in the ``_DATA_DIRS`` set.  This prevents false
+    positives for nested directories under ``data/``, ``_resources/``, etc.
+    that contain ``.py`` files as demo samples rather than importable code.
 
     Parameters
     ----------
-    dirname : str
-        Directory basename to check.
+    dirpath : pathlib.Path
+        Directory path to check (basename and ancestors are examined).
 
     Returns
     -------
     bool
     """
-    return dirname in _DATA_DIRS
+    return any(
+        parent.name in _DATA_DIRS for parent in [dirpath] + list(dirpath.parents)
+    )
 
 
 def _init_py_is_bare(init_path: Path) -> bool:
@@ -176,7 +184,7 @@ def scan_directory(root: Path) -> list[PackageScan]:
         dirname = dirpath.name
         init_path = dirpath / "__init__.py"
         has_py = _has_py_files(dirpath)
-        is_data = _is_data_dir(dirname)
+        is_data = _is_data_dir(dirpath)
 
         scan = PackageScan(str(dirpath))
 

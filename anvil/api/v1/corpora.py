@@ -21,16 +21,16 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, HTTPException
 
 from ...api.deps import get_workbench
-from ...api.v1.schemas import (
+from ...services.datasets.chunking_strategy import ChunkingStrategy
+from ...services.datasets.corpus_loader import CorpusLoader
+from ...services.tracking.tracking import TrackingService
+from ...workbench import AnvilWorkbench
+from .schemas_corpus import (
     AnalyzePathBody,
     CreateCorpusBody,
     ForkCorpusBody,
     ResolvePathBody,
 )
-from ...services.datasets.chunking_strategy import ChunkingStrategy
-from ...services.datasets.corpus_loader import CorpusLoader
-from ...services.tracking.tracking import TrackingService
-from ...workbench import AnvilWorkbench
 
 WORKSPACE_ROOTS = [
     os.path.expanduser("~/Workbench/Repositories"),

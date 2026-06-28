@@ -1,3 +1,4 @@
+# one-class:allow — RestoreResult is the return type of RestoreEngine
 # Copyright © 2026 Josh Burt
 #
 # This source code is licensed under the MIT license found in the

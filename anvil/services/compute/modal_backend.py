@@ -235,7 +235,7 @@ class ModalBackend:
             import mlflow
 
             # import-placement:allow -- Modal remote function runs in cloud
-            from ...core.torch_engine import train_torch
+            from ..training.torch_engine import train_torch
 
             mlflow_tracking_uri = os.environ.get(
                 "MLFLOW_TRACKING_URI",

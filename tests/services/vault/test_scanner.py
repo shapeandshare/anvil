@@ -11,8 +11,8 @@ from pathlib import Path
 
 import pytest
 
-from anvil.services.vault._types import NoteMetadata
 from anvil.services.vault.scanner import GraphHealthRunner, is_exempt, should_exclude
+from anvil.services.vault.types_note_metadata import NoteMetadata
 
 
 class TestShouldExclude:

@@ -9,17 +9,15 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from ._types import (
-    ConnectivityMetrics,
-    GraphHealthReport,
-    HealthScore,
-    HygieneMetrics,
-    LinkPredictionResult,
-    NoteMetadata,
-    StructuralMetrics,
-    TemporalMetrics,
-    TopologicalMetrics,
-)
+from .types_connectivity_metrics import ConnectivityMetrics
+from .types_graph_health_report import GraphHealthReport
+from .types_health_score import HealthScore
+from .types_hygiene_metrics import HygieneMetrics
+from .types_link_prediction_result import LinkPredictionResult
+from .types_note_metadata import NoteMetadata
+from .types_structural_metrics import StructuralMetrics
+from .types_temporal_metrics import TemporalMetrics
+from .types_topological_metrics import TopologicalMetrics
 
 
 def render_markdown(

@@ -24,7 +24,7 @@ from ...services.governance.audit_target_type import AuditTargetType
 from ...services.runtime_config.apply_class import ApplyClass
 from ...workbench import AnvilWorkbench
 from ..deps import get_workbench
-from .schemas import ConfigSettingOut, UpdateConfigBody
+from .schemas_misc import ConfigSettingOut, UpdateConfigBody
 
 router = APIRouter()
 

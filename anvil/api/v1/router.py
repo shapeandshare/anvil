@@ -17,22 +17,22 @@ from pathlib import Path
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 
-from anvil.api.v1.backup import router as backup_router
-from anvil.api.v1.compute import router as compute_router
-from anvil.api.v1.config import router as config_router
-from anvil.api.v1.content import router as content_router
-from anvil.api.v1.corpora import router as corpora_router
-from anvil.api.v1.datasets import router as datasets_router
-from anvil.api.v1.eval import router as eval_router
-from anvil.api.v1.eval_datasets import router as eval_datasets_router
-from anvil.api.v1.experiments import router as experiments_router
-from anvil.api.v1.governance import router as governance_router
-from anvil.api.v1.health_ops import router as health_ops_router
-from anvil.api.v1.inference import router as inference_router
-from anvil.api.v1.learning import router as learning_router
-from anvil.api.v1.pages import router as pages_router
-from anvil.api.v1.registry import router as registry_router
-from anvil.api.v1.training import router as training_router
+from .backup import router as backup_router
+from .compute import router as compute_router
+from .config import router as config_router
+from .content import router as content_router
+from .corpora import router as corpora_router
+from .datasets import router as datasets_router
+from .eval import router as eval_router
+from .eval_datasets import router as eval_datasets_router
+from .experiments import router as experiments_router
+from .governance import router as governance_router
+from .health_ops import router as health_ops_router
+from .inference import router as inference_router
+from .learning import router as learning_router
+from .pages import router as pages_router
+from .registry import router as registry_router
+from .training import router as training_router
 
 router = APIRouter()
 router.include_router(training_router)

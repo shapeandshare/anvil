@@ -17,7 +17,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import networkx as nx
 
-from ._types import NoteMetadata, TemporalMetrics
+from .types_note_metadata import NoteMetadata
+from .types_temporal_metrics import TemporalMetrics
 
 
 def compute_temporal(

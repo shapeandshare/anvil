@@ -31,13 +31,12 @@ from ...api.deps import get_workbench
 from ...db.models.content_source import ContentSource
 from ...services.content.ingest_status import IngestStatus
 from ...workbench import AnvilWorkbench
-from .schemas import (
+from .schemas_content import (
     AcceptOut,
     CompositionSpecItem,
     ContentCorpusCreate,
     ContentCorpusOut,
     ContentVersionOut,
-    CreateSourceBody,
     FreezeVersionBody,
     ImportJobOut,
     ImportStart,
@@ -49,6 +48,7 @@ from .schemas import (
     TagBody,
     ValidationReportOut,
 )
+from .schemas_misc import CreateSourceBody
 
 router = APIRouter()
 """APIRouter: Content repository routes, mounted under

@@ -18,7 +18,9 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from ._types import LinkPredictionResult, NoteMetadata, ScoredPair
+from .types_link_prediction_result import LinkPredictionResult
+from .types_note_metadata import NoteMetadata
+from .types_scored_pair import ScoredPair
 
 try:
     import networkx as nx

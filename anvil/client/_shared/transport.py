@@ -1,3 +1,4 @@
+# one-class:allow — _RawResponse is an internal envelope model used only by Transport
 # Copyright © 2026 Josh Burt
 #
 # This source code is licensed under the MIT license found in the
@@ -24,16 +25,16 @@ import httpx
 from pydantic import BaseModel, ConfigDict
 from pydantic import ValidationError as PydanticValidationError
 
-from anvil.client._shared.errors.api_error import ApiError
-from anvil.client._shared.errors.authentication_error import AuthenticationError
-from anvil.client._shared.errors.connection_error import ConnectionError
-from anvil.client._shared.errors.not_found_error import NotFoundError
-from anvil.client._shared.errors.rate_limit_error import RateLimitError
-from anvil.client._shared.errors.server_error import ServerError
-from anvil.client._shared.errors.validation_error import ValidationError
-from anvil.client._shared.server_config import ServerConfig
-from anvil.client._shared.stream_event import StreamEvent
-from anvil.client._shared.stream_event_type import StreamEventType
+from .api_error import ApiError
+from .authentication_error import AuthenticationError
+from .connection_error import ConnectionError
+from .not_found_error import NotFoundError
+from .rate_limit_error import RateLimitError
+from .server_config import ServerConfig
+from .server_error import ServerError
+from .stream_event import StreamEvent
+from .stream_event_type import StreamEventType
+from .validation_error import ValidationError
 
 try:
     import aiofiles  # type: ignore[import-untyped]

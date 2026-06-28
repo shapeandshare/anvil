@@ -54,10 +54,14 @@ from .services.datasets.dataset_export import DatasetExportService
 from .services.datasets.dataset_import import DatasetImportService
 from .services.datasets.datasets import DatasetService
 from .services.demo.demo_bootstrap import DemoBootstrapService
+from .services.governance.audit_action import AuditAction
+from .services.governance.audit_outcome import AuditOutcome
 from .services.governance.audit_service import AuditService
 from .services.governance.governance_service import GovernanceService
+from .services.inference.inference import InferenceService
 from .services.instances.instance_lifecycle_service import InstanceLifecycleService
 from .services.runtime_config.runtime_config_service import RuntimeConfigService
+from .services.tracking.tracking import TrackingService
 from .services.training.training import TrainingService
 from .storage.local import LocalFileStore
 from .workspace.workspace_paths import WorkspacePaths
@@ -84,6 +88,11 @@ class AnvilWorkbench:
         Created lazily if omitted.
     """
 
+    # Re-exported audit enums for route-layer consumption
+    # without direct import from anvil.services.governance.
+    AuditAction: type[AuditAction] = AuditAction
+    AuditOutcome: type[AuditOutcome] = AuditOutcome
+
     def __init__(
         self,
         session: AsyncSession,
@@ -95,6 +104,9 @@ class AnvilWorkbench:
         self._registry_session = registry_session
         # DB-backed lazy references.
         self._training: TrainingService | None = None
+        self._tracking: TrackingService | None = None
+        self._inference: InferenceService | None = None
+        self._tracking: TrackingService | None = None
         self._dataset_repo: DatasetRepository | None = None
         self._corpus_repo: CorpusRepository | None = None
         self._datasets: DatasetService | None = None
@@ -137,6 +149,27 @@ class AnvilWorkbench:
         if self._training is None:
             self._training = TrainingService()
         return self._training
+
+    @property
+    def tracking(self) -> TrackingService:
+        """Return the stateless ``TrackingService``."""
+        if self._tracking is None:
+            self._tracking = TrackingService()
+        return self._tracking
+
+    @property
+    def inference(self) -> InferenceService:
+        """Return the stateless ``InferenceService``."""
+        if self._inference is None:
+            self._inference = InferenceService()
+        return self._inference
+
+    @property
+    def tracking(self) -> TrackingService:
+        """Return the stateless ``TrackingService``."""
+        if self._tracking is None:
+            self._tracking = TrackingService()
+        return self._tracking
 
     # ── Repository helpers ──────────────────────────────────────────────
 
@@ -191,20 +224,12 @@ class AnvilWorkbench:
         return DatasetImportService(self._session, dataset_id, self.store)
 
     def dataset_curation(self, dataset_id: int) -> DatasetCurationService:
-        """Return a ``DatasetCurationService`` for a specific dataset."""
-        if self._dataset_curation is None:
-            self._dataset_curation = DatasetCurationService(
-                self._session, dataset_id, self.store
-            )
-        return self._dataset_curation
+        """Return a fresh ``DatasetCurationService`` for a specific dataset."""
+        return DatasetCurationService(self._session, dataset_id, self.store)
 
     def dataset_export(self, dataset_id: int) -> DatasetExportService:
-        """Return a ``DatasetExportService`` for a specific dataset."""
-        if self._dataset_export is None:
-            self._dataset_export = DatasetExportService(
-                self._session, dataset_id, self.store
-            )
-        return self._dataset_export
+        """Return a fresh ``DatasetExportService`` for a specific dataset."""
+        return DatasetExportService(self._session, dataset_id, self.store)
 
     @property
     def demo(self) -> DemoBootstrapService:

@@ -17,8 +17,10 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-from anvil.db.base import Base
-from anvil.db.registry import (  # registers all models on Base.metadata
+from anvil.db.base import (  # relative-imports:allow — Alembic loader does not set __package__
+    Base,
+)
+from anvil.db.registry import (  # relative-imports:allow — registers all models on Base.metadata
     get_expected_tables,
 )
 

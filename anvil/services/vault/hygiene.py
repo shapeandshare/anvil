@@ -17,7 +17,8 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
-from ._types import HygieneMetrics, NoteMetadata
+from .types_hygiene_metrics import HygieneMetrics
+from .types_note_metadata import NoteMetadata
 
 # Controlled vocabulary constants (mirrors docs/vault/_meta/tags.md)
 TYPE_VOCAB: set[str] = {

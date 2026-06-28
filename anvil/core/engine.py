@@ -18,7 +18,7 @@ import random
 from collections.abc import Callable
 from typing import Any, TypeGuard
 
-from anvil.core.autograd import Value
+from .autograd import Value
 
 
 def _is_matrix_state_val(

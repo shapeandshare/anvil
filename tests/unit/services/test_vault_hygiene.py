@@ -11,7 +11,6 @@ from datetime import date, datetime
 from pathlib import Path
 from unittest.mock import mock_open, patch
 
-from anvil.services.vault._types import NoteMetadata
 from anvil.services.vault.hygiene import (
     _classify_percentage,
     _find_near_duplicate_tags,
@@ -21,6 +20,7 @@ from anvil.services.vault.hygiene import (
     _load_controlled_tags,
     compute_hygiene,
 )
+from anvil.services.vault.types_note_metadata import NoteMetadata
 
 
 class TestClassifyPercentage:

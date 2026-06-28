@@ -1,3 +1,4 @@
+# one-class:allow — ScanResult/result types are tightly coupled to the checker
 # Copyright © 2026 Josh Burt
 #
 # This source code is licensed under the MIT license found in the
@@ -14,8 +15,9 @@ from __future__ import annotations
 import asyncio
 from pathlib import Path
 
-from ._types import GraphHealthReport, MechanicalReport
 from .scanner import GraphHealthRunner
+from .types_graph_health_report import GraphHealthReport
+from .types_mechanical_report import MechanicalReport
 from .vault_audit import VaultAuditService
 
 

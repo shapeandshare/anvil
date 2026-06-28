@@ -16,14 +16,14 @@ from __future__ import annotations
 import random
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
-from anvil.api.v1.schemas import InferenceSampleBody
-from anvil.core.autograd import Value
-from anvil.core.engine import LlamaModel, softmax
-from anvil.services.inference.inference import InferenceService
-from anvil.services.tracking.tracking import TrackingService
+from ...core.autograd import Value
+from ...core.engine import LlamaModel, softmax
+from ...workbench import AnvilWorkbench
+from ..deps import get_workbench
+from .schemas_misc import InferenceSampleBody
 
 router = APIRouter()
 
@@ -2500,8 +2500,15 @@ async def model_detail_page(request: Request, model_id: str) -> HTMLResponse:
 
 
 @router.get("/inference/models")
-async def list_inference_models() -> dict[str, Any]:
+async def list_inference_models(
+    workbench: AnvilWorkbench = Depends(get_workbench),
+) -> dict[str, Any]:
     """List all registered models available for inference.
+
+    Parameters
+    ----------
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
 
     Returns
     -------
@@ -2509,8 +2516,7 @@ async def list_inference_models() -> dict[str, Any]:
         Dict with ``models`` (list of model dicts) and optionally a
         ``message`` if no models are registered.
     """
-    tracking_svc = TrackingService()
-    models = await tracking_svc.list_registered_models()
+    models = await workbench.tracking.list_registered_models()
     if not models:
         return {
             "models": [],
@@ -2848,7 +2854,10 @@ def _sample_tokens(
 @router.post(
     "/inference/sample", responses={400: {"description": "Invalid sampling parameters"}}
 )
-async def inference_sample(body: InferenceSampleBody) -> dict[str, Any]:
+async def inference_sample(
+    body: InferenceSampleBody,
+    workbench: AnvilWorkbench = Depends(get_workbench),
+) -> dict[str, Any]:
     """Generate text samples from a registered model.
 
     Parameters
@@ -2856,6 +2865,8 @@ async def inference_sample(body: InferenceSampleBody) -> dict[str, Any]:
     body : InferenceSampleBody
         Request body with ``model_id``, ``version``, and optional
         sampling parameters.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
 
     Returns
     -------
@@ -2870,9 +2881,8 @@ async def inference_sample(body: InferenceSampleBody) -> dict[str, Any]:
     """
     top_k, top_p = _validate_sampling_params(body)
 
-    inf_svc = InferenceService()
     try:
-        loaded = await inf_svc.load_model(body.model_id, body.version)
+        loaded = await workbench.inference.load_model(body.model_id, body.version)
     except (ValueError, FileNotFoundError) as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
 

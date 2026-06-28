@@ -5,7 +5,7 @@
 
 """PyTorch local compute backend.
 
-Wraps ``anvil.core.torch_engine.train_torch`` as an async
+Wraps ``anvil.services.training.torch_engine.train_torch`` as an async
 ``ComputeBackendProtocol`` implementation using
 ``loop.run_in_executor()`` so it integrates with the async training
 service without blocking the event loop.
@@ -18,8 +18,8 @@ import asyncio
 from typing import Any
 
 from ...core.engine import LlamaModel
-from ...core.torch_engine import torch_available as _torch_available
-from ...core.torch_engine import train_torch
+from ..training.torch_engine import torch_available as _torch_available
+from ..training.torch_engine import train_torch
 from .compute_backend_result import ComputeBackendResult
 from .compute_status import ComputeStatus
 from .local_stdlib_backend import _load_weights_into_model

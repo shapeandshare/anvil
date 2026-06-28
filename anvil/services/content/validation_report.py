@@ -1,3 +1,4 @@
+# one-class:allow — ValidationProblem is a sub-type of ValidationReport
 # Copyright © 2026 Josh Burt
 #
 # This source code is licensed under the MIT license found in the

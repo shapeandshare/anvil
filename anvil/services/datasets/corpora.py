@@ -14,10 +14,14 @@ from __future__ import annotations
 
 import json
 from collections.abc import Sequence
+from pathlib import Path
 
 from ...db.models.corpus import Corpus
 from ...db.models.corpus_file import CorpusFile
 from ...db.repositories.corpora import CorpusRepository
+from ..chunking.file_chunker import FileAsDocChunker
+from ..chunking.line_chunker import LineAsDocChunker
+from ..chunking.window_chunker import FixedSizeWindowChunker
 from .chunking_strategy import ChunkingStrategy
 from .corpus_loader import CorpusLoader
 
@@ -324,6 +328,94 @@ class CorpusService:
         corpus.language_map = json.dumps(result.language_map)
         corpus.errors = json.dumps(result.errors) if result.errors else None
         return corpus, result.errors
+
+    async def scan_and_chunk(
+        self,
+        corpus_id: int,
+        chunking_strategy: str = "windowed",
+        chunk_overlap: float = 0.5,
+        block_size: int | None = None,
+        include_patterns: list[str] | None = None,
+        exclude_patterns: list[str] | None = None,
+    ) -> list[str]:
+        """Scan a corpus directory and chunk files with custom parameters.
+
+        Loads the file listing using the corpus's include/exclude patterns
+        (optionally overridden), reads each file's text content, and
+        chunks using the requested strategy.  This is independent of the
+        corpus's stored chunking configuration.
+
+        Parameters
+        ----------
+        corpus_id : int
+            The corpus ID to scan.
+        chunking_strategy : str
+            One of ``"line"``, ``"file"``, or ``"windowed"``.
+        chunk_overlap : float
+            Overlap fraction for windowed chunking. Defaults to ``0.5``.
+        block_size : int, optional
+            Block size for windowed chunking. ``None`` defaults to
+            the corpus's stored ``block_size``.
+        include_patterns : list[str], optional
+            Override include glob patterns. ``None`` uses corpus default.
+        exclude_patterns : list[str], optional
+            Override exclude glob patterns. ``None`` uses corpus default.
+
+        Returns
+        -------
+        list[str]
+            Chunked document strings.
+
+        Raises
+        ------
+        ValueError
+            If the corpus is not found.
+        """
+        corpus = await self._repo.get(corpus_id)
+        if corpus is None:
+            raise ValueError(f"Corpus {corpus_id} not found")
+
+        inc = (
+            include_patterns
+            if include_patterns is not None
+            else (
+                json.loads(corpus.include_patterns) if corpus.include_patterns else None
+            )
+        )
+        exc = (
+            exclude_patterns
+            if exclude_patterns is not None
+            else (
+                json.loads(corpus.exclude_patterns) if corpus.exclude_patterns else None
+            )
+        )
+
+        load_result = self._loader.ingest(
+            root_path=corpus.root_path,
+            include_patterns=inc,
+            exclude_patterns=exc,
+            chunking_strategy=chunking_strategy,
+            chunk_overlap=chunk_overlap,
+            block_size=block_size or corpus.block_size,
+        )
+
+        if chunking_strategy == "line":
+            chunker = LineAsDocChunker()
+        elif chunking_strategy == "file":
+            chunker = FileAsDocChunker()
+        else:
+            bs = block_size or corpus.block_size or 16
+            chunker = FixedSizeWindowChunker(block_size=bs, overlap=chunk_overlap)
+
+        docs: list[str] = []
+        for fd in load_result.files:
+            full_path = Path(corpus.root_path) / fd["relative_path"]
+            try:
+                text = full_path.read_text("utf-8")
+            except (FileNotFoundError, UnicodeDecodeError):
+                continue
+            docs.extend(chunker.chunk(text))
+        return docs
 
     async def load_docs(self, corpus_id: int) -> list[str]:
         """Load and chunk all documents for a corpus.
