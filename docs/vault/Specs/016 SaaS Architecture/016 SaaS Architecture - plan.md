@@ -3,13 +3,20 @@ title: 016 SaaS Architecture - plan
 type: plan
 tags:
   - type/spec
+  - status/superseded
 spec-refs:
   - docs/vault/Specs/016 SaaS Architecture/
 related:
   - '[[016 SaaS Architecture]]'
-created: ~
-updated: ~
+  - '[[Reference/SaaSArchitectureDecisions]]'
+status: superseded
+created: '2026-06-19'
+updated: '2026-06-27'
 ---
+
+> [!WARNING] Superseded — This artifact is retained for historical reference.
+> Superseded by per-feature specs 028–037. See [[Specs/016 SaaS Architecture/016 SaaS Architecture|016 index]].
+
 # Implementation Plan: SaaS Architecture — Three-Mode Operating Model
 
 **Branch**: `016-saas-architecture` | **Date**: 2026-06-19 | **Spec**: docs/vault/Specs/016 SaaS Architecture/spec.md

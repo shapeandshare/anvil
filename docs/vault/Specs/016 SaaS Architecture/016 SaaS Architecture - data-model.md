@@ -3,13 +3,21 @@ title: 016 SaaS Architecture - data-model
 type: data-model
 tags:
   - type/spec
+  - status/superseded
 spec-refs:
   - docs/vault/Specs/016 SaaS Architecture/
 related:
   - '[[016 SaaS Architecture]]'
-created: ~
-updated: ~
+  - '[[Reference/SaaSArchitectureDecisions]]'
+status: superseded
+created: '2026-06-19'
+updated: '2026-06-27'
 ---
+
+> [!WARNING] Superseded — This artifact is retained for historical reference.
+> Entities and relationships have been lifted into per-feature data-model docs (028–037).
+> See [[Specs/016 SaaS Architecture/016 SaaS Architecture|016 index]].
+
 # Data Model: SaaS Architecture
 
 This model implements full RBAC multi-tenancy (AD-8), Postgres-source-of-truth job state (AD-4), and usage metering (AD-9). All SaaS resources are owned by `org_id` and scoped by team/role.
