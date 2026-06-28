@@ -10,7 +10,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
-from ...api.v1.schemas import EvalPerplexityBody
+from .schemas_eval import EvalPerplexityBody
 from ...core.engine import softmax
 from ...services.inference.inference import InferenceService
 

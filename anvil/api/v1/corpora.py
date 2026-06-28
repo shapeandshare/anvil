@@ -21,7 +21,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, HTTPException
 
 from ...api.deps import get_workbench
-from ...api.v1.schemas import (
+from .schemas_corpus import (
     AnalyzePathBody,
     CreateCorpusBody,
     ForkCorpusBody,

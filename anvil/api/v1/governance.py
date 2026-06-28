@@ -19,7 +19,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from ...api.deps import get_workbench
 from ...workbench import AnvilWorkbench
-from .schemas import TakedownBody
+from .schemas_governance import TakedownBody
 
 router = APIRouter()
 
