@@ -1,0 +1,270 @@
+<!--
+  ~ Copyright © 2026 Josh Burt
+  ~
+  ~ This source code is licensed under the MIT license found in the
+  ~ LICENSE file in the root directory of this source tree.
+-->
+
+{% extends "base.html" %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
+{% block content %}
+
+<div class="section-card" style="--stagger-i: 0">
+  <div class="page-intro">View and manage runtime configuration settings. Override a setting to persist a custom value. Settings with <strong class="cmd">boot_critical</strong> apply class require a restart to take effect.</div>
+
+  {# ── Pending-restart warning banner ── #}
+  <div id="pending-restart-banner" class="section-card section-card--banner" style="--stagger-i: 0;display:none;margin-bottom:var(--space-3);">
+    <div class="section-card__content" style="display:flex;align-items:center;gap:var(--space-3);">
+      <span style="font-size:1.2rem;flex-shrink:0;color:var(--accent-warn);">&#9888;</span>
+      <div style="flex:1;">
+        <div style="font-family:var(--font-body);font-weight:600;font-size:var(--text-footnote);color:var(--accent-warn);">
+          Pending Restart
+        </div>
+        <div id="pending-restart-msg" style="font-size:var(--text-caption-2);color:var(--text-tertiary);margin-top:2px;">
+          Some settings have been changed but will only take effect after a restart.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-card__header">
+    <span class="section-card__icon">&#9881;</span>
+    <h2 class="section-card__title">Configuration Settings</h2>
+  </div>
+  <div id="config-list">
+    <span class="text-muted type-subhead">Loading configuration&hellip;</span>
+  </div>
+</div>
+
+<script nonce="{{ request.state.csp_nonce }}">
+(function() {
+  var TOAST_DURATION = 3000;
+
+  function toast(msg, type) {
+    type = type || 'info';
+    var container = document.getElementById('toast-container');
+    var el = document.createElement('div');
+    el.className = 'toast toast-' + type;
+    el.textContent = msg;
+    container.appendChild(el);
+    setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, TOAST_DURATION);
+  }
+
+  function setBtnLoading(btn, loading) {
+    if (!btn) return;
+    btn.disabled = loading;
+    btn.textContent = loading ? '...' : (btn.getAttribute('data-label') || btn.textContent);
+  }
+
+  window.loadConfig = async function loadConfig() {
+    var el = document.getElementById('config-list');
+    if (!el) return;
+    try {
+      var resp = await fetch('/v1/config');
+      if (!resp.ok) {
+        el.innerHTML = '<span class="text-muted type-subhead">Could not load configuration.</span>';
+        return;
+      }
+      var settings = await resp.json();
+
+      if (!settings || settings.length === 0) {
+        el.innerHTML = '<div class="empty-state">No configuration settings available.</div>';
+        return;
+      }
+
+      // ── Pending-restart banner ──
+      var pendingBanner = document.getElementById('pending-restart-banner');
+      var pendingMsg = document.getElementById('pending-restart-msg');
+      var pendingCount = 0;
+      var pendingKeys = [];
+      for (var pi = 0; pi < settings.length; pi++) {
+        if (settings[pi].pending_restart) {
+          pendingCount++;
+          pendingKeys.push(settings[pi].key);
+        }
+      }
+      if (pendingCount > 0) {
+        pendingMsg.textContent = pendingCount + ' setting(s) pending restart: ' + pendingKeys.join(', ') + '. Restart required to apply.';
+        pendingBanner.style.display = '';
+      } else {
+        pendingBanner.style.display = 'none';
+      }
+
+      var html = '<div class="table-scroll"><table class="grouped-list">';
+      html += '<thead><tr><th>Key</th><th>Value</th><th>Source</th><th>Apply Class</th><th>Actions</th></tr></thead><tbody>';
+
+      for (var i = 0; i < settings.length; i++) {
+        var s = settings[i];
+
+        var sourceBadge = '';
+        if (s.source === 'override') {
+          sourceBadge = '<span class="badge badge-cyan">override</span>';
+        } else if (s.source === 'env') {
+          sourceBadge = '<span class="badge badge-yellow">env</span>';
+        } else {
+          sourceBadge = '<span class="badge" style="background:color-mix(in srgb,var(--text-tertiary) 15%,transparent);color:var(--text-tertiary);">default</span>';
+        }
+
+        var applyClassLabel = s.apply_class.replace(/_/g, ' ');
+        var applyClassBadge = '';
+        if (s.apply_class === 'applies_live') {
+          applyClassBadge = '<span class="badge badge-green">' + applyClassLabel + '</span>';
+        } else if (s.apply_class === 'mlflow_restart') {
+          applyClassBadge = '<span class="badge badge-yellow">' + applyClassLabel + '</span>';
+        } else {
+          applyClassBadge = '<span class="badge badge-red">' + applyClassLabel + '</span>';
+        }
+
+        var pendingHtml = s.pending_restart ? ' <span class="badge badge-yellow" title="Restart required">&#9888; pending</span>' : '';
+
+        html += '<tr class="row-entrance" style="--row-i:' + i + '">';
+        html += '<td class="cell-mono" style="font-weight:600;">' + s.key + pendingHtml + '</td>';
+        html += '<td class="cell-mono" id="config-value-' + s.key + '">' + s.value + '</td>';
+        html += '<td class="cell-nowrap">' + sourceBadge + '</td>';
+        html += '<td class="cell-nowrap">' + applyClassBadge + '</td>';
+        html += '<td class="cell-nowrap">';
+
+        if (s.editable) {
+          html += '<button type="button" class="btn btn-secondary btn-sm" id="btn-edit-' + s.key + '" data-config-action="edit" data-config-key="' + s.key + '" data-label="Edit">Edit</button> ';
+          if (s.source === 'override') {
+            html += '<button type="button" class="btn btn-secondary btn-sm" style="color:var(--accent-red);border-color:var(--accent-red);" id="btn-reset-' + s.key + '" data-config-action="reset" data-config-key="' + s.key + '" data-label="Reset">Reset</button>';
+          }
+        } else {
+          html += '<span class="text-muted type-caption-2">&mdash;</span>';
+        }
+
+        html += '</td>';
+        html += '</tr>';
+      }
+
+      html += '</tbody></table></div>';
+      el.innerHTML = html;
+    } catch(e) {
+      el.innerHTML = '<span class="text-muted type-subhead">Could not load configuration.</span>';
+    }
+  };
+
+  function promptEdit(key, currentValue) {
+    var overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.innerHTML = '<div class="modal-dialog">'
+      + '<div class="modal-dialog__header">'
+      + '<div class="modal-dialog__icon" style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent);">&#9998;</div>'
+      + '<h3 class="modal-dialog__title">Edit ' + key + '</h3></div>'
+      + '<div class="modal-dialog__body">'
+      + '<label for="config-edit-input" style="display:block;font-size:var(--text-footnote);color:var(--text-secondary);margin-bottom:var(--space-1);">Value</label>'
+      + '<input type="text" id="config-edit-input" class="input" value="' + currentValue.replace(/"/g, '&quot;') + '" style="width:100%;box-sizing:border-box;">'
+      + '</div>'
+      + '<div class="modal-dialog__actions">'
+      + '<button type="button" class="modal-dialog__btn modal-dialog__btn--cancel" id="modal-cancel">Cancel</button>'
+      + '<button type="button" class="modal-dialog__btn modal-dialog__btn--confirm" style="color:var(--accent);" id="modal-save">Save</button>'
+      + '</div></div>';
+
+    document.body.appendChild(overlay);
+    document.getElementById('modal-cancel').focus();
+
+    var close = function() {
+      overlay.classList.add('modal-overlay--closing');
+      setTimeout(function() { overlay.remove(); }, 250);
+    };
+
+    document.getElementById('modal-cancel').addEventListener('click', close);
+    document.getElementById('modal-save').addEventListener('click', async function() {
+      var newValue = document.getElementById('config-edit-input').value;
+      close();
+      try {
+        var resp = await window.apiFetch('/v1/config/' + encodeURIComponent(key), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ value: newValue })
+        });
+        var data = await resp.json();
+        if (resp.ok) {
+          toast(key + ' updated', 'success');
+          window.loadConfig();
+        } else {
+          toast(data.detail || 'Failed to update ' + key, 'error');
+        }
+      } catch(e) {
+        toast('Network error', 'error');
+      }
+    });
+
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) close(); });
+    document.addEventListener('keydown', function handler(e) {
+      if (e.key === 'Escape') { close(); document.removeEventListener('keydown', handler); }
+    });
+
+    setTimeout(function() {
+      var input = document.getElementById('config-edit-input');
+      if (input) { input.focus(); input.select(); }
+    }, 100);
+  }
+
+  function promptReset(key) {
+    var overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.innerHTML = '<div class="modal-dialog">'
+      + '<div class="modal-dialog__header">'
+      + '<div class="modal-dialog__icon" style="background:color-mix(in srgb,var(--accent-red) 15%,transparent);color:var(--accent-red);">&#9888;</div>'
+      + '<h3 class="modal-dialog__title">Reset ' + key + '</h3></div>'
+      + '<div class="modal-dialog__body"><p class="modal-dialog__message">Reset <strong class="cmd">' + key + '</strong> to its default or env value? This cannot be undone.</p></div>'
+      + '<div class="modal-dialog__actions">'
+      + '<button type="button" class="modal-dialog__btn modal-dialog__btn--cancel" id="modal-cancel">Cancel</button>'
+      + '<button type="button" class="modal-dialog__btn modal-dialog__btn--confirm" style="color:var(--accent-red);" id="modal-confirm-reset">Reset</button>'
+      + '</div></div>';
+
+    document.body.appendChild(overlay);
+    document.getElementById('modal-cancel').focus();
+
+    var close = function() {
+      overlay.classList.add('modal-overlay--closing');
+      setTimeout(function() { overlay.remove(); }, 250);
+    };
+
+    document.getElementById('modal-cancel').addEventListener('click', close);
+    document.getElementById('modal-confirm-reset').addEventListener('click', async function() {
+      close();
+      try {
+        var resp = await window.apiFetch('/v1/config/' + encodeURIComponent(key) + '/reset', { method: 'POST' });
+        var data = await resp.json();
+        if (resp.ok) {
+          toast(key + ' reset', 'success');
+          window.loadConfig();
+        } else {
+          toast(data.detail || 'Failed to reset ' + key, 'error');
+        }
+      } catch(e) {
+        toast('Network error', 'error');
+      }
+    });
+
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) close(); });
+    document.addEventListener('keydown', function handler(e) {
+      if (e.key === 'Escape') { close(); document.removeEventListener('keydown', handler); }
+    });
+  }
+
+  window.loadConfig();
+
+  document.getElementById('config-list').addEventListener('click', function(e) {
+    var btn = e.target.closest('[data-config-action]');
+    if (!btn) return;
+    var action = btn.dataset.configAction;
+    var key = btn.dataset.configKey;
+    if (!action || !key) return;
+    if (action === 'edit') {
+      var valueCell = document.getElementById('config-value-' + key);
+      var currentValue = valueCell ? valueCell.textContent : '';
+      promptEdit(key, currentValue);
+    } else if (action === 'reset') {
+      promptReset(key);
+    }
+  });
+})();
+</script>
+{% endblock %}

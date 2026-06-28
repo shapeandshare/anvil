@@ -32,6 +32,7 @@ from .curation_result import CurationResult
 from .metrics_result import MetricsResult
 
 if TYPE_CHECKING:
+    from ...workspace.workspace_paths import WorkspacePaths
     from ..governance.audit_service import AuditService
 
 
@@ -48,6 +49,7 @@ class DatasetCurationService:
         session: AsyncSession,
         dataset_id: int,
         store: LocalFileStore | None = None,
+        paths: WorkspacePaths | None = None,
     ):
         """Initialise the curation service.
 
@@ -58,12 +60,22 @@ class DatasetCurationService:
         dataset_id : int
             ID of the dataset to curate.
         store : LocalFileStore, optional
-            File store for reading/writing sample content. Defaults to
-            a new ``LocalFileStore`` at ``"data/datasets"``.
+            File store for reading/writing sample content.  When
+            ``None`` and *paths* is provided the store is rooted at
+            ``paths.datasets_dir``, otherwise it falls back to
+            ``"data/datasets"``.
+        paths : WorkspacePaths, optional
+            When provided with no explicit *store*, the store is created
+            from ``paths.datasets_dir``.
         """
         self._session = session
         self._dataset_id = dataset_id
-        self._store = store or LocalFileStore("data/datasets")
+        if store is not None:
+            self._store = store
+        elif paths is not None:
+            self._store = LocalFileStore(str(paths.datasets_dir))
+        else:
+            self._store = LocalFileStore("data/datasets")
         self._sample_repo = SampleRepository(session)
         self._op_repo = CurationOperationRepository(session)
         self._dataset_repo = DatasetRepository(session)

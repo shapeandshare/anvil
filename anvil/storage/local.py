@@ -5,16 +5,22 @@
 
 """Local filesystem implementation of FileStore."""
 
+from __future__ import annotations
+
 import os
 import shutil
 import tempfile
 from collections.abc import AsyncIterator
 from datetime import datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import aiofiles  # type: ignore[import-untyped]
 
 from .interface import FileInfo, FileStore  # type: ignore[attr-defined]
+
+if TYPE_CHECKING:
+    from ..workspace.workspace_paths import WorkspacePaths
 
 
 class LocalFileStore(FileStore):
@@ -29,10 +35,22 @@ class LocalFileStore(FileStore):
     ----------
     base_path : str, optional
         Root directory for file storage. Created automatically if it
-        does not exist. Defaults to ``"data/storage"``.
+        does not exist. Defaults to ``"data/storage"`` when neither
+        *base_path* nor *paths* is provided.
+    paths : WorkspacePaths, optional
+        When provided the ``storage_dir`` property overrides
+        *base_path*.  Ignored when *base_path* is given explicitly.
     """
 
-    def __init__(self, base_path: str = "data/storage"):
+    def __init__(
+        self,
+        base_path: str | None = None,
+        paths: WorkspacePaths | None = None,
+    ):
+        if paths is not None:
+            base_path = str(paths.storage_dir)
+        elif base_path is None:
+            base_path = "data/storage"
         self.base_path = Path(base_path)
         self.base_path.mkdir(parents=True, exist_ok=True)
 

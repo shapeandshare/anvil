@@ -9,14 +9,20 @@ Provides the ``DatasetExportService`` class which reads active samples
 from a dataset and streams them in TXT, CSV, or JSONL format.
 """
 
+from __future__ import annotations
+
 import json
 from collections.abc import AsyncIterator, Sequence
+from typing import TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...db.models.sample import Sample
 from ...db.repositories.curation import SampleRepository
 from ...storage.local import LocalFileStore
+
+if TYPE_CHECKING:
+    from ...workspace.workspace_paths import WorkspacePaths
 
 
 class DatasetExportService:
@@ -32,6 +38,7 @@ class DatasetExportService:
         session: AsyncSession,
         dataset_id: int,
         store: LocalFileStore | None = None,
+        paths: WorkspacePaths | None = None,
     ):
         """Initialise the export service.
 
@@ -42,12 +49,22 @@ class DatasetExportService:
         dataset_id : int
             ID of the dataset to export.
         store : LocalFileStore, optional
-            File store for reading sample content. Defaults to a new
-            ``LocalFileStore`` at ``"data/datasets"``.
+            File store for reading sample content.  When ``None`` and
+            *paths* is provided the store is rooted at
+            ``paths.datasets_dir``, otherwise it falls back to
+            ``"data/datasets"``.
+        paths : WorkspacePaths, optional
+            When provided with no explicit *store*, the store is created
+            from ``paths.datasets_dir``.
         """
         self._session = session
         self._dataset_id = dataset_id
-        self._store = store or LocalFileStore("data/datasets")
+        if store is not None:
+            self._store = store
+        elif paths is not None:
+            self._store = LocalFileStore(str(paths.datasets_dir))
+        else:
+            self._store = LocalFileStore("data/datasets")
         self._sample_repo = SampleRepository(session)
 
     async def _get_active_samples(self) -> Sequence[Sample]:

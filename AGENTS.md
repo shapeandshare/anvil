@@ -1,6 +1,6 @@
 # anvil — Agent Guidelines
 
-**Last updated**: 2026-06-22 (constitution v1.8.0: Article XI Simplicity First / Boring Technology + ADR-041; sonarcloud-tooling + content-repository-016-mvp; scripts-python-over-bash + package-module-migration, testing-guide consolidation; OWASP remediation spec 017 + ADRs 035/036; whole-API e2e test suite 017)
+**Last updated**: 2026-06-27 (constitution v1.8.0: Article XI Simplicity First / Boring Technology + ADR-041; sonarcloud-tooling + content-repository-016-mvp; scripts-python-over-bash + package-module-migration, testing-guide consolidation; OWASP remediation spec 017 + ADRs 035/036; whole-API e2e test suite 017)
 
 ## Project Overview
 
@@ -391,6 +391,8 @@ SomeException
 - N/A — the SDK is a stateless HTTP client; the only persisted state is an in-memory session cookie + optional API key held on the client instance. (026-client-sdk)
 - Python 3.11+ + FastAPI + Jinja2 (existing project stack — no new deps) (opencode/lucky-canyon)
 - N/A — static content defined as structured data in a Python module (opencode/lucky-canyon)
+- Python 3.11+ (repo standard; `StrEnum`, PEP 604 unions, PEP 563 `from __future__ import annotations`) + FastAPI, async SQLAlchemy + aiosqlite, Alembic, Jinja2, uvicorn, MLflow (sidecar). **No new runtime dependencies** — boot file uses stdlib `json`; global registry uses the existing async SQLAlchemy/Alembic stack (or stdlib `sqlite3` for the host-level store — see research.md F). (opencode/witty-meadow)
+- Per-instance SQLite app DB (WAL) under each workspace; a host-level global registry SQLite DB at `~/.anvil/registry.db`; per-workspace `instance.json` boot file (JSON on disk). (opencode/witty-meadow)
 
 ## Recent Changes
 - 025-ux-rules-integration: Added Python 3.11+ (existing repo convention) + Stdlib only — `ux_lint.py` (re/ sys/ os/), `ux_review.py` (stdlib + urllib for OpenAI-compatible API calls)

@@ -10,11 +10,13 @@ formats (TXT, CSV, JSONL, JSON, paste, corpus) and committing the
 parsed samples to a dataset with file storage.
 """
 
+from __future__ import annotations
+
 import csv
 import io
 import json
 from collections.abc import AsyncIterator
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -30,6 +32,9 @@ from .dataset_status import DatasetStatus
 from .import_result import ImportResult
 from .parsed_sample import ParsedSample
 
+if TYPE_CHECKING:
+    from ...workspace.workspace_paths import WorkspacePaths
+
 
 class DatasetImportService:
     """Parses text in various formats and imports samples into a dataset.
@@ -44,6 +49,7 @@ class DatasetImportService:
         session: AsyncSession,
         dataset_id: int,
         store: LocalFileStore | None = None,
+        paths: WorkspacePaths | None = None,
     ):
         """Initialise the import service.
 
@@ -54,12 +60,22 @@ class DatasetImportService:
         dataset_id : int
             ID of the dataset to import into.
         store : LocalFileStore, optional
-            File store for persisting sample content. Defaults to a
-            new ``LocalFileStore`` at ``"data/datasets"``.
+            File store for persisting sample content.  When ``None``
+            and *paths* is provided the store is rooted at
+            ``paths.datasets_dir``, otherwise it falls back to
+            ``"data/datasets"``.
+        paths : WorkspacePaths, optional
+            When provided with no explicit *store*, the store is created
+            from ``paths.datasets_dir``.
         """
         self._session = session
         self._dataset_id = dataset_id
-        self._store = store or LocalFileStore("data/datasets")
+        if store is not None:
+            self._store = store
+        elif paths is not None:
+            self._store = LocalFileStore(str(paths.datasets_dir))
+        else:
+            self._store = LocalFileStore("data/datasets")
         self._sample_repo = SampleRepository(session)
         self._op_repo = CurationOperationRepository(session)
         self._import_repo = ImportSourceRepository(session)

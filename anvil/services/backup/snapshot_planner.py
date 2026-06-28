@@ -11,6 +11,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import ClassVar
 
+from ...workspace.workspace_paths import WorkspacePaths
+
 
 @dataclass  # noqa: dataclass
 class SnapshotPlan:
@@ -48,6 +50,10 @@ class SnapshotPlanner:
     ``INCLUDED_ROOTS`` are the persistent filesystem roots that form
     the deployment state.  ``EXCLUDED_ROOTS`` are deliberately omitted
     (diagnostic-only logs, environment-specific config/secrets).
+
+    When *workspace_root* is provided, paths are resolved via
+    :class:`WorkspacePaths` instead of ``Path.cwd()`` — this ensures
+    backups respect the per-instance workspace layout.
     """
 
     INCLUDED_ROOTS: ClassVar[list[str]] = [
@@ -63,6 +69,28 @@ class SnapshotPlanner:
         "logs",
         ".env",
     ]
+
+    #: Maps INCLUDED_ROOTS entries to WorkspacePaths property names.
+    _ROOT_TO_WP_PROP: ClassVar[dict[str, str]] = {
+        "data/anvil-state.db": "state_db_path",
+        "data/models": "models_dir",
+        "data/datasets": "datasets_dir",
+        "data/storage": "storage_dir",
+        "data/content": "content_dir",
+        "mlruns": "mlruns_dir",
+    }
+
+    def __init__(self, workspace_root: Path | None = None) -> None:
+        """Initialise the planner.
+
+        Parameters
+        ----------
+        workspace_root : Path or None
+            Optional workspace root.  When set, paths in ``plan()`` are
+            resolved via :class:`WorkspacePaths` instead of the current
+            working directory.
+        """
+        self._workspace_root = workspace_root
 
     @staticmethod
     def _dir_size(path: Path) -> int:
@@ -101,15 +129,28 @@ class SnapshotPlanner:
         roots: list[Path] = []
         total = 0
 
-        for rel in self.INCLUDED_ROOTS:
-            p = cwd / rel
-            if not p.exists():
-                continue
-            roots.append(p)
-            if p.is_file():
-                total += p.stat().st_size
-            else:
-                total += self._dir_size(p)
+        if self._workspace_root is not None:
+            wp = WorkspacePaths(self._workspace_root)
+            for rel in self.INCLUDED_ROOTS:
+                prop = self._ROOT_TO_WP_PROP[rel]
+                p: Path = getattr(wp, prop)
+                if not p.exists():
+                    continue
+                roots.append(p)
+                if p.is_file():
+                    total += p.stat().st_size
+                else:
+                    total += self._dir_size(p)
+        else:
+            for rel in self.INCLUDED_ROOTS:
+                p = cwd / rel
+                if not p.exists():
+                    continue
+                roots.append(p)
+                if p.is_file():
+                    total += p.stat().st_size
+                else:
+                    total += self._dir_size(p)
 
         required = int(total * 1.1)  # 10% safety margin for the temp copy
         try:

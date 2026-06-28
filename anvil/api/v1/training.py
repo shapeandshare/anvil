@@ -106,8 +106,46 @@ _tasks: dict[int, asyncio.Task[Any]] = {}
 """dict[int, asyncio.Task]: In-memory registry of active training tasks keyed by
 run ID."""
 MODELS_DIR = Path("data/models")
-"""Path: Directory where trained model artifacts are saved."""
+"""Path: Default directory where trained model artifacts are saved."""
 MODELS_DIR.mkdir(parents=True, exist_ok=True)
+
+_models_dir_override: Path | None = None
+"""Path | None: Optional runtime override for MODELS_DIR, set via
+:func:`set_models_dir` when a :class:`~anvil.workspace.workspace_paths.WorkspacePaths`
+instance is available at call time."""
+
+
+def set_models_dir(path: Path | None) -> None:
+    """Override the effective models directory at runtime.
+
+    Intended to be called with ``workspace_paths.models_dir`` during
+    application initialisation when a ``WorkspacePaths`` instance is
+    available.  Resets to the module-level default when ``None``.
+
+    Parameters
+    ----------
+    path : Path | None
+        The models directory to use, or ``None`` to fall back to
+        ``MODELS_DIR``.
+    """
+    global _models_dir_override  # pylint: disable=global-statement
+    _models_dir_override = path
+
+
+def _get_models_dir() -> Path:
+    """Return the effective models directory.
+
+    Returns the runtime override if set, otherwise the module-level
+    ``MODELS_DIR`` default.  Used at call time (e.g. inside route
+    handlers that cannot import ``WorkspacePaths`` directly because
+    the module is loaded at import time).
+
+    Returns
+    -------
+    Path
+        The models directory to use.
+    """
+    return _models_dir_override if _models_dir_override is not None else MODELS_DIR
 
 
 def _validate_hparams(
@@ -742,7 +780,9 @@ async def start_training(config: TrainConfig) -> dict[str, Any]:
             )
 
         if model is not None:
-            experiment_model_path = MODELS_DIR / f"experiment_{experiment_id}.json"
+            experiment_model_path = (
+                _get_models_dir() / f"experiment_{experiment_id}.json"
+            )
             model.save(str(experiment_model_path), uchars)  # type: ignore[attr-defined]
 
         if mps_thread is not None:

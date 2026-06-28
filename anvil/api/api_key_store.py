@@ -20,11 +20,15 @@ once at startup and then removed from ``os.environ`` to limit
 ``/proc/<pid>/environ`` exposure (FR-026).
 """
 
+from __future__ import annotations
+
 import logging
 import os
 import secrets
 import sys
 from pathlib import Path
+
+from ..workspace.workspace_paths import WorkspacePaths
 
 logger = logging.getLogger(__name__)
 
@@ -39,11 +43,25 @@ class ApiKeyStore:
     Parameters
     ----------
     key_path : str or Path, optional
-        Path to the API key state file.  Defaults to ``data/.api_key``.
+        Path to the API key state file.  Defaults to ``data/.api_key``
+        (or ``workspace_paths.api_key_path`` if that argument is given).
+    workspace_paths : WorkspacePaths, optional
+        If provided, the default key path is derived from
+        ``workspace_paths.api_key_path`` when *key_path* is not
+        explicitly given.
     """
 
-    def __init__(self, key_path: str | Path | None = None) -> None:
-        self._key_path = Path(key_path) if key_path else _API_KEY_FILE
+    def __init__(
+        self,
+        key_path: str | Path | None = None,
+        workspace_paths: WorkspacePaths | None = None,
+    ) -> None:
+        if key_path is not None:
+            self._key_path = Path(key_path)
+        elif workspace_paths is not None:
+            self._key_path = workspace_paths.api_key_path
+        else:
+            self._key_path = _API_KEY_FILE
         self._key: str | None = None
         self._load_or_generate()
 

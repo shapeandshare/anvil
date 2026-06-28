@@ -15,6 +15,7 @@ representing a persistent entity in the anvil application database.
 # or create tables via ``metadata.create_all()`` at test startup.
 from . import (
     audit_event,
+    backup_operation,
     content_blob,
     content_corpus,
     content_entry,
@@ -30,7 +31,9 @@ from . import (
     curation_operation,
     dataset,
     import_source,
+    instance_record,
     license_entry,
+    runtime_config,
     sample,
     training_config,
 )

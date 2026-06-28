@@ -227,6 +227,26 @@ async def content_page(request: Request) -> HTMLResponse:
     )
 
 
+@router.get("/config-page", response_class=HTMLResponse)
+async def config_page(request: Request) -> HTMLResponse:
+    """Render the runtime configuration management page.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming HTTP request.
+
+    Returns
+    -------
+    HTMLResponse
+        Rendered ``config.html`` template.
+    """
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
+        request,
+        "config.html",
+    )
+
+
 @router.get("/about", response_class=HTMLResponse)
 async def about_page(
     request: Request,

@@ -19,6 +19,7 @@ from fastapi.responses import HTMLResponse
 
 from anvil.api.v1.backup import router as backup_router
 from anvil.api.v1.compute import router as compute_router
+from anvil.api.v1.config import router as config_router
 from anvil.api.v1.content import router as content_router
 from anvil.api.v1.corpora import router as corpora_router
 from anvil.api.v1.datasets import router as datasets_router
@@ -43,6 +44,7 @@ router.include_router(eval_router)
 router.include_router(eval_datasets_router)
 router.include_router(inference_router)
 router.include_router(compute_router)
+router.include_router(config_router)
 router.include_router(governance_router)
 router.include_router(health_ops_router)
 router.include_router(pages_router)
@@ -51,7 +53,7 @@ router.include_router(content_router)
 router.include_router(backup_router)
 
 MODELS_DIR = Path("data/models")
-"""Path: Directory where trained model artifacts are stored on disk."""
+"""Path: Default models directory (mirrors ``workspace_paths.models_dir``)."""
 
 
 @router.get("", response_class=HTMLResponse)

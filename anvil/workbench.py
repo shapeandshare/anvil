@@ -31,6 +31,8 @@ if TYPE_CHECKING:
     from .db.repositories.content_versions import ContentVersionRepository
     from .db.repositories.corpora import CorpusRepository
     from .db.repositories.datasets import DatasetRepository
+    from .db.repositories.instance_registry import InstanceRegistryRepository
+    from .db.repositories.runtime_config import RuntimeConfigRepository
     from .services.content.composition_service import CompositionService
     from .services.content.corpus_service import CorpusService as ContentCorpusService
     from .services.content.import_service import ImportService
@@ -46,8 +48,11 @@ if TYPE_CHECKING:
     from .services.demo.demo_bootstrap import DemoBootstrapService
     from .services.governance.audit_service import AuditService
     from .services.governance.governance_service import GovernanceService
+    from .services.instances.instance_lifecycle_service import InstanceLifecycleService
+    from .services.runtime_config.runtime_config_service import RuntimeConfigService
     from .services.training.training import TrainingService
     from .storage.local import LocalFileStore
+    from .workspace.workspace_paths import WorkspacePaths
 
 __all__ = ["AnvilWorkbench"]
 
@@ -62,10 +67,24 @@ class AnvilWorkbench:
         Services created via lazy accessors share this session so
         audit writes, provenance updates, etc. participate in the
         same transaction.
+    paths : WorkspacePaths, optional
+        Derived paths from the workspace root.  Set by workspace-
+        aware callers; defaults to ``None`` (legacy single-instance
+        paths).
+    registry_session : AsyncSession, optional
+        Session bound to the global registry DB (``~/.anvil/registry.db``).
+        Created lazily if omitted.
     """
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(
+        self,
+        session: AsyncSession,
+        paths: WorkspacePaths | None = None,
+        registry_session: AsyncSession | None = None,
+    ) -> None:
         self._session = session
+        self._paths = paths
+        self._registry_session = registry_session
         # DB-backed lazy references.
         self._training: TrainingService | None = None
         self._dataset_repo: DatasetRepository | None = None
@@ -95,6 +114,12 @@ class AnvilWorkbench:
         self._content_locks: LockService | None = None
         # Backup & Restore (feature 026).
         self._backup_repo: BackupOperationRepository | None = None
+        # Instance lifecycle (feature 028).
+        self._instances: InstanceLifecycleService | None = None
+        self._instance_registry: InstanceRegistryRepository | None = None
+        # Runtime config (feature 037).
+        self._runtime_config_repo: RuntimeConfigRepository | None = None
+        self._runtime_config: RuntimeConfigService | None = None
 
     # ── Stateless service accessors ─────────────────────────────────────
 
@@ -129,11 +154,16 @@ class AnvilWorkbench:
 
     @property
     def store(self) -> LocalFileStore:
-        """Lazily-initialised ``LocalFileStore`` at ``data/datasets``."""
+        """Lazily-initialised ``LocalFileStore`` rooted at the datasets dir."""
         if self._store is None:
             from .storage.local import LocalFileStore
 
-            self._store = LocalFileStore("data/datasets")
+            datasets_path = (
+                str(self._paths.datasets_dir)
+                if self._paths is not None
+                else "data/datasets"
+            )
+            self._store = LocalFileStore(datasets_path)
         return self._store
 
     # ── DB-backed domain service accessors ──────────────────────────────
@@ -432,6 +462,69 @@ class AnvilWorkbench:
 
             self._backup_repo = BackupOperationRepository(self._session)
         return self._backup_repo
+
+    # ── Instance lifecycle accessors (feature 028) ──────────────────────
+
+    @property
+    def instances(self) -> InstanceLifecycleService:
+        """Lazily-initialised ``InstanceLifecycleService`` wired to
+        *session*.
+        """
+        if self._instances is None:
+            from .services.instances.instance_lifecycle_service import (
+                InstanceLifecycleService,
+            )
+
+            self._instances = InstanceLifecycleService(
+                self._session,
+                registry_session=self._registry_session,
+                audit=self._audit,
+            )
+        return self._instances
+
+    @property
+    def instance_registry(self) -> InstanceRegistryRepository:
+        """Lazily-initialised ``InstanceRegistryRepository`` bound to
+        the global registry session.
+        """
+        if self._instance_registry is None:
+            from .db.repositories.instance_registry import (
+                InstanceRegistryRepository,
+                create_registry_session,
+            )
+
+            # Create registry session lazily if the caller did not
+            # provide one.
+            if self._registry_session is None:
+                import asyncio
+
+                self._registry_session = asyncio.run(create_registry_session())
+            self._instance_registry = InstanceRegistryRepository(self._registry_session)
+        return self._instance_registry
+
+    # ── Runtime config accessors (feature 037) ──────────────────────────
+
+    @property
+    def runtime_config_repo(self) -> RuntimeConfigRepository:
+        """Lazily-initialised ``RuntimeConfigRepository`` bound to
+        *session*.
+        """
+        if self._runtime_config_repo is None:
+            from .db.repositories.runtime_config import RuntimeConfigRepository
+
+            self._runtime_config_repo = RuntimeConfigRepository(self._session)
+        return self._runtime_config_repo
+
+    @property
+    def runtime_config(self) -> RuntimeConfigService:
+        """Lazily-initialised ``RuntimeConfigService`` wired to *session*."""
+        if self._runtime_config is None:
+            from .services.runtime_config.runtime_config_service import (
+                RuntimeConfigService,
+            )
+
+            self._runtime_config = RuntimeConfigService(self.runtime_config_repo)
+        return self._runtime_config
 
     # ── Session lifecycle ───────────────────────────────────────────────
 

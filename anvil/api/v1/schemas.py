@@ -882,3 +882,49 @@ class CreateSourceBody(BaseModel):
     slug: str = Field(min_length=1, max_length=255)
     name: str = Field(min_length=1, max_length=255)
     kind: str = "manual"
+
+
+# ── Runtime Config (User Story 2) schemas ────────────────────────────
+
+
+class ConfigSettingOut(BaseModel):
+    """Runtime config setting as returned by the API.
+
+    Parameters
+    ----------
+    key : str
+        The setting name (e.g. ``device``, ``mlflow_uri``).
+    value : str
+        The current effective value (stringified).
+    source : str
+        Provenance — ``override``, ``env``, or ``default``.
+    apply_class : str
+        How changes take effect (``boot_critical``, ``mlflow_restart``,
+        ``applies_live``).
+    pending_restart : bool
+        ``True`` when a boot-critical override has been saved but not
+        yet applied.
+    editable : bool
+        ``True`` when the setting can be overridden via the UI.
+    """
+
+    key: str
+    value: str
+    source: str
+    apply_class: str
+    pending_restart: bool = False
+    editable: bool = True
+
+
+class UpdateConfigBody(BaseModel):
+    """Request body for updating a runtime config setting.
+
+    Parameters
+    ----------
+    value : str
+        The new value to persist as an override.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    value: str

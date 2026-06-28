@@ -37,3 +37,5 @@ class AuditTargetType(StrEnum):
     POLICY = "policy"
     AUDIT_CHAIN = "audit_chain"
     BACKUP = "backup"
+    RUNTIME_CONFIG = "runtime_config"
+    INSTANCE = "instance"

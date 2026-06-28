@@ -84,6 +84,7 @@ anvil-db = "anvil.cli:db_main"
 anvil-vault = "anvil.services.vault.cli:main"
 anvil-show-api-key = "anvil.cli:show_api_key"
 anvil-backup = "anvil.services.backup.cli:main"
+anvil-instance = "anvil.services.instances.cli:main"
 
 [tool.ruff]
 target-version = "py311"
@@ -109,7 +110,12 @@ convention = "numpy"
 "anvil/api/v1/experiments.py" = ["ASYNC240", "ASYNC230"]
 "anvil/api/v1/router.py" = ["ASYNC221", "ASYNC240", "B904"]
 "anvil/api/v1/training.py" = ["ASYNC230"]
+"anvil/db/repositories/instance_registry.py" = ["ASYNC240"]
+"anvil/services/backup/cli.py" = ["ASYNC240"]
 "anvil/services/inference/inference.py" = ["ASYNC240"]
+"anvil/services/instances/instance_lifecycle_service.py" = ["ASYNC220", "ASYNC240"]
+"anvil/services/instances/workspace_lock.py" = ["ASYNC240"]
+"anvil/workspace/workspace_paths.py" = ["D102"]
 
 [tool.ruff.format]
 quote-style = "double"
