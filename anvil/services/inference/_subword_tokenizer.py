@@ -13,17 +13,25 @@ Both implement the ``Tokenizer`` protocol and are gated behind the
 
 from __future__ import annotations
 
+from typing import Any
+
 from ...core._tokenizer_base import Tokenizer
 
-_HAS_FINETUNE_DEPS = False
+_HAS_FINETUNE_DEPS: bool = False
+_HAS_SP_DEPS: bool = False
 try:
-    from tokenizers import Encoding as _Encoding
-    from tokenizers import Tokenizer as _HFTokenizer
+    import tokenizers as _tokenizers_lib
 
     _HAS_FINETUNE_DEPS = True
 except ImportError:
-    _HFTokenizer = None  # type: ignore[assignment]
-    _Encoding = None  # type: ignore[assignment]
+    _tokenizers_lib = None
+
+try:
+    import sentencepiece as _sentencepiece_lib
+
+    _HAS_SP_DEPS = True
+except ImportError:
+    _sentencepiece_lib = None
 
 
 class HFFastTokenizer(Tokenizer):
@@ -33,7 +41,7 @@ class HFFastTokenizer(Tokenizer):
     file. Requires the ``[finetune]`` extra.
     """
 
-    def __init__(self, tokenizer: _HFTokenizer) -> None:  # type: ignore[arg-type]
+    def __init__(self, tokenizer: Any) -> None:
         """Wrap a pre-loaded HF tokenizer instance.
 
         Parameters
@@ -68,7 +76,7 @@ class HFFastTokenizer(Tokenizer):
                 "The HuggingFace tokenizers library is required. "
                 "Install with: pip install anvil[finetune]"
             )
-        hf_tokenizer = _HFTokenizer.from_file(path)
+        hf_tokenizer = _tokenizers_lib.Tokenizer.from_file(path)
         return cls(hf_tokenizer)
 
     def encode(self, text: str) -> list[int]:
@@ -84,8 +92,8 @@ class HFFastTokenizer(Tokenizer):
         list of int
             Token ID sequence.
         """
-        encoding: _Encoding = self._tokenizer.encode(text)
-        return encoding.ids
+        encoding = self._tokenizer.encode(text)
+        return list(encoding.ids)
 
     def decode(self, ids: list[int]) -> str:
         """Decode token IDs back into text.
@@ -100,12 +108,12 @@ class HFFastTokenizer(Tokenizer):
         str
             Decoded text, with special tokens stripped.
         """
-        return self._tokenizer.decode(ids, skip_special_tokens=True)
+        return str(self._tokenizer.decode(ids, skip_special_tokens=True))
 
     @property
     def vocab_size(self) -> int:
         """Total vocabulary size including added tokens."""
-        return self._tokenizer.get_vocab_size(with_added_tokens=True)
+        return int(self._tokenizer.get_vocab_size(with_added_tokens=True))
 
     @property
     def bos_id(self) -> None:
@@ -120,11 +128,11 @@ class HFFastTokenizer(Tokenizer):
 
 _HAS_SP_DEPS = False
 try:
-    import sentencepiece as _sentencepiece
+    import sentencepiece as _sentencepiece_lib
 
     _HAS_SP_DEPS = True
 except ImportError:
-    pass
+    _sentencepiece_lib = None
 
 
 class SentencePieceTokenizer(Tokenizer):
@@ -134,7 +142,7 @@ class SentencePieceTokenizer(Tokenizer):
     Requires the ``[finetune]`` extra.
     """
 
-    def __init__(self, processor: _sentencepiece.SentencePieceProcessor) -> None:  # type: ignore[name-defined]
+    def __init__(self, processor: Any) -> None:
         """Wrap a pre-loaded SentencePiece processor.
 
         Parameters
@@ -169,7 +177,7 @@ class SentencePieceTokenizer(Tokenizer):
                 "The sentencepiece library is required. "
                 "Install with: pip install anvil[finetune]"
             )
-        processor = _sentencepiece.SentencePieceProcessor()
+        processor = _sentencepiece_lib.SentencePieceProcessor()
         processor.load(path)
         return cls(processor)
 
@@ -186,7 +194,7 @@ class SentencePieceTokenizer(Tokenizer):
         list of int
             Token ID sequence.
         """
-        return self._processor.encode(text)
+        return list(self._processor.encode(text))
 
     def decode(self, ids: list[int]) -> str:
         """Decode token IDs back into text.
@@ -201,12 +209,12 @@ class SentencePieceTokenizer(Tokenizer):
         str
             Decoded text.
         """
-        return self._processor.decode(ids)
+        return str(self._processor.decode(ids))
 
     @property
     def vocab_size(self) -> int:
         """Total vocabulary size."""
-        return self._processor.get_piece_size()
+        return int(self._processor.get_piece_size())
 
     @property
     def bos_id(self) -> None:

@@ -101,9 +101,9 @@ class Vocabulary(Tokenizer):
             Token IDs with leading and trailing BOS tokens.
         """
         return (
-            [self.bos_id]
+            [self._bos_id]
             + [self._char_to_id[ch] for ch in text if ch in self._char_to_id]
-            + [self.bos_id]
+            + [self._bos_id]
         )
 
     def decode(self, ids: list[int]) -> str:

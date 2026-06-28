@@ -57,7 +57,7 @@ class LoadedModel:
             Dict with keys ``id``, ``version``, ``name``, ``is_demo``,
             and ``tokenizer`` (family, serialization_type, vocab_size).
         """
-        base = {
+        base: dict[str, Any] = {
             "id": self.model_id,
             "version": self.version,
             "name": self.name,

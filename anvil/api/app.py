@@ -343,12 +343,11 @@ async def _http_exception_handler(request: Request, exc: HTTPException) -> JSONR
 try:
     from ..services._shared.tokenizer_load_error import TokenizerLoadError
 except ImportError:
-    TokenizerLoadError = None  # type: ignore[assignment, misc]
-
+    TokenizerLoadError = None  # type: ignore[assignment,misc]
 
 if TokenizerLoadError is not None:
 
-    @app.exception_handler(TokenizerLoadError)  # type: ignore[arg-type]
+    @app.exception_handler(TokenizerLoadError)
     async def _tokenizer_load_error_handler(
         request: Request, exc: TokenizerLoadError
     ) -> JSONResponse:
