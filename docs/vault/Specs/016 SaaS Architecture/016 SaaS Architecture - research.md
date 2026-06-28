@@ -3,13 +3,21 @@ title: 016 SaaS Architecture - research
 type: research
 tags:
   - type/spec
+  - status/superseded
 spec-refs:
   - docs/vault/Specs/016 SaaS Architecture/
 related:
   - '[[016 SaaS Architecture]]'
-created: ~
-updated: ~
+  - '[[Reference/SaaSArchitectureDecisions]]'
+status: superseded
+created: '2026-06-19'
+updated: '2026-06-27'
 ---
+
+> [!WARNING] Superseded — This artifact is retained for historical reference.
+> Research findings have been lifted into per-feature research docs (028–037).
+> See [[Specs/016 SaaS Architecture/016 SaaS Architecture|016 index]].
+
 # Research: SaaS Architecture — Three-Mode Operating Model
 
 **Phase 0 output** — resolves all research unknowns for implementation planning.

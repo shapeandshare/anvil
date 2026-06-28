@@ -3,13 +3,21 @@ title: 016 SaaS Architecture - tasks
 type: tasks
 tags:
   - type/spec
+  - status/superseded
 spec-refs:
   - docs/vault/Specs/016 SaaS Architecture/
 related:
   - '[[016 SaaS Architecture]]'
-created: ~
-updated: ~
+  - '[[Reference/SaaSArchitectureDecisions]]'
+status: superseded
+created: '2026-06-19'
+updated: '2026-06-27'
 ---
+
+> [!WARNING] Superseded — This artifact is retained for historical reference.
+> Superseded by per-feature specs 028–037. Task IDs T001–T110 are now distributed across the child
+> specs. See [[Specs/016 SaaS Architecture/016 SaaS Architecture|016 index]].
+
 # Tasks: SaaS Architecture — Three-Mode Operating Model
 
 **Input**: Design documents from `docs/vault/Specs/016 SaaS Architecture/`

@@ -6,7 +6,7 @@ tags:
   - domain/architecture
   - domain/infrastructure
 created: 2026-06-19
-updated: 2026-06-19
+updated: 2026-06-27
 aliases:
   - "ADR-030: SaaS Architecture — Three-Mode Operating Model"
   - ADR-030
@@ -15,8 +15,16 @@ source: agent
 related:
   - '[[Decisions/ADR-015-pluggable-compute-backends]]'
   - '[[Reference/DualBackend]]'
+  - '[[Reference/SaaSArchitectureDecisions]]'
 code-refs:
-  - docs/vault/Specs/016 SaaS Architecture/spec.md
+  - docs/vault/Reference/SaaSArchitectureDecisions.md
+  - docs/vault/Specs/028 SaaS Abstraction Framework/
+  - docs/vault/Specs/030 SaaS Authentication/
+  - docs/vault/Specs/031 SaaS Multi-Tenancy RBAC/
+  - docs/vault/Specs/032 SaaS Training Pipeline/
+  - docs/vault/Specs/033 SaaS CDK Infrastructure/
+  - docs/vault/Specs/034 SaaS One-Command Deploy/
+  - docs/vault/Specs/036 SaaS Observability MLflow Proxy/
   - docs/vault/Reference/SaaSArchitecture.md
   - docs/vault/Reference/SaaSSystemDiagrams.md
 ---
@@ -24,6 +32,12 @@ code-refs:
 # ADR-030: SaaS Architecture — Three-Mode Operating Model
 
 ## Status
+
+**Update (2026-06-27)**: The umbrella spec `016 SaaS Architecture` that hosted this ADR's decisions
+has been superseded and split into per-feature specs 028–037. The canonical architecture decisions
+(AD-1..AD-17) moved to [[Reference/SaaSArchitectureDecisions|SaaS Architecture Decisions]]. This
+ADR's authority is unchanged — it remains the originating decision record. Code references updated
+to point at the child specs and the shared decisions note.
 
 Proposed
 
