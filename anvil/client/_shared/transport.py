@@ -1,3 +1,4 @@
+# one-class:allow — _RawResponse is an internal envelope model used only by Transport
 # Copyright © 2026 Josh Burt
 #
 # This source code is licensed under the MIT license found in the

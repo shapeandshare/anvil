@@ -1,3 +1,4 @@
+# one-class:allow — CatalogEntry is a return type of RuntimeConfigService
 # Copyright © 2026 Josh Burt
 #
 # This source code is licensed under the MIT license found in the

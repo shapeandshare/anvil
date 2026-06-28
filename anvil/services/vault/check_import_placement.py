@@ -1,3 +1,4 @@
+# one-class:allow — ScanResult/result types are tightly coupled to the checker
 # Copyright © 2026 Josh Burt
 #
 # This source code is licensed under the MIT license found in the
