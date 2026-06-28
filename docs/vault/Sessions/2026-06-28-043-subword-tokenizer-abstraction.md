@@ -7,6 +7,7 @@ tags:
   - domain/training
 created: '2026-06-28'
 updated: '2026-06-28'
+session-end: '2026-06-28T23:20:00Z'
 aliases:
   - Session: 043 Subword Tokenizer Abstraction
 status: draft
@@ -108,6 +109,40 @@ InferenceService → uses protocol; all .vocab.* refs migrated
 ## Vault health
 
 Ran `make vault-audit` — 0 errors. Session log and spec artifacts committed.
+
+## Session continuation: CI gate remediation (2026-06-28)
+
+After the merge of `main` into this branch, several CI gates failed. Remediated:
+
+### Merge conflict resolution
+- `.specify/feature.json`: kept HEAD (043 feature directory)
+- `AGENTS.md` Active Technologies section: merged both HEAD and main entries
+
+### SonarCloud quality gate fixes
+| Finding | Fix |
+|---------|-----|
+| Security: `test_tokenizer_factory.py:42` hardcoded `/tmp` | Replaced with `tempfile.TemporaryDirectory()` |
+| Reliability: `tokenizer_factory.py` cognitive complexity 25 (limit 15) | Extracted `_load_hf_fast()` and `_load_sentencepiece()` helpers |
+| Code smell: `inference.py:468,767` nested conditionals | Extracted to local variables (`fallback_id`, `seed_fallback`) |
+
+### mypy strict fixes (15 pre-existing errors across 8 files)
+| File | Fix |
+|------|-----|
+| `corpora.py:403-408` | Added `BaseChunker` type annotation via `Chunker as BaseChunker` import |
+| `gpu.py:100` | Removed unused `# type: ignore[assignment]` |
+| `mlflow_inputs.py:112` | Removed unused `# type: ignore[assignment]` |
+| `mlflow_capabilities.py:60` | Added `import mlflow` before probe |
+| `modal_backend.py:127` | Removed unused `# type: ignore[possibly-unbound]` |
+| `torch_engine.py:550-562` | Replaced `model.chars` with `getattr(model, "chars")` for dynamically-set attribute |
+| `tracking.py:44,45,1177,1202,1224` | Removed 5 unused `# type: ignore` comments |
+| `workbench.py:109` | Removed duplicate `self._tracking` assignment |
+
+### Vault audit fix
+- Added YAML frontmatter to 5 Specs/043 files (data-model, plan, quickstart, research, tasks)
+- Fixed `scanner.py:build_graph()` — `networkx` is behind `[vault-health]` extra so CI doesn't install it. The `try/except ImportError` in `scanner.py` correctly set `nx = None`, but `build_graph()` crashed with `AttributeError` on `nx.DiGraph()`. Added early-return guard when `nx is None`.
+
+### CI result
+All core gates pass: Lint, Typecheck (0 errors), Tests (83/83), Vault Audit (0 errors), SonarCloud Code Analysis (SUCCESS). Only the SonarCloud GitHub Actions job fails due to a JRE provisioning/token infrastructure issue.
 
 ## See also
 
