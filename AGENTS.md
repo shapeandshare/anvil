@@ -442,6 +442,8 @@ SomeException
 - N/A — static content defined as structured data in a Python module (opencode/lucky-canyon)
 - Python 3.11+ (repo standard; `StrEnum`, PEP 604 unions, PEP 563 `from __future__ import annotations`) + FastAPI, async SQLAlchemy + aiosqlite, Alembic, Jinja2, uvicorn, MLflow (sidecar). **No new runtime dependencies** — boot file uses stdlib `json`; global registry uses the existing async SQLAlchemy/Alembic stack (or stdlib `sqlite3` for the host-level store — see research.md F). (opencode/witty-meadow)
 - Per-instance SQLite app DB (WAL) under each workspace; a host-level global registry SQLite DB at `~/.anvil/registry.db`; per-workspace `instance.json` boot file (JSON on disk). (opencode/witty-meadow)
+- Python 3.11+ (existing repo convention) + FastAPI, Jinja2, existing widget JS framework — no new dependencies (opencode/cosmic-eagle)
+- N/A — static content pages (opencode/cosmic-eagle)
 - Python 3.11+ + FastAPI, async SQLAlchemy, Jinja2, MLflow (existing — no new deps) (014-model-warm-start)
 - MLflow Model Registry (registered_models / model_versions tables) — lineage via tags (014-model-warm-start)
 

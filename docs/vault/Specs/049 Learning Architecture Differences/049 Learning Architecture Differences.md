@@ -3,7 +3,7 @@ title: 049 Learning Architecture Differences
 type: spec
 tags:
   - type/spec
-  - domain/learning
+  - domain/content
   - domain/ui
 spec-refs:
   - docs/vault/Specs/049 Learning Architecture Differences/

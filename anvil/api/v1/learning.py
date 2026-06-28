@@ -172,6 +172,24 @@ LEARNING_ARC = [
         "desc": "How trained models are exported to safetensors for HuggingFace compatibility.",
     },
     {
+        "key": "fine-tuning-intro",
+        "title": "What Fine-Tuning Is",
+        "path": "/v1/learn/fine-tuning-intro",
+        "desc": "What fine-tuning means in the context of LLMs — continued training of a pre-trained model on new data.",
+    },
+    {
+        "key": "warmstart-vs-lora",
+        "title": "Warm-Start vs PEFT/LoRA",
+        "path": "/v1/learn/warmstart-vs-lora",
+        "desc": "How full fine-tuning (warm-start) differs from parameter-efficient approaches like LoRA, and the low-rank intuition behind adapters.",
+    },
+    {
+        "key": "finetune-vs-prompt-vs-rag",
+        "title": "Fine-Tune vs Prompt vs RAG",
+        "path": "/v1/learn/finetune-vs-prompt-vs-rag",
+        "desc": "When to fine-tune, when to prompt-engineer, and when to use retrieval-augmented generation — a decision comparison.",
+    },
+    {
         "key": "chunking",
         "title": "Chunking Strategies",
         "path": "/v1/learn/chunking",
@@ -1117,6 +1135,222 @@ EXPORT_STEPS = [
             "safetensors, and numpy as dependencies. This enables MLflow Model Registry "
             "to deploy the model as a REST endpoint or load it in Python for inference. "
             "The demo model at data/models/demo/ is the canonical example."
+        ),
+    },
+]
+
+FINE_TUNING_INTRO_STEPS = [
+    {
+        "key": "what-is-fine-tuning",
+        "title": "What Is Fine-Tuning?",
+        "body": (
+            "Fine-tuning is the process of taking a pre-trained model and continuing its "
+            "training on new, domain-specific data. Instead of training from scratch &mdash; "
+            "which requires massive compute and data &mdash; you start with a model that "
+            "already understands basic language patterns and adapt it to your task. "
+            "The core architecture, learning rate schedule, and tokenizer all stay the same: "
+            "only the data changes."
+        ),
+    },
+    {
+        "key": "pretrained-foundation",
+        "title": "The Pre-Trained Foundation",
+        "body": (
+            "The from-scratch model you built in earlier lessons is a pre-trained foundation: "
+            "it has learned character-level patterns, attention relationships, and basic "
+            "language structure from its training corpus. The weights encode everything the "
+            "model knows. Fine-tuning starts from these existing weights rather than random "
+            "initialisation, which is why it converges much faster than training from scratch."
+        ),
+    },
+    {
+        "key": "cold-vs-warm",
+        "title": "Cold-Start vs Warm-Start",
+        "body": (
+            "<b>Cold-start</b> (training from scratch) initialises all weights randomly and "
+            "learns everything from the data. <b>Warm-start</b> (fine-tuning) loads a "
+            "pre-trained model's weights and continues training on new data. Warm-start "
+            "requires less data, fewer steps, and lower compute because the model does not "
+            "need to rediscover fundamental patterns &mdash; it only needs to adapt."
+        ),
+    },
+    {
+        "key": "what-changes",
+        "title": "What Fine-Tuning Preserves vs Changes",
+        "body": (
+            "Fine-tuning preserves the model's architecture, vocabulary, and the bulk of its "
+            "learned representations. What changes are the weights themselves: the fine-tuning "
+            "process shifts parameters toward the new data distribution. The most significant "
+            "changes typically happen in the later layers, which are responsible for higher-level "
+            "patterns. The early layers (token embeddings, base attention patterns) change less. "
+            "This selective pressure is what makes fine-tuning data-efficient."
+        ),
+    },
+    {
+        "key": "forward-link-fine-tuning",
+        "title": "What Comes Next",
+        "body": (
+            "With the concept of fine-tuning established, you can explore two concrete approaches "
+            "in the next page: <b>full fine-tuning (warm-start)</b>, which updates all parameters, "
+            "and <b>parameter-efficient methods like LoRA</b>, which update only a small subset. "
+            '<span class="coming-soon-badge">Coming soon: Warm-Start (039) &mdash; full fine-tuning '
+            "capabilities</span> "
+            '<span class="coming-soon-badge">Coming soon: LoRA (044) &mdash; PEFT fine-tuning '
+            "capabilities</span>"
+        ),
+    },
+]
+
+WARMSTART_VS_LORA_STEPS = [
+    {
+        "key": "full-fine-tuning",
+        "title": "Full Fine-Tuning (Warm-Start)",
+        "body": (
+            "In full fine-tuning, every parameter of the pre-trained model is updated during "
+            "training. The optimiser touches the same weight matrices you saw in the "
+            "Architecture and Parameters lessons: WTE, Q/K/V/O projections, SwiGLU gate/up/down, "
+            "RMSNorm scales, and the lm_head. Full fine-tuning is the most expressive approach "
+            "because the entire model can adapt, but it is also the most expensive &mdash; "
+            "requiring a full copy of the model's gradients and optimiser states."
+        ),
+    },
+    {
+        "key": "peft-concept",
+        "title": "Parameter-Efficient Fine-Tuning (PEFT)",
+        "body": (
+            "PEFT methods update only a tiny fraction of the model's parameters while keeping "
+            "most weights frozen. This dramatically reduces memory requirements because only the "
+            "adapters need gradients and optimiser states. The most popular PEFT method is "
+            "<b>LoRA</b> (Low-Rank Adaptation), which learns small rank-decomposed matrices "
+            "that are injected alongside the existing weight matrices. The base weights stay "
+            "frozen &mdash; only the LoRA matrices change during training."
+        ),
+    },
+    {
+        "key": "lora-intuition",
+        "title": "LoRA Intuition — Low-Rank Decomposition",
+        "body": (
+            "The core insight behind LoRA: weight updates during fine-tuning have been observed "
+            "to have a low <b>intrinsic rank</b>. This means the update matrix \u0394W (of shape "
+            "d\u00d7k) can be approximated by the product of two smaller matrices: \u0394W \u2248 A\u00d7B, "
+            "where A is d\u00d7r and B is r\u00d7k, with r \u226a min(d, k). Instead of updating all "
+            "d\u00d7k parameters, LoRA learns only the 2\u00d7r\u00d7d parameters in A and B. "
+            "The widget below lets you explore this decomposition interactively."
+        ),
+        "widget": "lora",
+    },
+    {
+        "key": "interactive-rank",
+        "title": "Interactive Rank Exploration",
+        "body": (
+            "Drag the rank slider in the widget below. At r=1, the approximation uses only "
+            "one column and one row &mdash; the reconstruction is poor but requires minimal "
+            "parameters. As r increases, the approximation quality improves. The difference "
+            "heatmap shows where the error concentrates. The reconstruction error number tells "
+            "you how close A\u00d7B is to the original \u0394W. At r=min(d,k), A\u00d7B equals "
+            "\u0394W exactly &mdash; demonstrating that full fine-tuning is a special case of LoRA "
+            "with maximum rank."
+        ),
+        "widget": "lora",
+    },
+    {
+        "key": "when-to-use-which",
+        "title": "Warm-Start vs LoRA: Trade-offs",
+        "body": (
+            "Choose <b>full fine-tuning (warm-start)</b> when: you have sufficient data and "
+            "compute, the task requires deep behavioural changes, or you want the maximum "
+            "possible performance on a specific domain. Choose <b>LoRA</b> when: data or "
+            "compute is limited, you need to fine-tune for many tasks (each LoRA adapter is "
+            "small enough to swap at runtime), or you want to experiment cheaply with "
+            "different configurations. LoRA is particularly effective for adapting to new "
+            "formats, styles, or knowledge domains where the base model already has strong "
+            "foundational understanding."
+        ),
+    },
+    {
+        "key": "lora-forward-link",
+        "title": "Practical LoRA",
+        "body": (
+            "The LoRA capability (spec 044) will let you apply LoRA fine-tuning directly in "
+            "anvil &mdash; configure rank, target modules, and training hyperparameters via "
+            "the dashboard, train with GPU acceleration, and export the adapter for inference. "
+            '<span class="coming-soon-badge">Coming soon: LoRA Fine-Tuning (044)</span>'
+        ),
+    },
+]
+
+FINETUNE_VS_PROMPT_VS_RAG_STEPS = [
+    {
+        "key": "when-to-finetune",
+        "title": "When to Fine-Tune",
+        "body": (
+            "Fine-tuning is the right choice when you need the model to <b>change its behaviour</b> "
+            "or learn <b>new knowledge</b> that isn't in its training data. It is the most "
+            "powerful tool, but also the most expensive. Fine-tune when: you have a well-defined "
+            "task with labelled data, the model's current output quality is insufficient with "
+            "prompting alone, or you need consistent, deterministic behaviour changes that "
+            "prompting cannot guarantee."
+        ),
+    },
+    {
+        "key": "when-to-prompt",
+        "title": "When to Prompt Engineer",
+        "body": (
+            "Prompt engineering is the <b>zero-cost</b> approach: you craft the input to guide "
+            "the model's output without changing any weights. Use prompting when: the task is "
+            "well-handled by the base model with careful instruction design, you need quick "
+            "iteration, or you are prototyping. Prompt engineering includes techniques like "
+            "few-shot examples, chain-of-thought reasoning, system messages, and output "
+            "formatting. It is always worth trying before fine-tuning &mdash; if a prompt "
+            "solves your task, you save the cost of training entirely."
+        ),
+    },
+    {
+        "key": "when-to-rag",
+        "title": "When to Use RAG",
+        "body": (
+            "<b>Retrieval-Augmented Generation (RAG)</b> augments the model's input with "
+            "relevant documents retrieved from a knowledge base at inference time. Use RAG "
+            "when: your task requires up-to-date or dynamic information, you have a large "
+            "corpus of documents that changes frequently, or you need to cite sources. RAG "
+            "does not change model weights &mdash; it changes what the model sees as context. "
+            "This makes it ideal for knowledge-grounded tasks like Q&A over documentation, "
+            "research assistance, and customer support."
+        ),
+    },
+    {
+        "key": "comparison-table",
+        "title": "Side-by-Side Comparison",
+        "body": (
+            '<table class="learn-comparison-table">'
+            "<thead><tr><th></th><th>Fine-Tune</th><th>Prompt</th><th>RAG</th></tr></thead>"
+            "<tbody>"
+            "<tr><td><b>Strengths</b></td>"
+            "<td>Deep behaviour change<br>Learns new knowledge<br>Deterministic output</td>"
+            "<td>Zero cost<br>Fast iteration<br>No training data needed</td>"
+            "<td>Up-to-date info<br>Source citation<br>Handles dynamic data</td></tr>"
+            "<tr><td><b>Weaknesses</b></td>"
+            "<td>Expensive compute<br>Requires training data<br>Needs re-training to update</td>"
+            "<td>Limited by base model<br>Inconsistent at edge cases<br>Context window limits</td>"
+            "<td>Requires retrieval infrastructure<br>Latency of retrieval step<br>Quality depends on retriever</td></tr>"
+            "<tr><td><b>Best For</b></td>"
+            "<td>Domain specialisation<br>Format/style adaptation<br>Consistent behaviour</td>"
+            "<td>Quick prototyping<br>Well-known tasks<br>Zero-setup needs</td>"
+            "<td>Knowledge Q&A<br>Dynamic information<br>Source-grounded answers</td></tr>"
+            "</tbody></table>"
+        ),
+    },
+    {
+        "key": "decision-summary",
+        "title": "Decision Guide",
+        "body": (
+            "Start with <b>prompt engineering</b> &mdash; it costs nothing and might be enough. "
+            "If the model lacks the knowledge your task needs, add <b>RAG</b> to ground the "
+            "model in your documents. If the model's behaviour or output quality still isn't "
+            "sufficient, apply <b>fine-tuning</b> to adapt the model itself. These three "
+            "tools are complementary, not mutually exclusive &mdash; a production system often "
+            "uses all three: fine-tune the model for domain style, use RAG for knowledge, and "
+            "prompt-engineer the instruction to tie them together."
         ),
     },
 ]
@@ -2102,6 +2336,39 @@ async def export_concept_page(request: Request) -> HTMLResponse:
         request,
         "archetypes/concept.html",
         {"steps": EXPORT_STEPS, **_arc_context("export")},
+    )
+
+
+@router.get("/learn/fine-tuning-intro", response_class=HTMLResponse)
+async def fine_tuning_intro_page(request: Request) -> HTMLResponse:
+    """Render the fine-tuning introduction walkthrough page."""
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
+        request,
+        "archetypes/concept.html",
+        {"steps": FINE_TUNING_INTRO_STEPS, **_arc_context("fine-tuning-intro")},
+    )
+
+
+@router.get("/learn/warmstart-vs-lora", response_class=HTMLResponse)
+async def warmstart_vs_lora_page(request: Request) -> HTMLResponse:
+    """Render the warm-start vs PEFT/LoRA walkthrough page with interactive LoRA widget."""
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
+        request,
+        "archetypes/concept.html",
+        {"steps": WARMSTART_VS_LORA_STEPS, **_arc_context("warmstart-vs-lora")},
+    )
+
+
+@router.get("/learn/finetune-vs-prompt-vs-rag", response_class=HTMLResponse)
+async def finetune_vs_prompt_vs_rag_page(request: Request) -> HTMLResponse:
+    """Render the fine-tune vs prompt vs RAG decision walkthrough page."""
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
+        request,
+        "archetypes/concept.html",
+        {
+            "steps": FINETUNE_VS_PROMPT_VS_RAG_STEPS,
+            **_arc_context("finetune-vs-prompt-vs-rag"),
+        },
     )
 
 
