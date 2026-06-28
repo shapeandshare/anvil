@@ -1,0 +1,156 @@
+# Implementation Plan: 040 External Model Registry & Import Paradigm
+
+**Branch**: `040-external-model-registry` | **Date**: 2026-06-28 | **Spec**: [[040 External Model Registry - spec]]
+**Input**: Feature specification from `docs/vault/Specs/040 External Model Registry/`
+
+## Summary
+
+A source-agnostic `ModelSource` abstraction (HF Hub first, local-file second) that lets learners
+import external models into anvil as tracked metadata entries — created before any weight download.
+Import is async job-based, surfaced via CLI (`anvil import`), REST API (`POST /v1/models/import`),
+and Python SDK (`client.import_model(...)`). Registry entries are distinguishable by origin alongside
+anvil's native models, with typed error codes and idempotent same-revision re-import.
+
+## Technical Context
+
+**Language/Version**: Python 3.11+
+**Primary Dependencies**: `huggingface_hub>=0.24,<2` (NEW — added in a new `[finetune]` extra; this
+  extra does NOT exist yet and is created by this feature; current latest is 1.x); existing FastAPI,
+  async SQLAlchemy + aiosqlite, Pydantic, httpx (stdlib for CLI)
+**Storage**: SQLite (anvil-state.db, WAL mode) via async SQLAlchemy + existing Alembic migrations;
+  external model entries co-located in the same registry schema (extending spec 003)
+**Testing**: pytest + pytest-asyncio (existing convention); unit tests per domain sub-package,
+  e2e HTTP tests via `httpx.AsyncClient`
+**Target Platform**: Linux / macOS POSIX server
+**Project Type**: CLI + REST API + Python SDK (web service package with CLI frontend)
+**Performance Goals**: HF Hub metadata resolution completes in <5s for typical model cards;
+  local-file import near-instant. Registry queries <100ms
+**Constraints**: NMRG — base (`pip install anvil`) MUST NOT import `huggingface_hub`;
+  `[finetune]` extra required for HF source; existing from-scratch training path unchanged;
+  all new modules — no existing paths modified
+**Scale/Scope**: Tens to hundreds of external model metadata entries per instance;
+  each entry is ~1 KB of structured metadata
+
+## Constitution Check
+
+*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+
+**Applicable articles and constraints**:
+
+- **Article I (Zero-Dependency Core)** — Core engine (`anvil/core/`) must remain stdlib only.
+  Compliance: `huggingface_hub` is behind `[finetune]` extra, never imported from core path.
+- **Article IV (TDD Mandatory)** — Tests before implementation; coverage ratcheting.
+  Compliance: Unit and e2e tests required for all new modules.
+- **Article V (Async-First)** — Web, DB, service layers async.
+  Compliance: Import service and repository use async SQLAlchemy; import job is async.
+- **Article VI (init.py Ownership)** — Bare `__init__.py` for new authoritative packages.
+  Compliance: The new `anvil/services/model_import/` and `anvil/client/models/` domain sub-packages
+  each get a docstring-only `__init__.py`.
+- **Article VII (Layered Architecture)** — Repository → Service → God Class → Routes/CLI.
+  Compliance: `ExternalModelRepository`/`ModelImportJobRepository` → `ModelImportService` →
+  `AnvilWorkbench` → CLI/API/SDK.
+- **Article X (Domain-Driven Decomposition)** — Domain boundaries, max 2 nesting levels.
+  Compliance: New `model_import/` domain sub-package under `anvil/services/` (named `model_import`,
+  not `import` — reserved keyword). Models co-locate; cross-domain types in `_shared/import_types.py`.
+- **Article XI (Simplicity First / Boring Technology)** — Hard MUST gate.
+  See checklist below.
+- **Additional Constraints**:
+  - No type-error suppression (`mypy --strict`)
+  - Pydantic `BaseModel` over `dataclasses.dataclass`
+  - One class per file
+  - Lean dependencies — only `huggingface_hub` as new dependency (behind extra)
+  - Alembic migration for schema changes
+  - UI compliance (`docs/ux-rules.md`) — not applicable (no UI in this spec)
+  - ADR for significant decisions
+
+**Simplicity First gate (Article XI — hard MUST)**: Confirm this plan favors
+the simplest, most boring solution that meets the requirement:
+
+- [x] **Simplest viable** (§11.1) — the chosen approach is the simplest that
+      satisfies the requirement; any added complexity has a concrete, present
+      justification (not a hypothetical future one).
+- [x] **Boring over novel** (§11.2) — no novel/experimental dependency,
+      framework, or pattern is introduced where a simpler proven alternative
+      exists; any such choice is recorded in Complexity Tracking below.
+- [x] **YAGNI** (§11.3) — no speculative generality, premature abstraction, or
+      config knobs without a present consumer.
+- [x] **Reuse first** (§11.4) — existing libraries/patterns/abstractions are
+      reused before introducing new ones.
+- [x] **Testable** (§11.6) — the approach is demonstrably testable; untested or
+      untestable paths are not treated as complete (pairs with Article IV TDD).
+
+> Any deviation from the simplest viable solution MUST be recorded in the
+> Complexity Tracking table below (§11.5), or this gate fails.
+
+## Project Structure
+
+### Documentation (this feature)
+
+```text
+docs/vault/Specs/[###-feature]/
+├── plan.md              # This file (/speckit.plan command output)
+├── research.md          # Phase 0 output (/speckit.plan command)
+├── data-model.md        # Phase 1 output (/speckit.plan command)
+├── quickstart.md        # Phase 1 output (/speckit.plan command)
+├── contracts/           # Phase 1 output (/speckit.plan command)
+└── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
+```
+
+### Source Code (repository root)
+
+```text
+# New files
+anvil/db/models/external_model.py          # ExternalModel ORM entity
+anvil/db/models/model_import_job.py         # ModelImportJob ORM entity (distinct from content ImportJob)
+anvil/db/repositories/external_models.py    # ExternalModelRepository
+anvil/db/repositories/model_import_jobs.py  # ModelImportJobRepository
+anvil/services/model_import/                # NOTE: 'model_import' not 'import' (reserved keyword)
+├── __init__.py                            # Bare docstring-only
+├── model_import_service.py                # ModelImportService — orchestration
+├── model_source.py                        # ModelSource Protocol
+├── hf_source.py                           # HF Hub ModelSource impl (huggingface_hub behind try/except)
+└── local_source.py                        # Local file ModelSource impl
+anvil/services/_shared/import_types.py     # SourceType/RunnableStatus/AssetState/ModelImportJobStatus enums, ModelMetadata, ModelSourceError
+anvil/api/v1/models.py                     # API routes (/v1/models/...)
+anvil/client/models/
+├── __init__.py
+├── models_client.py                       # ModelsClient domain aggregator
+├── models_import_command.py               # ModelsImportCommand
+├── models_get_status_command.py           # ModelsGetStatusCommand
+└── models_get_command.py                  # ModelsGetCommand
+
+# Modified files
+pyproject.toml              # Add `finetune` extra (huggingface_hub) + anvil-import entry points
+anvil/db/models/__init__.py # Import external_model + model_import_job modules for registration
+anvil/workbench.py          # Wire ModelImportService + repositories (lazy properties)
+anvil/cli.py                # Add import_main() + import_status_main()
+anvil/api/v1/router.py      # Register models_router
+anvil/client/anvil_client.py # Add models property
+anvil/_resources/migrations/versions/005_add_external_models.py  # down_revision = "004"
+
+tests/
+├── unit/
+│   ├── db/
+│   │   └── test_external_model_repo.py
+│   ├── services/
+│   │   ├── test_model_import_service.py
+│   │   ├── test_hf_source.py
+│   │   └── test_local_source.py
+└── e2e/
+    └── test_external_models.py
+```
+
+**Structure Decision**: Single project (existing monorepo layout). New `model_import/` domain
+sub-package under `anvil/services/` per Article X — named `model_import` (NOT `import`, a Python
+reserved keyword that would break relative imports). New `models/` domain sub-package under
+`anvil/client/`. ORM models and repositories follow existing patterns in `anvil/db/models/` and
+`anvil/db/repositories/`. The `finetune` optional-dependencies extra does not yet exist and is added.
+
+## Complexity Tracking
+
+> **Fill ONLY if Constitution Check has violations that must be justified**
+
+| Violation | Why Needed | Simpler Alternative Rejected Because |
+|-----------|------------|-------------------------------------|
+| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
+| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |

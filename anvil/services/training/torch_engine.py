@@ -77,6 +77,9 @@ class TorchLlamaModel:
     - Causal multi-head attention with key/value caching
     """
 
+    chars: list[str] | None = None
+    """Character vocabulary set by the compute backend after training."""
+
     def __init__(
         self,
         vocab_size: int,
@@ -472,8 +475,7 @@ def train_torch(
     n_head: int = 4,
     n_layer: int = 1,
     learning_rate: float = 0.01,
-    beta1: float = 0.85,
-    beta2: float = 0.99,
+    adam_betas: tuple[float, float] = (0.85, 0.99),
     temperature: float = 0.5,
     progress_callback: Callable[..., None] | None = None,
     stop_check: Callable[[], bool] | None = None,
@@ -506,10 +508,8 @@ def train_torch(
         Number of transformer layers. Defaults to ``1``.
     learning_rate : float, optional
         Peak learning rate. Defaults to ``0.01``.
-    beta1 : float, optional
-        Adam beta1. Defaults to ``0.85``.
-    beta2 : float, optional
-        Adam beta2. Defaults to ``0.99``.
+    adam_betas : tuple of float, optional
+        Adam (beta1, beta2). Defaults to ``(0.85, 0.99)``.
     temperature : float, optional
         Sampling temperature. Defaults to ``0.5``.
     progress_callback : callable, optional
@@ -554,10 +554,11 @@ def train_torch(
                 "model must have 'chars' attribute set "
                 "(set by backend after training)"
             )
+
         if model.vocab_size != len(model_chars) + 1:
             raise ValueError(
                 f"model.vocab_size ({model.vocab_size}) != "
-                f"len(model.chars) + 1 ({len(model_chars) + 1})"
+                f"len(model_chars) + 1 ({len(model_chars) + 1})"
             )
 
         uchars = model_chars
@@ -565,8 +566,6 @@ def train_torch(
         vocab_size = model.vocab_size
         block_size = model.block_size
         n_layer = model.n_layer
-        n_embd = model.n_embd
-        n_head = model.n_head
 
         # Pre-scan docs for OOV characters not in model's vocabulary
         known = set(uchars)
@@ -594,7 +593,7 @@ def train_torch(
         model.to(device_obj)
 
     optim = torch.optim.Adam(
-        model.parameters(), lr=learning_rate, betas=(beta1, beta2), eps=1e-8
+        model.parameters(), lr=learning_rate, betas=adam_betas, eps=1e-8
     )
     scheduler = torch.optim.lr_scheduler.LambdaLR(
         optim, lr_lambda=lambda step: 1 - step / num_steps

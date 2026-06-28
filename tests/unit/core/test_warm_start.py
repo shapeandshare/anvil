@@ -42,7 +42,7 @@ def test_warm_start_subset_corpus_keeps_base_vocab(tmp_path):
     # vocab_size should be inherited from model
     assert warm_model.vocab_size == len(loaded_model.chars) + 1
 
-    # BOS = len(uchars) = len(model.chars) = model.vocab_size - 1
+    # BOS token index equals the number of unique characters (vocab_size - 1)
     assert warm_model.vocab_size - 1 == len(loaded_model.chars)
 
     # block_size should be inherited from model

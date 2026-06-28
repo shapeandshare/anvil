@@ -803,7 +803,7 @@ var gpuToggle = document.getElementById('compute_backend');
     var name = prompt('Register model from Experiment #' + experimentId + '\n\nEnter a name for this model:');
     if (!name || !name.trim()) return;
     var desc = prompt('Optional description (or leave blank):');
-    window.apiFetch('/v1/registry/models', {
+    globalThis.apiFetch('/v1/registry/models', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ experiment_id: experimentId, name: name.trim(), description: desc || null }),
@@ -1164,53 +1164,33 @@ var gpuToggle = document.getElementById('compute_backend');
     updateOutputIndicator('idle');
 
     var config = {
-      n_embd: parseInt(document.getElementById('n_embd').value),
-      n_layer: parseInt(document.getElementById('n_layer').value),
-      n_head: parseInt(document.getElementById('n_head').value),
-      block_size: parseInt(document.getElementById('block_size').value),
-      num_steps: parseInt(document.getElementById('num_steps').value),
+      n_embd: Number.parseInt(document.getElementById('n_embd').value),
+      n_layer: Number.parseInt(document.getElementById('n_layer').value),
+      n_head: Number.parseInt(document.getElementById('n_head').value),
+      block_size: Number.parseInt(document.getElementById('block_size').value),
+      num_steps: Number.parseInt(document.getElementById('num_steps').value),
       learning_rate: parseFloat(document.getElementById('learning_rate').value),
       temperature: parseFloat(document.getElementById('temperature').value),
       compute_backend: document.getElementById('compute_backend').value,
     };
     var cid = corpusSelect.value;
     var did = datasetSelect.value;
-    if (cid) config.corpus_id = parseInt(cid);
-    if (did) config.dataset_id = parseInt(did);
+    if (cid) config.corpus_id = Number.parseInt(cid);
+    if (did) config.dataset_id = Number.parseInt(did);
 
     var baseModelRef = core.getUrlParams().get('base_model_ref');
     if (baseModelRef) {
-      config.base_model_ref = parseInt(baseModelRef);
+      config.base_model_ref = Number.parseInt(baseModelRef);
     }
 
     log('> Starting training with: ' + JSON.stringify(config));
 
-    /* Log block_size mismatch warning if applicable */
-    var bsWarn = document.getElementById('bs-mismatch-warn');
-    if (bsWarn && bsWarn.style.display !== 'none' && cid && corpusCache[cid]) {
-      log('\u26a0\ufe0f  Warning: block_size (' + config.block_size + ') > corpus chunk size (' + corpusCache[cid].block_size + ') \u2014 only chunks of ' + corpusCache[cid].block_size + ' chars will be used per step');
-    }
-
-    /* Log data source warnings */
-    var dataConflictWarn = document.getElementById('data-conflict-warn');
-    if (dataConflictWarn && dataConflictWarn.style.display !== 'none') {
-      log('\u26a0\ufe0f  Warning: Both corpus and dataset selected \u2014 dataset will be used, corpus ignored');
-    }
-    var emptyDataWarn = document.getElementById('empty-data-warn');
-    if (emptyDataWarn && emptyDataWarn.style.display !== 'none') {
-      log('\u26a0\ufe0f  Warning: No data source selected \u2014 will use default demo corpus');
-    }
-
-    /* Log attention geometry warnings */
-    var attnWarn = document.getElementById('attn-geom-warn');
-    if (attnWarn && attnWarn.style.display !== 'none') {
-      log('\u26a0\ufe0f  Warning: ' + attnWarn.textContent.replace(/\s+/g, ' ').trim());
-    }
+    _logTrainingWarnings(config, cid, corpusCache);
 
     try {
       initChart();
       if (chart) chart.clear();
-      var resp = await window.apiFetch('/v1/training/start', {
+      var resp = await globalThis.apiFetch('/v1/training/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config)
@@ -1267,6 +1247,26 @@ var gpuToggle = document.getElementById('compute_backend');
     }
     renderRunsList(window.coreSession.getActiveRuns());
   };
+
+  /* ── Warning logger helpers (extracted for readability) ── */
+  function _logTrainingWarnings(config, cid, corpusCache) {
+    var bsWarn = document.getElementById('bs-mismatch-warn');
+    if (bsWarn && bsWarn.style.display !== 'none' && cid && corpusCache[cid]) {
+      log('\u26a0\ufe0f  Warning: block_size (' + config.block_size + ') > corpus chunk size (' + corpusCache[cid].block_size + ') \u2014 only chunks of ' + corpusCache[cid].block_size + ' chars will be used per step');
+    }
+    var dataConflictWarn = document.getElementById('data-conflict-warn');
+    if (dataConflictWarn && dataConflictWarn.style.display !== 'none') {
+      log('\u26a0\ufe0f  Warning: Both corpus and dataset selected \u2014 dataset will be used, corpus ignored');
+    }
+    var emptyDataWarn = document.getElementById('empty-data-warn');
+    if (emptyDataWarn && emptyDataWarn.style.display !== 'none') {
+      log('\u26a0\ufe0f  Warning: No data source selected \u2014 will use default demo corpus');
+    }
+    var attnWarn = document.getElementById('attn-geom-warn');
+    if (attnWarn && attnWarn.style.display !== 'none') {
+      log('\u26a0\ufe0f  Warning: ' + attnWarn.textContent.replace(/\s+/g, ' ').trim());
+    }
+  }
 
   /* ── Past Experiments (attach) ── */
   function loadPastExperiments() {
@@ -1514,7 +1514,7 @@ var gpuToggle = document.getElementById('compute_backend');
   /* ── Warm-start pre-fill (FR-003a) ── */
   var baseModelRef = core.getUrlParams().get('base_model_ref');
   if (baseModelRef) {
-    window.apiFetch('/v1/registry/models/' + baseModelRef)
+    globalThis.apiFetch('/v1/registry/models/' + baseModelRef)
       .then(function(r) { return r.ok ? r.json() : null; })
       .then(function(modelData) {
         if (!modelData || !modelData.versions || modelData.versions.length === 0) {

@@ -74,6 +74,7 @@ dev = [
     "pytest-playwright>=0.5,<1",
 ]
 finetune = [
+    "huggingface_hub>=0.24,<2",
     "tokenizers>=0.15,<1",
     "sentencepiece>=0.1.99,<1",
     "transformers>=4.30.0,<5",
@@ -89,6 +90,8 @@ anvil-db = "anvil.cli:db_main"
 anvil-vault = "anvil.services.vault.cli:main"
 anvil-show-api-key = "anvil.cli:show_api_key"
 anvil-backup = "anvil.services.backup.cli:main"
+anvil-import = "anvil.cli:import_main"
+anvil-import-status = "anvil.cli:import_status_main"
 anvil-instance = "anvil.services.instances.cli:main"
 
 [tool.ruff]

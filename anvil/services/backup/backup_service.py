@@ -472,6 +472,7 @@ class BackupService:
                                 backup_id=backup_id,
                                 percent=float(pct),
                                 current_step=step,
+                                safety_snapshot_id=safety_snapshot_id,
                             )
                         ),
                         self._loop,
