@@ -131,7 +131,20 @@
         <input type="text" class="form-input type-footnote" id="dataset-search" placeholder="filter...">
         <button class="btn btn-sm btn-secondary type-caption-1" id="search-btn">filter</button>
       </div>
-      <div id="dataset-list"><span class="text-muted type-subhead">Loading...</span></div>
+      <div id="dataset-list">
+        <div class="table-scroll" id="dataset-table-wrapper" style="display:none;">
+          <table class="grouped-list">
+            <thead><tr>
+              <th>Name</th><th>Description</th><th style="text-align:right;">Samples</th>
+              <th style="text-align:right;">Size</th><th>Status</th>
+              <th>Source</th><th>License</th>
+              <th style="text-align:center;">Cur.</th><th style="text-align:right;">Actions</th>
+            </tr></thead>
+            <tbody id="datasets-tbody"></tbody>
+          </table>
+        </div>
+        <span id="datasets-empty" class="text-muted type-subhead">Loading...</span>
+      </div>
     </div>
   </div>
 </div>
@@ -253,7 +266,19 @@
       <div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-2);">
         <span class="label-text">CORPORA</span>
       </div>
-      <div id="corpus-list"><span class="text-muted type-subhead">Loading...</span></div>
+      <div id="corpus-list">
+        <div class="table-scroll" id="corpora-table-wrapper" style="display:none;">
+          <table class="grouped-list">
+            <thead><tr>
+              <th>Name</th><th style="text-align:right;">Files</th><th style="text-align:right;">Docs</th>
+              <th>Created</th><th>Strategy</th><th style="text-align:center;">Warnings</th>
+              <th style="text-align:right;">Actions</th>
+            </tr></thead>
+            <tbody id="corpora-tbody"></tbody>
+          </table>
+        </div>
+        <span id="corpora-empty" class="text-muted type-subhead">Loading...</span>
+      </div>
     </div>
 
     {# ── Import corpus as dataset (custom chunking) ── #}
@@ -361,7 +386,19 @@
     </div>
 
     <div id="combined-table-container" class="ds-table-wrapper" style="overflow-x:auto;">
-      <span class="text-muted type-subhead">Loading...</span>
+      <div id="combined-errors" style="display:none;"></div>
+      <div class="table-scroll" id="combined-table-wrapper" style="display:none;">
+        <table class="grouped-list">
+          <thead><tr>
+            <th>Type</th><th>Name</th><th>Description / Path</th>
+            <th style="text-align:right;">Size</th><th>Status / Strategy</th>
+            <th>Source</th><th>License</th>
+            <th>Created</th><th style="text-align:right;">Actions</th>
+          </tr></thead>
+          <tbody id="combined-tbody"></tbody>
+        </table>
+      </div>
+      <span id="combined-empty" class="text-muted type-subhead">Loading...</span>
     </div>
   </div>
 </div>
@@ -432,6 +469,78 @@
     }, 3000);
   }
 
+  /* ── dataset row helpers ───────────────────────────── */
+
+  function _createDatasetRow(d, i) {
+    var tr = document.createElement('tr');
+    tr.setAttribute('data-id', d.id);
+    tr.className = 'row-entrance';
+    tr.style.setProperty('--row-i', String(i));
+    tr.innerHTML = '<td><span class="edit-target" data-field="name" style="color:var(--text);font-weight:500;"></span></td>'
+      + '<td><span class="edit-target text-muted type-footnote" data-field="description"></span></td>'
+      + '<td class="cell-numeric" style="color:var(--info);"></td>'
+      + '<td class="cell-numeric text-muted"></td>'
+      + '<td></td>'
+      + '<td class="type-footnote cell-meta cell-wrap" style="max-width:160px;"></td>'
+      + '<td class="type-footnote cell-meta cell-wrap" style="max-width:160px;"></td>'
+      + '<td class="text-muted" style="text-align:center;"></td>'
+      + '<td class="cell-numeric"></td>';
+    _updateDatasetRow(tr, d, i);
+    dom.animateEntrance(tr, i);
+    return tr;
+  }
+
+  function _updateDatasetRow(tr, d, i) {
+    var nameEsc = escHtml(d.name);
+    var descEsc = escHtml(d.description);
+    var sampleCount = d.sample_count != null ? d.sample_count : '?';
+    var sizeStr = formatBytes(d.total_size_bytes);
+
+    tr.style.setProperty('--row-i', String(i));
+    /* col 0: name */
+    var nameSpan = tr.cells[0].querySelector('.edit-target[data-field="name"]');
+    if (nameSpan) dom.setText(nameSpan, d.name);
+    /* col 1: description */
+    var descSpan = tr.cells[1].querySelector('.edit-target[data-field="description"]');
+    if (descSpan) dom.setText(descSpan, d.description ? d.description : '-');
+    /* col 2: samples */
+    dom.setText(tr.cells[2], String(sampleCount));
+    /* col 3: size */
+    dom.setText(tr.cells[3], sizeStr);
+    /* col 4: status badge */
+    var badge = statusBadge(d.status);
+    dom.setCellHtml(tr, 4, badge);
+    /* col 5: source */
+    var sourceVal = d.declared_source ? escHtml(d.declared_source) : '<span class="text-muted type-caption-2">&mdash;</span>';
+    dom.setCellHtml(tr, 5, sourceVal);
+    /* col 6: license */
+    var licenseVal = d.license ? escHtml(d.license) : '<span class="text-muted type-caption-2">&mdash;</span>';
+    dom.setCellHtml(tr, 6, licenseVal);
+    /* col 7: curation version */
+    var curVer = d.curation_version != null ? String(d.curation_version) : '-';
+    dom.setText(tr.cells[7], curVer);
+    /* col 8: actions (rebuild with fresh data-id/data-name) */
+    var actionsHtml = '<div style="display:flex;gap:var(--space-1);justify-content:flex-end;">'
+      + '<button class="btn btn-sm btn-secondary edit-btn" data-id="' + d.id + '">edit</button>'
+      + '<button class="btn btn-sm btn-secondary curate-btn" data-id="' + d.id + '" title="Open dataset curation">curate</button>'
+      + '<button class="btn btn-sm btn-secondary fork-btn" data-id="' + d.id + '" title="Clone this dataset">fork</button>'
+      + '<button class="btn btn-sm btn-danger del-dataset-btn" data-id="' + d.id + '" data-name="' + nameEsc + '">rm</button>'
+      + '</div>'
+      + '<div class="inline-edit-form" style="display:none;margin-top:4px;gap:4px;flex-wrap:wrap;align-items:center;">'
+      + '<input type="text" class="form-input ie-name type-caption-1" placeholder="name" value="' + nameEsc + '">'
+      + '<input type="text" class="form-input ie-desc type-caption-1" placeholder="description" value="' + (d.description ? descEsc : '') + '">'
+      + '<button class="btn btn-sm btn-primary ie-save">save</button>'
+      + '<button class="btn btn-sm btn-secondary ie-cancel">cancel</button>'
+      + '</div>'
+      + '<div class="fork-form" style="display:none;margin-top:4px;gap:4px;flex-wrap:wrap;align-items:center;">'
+      + '<input type="text" class="form-input fork-name type-caption-1" placeholder="name" value="' + nameEsc + ' (copy)">'
+      + '<input type="text" class="form-input fork-desc type-caption-1" placeholder="description" value="' + (d.description ? descEsc : '') + '">'
+      + '<button class="btn btn-sm btn-primary fork-execute">clone</button>'
+      + '<button class="btn btn-sm btn-secondary fork-cancel">cancel</button>'
+      + '</div>';
+    dom.setCellHtml(tr, 8, actionsHtml);
+  }
+
   /* ── load datasets ──────────────────────────────────── */
 
   window.loadDatasets = async function loadDatasets() {
@@ -440,109 +549,122 @@
     var resp = await fetch(url);
     var data = await resp.json();
     var datasets = extractDatasets(data);
-    var list = document.getElementById('dataset-list');
+    var emptyEl = document.getElementById('datasets-empty');
+    var wrapper = document.getElementById('dataset-table-wrapper');
+    var tbody = document.getElementById('datasets-tbody');
 
     if (datasets.length === 0) {
-      list.innerHTML = '<span class="text-muted type-subhead">No datasets'
+      dom.setVisible(wrapper, false);
+      dom.setVisible(emptyEl, true);
+      dom.setHtml(emptyEl, '<span class="text-muted type-subhead">No datasets'
         + (currentQuery ? ' matching &quot;' + escHtml(currentQuery) + '&quot;' : ' uploaded yet')
-        + '.</span>';
+        + '.</span>');
       return;
     }
 
-    var html = '<div class="table-scroll"><table class="grouped-list">'
-      + '<thead><tr>'
-      + '<th>Name</th><th>Description</th><th style="text-align:right;">Samples</th>'
-      + '<th style="text-align:right;">Size</th><th>Status</th>'
-      + '<th>Source</th><th>License</th>'
-      + '<th style="text-align:center;">Cur.</th><th style="text-align:right;">Actions</th>'
-      + '</tr></thead><tbody>';
-
-    datasets.forEach(function(d, i) {
-      var nameEsc = escHtml(d.name);
-      var descEsc = escHtml(d.description);
-      var sampleCount = d.sample_count != null ? d.sample_count : '?';
-      var sizeStr = formatBytes(d.total_size_bytes);
-      var badge = statusBadge(d.status);
-      var curVer = d.curation_version != null ? d.curation_version : '-';
-      var sourceVal = d.declared_source ? escHtml(d.declared_source) : '<span class="text-muted type-caption-2">&mdash;</span>';
-      var licenseVal = d.license ? escHtml(d.license) : '<span class="text-muted type-caption-2">&mdash;</span>';
-
-      html += '<tr data-id="' + d.id + '" class="row-entrance" style="--row-i: ' + i + '">'
-        + '<td><span class="edit-target" data-field="name" style="color:var(--text);font-weight:500;">' + nameEsc + '</span></td>'
-        + '<td><span class="edit-target text-muted type-footnote" data-field="description">' + (d.description ? descEsc : '-') + '</span></td>'
-        + '<td class="cell-numeric" style="color:var(--info);">' + sampleCount + '</td>'
-        + '<td class="cell-numeric text-muted">' + sizeStr + '</td>'
-        + '<td>' + badge + '</td>'
-        + '<td class="type-footnote cell-meta cell-wrap" style="max-width:160px;">' + sourceVal + '</td>'
-        + '<td class="type-footnote cell-meta cell-wrap" style="max-width:160px;">' + licenseVal + '</td>'
-        + '<td class="text-muted" style="text-align:center;">' + curVer + '</td>'
-        + '<td class="cell-numeric">'
-        + '<div style="display:flex;gap:var(--space-1);justify-content:flex-end;">'
-        + '<button class="btn btn-sm btn-secondary edit-btn" data-id="' + d.id + '">edit</button>'
-        + '<button class="btn btn-sm btn-secondary curate-btn" data-id="' + d.id + '" title="Open dataset curation">curate</button>'
-        + '<button class="btn btn-sm btn-secondary fork-btn" data-id="' + d.id + '" title="Clone this dataset">fork</button>'
-        + '<button class="btn btn-sm btn-danger del-dataset-btn" data-id="' + d.id + '" data-name="' + nameEsc + '">rm</button>'
-        + '</div>'
-        + '<div class="inline-edit-form" style="display:none;margin-top:4px;gap:4px;flex-wrap:wrap;align-items:center;">'
-        + '<input type="text" class="form-input ie-name type-caption-1" placeholder="name" value="' + nameEsc + '">'
-        + '<input type="text" class="form-input ie-desc type-caption-1" placeholder="description" value="' + (d.description ? descEsc : '') + '">'
-        + '<button class="btn btn-sm btn-primary ie-save">save</button>'
-        + '<button class="btn btn-sm btn-secondary ie-cancel">cancel</button>'
-        + '</div>'
-        + '<div class="fork-form" style="display:none;margin-top:4px;gap:4px;flex-wrap:wrap;align-items:center;">'
-        + '<input type="text" class="form-input fork-name type-caption-1" placeholder="name" value="' + nameEsc + ' (copy)">'
-        + '<input type="text" class="form-input fork-desc type-caption-1" placeholder="description" value="' + (d.description ? descEsc : '') + '">'
-        + '<button class="btn btn-sm btn-primary fork-execute">clone</button>'
-        + '<button class="btn btn-sm btn-secondary fork-cancel">cancel</button>'
-        + '</div></td>'
-        + '</tr>';
-    });
-
-    html += '</tbody></table></div>';
-    list.innerHTML = html;
+    dom.setVisible(emptyEl, false);
+    dom.setVisible(wrapper, true);
+    dom.syncTableBody(tbody, datasets,
+      function(d) { return String(d.id); },
+      _createDatasetRow,
+      _updateDatasetRow
+    );
   };
+
+  /* ── load corpora ───────────────────────────────────── */
+
+  /* ── corpus row helpers ─────────────────────────────── */
+
+  function _createCorpusRow(c, i) {
+    var tr = document.createElement('tr');
+    tr.setAttribute('data-id', c.id);
+    tr.className = 'row-entrance';
+    tr.style.setProperty('--row-i', String(i));
+    tr.innerHTML = '<td><span style="color:var(--text);font-weight:500;"></span></td>'
+      + '<td class="cell-numeric text-muted"></td>'
+      + '<td class="cell-numeric" style="color:var(--info);"></td>'
+      + '<td class="text-muted type-footnote"></td>'
+      + '<td class="text-muted type-footnote"></td>'
+      + '<td style="text-align:center;"></td>'
+      + '<td class="cell-numeric"></td>';
+    _updateCorpusRow(tr, c, i);
+    dom.animateEntrance(tr, i);
+    return tr;
+  }
+
+  function _updateCorpusRow(tr, c, i) {
+    tr.style.setProperty('--row-i', String(i));
+    /* col 0: name */
+    dom.setText(tr.cells[0].querySelector('span'), c.name);
+    /* col 1: files */
+    dom.setText(tr.cells[1], String(c.file_count || 0));
+    /* col 2: docs */
+    dom.setText(tr.cells[2], String(c.document_count || 0));
+    /* col 3: created */
+    dom.setText(tr.cells[3], (c.created_at || '').slice(0, 10));
+    /* col 4: strategy */
+    dom.setText(tr.cells[4], c.chunking_strategy || '?');
+    /* col 5: warnings */
+    var warnHtml;
+    if (c.error_count > 0) {
+      warnHtml = '<span class="corpus-warn-badge type-caption-2" data-id="' + c.id + '" style="color:var(--warning);cursor:pointer;" title="Click to view warnings">&#9888; ' + c.error_count + '</span>';
+    } else {
+      warnHtml = '<span class="text-muted type-caption-2">-</span>';
+    }
+    dom.setCellHtml(tr, 5, warnHtml);
+    /* col 6: actions */
+    var actionsHtml = '<button class="btn btn-sm btn-secondary ingest-btn" data-id="' + c.id + '">ingest</button>'
+      + '<button class="btn btn-sm btn-danger del-btn" data-id="' + c.id + '" style="margin-left:2px;">rm</button>';
+    dom.setCellHtml(tr, 6, actionsHtml);
+  }
 
   /* ── load corpora ───────────────────────────────────── */
 
   window.loadCorpora = async function loadCorpora() {
     var resp = await fetch('/v1/corpora');
     var data = await resp.json();
-    var list = document.getElementById('corpus-list');
-    if (!data.data || data.data.length === 0) {
-      list.innerHTML = '<span class="text-muted type-subhead">No corpora created yet.</span>';
+    var corpora = (data && data.data) || [];
+    var emptyEl = document.getElementById('corpora-empty');
+    var wrapper = document.getElementById('corpora-table-wrapper');
+    var tbody = document.getElementById('corpora-tbody');
+
+    if (corpora.length === 0) {
+      dom.setVisible(wrapper, false);
+      dom.setVisible(emptyEl, true);
+      emptyEl.textContent = 'No corpora created yet.';
       return;
     }
-    list.innerHTML = '<div class="table-scroll"><table class="grouped-list">'
-      + '<thead><tr>'
-      + '<th>Name</th><th style="text-align:right;">Files</th><th style="text-align:right;">Docs</th>'
-      + '<th>Created</th><th>Strategy</th><th style="text-align:center;">Warnings</th>'
-      + '<th style="text-align:right;">Actions</th>'
-      + '</tr></thead><tbody>'
-      + data.data.map(function(c, i) {
-      var nameEsc = escHtml(c.name);
-      var ingestBtn = '<button class="btn btn-sm btn-secondary ingest-btn" data-id="' + c.id + '">ingest</button>';
-      var delBtn = '<button class="btn btn-sm btn-danger del-btn" data-id="' + c.id + '" style="margin-left:2px;">rm</button>';
-      var warnBadge = '';
-      if (c.error_count > 0) {
-        warnBadge = '<span class="corpus-warn-badge type-caption-2" data-id="' + c.id + '" style="color:var(--warning);cursor:pointer;" title="Click to view warnings">&#9888; ' + c.error_count + '</span>';
-      } else {
-        warnBadge = '<span class="text-muted type-caption-2">-</span>';
+
+    dom.setVisible(emptyEl, false);
+    dom.setVisible(wrapper, true);
+    dom.syncTableBody(tbody, corpora,
+      function(c) { return String(c.id); },
+      _createCorpusRow,
+      _updateCorpusRow
+    );
+
+    var liveIds = {};
+    corpora.forEach(function(c) {
+      liveIds[String(c.id)] = true;
+      var dataRow = tbody.querySelector('tr[data-key="' + c.id + '"]');
+      var detail = document.getElementById('detail-' + c.id);
+      if (dataRow && !detail) {
+        dataRow.insertAdjacentHTML('afterend',
+          '<tr class="corpus-detail-row" id="detail-' + c.id + '" style="display:none;">'
+          + '<td colspan="7" style="padding:0 var(--space-4) var(--space-2) var(--space-4);">'
+          + '<div class="corpus-files" id="files-' + c.id + '" style="display:none;"></div>'
+          + '<div class="corpus-errors" id="errors-' + c.id + '" style="display:none;"></div>'
+          + '</td></tr>'
+        );
+      } else if (dataRow && detail && detail.previousElementSibling !== dataRow) {
+        dataRow.insertAdjacentElement('afterend', detail);
       }
-      return '<tr data-id="' + c.id + '" class="row-entrance" style="--row-i: ' + i + '">'
-        + '<td><span style="color:var(--text);font-weight:500;">' + nameEsc + '</span></td>'
-        + '<td class="cell-numeric text-muted">' + (c.file_count || 0) + '</td>'
-        + '<td class="cell-numeric" style="color:var(--info);">' + (c.document_count || 0) + '</td>'
-        + '<td class="text-muted type-footnote">' + (c.created_at || '').slice(0,10) + '</td>'
-        + '<td class="text-muted type-footnote">' + (c.chunking_strategy || '?') + '</td>'
-        + '<td style="text-align:center;">' + warnBadge + '</td>'
-        + '<td class="cell-numeric">' + ingestBtn + delBtn + '</td>'
-        + '</tr>'
-        + '<tr class="corpus-detail-row" id="detail-' + c.id + '" style="display:none;">'
-        + '<td colspan="7" style="padding:0 var(--space-4) var(--space-2) var(--space-4);">'
-        + '<div class="corpus-files" id="files-' + c.id + '" style="display:none;"></div>'
-        + '<div class="corpus-errors" id="errors-' + c.id + '" style="display:none;"></div>'
-        + '</td></tr>';
-    }).join('') + '</tbody></table></div>';
+    });
+
+    tbody.querySelectorAll('tr.corpus-detail-row').forEach(function(row) {
+      var id = row.id.replace('detail-', '');
+      if (!liveIds[id]) row.remove();
+    });
   };
 
   /* ── event delegation ───────────────────────────────── */
@@ -570,7 +692,7 @@
           if (d.errors && d.errors.length > 0) {
             msg += '  <span style="color:var(--warning);">' + d.errors.length + ' warning(s)</span>';
           }
-          status.innerHTML = msg;
+          dom.setHtml(status, msg);
           loadCorpora();
           loadCombinedData();
         })
@@ -600,11 +722,11 @@
       fetch('/v1/corpora/' + id).then(function(r) { return r.json(); }).then(function(resp) {
         var errors = resp.data && resp.data.errors;
         if (!errors || errors.length === 0) {
-          errDiv.innerHTML = '<span class="text-muted type-caption-2">No warnings recorded.</span>';
+          dom.setHtml(errDiv, '<span class="text-muted type-caption-2">No warnings recorded.</span>');
         } else {
-          errDiv.innerHTML = errors.map(function(e) {
+          dom.setHtml(errDiv, errors.map(function(e) {
             return '<div class="text-muted type-caption-2" style="padding:1px 0;">! ' + escHtml(e) + '</div>';
-          }).join('');
+          }).join(''));
         }
         errDiv.style.display = '';
         detailRow.style.display = '';
@@ -740,6 +862,33 @@
 
   });
 
+  /* ── delegated click: recommendation cards ─────────── */
+  document.getElementById('wiz-recs').addEventListener('click', function(e) {
+    var card = e.target.closest('.rec-card');
+    if (!card) return;
+    var recsContainer = document.getElementById('wiz-recs');
+    recsContainer.querySelectorAll('.rec-card').forEach(function(c) { c.classList.remove('selected-rec'); c.style.borderColor = 'var(--border)'; });
+    card.classList.add('selected-rec');
+    card.style.borderColor = 'var(--accent-cyan)';
+    card.querySelector('input').checked = true;
+    var idx = parseInt(card.querySelector('input').value, 10);
+    var analysis = wizState.analysis;
+    if (!analysis || !analysis.recommendations) return;
+    var rec = analysis.recommendations[idx];
+    if (rec.strategy) document.getElementById('wiz-strategy').value = rec.strategy;
+    if (rec.block_size) {
+      var bs = document.getElementById('wiz-block-size');
+      bs.value = String(rec.block_size);
+      document.getElementById('wiz-bs-value').textContent = bs.value;
+    }
+    if (rec.overlap != null) {
+      var ov = document.getElementById('wiz-overlap');
+      ov.value = String(Math.round(rec.overlap * 100));
+      document.getElementById('wiz-ov-value').textContent = ov.value + '%';
+    }
+    updateWizParams();
+  });
+
   /* ── upload form ────────────────────────────────────── */
 
   document.getElementById('upload-form').addEventListener('submit', async function(e) {
@@ -826,13 +975,13 @@
     .then(function(resp) {
       if (resp.data && resp.data.path) {
         document.getElementById('wiz-root').value = resp.data.path;
-        status.innerHTML = '> Resolved "' + dirName + '" to ' + resp.data.path + '. Click <b>analyze</b> or drop another folder.';
+        dom.setHtml(status, '> Resolved "' + dirName + '" to ' + resp.data.path + '. Click <b>analyze</b> or drop another folder.');
       } else {
-        status.innerHTML = '> Folder "' + dirName + '" selected (' + files.length + ' files). Could not auto-resolve. Drag from Finder or paste the full path.';
+        dom.setHtml(status, '> Folder "' + dirName + '" selected (' + files.length + ' files). Could not auto-resolve. Drag from Finder or paste the full path.');
       }
     })
     .catch(function() {
-      status.innerHTML = '> Folder "' + dirName + '" selected (' + files.length + ' files). Drag from Finder or paste the full path.';
+      dom.setHtml(status, '> Folder "' + dirName + '" selected (' + files.length + ' files). Drag from Finder or paste the full path.');
     });
   });
 
@@ -894,7 +1043,7 @@
       } else if (files[0].name) {
         dirName = files[0].name;
       }
-      status.innerHTML = '> Folder "' + dirName + '" dropped (' + files.length + ' files). Could not resolve path. Paste the full path above or use <b>browse</b>.';
+      dom.setHtml(status, '> Folder "' + dirName + '" dropped (' + files.length + ' files). Could not resolve path. Paste the full path above or use <b>browse</b>.');
     }
   });
 
@@ -932,7 +1081,7 @@
     var status = document.getElementById('wiz-status');
     if (!root) { status.textContent = '! root_path required'; return; }
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> scanning';
+    dom.setHtml(btn, '<span class="spinner"></span> scanning');
     status.textContent = '> scanning...';
     var body = { path: root };
     var incList = parsePatterns(inc);
@@ -946,14 +1095,14 @@
         body: JSON.stringify(body),
       });
       var parsed = await safeJson(resp);
-      if (!parsed.ok) { btn.disabled = false; btn.innerHTML = 'auto-tune'; status.textContent = '! ' + (parsed.body ? (parsed.body.detail || 'Analyze failed') : parsed.raw); return; }
+      if (!parsed.ok) { btn.disabled = false; dom.setText(btn, 'auto-tune'); status.textContent = '! ' + (parsed.body ? (parsed.body.detail || 'Analyze failed') : parsed.raw); return; }
       wizState.analysis = parsed.body.data;
       renderWizResults(parsed.body.data, true);
       document.getElementById('wiz-results').style.display = 'block';
       status.textContent = '> scan complete: ' + parsed.body.data.file_count + ' files, ' + formatBytes(parsed.body.data.total_bytes);
       btn.disabled = false;
-      btn.innerHTML = 'auto-tune';
-    } catch (err) { btn.disabled = false; btn.innerHTML = 'auto-tune'; status.textContent = '! ' + err.message; }
+      dom.setText(btn, 'auto-tune');
+    } catch (err) { btn.disabled = false; dom.setText(btn, 'auto-tune'); status.textContent = '! ' + err.message; }
   });
 
   function renderWizResults(data, autoSelect) {
@@ -970,58 +1119,63 @@
           return '<span style="color:var(--accent-cyan);">' + l + '</span> ' + data.language_breakdown[l] + ' files' + extra;
         }).join(' &middot; ')
       : 'No language data';
-    document.getElementById('wiz-stats').innerHTML =
+    dom.setHtml(document.getElementById('wiz-stats'),
       '<div class="type-caption-1" style="display:flex;gap:20px;flex-wrap:wrap;">'
       + '<span><b>Files</b>: ' + data.file_count + '</span>'
       + '<span><b>Total</b>: ' + formatBytes(data.total_bytes) + '</span>'
       + '<span><b>Avg</b>: ' + formatBytes(data.avg_bytes) + '</span>'
       + '<span><b>Median</b>: ' + formatBytes(data.median_bytes) + '</span>'
-      + '</div><div class="text-muted type-caption-1" style="margin-top:4px;">' + langHtml + '</div>';
+      + '</div><div class="text-muted type-caption-1" style="margin-top:4px;">' + langHtml + '</div>');
 
     /* recommendations */
     var recs = data.recommendations || [];
-    var html = recs.map(function(r, i) {
+    var recsContainer = document.getElementById('wiz-recs');
+
+    function _setRecCardInner(el, r, i) {
       var docs = r.estimated_docs != null ? formatBytes(r.estimated_docs).replace('B','').replace('KB','K').replace('MB','M') + ' docs' : '? docs';
-      var selected = i === 0 && r.strategy ? ' selected-rec' : '';
-      var stratAttr = r.strategy ? ' data-strategy="' + r.strategy + '"' : '';
-      var cardStyle = r.strategy
-        ? 'class="type-caption-1" style="display:flex;gap:8px;align-items:flex-start;padding:6px 10px;border:1px solid var(--border);border-radius:4px;cursor:pointer;"'
-        : 'class="text-muted type-caption-1" style="display:flex;gap:8px;align-items:flex-start;padding:6px 10px;border:1px dashed var(--border);border-radius:4px;"';
-      return '<div class="rec-card' + selected + '" data-idx="' + i + '"' + stratAttr + ' ' + cardStyle + '>'
-        + '<input type="radio" name="wiz-rec" value="' + i + '"' + (i === 0 ? ' checked' : '') + ' style="margin-top:2px;accent-color:var(--primary);">'
+      el.innerHTML = '<input type="radio" name="wiz-rec" value="' + i + '"' + (i === 0 ? ' checked' : '') + ' style="margin-top:2px;accent-color:var(--primary);">'
         + '<div style="flex:1;">'
         + '<div style="color:var(--accent-green);font-weight:bold;">' + r.label + '</div>'
         + '<div style="color:var(--text-dim);">' + r.detail + '</div>'
         + '</div>'
-        + '<div class="type-caption-1" style="text-align:right;white-space:nowrap;color:var(--info);">' + docs + '</div>'
-        + '</div>';
-    }).join('');
-    var recsContainer = document.getElementById('wiz-recs');
-    recsContainer.innerHTML = html;
+        + '<div class="type-caption-1" style="text-align:right;white-space:nowrap;color:var(--info);">' + docs + '</div>';
+    }
 
-    /* click handler on rec cards */
-    recsContainer.querySelectorAll('.rec-card').forEach(function(card) {
-      card.addEventListener('click', function() {
-        recsContainer.querySelectorAll('.rec-card').forEach(function(c) { c.classList.remove('selected-rec'); c.style.borderColor = 'var(--border)'; });
-        card.classList.add('selected-rec');
-        card.style.borderColor = 'var(--accent-cyan)';
-        card.querySelector('input').checked = true;
-        var idx = parseInt(card.getAttribute('data-idx'), 10);
-        var rec = data.recommendations[idx];
-        if (rec.strategy) document.getElementById('wiz-strategy').value = rec.strategy;
-        if (rec.block_size) {
-          var bs = document.getElementById('wiz-block-size');
-          bs.value = String(rec.block_size);
-          document.getElementById('wiz-bs-value').textContent = bs.value;
-        }
-        if (rec.overlap != null) {
-          var ov = document.getElementById('wiz-overlap');
-          ov.value = String(Math.round(rec.overlap * 100));
-          document.getElementById('wiz-ov-value').textContent = ov.value + '%';
-        }
-        updateWizParams();
-      });
-    });
+    function _applyRecCardVisual(el, r, i) {
+      if (r.strategy) {
+        el.setAttribute('data-strategy', r.strategy);
+        el.style.border = '1px solid var(--border)';
+        el.style.cursor = 'pointer';
+        el.classList.remove('text-muted');
+      } else {
+        el.removeAttribute('data-strategy');
+        el.style.border = '1px dashed var(--border)';
+        el.style.cursor = '';
+        el.classList.add('text-muted');
+      }
+      dom.toggleClass(el, 'selected-rec', i === 0 && !!r.strategy);
+      if (i === 0 && r.strategy) {
+        el.style.borderColor = 'var(--accent-cyan)';
+      } else if (r.strategy) {
+        el.style.borderColor = 'var(--border)';
+      }
+    }
+
+    dom.syncList(recsContainer, recs,
+      function(r, i) { return String(i); },
+      function(r, i) {
+        var el = document.createElement('div');
+        el.className = 'type-caption-1 rec-card';
+        el.style.cssText = 'display:flex;gap:8px;align-items:flex-start;padding:6px 10px;';
+        _applyRecCardVisual(el, r, i);
+        _setRecCardInner(el, r, i);
+        return el;
+      },
+      function(el, r, i) {
+        _applyRecCardVisual(el, r, i);
+        _setRecCardInner(el, r, i);
+      }
+    );
 
     /* auto-select first recommendation on first analysis */
     if (recs.length > 0) {
@@ -1059,7 +1213,7 @@
   function updateEstimate() {
     var analysis = wizState.analysis;
     var el = document.getElementById('wiz-estimate');
-    if (!analysis) { el.innerHTML = ''; return; }
+    if (!analysis) { dom.setHtml(el, ''); return; }
     var strat = document.getElementById('wiz-strategy').value;
     var totalBytes = analysis.total_bytes;
     var fileCount = analysis.file_count;
@@ -1083,7 +1237,7 @@
     var displayDocs = docs.toLocaleString();
     var color = docs > 5000000 ? 'var(--warning)' : docs > 500000 ? 'var(--text-dim)' : 'var(--accent-green)';
     var html = '<span style="color:' + color + ';">~' + displayDocs + ' training docs</span>  <span style="color:var(--text-dim);">(' + label + ')</span>';
-    el.innerHTML = html;
+    dom.setHtml(el, html);
     updateEstimateWarnings();
   }
 
@@ -1092,7 +1246,7 @@
   function updateEstimateWarnings() {
     var analysis = wizState.analysis;
     var warnEl = document.getElementById('wiz-estimate-warnings');
-    if (!analysis) { warnEl.innerHTML = ''; return; }
+    if (!analysis) { dom.setHtml(warnEl, ''); return; }
     var warnings = [];
 
     /* max_files check: warn if file_count exceeds the ingest limit */
@@ -1118,7 +1272,7 @@
       if (bs >= 1024) {
         /* find recommended block_size from selected rec card */
         var recCard = document.querySelector('.rec-card.selected-rec');
-        var recIdx = recCard ? parseInt(recCard.getAttribute('data-idx'), 10) : -1;
+        var recIdx = recCard ? parseInt(recCard.querySelector('input').value, 10) : -1;
         var recs = analysis.recommendations || [];
         var rec = recIdx >= 0 ? recs[recIdx] : null;
         var recBs = rec && rec.block_size ? rec.block_size : null;
@@ -1136,7 +1290,7 @@
       }
     }
 
-    warnEl.innerHTML = warnings.join('<br>');
+    dom.setHtml(warnEl, warnings.join('<br>'));
   }
 
   /* ── wizard: fix functions ─────────────────────────────── */
@@ -1182,7 +1336,7 @@
     if (!name) { status.textContent = '! name required'; return; }
     btn.disabled = true;
     var origText = btn.innerHTML;
-    btn.innerHTML = '<span class="spinner"></span> creating';
+    dom.setHtml(btn, '<span class="spinner"></span> creating');
 
     var body = {
       name: name,
@@ -1205,7 +1359,7 @@
       });
       var parsed = await safeJson(resp);
       if (!parsed.ok) {
-        btn.disabled = false; btn.innerHTML = origText;
+        btn.disabled = false; dom.setHtml(btn, origText);
         status.textContent = '! ' + (parsed.body ? (parsed.body.detail || 'Create failed') : parsed.raw);
         return;
       }
@@ -1218,8 +1372,8 @@
       var ingestParsed = await safeJson(ingestResp);
       if (!ingestParsed.ok) {
         btn.disabled = false;
-        btn.innerHTML = origText;
-        status.innerHTML = '! Ingest failed: ' + (ingestParsed.body ? (ingestParsed.body.detail || 'Unknown') : ingestParsed.raw);
+        dom.setHtml(btn, origText);
+        dom.setText(status, '! Ingest failed: ' + (ingestParsed.body ? (ingestParsed.body.detail || 'Unknown') : ingestParsed.raw));
         loadCorpora();
         loadCombinedData();
         return;
@@ -1235,12 +1389,12 @@
           msg += '<br><span class="text-muted type-caption-2">... click the &#9888; badge in the corpus list for all ' + d.errors.length + ' warnings</span>';
         }
       }
-      status.innerHTML = msg;
+      dom.setHtml(status, msg);
       btn.disabled = false;
-      btn.innerHTML = origText;
+      dom.setHtml(btn, origText);
       loadCorpora();
       loadCombinedData();
-    } catch (err) { btn.disabled = false; btn.innerHTML = origText; status.textContent = '! ' + err.message; }
+    } catch (err) { btn.disabled = false; dom.setHtml(btn, origText); status.textContent = '! ' + err.message; }
   });
 
   /* ════════════════════════════════════════════════════════════
@@ -1293,8 +1447,96 @@
      Combined table
      ════════════════════════════════════════════════════════════ */
 
+  /* ── combined table row helpers ─────────────────────── */
+
+  function _createCombinedRow(item, i) {
+    var tr = document.createElement('tr');
+    tr.setAttribute('data-id', item.id);
+    tr.className = 'row-entrance';
+    tr.style.setProperty('--row-i', String(i));
+    tr.innerHTML = '<td></td>'
+      + '<td><span style="color:var(--text);font-weight:500;"></span></td>'
+      + '<td class="cell-meta cell-wrap"></td>'
+      + '<td class="cell-numeric text-muted"></td>'
+      + '<td></td>'
+      + '<td class="type-footnote cell-meta cell-wrap" style="max-width:140px;"></td>'
+      + '<td class="type-footnote cell-meta cell-wrap" style="max-width:140px;"></td>'
+      + '<td class="cell-meta"></td>'
+      + '<td style="text-align:right;white-space:nowrap;"></td>';
+    _updateCombinedRow(tr, item, i);
+    dom.animateEntrance(tr, i);
+    return tr;
+  }
+
+  function _updateCombinedRow(tr, item, i) {
+    var nameEsc = escHtml(item.name);
+    var descEsc = escHtml(item.description);
+    tr.style.setProperty('--row-i', String(i));
+    /* col 0: type badge */
+    var typeHtml = item.type === 'dataset'
+      ? '<span class="ds-badge ds-badge-dataset">Dataset</span>'
+      : '<span class="ds-badge ds-badge-corpus">Corpus</span>';
+    dom.setCellHtml(tr, 0, typeHtml);
+    /* col 1: name */
+    dom.setText(tr.cells[1].querySelector('span'), item.name);
+    /* col 2: description */
+    dom.setCellHtml(tr, 2, item.description ? descEsc : '-');
+    if (item.description) tr.cells[2].setAttribute('title', item.description);
+    /* col 3: size */
+    dom.setText(tr.cells[3], item.sizeInfo);
+    /* col 4: status / strategy */
+    var statHtml = item.type === 'dataset'
+      ? statusBadge(item.statusOrStrategy)
+      : '<span class="text-muted type-footnote">' + escHtml(item.statusOrStrategy) + '</span>';
+    dom.setCellHtml(tr, 4, statHtml);
+    /* col 5: source */
+    var sourceHtml = item.type === 'dataset' && item.declared_source
+      ? escHtml(item.declared_source) : '<span class="text-muted type-caption-2">&mdash;</span>';
+    dom.setCellHtml(tr, 5, sourceHtml);
+    /* col 6: license */
+    var licenseHtml = item.type === 'dataset' && item.license
+      ? escHtml(item.license) : '<span class="text-muted type-caption-2">&mdash;</span>';
+    dom.setCellHtml(tr, 6, licenseHtml);
+    /* col 7: created */
+    var createdStr = item.created_at ? item.created_at.slice(0, 10) : '-';
+    dom.setText(tr.cells[7], createdStr);
+    /* col 8: actions */
+    var actionsHtml = '';
+    if (item.type === 'dataset') {
+      actionsHtml = '<div style="display:flex;gap:var(--space-1);justify-content:flex-end;">'
+        + '<button class="btn btn-sm btn-secondary edit-btn" data-id="' + item.id + '">edit</button>'
+        + '<button class="btn btn-sm btn-secondary curate-btn" data-id="' + item.id + '" title="Open dataset curation">curate</button>'
+        + '<button class="btn btn-sm btn-secondary fork-btn" data-id="' + item.id + '" title="Clone this dataset">fork</button>'
+        + '<button class="btn btn-sm btn-danger del-dataset-btn" data-id="' + item.id + '" data-name="' + nameEsc + '">rm</button>'
+        + '</div>'
+        + '<div class="inline-edit-form" style="display:none;margin-top:4px;gap:4px;flex-wrap:wrap;align-items:center;">'
+        + '<input type="text" class="form-input ie-name type-caption-1" placeholder="name" value="' + nameEsc + '">'
+        + '<input type="text" class="form-input ie-desc type-caption-1" placeholder="description" value="' + (item.description ? descEsc : '') + '">'
+        + '<button class="btn btn-sm btn-primary ie-save">save</button>'
+        + '<button class="btn btn-sm btn-secondary ie-cancel">cancel</button>'
+        + '</div>'
+        + '<div class="fork-form" style="display:none;margin-top:4px;gap:4px;flex-wrap:wrap;align-items:center;">'
+        + '<input type="text" class="form-input fork-name type-caption-1" placeholder="name" value="' + nameEsc + ' (copy)">'
+        + '<input type="text" class="form-input fork-desc type-caption-1" placeholder="description" value="' + (item.description ? descEsc : '') + '">'
+        + '<button class="btn btn-sm btn-primary fork-execute">clone</button>'
+        + '<button class="btn btn-sm btn-secondary fork-cancel">cancel</button>'
+        + '</div>';
+    } else {
+      actionsHtml = '<div style="display:flex;gap:var(--space-1);justify-content:flex-end;">'
+        + '<button class="btn btn-sm btn-secondary ingest-btn" data-id="' + item.id + '">ingest</button>'
+        + '<button class="btn btn-sm btn-danger del-btn" data-id="' + item.id + '">rm</button>'
+        + '</div>';
+    }
+    dom.setCellHtml(tr, 8, actionsHtml);
+  }
+
+  /* ── combined table ────────────────────────────────── */
+
   window.loadCombinedData = async function loadCombinedData() {
-    var container = document.getElementById('combined-table-container');
+    var emptyEl = document.getElementById('combined-empty');
+    var wrapper = document.getElementById('combined-table-wrapper');
+    var errorsEl = document.getElementById('combined-errors');
+    var tbody = document.getElementById('combined-tbody');
     var errors = [];
 
     /* Fetch both endpoints independently — one failure must not sink the other */
@@ -1314,144 +1556,95 @@
     var corpora = await corpFetch;
 
     /* Tag each item with type and normalized created_at */
-      var combined = [];
+    var combined = [];
 
-      datasets.forEach(function(d) {
-        combined.push({
-          type: 'dataset',
-          id: d.id,
-          name: d.name,
-          description: d.description,
-          sizeInfo: (d.sample_count != null ? d.sample_count : '?') + ' samples / ' + formatBytes(d.total_size_bytes),
-          fileOrDocCount: d.sample_count,
-          secondaryCount: d.total_size_bytes,
-          statusOrStrategy: d.status || 'unknown',
-          created_at: d.created_at || d.updated_at || null,
-          curation_version: d.curation_version,
-          vocabulary_size: d.vocabulary_size,
-          document_count: d.document_count,
-          root_path: null,
-          chunking_strategy: null,
-          file_count: null,
-          error_count: null,
-          declared_source: d.declared_source || null,
-          license: d.license || null,
-        });
+    datasets.forEach(function(d) {
+      combined.push({
+        type: 'dataset',
+        id: d.id,
+        name: d.name,
+        description: d.description,
+        sizeInfo: (d.sample_count != null ? d.sample_count : '?') + ' samples / ' + formatBytes(d.total_size_bytes),
+        fileOrDocCount: d.sample_count,
+        secondaryCount: d.total_size_bytes,
+        statusOrStrategy: d.status || 'unknown',
+        created_at: d.created_at || d.updated_at || null,
+        curation_version: d.curation_version,
+        vocabulary_size: d.vocabulary_size,
+        document_count: d.document_count,
+        root_path: null,
+        chunking_strategy: null,
+        file_count: null,
+        error_count: null,
+        declared_source: d.declared_source || null,
+        license: d.license || null,
       });
+    });
 
-      corpora.forEach(function(c) {
-        combined.push({
-          type: 'corpus',
-          id: c.id,
-          name: c.name,
-          description: c.root_path || '(no path)',
-          sizeInfo: (c.file_count || 0) + ' files / ' + (c.document_count || 0) + ' docs',
-          fileOrDocCount: c.file_count,
-          secondaryCount: c.document_count,
-          statusOrStrategy: c.chunking_strategy || '?',
-          created_at: c.created_at || null,
-          curation_version: null,
-          vocabulary_size: null,
-          document_count: c.document_count,
-          root_path: c.root_path,
-          chunking_strategy: c.chunking_strategy,
-          file_count: c.file_count,
-          error_count: c.error_count,
-        });
+    corpora.forEach(function(c) {
+      combined.push({
+        type: 'corpus',
+        id: c.id,
+        name: c.name,
+        description: c.root_path || '(no path)',
+        sizeInfo: (c.file_count || 0) + ' files / ' + (c.document_count || 0) + ' docs',
+        fileOrDocCount: c.file_count,
+        secondaryCount: c.document_count,
+        statusOrStrategy: c.chunking_strategy || '?',
+        created_at: c.created_at || null,
+        curation_version: null,
+        vocabulary_size: null,
+        document_count: c.document_count,
+        root_path: c.root_path,
+        chunking_strategy: c.chunking_strategy,
+        file_count: c.file_count,
+        error_count: c.error_count,
       });
+    });
 
-      /* Sort by created_at descending (nulls last) */
-      combined.sort(function(a, b) {
-        if (!a.created_at && !b.created_at) return 0;
-        if (!a.created_at) return 1;
-        if (!b.created_at) return -1;
-        return b.created_at.localeCompare(a.created_at);
-      });
+    /* Sort by created_at descending (nulls last) */
+    combined.sort(function(a, b) {
+      if (!a.created_at && !b.created_at) return 0;
+      if (!a.created_at) return 1;
+      if (!b.created_at) return -1;
+      return b.created_at.localeCompare(a.created_at);
+    });
 
-      if (combined.length === 0 && errors.length === 0) {
-        container.innerHTML = '<span class="text-muted type-subhead">No datasets or corpora yet.</span>';
-        return;
-      }
+    if (combined.length === 0 && errors.length === 0) {
+      dom.setVisible(wrapper, false);
+      dom.setVisible(errorsEl, false);
+      dom.setVisible(emptyEl, true);
+      dom.setText(emptyEl, 'No datasets or corpora yet.');
+      return;
+    }
 
-      if (combined.length === 0 && errors.length > 0) {
-        container.innerHTML = '<span class="type-subhead" style="color:var(--accent-red);">Failed to load: ' + escHtml(errors.join('; ')) + '</span>';
-        return;
-      }
+    if (combined.length === 0 && errors.length > 0) {
+      dom.setVisible(wrapper, false);
+      dom.setVisible(emptyEl, false);
+      dom.setVisible(errorsEl, true);
+      dom.setHtml(errorsEl, '<span class="type-subhead" style="color:var(--accent-red);">Failed to load: ' + escHtml(errors.join('; ')) + '</span>');
+      return;
+    }
 
-      var warningHtml = '';
-      if (errors.length > 0) {
-        warningHtml = '<div class="type-footnote" style="color:var(--accent-orange);padding:var(--space-2);border:1px solid var(--accent-orange);border-radius:var(--radius-md);margin-bottom:var(--space-2);">'
-          + '⚠ Partial data — ' + escHtml(errors.join('; ')) + '</div>';
-      }
+    /* Show data rows */
+    dom.setVisible(emptyEl, false);
+    dom.setVisible(wrapper, true);
 
-      var html = warningHtml + '<div class="table-scroll"><table class="grouped-list">'
-        + '<thead><tr>'
-        + '<th>Type</th><th>Name</th><th>Description / Path</th>'
-        + '<th style="text-align:right;">Size</th><th>Status / Strategy</th>'
-        + '<th>Source</th><th>License</th>'
-        + '<th>Created</th><th style="text-align:right;">Actions</th>'
-        + '</tr></thead><tbody>';
+    /* Error banner (if any) */
+    if (errors.length > 0) {
+      dom.setVisible(errorsEl, true);
+      dom.setHtml(errorsEl, '<div class="type-footnote" style="color:var(--accent-orange);padding:var(--space-2);border:1px solid var(--accent-orange);border-radius:var(--radius-md);margin-bottom:var(--space-2);">'
+        + '&#9888; Partial data — ' + escHtml(errors.join('; ')) + '</div>');
+    } else {
+      dom.setVisible(errorsEl, false);
+    }
 
-      combined.forEach(function(item, i) {
-        var nameEsc = escHtml(item.name);
-        var descEsc = escHtml(item.description);
-        var typeBadge = item.type === 'dataset'
-          ? '<span class="ds-badge ds-badge-dataset">Dataset</span>'
-          : '<span class="ds-badge ds-badge-corpus">Corpus</span>';
-        var createdStr = item.created_at ? item.created_at.slice(0, 10) : '-';
-        var statStr = item.type === 'dataset'
-          ? statusBadge(item.statusOrStrategy)
-          : '<span class="text-muted type-footnote">' + escHtml(item.statusOrStrategy) + '</span>';
-        var provSource = item.type === 'dataset' && item.declared_source
-          ? escHtml(item.declared_source) : '<span class="text-muted type-caption-2">&mdash;</span>';
-        var provLicense = item.type === 'dataset' && item.license
-          ? escHtml(item.license) : '<span class="text-muted type-caption-2">&mdash;</span>';
-
-        var actionsHtml = '';
-        if (item.type === 'dataset') {
-          actionsHtml = '<div style="display:flex;gap:var(--space-1);justify-content:flex-end;">'
-            + '<button class="btn btn-sm btn-secondary edit-btn" data-id="' + item.id + '">edit</button>'
-            + '<button class="btn btn-sm btn-secondary curate-btn" data-id="' + item.id + '" title="Open dataset curation">curate</button>'
-            + '<button class="btn btn-sm btn-secondary fork-btn" data-id="' + item.id + '" title="Clone this dataset">fork</button>'
-            + '<button class="btn btn-sm btn-danger del-dataset-btn" data-id="' + item.id + '" data-name="' + nameEsc + '">rm</button>'
-            + '</div>'
-            + '<div class="inline-edit-form" style="display:none;margin-top:4px;gap:4px;flex-wrap:wrap;align-items:center;">'
-            + '<input type="text" class="form-input ie-name type-caption-1" placeholder="name" value="' + nameEsc + '">'
-            + '<input type="text" class="form-input ie-desc type-caption-1" placeholder="description" value="' + (item.description ? descEsc : '') + '">'
-            + '<button class="btn btn-sm btn-primary ie-save">save</button>'
-            + '<button class="btn btn-sm btn-secondary ie-cancel">cancel</button>'
-            + '</div>'
-            + '<div class="fork-form" style="display:none;margin-top:4px;gap:4px;flex-wrap:wrap;align-items:center;">'
-            + '<input type="text" class="form-input fork-name type-caption-1" placeholder="name" value="' + nameEsc + ' (copy)">'
-            + '<input type="text" class="form-input fork-desc type-caption-1" placeholder="description" value="' + (item.description ? descEsc : '') + '">'
-            + '<button class="btn btn-sm btn-primary fork-execute">clone</button>'
-            + '<button class="btn btn-sm btn-secondary fork-cancel">cancel</button>'
-            + '</div>';
-        } else {
-          actionsHtml = '<div style="display:flex;gap:var(--space-1);justify-content:flex-end;">'
-            + '<button class="btn btn-sm btn-secondary ingest-btn" data-id="' + item.id + '">ingest</button>'
-            + '<button class="btn btn-sm btn-danger del-btn" data-id="' + item.id + '">rm</button>'
-            + '</div>';
-        }
-
-        html += '<tr class="row-entrance" data-id="' + item.id + '" style="--row-i: ' + i + '">'
-          + '<td>' + typeBadge + '</td>'
-          + '<td><span style="color:var(--text);font-weight:500;">' + nameEsc + '</span></td>'
-          + '<td class="cell-meta cell-wrap" title="' + descEsc + '">'
-          + (item.description ? descEsc : '-') + '</td>'
-          + '<td class="cell-numeric text-muted">' + item.sizeInfo + '</td>'
-          + '<td>' + statStr + '</td>'
-          + '<td class="type-footnote cell-meta cell-wrap" style="max-width:140px;">' + provSource + '</td>'
-          + '<td class="type-footnote cell-meta cell-wrap" style="max-width:140px;">' + provLicense + '</td>'
-          + '<td class="cell-meta">' + createdStr + '</td>'
-          + '<td style="text-align:right;white-space:nowrap;">' + actionsHtml + '</td>'
-          + '</tr>';
-      });
-
-      html += '</tbody></table></div>';
-      container.innerHTML = html;
-
-    };
+    dom.syncTableBody(tbody, combined,
+      function(item) { return item.type + '-' + item.id; },
+      _createCombinedRow,
+      _updateCombinedRow
+    );
+  };
 
   /* ════════════════════════════════════════════════════════════
      Import form — populate selects
@@ -1480,18 +1673,20 @@
     var corpora = await corpFetch;
 
       /* Populate corpus select */
-      corpusSelect.innerHTML = '<option value="">Select a corpus...</option>';
+      var corpusHtml = '<option value="">Select a corpus...</option>';
       corpora.forEach(function(c) {
         var sel = c.id === prevCorpus ? ' selected' : '';
-        corpusSelect.innerHTML += '<option value="' + c.id + '"' + sel + '>' + escHtml(c.name) + '</option>';
+        corpusHtml += '<option value="' + c.id + '"' + sel + '>' + escHtml(c.name) + '</option>';
       });
+      dom.setHtml(corpusSelect, corpusHtml);
 
       /* Populate dataset select */
-      datasetSelect.innerHTML = '<option value="">Select a dataset...</option>';
+      var datasetHtml = '<option value="">Select a dataset...</option>';
       datasets.forEach(function(d) {
         var sel = d.id === prevDataset ? ' selected' : '';
-        datasetSelect.innerHTML += '<option value="' + d.id + '"' + sel + '>' + escHtml(d.name) + '</option>';
+        datasetHtml += '<option value="' + d.id + '"' + sel + '>' + escHtml(d.name) + '</option>';
       });
+      dom.setHtml(datasetSelect, datasetHtml);
   }
 
   /* ── import button handler ── */
@@ -1509,7 +1704,7 @@
     var btn = this;
     btn.disabled = true;
     var origText = btn.innerHTML;
-    btn.innerHTML = '<span class="spinner"></span> importing';
+    dom.setHtml(btn, '<span class="spinner"></span> importing');
     status.textContent = '> importing...';
 
     try {
@@ -1523,7 +1718,7 @@
       if (!resp.ok) {
         status.textContent = '! Import failed: ' + (data.detail || data.message || 'Unknown error');
         btn.disabled = false;
-        btn.innerHTML = origText;
+        dom.setHtml(btn, origText);
         return;
       }
 
@@ -1532,12 +1727,12 @@
       loadDatasets();
       loadCombinedData();
       btn.disabled = false;
-      btn.innerHTML = origText;
+      dom.setHtml(btn, origText);
 
     } catch (err) {
       status.textContent = '! Import error: ' + err.message;
       btn.disabled = false;
-      btn.innerHTML = origText;
+      dom.setHtml(btn, origText);
     }
   });
 
@@ -1553,12 +1748,14 @@
 
   function populateCorpusToDatasetSelect() {
     var select = document.getElementById('cd-corpus-select');
-    select.innerHTML = '<option value="">Select a corpus...</option>';
+    var origHtml = select.innerHTML;
+    var html = '<option value="">Select a corpus...</option>';
     fetch('/v1/corpora').then(function(r) { return r.json(); }).then(function(data) {
       var corpora = (data && data.data) || [];
       corpora.forEach(function(c) {
-        select.innerHTML += '<option value="' + c.id + '">' + escHtml(c.name) + '</option>';
+        html += '<option value="' + c.id + '">' + escHtml(c.name) + '</option>';
       });
+      dom.setHtml(select, html);
     }).catch(function() {});
   }
 
@@ -1600,7 +1797,7 @@
     var btn = this;
     btn.disabled = true;
     var origText = btn.innerHTML;
-    btn.innerHTML = '<span class="spinner"></span> creating';
+    dom.setHtml(btn, '<span class="spinner"></span> creating');
 
     var body = {
       corpus_id: parseInt(corpusId),
@@ -1620,20 +1817,20 @@
       if (!resp.ok) {
         status.textContent = '! ' + (data.detail || 'Create failed');
         btn.disabled = false;
-        btn.innerHTML = origText;
+        dom.setHtml(btn, origText);
         return;
       }
-      status.innerHTML = '> Created dataset "' + escHtml(name) + '"';
+      dom.setHtml(status, '> Created dataset "' + escHtml(name) + '"');
       document.getElementById('cd-name').value = '';
       btn.disabled = false;
-      btn.innerHTML = origText;
+      dom.setHtml(btn, origText);
       showToast('Dataset created from corpus', 'success');
       loadDatasets();
       loadCombinedData();
     } catch (err) {
       status.textContent = '! ' + err.message;
       btn.disabled = false;
-      btn.innerHTML = origText;
+      dom.setHtml(btn, origText);
     }
   });
 

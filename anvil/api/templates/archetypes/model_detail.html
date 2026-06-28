@@ -17,7 +17,27 @@
     {% if error %}
     <div class="error-text">{{ error }}</div>
     {% else %}
-    <div class="loading-indicator" style="display:block;">Loading model...</div>
+    <div class="loading-indicator" id="md-loading" style="display:block;">Loading model...</div>
+    <div id="md-error" class="error-text" style="display:none;"></div>
+    <div id="md-body" style="display:none;">
+      <div class="model-header">
+        <h3 class="model-name" id="md-name"></h3>
+        <p id="md-description" class="text-dim" style="display:none;"></p>
+        <a id="md-play-link" href="#" class="btn btn-primary btn-sm" style="margin-top:var(--space-2);">Play</a>
+      </div>
+      <div class="metrics-grid">
+        <div class="metric"><span class="metric-label">Versions</span><span class="metric-value" id="md-versions"></span></div>
+        <div class="metric"><span class="metric-label">Created</span><span class="metric-value" id="md-created"></span></div>
+      </div>
+      <p id="md-avg-loss" class="text-dim" style="margin-top:var(--space-2);display:none;"></p>
+      <table class="grouped-list" id="md-versions-table" style="margin-top:var(--space-4);display:none;">
+        <thead><tr><th>Version</th><th>Experiment</th><th>Loss</th><th>Dataset</th><th>Created</th><th>Actions</th></tr></thead>
+        <tbody id="md-versions-tbody"></tbody>
+      </table>
+      <div style="margin-top:var(--space-4);">
+        <button class="btn btn-secondary" onclick="deleteModel()" style="color:var(--danger);">Delete Entire Model</button>
+      </div>
+    </div>
     {% endif %}
   </div>
 </div>
@@ -59,35 +79,60 @@
 
   function loadModelDetail() {
     fetch('/v1/registry/models/' + modelId).then(function(r) { return r.json(); }).then(function(data) {
-      var el = document.getElementById('model-detail');
+      var loadingEl = document.getElementById('md-loading');
+      var errorEl = document.getElementById('md-error');
+      var bodyEl = document.getElementById('md-body');
+
       if (data.detail) {
-        el.innerHTML = '<div class="error-text">Error: ' + escHtml(data.detail) + '</div>';
+        loadingEl.style.display = 'none';
+        errorEl.style.display = '';
+        errorEl.textContent = 'Error: ' + data.detail;
         return;
       }
 
-      var html = '<div class="model-header">'
-        + '<h3 class="model-name">' + escHtml(data.name) + '</h3>'
-        + (data.description ? '<p class="text-dim">' + escHtml(data.description) + '</p>' : '')
-        + '<a href="/v1/inference-page?model_id=' + modelId + '" class="btn btn-primary btn-sm" style="margin-top:var(--space-2);">Play</a>'
-        + '</div>'
-        + '<div class="metrics-grid">'
-        + '<div class="metric"><span class="metric-label">Versions</span><span class="metric-value">' + data.versions.length + '</span></div>'
-        + '<div class="metric"><span class="metric-label">Created</span><span class="metric-value">' + (data.created_at || '—') + '</span></div>'
-        + '</div>';
+      loadingEl.style.display = 'none';
+      bodyEl.style.display = '';
 
+      // Model name
+      dom.setText(document.getElementById('md-name'), data.name);
+
+      // Description
+      var descEl = document.getElementById('md-description');
+      if (data.description) {
+        descEl.style.display = '';
+        dom.setText(descEl, data.description);
+      } else {
+        descEl.style.display = 'none';
+      }
+
+      // Play link
+      document.getElementById('md-play-link').href = '/v1/inference-page?model_id=' + modelId;
+
+      // Metrics
+      dom.setText(document.getElementById('md-versions'), String(data.versions.length));
+      dom.setText(document.getElementById('md-created'), data.created_at || '—');
+
+      // Avg loss
       var totalLosses = data.versions.filter(function(v) { return v.final_loss != null; });
       var avgLoss = totalLosses.length > 0
         ? totalLosses.reduce(function(s, v) { return s + v.final_loss; }, 0) / totalLosses.length
         : null;
+      var avgLossEl = document.getElementById('md-avg-loss');
       if (avgLoss !== null) {
-        html += '<p class="text-dim" style="margin-top:var(--space-2);">avg loss: <span class="accent-cyan">' + avgLoss.toFixed(4) + '</span> across ' + totalLosses.length + ' version(s)</p>';
+        avgLossEl.style.display = '';
+        dom.setHtml(avgLossEl, 'avg loss: <span class="accent-cyan">' + avgLoss.toFixed(4) + '</span> across ' + totalLosses.length + ' version(s)');
+      } else {
+        avgLossEl.style.display = 'none';
       }
 
+      // Versions table
+      var tableEl = document.getElementById('md-versions-table');
+      var tbody = document.getElementById('md-versions-tbody');
       if (data.versions.length > 0) {
-        html += '<table class="grouped-list" style="margin-top:var(--space-4);">'
-          + '<thead><tr><th>Version</th><th>Experiment</th><th>Loss</th><th>Dataset</th><th>Created</th><th>Actions</th></tr></thead><tbody>';
+        tableEl.style.display = '';
+        var versionHtml = '';
         data.versions.forEach(function(v) {
-          html += '<tr>'
+          versionHtml += '<tr>'
             + '<td>v' + v.version + '</td>'
             + '<td><a href="/v1/experiments-page" class="action-link">#' + v.experiment_id + '</a></td>'
             + '<td class="loss-value">' + (v.final_loss != null ? v.final_loss.toFixed(4) : '—') + '</td>'
@@ -97,7 +142,7 @@
             + '</tr>';
 
           if (v.hyperparameters) {
-            html += '<tr class="hp-row"><td colspan="6"><div class="hp-grid">';
+            versionHtml += '<tr class="hp-row"><td colspan="6"><div class="hp-grid">';
             var hpFields = [
               { key: 'n_embd', label: 'n_embd' },
               { key: 'n_head', label: 'n_head' },
@@ -108,21 +153,20 @@
             ];
             hpFields.forEach(function(f) {
               var val = v.hyperparameters[f.key] !== undefined ? v.hyperparameters[f.key] : null;
-              html += '<span class="hp-tag"><span class="hp-label">' + f.label + '</span> <span class="hp-value">' + (val !== null ? val : '—') + '</span></span>';
+              versionHtml += '<span class="hp-tag"><span class="hp-label">' + f.label + '</span> <span class="hp-value">' + (val !== null ? val : '—') + '</span></span>';
             });
-            html += '</div></td></tr>';
+            versionHtml += '</div></td></tr>';
           }
         });
-        html += '</tbody></table>';
+        dom.setHtml(tbody, versionHtml);
+      } else {
+        tableEl.style.display = 'none';
       }
-
-      html += '<div style="margin-top:var(--space-4);">'
-        + '<button class="btn btn-secondary" onclick="deleteModel()" style="color:var(--danger);">Delete Entire Model</button>'
-        + '</div>';
-
-      el.innerHTML = html;
     }).catch(function(err) {
-      document.getElementById('model-detail').innerHTML = '<div class="error-text">Failed to load: ' + err.message + '</div>';
+      document.getElementById('md-loading').style.display = 'none';
+      var errorEl = document.getElementById('md-error');
+      errorEl.style.display = '';
+      dom.setText(errorEl, 'Failed to load: ' + err.message);
     });
   }
 

@@ -44,7 +44,7 @@
         <th>Actions</th>
       </tr>
     </thead>
-    <tbody id="run-tbody"></tbody>
+    <tbody id="experiment-runs-tbody"></tbody>
   </table>
 </div>
 
@@ -64,7 +64,21 @@
     </div>
     <div id="detail-safetensors" style="margin-top:var(--space-4);padding-top:var(--space-3);border-top:var(--border-width) solid var(--border);display:none;">
       <h3 class="section-card__title type-footnote">Model Artifacts</h3>
-      <div id="detail-artifact-list" style="margin-top:var(--space-2);"></div>
+      <div id="detail-artifact-list" style="margin-top:var(--space-2);">
+  <div id="detail-artifact-table-wrapper" class="grouped-list" style="width:100%;display:none;">
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr>
+          <th class="type-caption-2 text-muted" style="text-align:left;padding:var(--space-1) var(--space-2);text-transform:uppercase;letter-spacing:0.05em;">File</th>
+          <th class="type-caption-2 text-muted" style="text-align:right;padding:var(--space-1) var(--space-2);text-transform:uppercase;letter-spacing:0.05em;">Size</th>
+          <th style="text-align:right;padding:var(--space-1) var(--space-2);"></th>
+        </tr>
+      </thead>
+      <tbody id="detail-artifact-tbody"></tbody>
+    </table>
+  </div>
+  <div id="detail-artifact-placeholder" class="type-caption-1 text-muted" style="padding:var(--space-2);display:none;"></div>
+</div>
       <div style="margin-top:var(--space-3);display:flex;gap:var(--space-2);flex-wrap:wrap;">
         <button class="btn btn-secondary btn-sm" id="btn-retry-export" style="display:none;" onclick="retryExport()">Retry Export</button>
       </div>
@@ -108,20 +122,63 @@
     var exps = data.experiments || [];
     var emptyEl = document.getElementById('experiment-empty');
     var tableEl = document.getElementById('run-table');
-    var tbody = document.getElementById('run-tbody');
+    var tbody = document.getElementById('experiment-runs-tbody');
 
     if (exps.length === 0) {
-      emptyEl.innerHTML = 'No runs yet — <a href="/v1/training-page">train your first model</a>';
+      dom.setHtml(emptyEl, 'No runs yet — <a href="/v1/training-page">train your first model</a>');
+      dom.setVisible(emptyEl, true);
+      dom.setVisible(tableEl, false);
+      if (runId) selectRun(parseInt(runId));
       return;
     }
 
-    emptyEl.style.display = 'none';
-    tableEl.style.display = '';
+    dom.setVisible(emptyEl, false);
+    dom.setVisible(tableEl, true);
 
-    exps.forEach(function(exp, i) {
+    function _createRunRow(exp, i) {
       var row = document.createElement('tr');
       row.style.setProperty('--row-i', i);
       row.classList.add('row-entrance');
+
+      // Build each cell individually for stable DOM references
+      var tdId = document.createElement('td');
+      tdId.textContent = String(exp.id);
+      row.appendChild(tdId);
+
+      var tdStatus = document.createElement('td');
+      var badge = document.createElement('span');
+      badge.className = 'badge';
+      tdStatus.appendChild(badge);
+      row.appendChild(tdStatus);
+
+      var tdLoss = document.createElement('td');
+      tdLoss.className = 'loss-value';
+      row.appendChild(tdLoss);
+
+      var tdDataset = document.createElement('td');
+      row.appendChild(tdDataset);
+
+      var tdArch = document.createElement('td');
+      tdArch.className = 'text-dim cell-mono type-caption-2';
+      row.appendChild(tdArch);
+
+      var tdActions = document.createElement('td');
+      var btn = document.createElement('button');
+      btn.className = 'btn btn-secondary';
+      btn.textContent = 'View';
+      btn.onclick = function() { selectRun(exp.id); };
+      tdActions.appendChild(btn);
+      row.appendChild(tdActions);
+
+      row.addEventListener('click', function() { selectRun(exp.id); });
+
+      _updateRunRow(row, exp, i);
+      return row;
+    }
+
+    function _updateRunRow(tr, exp, i) {
+      tr.style.setProperty('--row-i', i);
+      dom.setText(tr.cells[0], String(exp.id));
       var badgeClass = '';
       var statusText = 'running';
       if (exp.status === 'finished') {
@@ -132,16 +189,14 @@
         statusText = 'failed';
         badgeClass = 'badge-red';
       }
-      row.innerHTML =
-        '<td>' + exp.id + '</td>' +
-        '<td><span class="badge ' + badgeClass + '">' + statusText + '</span></td>' +
-        '<td class="loss-value">' + (exp.final_loss != null ? exp.final_loss.toFixed(4) : '—') + '</td>' +
-        '<td>' + (exp.dataset_name || '—') + '</td>' +
-        '<td class="text-dim cell-mono type-caption-2">' + (exp.engine_backend === 'torch' ? 'GPU' : 'CPU') + '</td>' +
-        '<td><button class="btn btn-secondary" onclick="selectRun(' + exp.id + ')">View</button></td>';
-      row.addEventListener('click', function() { selectRun(exp.id); });
-      tbody.appendChild(row);
-    });
+      dom.updateBadge(tr.cells[1].firstElementChild, statusText, badgeClass);
+      dom.setText(tr.cells[2], exp.final_loss != null ? exp.final_loss.toFixed(4) : '—');
+      dom.setText(tr.cells[3], exp.dataset_name || '—');
+      dom.setText(tr.cells[4], exp.engine_backend === 'torch' ? 'GPU' : 'CPU');
+      // Cell 5 (actions) is static for a given key
+    }
+
+    dom.syncTableBody(tbody, exps, function(exp) { return String(exp.id); }, _createRunRow, _updateRunRow);
 
     if (runId) selectRun(parseInt(runId));
   }).catch(function() {
@@ -191,56 +246,84 @@
 
       var mlflowEl = document.getElementById('detail-mlflow');
       if (exp.mlflow && exp.mlflow.run_url) {
-        mlflowEl.innerHTML = '<a href="' + exp.mlflow.run_url + '" target="_blank" class="btn btn-secondary btn-sm">open in MLflow →</a>';
+        dom.setHtml(mlflowEl, '<a href="' + exp.mlflow.run_url + '" target="_blank" class="btn btn-secondary btn-sm">open in MLflow →</a>');
       } else {
-        mlflowEl.textContent = '—';
+        dom.setText(mlflowEl, '—');
       }
 
       selectedMlflowRunId = exp.mlflow_run_id;
 
       // Model artifact file list
       var stSection = document.getElementById('detail-safetensors');
-      var artifactList = document.getElementById('detail-artifact-list');
+      var artifactTableWrapper = document.getElementById('detail-artifact-table-wrapper');
+      var artifactPlaceholder = document.getElementById('detail-artifact-placeholder');
+      var artifactTbody = document.getElementById('detail-artifact-tbody');
       var btnRetry = document.getElementById('btn-retry-export');
       var stError = document.getElementById('detail-st-error');
 
-      stSection.style.display = 'none';
-      btnRetry.style.display = 'none';
-      stError.style.display = 'none';
+      dom.setVisible(stSection, false);
+      dom.setVisible(btnRetry, false);
+      dom.setVisible(stError, false);
+
+      function _createArtifactRow(f) {
+        var tr = document.createElement('tr');
+        tr.style.borderBottom = 'var(--border-width) solid var(--border)';
+
+        var tdFile = document.createElement('td');
+        tdFile.className = 'cell-mono';
+        tdFile.style.padding = 'var(--space-1) var(--space-2)';
+        var icon = f.is_safetensors ? '🧠' : f.is_config ? '⚙' : f.is_tokenizer ? '📝' : '📄';
+        tdFile.textContent = icon + ' ' + f.path;
+        tr.appendChild(tdFile);
+
+        var tdSize = document.createElement('td');
+        tdSize.className = 'cell-numeric cell-mono text-muted';
+        tdSize.style.padding = 'var(--space-1) var(--space-2)';
+        tdSize.textContent = formatFileSize(f.file_size);
+        tr.appendChild(tdSize);
+
+        var tdActions = document.createElement('td');
+        tdActions.style.textAlign = 'right';
+        tdActions.style.padding = 'var(--space-1) var(--space-2)';
+        var downloadUrl = '/v1/experiments/' + selectedExpId + '/runs/' + encodeURIComponent(selectedMlflowRunId) + '/download?path=' + encodeURIComponent(f.path);
+        var link = document.createElement('a');
+        link.href = downloadUrl;
+        link.className = 'btn btn-secondary btn-sm';
+        link.setAttribute('download', '');
+        link.textContent = 'Download';
+        tdActions.appendChild(link);
+        tr.appendChild(tdActions);
+
+        return tr;
+      }
+
+      function _updateArtifactRow(tr, f) {
+        var icon = f.is_safetensors ? '🧠' : f.is_config ? '⚙' : f.is_tokenizer ? '📝' : '📄';
+        dom.setText(tr.cells[0], icon + ' ' + f.path);
+        dom.setText(tr.cells[1], formatFileSize(f.file_size));
+        var downloadUrl = '/v1/experiments/' + selectedExpId + '/runs/' + encodeURIComponent(selectedMlflowRunId) + '/download?path=' + encodeURIComponent(f.path);
+        var link = tr.cells[2].querySelector('a');
+        if (link) link.href = downloadUrl;
+      }
 
       if (exp.safetensors_artifacts && exp.safetensors_artifacts.available) {
-        stSection.style.display = '';
-        btnRetry.style.display = exp.status === 'finished' ? '' : 'none';
+        dom.setVisible(stSection, true);
+        dom.setVisible(btnRetry, exp.status === 'finished');
+        dom.setVisible(artifactTableWrapper, true);
+        dom.setVisible(artifactPlaceholder, false);
 
-        // Build file list
-        var html = '<div class="grouped-list" style="width:100%;">';
-        html += '<table style="width:100%;border-collapse:collapse;">';
-        html += '<thead><tr>';
-        html += '<th class="type-caption-2 text-muted" style="text-align:left;padding:var(--space-1) var(--space-2);text-transform:uppercase;letter-spacing:0.05em;">File</th>';
-        html += '<th class="type-caption-2 text-muted" style="text-align:right;padding:var(--space-1) var(--space-2);text-transform:uppercase;letter-spacing:0.05em;">Size</th>';
-        html += '<th style="text-align:right;padding:var(--space-1) var(--space-2);"></th>';
-        html += '</tr></thead><tbody>';
-
-        exp.safetensors_artifacts.files.forEach(function(f) {
-          var icon = f.is_safetensors ? '🧠' : f.is_config ? '⚙' : f.is_tokenizer ? '📝' : '📄';
-          var downloadUrl = '/v1/experiments/' + selectedExpId + '/runs/' + encodeURIComponent(selectedMlflowRunId) + '/download?path=' + encodeURIComponent(f.path);
-          html += '<tr style="border-bottom:var(--border-width) solid var(--border);">';
-          html += '<td class="cell-mono" style="padding:var(--space-1) var(--space-2);">' + icon + ' ' + escHtml(f.path) + '</td>';
-          html += '<td class="cell-numeric cell-mono text-muted" style="padding:var(--space-1) var(--space-2);">' + formatFileSize(f.file_size) + '</td>';
-          html += '<td style="text-align:right;padding:var(--space-1) var(--space-2);"><a href="' + downloadUrl + '" class="btn btn-secondary btn-sm" download>Download</a></td>';
-          html += '</tr>';
-        });
-
-        html += '</tbody></table></div>';
-        artifactList.innerHTML = html;
+        dom.syncTableBody(artifactTbody, exp.safetensors_artifacts.files,
+          function(f) { return f.path; }, _createArtifactRow, _updateArtifactRow);
       } else if (exp.safetensors_artifacts && exp.safetensors_artifacts.error) {
-        stSection.style.display = '';
-        stError.style.display = '';
-        stError.textContent = 'Artifact error: ' + escHtml(exp.safetensors_artifacts.error);
+        dom.setVisible(stSection, true);
+        dom.setVisible(stError, true);
+        stError.textContent = 'Artifact error: ' + exp.safetensors_artifacts.error;
       } else if (exp.status === 'finished') {
-        stSection.style.display = '';
-        artifactList.innerHTML = '<div class="type-caption-1 text-muted" style="padding:var(--space-2);">No safetensors export found. Click <strong>Retry Export</strong> to generate artifacts.</div>';
-        btnRetry.style.display = '';
+        dom.setVisible(stSection, true);
+        dom.setVisible(artifactTableWrapper, false);
+        dom.setVisible(artifactPlaceholder, true);
+        dom.setHtml(artifactPlaceholder, 'No safetensors export found. Click <strong>Retry Export</strong> to generate artifacts.');
+        dom.setVisible(btnRetry, true);
       }
 
       loading.style.display = 'none';

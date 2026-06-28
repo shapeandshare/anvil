@@ -124,7 +124,7 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     needs: bump-scope-guard
     if: needs.bump-scope-guard.outputs.scope != 'version-only'
     steps:
@@ -142,7 +142,7 @@ jobs:
   sonar-scan:
     name: SonarCloud
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     needs: bump-scope-guard
     if: needs.bump-scope-guard.outputs.scope != 'version-only'
     steps:
