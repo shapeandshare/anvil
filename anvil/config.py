@@ -19,13 +19,13 @@ from __future__ import annotations
 import os
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
+from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 from starlette.requests import Request
 
-if TYPE_CHECKING:
-    from .workspace.workspace_paths import WorkspacePaths
+from .workspace.workspace_paths import WorkspacePaths
 
 load_dotenv()
 
@@ -97,8 +97,6 @@ def get_mlflow_browser_uri(request: Request) -> str:
 def _parse_port_from_uri(uri: str) -> int:
     """Extract the port number from an MLflow URI. ..."""
     try:
-        from urllib.parse import urlparse
-
         parsed = urlparse(uri)
         return parsed.port or 5001
     except (ValueError, TypeError):
@@ -117,7 +115,9 @@ def _workspace_paths() -> WorkspacePaths | None:
     ws = os.getenv("ANVIL_WORKSPACE_DIR")
     if not ws:
         return None
-    from .workspace.workspace_paths import WorkspacePaths  # delayed
+    # import-placement:allow
+    # cycle: config -> workspace_paths -> config (circular import during init)
+    from .workspace.workspace_paths import WorkspacePaths
 
     return WorkspacePaths(Path(ws).resolve())
 

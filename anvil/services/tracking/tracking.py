@@ -27,12 +27,22 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
+import mlflow
 import mlflow.entities
+from mlflow.tracking import MlflowClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...config import get_config
+from ...db.session import AsyncSessionLocal
 from .._shared.capability_unavailable import CapabilityUnavailable
 from .mlflow_capabilities import TrackingCapabilities, detect_capabilities
+from .mlflow_inputs import MlflowInputResolver
+
+try:
+    from mlflow.genai.datasets import create_dataset, get_dataset
+except ImportError:
+    create_dataset = None  # type: ignore[assignment]
+    get_dataset = None  # type: ignore[assignment]
 
 _system_metrics_enabled = False
 _MlflowClientLike = Any
@@ -73,12 +83,8 @@ class TrackingService:
         self._degraded = False
 
         if client_factory is not None:
-            from mlflow.tracking import MlflowClient
-
             self._client_factory: Callable[[str], _MlflowClientLike] = client_factory
         else:
-            from mlflow.tracking import MlflowClient
-
             self._client_factory = MlflowClient
 
         self._client: _MlflowClientLike | None = None
@@ -127,9 +133,7 @@ class TrackingService:
         if _system_metrics_enabled:
             return
         try:
-            import mlflow as _mlflow_mod
-
-            _mlflow_mod.enable_system_metrics_logging()  # type: ignore[no-untyped-call]
+            mlflow.enable_system_metrics_logging()  # type: ignore[no-untyped-call]
             _system_metrics_enabled = True
         except Exception:
             pass
@@ -437,8 +441,6 @@ class TrackingService:
         """
         if self._degraded or not run_id:
             return ""
-        from .mlflow_inputs import MlflowInputResolver
-
         if session is not None:
             try:
                 resolver = MlflowInputResolver(session)
@@ -457,8 +459,6 @@ class TrackingService:
             except Exception:
                 return ""
         else:
-            from ...db.session import AsyncSessionLocal
-
             async with AsyncSessionLocal() as sess:
                 try:
                     resolver = MlflowInputResolver(sess)
@@ -502,8 +502,6 @@ class TrackingService:
         """
         if self._degraded or not run_id:
             return ""
-        from .mlflow_inputs import MlflowInputResolver
-
         if session is not None:
             try:
                 resolver = MlflowInputResolver(session)
@@ -526,8 +524,6 @@ class TrackingService:
             except Exception:
                 return ""
         else:
-            from ...db.session import AsyncSessionLocal
-
             async with AsyncSessionLocal() as sess:
                 try:
                     resolver = MlflowInputResolver(sess)
@@ -1178,8 +1174,8 @@ def _create_dataset_sync(name: str, tags: dict[str, Any] | None) -> Any:
     Any
         The created MLflow dataset object.
     """
-    from mlflow.genai.datasets import create_dataset
-
+    if create_dataset is None:  # type: ignore[truthy-function]
+        raise ImportError("mlflow.genai.datasets is not available")
     return create_dataset(name=name, tags=tags or {})
 
 
@@ -1203,8 +1199,8 @@ def _append_records_sync(name: str, records: list[dict[str, Any]]) -> int:
     ValueError
         If the dataset is not found.
     """
-    from mlflow.genai.datasets import get_dataset
-
+    if get_dataset is None:  # type: ignore[truthy-function]
+        raise ImportError("mlflow.genai.datasets is not available")
     ds = get_dataset(name=name)
     if ds is None:
         raise ValueError(f"Dataset '{name}' not found")
@@ -1225,8 +1221,8 @@ def _get_dataset_sync(name: str) -> Any | None:
     Any or None
         The MLflow dataset object, or ``None`` if not found.
     """
-    from mlflow.genai.datasets import get_dataset
-
+    if get_dataset is None:  # type: ignore[truthy-function]
+        return None
     try:
         return get_dataset(name=name)
     except Exception:

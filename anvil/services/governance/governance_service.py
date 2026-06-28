@@ -15,7 +15,11 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+from ...db.models.corpus import Corpus
+from ...db.models.dataset import Dataset
 from ...db.models.license_entry import LicenseEntry
+from ...db.repositories.corpora import CorpusRepository
+from ...db.repositories.datasets import DatasetRepository
 from ...db.repositories.licenses import LicenseRepository
 from .audit_action import AuditAction
 from .audit_outcome import AuditOutcome
@@ -196,10 +200,6 @@ class GovernanceService:
         parent_provenance_ref : int, optional
             Parent dataset/corpus id when this data is derived.
         """
-        # Import here to avoid circular type dependency.
-        from ...db.models.corpus import Corpus
-        from ...db.models.dataset import Dataset
-
         if isinstance(entity, Dataset):
             entity.source_description = source_description
             entity.license_id = license_id
@@ -236,17 +236,8 @@ class GovernanceService:
             The provenance data, or a view with all fields ``None``
             if the entity is not found or has no provenance.
         """
-        from ...db.models.corpus import Corpus
-        from ...db.models.dataset import Dataset
-
         entity: Dataset | Corpus | None = None
 
-        from ...db.repositories.corpora import CorpusRepository
-        from ...db.repositories.datasets import DatasetRepository
-
-        # TODO: wire through workbench.dataset_repo once provenance
-        # methods on the repo are added (T030).  For now construct
-        # inline — will be migrated at that point.
         repo: DatasetRepository | CorpusRepository
         if target_type == AuditTargetType.DATASET.value:
             repo = DatasetRepository(self._audit._repo._session)

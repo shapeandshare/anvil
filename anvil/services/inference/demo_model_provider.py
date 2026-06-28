@@ -16,12 +16,25 @@ for fallback corpus data and warm-up via the system pipeline.
 # Intentional: catch-all guards in fallback / startup code paths.
 
 import asyncio
+import logging
+import tempfile
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, cast
 
-from ...core.engine import LlamaModel
+from ...core.engine import LlamaModel, train
+from ...db.repositories.corpora import CorpusRepository
+from ...db.session import AsyncSessionLocal
+from ..compute.compute_backend import ComputeBackend
+from ..compute.registry import get_backend
+from ..compute.resolve import resolve_backend
+from ..datasets.corpora import CorpusService
+from ..datasets.corpus_loader import CorpusLoader
+from ..demo.demo_bootstrap import DemoBootstrapService
+from ..tracking.tracking import TrackingService
+from ..training.export import SafetensorsExportService
+from ..training.training import TrainingService
 
 DEMO_MODEL_PATH = Path("data/models/demo/model.json")
 """:py:class:`~pathlib.Path`: Filesystem path to the demo model checkpoint."""
@@ -55,8 +68,6 @@ def _train_demo_model(docs: list[str] | None = None) -> LlamaModel:
     LlamaModel
         The trained demo model with its ``chars`` attribute set.
     """
-    from ...core.engine import train
-
     model, _loss, _samples, uchars = train(
         docs or _FALLBACK_CORPUS,
         num_steps=400,
@@ -80,19 +91,12 @@ def warmup_demo_via_system_pipeline() -> None:
     Runs in a background thread during server startup. Falls back to the
     inline training path if MLflow or the compute backend is unavailable.
     """
-    import logging
-
     logger = logging.getLogger(__name__)
 
     try:
         # Try to load docs from the bootstrapped demo corpus first
         docs: list[str] | None = None
         try:
-            from ...db.repositories.corpora import CorpusRepository
-            from ...db.session import AsyncSessionLocal
-            from ..datasets.corpora import CorpusService
-            from ..datasets.corpus_loader import CorpusLoader
-            from ..demo.demo_bootstrap import DemoBootstrapService
 
             async def _get_docs() -> list[str] | None:
                 async with AsyncSessionLocal() as session:
@@ -120,12 +124,6 @@ def warmup_demo_via_system_pipeline() -> None:
             "learning_rate": 0.01,
             "temperature": 0.5,
         }
-
-        from ..compute.compute_backend import ComputeBackend
-        from ..compute.registry import get_backend
-        from ..compute.resolve import resolve_backend
-        from ..tracking.tracking import TrackingService
-        from ..training.training import TrainingService
 
         async def _run() -> None:
             tracking_svc = TrackingService()
@@ -182,9 +180,6 @@ def warmup_demo_via_system_pipeline() -> None:
 
             # ── Replicate dataset/corpus metadata tags that user training sets ──
             try:
-                from ...db.session import AsyncSessionLocal
-                from ..demo.demo_bootstrap import DemoBootstrapService
-
                 async with AsyncSessionLocal() as sess:
                     bootstrap = DemoBootstrapService(sess)
                     corpus = await bootstrap.get_default_corpus()
@@ -212,9 +207,6 @@ def warmup_demo_via_system_pipeline() -> None:
             model.save(str(experiment_model_path), uchars)
 
             # ── Run safetensors export & log artifacts to MLflow ──
-            import tempfile
-
-            from ..training.export import SafetensorsExportService
 
             with tempfile.TemporaryDirectory() as tmpdir:
                 export_svc = SafetensorsExportService()
@@ -344,11 +336,6 @@ class DemoModelProvider:
     def _load_demo_docs() -> list[str] | None:
         """Try to load docs from the bootstrapped demo corpus; return None on failure."""
         try:
-            from ...db.repositories.corpora import CorpusRepository
-            from ...db.session import AsyncSessionLocal
-            from ..datasets.corpora import CorpusService
-            from ..datasets.corpus_loader import CorpusLoader
-            from ..demo.demo_bootstrap import DemoBootstrapService
 
             async def _load() -> list[str] | None:
                 async with AsyncSessionLocal() as session:

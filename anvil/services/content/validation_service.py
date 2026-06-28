@@ -12,21 +12,16 @@ deduplication, cross-corpus deduplication, language allowlisting,
 and sensitive-info scanning.
 """
 
-from __future__ import annotations
-
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from aiofiles import open as async_open  # type: ignore[import-untyped]
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ...db.models.content_entry import ContentEntry
 from .staged_entry import StagedEntry
 from .validation_report import ValidationProblem, ValidationReport
-
-if TYPE_CHECKING:
-    pass  # TYPE_CHECKING-only: avoids ORM import at module level
 
 _MAX_ENTRY_SIZE_BYTES = 100 * 1024 * 1024  # 100 MiB
 
@@ -270,9 +265,6 @@ class ValidationService:
         hashes = [e.content_hash for e in incoming]
         if not hashes:
             return problems
-
-        # Local import to avoid circular import at module level.
-        from ...db.models.content_entry import ContentEntry
 
         result = await content_db_session.execute(
             select(ContentEntry.content_hash)

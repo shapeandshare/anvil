@@ -40,9 +40,15 @@ class AnvilPyfuncModel(mlflow.pyfunc.PythonModel):  # type: ignore[name-defined,
             the directory containing ``config.json``,
             ``model.safetensors``, and ``tokenizer.json``.
         """
-        import torch
-        from safetensors.torch import load_file
-        from transformers import LlamaConfig, LlamaForCausalLM
+        try:
+            import torch
+            from safetensors.torch import load_file
+            from transformers import LlamaConfig, LlamaForCausalLM
+        except ImportError:
+            raise ImportError(
+                "torch, safetensors, and transformers are required for PyFunc model loading. "
+                "Install with: pip install torch safetensors transformers"
+            ) from None
 
         model_dir = Path(context.artifact_uri)  # type: ignore[attr-defined]
 

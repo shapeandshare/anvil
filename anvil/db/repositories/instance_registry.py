@@ -20,17 +20,17 @@ independently of the anvil package itself.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from sqlalchemy import Result, delete, select, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 
-if TYPE_CHECKING:
-    from ..models.instance_record import InstanceRecord
+from ..models.instance_record import InstanceRecord
 
 logger = logging.getLogger(__name__)
 
@@ -136,8 +136,6 @@ def dispose_registry_engine() -> None:
     """Dispose the module-level registry engine (for testing teardown)."""
     global _registry_engine
     if _registry_engine is not None:
-        import asyncio
-
         try:
             asyncio.get_running_loop()
         except RuntimeError:
@@ -361,7 +359,5 @@ def _get_instance_model() -> type[InstanceRecord]:
     """
     global _INSTANCE_MODEL
     if _INSTANCE_MODEL is None:
-        from ..models.instance_record import InstanceRecord
-
         _INSTANCE_MODEL = InstanceRecord
     return _INSTANCE_MODEL

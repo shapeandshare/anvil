@@ -19,6 +19,7 @@ import logging
 import os
 import secrets
 import sys
+import threading
 import time
 from collections import defaultdict
 from collections.abc import AsyncGenerator
@@ -38,8 +39,17 @@ from starlette.responses import Response
 from ..config import get_config
 from ..db import models  # noqa: F401  # pylint: disable=unused-import
 from ..db.migration import MigrationService
-from ..db.session import init_engine
+from ..db.repositories.corpora import CorpusRepository
+from ..db.repositories.datasets import DatasetRepository
+from ..db.session import AsyncSessionLocal, init_engine, reinit_engine
+from ..services.backup.backup_service import BackupService
+from ..services.demo.demo_bootstrap import DemoBootstrapService
+from ..services.inference.demo_model_provider import warmup_demo_via_system_pipeline
+from ..services.tracking.tracking import TrackingService
 from ..supervisor.services import MLflowService
+from ..workbench import AnvilWorkbench
+from ..workspace.boot_config import BootConfig
+from ..workspace.workspace_paths import WorkspacePaths
 from .auth import (
     SESSION_COOKIE_NAME,
     generate_csrf_token,
@@ -154,8 +164,6 @@ async def _enable_tracking_and_reconcile() -> None:
     Both operations are best-effort; failures are logged but do not
     block application startup.
     """
-    from ..services.tracking.tracking import TrackingService
-
     TrackingService.enable_system_metrics()
 
     try:
@@ -170,9 +178,6 @@ async def _seed_license_catalog() -> None:
     Best-effort -- failures are logged but do not block startup.
     """
     try:
-        from ..db.session import AsyncSessionLocal
-        from ..workbench import AnvilWorkbench
-
         async with AsyncSessionLocal() as session:
             wb = AnvilWorkbench(session)
             count = await wb.governance.seed_catalog()
@@ -192,11 +197,6 @@ async def _bootstrap_demo_data() -> None:
     the bundled ``data/demo/`` directory.  Best-effort.
     """
     try:
-        from ..db.repositories.corpora import CorpusRepository
-        from ..db.repositories.datasets import DatasetRepository
-        from ..db.session import AsyncSessionLocal
-        from ..services.demo.demo_bootstrap import DemoBootstrapService
-
         async with AsyncSessionLocal() as session:
             corpus_repo = CorpusRepository(session)
             dataset_repo = DatasetRepository(session)
@@ -231,12 +231,6 @@ def _warmup_demo_model() -> None:
     """
     print("Warming up demo model in background (may take ~30-60s)...", flush=True)
     try:
-        import threading
-
-        from ..services.inference.demo_model_provider import (
-            warmup_demo_via_system_pipeline,
-        )
-
         threading.Thread(
             target=warmup_demo_via_system_pipeline,
             name="demo-model-warmup",
@@ -253,8 +247,6 @@ async def _init_backup_service(_app: FastAPI) -> None:
     Best-effort -- failures are logged but do not block startup.
     """
     try:
-        from ..services.backup.backup_service import BackupService
-
         backup_svc = BackupService()
         _app.state.backup_service = backup_svc
         logger.info("BackupService initialised")
@@ -285,17 +277,12 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     boot_snapshot: dict[str, object] | None = None
 
     if ws_dir:
-        from ..workspace.boot_config import BootConfig
-        from ..workspace.workspace_paths import WorkspacePaths
-
         ws_root = await asyncio.to_thread(lambda: Path(ws_dir).resolve())
         boot_file = ws_root / "instance.json"
 
         # Explicitly redirect the engine to the workspace DB path so
         # that the lifespan is robust regardless of env-var timing.
         boot_cfg = BootConfig.load(boot_file)
-        from ..db.session import reinit_engine
-
         await reinit_engine(boot_cfg.state_db_path)
 
         workspace_paths = WorkspacePaths(ws_root)

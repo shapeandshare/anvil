@@ -22,6 +22,10 @@ from mlflow.tracking import MlflowClient
 
 from ...api.v1.schemas import RegisterModelBody
 from ...config import get_mlflow_uri
+from ...db.repositories.corpora import CorpusRepository
+from ...db.repositories.datasets import DatasetRepository
+from ...db.session import AsyncSessionLocal
+from ...services.tracking.tracking import TrackingService
 
 router = APIRouter()
 
@@ -57,8 +61,6 @@ async def register_model(
     """
     experiment_id = body.experiment_id
 
-    from ...services.tracking.tracking import TrackingService
-
     tracking_svc = TrackingService()
     exp = await tracking_svc.get_experiment(experiment_id)
     if exp is None:
@@ -82,18 +84,12 @@ async def register_model(
     corpus_id = params.get("corpus_id")
 
     if dataset_id is not None:
-        from ...db.repositories.datasets import DatasetRepository
-        from ...db.session import AsyncSessionLocal
-
         async with AsyncSessionLocal() as sess:
             ds_repo = DatasetRepository(sess)
             ds = await ds_repo.get(int(dataset_id))
             if ds:
                 registry_name = ds.name
     elif corpus_id is not None:
-        from ...db.repositories.corpora import CorpusRepository
-        from ...db.session import AsyncSessionLocal
-
         async with AsyncSessionLocal() as sess:
             corp_repo = CorpusRepository(sess)
             corpus = await corp_repo.get(int(corpus_id))
@@ -127,8 +123,6 @@ async def list_registered_models(
         Dictionary with a ``models`` key containing a list of registered
         model summaries.
     """
-    from ...services.tracking.tracking import TrackingService
-
     tracking_svc = TrackingService()
     models = await tracking_svc.list_registered_models(search=search)
     return {"models": models}
@@ -182,8 +176,6 @@ async def get_model(model_id: str) -> dict[str, Any]:
     HTTPException
         If the model cannot be found (404).
     """
-    from ...services.tracking.tracking import TrackingService
-
     tracking_svc = TrackingService()
     loop = asyncio.get_event_loop()
 
@@ -342,8 +334,6 @@ async def get_version(model_id: str, version: int) -> dict[str, Any]:
     HTTPException
         If the model or version is not found (404).
     """
-    from ...services.tracking.tracking import TrackingService
-
     tracking_svc = TrackingService()
     loop = asyncio.get_event_loop()
 
@@ -481,8 +471,6 @@ async def delete_version(model_id: str, version: int) -> dict[str, Any]:
     HTTPException
         If the model or version is not found, or deletion fails (404).
     """
-    from ...services.tracking.tracking import TrackingService
-
     tracking_svc = TrackingService()
     loop = asyncio.get_event_loop()
 
@@ -550,8 +538,6 @@ async def delete_model(model_id: str) -> dict[str, Any]:
     HTTPException
         If the model cannot be found or deletion fails (404).
     """
-    from ...services.tracking.tracking import TrackingService
-
     tracking_svc = TrackingService()
     loop = asyncio.get_event_loop()
 

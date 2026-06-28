@@ -14,6 +14,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ...db.models.content_blob import ContentBlob
 from ...db.repositories.content_corpora import ContentCorpusRepository
 from ...db.repositories.content_versions import ContentVersionRepository
 from .manifest import ManifestEntry
@@ -119,8 +120,6 @@ class CompositionService:
         corpus = await self._corpus_repo.get(corpus_id)
         if corpus is None:
             raise ValueError(f"Corpus not found: id={corpus_id}")
-
-        from ...db.models.content_blob import ContentBlob
 
         sources: list[dict[str, Any]] = []
         total_bytes = 0

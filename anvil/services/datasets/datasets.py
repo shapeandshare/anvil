@@ -16,6 +16,7 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from ...db.models.dataset import Dataset
+from ...db.repositories.curation import SampleRepository
 from ...db.repositories.datasets import DatasetRepository
 from ...storage.local import LocalFileStore
 from ..governance.audit_action import AuditAction
@@ -205,8 +206,6 @@ class DatasetService:
         list[str]
             All active sample texts.
         """
-        from ...db.repositories.curation import SampleRepository
-
         samples = await SampleRepository(
             self._repo._session
         ).get_active_texts(  # pylint: disable=protected-access

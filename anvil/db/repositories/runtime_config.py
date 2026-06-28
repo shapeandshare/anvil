@@ -16,6 +16,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from sqlalchemy import delete, select
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.runtime_config import RuntimeConfig
@@ -86,8 +87,6 @@ class RuntimeConfigRepository:
         RuntimeConfig
             The persisted (and flushed/refreshed) row.
         """
-        from sqlalchemy.dialects.sqlite import insert as sqlite_insert
-
         stmt = sqlite_insert(RuntimeConfig).values(
             key=key, value=value, apply_class=apply_class
         )

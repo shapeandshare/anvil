@@ -49,16 +49,15 @@ def detect_capabilities(tracking_uri: str) -> TrackingCapabilities:
         Detected capabilities including genai dataset support, server
         backend flag, and MLflow version.
     """
-    import mlflow
-
-    version = mlflow.__version__
-
     try:
+        # import-placement:allow -- version-dependent sub-module probe
         import mlflow.genai.datasets
 
         genai_ok = True
     except ImportError:
         genai_ok = False
+
+    version = mlflow.__version__
 
     server_backed = tracking_uri.startswith("http://") or tracking_uri.startswith(
         "https://"

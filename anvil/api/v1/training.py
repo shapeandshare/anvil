@@ -23,16 +23,25 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy import select
 from starlette.responses import StreamingResponse
 
+from ...db.models.training_config import TrainingConfig
+from ...db.repositories.content_versions import ContentVersionRepository
+from ...db.repositories.corpora import CorpusRepository
+from ...db.repositories.datasets import DatasetRepository
+from ...db.session import AsyncSessionLocal
 from ...gpu import GpuInfo, detect_gpu
 from ...services.compute.compute_backend_unavailable import ComputeBackendUnavailable
 from ...services.compute.resolve import resolve_backend
 from ...services.compute.result import ComputeResult
 from ...services.compute.training_engine import TrainingEngine
+from ...services.content.lineage_service import LineageService
+from ...services.inference.inference import InferenceService
 from ...services.tracking.mps_metrics_collector import MPSMetricsCollector
 from ...services.tracking.mps_sampler_thread import MPSSamplerThread
 from ...services.tracking.tracking import TrackingService
+from ...services.training.export import SafetensorsExportService
 from ...services.training.memory_estimator import (
     MemoryEstimate,
     estimate_training_memory,
@@ -380,8 +389,6 @@ async def _log_dataset_metadata(
     tracking_svc : TrackingService
         MLflow tracking service instance.
     """
-    from ...db.session import AsyncSessionLocal
-
     input_digest: str | None = None
     input_role: str | None = None
     if mlflow_run_id and dataset_id:
@@ -423,8 +430,6 @@ async def _log_dataset_metadata(
     if mlflow_run_id and dataset_id:
         async with AsyncSessionLocal() as sess:
             try:
-                from ...db.repositories.datasets import DatasetRepository
-
                 ds_repo = DatasetRepository(sess)
                 ds = await ds_repo.get(dataset_id)
                 if ds:
@@ -458,7 +463,6 @@ async def _log_dataset_metadata(
     elif mlflow_run_id and corpus_id:
         async with AsyncSessionLocal() as sess:
             try:
-                from ...db.repositories.corpora import CorpusRepository
 
                 corp_repo = CorpusRepository(sess)
                 corpus = await corp_repo.get(corpus_id)
@@ -490,8 +494,6 @@ async def _log_dataset_metadata(
     if mlflow_run_id and content_version_id is not None:
         async with AsyncSessionLocal() as sess:
             try:
-                from ...db.repositories.content_versions import ContentVersionRepository
-                from ...services.content.lineage_service import LineageService
 
                 ver_repo = ContentVersionRepository(sess)
                 lineage = LineageService(ver_repo)
@@ -697,7 +699,6 @@ async def start_training(config: TrainConfig) -> dict[str, Any]:
                         pass
 
                 # Auto-export safetensors after every successful local training
-                from ...services.training.export import SafetensorsExportService
 
                 export_svc = SafetensorsExportService()
                 export_result = await asyncio.get_event_loop().run_in_executor(
@@ -770,8 +771,6 @@ async def start_training(config: TrainConfig) -> dict[str, Any]:
                                 "Failed to log safetensors artifacts to MLflow"
                             )
 
-        from ...db.session import AsyncSessionLocal
-
         # Store final status as MLflow tags (no DB experiment row)
         if mlflow_run_id:
             await tracking_svc.set_tag(mlflow_run_id, "anvil.status", "finished")
@@ -793,7 +792,6 @@ async def start_training(config: TrainConfig) -> dict[str, Any]:
         if mlflow_run_id:
             registry_name = None
             if dataset_id is not None:
-                from ...db.repositories.datasets import DatasetRepository
 
                 async with AsyncSessionLocal() as sess:
                     ds_repo = DatasetRepository(sess)
@@ -801,7 +799,6 @@ async def start_training(config: TrainConfig) -> dict[str, Any]:
                     if ds:
                         registry_name = ds.name
             elif corpus_id is not None:
-                from ...db.repositories.corpora import CorpusRepository
 
                 async with AsyncSessionLocal() as sess:
                     corp_repo = CorpusRepository(sess)
@@ -991,11 +988,6 @@ async def list_configs() -> dict[str, Any]:
         List of config dicts with ``id``, ``name``, hyperparameter values,
         and ``created_at``, ordered by most recent first.
     """
-    from sqlalchemy import select
-
-    from ...db.models.training_config import TrainingConfig
-    from ...db.session import AsyncSessionLocal
-
     async with AsyncSessionLocal() as session:
         result = await session.execute(
             select(TrainingConfig).order_by(TrainingConfig.created_at.desc())
@@ -1066,8 +1058,6 @@ async def forward_pass_graph() -> dict[str, Any]:
     HTTPException
         If the demo model is not found (404).
     """
-    from ...services.inference.inference import InferenceService
-
     inf_svc = InferenceService()
     try:
         loaded = await inf_svc.load_model()

@@ -9,6 +9,7 @@ import shutil
 from collections.abc import Callable
 from pathlib import Path
 
+from .archive_reader import ArchiveReader
 from .restore_journal import RestoreJournal
 
 
@@ -79,8 +80,6 @@ class RestoreEngine:
         -------
         RestoreResult
         """
-        from .archive_reader import ArchiveReader
-
         reader = ArchiveReader(self._backup_dir)
 
         self._notify(progress_callback, 5, "Reading manifest")

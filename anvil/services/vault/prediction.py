@@ -13,11 +13,17 @@ Supports dry-run (ranked table) and ``--fix`` mode (auto-insert reciprocals).
 from __future__ import annotations
 
 import json
+import math
 import subprocess
 from pathlib import Path
 from typing import Any
 
 from ._types import LinkPredictionResult, NoteMetadata, ScoredPair
+
+try:
+    import networkx as nx
+except ImportError:
+    nx = None
 
 # Configuration
 ENSEMBLE_WEIGHTS: dict[str, float] = {
@@ -49,10 +55,6 @@ def compute_adamic_adar(
     dict[tuple[str, str], float]
         Mapping from (source, target) -> score (0-1 normalized via tanh).
     """
-    import math
-
-    import networkx as nx
-
     undirected = graph.to_undirected()
 
     scores: dict[tuple[str, str], float] = {}

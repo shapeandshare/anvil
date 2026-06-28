@@ -7,6 +7,7 @@
 space/quota.
 """
 
+import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import ClassVar
@@ -167,7 +168,3 @@ class SnapshotPlanner:
             sufficient_space=available >= required,
             within_quota=total <= quota_bytes,
         )
-
-
-# Late import for disk_usage (stdlib, no circular dep).
-import shutil  # noqa: E402 — placed after class to keep dataclass import clean

@@ -16,6 +16,10 @@ from typing import TYPE_CHECKING, Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ...config import get_config
+from ...db.models.content_entry import ContentEntry
+from ...db.models.content_version import ContentVersion
+
 if TYPE_CHECKING:
     from ...db.repositories.content_blobs import ContentBlobRepository
     from ...db.repositories.content_ingest_sessions import (
@@ -112,9 +116,6 @@ class AdvisoryService:
         current_hashes = {e.content_hash for e in entries}
         if not current_hashes:
             return []
-
-        from ...db.models.content_entry import ContentEntry
-        from ...db.models.content_version import ContentVersion
 
         result = await self._db_session.execute(
             select(ContentEntry)
@@ -235,8 +236,6 @@ class AdvisoryService:
             entry_count,
             total_bytes,
         )
-
-        from ...config import get_config
 
         content_dir = get_config()["content_dir"]
         advisory_dir = Path(content_dir) / "advisory"

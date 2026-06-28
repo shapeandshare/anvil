@@ -6,21 +6,33 @@
 """Process-lifetime BackupService — orchestrates backup/restore operations."""
 
 import asyncio
+import logging
 import os
 import shutil
 from datetime import UTC, datetime
 from pathlib import Path
 
+from alembic.config import Config as AlembicConfig
+from alembic.script import ScriptDirectory
+
+from ... import __version__ as anvil_version
 from ...config import get_config
 from ...db.models.backup_operation import BackupOperation
 from ...db.repositories.backup_operations import BackupOperationRepository
+from .archive_reader import ArchiveReader
+from .archive_writer import ArchiveWriter
 from .backup_lock import BackupLock
 from .backup_status import BackupStatus
 from .backup_storage_status import BackupStorageStatus
 from .backup_summary import BackupSummary
 from .create_backup_result import CreateBackupResult
 from .progress_event import ProgressEvent
+from .restore_engine import RestoreEngine
+from .restore_journal import RestoreJournal
 from .restore_preview import RestorePreview
+from .retention_policy import RetentionPolicy
+from .schema_compat_checker import check_schema_compatibility
+from .snapshot_planner import SnapshotPlanner
 from .verify_result import VerifyResult
 
 
@@ -32,9 +44,6 @@ def _get_alembic_head() -> str:
     no database connection is needed.
     """
     try:
-        from alembic.config import Config as AlembicConfig
-        from alembic.script import ScriptDirectory
-
         package_root = Path(__file__).resolve().parent.parent.parent
         resources = package_root / "_resources"
         ini = str(resources / "alembic.ini")
@@ -124,10 +133,6 @@ class BackupService:
         CreateBackupResult
             The backup identifier and any rotated backup ids.
         """
-        from anvil.services.backup.archive_writer import ArchiveWriter
-        from anvil.services.backup.retention_policy import RetentionPolicy
-        from anvil.services.backup.snapshot_planner import SnapshotPlanner
-
         backup_id = (
             datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ") + "-" + os.urandom(3).hex()
         )
@@ -324,11 +329,6 @@ class BackupService:
 
     async def restore_preview(self, backup_id: str) -> RestorePreview:
         """Return restore preview for a given backup."""
-        from ... import __version__ as anvil_version
-        from .archive_reader import ArchiveReader
-        from .schema_compat_checker import check_schema_compatibility
-        from .snapshot_planner import SnapshotPlanner
-
         reader = ArchiveReader(self._backup_dir)
         manifest = await reader.load_manifest(backup_id)
         if manifest is None:
@@ -380,15 +380,8 @@ class BackupService:
         dict
             Keys: ``restore_operation_id``, ``safety_snapshot_id``.
         """
-        from .archive_reader import ArchiveReader
-        from .restore_engine import RestoreEngine
-        from .restore_journal import RestoreJournal
-        from .schema_compat_checker import check_schema_compatibility
-
         if confirm != "RESTORE":
             raise ValueError("Confirmation token must be 'RESTORE'")
-
-        from ... import __version__ as anvil_version
 
         head_revision = _get_alembic_head()
 
@@ -412,9 +405,6 @@ class BackupService:
         try:
             # Auto-create pre-restore safety snapshot (inline, without
             # acquiring the lock — we already hold it).
-            from .archive_writer import ArchiveWriter
-            from .snapshot_planner import SnapshotPlanner
-
             planner = SnapshotPlanner()
             plan = planner.plan(self._backup_dir, self._quota_bytes)
             safety_id = (
@@ -538,14 +528,10 @@ class BackupService:
 
     async def recover_interrupted_restore(self) -> None:
         """Detect and recover from a crashed restore on startup."""
-        from .restore_journal import RestoreJournal
-
         journal_path = self._backup_dir / ".restore-journal.json"
         journal = RestoreJournal(journal_path)
         if journal.exists():
             result = journal.recover()
-            import logging
-
             logger = logging.getLogger(__name__)
             logger.warning(
                 "Restore journal found during startup — recovering: %s",
@@ -556,8 +542,6 @@ class BackupService:
         self, backup_id: str, repo: BackupOperationRepository
     ) -> VerifyResult:
         """Verify integrity of a backup archive."""
-        from .archive_reader import ArchiveReader
-
         reader = ArchiveReader(self._backup_dir)
         result = await reader.verify(backup_id)
         if not result.valid:

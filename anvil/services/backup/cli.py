@@ -23,18 +23,21 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
+import os
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from ...workbench import AnvilWorkbench
 
 from ...config import get_config
+from ...db.models.backup_operation import BackupOperation
+from ...db.session import AsyncSessionLocal
 from ...services.governance.audit_action import AuditAction
 from ...services.governance.audit_outcome import AuditOutcome
 from ...services.governance.audit_target_type import AuditTargetType
+from ...workbench import AnvilWorkbench
+from .archive_writer import ArchiveWriter
+from .snapshot_planner import SnapshotPlanner
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -88,9 +91,6 @@ def main(argv: list[str] | None = None) -> None:
 
 async def _run(args: argparse.Namespace) -> None:
     """Execute the requested subcommand."""
-    from ...db.session import AsyncSessionLocal
-    from ...workbench import AnvilWorkbench
-
     async with AsyncSessionLocal() as session:
         wb = AnvilWorkbench(session)
 
@@ -113,12 +113,6 @@ async def _run(args: argparse.Namespace) -> None:
 
 async def _cmd_create(wb: AnvilWorkbench) -> None:
     """Create a backup and print result."""
-    import os
-
-    from ...db.models.backup_operation import BackupOperation
-    from .archive_writer import ArchiveWriter
-    from .snapshot_planner import SnapshotPlanner
-
     backup_id = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ") + "-" + os.urandom(3).hex()
 
     cfg = get_config()
@@ -176,8 +170,6 @@ async def _cmd_list(args: argparse.Namespace, wb: AnvilWorkbench) -> None:
     """List backups."""
     raw = await wb.backup_repo.get_all()
     if args.json:
-        import json
-
         items = []
         now = datetime.now(UTC)
         for op in raw:

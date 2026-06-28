@@ -106,15 +106,25 @@ class MlflowInputResolver:
         name = f"{ds.name}@v{ds.id}"
 
         if docs:
-            import pandas as pd
+            try:
+                import pandas as pd
+            except ImportError:
+                pd = None  # type: ignore[assignment]
 
-            df = pd.DataFrame({"text": docs})
-            mlflow_ds = mlflow.data.from_pandas(  # type: ignore[attr-defined]
-                df,
-                source=LocalArtifactDatasetSource(ds.file_path),
-                name=name,
-                digest=digest,
-            )
+            if pd is None:
+                mlflow_ds = MetaDataset(  # type: ignore[abstract]
+                    source=LocalArtifactDatasetSource(ds.file_path),
+                    name=name,
+                    digest=digest,
+                )
+            else:
+                df = pd.DataFrame({"text": docs})
+                mlflow_ds = mlflow.data.from_pandas(  # type: ignore[attr-defined]
+                    df,
+                    source=LocalArtifactDatasetSource(ds.file_path),
+                    name=name,
+                    digest=digest,
+                )
         else:
             mlflow_ds = MetaDataset(  # type: ignore[abstract]
                 source=LocalArtifactDatasetSource(ds.file_path),

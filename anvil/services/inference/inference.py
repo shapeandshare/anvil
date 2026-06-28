@@ -17,8 +17,12 @@ import math
 from pathlib import Path
 from typing import Any
 
+from mlflow.tracking import MlflowClient
+
+from ...config import get_mlflow_uri
 from ...core.autograd import Value
-from ...core.engine import LlamaModel
+from ...core.engine import LlamaModel, softmax
+from ..tracking.tracking import TrackingService
 from .loaded_model import LoadedModel
 
 
@@ -174,8 +178,6 @@ class InferenceService:
             return LoadedModel(gpt_model, gpt_model.chars, model_id, version, name)
 
         # Fallback: try loading from MLflow Model Registry
-        from ..tracking.tracking import TrackingService
-
         tracking_svc = TrackingService()
         models = await tracking_svc.list_registered_models()
         model_name: str | None = None
@@ -186,10 +188,6 @@ class InferenceService:
                 break
 
         if model_name:
-            from mlflow.tracking import MlflowClient
-
-            from ...config import get_mlflow_uri
-
             loop = asyncio.get_event_loop()
             client = MlflowClient(get_mlflow_uri())
             try:
@@ -239,8 +237,6 @@ class InferenceService:
         """
         if self._default_id is not None:
             return self._default_id
-
-        from ..tracking.tracking import TrackingService
 
         tracking_svc = TrackingService()
         models = await tracking_svc.list_registered_models()
@@ -621,8 +617,6 @@ class InferenceService:
         for pos_id in range(n):
             token_id, target_id = ids[pos_id], ids[pos_id + 1]
             logits = loaded.model.forward(token_id, pos_id, keys, values)
-            from ...core.engine import softmax
-
             probs = softmax(logits)
             loss_t = -probs[target_id].log()
             losses.append(loss_t)
@@ -854,8 +848,6 @@ class InferenceService:
         ids = loaded.vocab.encode(text)
         n = min(len(ids) - 1, loaded.model.block_size)
         ids = ids[: n + 1]
-
-        from ...core.engine import softmax
 
         keys: list[list[list[Value]]] = [[] for _ in range(loaded.model.n_layer)]
         values: list[list[list[Value]]] = [[] for _ in range(loaded.model.n_layer)]

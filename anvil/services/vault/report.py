@@ -14,6 +14,7 @@ from ._types import (
     GraphHealthReport,
     HealthScore,
     HygieneMetrics,
+    LinkPredictionResult,
     NoteMetadata,
     StructuralMetrics,
     TemporalMetrics,
@@ -342,8 +343,6 @@ def _render_link_prediction(result: object) -> str:
     str
         Markdown section.
     """
-    from ._types import LinkPredictionResult
-
     assert isinstance(result, LinkPredictionResult)
 
     lines = ["## Link Prediction", ""]

@@ -10,11 +10,27 @@ Migrated from ``scripts/ci/graph_health/__init__.py``.
 
 from __future__ import annotations
 
+import re
+import unicodedata
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
+from . import connectivity, hygiene
+from . import prediction as pred_mod
+from . import report as report_mod
+from . import scoring, structural, temporal, topology
 from ._types import GraphHealthReport, NoteMetadata
+
+try:
+    import yaml  # type: ignore[import-untyped]
+except ImportError:
+    yaml = None
+
+try:
+    import networkx as nx
+except ImportError:
+    nx = None
 
 EXCLUDED_DIRS = {"_meta", ".obsidian", "addons"}
 EXEMPT_TYPES: set[str] = {"type/spec"}
@@ -167,10 +183,6 @@ class GraphHealthRunner:
 
     def scan_all_notes(self) -> None:
         """Read all vault .md files and extract metadata + wikilinks."""
-        import unicodedata
-
-        import yaml  # type: ignore[import-untyped]
-
         all_md = sorted(self.vault_root.rglob("*.md"))
         self.notes = {}
 
@@ -206,8 +218,6 @@ class GraphHealthRunner:
                 except Exception:
                     fm = {}
 
-            import re
-
             wikilink_pattern = re.compile(r"\[\[([^\]|#]+)(?:[|#][^\]]+)?\]\]")
             outbound_stems: list[str] = [
                 unicodedata.normalize("NFC", m.group(1))
@@ -242,8 +252,6 @@ class GraphHealthRunner:
             updated: date | None = self._parse_date(fm.get("updated"))
             last_mod = None
             try:
-                from datetime import datetime
-
                 last_mod = datetime.fromtimestamp(note_path.stat().st_mtime)
             except OSError:
                 pass
@@ -272,8 +280,6 @@ class GraphHealthRunner:
     @staticmethod
     def _parse_date(val: Any) -> date | None:
         """Parse a date from frontmatter (ISO string or date object)."""
-        from datetime import date
-
         if val is None:
             return None
         if isinstance(val, date) and not isinstance(val, datetime):
@@ -307,8 +313,6 @@ class GraphHealthRunner:
         -------
         nx.DiGraph
         """
-        import networkx as nx
-
         G = nx.DiGraph()
         for stem, meta in self.notes.items():
             G.add_node(stem, file_path=str(meta.path))
@@ -342,10 +346,6 @@ class GraphHealthRunner:
         -------
         GraphHealthReport
         """
-        from . import connectivity, hygiene
-        from . import prediction as pred_mod
-        from . import scoring, structural, temporal, topology
-
         report = GraphHealthReport()
         report.notes_scanned = len(self.notes)
 
@@ -389,18 +389,16 @@ class GraphHealthRunner:
 
         Parameters
         ----------
-        report : GraphHealthReport
-            The report to write.
-        output_dir : Path
-            Directory to write reports into.
+                report : GraphHealthReport
+                    The report to write.
+                output_dir : Path
+                    Directory to write reports into.
 
         Returns
         -------
-        tuple[Path, Path]
-            (json_path, md_path).
+                tuple[Path, Path]
+        (json_path, md_path).
         """
-        from . import report as report_mod
-
         output_dir.mkdir(parents=True, exist_ok=True)
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 

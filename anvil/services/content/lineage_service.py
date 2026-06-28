@@ -14,6 +14,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from ...db.models.content_version_run_ref import VersionRunRef
+
 if TYPE_CHECKING:
     from ...db.repositories.content_versions import ContentVersionRepository
 
@@ -62,8 +64,6 @@ class LineageService:
             Denormalised corpus reference, typically ``"corpus:<slug>"``
             or ``"corpus:<id>"``.
         """
-        from ...db.models.content_version_run_ref import VersionRunRef
-
         ref = VersionRunRef(
             version_id=version_id,
             mlflow_run_id=mlflow_run_id,

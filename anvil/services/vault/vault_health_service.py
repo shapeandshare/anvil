@@ -11,6 +11,7 @@ graph health analysis, and convenience methods for individual checks.
 
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 
 from ._types import GraphHealthReport, MechanicalReport
@@ -86,8 +87,6 @@ class GraphHealthService:
         -------
         GraphHealthReport
         """
-        import asyncio
-
         return await asyncio.to_thread(self._analyze_sync)
 
     def _analyze_sync(self) -> GraphHealthReport:
