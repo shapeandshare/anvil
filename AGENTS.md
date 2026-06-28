@@ -1,6 +1,6 @@
 # anvil — Agent Guidelines
 
-**Last updated**: 2026-06-27 (constitution v1.8.0: Article XI Simplicity First / Boring Technology + ADR-041; sonarcloud-tooling + content-repository-016-mvp; scripts-python-over-bash + package-module-migration, testing-guide consolidation; OWASP remediation spec 017 + ADRs 035/036; whole-API e2e test suite 017)
+**Last updated**: 2026-06-28 (constitution v1.8.0: Article XI Simplicity First / Boring Technology + ADR-041; sonarcloud-tooling + content-repository-016-mvp; scripts-python-over-bash + package-module-migration, testing-guide consolidation; OWASP remediation spec 017 + ADRs 035/036; whole-API e2e test suite 017)
 
 ## Project Overview
 
@@ -442,6 +442,8 @@ SomeException
 - N/A — static content defined as structured data in a Python module (opencode/lucky-canyon)
 - Python 3.11+ (repo standard; `StrEnum`, PEP 604 unions, PEP 563 `from __future__ import annotations`) + FastAPI, async SQLAlchemy + aiosqlite, Alembic, Jinja2, uvicorn, MLflow (sidecar). **No new runtime dependencies** — boot file uses stdlib `json`; global registry uses the existing async SQLAlchemy/Alembic stack (or stdlib `sqlite3` for the host-level store — see research.md F). (opencode/witty-meadow)
 - Per-instance SQLite app DB (WAL) under each workspace; a host-level global registry SQLite DB at `~/.anvil/registry.db`; per-workspace `instance.json` boot file (JSON on disk). (opencode/witty-meadow)
+- Python 3.11+ + `huggingface_hub` (behind `[finetune]` extra for HF source); existing (040-external-model-registry)
+- SQLite (anvil-state.db, WAL mode) via async SQLAlchemy + existing Alembic migrations; (040-external-model-registry)
 
 ## Recent Changes
 - 025-ux-rules-integration: Added Python 3.11+ (existing repo convention) + Stdlib only — `ux_lint.py` (re/ sys/ os/), `ux_review.py` (stdlib + urllib for OpenAI-compatible API calls)
