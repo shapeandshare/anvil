@@ -75,22 +75,22 @@
     var models = data.models || [];
 
     if (models.length === 0) {
-      emptyEl.innerHTML = 'No models registered yet — <a href="/v1/experiments-page" class="action-link">register one from a finished experiment</a>.';
+      dom.setHtml(emptyEl, 'No models registered yet — <a href="/v1/experiments-page" class="action-link">register one from a finished experiment</a>.');
       return;
     }
 
     emptyEl.style.display = 'none';
     tableEl.style.display = '';
 
-    models.forEach(function(m) {
-      var row = document.createElement('tr');
+    function keyFn(m) { return m.id != null ? String(m.id) : m.name; }
 
+    function createRow(m) {
+      var tr = document.createElement('tr');
       var lossDisplay = m.latest_loss != null ? m.latest_loss.toFixed(4) : '—';
       var lossClass = m.latest_loss != null
         ? (m.latest_loss < 0.5 ? 'loss-green' : m.latest_loss < 1.0 ? 'loss-yellow' : 'loss-red')
         : '';
-
-      row.innerHTML =
+      tr.innerHTML =
         '<td>' +
           (m.id != null
             ? '<a href="/v1/inference-page?model_id=' + m.id + '" class="action-link">' + escHtml(m.name) + '</a>'
@@ -106,9 +106,32 @@
               '<a href="/v1/inference-page?model_id=' + m.id + '" class="btn btn-primary btn-sm">Play</a>'
             : '<span class="text-dim">—</span>') +
         '</td>';
+      return tr;
+    }
 
-      tbody.appendChild(row);
-    });
+    function updateRow(tr, m) {
+      dom.setCellHtml(tr, 0,
+        m.id != null
+          ? '<a href="/v1/inference-page?model_id=' + m.id + '" class="action-link">' + escHtml(m.name) + '</a>'
+          : '<span class="text-dim">' + escHtml(m.name) + '</span>');
+      dom.setCellText(tr, 1, m.description ? m.description : '—');
+      dom.setCellText(tr, 2, String(m.total_versions));
+      var lossDisplay = m.latest_loss != null ? m.latest_loss.toFixed(4) : '—';
+      var lossClass = m.latest_loss != null
+        ? (m.latest_loss < 0.5 ? 'loss-green' : m.latest_loss < 1.0 ? 'loss-yellow' : 'loss-red')
+        : '';
+      var lossTd = dom.cell(tr, 3);
+      dom.setClass(lossTd, lossClass);
+      dom.setText(lossTd, lossDisplay);
+      dom.setCellText(tr, 4, m.created_at || '—');
+      dom.setCellHtml(tr, 5,
+        m.id != null
+          ? '<a href="/v1/model-detail/' + m.id + '" class="btn btn-secondary btn-sm">View</a> ' +
+            '<a href="/v1/inference-page?model_id=' + m.id + '" class="btn btn-primary btn-sm">Play</a>'
+          : '<span class="text-dim">—</span>');
+    }
+
+    dom.syncTableBody(tbody, models, keyFn, createRow, updateRow);
   }).catch(function() {
     emptyEl.textContent = 'Failed to load models.';
   });

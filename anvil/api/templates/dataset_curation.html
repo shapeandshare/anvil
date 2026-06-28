@@ -148,7 +148,15 @@
     </div>
   </div>
   <div id="samples-container" class="ds-table-wrapper" style="overflow-x:auto;">
-    <span class="text-muted type-subhead">Loading...</span>
+    <div id="samples-status"><span class="text-muted type-subhead">Loading...</span></div>
+    <div id="samples-table-wrapper" class="table-scroll" style="display:none;">
+      <table class="grouped-list">
+        <thead><tr>
+          <th style="width:40px;">Index</th><th>Content (preview)</th><th style="width:60px;text-align:right;">Length</th><th style="width:50px;text-align:center;">Actions</th>
+        </tr></thead>
+        <tbody id="samples-tbody"></tbody>
+      </table>
+    </div>
   </div>
   <div style="display:flex;gap:var(--space-2);align-items:center;margin-top:var(--space-3);padding-top:var(--space-2);border-top:1px solid var(--separator);">
     <button class="btn btn-sm btn-secondary" id="sample-prev-btn" disabled>&larr; Prev</button>
@@ -165,7 +173,15 @@
     <span class="text-muted type-caption-1">curation log</span>
   </div>
   <div id="operations-container" class="ds-table-wrapper" style="overflow-x:auto;">
-    <span class="text-muted type-subhead">Loading...</span>
+    <div id="operations-status"><span class="text-muted type-subhead">Loading...</span></div>
+    <div id="operations-table-wrapper" class="table-scroll" style="display:none;">
+      <table class="grouped-list">
+        <thead><tr>
+          <th>Type</th><th style="text-align:right;">Before</th><th style="text-align:right;">After</th><th>Date</th>
+        </tr></thead>
+        <tbody id="operations-tbody"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -232,37 +248,57 @@
 
   /* ── Load samples ── */
   async function loadSamples() {
-    var container = document.getElementById('samples-container');
-    container.innerHTML = '<span class="text-muted type-subhead">Loading...</span>';
+    var statusEl = document.getElementById('samples-status');
+    var tableWrapper = document.getElementById('samples-table-wrapper');
+    var tbody = document.getElementById('samples-tbody');
+    statusEl.style.display = '';
+    tableWrapper.style.display = 'none';
+    dom.setHtml(statusEl, '<span class="text-muted type-subhead">Loading...</span>');
     try {
       var params = 'offset=' + samplePage.offset + '&limit=' + samplePage.limit;
       if (samplePage.search) params += '&search=' + encodeURIComponent(samplePage.search);
       var resp = await fetch('/v1/datasets/' + DATASET_ID + '/samples?' + params);
-      if (!resp.ok) { container.innerHTML = '<span class="text-muted type-subhead">Failed to load samples.</span>'; return; }
+      if (!resp.ok) { dom.setHtml(statusEl, '<span class="text-muted type-subhead">Failed to load samples.</span>'); return; }
       var data = await resp.json();
       var d = data && data.data;
       if (!d || !d.samples || d.samples.length === 0) {
-        container.innerHTML = '<span class="text-muted type-subhead">No samples' + (samplePage.search ? ' matching "' + escHtml(samplePage.search) + '"' : '') + '.</span>';
+        dom.setHtml(statusEl, '<span class="text-muted type-subhead">No samples' + (samplePage.search ? ' matching "' + escHtml(samplePage.search) + '"' : '') + '.</span>');
         document.getElementById('sample-count-label').textContent = '0';
         return;
       }
       document.getElementById('sample-count-label').textContent = d.total + ' total';
 
-      var html = '<div class="table-scroll"><table class="grouped-list"><thead><tr>'
-        + '<th style="width:40px;">Index</th><th>Content (preview)</th><th style="width:60px;text-align:right;">Length</th><th style="width:50px;text-align:center;">Actions</th>'
-        + '</tr></thead><tbody>';
+      function sampleKey(s) { return String(s.id); }
 
-      d.samples.forEach(function(s, i) {
+      function createSampleRow(s) {
+        var tr = document.createElement('tr');
+        tr.className = 'row-entrance';
         var preview = escHtml(s.text_preview || '');
-        html += '<tr class="row-entrance" style="--row-i: ' + i + '">'
-          + '<td style="color:var(--text-tertiary);">' + s.index + '</td>'
+        tr.innerHTML = '<td style="color:var(--text-tertiary);">' + s.index + '</td>'
           + '<td class="cell-mono cell-wrap" style="color:var(--accent-green);" title="' + preview + '">' + preview + '</td>'
           + '<td class="cell-numeric text-muted">' + (s.length || 0) + '</td>'
-          + '<td style="text-align:center;"><button class="btn btn-sm btn-danger sample-delete-btn type-caption-2" data-sample-id="' + s.id + '" data-index="' + s.index + '" style="min-height:28px;padding:0 var(--space-2);">del</button></td>'
-          + '</tr>';
-      });
+          + '<td style="text-align:center;"><button class="btn btn-sm btn-danger sample-delete-btn type-caption-2" data-sample-id="' + s.id + '" data-index="' + s.index + '" style="min-height:28px;padding:0 var(--space-2);">del</button></td>';
+        return tr;
+      }
 
-      html += '</tbody></table></div>';
+      function updateSampleRow(tr, s) {
+        dom.setCellText(tr, 0, String(s.index));
+        var rawPreview = s.text_preview || '';
+        var cell1 = dom.cell(tr, 1);
+        dom.setText(cell1, rawPreview);
+        dom.setAttr(cell1, 'title', rawPreview);
+        dom.setCellText(tr, 2, String(s.length || 0));
+        var delBtn = tr.querySelector('.sample-delete-btn');
+        if (delBtn) {
+          dom.setAttr(delBtn, 'data-sample-id', String(s.id));
+          dom.setAttr(delBtn, 'data-index', String(s.index));
+        }
+      }
+
+      statusEl.style.display = 'none';
+      tableWrapper.style.display = '';
+      dom.syncTableBody(tbody, d.samples, sampleKey, createSampleRow, updateSampleRow);
+
       var total = d.total || 0;
       var currentPage = Math.floor(samplePage.offset / samplePage.limit) + 1;
       var totalPages = Math.ceil(total / samplePage.limit) || 1;
@@ -271,35 +307,52 @@
       document.getElementById('sample-next-btn').disabled = (samplePage.offset + samplePage.limit) >= total;
 
     } catch(e) {
-      container.innerHTML = '<span class="text-muted type-subhead">Error loading samples: ' + escHtml(e.message) + '</span>';
+      dom.setHtml(statusEl, '<span class="text-muted type-subhead">Error loading samples: ' + escHtml(e.message) + '</span>');
     }
   }
 
   /* ── Load operations history ── */
   async function loadOperations() {
-    var container = document.getElementById('operations-container');
+    var statusEl = document.getElementById('operations-status');
+    var tableWrapper = document.getElementById('operations-table-wrapper');
+    var tbody = document.getElementById('operations-tbody');
+    statusEl.style.display = '';
+    tableWrapper.style.display = 'none';
     try {
       var resp = await fetch('/v1/datasets/' + DATASET_ID + '/operations');
-      if (!resp.ok) { container.innerHTML = '<span class="text-muted type-subhead">Failed to load operations.</span>'; return; }
+      if (!resp.ok) { dom.setHtml(statusEl, '<span class="text-muted type-subhead">Failed to load operations.</span>'); return; }
       var data = await resp.json();
       var ops = data && data.data && data.data.operations;
       if (!ops || ops.length === 0) {
-        container.innerHTML = '<span class="text-muted type-subhead">No curation operations yet.</span>';
+        dom.setHtml(statusEl, '<span class="text-muted type-subhead">No curation operations yet.</span>');
         return;
       }
-      var html = '<div class="table-scroll"><table class="grouped-list"><thead><tr>'
-        + '<th>Type</th><th style="text-align:right;">Before</th><th style="text-align:right;">After</th><th>Date</th>'
-        + '</tr></thead><tbody>';
-      ops.forEach(function(op) {
-        html += '<tr class="row-entrance">'
-          + '<td><span class="badge badge-cyan">' + escHtml(op.operation_type) + '</span></td>'
+
+      function opKey(op, i) { return String(i); }
+
+      function createOpRow(op) {
+        var tr = document.createElement('tr');
+        tr.className = 'row-entrance';
+        tr.innerHTML = '<td><span class="badge badge-cyan">' + escHtml(op.operation_type) + '</span></td>'
           + '<td style="text-align:right;">' + (op.sample_count_before != null ? op.sample_count_before : '--') + '</td>'
           + '<td style="text-align:right;">' + (op.sample_count_after != null ? op.sample_count_after : '--') + '</td>'
-          + '<td class="cell-meta">' + (op.created_at || '').slice(0, 19).replace('T', ' ') + '</td>'
-          + '</tr>';
-      });
-      html += '</tbody></table></div>';
-      container.innerHTML = '<span class="text-muted type-subhead">Error: ' + escHtml(e.message) + '</span>';
+          + '<td class="cell-meta">' + (op.created_at || '').slice(0, 19).replace('T', ' ') + '</td>';
+        return tr;
+      }
+
+      function updateOpRow(tr, op) {
+        dom.setCellHtml(tr, 0, '<span class="badge badge-cyan">' + escHtml(op.operation_type) + '</span>');
+        dom.setCellText(tr, 1, op.sample_count_before != null ? String(op.sample_count_before) : '--');
+        dom.setCellText(tr, 2, op.sample_count_after != null ? String(op.sample_count_after) : '--');
+        dom.setCellText(tr, 3, (op.created_at || '').slice(0, 19).replace('T', ' '));
+      }
+
+      statusEl.style.display = 'none';
+      tableWrapper.style.display = '';
+      dom.syncTableBody(tbody, ops, opKey, createOpRow, updateOpRow);
+
+    } catch(e) {
+      dom.setHtml(statusEl, '<span class="text-muted type-subhead">Error: ' + escHtml(e.message) + '</span>');
     }
   }
 
