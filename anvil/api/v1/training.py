@@ -88,6 +88,12 @@ class TrainConfig(BaseModel):
         Optional content version ID for reproducibility.
     device : str | None
         Optional device override (e.g. ``"cpu"``, ``"cuda:0"``, ``"mps"``).
+    base_model_ref : int | None
+        Optional experiment ID of a previously trained model to use as
+        a warm-start checkpoint. When set, architecture dimensions
+        (``n_embd``, ``n_head``, ``n_layer``, ``block_size``) are
+        inherited from the base model and explicit overrides are
+        rejected with HTTP 422.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -106,6 +112,7 @@ class TrainConfig(BaseModel):
     corpus_id: int | None = None
     content_version_id: int | None = None
     device: str | None = None
+    base_model_ref: int | None = None
 
 
 router = APIRouter()
@@ -578,6 +585,50 @@ async def start_training(config: TrainConfig) -> dict[str, Any]:
     """
     _validate_hparams(config.n_embd, config.n_head, config.block_size)
 
+    if config.base_model_ref is not None:
+        inference = InferenceService()
+        try:
+            base_model = await inference.load_model(model_id=config.base_model_ref)
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=str(e)) from None
+
+        if config.n_embd != base_model.model.n_embd:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"n_embd={config.n_embd} conflicts with base model's "
+                    f"n_embd={base_model.model.n_embd}. Architecture dimensions are "
+                    "inherited from the base checkpoint during warm-start."
+                ),
+            )
+        if config.n_head != base_model.model.n_head:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"n_head={config.n_head} conflicts with base model's "
+                    f"n_head={base_model.model.n_head}. Architecture dimensions are "
+                    "inherited from the base checkpoint during warm-start."
+                ),
+            )
+        if config.n_layer != base_model.model.n_layer:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"n_layer={config.n_layer} conflicts with base model's "
+                    f"n_layer={base_model.model.n_layer}. Architecture dimensions are "
+                    "inherited from the base checkpoint during warm-start."
+                ),
+            )
+        if config.block_size != base_model.model.block_size:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"block_size={config.block_size} conflicts with base model's "
+                    f"block_size={base_model.model.block_size}. Architecture dimensions "
+                    "are inherited from the base checkpoint during warm-start."
+                ),
+            )
+
     engine_backend, device = _resolve_training_backend(config.compute_backend)
 
     gpu_info = detect_gpu()
@@ -656,6 +707,34 @@ async def start_training(config: TrainConfig) -> dict[str, Any]:
             await tracking_svc.set_tag(
                 mlflow_run_id, "architectures", "LlamaForCausalLM"
             )
+
+            # Record warm-start lineage (FR-003)
+            if config.base_model_ref is not None:
+                await tracking_svc.set_tag(
+                    mlflow_run_id, "anvil.warm_start", "true"
+                )
+                await tracking_svc.set_tag(
+                    mlflow_run_id, "anvil.base_model_ref", str(config.base_model_ref)
+                )
+                # Resolve corpus name for specialization_corpus tag
+                specialization_corpus = "unknown"
+                if dataset_id is not None:
+                    async with AsyncSessionLocal() as sess:
+                        ds_repo = DatasetRepository(sess)
+                        ds = await ds_repo.get(dataset_id)
+                        if ds:
+                            specialization_corpus = ds.name
+                elif corpus_id is not None:
+                    async with AsyncSessionLocal() as sess:
+                        corp_repo = CorpusRepository(sess)
+                        corpus = await corp_repo.get(corpus_id)
+                        if corpus:
+                            specialization_corpus = corpus.name
+                await tracking_svc.set_tag(
+                    mlflow_run_id,
+                    "anvil.specialization_corpus",
+                    specialization_corpus,
+                )
 
         # Local path: log artifacts, run safetensors export
         # Remote path: artifacts were logged inside the cloud job — skip
