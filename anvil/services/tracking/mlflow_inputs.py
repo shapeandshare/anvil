@@ -109,7 +109,7 @@ class MlflowInputResolver:
             try:
                 import pandas as pd
             except ImportError:
-                pd = None  # type: ignore[assignment]
+                pd = None
 
             if pd is None:
                 mlflow_ds = MetaDataset(  # type: ignore[abstract]

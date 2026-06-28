@@ -124,7 +124,7 @@ class ModalBackend:
             assert (
                 _MODAL_AVAILABLE
             ), "modal package required when no function factory provided"
-            remote_fn = self._build_remote_function(modal)  # type: ignore[possibly-unbound]
+            remote_fn = self._build_remote_function(modal)
 
         # --- submit ---
         call = await loop.run_in_executor(None, lambda: remote_fn.spawn(docs, config))

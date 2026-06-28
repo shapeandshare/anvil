@@ -41,8 +41,8 @@ from .mlflow_inputs import MlflowInputResolver
 try:
     from mlflow.genai.datasets import create_dataset, get_dataset
 except ImportError:
-    create_dataset = None  # type: ignore[assignment]
-    get_dataset = None  # type: ignore[assignment]
+    create_dataset = None
+    get_dataset = None
 
 _system_metrics_enabled = False
 _MlflowClientLike = Any
@@ -1174,7 +1174,7 @@ def _create_dataset_sync(name: str, tags: dict[str, Any] | None) -> Any:
     Any
         The created MLflow dataset object.
     """
-    if create_dataset is None:  # type: ignore[truthy-function]
+    if create_dataset is None:
         raise ImportError("mlflow.genai.datasets is not available")
     return create_dataset(name=name, tags=tags or {})
 
@@ -1199,7 +1199,7 @@ def _append_records_sync(name: str, records: list[dict[str, Any]]) -> int:
     ValueError
         If the dataset is not found.
     """
-    if get_dataset is None:  # type: ignore[truthy-function]
+    if get_dataset is None:
         raise ImportError("mlflow.genai.datasets is not available")
     ds = get_dataset(name=name)
     if ds is None:
@@ -1221,7 +1221,7 @@ def _get_dataset_sync(name: str) -> Any | None:
     Any or None
         The MLflow dataset object, or ``None`` if not found.
     """
-    if get_dataset is None:  # type: ignore[truthy-function]
+    if get_dataset is None:
         return None
     try:
         return get_dataset(name=name)

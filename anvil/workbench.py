@@ -112,7 +112,6 @@ class AnvilWorkbench:
         self._training: TrainingService | None = None
         self._tracking: TrackingService | None = None
         self._inference: InferenceService | None = None
-        self._tracking: TrackingService | None = None
         self._dataset_repo: DatasetRepository | None = None
         self._corpus_repo: CorpusRepository | None = None
         self._datasets: DatasetService | None = None

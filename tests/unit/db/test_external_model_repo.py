@@ -74,7 +74,7 @@ async def test_get_all_returns_newest_first(db_session):
     m2 = ExternalModel(
         display_name="b",
         source_type="local",
-        source_identifier="/tmp/b",
+        source_identifier="/test/b",
         architecture_family="LlamaForCausalLM",
         parameter_count=200,
         license="mit",
@@ -139,7 +139,7 @@ async def test_delete_removes_entry(db_session):
     model = ExternalModel(
         display_name="delete-me",
         source_type="local",
-        source_identifier="/tmp/delete",
+        source_identifier="/test/delete",
         architecture_family="LlamaForCausalLM",
         parameter_count=0,
         license="unknown",

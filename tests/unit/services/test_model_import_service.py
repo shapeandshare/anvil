@@ -126,4 +126,4 @@ async def test_submit_unknown_source_raises(svc_factory):
     async with maker() as session:
         svc = make(session, _FakeSource())
         with pytest.raises(ValueError):
-            await svc.submit_import(source="local", identifier="/tmp/x")
+            await svc.submit_import(source="local", identifier="/test/x")
