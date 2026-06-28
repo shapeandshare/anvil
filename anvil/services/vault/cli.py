@@ -22,8 +22,8 @@ def build_parser() -> argparse.ArgumentParser:
     Returns
     -------
     argparse.ArgumentParser
-        Configured parser with ``audit``, ``check-adrs``,
-        ``check-guarded-imports``, and ``check-bump-scope`` subcommands.
+        Configured parser with all vault subcommands including audits,
+        ADR checks, guarded-import checks, and constitution checks.
     """
     parser = argparse.ArgumentParser(
         prog="anvil-vault",
@@ -154,6 +154,59 @@ def build_parser() -> argparse.ArgumentParser:
         help="Path to specs directory (default: specs)",
     )
 
+    # --- check-init-py ---
+    sub.add_parser(
+        "check-init-py",
+        help="Validate __init__.py ownership policy in source tree",
+    )
+
+    # --- check-relative-imports ---
+    sub.add_parser(
+        "check-relative-imports",
+        help="Check for absolute anvil. imports inside the anvil/ package",
+    )
+
+    # --- check-one-class ---
+    sub.add_parser(
+        "check-one-class",
+        help="Verify one class per Python source file",
+    )
+
+    # --- check-import-placement ---
+    sub.add_parser(
+        "check-import-placement",
+        help="Verify imports are at top of file (no lazy imports)",
+    )
+
+    # --- check-nesting ---
+    sub.add_parser(
+        "check-nesting",
+        help="Verify max 2 levels of package nesting from anvil/ root",
+    )
+
+    # --- check-py-typed ---
+    sub.add_parser(
+        "check-py-typed",
+        help="Verify py.typed marker exists and is configured in pyproject.toml",
+    )
+
+    # --- check-core-deps ---
+    core_p = sub.add_parser(
+        "check-core-deps",
+        help="Verify anvil/core/ has zero third-party dependencies",
+    )
+    core_p.add_argument(
+        "--source-dir",
+        default="anvil/core",
+        help="Directory to scan for third-party imports (default: anvil/core)",
+    )
+
+    # --- check-layers ---
+    sub.add_parser(
+        "check-layers",
+        help="Verify layer boundaries in the codebase architecture",
+    )
+
     return parser
 
 
@@ -188,6 +241,22 @@ def main(argv: list[str] | None = None) -> None:
         _cmd_build_notes(args)
     elif args.command == "migrate-specs":
         _cmd_migrate_specs(args)
+    elif args.command == "check-init-py":
+        _cmd_check_init_py(args)
+    elif args.command == "check-relative-imports":
+        _cmd_check_relative_imports(args)
+    elif args.command == "check-one-class":
+        _cmd_check_one_class(args)
+    elif args.command == "check-import-placement":
+        _cmd_check_import_placement(args)
+    elif args.command == "check-nesting":
+        _cmd_check_nesting(args)
+    elif args.command == "check-py-typed":
+        _cmd_check_py_typed(args)
+    elif args.command == "check-core-deps":
+        _cmd_check_core_deps(args)
+    elif args.command == "check-layers":
+        _cmd_check_layers(args)
     else:
         parser.print_help()
         sys.exit(1)
@@ -368,6 +437,68 @@ def _cmd_migrate_specs(args: argparse.Namespace) -> None:
             apply=args.apply,
         )
     )
+
+
+def _cmd_check_init_py(args: argparse.Namespace) -> None:
+    """Handle the ``check-init-py`` subcommand."""
+    from .check_init_py_ownership import main
+
+    main()
+
+
+def _cmd_check_relative_imports(args: argparse.Namespace) -> None:
+    """Handle the ``check-relative-imports`` subcommand."""
+    from .check_relative_imports import main
+
+    main()
+
+
+def _cmd_check_one_class(args: argparse.Namespace) -> None:
+    """Handle the ``check-one-class`` subcommand."""
+    import os as _os
+
+    _os.environ["ANVIL_ROOT"] = getattr(args, "source_dir", "anvil")
+    from .check_one_class import main
+
+    main()
+
+
+def _cmd_check_import_placement(args: argparse.Namespace) -> None:
+    """Handle the ``check-import-placement`` subcommand."""
+    from .check_import_placement import main
+
+    main()
+
+
+def _cmd_check_nesting(args: argparse.Namespace) -> None:
+    """Handle the ``check-nesting`` subcommand."""
+    from .check_nesting_depth import main
+
+    main()
+
+
+def _cmd_check_py_typed(args: argparse.Namespace) -> None:
+    """Handle the ``check-py-typed`` subcommand."""
+    from .check_py_typed import main
+
+    main()
+
+
+def _cmd_check_core_deps(args: argparse.Namespace) -> None:
+    """Handle the ``check-core-deps`` subcommand."""
+    import os as _os
+
+    _os.environ["ANVIL_ROOT"] = getattr(args, "source_dir", "anvil/core")
+    from .check_core_deps import main
+
+    main()
+
+
+def _cmd_check_layers(args: argparse.Namespace) -> None:
+    """Handle the ``check-layers`` subcommand."""
+    from .check_layer_boundaries import main
+
+    main()
 
 
 if __name__ == "__main__":
