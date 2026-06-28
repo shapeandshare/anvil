@@ -103,7 +103,9 @@ def _is_data_dir(dirpath: Path) -> bool:
     -------
     bool
     """
-    return any(parent.name in _DATA_DIRS for parent in [dirpath] + list(dirpath.parents))
+    return any(
+        parent.name in _DATA_DIRS for parent in [dirpath] + list(dirpath.parents)
+    )
 
 
 def _init_py_is_bare(init_path: Path) -> bool:
