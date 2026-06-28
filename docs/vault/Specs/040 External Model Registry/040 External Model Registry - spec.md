@@ -104,8 +104,8 @@ returned; poll until complete; verify a registry entry is created with all FR-00
 - **FR-006**: Importing a model MUST create a tracked metadata entry recording at minimum: display name,
   source + source identifier, architecture family, parameter count, license, tokenizer family, and
   revision/commit SHA — created BEFORE any asset download.
-- **FR-009**: External-model metadata MUST be tracked in the existing model registry alongside anvil's
-  own trained models (extending spec 003), distinguishable by origin.
+- **FR-009**: External-model metadata MUST be tracked in a dedicated `external_models` table,
+  alongside anvil's own MLflow-registered models, distinguishable by origin.
 - **FR-005a**: `ModelSource` MUST be a structural interface (consistent with the compute-backend
   protocol style) so additional sources can register without changing the registry layer.
 - **FR-005b**: The HF Hub source MUST respect the `HF_TOKEN` environment variable when querying gated

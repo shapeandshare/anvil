@@ -14,8 +14,9 @@ anvil's native models, with typed error codes and idempotent same-revision re-im
 ## Technical Context
 
 **Language/Version**: Python 3.11+
-**Primary Dependencies**: `huggingface_hub` (behind `[finetune]` extra for HF source); existing
-  FastAPI, async SQLAlchemy + aiosqlite, Pydantic, httpx (stdlib for CLI)
+**Primary Dependencies**: `huggingface_hub>=0.24,<2` (NEW — added in a new `[finetune]` extra; this
+  extra does NOT exist yet and is created by this feature; current latest is 1.x); existing FastAPI,
+  async SQLAlchemy + aiosqlite, Pydantic, httpx (stdlib for CLI)
 **Storage**: SQLite (anvil-state.db, WAL mode) via async SQLAlchemy + existing Alembic migrations;
   external model entries co-located in the same registry schema (extending spec 003)
 **Testing**: pytest + pytest-asyncio (existing convention); unit tests per domain sub-package,
@@ -43,13 +44,14 @@ anvil's native models, with typed error codes and idempotent same-revision re-im
 - **Article V (Async-First)** — Web, DB, service layers async.
   Compliance: Import service and repository use async SQLAlchemy; import job is async.
 - **Article VI (init.py Ownership)** — Bare `__init__.py` for new authoritative packages.
-  Compliance: If a new domain sub-package is created (e.g., `anvil/services/import/`), it needs a
-  docstring-only `__init__.py`.
+  Compliance: The new `anvil/services/model_import/` and `anvil/client/models/` domain sub-packages
+  each get a docstring-only `__init__.py`.
 - **Article VII (Layered Architecture)** — Repository → Service → God Class → Routes/CLI.
-  Compliance: `ExternalModelRepository` → `ImportService` → `AnvilWorkbench` → CLI/API/SDK.
+  Compliance: `ExternalModelRepository`/`ModelImportJobRepository` → `ModelImportService` →
+  `AnvilWorkbench` → CLI/API/SDK.
 - **Article X (Domain-Driven Decomposition)** — Domain boundaries, max 2 nesting levels.
-  Compliance: Evaluate whether an `import/` domain sub-package under `anvil/services/` is warranted
-  vs extending an existing service. Models co-locate with the service or in `_shared/` if cross-domain.
+  Compliance: New `model_import/` domain sub-package under `anvil/services/` (named `model_import`,
+  not `import` — reserved keyword). Models co-locate; cross-domain types in `_shared/import_types.py`.
 - **Article XI (Simplicity First / Boring Technology)** — Hard MUST gate.
   See checklist below.
 - **Additional Constraints**:
@@ -99,14 +101,16 @@ docs/vault/Specs/[###-feature]/
 ```text
 # New files
 anvil/db/models/external_model.py          # ExternalModel ORM entity
-anvil/db/repositories/external_models.py   # ExternalModelRepository
-anvil/services/import/
+anvil/db/models/model_import_job.py         # ModelImportJob ORM entity (distinct from content ImportJob)
+anvil/db/repositories/external_models.py    # ExternalModelRepository
+anvil/db/repositories/model_import_jobs.py  # ModelImportJobRepository
+anvil/services/model_import/                # NOTE: 'model_import' not 'import' (reserved keyword)
 ├── __init__.py                            # Bare docstring-only
-├── import_service.py                      # ImportService — orchestration
+├── model_import_service.py                # ModelImportService — orchestration
 ├── model_source.py                        # ModelSource Protocol
-├── hf_source.py                           # HF Hub ModelSource impl
+├── hf_source.py                           # HF Hub ModelSource impl (huggingface_hub behind try/except)
 └── local_source.py                        # Local file ModelSource impl
-anvil/services/_shared/import_types.py     # ModelMetadata, ModelSourceError (Pydantic)
+anvil/services/_shared/import_types.py     # SourceType/RunnableStatus/AssetState/ModelImportJobStatus enums, ModelMetadata, ModelSourceError
 anvil/api/v1/models.py                     # API routes (/v1/models/...)
 anvil/client/models/
 ├── __init__.py
@@ -116,31 +120,31 @@ anvil/client/models/
 └── models_get_command.py                  # ModelsGetCommand
 
 # Modified files
-pyproject.toml              # Add anvil-import entry point
-anvil/workbench.py          # Wire ImportService + ExternalModelRepository
+pyproject.toml              # Add `finetune` extra (huggingface_hub) + anvil-import entry points
+anvil/db/models/__init__.py # Import external_model + model_import_job modules for registration
+anvil/workbench.py          # Wire ModelImportService + repositories (lazy properties)
 anvil/cli.py                # Add import_main() + import_status_main()
 anvil/api/v1/router.py      # Register models_router
 anvil/client/anvil_client.py # Add models property
-anvil/_resources/migrations/versions/  # Add 005_add_external_models.py
+anvil/_resources/migrations/versions/005_add_external_models.py  # down_revision = "004"
 
 tests/
 ├── unit/
 │   ├── db/
 │   │   └── test_external_model_repo.py
 │   ├── services/
-│   │   ├── test_import_service.py
+│   │   ├── test_model_import_service.py
 │   │   ├── test_hf_source.py
 │   │   └── test_local_source.py
-│   └── api/
-│       └── test_models_routes.py
 └── e2e/
     └── test_external_models.py
 ```
 
-**Structure Decision**: Single project (existing monorepo layout). New `import/` domain sub-package
-under `anvil/services/` per Article X. New `models/` domain sub-package under `anvil/client/` per
-existing SDK client convention. ORM model and repository follow existing patterns in
-`anvil/db/models/` and `anvil/db/repositories/`.
+**Structure Decision**: Single project (existing monorepo layout). New `model_import/` domain
+sub-package under `anvil/services/` per Article X — named `model_import` (NOT `import`, a Python
+reserved keyword that would break relative imports). New `models/` domain sub-package under
+`anvil/client/`. ORM models and repositories follow existing patterns in `anvil/db/models/` and
+`anvil/db/repositories/`. The `finetune` optional-dependencies extra does not yet exist and is added.
 
 ## Complexity Tracking
 

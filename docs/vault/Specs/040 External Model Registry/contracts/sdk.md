@@ -58,7 +58,7 @@ if status.status == "complete":
 
 ### Returns
 
-`ImportJobStatus` (Pydantic BaseModel):
+`ImportJobStatusDTO` (Pydantic BaseModel; distinct from the ORM `ModelImportJobStatus` enum):
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -93,7 +93,7 @@ class ModelsClient:
     async def import_model(self, source: str, identifier: str, ...) -> ImportResult:
         return await self._import_cmd.execute(source, identifier, ...)
 
-    async def get_import_status(self, job_id: int) -> ImportJobStatus:
+    async def get_import_status(self, job_id: int) -> ImportJobStatusDTO:
         return await self._status_cmd.execute(job_id)
 
     async def get(self, model_id: int) -> ExternalModel:

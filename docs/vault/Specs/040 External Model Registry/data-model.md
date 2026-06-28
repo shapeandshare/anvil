@@ -1,5 +1,11 @@
 # Data Model: 040 External Model Registry
 
+## Storage Note
+
+Enum-typed columns are stored as `String(20)` columns with the enum member as the default value
+(matching the existing `Dataset`/`Corpus` pattern), NOT as native SQL enum types. At service
+boundaries, raw strings are coerced via `MyEnum(value)` per Principle 11.
+
 ## Entities
 
 ### ExternalModel
@@ -9,40 +15,45 @@ The canonical metadata record for an externally-sourced model. Stored in a new `
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | `int` (PK, auto-increment) | Unique identifier |
-| `display_name` | `str` | Human-readable name for the registry entry |
-| `source_type` | `SourceType` (enum) | Origin source: `huggingface`, `local` |
-| `source_identifier` | `str` | Source-specific identifier (HF repo ID `org/name`, local file path) |
-| `architecture_family` | `str` | Model architecture (e.g., `LlamaForCausalLM`) |
+| `display_name` | `str` (String(255)) | Human-readable name for the registry entry |
+| `source_type` | `SourceType` enum → `String(20)` | Origin source: `huggingface`, `local` |
+| `source_identifier` | `str` (String(255)) | Source-specific identifier (HF repo ID `org/name`, local path) |
+| `architecture_family` | `str` (String(100)) | Model architecture (e.g., `LlamaForCausalLM`) |
 | `parameter_count` | `int` | Total parameters (from model card, or `0` if unknown) |
-| `license` | `str` | License identifier (e.g., `apache-2.0`, `mit`, `"unknown"`) |
-| `tokenizer_family` | `str` | Tokenizer type (e.g., `sentencepiece`, `tokenizers`, `"unknown"`) |
-| `revision_sha` | `str` | Source revision/commit SHA |
-| `runnable_status` | `RunnableStatus` (enum) | `runnable` or `track_only` with reason |
-| `runnable_reason` | `str | None` | Why not runnable (null if runnable) |
-| `asset_availability` | `AssetState` (enum) | `metadata_only`, `assets_available`, `assets_pending` |
-| `config_json` | `str | None` | Raw model configuration (JSON) as returned by source |
+| `license` | `str` (String(100)) | License identifier (e.g., `apache-2.0`, `mit`, `"unknown"`) |
+| `tokenizer_family` | `str` (String(100)) | Tokenizer type (e.g., `sentencepiece`, `tokenizers`, `"unknown"`) |
+| `revision_sha` | `str` (String(255)) | Source revision/commit SHA |
+| `runnable_status` | `RunnableStatus` enum → `String(20)` | `runnable` or `track_only` with reason |
+| `runnable_reason` | `str \| None` (Text, nullable) | Why not runnable (null if runnable) |
+| `asset_availability` | `AssetState` enum → `String(20)` | `metadata_only`, `assets_available`, `assets_pending` |
+| `config_json` | `str \| None` (Text, nullable) | Raw model configuration (JSON) as returned by source |
 | `created_at` | `datetime` | TimestampMixin |
 | `updated_at` | `datetime` | TimestampMixin |
 
 **Identity**: `(source_type, source_identifier, revision_sha)` is the canonical identity triple.
 Same triple → idempotent (return existing entry).
 
-### ImportJob
+### ModelImportJob
 
-Tracks the async import lifecycle. Uses the existing job pattern.
+Tracks the async import lifecycle. Stored in a new `model_import_jobs` table.
+
+> **Naming**: This is a NEW, distinct entity. It is NOT the existing
+> `anvil/db/models/content_import_job.py::ImportJob` (which tracks content-repository imports).
+> The name `ModelImportJob` avoids a class-name collision.
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | `int` (PK, auto-increment) | Unique identifier |
-| `status` | `ImportJobStatus` (enum) | `queued`, `resolving`, `complete`, `failed` |
-| `source_type` | `str` | Source type passed at creation |
-| `source_identifier` | `str` | Source identifier passed at creation |
-| `error_code` | `str | None` | Typed error code if failed |
-| `error_message` | `str | None` | Human-readable error detail |
-| `external_model_id` | `int | None` | FK to `external_models.id` (set on completion) |
-| `started_at` | `datetime | None` | When job began resolving |
-| `finished_at` | `datetime | None` | When job completed or failed |
+| `status` | `ModelImportJobStatus` enum → `String(20)` | `queued`, `resolving`, `complete`, `failed` |
+| `source_type` | `str` (String(20)) | Source type passed at creation |
+| `source_identifier` | `str` (String(255)) | Source identifier passed at creation |
+| `error_code` | `str \| None` (String(50), nullable) | Typed error code if failed |
+| `error_message` | `str \| None` (Text, nullable) | Human-readable error detail |
+| `external_model_id` | `int \| None` (FK → `external_models.id`, `ondelete="SET NULL"`) | Set on completion |
+| `started_at` | `datetime \| None` (nullable) | When job began resolving |
+| `finished_at` | `datetime \| None` (nullable) | When job completed or failed |
 | `created_at` | `datetime` | TimestampMixin |
+| `updated_at` | `datetime` | TimestampMixin |
 
 ## Enums
 
@@ -68,7 +79,7 @@ Tracks the async import lifecycle. Uses the existing job pattern.
 | `ASSETS_AVAILABLE` | `assets_available` | Weights/tokenizer/config downloaded (set by spec 042) |
 | `ASSETS_PENDING` | `assets_pending` | Asset download in progress |
 
-### ImportJobStatus (StrEnum)
+### ModelImportJobStatus (StrEnum)
 
 | Member | Value | Description |
 |--------|-------|-------------|
@@ -79,7 +90,7 @@ Tracks the async import lifecycle. Uses the existing job pattern.
 
 ## State Transitions
 
-### ImportJob lifecycle
+### ModelImportJob lifecycle
 
 ```
 queued → resolving → complete
@@ -162,9 +173,10 @@ class ModelSourceError(Exception):
 ## Relationships
 
 ```
-ExternalModel 1──0..1 ImportJob    (job that created this entry)
-ImportJob      1──0..1 ExternalModel (entry created by this job)
+ExternalModel 1──0..1 ModelImportJob    (job that created this entry)
+ModelImportJob 1──0..1 ExternalModel    (entry created by this job, via external_model_id FK)
 ```
 
 The relationship is optional both ways: a job may fail without creating an entry,
-and existing entries (from idempotent re-import) may have no new associated job.
+and existing entries (from idempotent re-import) may have no new associated job. The FK
+`model_import_jobs.external_model_id → external_models.id` uses `ondelete="SET NULL"`.
