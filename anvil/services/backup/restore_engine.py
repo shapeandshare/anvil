@@ -14,6 +14,12 @@ from .archive_reader import ArchiveReader
 from .restore_journal import RestoreJournal
 
 
+#: Name of the staging directory at the project root (outside managed
+#: roots such as ``data/`` so that swapping a root does not orphan the
+#: staging directory).
+_RESTORE_TMP_NAME = ".restore-tmp"
+
+
 class RestoreResult:
     """Result of a restore operation.
 
@@ -93,7 +99,7 @@ class RestoreEngine:
             )
 
         self._notify(progress_callback, 15, "Extracting to temp directory")
-        restore_tmp = self._backup_dir / ".restore-tmp" / backup_id
+        restore_tmp = Path.cwd() / _RESTORE_TMP_NAME / backup_id
         if restore_tmp.exists():
             shutil.rmtree(restore_tmp, ignore_errors=True)
         restore_tmp.mkdir(parents=True, exist_ok=True)

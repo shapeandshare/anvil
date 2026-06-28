@@ -274,7 +274,7 @@
           html += '<span class="config-row__meta-label">Value</span>';
           html += '<span class="config-row__meta-value" style="font-weight:600;">' + esc(s.value) + '</span>';
           html += '<span class="config-row__meta-label">Default</span>';
-          html += '<span class="config-row__meta-value">' + esc(s.default_value || '&mdash;') + '</span>';
+          html += '<span class="config-row__meta-value">' + esc(s.default_value || '—') + '</span>';
           if (s.env_var) {
             html += '<span class="config-row__meta-label">Env Var</span>';
             html += '<span class="config-row__meta-value" style="font-family:var(--font-mono);">' + esc(s.env_var) + '</span>';

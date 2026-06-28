@@ -103,12 +103,19 @@ class BackupService:
         self._queues: dict[str, asyncio.Queue[ProgressEvent]] = {}
 
         # Sweep left-over .tmp/ and .restore-tmp/ dirs (FR-013).
+        # The cwd-level .restore-tmp is the current location (feature-027
+        # fix: was inside data/backups/ which caused self-referential move
+        # failure during restore swaps).  The backup-dir-level location is
+        # kept for backward compatibility with old temp dirs.
         tmp_dir = self._backup_dir / ".tmp"
-        restore_tmp_dir = self._backup_dir / ".restore-tmp"
+        old_restore_tmp_dir = self._backup_dir / ".restore-tmp"
+        restore_tmp_root = Path.cwd() / ".restore-tmp"
         if tmp_dir.exists():
             shutil.rmtree(tmp_dir, ignore_errors=True)
-        if restore_tmp_dir.exists():
-            shutil.rmtree(restore_tmp_dir, ignore_errors=True)
+        if old_restore_tmp_dir.exists():
+            shutil.rmtree(old_restore_tmp_dir, ignore_errors=True)
+        if restore_tmp_root.exists():
+            shutil.rmtree(restore_tmp_root, ignore_errors=True)
 
     @property
     def lock(self) -> BackupLock:
