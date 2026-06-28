@@ -646,6 +646,7 @@ font-size: var(--text-body);
 
 .modal-overlay--closing {
   animation: modal-overlay-out 0.2s var(--ease) both;
+  pointer-events: none;
 }
 
 /* ── Forge Start Button ── */

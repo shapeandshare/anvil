@@ -174,7 +174,8 @@ async def test_list_returns_json_serializable_shape(
     registry_session: AsyncSession,
 ) -> None:
     """list() returns dicts with all string/int values for JSON
-    serialisation."""
+    serialisation.
+    """
     service = _make_service(registry_session)
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -322,7 +323,8 @@ async def test_status_transitions(
     registry_session: AsyncSession,
 ) -> None:
     """status() returns correct status through the lifecycle:
-    stopped -> running -> stopped."""
+    stopped -> running -> stopped.
+    """
     service = _make_service(registry_session)
 
     with tempfile.TemporaryDirectory() as tmpdir:

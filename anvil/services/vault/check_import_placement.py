@@ -107,7 +107,6 @@ def _scan_source_for_imports(source: str, filepath: str) -> list[LazyImport]:
     # Each entry: (indent_of_opener, kind)
     # where kind is: "try", "import_error", "type_checking", "platform"
     context_stack: list[tuple[int, str]] = []
-    last_line_indent = 0
     suppress = False
 
     for lineno, raw in enumerate(lines, 1):
@@ -164,8 +163,6 @@ def _scan_source_for_imports(source: str, filepath: str) -> list[LazyImport]:
             )
             if not allowed:
                 violations.append(LazyImport(line.strip(), filepath, lineno))
-
-        last_line_indent = indent
 
     return violations
 
