@@ -17,6 +17,8 @@ from __future__ import annotations
 # Import all model modules to register them on Base.metadata.
 # Each module defines a single ORM model with a ``__tablename__``.
 from . import models  # noqa: F401  — registers models via models/__init__.py
+from .models import external_model  # noqa: F401
+from .models import model_import_job  # noqa: F401
 from .base import Base
 
 
