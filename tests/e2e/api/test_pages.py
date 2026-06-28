@@ -312,6 +312,45 @@ async def test_learn_cloud_compute(client):
 
 
 @pytest.mark.asyncio
+async def test_learn_fine_tuning_intro(client):
+    """GET /v1/learn/fine-tuning-intro renders the fine-tuning introduction lesson."""
+    r = await client.get("/v1/learn/fine-tuning-intro")
+    assert r.status_code == 200
+    assert "text/html" in r.headers["content-type"]
+    assert "What Is Fine-Tuning?" in r.text
+    assert "coming-soon-badge" in r.text
+
+
+@pytest.mark.asyncio
+async def test_learn_warmstart_vs_lora(client):
+    """GET /v1/learn/warmstart-vs-lora renders the warm-start vs LoRA lesson."""
+    r = await client.get("/v1/learn/warmstart-vs-lora")
+    assert r.status_code == 200
+    assert "text/html" in r.headers["content-type"]
+    assert (
+        "Warm-Start vs LoRA" in r.text
+        or "Warm-Start vs PEFT" in r.text
+        or "Parameter-Efficient" in r.text
+    )
+    assert 'data-widget="lora"' in r.text
+    assert "/static/js/widgets/lora.js" in r.text
+    assert "coming-soon-badge" in r.text
+
+
+@pytest.mark.asyncio
+async def test_learn_finetune_vs_prompt_vs_rag(client):
+    """GET /v1/learn/finetune-vs-prompt-vs-rag renders the decision comparison lesson."""
+    r = await client.get("/v1/learn/finetune-vs-prompt-vs-rag")
+    assert r.status_code == 200
+    assert "text/html" in r.headers["content-type"]
+    assert "Side-by-Side Comparison" in r.text
+    assert "learn-comparison-table" in r.text
+    assert "Strengths" in r.text
+    assert "Weaknesses" in r.text
+    assert "Best For" in r.text
+
+
+@pytest.mark.asyncio
 async def test_models_page(client):
     """GET /v1/models-page renders the model registry page."""
     r = await client.get("/v1/models-page")
