@@ -115,7 +115,7 @@ def check_package_data_configured(repo_root: Path) -> str | None:
 
     try:
         data = tomllib.loads(pyproject.read_text())
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return f"ERROR: failed to parse pyproject.toml: {exc}"
 
     try:

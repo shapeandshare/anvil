@@ -8,6 +8,9 @@ tags:
 status: canonical
 created: '2026-06-27'
 updated: '2026-06-27'
+aliases:
+  - concurrent-isolated-instances-2026-06-27
+source: agent
 ---
 
 # Session Log: 2026-06-27 — Concurrent Isolated Instances

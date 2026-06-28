@@ -288,7 +288,7 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
         from ..workspace.boot_config import BootConfig
         from ..workspace.workspace_paths import WorkspacePaths
 
-        ws_root = Path(ws_dir).resolve()
+        ws_root = await asyncio.to_thread(lambda: Path(ws_dir).resolve())
         boot_file = ws_root / "instance.json"
 
         # Explicitly redirect the engine to the workspace DB path so

@@ -3,11 +3,16 @@ title: Global Engine Singleton Causes Cross-Test Contamination
 type: discovery
 tags:
   - type/discovery
-  - domain/testing
   - domain/database
 status: draft
 created: '2026-06-27'
 updated: '2026-06-27'
+aliases:
+  - global-engine-singleton-test-contamination
+source: agent
+code-refs:
+  - anvil/api/app.py
+  - tests/
 ---
 
 # Global Engine Singleton Causes Cross-Test Contamination

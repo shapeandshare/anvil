@@ -254,7 +254,7 @@ def _get_stdlib() -> frozenset[str]:
     frozenset of str
     """
     if hasattr(sys, "stdlib_module_names"):
-        return frozenset(sys.stdlib_module_names)  # type: ignore[attr-defined]
+        return frozenset(sys.stdlib_module_names)
     return _STDLIB_FALLBACK
 
 

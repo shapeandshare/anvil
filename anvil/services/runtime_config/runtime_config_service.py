@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from ...config import get_config as get_env_config
 from .apply_class import ApplyClass
@@ -74,7 +74,7 @@ CATALOG: list[CatalogEntry] = [
         key="port",
         display_name="Web Port",
         description="HTTP port the web server listens on.",
-        apply_class=cast(ApplyClass, ApplyClass.BOOT_CRITICAL),
+        apply_class=ApplyClass.BOOT_CRITICAL,
         env_var="ANVIL_PORT",
         default_value="8080",
     ),
@@ -82,7 +82,7 @@ CATALOG: list[CatalogEntry] = [
         key="device",
         display_name="Compute Device",
         description="Device override (cpu, cuda:0, mps). Empty = auto.",
-        apply_class=cast(ApplyClass, ApplyClass.APPLIES_LIVE),
+        apply_class=ApplyClass.APPLIES_LIVE,
         env_var="ANVIL_DEVICE",
         default_value="",
     ),
@@ -90,7 +90,7 @@ CATALOG: list[CatalogEntry] = [
         key="mlflow_uri",
         display_name="MLflow URI",
         description="MLflow tracking server URI.",
-        apply_class=cast(ApplyClass, ApplyClass.MLFLOW_RESTART),
+        apply_class=ApplyClass.MLFLOW_RESTART,
         env_var="ANVIL_MLFLOW_URI",
         default_value="http://127.0.0.1:5001",
     ),
@@ -98,7 +98,7 @@ CATALOG: list[CatalogEntry] = [
         key="mlflow_port",
         display_name="MLflow Port",
         description="Port parsed from the MLflow URI.",
-        apply_class=cast(ApplyClass, ApplyClass.BOOT_CRITICAL),
+        apply_class=ApplyClass.BOOT_CRITICAL,
         env_var="ANVIL_MLFLOW_URI",
         default_value="5001",
     ),
@@ -106,7 +106,7 @@ CATALOG: list[CatalogEntry] = [
         key="log_dir",
         display_name="Log Directory",
         description="Directory for log files.",
-        apply_class=cast(ApplyClass, ApplyClass.BOOT_CRITICAL),
+        apply_class=ApplyClass.BOOT_CRITICAL,
         env_var="ANVIL_LOG_DIR",
         default_value="logs",
     ),
@@ -114,7 +114,7 @@ CATALOG: list[CatalogEntry] = [
         key="storage_backend",
         display_name="Storage Backend",
         description="Storage backend name (local, s3).",
-        apply_class=cast(ApplyClass, ApplyClass.BOOT_CRITICAL),
+        apply_class=ApplyClass.BOOT_CRITICAL,
         env_var="ANVIL_STORAGE_BACKEND",
         default_value="local",
     ),
@@ -122,7 +122,7 @@ CATALOG: list[CatalogEntry] = [
         key="db_auto_migrate",
         display_name="Auto Migrate",
         description="Auto-migrate DB schema on startup.",
-        apply_class=cast(ApplyClass, ApplyClass.BOOT_CRITICAL),
+        apply_class=ApplyClass.BOOT_CRITICAL,
         env_var="ANVIL_DB_AUTO_MIGRATE",
         default_value="true",
     ),
@@ -130,7 +130,7 @@ CATALOG: list[CatalogEntry] = [
         key="content_dir",
         display_name="Content Directory",
         description="Directory for versioned content storage.",
-        apply_class=cast(ApplyClass, ApplyClass.BOOT_CRITICAL),
+        apply_class=ApplyClass.BOOT_CRITICAL,
         env_var="ANVIL_CONTENT_DIR",
         default_value="data/content",
     ),
@@ -138,7 +138,7 @@ CATALOG: list[CatalogEntry] = [
         key="backup_dir",
         display_name="Backup Directory",
         description="Directory for deployment backups.",
-        apply_class=cast(ApplyClass, ApplyClass.BOOT_CRITICAL),
+        apply_class=ApplyClass.BOOT_CRITICAL,
         env_var="ANVIL_BACKUP_DIR",
         default_value="data/backups",
     ),
@@ -146,7 +146,7 @@ CATALOG: list[CatalogEntry] = [
         key="backup_quota_bytes",
         display_name="Backup Quota",
         description="Maximum total bytes for all backups.",
-        apply_class=cast(ApplyClass, ApplyClass.APPLIES_LIVE),
+        apply_class=ApplyClass.APPLIES_LIVE,
         env_var="ANVIL_BACKUP_QUOTA_BYTES",
         default_value=str(10 * 1024**3),
     ),
@@ -154,7 +154,7 @@ CATALOG: list[CatalogEntry] = [
         key="backup_quota_warn_fraction",
         display_name="Backup Quota Warning",
         description="Fraction of quota that triggers a warning.",
-        apply_class=cast(ApplyClass, ApplyClass.APPLIES_LIVE),
+        apply_class=ApplyClass.APPLIES_LIVE,
         env_var="ANVIL_BACKUP_QUOTA_WARN",
         default_value="0.8",
     ),
@@ -162,7 +162,7 @@ CATALOG: list[CatalogEntry] = [
         key="backup_retention_max_count",
         display_name="Backup Max Count",
         description="Maximum number of backups to retain (empty = unlimited).",
-        apply_class=cast(ApplyClass, ApplyClass.APPLIES_LIVE),
+        apply_class=ApplyClass.APPLIES_LIVE,
         env_var="ANVIL_BACKUP_RETENTION_MAX_COUNT",
         default_value="",
     ),
@@ -170,7 +170,7 @@ CATALOG: list[CatalogEntry] = [
         key="backup_retention_max_age_days",
         display_name="Backup Max Age",
         description="Maximum age in days for retained backups (empty = unlimited).",
-        apply_class=cast(ApplyClass, ApplyClass.APPLIES_LIVE),
+        apply_class=ApplyClass.APPLIES_LIVE,
         env_var="ANVIL_BACKUP_RETENTION_MAX_AGE_DAYS",
         default_value="",
     ),
@@ -178,7 +178,7 @@ CATALOG: list[CatalogEntry] = [
         key="mlflow_disable_local",
         display_name="Disable Local MLflow",
         description="Do not start a local MLflow server.",
-        apply_class=cast(ApplyClass, ApplyClass.BOOT_CRITICAL),
+        apply_class=ApplyClass.BOOT_CRITICAL,
         env_var="ANVIL_MLFLOW_DISABLE_LOCAL",
         default_value="false",
     ),
@@ -262,14 +262,14 @@ class RuntimeConfigService:
             The effective value and its provenance source.
         """
         if override is not None:
-            return override, cast(ConfigSource, ConfigSource.OVERRIDE)
+            return override, ConfigSource.OVERRIDE
         env_config_value = _resolve_env_config(entry)
         if env_config_value and env_config_value != entry.default_value:
-            return env_config_value, cast(ConfigSource, ConfigSource.ENV)
+            return env_config_value, ConfigSource.ENV
         env_direct = _resolve_env(entry)
         if env_direct is not None:
-            return env_direct, cast(ConfigSource, ConfigSource.ENV)
-        return entry.default_value, cast(ConfigSource, ConfigSource.DEFAULT)
+            return env_direct, ConfigSource.ENV
+        return entry.default_value, ConfigSource.DEFAULT
 
     async def get_all(
         self, boot_snapshot: dict[str, object] | None = None

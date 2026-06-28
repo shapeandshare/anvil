@@ -315,7 +315,8 @@ CREATE TABLE IF NOT EXISTS audit_events (
 @pytest_asyncio.fixture
 async def audit_session() -> AsyncGenerator[AsyncSession, None]:
     """Create a fresh in-memory DB with instance_records AND
-    audit_events tables."""
+    audit_events tables.
+    """
     engine = create_async_engine(
         "sqlite+aiosqlite://",
         echo=False,
@@ -392,7 +393,8 @@ async def test_list_dict_shape(
     service: InstanceLifecycleService,
 ) -> None:
     """list() returns dicts matching the expected JSON-serialisable
-    shape."""
+    shape.
+    """
     with tempfile.TemporaryDirectory() as tmpdir:
         ws = Path(tmpdir) / "shape"
         await service.create(
@@ -441,7 +443,8 @@ async def test_destroy_removes_workspace_and_deregisters(
     registry_session: AsyncSession,
 ) -> None:
     """destroy() with confirmed=True deletes workspace and removes from
-    registry."""
+    registry.
+    """
     with tempfile.TemporaryDirectory() as tmpdir:
         ws = Path(tmpdir) / "delete-me"
         await service.create(
@@ -501,7 +504,8 @@ async def test_destroy_force_stops_running_instance(
     registry_session: AsyncSession,
 ) -> None:
     """destroy() with force=True stops a running instance before
-    destroying."""
+    destroying.
+    """
     with tempfile.TemporaryDirectory() as tmpdir:
         ws = Path(tmpdir) / "force-stop"
         await service.create(
@@ -614,7 +618,8 @@ async def test_destroy_emits_audit(audit_session: AsyncSession) -> None:
 @pytest.mark.asyncio
 async def test_start_stop_restart_emit_audit(audit_session: AsyncSession) -> None:
     """start(), stop(), restart() each emit their respective audit
-    events when AuditService is wired."""
+    events when AuditService is wired.
+    """
     from unittest.mock import patch
 
     from anvil.db.repositories.audit_events import AuditEventRepository

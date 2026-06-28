@@ -23,10 +23,10 @@ from __future__ import annotations
 import logging
 from collections.abc import Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import delete, select, text
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy import Result, delete, select, text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 
 if TYPE_CHECKING:
@@ -232,7 +232,7 @@ class InstanceRegistryRepository:
             The matching record, or ``None`` if not found.
         """
         model_cls = _get_instance_model()
-        result = await self._session.execute(
+        result: Result[Any] = await self._session.execute(
             select(model_cls).where(model_cls.name == name)
         )
         return result.scalar_one_or_none()
@@ -246,7 +246,7 @@ class InstanceRegistryRepository:
             All records in descending ``created_at`` order.
         """
         model_cls = _get_instance_model()
-        result = await self._session.execute(
+        result: Result[Any] = await self._session.execute(
             select(model_cls).order_by(model_cls.created_at.desc())
         )
         return result.scalars().all()
@@ -284,7 +284,7 @@ class InstanceRegistryRepository:
             is taken.
         """
         model_cls = _get_instance_model()
-        result = await self._session.execute(
+        result: Result[Any] = await self._session.execute(
             select(model_cls).where(
                 (model_cls.web_port == web_port)
                 | (model_cls.mlflow_port == mlflow_port)
@@ -306,7 +306,7 @@ class InstanceRegistryRepository:
             The matching record, or ``None`` if the root is free.
         """
         model_cls = _get_instance_model()
-        result = await self._session.execute(
+        result: Result[Any] = await self._session.execute(
             select(model_cls).where(model_cls.workspace_root == root)
         )
         return result.scalar_one_or_none()
@@ -329,7 +329,7 @@ class InstanceRegistryRepository:
             The first overlapping record, or ``None`` if no overlap.
         """
         model_cls = _get_instance_model()
-        result = await self._session.execute(
+        result: Result[Any] = await self._session.execute(
             select(model_cls).order_by(model_cls.workspace_root)
         )
         all_records: Sequence[InstanceRecord] = result.scalars().all()
@@ -354,7 +354,7 @@ class InstanceRegistryRepository:
 _INSTANCE_MODEL: type | None = None
 
 
-def _get_instance_model() -> type:
+def _get_instance_model() -> type[InstanceRecord]:
     """Lazily import and return the ``InstanceRecord`` ORM class.
 
     Uses a lazy import to avoid circular dependencies at module level.
@@ -364,4 +364,4 @@ def _get_instance_model() -> type:
         from ..models.instance_record import InstanceRecord
 
         _INSTANCE_MODEL = InstanceRecord
-    return _INSTANCE_MODEL  # type: ignore[return-value]
+    return _INSTANCE_MODEL
