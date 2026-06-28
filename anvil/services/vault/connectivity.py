@@ -21,7 +21,8 @@ try:
 except ImportError:
     nx = None
 
-from ._types import ConnectivityMetrics, NoteMetadata
+from .types_connectivity_metrics import ConnectivityMetrics
+from .types_note_metadata import NoteMetadata
 
 # Exempt note types and names for orphan/dead-end detection
 EXEMPT_ORPHAN_TYPES: set[str] = {"type/moc", "type/session-log"}

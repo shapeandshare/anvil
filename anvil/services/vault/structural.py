@@ -22,7 +22,9 @@ try:
 except ImportError:
     nx = None
 
-from ._types import NoteMetadata, StructuralMetrics, TopologicalMetrics
+from .types_note_metadata import NoteMetadata
+from .types_structural_metrics import StructuralMetrics
+from .types_topological_metrics import TopologicalMetrics
 from .connectivity import _is_spec_subfile
 
 # Maximum out-degree for a note to be considered a specific-enough

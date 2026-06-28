@@ -20,7 +20,8 @@ from . import connectivity, hygiene
 from . import prediction as pred_mod
 from . import report as report_mod
 from . import scoring, structural, temporal, topology
-from ._types import GraphHealthReport, NoteMetadata
+from .types_graph_health_report import GraphHealthReport
+from .types_note_metadata import NoteMetadata
 
 try:
     import yaml  # type: ignore[import-untyped]

@@ -21,7 +21,8 @@ try:
 except ImportError:
     nx = None
 
-from ._types import NoteMetadata, TopologicalMetrics
+from .types_note_metadata import NoteMetadata
+from .types_topological_metrics import TopologicalMetrics
 
 
 def compute_topological(

@@ -10,7 +10,8 @@ Weighted health scoring based on connectivity, topological, and hygiene metrics.
 
 from __future__ import annotations
 
-from ._types import GraphHealthReport, HealthScore
+from .types_graph_health_report import GraphHealthReport
+from .types_health_score import HealthScore
 
 
 def compute_health_score(report: GraphHealthReport) -> HealthScore:

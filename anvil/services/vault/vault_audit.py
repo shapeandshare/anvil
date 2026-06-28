@@ -24,7 +24,8 @@ try:
 except ImportError:
     yaml = None
 
-from ._types import Finding, MechanicalReport
+from .types_finding import Finding
+from .types_mechanical_report import MechanicalReport
 
 # Controlled vocabulary (mirrors docs/vault/_meta/tags.md)
 TYPE_VOCAB: set[str] = {

@@ -12,7 +12,7 @@ from pathlib import Path
 import networkx as nx
 import pytest
 
-from anvil.services.vault._types import NoteMetadata
+from anvil.services.vault.types_note_metadata import NoteMetadata
 from anvil.services.vault.connectivity import (
     _count_exempt,
     _is_exempt,
