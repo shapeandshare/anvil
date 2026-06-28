@@ -337,6 +337,37 @@
           html += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-red);border-color:var(--accent-red);" id="btn-' + svc.name + '-killport" data-label="\u2715 Port" data-svc-action="kill-port" data-svc-name="' + svc.name + '" title="Force-kill process on port ' + svc.port + '">\u2715 Port</button>';
         }
       }
+    }
+  }
+
+  window.loadServices = async function loadServices() {
+    var tbody = document.getElementById('services-tbody');
+    if (!tbody) return;
+    var detailedResp = await fetch('/v1/health/detailed');
+    var svcResp = await fetch('/v1/services');
+    if (!detailedResp.ok || !svcResp.ok) {
+      dom.setHtml(tbody, '<tr><td colspan="6"><span class="text-muted type-subhead">Could not load services — check your session.</span></td></tr>');
+      return;
+    }
+    var health = await detailedResp.json();
+    var svcData = await svcResp.json();
+
+    var uptime = health.uptime_seconds || 0;
+    var hours = Math.floor(uptime / 3600);
+    var mins = Math.floor((uptime % 3600) / 60);
+    var secs = uptime % 60;
+
+    // Build combined data array: web-server pseudo-row + filtered services
+    var items = [{
+      name: 'web-server',
+      pid: 1,
+      status: 'running',
+      uptime: hours + 'h ' + mins + 'm ' + secs + 's',
+      memory: '-',
+      port: null
+    }];
+    svcData.services.forEach(function(s) {
+      if (s.name !== 'web') items.push(s);
     });
 
     dom.syncTableBody(tbody, items,
@@ -709,7 +740,6 @@ _updateBackupRow: function(tr, b, index) {
           actionsHtml += '<button class="btn btn-secondary btn-sm" id="btn-restore-' + b.backup_id + '" data-backup-action="restore" data-backup-id="' + b.backup_id + '" title="Restore">&#128259;</button> ';
           actionsHtml += '<button class="btn btn-secondary btn-sm" style="color:var(--accent-red);border-color:var(--accent-red);" id="btn-delete-' + b.backup_id + '" data-backup-action="delete" data-backup-id="' + b.backup_id + '" title="Delete">&#128465;</button>';
         }
-      }
       }
     },
 
