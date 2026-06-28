@@ -6,7 +6,6 @@
 """E2E render-smoke tests for all HTML page routes."""
 
 import httpx
-
 import pytest
 
 
