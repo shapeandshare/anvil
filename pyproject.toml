@@ -50,9 +50,6 @@ anvil = [
 ]
 
 [project.optional-dependencies]
-finetune = [
-    "huggingface_hub>=0.24,<2",
-]
 gpu = [
     "torch>=2.0,<3",
     "nvidia-ml-py>=12,<13",
@@ -75,6 +72,12 @@ dev = [
     "coverage>=7.0,<8",
     "commitizen>=3.0,<4",
     "pytest-playwright>=0.5,<1",
+]
+finetune = [
+    "huggingface_hub>=0.24,<2",
+    "tokenizers>=0.15,<1",
+    "sentencepiece>=0.1.99,<1",
+    "transformers>=4.30.0,<5",
 ]
 
 [project.scripts]

@@ -11,6 +11,7 @@ from pathlib import Path
 
 import pytest
 
+from anvil.core._tokenizer_base import Tokenizer
 from anvil.core.engine import LlamaModel, train
 from anvil.core.vocabulary import Vocabulary
 from anvil.services.inference.demo_model_provider import DemoModelProvider
@@ -20,6 +21,11 @@ from anvil.services.inference.inference import (
     _top_k_logits,
 )
 from anvil.services.inference.loaded_model import LoadedModel
+
+
+def _make_tokenizer(chars: list[str]) -> Tokenizer:
+    """Build a Vocabulary-based tokenizer, matching how InferenceService builds one."""
+    return Vocabulary.from_chars(chars)
 
 
 @pytest.fixture
@@ -35,7 +41,8 @@ def trained_loaded_model():
         model.save(f.name, uchars)
         fpath = f.name
     gpt = LlamaModel.load(fpath)
-    loaded = LoadedModel(gpt, uchars, None, None, "test", is_demo=True)
+    tokenizer = _make_tokenizer(uchars)
+    loaded = LoadedModel(gpt, tokenizer, None, None, "test", is_demo=True)
     yield loaded
     Path(fpath).unlink(missing_ok=True)
 
@@ -62,9 +69,10 @@ def test_demo_provider_cached():
 def test_loaded_model_vocab():
     docs = ["hello", "world"]
     model, _, _, uchars = train(docs, num_steps=5, n_embd=8, n_head=2)
-    loaded = LoadedModel(model, uchars, 1, 1, "test")
-    assert loaded.vocab.vocab_size == len(uchars) + 1
-    assert loaded.vocab.bos_id == len(uchars)
+    tokenizer = _make_tokenizer(uchars)
+    loaded = LoadedModel(model, tokenizer, 1, 1, "test")
+    assert loaded.tokenizer.vocab_size == len(uchars) + 1
+    assert loaded.bos_id == len(uchars)
     assert loaded.info()["id"] == 1
     assert loaded.info()["is_demo"] is False
 
@@ -375,7 +383,8 @@ def test_loaded_model_no_id():
         model.save(f.name, uchars)
         fpath = f.name
     gpt = LlamaModel.load(fpath)
-    loaded = LoadedModel(gpt, uchars, None, None, "no-id-test")
+    tokenizer = _make_tokenizer(uchars)
+    loaded = LoadedModel(gpt, tokenizer, None, None, "no-id-test")
     info = loaded.info()
     assert info["id"] is None
     assert info["version"] is None
@@ -394,7 +403,7 @@ def test_load_model_cache_hit(demo_service, trained_loaded_model):
     # Manually populate the cache
     demo_service._cache[(99, 1)] = (
         trained_loaded_model.model,
-        trained_loaded_model.chars,
+        trained_loaded_model.tokenizer,
     )
     loaded = asyncio.run(demo_service.load_model(model_id=99))
     assert loaded.name == "cached"

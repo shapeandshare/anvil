@@ -145,6 +145,8 @@ class LlamaModel:
         self.state_dict["rms_final"] = [Value(1.0) for _ in range(n_embd)]
 
         self.chars = None  # type: list[str] | None
+        self.tokenizer_family: str = "char"
+        self.serialization_type: str = "char_json"
         self.params: list[Value] = []
         for mat in self.state_dict.values():
             if _is_matrix_state_val(mat):
@@ -314,6 +316,8 @@ class LlamaModel:
             "n_layer": self.n_layer,
             "block_size": self.block_size,
             "intermediate_size": self.intermediate_size,
+            "tokenizer_family": "char",
+            "serialization_type": "char_json",
             "chars": chars,
             "state_dict": serialized,
         }
@@ -370,6 +374,8 @@ class LlamaModel:
                     mat[i].data = val
 
         model.chars = data.get("chars")
+        model.tokenizer_family = data.get("tokenizer_family", "char")
+        model.serialization_type = data.get("serialization_type", "char_json")
         return model
 
     def forward_introspect(self, token_ids: list[int]) -> dict[str, Any]:

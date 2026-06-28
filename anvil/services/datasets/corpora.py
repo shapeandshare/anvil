@@ -19,7 +19,7 @@ from pathlib import Path
 from ...db.models.corpus import Corpus
 from ...db.models.corpus_file import CorpusFile
 from ...db.repositories.corpora import CorpusRepository
-from ..chunking.base import Chunker
+from ..chunking.base import Chunker as BaseChunker
 from ..chunking.file_chunker import FileAsDocChunker
 from ..chunking.line_chunker import LineAsDocChunker
 from ..chunking.window_chunker import FixedSizeWindowChunker
@@ -400,9 +400,8 @@ class CorpusService:
             block_size=block_size or corpus.block_size,
         )
 
-        chunker: Chunker
         if chunking_strategy == "line":
-            chunker = LineAsDocChunker()
+            chunker: BaseChunker = LineAsDocChunker()
         elif chunking_strategy == "file":
             chunker = FileAsDocChunker()
         else:
