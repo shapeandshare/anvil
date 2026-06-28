@@ -13,7 +13,6 @@ not warrant their own dedicated schema module.
 
 from __future__ import annotations
 
-
 from pydantic import BaseModel, ConfigDict, Field
 
 
