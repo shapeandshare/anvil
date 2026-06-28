@@ -212,10 +212,10 @@ LEARNING_ARC = [
         "desc": "Definitions for every technical term used across the learning arc and codebase.",
     },
     {
-        "key": "cloud-compute",
-        "title": "Training in the Cloud",
-        "path": "/v1/learn/cloud-compute",
-        "desc": "Run training on external compute with Modal, Modal GPUs, MLflow artifact sync, and the submitted/poll/complete lifecycle.",
+        "key": "runtime-config",
+        "title": "Runtime Configuration",
+        "path": "/v1/learn/runtime-config",
+        "desc": "How the three-layer resolution chain works and what each setting does.",
     },
     {
         "key": "backup",
@@ -237,7 +237,6 @@ LEARNING_ARC = [
     },
 ]
 
-
 LEARNING_ARC_ADDITIONAL = [
     {
         "key": "cloud-compute",
@@ -256,6 +255,12 @@ LEARNING_ARC_ADDITIONAL = [
         "title": "Glossary",
         "path": "/v1/learn/glossary",
         "desc": "Definitions for every technical term used across the learning arc and codebase.",
+    },
+    {
+        "key": "runtime-config",
+        "title": "Runtime Configuration",
+        "path": "/v1/learn/runtime-config",
+        "desc": "How the three-layer resolution chain works and what each setting does.",
     },
 ]
 
@@ -1607,6 +1612,136 @@ MEMORY_DIVERGENCE_STEPS = [
     },
 ]
 
+RUNTIME_CONFIG_STEPS = [
+    {
+        "key": "what-is-runtime-config",
+        "title": "What is Runtime Configuration?",
+        "body": (
+            "anvil's runtime configuration lets you adjust how the application behaves without "
+            "editing code or restarting from scratch. Every setting follows a three-layer "
+            "resolution chain: <b>override</b> (saved via the UI) &gt; <b>environment variable</b> "
+            "&gt; <b>code-level default</b>. The effective value is whichever is highest in the "
+            "chain that is set. This is visible from the Config page where each row shows "
+            "the source badge: <b class='cmd'>override</b>, <b class='cmd'>env</b>, or "
+            "<b class='cmd'>default</b>."
+        ),
+    },
+    {
+        "key": "the-resolution-chain",
+        "title": "The Resolution Chain",
+        "body": (
+            "<b>1. Override</b> \u2014 persisted in the app database. Set via the Config page's "
+            "Edit button. This always wins when present.<br><br>"
+            "<b>2. Environment variable</b> \u2014 set before starting anvil (e.g. "
+            "<code>export ANVIL_PORT=9090</code>). Each setting has a dedicated env var name "
+            "shown in its metadata row on the Config page.<br><br>"
+            "<b>3. Code-level default</b> \u2014 the hardcoded fallback baked into the binary. "
+            "Listed as 'Default' on each setting's metadata row. These are sensible out-of-box "
+            "values that work for most users."
+        ),
+    },
+    {
+        "key": "apply-classes",
+        "title": "How Changes Take Effect (Apply Classes)",
+        "body": (
+            "Not all settings can change live. anvil classifies every setting by its "
+            "<b>apply class</b> \u2014 three categories that tell you when a change takes effect:<br><br>"
+            "<b>Applies Live (\u25b6)</b> \u2014 the value is re-read on every request. Change it "
+            "and it works immediately. Example: compute device, backup quotas.<br><br>"
+            "<b>MLflow Restart (\u2601\ufe0f)</b> \u2014 the value controls the MLflow experiment-tracking "
+            "sidecar. The system auto-restarts that sidecar on save. Example: MLflow URI.<br><br>"
+            "<b>Boot Critical (\u26a0)</b> \u2014 the value is read at process start. Saving an "
+            "override marks it 'pending restart'; it takes effect the next time anvil starts. "
+            "Example: web port, log directory, storage backend."
+        ),
+    },
+    {
+        "key": "boot-critical-deep-dive",
+        "title": "Boot-Critical Settings \u2014 Deep Dive",
+        "body": (
+            "Boot-critical settings are consumed the moment anvil starts. Changing them at "
+            "runtime cannot affect the running process \u2014 the old value is already cached in "
+            "memory. When you save a boot-critical override, the Config page shows a "
+            "<b>Pending Restart</b> banner at the top and marks the affected rows.<br><br>"
+            "The full list of boot-critical settings: <b>port</b> (web server), "
+            "<b>mlflow_port</b> (parsed from the MLflow URI), <b>log_dir</b>, "
+            "<b>storage_backend</b>, <b>db_auto_migrate</b>, <b>content_dir</b>, "
+            "<b>backup_dir</b>, and <b>mlflow_disable_local</b>. These are ones you typically "
+            "set once during initial setup and rarely change."
+        ),
+    },
+    {
+        "key": "live-settings-deep-dive",
+        "title": "Live Settings \u2014 Deep Dive",
+        "body": (
+            "Live settings are safe to change at any time with immediate effect. "
+            "There is no restart required, no pending flag, no sidecar restart. "
+            "The new value is used on the next request that reads that setting.<br><br>"
+            "The live settings are: <b>device</b> (compute device override \u2014 cpu, cuda:0, mps), "
+            "<b>backup_quota_bytes</b> (maximum total bytes for all backups), "
+            "<b>backup_quota_warn_fraction</b> (fraction of quota that triggers a warning), "
+            "<b>backup_retention_max_count</b> (maximum backups to keep), and "
+            "<b>backup_retention_max_age_days</b> (maximum age in days).<br><br>"
+            "These are safe to experiment with \u2014 change a value, observe the effect, and reset "
+            "to revert."
+        ),
+    },
+    {
+        "key": "mlflow-restart-deep-dive",
+        "title": "Sidecar (MLflow) Settings \u2014 Deep Dive",
+        "body": (
+            "The only MLflow restart setting is <b>mlflow_uri</b>. This controls where the "
+            "MLflow tracking client points. When you save a new URI, the system: "
+            "(1) persists the override, (2) stops the running MLflow sidecar process, "
+            "(3) starts a new sidecar bound to the new URI, (4) confirms success via a toast. "
+            "This happens automatically \u2014 you don't need to restart anvil itself.<br><br>"
+            "The <b>mlflow_port</b> setting is read from the same <code>ANVIL_MLFLOW_URI</code> "
+            "env var but is boot-critical (it configures the sidecar launch port at startup)."
+        ),
+    },
+    {
+        "key": "env-vars-reference",
+        "title": "Environment Variable Reference",
+        "body": (
+            "Every setting has a corresponding environment variable. Below is the full mapping. "
+            "You can set these in your shell before launching anvil, or in a <code>.env</code> "
+            "file.<br><br>"
+            "<b>ANVIL_PORT</b> \u2192 port (default: 8080)<br>"
+            "<b>ANVIL_DEVICE</b> \u2192 device (default: auto-detect)<br>"
+            "<b>ANVIL_MLFLOW_URI</b> \u2192 mlflow_uri / mlflow_port (default: http://127.0.0.1:5001)<br>"
+            "<b>ANVIL_LOG_DIR</b> \u2192 log_dir (default: logs)<br>"
+            "<b>ANVIL_STORAGE_BACKEND</b> \u2192 storage_backend (default: local)<br>"
+            "<b>ANVIL_DB_AUTO_MIGRATE</b> \u2192 db_auto_migrate (default: true)<br>"
+            "<b>ANVIL_CONTENT_DIR</b> \u2192 content_dir (default: data/content)<br>"
+            "<b>ANVIL_BACKUP_DIR</b> \u2192 backup_dir (default: data/backups)<br>"
+            "<b>ANVIL_BACKUP_QUOTA_BYTES</b> \u2192 backup_quota_bytes (default: 10GB)<br>"
+            "<b>ANVIL_BACKUP_QUOTA_WARN</b> \u2192 backup_quota_warn_fraction (default: 0.8)<br>"
+            "<b>ANVIL_BACKUP_RETENTION_MAX_COUNT</b> \u2192 backup_retention_max_count (default: unlimited)<br>"
+            "<b>ANVIL_BACKUP_RETENTION_MAX_AGE_DAYS</b> \u2192 backup_retention_max_age_days (default: unlimited)<br>"
+            "<b>ANVIL_MLFLOW_DISABLE_LOCAL</b> \u2192 mlflow_disable_local (default: false)"
+        ),
+    },
+    {
+        "key": "troubleshooting-config",
+        "title": "Troubleshooting",
+        "body": (
+            "<b>Q: I changed a boot-critical setting but nothing happened.</b><br>"
+            "A: Boot-critical values are read at startup. The running process still uses the "
+            "old value. Check the Config page for a 'pending restart' banner and restart anvil.<br><br>"
+            "<b>Q: I reset a setting but it still shows a non-default value.</b><br>"
+            "A: The reset removes your override, but if the corresponding environment variable "
+            "is still set, the setting resolves to 'env'. Unset the env var or set it to the "
+            "desired value.<br><br>"
+            "<b>Q: MLflow stopped working after I changed the URI.</b><br>"
+            "A: The sidecar auto-restarts on save. Check that the new URI is reachable from "
+            "the anvil host. You can verify the sidecar status on the Operations page.<br><br>"
+            "<b>Q: How do I find which env var controls a setting?</b><br>"
+            "A: On the Config page, each row shows the env var name in its metadata grid. "
+            "The <a href='/v1/config-page'>Config page</a> is always the fastest reference."
+        ),
+    },
+]
+
 BACKUP_STEPS = [
     {
         "key": "what-is-a-backup",
@@ -2283,6 +2418,16 @@ async def glossary_page(request: Request) -> HTMLResponse:
         request,
         "archetypes/glossary.html",
         {"terms": GLOSSARY_TERMS, "arc": LEARNING_ARC},
+    )
+
+
+@router.get("/learn/runtime-config", response_class=HTMLResponse)
+async def runtime_config_lesson_page(request: Request) -> HTMLResponse:
+    """Render the runtime configuration walkthrough page with interactive steps."""
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
+        request,
+        "archetypes/concept.html",
+        {"steps": RUNTIME_CONFIG_STEPS, **_arc_context("runtime-config")},
     )
 
 

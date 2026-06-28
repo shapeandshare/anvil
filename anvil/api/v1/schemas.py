@@ -906,6 +906,14 @@ class ConfigSettingOut(BaseModel):
         yet applied.
     editable : bool
         ``True`` when the setting can be overridden via the UI.
+    display_name : str
+        Human-readable label for the UI.
+    description : str
+        Brief description of what this setting controls.
+    env_var : str
+        The environment variable name (e.g. ``ANVIL_DEVICE``).
+    default_value : str
+        The code-level default when no env or override is set.
     """
 
     key: str
@@ -914,6 +922,10 @@ class ConfigSettingOut(BaseModel):
     apply_class: str
     pending_restart: bool = False
     editable: bool = True
+    display_name: str = ""
+    description: str = ""
+    env_var: str = ""
+    default_value: str = ""
 
 
 class UpdateConfigBody(BaseModel):
