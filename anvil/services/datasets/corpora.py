@@ -379,18 +379,14 @@ class CorpusService:
             include_patterns
             if include_patterns is not None
             else (
-                json.loads(corpus.include_patterns)
-                if corpus.include_patterns
-                else None
+                json.loads(corpus.include_patterns) if corpus.include_patterns else None
             )
         )
         exc = (
             exclude_patterns
             if exclude_patterns is not None
             else (
-                json.loads(corpus.exclude_patterns)
-                if corpus.exclude_patterns
-                else None
+                json.loads(corpus.exclude_patterns) if corpus.exclude_patterns else None
             )
         )
 
@@ -409,9 +405,7 @@ class CorpusService:
             chunker = FileAsDocChunker()
         else:
             bs = block_size or corpus.block_size or 16
-            chunker = FixedSizeWindowChunker(
-                block_size=bs, overlap=chunk_overlap
-            )
+            chunker = FixedSizeWindowChunker(block_size=bs, overlap=chunk_overlap)
 
         docs: list[str] = []
         for fd in load_result.files:

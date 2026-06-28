@@ -7,12 +7,12 @@
 
 from __future__ import annotations
 
+from anvil.services.vault.report import render_markdown
 from anvil.services.vault.types_connectivity_metrics import ConnectivityMetrics
 from anvil.services.vault.types_graph_health_report import GraphHealthReport
 from anvil.services.vault.types_health_score import HealthScore
 from anvil.services.vault.types_hygiene_metrics import HygieneMetrics
 from anvil.services.vault.types_topological_metrics import TopologicalMetrics
-from anvil.services.vault.report import render_markdown
 
 
 class TestRenderMarkdown:

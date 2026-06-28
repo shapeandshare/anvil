@@ -22,10 +22,10 @@ try:
 except ImportError:
     nx = None
 
+from .connectivity import _is_spec_subfile
 from .types_note_metadata import NoteMetadata
 from .types_structural_metrics import StructuralMetrics
 from .types_topological_metrics import TopologicalMetrics
-from .connectivity import _is_spec_subfile
 
 # Maximum out-degree for a note to be considered a specific-enough
 # intermediate concept (rather than a broad hub like a MOC or thread).

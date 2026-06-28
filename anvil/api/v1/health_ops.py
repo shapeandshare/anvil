@@ -22,13 +22,13 @@ import psutil
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from ... import __version__ as anvil_version
-from ..auth import SESSION_COOKIE_NAME, generate_csrf_token
-from ..deps import get_workbench
 from ...config import get_config, get_mlflow_browser_uri
 from ...db.migration import MigrationService
 from ...db.schema_version import SCHEMA_VERSION
 from ...gpu import detect_gpu
 from ...workbench import AnvilWorkbench
+from ..auth import SESSION_COOKIE_NAME, generate_csrf_token
+from ..deps import get_workbench
 
 router = APIRouter()
 

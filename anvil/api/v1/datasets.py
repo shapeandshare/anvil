@@ -23,7 +23,9 @@ from starlette.requests import Request
 from starlette.responses import StreamingResponse
 from starlette.templating import _TemplateResponse as TemplateResponse
 
+from ...workbench import AnvilWorkbench
 from ..deps import get_workbench
+from .learning import related_lessons
 from .schemas_dataset import (
     CloneDatasetBody,
     CreateDatasetBody,
@@ -35,9 +37,6 @@ from .schemas_dataset import (
     UpdateSampleBody,
 )
 from .schemas_misc import ImportFromCorpusBody
-from ...workbench import AnvilWorkbench
-
-from .learning import related_lessons
 
 router = APIRouter()
 
@@ -834,9 +833,7 @@ async def update_sample(
         raise HTTPException(status_code=404, detail="Sample not found")
 
     content_hash = hashlib.sha256(body.text.encode("utf-8")).hexdigest()
-    sample = await curation_svc.update_sample_text(
-        sample_id, body.text, content_hash
-    )
+    sample = await curation_svc.update_sample_text(sample_id, body.text, content_hash)
     await workbench.session.commit()
 
     return {"data": {"sample_id": sample.id, "length": sample.length}, "error": None}

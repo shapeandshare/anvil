@@ -19,11 +19,11 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
-from ..deps import get_workbench
-from ...workbench import AnvilWorkbench
-from .schemas_misc import InferenceSampleBody
 from ...core.autograd import Value
 from ...core.engine import LlamaModel, softmax
+from ...workbench import AnvilWorkbench
+from ..deps import get_workbench
+from .schemas_misc import InferenceSampleBody
 
 router = APIRouter()
 

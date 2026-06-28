@@ -62,7 +62,6 @@ from .services.inference.inference import InferenceService
 from .services.instances.instance_lifecycle_service import InstanceLifecycleService
 from .services.runtime_config.runtime_config_service import RuntimeConfigService
 from .services.tracking.tracking import TrackingService
-from .services.tracking.tracking import TrackingService
 from .services.training.training import TrainingService
 from .storage.local import LocalFileStore
 from .workspace.workspace_paths import WorkspacePaths

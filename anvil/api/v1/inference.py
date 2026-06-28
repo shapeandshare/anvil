@@ -28,7 +28,6 @@ from .inference_schemas import (
     InferenceTokenizeBody,
 )
 
-
 router = APIRouter()
 _svc = InferenceService()
 

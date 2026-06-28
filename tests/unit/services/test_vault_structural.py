@@ -12,8 +12,6 @@ from pathlib import Path
 import networkx as nx
 import pytest
 
-from anvil.services.vault.types_note_metadata import NoteMetadata
-from anvil.services.vault.types_topological_metrics import TopologicalMetrics
 from anvil.services.vault.structural import (
     _find_broken_cycles,
     _find_chain_gaps,
@@ -21,6 +19,8 @@ from anvil.services.vault.structural import (
     _is_hub,
     compute_structural,
 )
+from anvil.services.vault.types_note_metadata import NoteMetadata
+from anvil.services.vault.types_topological_metrics import TopologicalMetrics
 
 
 def _meta(stem: str, tags: list[str] | None = None) -> NoteMetadata:

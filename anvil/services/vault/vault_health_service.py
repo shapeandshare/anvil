@@ -14,9 +14,9 @@ from __future__ import annotations
 import asyncio
 from pathlib import Path
 
+from .scanner import GraphHealthRunner
 from .types_graph_health_report import GraphHealthReport
 from .types_mechanical_report import MechanicalReport
-from .scanner import GraphHealthRunner
 from .vault_audit import VaultAuditService
 
 

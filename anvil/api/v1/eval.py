@@ -10,9 +10,9 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
-from .schemas_eval import EvalPerplexityBody
 from ...core.engine import softmax
 from ...services.inference.inference import InferenceService
+from .schemas_eval import EvalPerplexityBody
 
 router = APIRouter()
 
