@@ -63,16 +63,30 @@ async def registry_session() -> AsyncGenerator[AsyncSession, None]:
     await engine.dispose()
 
 
+def _make_record(
+    tmp_path: Path,
+    name: str,
+    suffix: str | int,
+    web_port: int,
+    mlflow_port: int,
+) -> InstanceRecord:
+    """Build an InstanceRecord rooted under *tmp_path*."""
+    return InstanceRecord(
+        name=name,
+        workspace_root=str(tmp_path / f"anvil-{suffix}"),
+        web_port=web_port,
+        mlflow_port=mlflow_port,
+    )
+
+
 @pytest.mark.asyncio
-async def test_register_creates_row(registry_session: AsyncSession) -> None:
+async def test_register_creates_row(
+    registry_session: AsyncSession,
+    tmp_path: Path,
+) -> None:
     """Registering an instance record creates a row with an id."""
     repo = InstanceRegistryRepository(registry_session)
-    record = InstanceRecord(
-        name="test-instance",
-        workspace_root="/tmp/anvil-test-1",
-        web_port=9090,
-        mlflow_port=6001,
-    )
+    record = _make_record(tmp_path, "test-instance", "test-1", 9090, 6001)
     saved = await repo.register(record)
     assert saved.id is not None
     assert saved.name == "test-instance"
@@ -80,21 +94,19 @@ async def test_register_creates_row(registry_session: AsyncSession) -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_by_name_returns_row(registry_session: AsyncSession) -> None:
+async def test_get_by_name_returns_row(
+    registry_session: AsyncSession,
+    tmp_path: Path,
+) -> None:
     """Looking up by name returns the correct record."""
     repo = InstanceRegistryRepository(registry_session)
-    record = InstanceRecord(
-        name="find-me",
-        workspace_root="/tmp/anvil-find",
-        web_port=9091,
-        mlflow_port=6002,
-    )
+    record = _make_record(tmp_path, "find-me", "find", 9091, 6002)
     await repo.register(record)
     await registry_session.commit()
 
     found = await repo.get_by_name("find-me")
     assert found is not None
-    assert found.workspace_root == "/tmp/anvil-find"
+    assert found.workspace_root == str(tmp_path / "anvil-find")
 
 
 @pytest.mark.asyncio
@@ -110,17 +122,13 @@ async def test_get_by_name_returns_none_for_missing(
 @pytest.mark.asyncio
 async def test_list_all_returns_all_rows(
     registry_session: AsyncSession,
+    tmp_path: Path,
 ) -> None:
     """Listing all returns every registered record."""
     repo = InstanceRegistryRepository(registry_session)
     for i in range(3):
         await repo.register(
-            InstanceRecord(
-                name=f"instance-{i}",
-                workspace_root=f"/tmp/anvil-list-{i}",
-                web_port=9100 + i,
-                mlflow_port=6100 + i,
-            )
+            _make_record(tmp_path, f"instance-{i}", f"list-{i}", 9100 + i, 6100 + i)
         )
     await registry_session.commit()
 
@@ -130,16 +138,14 @@ async def test_list_all_returns_all_rows(
 
 
 @pytest.mark.asyncio
-async def test_deregister_removes_row(registry_session: AsyncSession) -> None:
+async def test_deregister_removes_row(
+    registry_session: AsyncSession,
+    tmp_path: Path,
+) -> None:
     """Deregistering removes the row from the registry."""
     repo = InstanceRegistryRepository(registry_session)
     await repo.register(
-        InstanceRecord(
-            name="to-delete",
-            workspace_root="/tmp/anvil-del",
-            web_port=9200,
-            mlflow_port=6200,
-        )
+        _make_record(tmp_path, "to-delete", "del", 9200, 6200)
     )
     await registry_session.commit()
 
@@ -153,43 +159,30 @@ async def test_deregister_removes_row(registry_session: AsyncSession) -> None:
 @pytest.mark.asyncio
 async def test_duplicate_name_raises_value_error(
     registry_session: AsyncSession,
+    tmp_path: Path,
 ) -> None:
     """Registering a duplicate name raises a ValueError collision."""
     repo = InstanceRegistryRepository(registry_session)
     await repo.register(
-        InstanceRecord(
-            name="unique",
-            workspace_root="/tmp/anvil-uniq-1",
-            web_port=9300,
-            mlflow_port=6300,
-        )
+        _make_record(tmp_path, "unique", "uniq-1", 9300, 6300)
     )
     await registry_session.commit()
 
     with pytest.raises(ValueError, match="already exists"):
         await repo.register(
-            InstanceRecord(
-                name="unique",
-                workspace_root="/tmp/anvil-uniq-2",
-                web_port=9301,
-                mlflow_port=6301,
-            )
+            _make_record(tmp_path, "unique", "uniq-2", 9301, 6301)
         )
 
 
 @pytest.mark.asyncio
 async def test_find_port_conflict_detects_collision(
     registry_session: AsyncSession,
+    tmp_path: Path,
 ) -> None:
     """find_port_conflict returns a record when a port is taken."""
     repo = InstanceRegistryRepository(registry_session)
     await repo.register(
-        InstanceRecord(
-            name="port-owner",
-            workspace_root="/tmp/anvil-port",
-            web_port=9400,
-            mlflow_port=6400,
-        )
+        _make_record(tmp_path, "port-owner", "port", 9400, 6400)
     )
     await registry_session.commit()
 
@@ -211,20 +204,22 @@ async def test_find_port_conflict_returns_none_when_free(
 @pytest.mark.asyncio
 async def test_find_workspace_conflict_detects_collision(
     registry_session: AsyncSession,
+    tmp_path: Path,
 ) -> None:
     """find_workspace_conflict returns a record when root is taken."""
     repo = InstanceRegistryRepository(registry_session)
+    ws_root = str(tmp_path / "anvil-ws")
     await repo.register(
         InstanceRecord(
             name="ws-owner",
-            workspace_root="/tmp/anvil-ws",
+            workspace_root=ws_root,
             web_port=9500,
             mlflow_port=6500,
         )
     )
     await registry_session.commit()
 
-    conflict = await repo.find_workspace_conflict("/tmp/anvil-ws")
+    conflict = await repo.find_workspace_conflict(ws_root)
     assert conflict is not None
     assert conflict.name == "ws-owner"
 
@@ -235,7 +230,7 @@ async def test_find_workspace_conflict_returns_none_when_free(
 ) -> None:
     """find_workspace_conflict returns None when root is free."""
     repo = InstanceRegistryRepository(registry_session)
-    conflict = await repo.find_workspace_conflict("/tmp/free-root")
+    conflict = await repo.find_workspace_conflict("/free/should-not-exist")
     assert conflict is None
 
 

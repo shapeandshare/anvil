@@ -12,8 +12,8 @@ from pathlib import Path
 from anvil.workspace.workspace_paths import WorkspacePaths
 
 
-def test_every_path_derives_from_root() -> None:
-    root = Path("/tmp/test-workspace")
+def test_every_path_derives_from_root(tmp_path: Path) -> None:
+    root = tmp_path / "test-workspace"
     wp = WorkspacePaths(root)
     assert wp.state_db_path == root / "data/anvil-state.db"
     assert wp.datasets_dir == root / "data/datasets"
@@ -26,15 +26,15 @@ def test_every_path_derives_from_root() -> None:
     assert wp.backup_dir == root / "data/backups"
 
 
-def test_mlflow_backend_store_uri() -> None:
-    root = Path("/tmp/test-workspace")
+def test_mlflow_backend_store_uri(tmp_path: Path) -> None:
+    root = tmp_path / "test-workspace"
     wp = WorkspacePaths(root)
     expected = f"sqlite:///{root}/mlruns/mlflow.db"
     assert wp.mlflow_backend_store_uri == expected
 
 
-def test_path_overrides_override_default() -> None:
-    root = Path("/tmp/test-workspace")
+def test_path_overrides_override_default(tmp_path: Path) -> None:
+    root = tmp_path / "test-workspace"
     wp = WorkspacePaths(root, overrides={"models_dir": root / "alt-models"})
     assert wp.models_dir == root / "alt-models"
     # Non-overridden paths still derive from root

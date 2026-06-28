@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from sqlalchemy import delete, select, text
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 
 if TYPE_CHECKING:
@@ -190,7 +191,7 @@ class InstanceRegistryRepository:
             await self._session.flush()
             await self._session.refresh(record)
             return record
-        except Exception as exc:
+        except SQLAlchemyError as exc:
             await self._session.rollback()
             err_msg = str(exc).lower()
             if "unique" in err_msg or "integrity" in err_msg:

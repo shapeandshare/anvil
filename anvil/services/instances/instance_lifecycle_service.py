@@ -497,18 +497,18 @@ class InstanceLifecycleService:
         registry = await self.get_registry()
         record = await registry.get_by_name(name)
         if record is None:
-            return InstanceStatus.STOPPED  # type: ignore[return-value]
+            return InstanceStatus(InstanceStatus.STOPPED)
 
         pid_path = Path(record.workspace_root) / "logs" / "web.pid"
         if not pid_path.exists():
-            return InstanceStatus.STOPPED  # type: ignore[return-value]
+            return InstanceStatus(InstanceStatus.STOPPED)
 
         pid = int(pid_path.read_text().strip())
         if _process_exists(pid):
-            return InstanceStatus.RUNNING  # type: ignore[return-value]
+            return InstanceStatus(InstanceStatus.RUNNING)
 
         # PID file exists but process is dead → unhealthy.
-        return InstanceStatus.UNHEALTHY  # type: ignore[return-value]
+        return InstanceStatus(InstanceStatus.UNHEALTHY)
 
     # ── LIST ──────────────────────────────────────────────────────────────
 
