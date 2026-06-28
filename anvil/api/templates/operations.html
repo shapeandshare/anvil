@@ -864,6 +864,29 @@ _updateBackupRow: function(tr, b, index) {
       }
     },
 
+    /// Check for any backup still in "creating" status (survives page refresh).
+    checkForActiveOperation: function() {
+      if (backup._eventSource) return; // already connected
+      try {
+        fetch('/v1/backup').then(function(resp) {
+          if (!resp.ok) return;
+          resp.json().then(function(backups) {
+            var active = null;
+            for (var i = 0; i < backups.length; i++) {
+              if (backups[i].status === 'creating') {
+                active = backups[i];
+                break;
+              }
+            }
+            if (active) {
+              backup._activeOperationId = active.backup_id;
+              backup._startSSE(active.backup_id);
+            }
+          });
+        });
+      } catch(_) {}
+    },
+
     loadAll: function() {
       backup.loadStatus();
       backup.loadBackups();
@@ -974,6 +997,8 @@ _updateBackupRow: function(tr, b, index) {
 
   setInterval(backup.loadAll, 15000);
   setTimeout(backup.loadAll, 500);
+  // Reconnect SSE for in-progress operations after page refresh.
+  setTimeout(function() { backup.checkForActiveOperation(); }, 1500);
 
   /* ── Event delegation for CSP-safe button interactions ── */
   // Static action buttons (replace onclick= attributes blocked by CSP)
