@@ -29,8 +29,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...config import get_config
 from ...db.models.content_blob import ContentBlob
-from ...db.models.content_entry import ContentEntry
-from ...db.models.content_version import ContentVersion
+from ...db.models.content_corpus import ContentEntry, ContentVersion
 from ...db.repositories.content_blobs import ContentBlobRepository
 from ...db.repositories.content_corpora import ContentCorpusRepository
 from ...db.repositories.content_ingest_sessions import ContentIngestSessionRepository
