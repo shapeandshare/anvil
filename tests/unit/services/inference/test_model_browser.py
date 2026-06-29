@@ -15,7 +15,7 @@ from __future__ import annotations
 import pytest
 
 from anvil.services.inference.model_browser import ModelBrowserService
-from anvil.services.inference.model_browser_types import ResourceEnvelope
+from anvil.services.inference.resource_envelope import ResourceEnvelope
 
 
 class _FakeGpuInfo:

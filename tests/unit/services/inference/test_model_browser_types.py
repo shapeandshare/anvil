@@ -14,11 +14,9 @@ import pytest
 import yaml
 from pydantic import ValidationError
 
-from anvil.services.inference.model_browser_types import (
-    CatalogEntry,
-    CuratedCatalog,
-    ResourceEnvelope,
-)
+from anvil.services.inference.catalog_entry import CatalogEntry
+from anvil.services.inference.curated_catalog import CuratedCatalog
+from anvil.services.inference.resource_envelope import ResourceEnvelope
 
 
 def test_resource_envelope_rejects_negative_min_ram_gb():

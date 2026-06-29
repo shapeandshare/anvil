@@ -27,7 +27,9 @@ from ..model_import.model_import_service import (
     _ACCEPTED_FORMATS,
     _ALLOWED_ARCHITECTURES,
 )
-from .model_browser_types import CatalogEntry, CuratedCatalog, ResourceEnvelope
+from .catalog_entry import CatalogEntry
+from .curated_catalog import CuratedCatalog
+from .resource_envelope import ResourceEnvelope
 
 logger = logging.getLogger(__name__)
 
