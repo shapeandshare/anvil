@@ -1,0 +1,238 @@
+<!--
+  ~ Copyright © 2026 Josh Burt
+  ~
+  ~ This source code is licensed under the MIT license found in the
+  ~ LICENSE file in the root directory of this source tree.
+-->
+
+{% extends "base.html" %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
+{% block content %}
+
+<div class="section-card" style="--stagger-i: 0">
+  <div class="section-card__content">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-2);margin-bottom:var(--space-3);">
+      <h1 class="type-title-1" style="margin:0;">HuggingFace Model Browser</h1>
+      <div class="type-caption-1" style="color:var(--text-tertiary);">
+        Host: <strong>{{ host_backend }}</strong> &middot;
+        RAM: <strong>{{ "%.1f"|format(host_ram_gb) }} GB</strong>
+        {% if host_backend != "cpu" %}
+          &middot; Accepted: <strong>{{ accepted_format }}</strong>
+        {% endif %}
+      </div>
+    </div>
+    {% if host_backend == "mps" %}
+    <div class="section-card__content" style="background:var(--surface-warning, rgba(255,180,0,0.08));border:1px solid var(--border-warning, rgba(255,180,0,0.25));border-radius:var(--radius-2);padding:var(--space-2) var(--space-3);margin-bottom:var(--space-3);">
+      <span class="type-footnote" style="color:var(--text-warning, #b8860b);">MPS (Apple Silicon) detected. VRAM eligibility is approximated from unified system memory — best-effort only.</span>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{# ── Search bar (HF Hub live search) ── #}
+<div class="section-card" style="--stagger-i: 1">
+  <div class="section-card__content">
+    <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;">
+      <label for="hf-search" class="sr-only">Search HuggingFace Hub</label>
+      <input type="text" class="form-input" id="hf-search" placeholder="Search HuggingFace Hub..." style="flex:1;min-width:200px;">
+      <button class="btn btn-primary" id="hf-search-btn">Search</button>
+      {% if not hf_available %}
+      <span class="type-caption-1" style="color:var(--text-tertiary);">(install <code>anvil[finetune]</code> for live search)</span>
+      {% endif %}
+    </div>
+    <div id="hf-search-results" style="margin-top:var(--space-2);display:none;"></div>
+    <div id="hf-search-status" class="ds-status-line" style="margin-top:var(--space-2);">
+      {% if hf_available %}
+        Search the Hub for models, or browse the curated catalog below.
+      {% else %}
+        Browse the curated catalog below.
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{# ── Curated catalog ── #}
+<div class="section-card" style="--stagger-i: 2">
+  <div class="section-card__content">
+    <h2 class="type-title-2" style="margin:0 0 var(--space-2) 0;">
+      Curated Catalog
+      <span class="type-caption-1" style="color:var(--text-tertiary);font-weight:400;"> &middot; {{ catalog|length }} models</span>
+    </h2>
+    <p class="type-subhead" style="color:var(--text-secondary);margin-bottom:var(--space-3);">
+      Vetted small models suitable for local fine-tuning. Architecture allow-list:
+      {% for arch in allow_list %}<code style="margin-right:var(--space-1);">{{ arch }}</code>{% endfor %}
+      &middot; Format: <code>{{ accepted_format }}</code>
+    </p>
+
+    {% if catalog and catalog|length > 0 %}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--space-3);">
+      {% for entry in catalog %}
+      <div class="hf-card" data-hf-id="{{ entry.hf_id }}" style="border:1px solid var(--border);border-radius:var(--radius-2);padding:var(--space-3);background:var(--surface-card, var(--surface));cursor:pointer;transition:box-shadow 0.2s ease;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:var(--space-2);">
+          <div style="flex:1;min-width:0;">
+            <div class="type-subhead" style="font-weight:600;color:var(--text);">{{ entry.display_name }}</div>
+            <div class="type-caption-1" style="color:var(--text-tertiary);">{{ entry.hf_id }}</div>
+          </div>
+          {% if entry.runnable_status == "runnable" and entry.eligible %}
+            <span class="badge badge-green" style="flex-shrink:0;margin-left:var(--space-2);">Runnable</span>
+          {% elif entry.runnable_status == "track_only" %}
+            <span class="badge badge-yellow" style="flex-shrink:0;margin-left:var(--space-2);">Track Only</span>
+          {% else %}
+            <span class="badge badge-yellow" style="flex-shrink:0;margin-left:var(--space-2);">Limited</span>
+          {% endif %}
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:var(--space-1);margin-bottom:var(--space-2);">
+          <span class="tag" style="font-size:var(--text-footnote);">{{ entry.params }}</span>
+          <span class="tag" style="font-size:var(--text-footnote);">{{ entry.architecture }}</span>
+          {% for tag in entry.tags %}
+          <span class="tag" style="font-size:var(--text-footnote);">{{ tag }}</span>
+          {% endfor %}
+        </div>
+        <div class="type-caption-2" style="color:var(--text-tertiary);">
+          License: {{ entry.license }} &middot; {{ entry.tokenizer_family }}
+        </div>
+        <div style="margin-top:var(--space-2);display:flex;gap:var(--space-1);flex-wrap:wrap;">
+          <button class="btn btn-sm btn-primary hf-import-btn" data-hf-id="{{ entry.hf_id }}" data-name="{{ entry.display_name }}">Import</button>
+          <a href="{{ entry.url }}" target="_blank" rel="noopener" class="btn btn-sm btn-secondary" style="text-decoration:none;">View on HF</a>
+          {% if entry.runnable_status == "track_only" and lesson_049_available %}
+          <a href="/v1/learn/architecture-differences" class="btn btn-sm btn-secondary" style="text-decoration:none;">Why not run?</a>
+          {% endif %}
+        </div>
+        {# ── Detail panel (hidden, shown on card click) ── #}
+        <div class="hf-card-detail" style="display:none;margin-top:var(--space-2);padding-top:var(--space-2);border-top:1px solid var(--border);">
+          <table class="type-caption-1" style="width:100%;">
+            <tr><td style="color:var(--text-secondary);padding:2px 8px 2px 0;">RAM required</td><td>{{ "%.1f"|format(entry.resource_envelope.min_ram_gb) }} GB</td></tr>
+            <tr><td style="color:var(--text-secondary);padding:2px 8px 2px 0;">VRAM (CUDA)</td><td>{{ "%.1f"|format(entry.resource_envelope.min_vram_per_backend.get("cuda", 0)) }} GB</td></tr>
+            <tr><td style="color:var(--text-secondary);padding:2px 8px 2px 0;">VRAM (MPS)</td><td>{{ "%.1f"|format(entry.resource_envelope.min_vram_per_backend.get("mps", 0)) }} GB</td></tr>
+            <tr><td style="color:var(--text-secondary);padding:2px 8px 2px 0;">Methods</td><td>{{ entry.resource_envelope.supported_methods|join(", ") }}</td></tr>
+            <tr><td style="color:var(--text-secondary);padding:2px 8px 2px 0;">Accepted format</td><td>{{ accepted_format }}</td></tr>
+            <tr><td style="color:var(--text-secondary);padding:2px 8px 2px 0;">Tokenizer</td><td>{{ entry.tokenizer_family }}</td></tr>
+          </table>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="section-card__content" style="text-align:center;padding:var(--space-6) var(--space-4);">
+      <p class="type-subhead" style="color:var(--text-tertiary);">No models in the curated catalog yet.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{# ── JavaScript ── #}
+<script nonce="{{ request.state.csp_nonce }}">
+(function() {
+  /* ── Card click: toggle detail panel ── */
+  document.querySelectorAll('.hf-card').forEach(function(card) {
+    card.addEventListener('click', function(e) {
+      if (e.target.closest('.btn')) return; /* Let button clicks pass through */
+      var detail = card.querySelector('.hf-card-detail');
+      if (detail) {
+        var isVisible = detail.style.display !== 'none';
+        detail.style.display = isVisible ? 'none' : 'block';
+      }
+    });
+  });
+
+  /* ── Import button: POST /v1/models/import ── */
+  document.querySelectorAll('.hf-import-btn').forEach(function(btn) {
+    btn.addEventListener('click', async function(e) {
+      e.stopPropagation();
+      var hfId = btn.getAttribute('data-hf-id');
+      var name = btn.getAttribute('data-name');
+      btn.disabled = true;
+      btn.textContent = 'importing...';
+      try {
+        var resp = await fetch('/v1/models/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ source: 'huggingface', identifier: hfId, name: name })
+        });
+        var data = await resp.json();
+        if (resp.ok) {
+          btn.textContent = 'imported (job #' + data.job_id + ')';
+          btn.classList.remove('btn-primary');
+          btn.classList.add('btn-success');
+        } else {
+          btn.textContent = 'import failed';
+          btn.disabled = false;
+          btn.classList.add('btn-danger');
+        }
+      } catch (err) {
+        btn.textContent = 'error';
+        btn.disabled = false;
+        console.error('Import error:', err);
+      }
+    });
+  });
+
+  /* ── Search ── */
+  {% if hf_available %}
+  var searchInput = document.getElementById('hf-search');
+  var searchBtn = document.getElementById('hf-search-btn');
+  var resultsDiv = document.getElementById('hf-search-results');
+
+  async function doSearch() {
+    var q = searchInput.value.trim();
+    if (!q) return;
+    resultsDiv.style.display = 'block';
+    resultsDiv.innerHTML = '<div class="type-subhead" style="color:var(--text-tertiary);padding:var(--space-2);">Searching...</div>';
+    try {
+      var resp = await fetch('/v1/hf-browser/search?q=' + encodeURIComponent(q) + '&limit=20');
+      var data = await resp.json();
+      if (data.error) {
+        resultsDiv.innerHTML = '<div class="type-subhead" style="color:var(--warning);padding:var(--space-2);">' + data.error + '</div>';
+        return;
+      }
+      if (!data.results || data.results.length === 0) {
+        resultsDiv.innerHTML = '<div class="type-subhead" style="color:var(--text-tertiary);padding:var(--space-2);">No results found.</div>';
+        return;
+      }
+      var html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:var(--space-2);">';
+      data.results.forEach(function(r) {
+        html += '<div class="section-card__content" style="border:1px solid var(--border);border-radius:var(--radius-1);padding:var(--space-2);">'
+          + '<div class="type-footnote" style="font-weight:600;">' + (r.display_name || r.hf_id) + '</div>'
+          + '<div class="type-caption-2" style="color:var(--text-tertiary);">' + r.hf_id + '</div>'
+          + (r.params ? '<div class="type-caption-2">Params: ' + r.params + '</div>' : '')
+          + (r.architecture ? '<div class="type-caption-2">Arch: ' + r.architecture + '</div>' : '')
+          + '<button class="btn btn-sm btn-primary hf-import-btn" data-hf-id="' + r.hf_id + '" data-name="' + (r.display_name || r.hf_id) + '" style="margin-top:var(--space-1);">Import</button>'
+          + '</div>';
+      });
+      html += '</div>';
+      if (data.cached) html += '<div class="type-caption-2" style="color:var(--text-tertiary);margin-top:var(--space-1);">(cached results)</div>';
+      resultsDiv.innerHTML = html;
+
+      /* Wire import buttons in search results */
+      resultsDiv.querySelectorAll('.hf-import-btn').forEach(function(b) {
+        b.addEventListener('click', async function(ev) {
+          ev.stopPropagation();
+          var hid = b.getAttribute('data-hf-id');
+          var nm = b.getAttribute('data-name');
+          b.disabled = true;
+          b.textContent = 'importing...';
+          try {
+            var r = await fetch('/v1/models/import', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ source: 'huggingface', identifier: hid, name: nm })
+            });
+            var d = await r.json();
+            b.textContent = r.ok ? 'done' : 'failed';
+          } catch (err) {
+            b.textContent = 'error';
+          }
+        });
+      });
+    } catch (err) {
+      resultsDiv.innerHTML = '<div class="type-subhead" style="color:var(--danger);padding:var(--space-2);">Search error: ' + err.message + '</div>';
+    }
+  }
+
+  searchBtn.addEventListener('click', doSearch);
+  searchInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') doSearch(); });
+  {% endif %}
+})();
+</script>
+
+{% endblock %}

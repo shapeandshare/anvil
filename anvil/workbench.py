@@ -63,6 +63,7 @@ from .services.governance.audit_outcome import AuditOutcome
 from .services.governance.audit_service import AuditService
 from .services.governance.governance_service import GovernanceService
 from .services.inference.inference import InferenceService
+from .services.inference.model_browser import ModelBrowserService
 from .services.instances.instance_lifecycle_service import InstanceLifecycleService
 from .services.model_import.hf_source import HfHubSource
 from .services.model_import.local_source import LocalSource
@@ -152,6 +153,8 @@ class AnvilWorkbench:
         self._model_imports: ModelImportService | None = None
         # Fine-tune dataset preparation (feature 053).
         self._ftd_repo: FineTuneDatasetRepository | None = None
+        # HuggingFace Model Browser (feature 041).
+        self._model_browser: ModelBrowserService | None = None
 
     # ── Stateless service accessors ─────────────────────────────────────
 
@@ -520,6 +523,13 @@ class AnvilWorkbench:
                 },
             )
         return self._model_imports
+
+    @property
+    def model_browser(self) -> ModelBrowserService:
+        """Lazily-initialised ``ModelBrowserService`` for HuggingFace model browsing."""
+        if self._model_browser is None:
+            self._model_browser = ModelBrowserService()
+        return self._model_browser
 
     # ── Session lifecycle ───────────────────────────────────────────────
 

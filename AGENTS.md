@@ -454,6 +454,8 @@ SomeException
 - MLflow Model Registry (registered_models / model_versions tables) — lineage via tags (014-model-warm-start)
 - Python 3.11+ + FastAPI, async SQLAlchemy + aiosqlite, Jinja2 (existing stack); no new runtime deps (053-fine-tuning-dataset-preparation)
 - `LocalFileStore` at `data/datasets/<id>/prepared/`; SQLite (anvil-state.db) for metadata (053-fine-tuning-dataset-preparation)
+- Python 3.11+ (PEP 604, `StrEnum`, `from __future__ import annotations`) + FastAPI + Jinja2 (existing), PyYAML (existing), `huggingface_hub` (behind `[finetune]` extra), Pydantic (existing) (041-huggingface-model-browser)
+- In-repo YAML file (`curated-models.yaml`) bundled with the Python package; in-memory cache for HF API results with configurable TTL (041-huggingface-model-browser)
 
 ## Recent Changes
 - 025-ux-rules-integration: Added Python 3.11+ (existing repo convention) + Stdlib only — `ux_lint.py` (re/ sys/ os/), `ux_review.py` (stdlib + urllib for OpenAI-compatible API calls)

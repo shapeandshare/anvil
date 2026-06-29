@@ -192,6 +192,7 @@ PAGE_PREFIXES: tuple[str, ...] = (
     "/v1/models-page",
     "/v1/inference-page",
     "/v1/operations-page",
+    "/v1/hf-browser",
     "/v1/learn",
     "/v1/about",
 )
