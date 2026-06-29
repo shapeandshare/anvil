@@ -21,10 +21,10 @@ reach 100% (the project coverage `fail_under` ratchet may only increase, never d
 
 **Purpose**: Establish the NMRG baseline and create new package structure.
 
-- [ ] T001 Run `make test` to establish the NMRG baseline (record any pre-existing failures so SC-004 can prove "pre-existing tests pass unmodified")
-- [ ] T002 Create `anvil/services/finetuning/` domain sub-package with bare `__init__.py` in `anvil/services/finetuning/__init__.py`
-- [ ] T003 [P] Create `anvil/services/_shared/fine_tune_dataset_status.py` with `FineTuneDatasetStatus` StrEnum (`PREPARING`, `READY`, `FAILED`)
-- [ ] T004 [P] Create `anvil/services/_shared/chat_template_status.py` with `ChatTemplateStatus` StrEnum (`ACTIVE`, `DEPRECATED`)
+- [X] T001 Run `make test` to establish the NMRG baseline (record any pre-existing failures so SC-004 can prove "pre-existing tests pass unmodified")
+- [X] T002 Create `anvil/services/finetuning/` domain sub-package with bare `__init__.py` in `anvil/services/finetuning/__init__.py`
+- [X] T003 [P] Create `anvil/services/_shared/fine_tune_dataset_status.py` with `FineTuneDatasetStatus` StrEnum (`PREPARING`, `READY`, `FAILED`)
+- [X] T004 [P] Create `anvil/services/_shared/chat_template_status.py` with `ChatTemplateStatus` StrEnum (`ACTIVE`, `DEPRECATED`)
 
 ---
 
@@ -34,13 +34,13 @@ reach 100% (the project coverage `fail_under` ratchet may only increase, never d
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T005 Create Alembic migration `anvil/_resources/migrations/versions/006_add_fine_tune_datasets.py` — creates `chat_templates` and `fine_tune_datasets` tables with columns, FKs, and indexes per `data-model.md`
-- [ ] T006 [P] Create `ChatTemplate` ORM model in `anvil/db/models/chat_template.py`
-- [ ] T007 [P] Create `FineTuneDataset` ORM model in `anvil/db/models/fine_tune_dataset.py`
-- [ ] T008 [P] **(test-first, must FAIL)** Unit tests for `ChatTemplateRepository` (CRUD, unique-name, get-by-name/family) in `tests/unit/db/repositories/test_chat_templates.py`
-- [ ] T009 [P] **(test-first, must FAIL)** Unit tests for `FineTuneDatasetRepository` (CRUD, `get_active_for_dataset`, status/dataset/model filters, `update_status`) in `tests/unit/db/repositories/test_fine_tune_datasets.py`
-- [ ] T010 [P] Implement `ChatTemplateRepository` in `anvil/db/repositories/chat_templates.py` — make T008 pass
-- [ ] T011 [P] Implement `FineTuneDatasetRepository` in `anvil/db/repositories/fine_tune_datasets.py` (incl. `get_active_for_dataset` for the one-active-preparation rule) — make T009 pass
+- [X] T005 Create Alembic migration `anvil/_resources/migrations/versions/006_add_fine_tune_datasets.py` — creates `chat_templates` and `fine_tune_datasets` tables with columns, FKs, and indexes per `data-model.md`
+- [X] T006 [P] Create `ChatTemplate` ORM model in `anvil/db/models/chat_template.py`
+- [X] T007 [P] Create `FineTuneDataset` ORM model in `anvil/db/models/fine_tune_dataset.py`
+- [X] T008 [P] **(test-first, must FAIL)** Unit tests for `ChatTemplateRepository` (CRUD, unique-name, get-by-name/family) in `tests/unit/db/test_chat_templates.py` — FAIL confirmed → PASS after T010
+- [X] T009 [P] **(test-first, must FAIL)** Unit tests for `FineTuneDatasetRepository` (CRUD, `get_active_for_dataset`, status/dataset/model filters, `update_status`) in `tests/unit/db/test_fine_tune_datasets.py` — FAIL confirmed → PASS after T011
+- [X] T010 [P] Implement `ChatTemplateRepository` in `anvil/db/repositories/chat_templates.py` — make T008 pass
+- [X] T011 [P] Implement `FineTuneDatasetRepository` in `anvil/db/repositories/fine_tune_datasets.py` (incl. `get_active_for_dataset` for the one-active-preparation rule) — make T009 pass
 
 **Checkpoint**: Schema + models + repositories tested and green — user story implementation can begin.
 

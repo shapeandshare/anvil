@@ -33,6 +33,7 @@ from .db.repositories.content_versions import ContentVersionRepository
 from .db.repositories.corpora import CorpusRepository
 from .db.repositories.datasets import DatasetRepository
 from .db.repositories.external_models import ExternalModelRepository
+from .db.repositories.fine_tune_datasets import FineTuneDatasetRepository
 from .db.repositories.instance_registry import (
     InstanceRegistryRepository,
     create_registry_session,
@@ -149,6 +150,8 @@ class AnvilWorkbench:
         self._external_model_repo: ExternalModelRepository | None = None
         self._model_import_job_repo: ModelImportJobRepository | None = None
         self._model_imports: ModelImportService | None = None
+        # Fine-tune dataset preparation (feature 053).
+        self._ftd_repo: FineTuneDatasetRepository | None = None
 
     # ── Stateless service accessors ─────────────────────────────────────
 
@@ -489,6 +492,13 @@ class AnvilWorkbench:
         if self._external_model_repo is None:
             self._external_model_repo = ExternalModelRepository(self._session)
         return self._external_model_repo
+
+    @property
+    def ftd_repo(self) -> FineTuneDatasetRepository:
+        """Lazily-initialised ``FineTuneDatasetRepository`` bound to *session*."""
+        if self._ftd_repo is None:
+            self._ftd_repo = FineTuneDatasetRepository(self._session)
+        return self._ftd_repo
 
     @property
     def model_import_job_repo(self) -> ModelImportJobRepository:

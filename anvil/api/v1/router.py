@@ -26,6 +26,7 @@ from .datasets import router as datasets_router
 from .eval import router as eval_router
 from .eval_datasets import router as eval_datasets_router
 from .experiments import router as experiments_router
+from .fine_tune_datasets import router as fine_tune_datasets_router
 from .governance import router as governance_router
 from .health_ops import router as health_ops_router
 from .inference import router as inference_router
@@ -53,6 +54,7 @@ router.include_router(learning_router)
 router.include_router(content_router)
 router.include_router(backup_router)
 router.include_router(models_router)
+router.include_router(fine_tune_datasets_router)
 
 MODELS_DIR = Path("data/models")
 """Path: Default models directory (mirrors ``workspace_paths.models_dir``)."""
