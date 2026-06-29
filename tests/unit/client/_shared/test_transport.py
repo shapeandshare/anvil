@@ -14,11 +14,11 @@ import httpx
 import pytest
 from pydantic import BaseModel, ConfigDict
 
-from anvil.client._shared.errors.authentication_error import AuthenticationError
-from anvil.client._shared.errors.connection_error import ConnectionError
-from anvil.client._shared.errors.not_found_error import NotFoundError
-from anvil.client._shared.errors.server_error import ServerError
-from anvil.client._shared.errors.validation_error import ValidationError
+from anvil.client._shared.authentication_error import AuthenticationError
+from anvil.client._shared.connection_error import ConnectionError
+from anvil.client._shared.not_found_error import NotFoundError
+from anvil.client._shared.server_error import ServerError
+from anvil.client._shared.validation_error import ValidationError
 from anvil.client._shared.http_method import HttpMethod
 from anvil.client._shared.server_config import ServerConfig
 from anvil.client._shared.transport import Transport

@@ -433,3 +433,124 @@ def test_demo_provider_trains_on_fallback(monkeypatch, tmp_path):
     info = provider.info()
     assert info["is_demo"] is True
     assert info["id"] is None
+
+
+# ── Multi-token and edge-case tests ──
+
+
+def test_embeddings_multi_token(demo_service, trained_loaded_model):
+    """Embeddings with 5+ token input extracts vectors for each."""
+    result = demo_service.embeddings("abcdefghi", trained_loaded_model)
+    # "abcdefghi" -> 9 chars + 2 BOS = 11 tokens
+    assert len(result["vectors"]) >= 5
+    assert len(result["vectors"]) == len(result["tokens"])
+    assert len(result["projection"]) == len(result["vectors"])
+    for vec in result["vectors"]:
+        assert len(vec) == trained_loaded_model.model.n_embd
+
+
+def test_attention_max_len_truncation(tmp_path):
+    """Attention truncates text longer than 256 tokens and slices RoPE
+    tables correctly.
+    """
+    import json
+
+    import anvil.core.engine as eng
+    from anvil.core.vocabulary import Vocabulary
+
+    docs = ["abc", "def", "ghi"]
+    model, _, _, uchars = eng.train(
+        docs, num_steps=20, n_embd=8, n_head=2, block_size=16
+    )
+    model_path = tmp_path / "big_model.json"
+    model.save(str(model_path), uchars)
+
+    # Re-serialize with block_size=300 so the loaded model accepts 256 tokens
+    with open(model_path, encoding="utf-8") as f:
+        data = json.load(f)
+    data["block_size"] = 300
+    with open(model_path, "w", encoding="utf-8") as f:
+        json.dump(data, f)
+
+    gpt = eng.LlamaModel.load(str(model_path))
+    tokenizer = Vocabulary.from_chars(uchars)
+    loaded = LoadedModel(gpt, tokenizer, None, None, "big-test", is_demo=True)
+
+    service = InferenceService()
+    text = "a" * 260  # encode -> 262 tokens, truncated to 256
+    result = service.attention(text, loaded)
+
+    assert len(result["tokens"]) == 256
+    assert len(result["rope"]["cos_table"]) == 256
+    assert len(result["rope"]["sin_table"]) == 256
+    assert result["rope"]["head_dim"] == gpt.head_dim
+    for hi in range(result["n_head"]):
+        for qi in range(256):
+            row = result["weights"][0][hi][qi]
+            assert abs(sum(row) - 1.0) < 1e-5
+
+
+def test_sampling_distribution_multi_token(demo_service, trained_loaded_model):
+    """sampling_distribution with multi-token prompt accumulates KV cache."""
+    result = demo_service.sampling_distribution("abc", 1.0, None, trained_loaded_model)
+    assert result["prompt"] == "abc"
+    assert result["temperature"] == 1.0
+    tokens = result["tokens"]
+    vocab_size = trained_loaded_model.tokenizer.vocab_size
+    assert len(tokens) == vocab_size
+    probs = [t["prob"] for t in tokens]
+    assert abs(sum(probs) - 1.0) < 1e-5
+    assert all("raw_logit" in t for t in tokens)
+    assert all("scaled_logit" in t for t in tokens)
+    assert all("prob_pre_top_k" in t for t in tokens)
+    assert all("prob_final" in t for t in tokens)
+    assert all("in_top_k" in t for t in tokens)
+
+
+def test_forward_graph_pow_silu(demo_service, trained_loaded_model):
+    """forward_graph returns silu-labelled nodes from SwiGLU activation."""
+    result = demo_service.forward_graph(trained_loaded_model)
+    ops = {n["op"] for n in result["nodes"]}
+    assert "silu" in ops, f"Expected 'silu' op in forward_graph nodes, got {ops}"
+    # All nodes have the required fields
+    for n in result["nodes"]:
+        assert "id" in n
+        assert "op" in n
+        assert "value" in n
+        assert "depth" in n
+
+
+def test_model_params_all_patterns(demo_service, trained_loaded_model):
+    """model_params covers all parameter name patterns."""
+    result = demo_service.model_params(trained_loaded_model)
+    categories = {g["category"] for g in result["groups"]}
+    expected = {
+        "embedding",
+        "output",
+        "attention projections",
+        "SwiGLU MLP",
+        "RMSNorm scales",
+    }
+    assert expected.issubset(categories), f"Missing categories: {expected - categories}"
+    # Verify each group has complete metadata
+    for g in result["groups"]:
+        assert "name" in g
+        assert "category" in g
+        assert "shape" in g
+        assert len(g["shape"]) == 2
+        assert "num_params" in g
+        assert g["num_params"] > 0
+        assert "percentage" in g
+        assert 0.0 <= g["percentage"] <= 100.0
+    assert result["total_params"] == sum(g["num_params"] for g in result["groups"])
+
+
+def test_loss_breakdown_baseline(demo_service, trained_loaded_model):
+    """loss_breakdown random_baseline equals -math.log(1/vocab_size)."""
+    import math
+
+    result = demo_service.loss_breakdown("abc", trained_loaded_model)
+    vocab_size = trained_loaded_model.tokenizer.vocab_size
+    expected = round(-math.log(1.0 / vocab_size), 6)
+    assert result["random_baseline"] == expected
+    assert result["vocab_size"] == vocab_size

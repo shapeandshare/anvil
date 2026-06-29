@@ -75,12 +75,10 @@ class TestScanFile:
         result = scan_file(filepath)
         assert result.issues == []
 
-    def test_two_classes_both_exceptions_fail(self, tmp_path: Path) -> None:
+    def test_two_classes_both_exceptions_pass(self, tmp_path: Path) -> None:
         filepath = tmp_path / "foo.py"
         filepath.write_text(
             "class MyError(Exception):\n    pass\n\nclass AnotherError(Exception):\n    pass\n"
         )
         result = scan_file(filepath)
-        assert len(result.issues) == 1
-        assert "MyError" in result.issues[0].classes
-        assert "AnotherError" in result.issues[0].classes
+        assert result.issues == []

@@ -54,12 +54,12 @@ class TestIsDataDir:
 
     def test_known_data_dirs(self) -> None:
         for name in ("static", "templates", "data", "_resources", "_meta"):
-            assert _is_data_dir(name) is True
+            assert _is_data_dir(Path(name)) is True
 
     def test_non_data_dir(self) -> None:
-        assert _is_data_dir("services") is False
-        assert _is_data_dir("core") is False
-        assert _is_data_dir("mypackage") is False
+        assert _is_data_dir(Path("services")) is False
+        assert _is_data_dir(Path("core")) is False
+        assert _is_data_dir(Path("mypackage")) is False
 
 
 class TestInitPyIsBare:
