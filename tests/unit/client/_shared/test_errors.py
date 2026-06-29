@@ -9,13 +9,13 @@ from __future__ import annotations
 
 import pytest
 
-from anvil.client._shared.errors.api_error import ApiError
-from anvil.client._shared.errors.authentication_error import AuthenticationError
-from anvil.client._shared.errors.connection_error import ConnectionError
-from anvil.client._shared.errors.not_found_error import NotFoundError
-from anvil.client._shared.errors.rate_limit_error import RateLimitError
-from anvil.client._shared.errors.server_error import ServerError
-from anvil.client._shared.errors.validation_error import ValidationError
+from anvil.client._shared.api_error import ApiError
+from anvil.client._shared.authentication_error import AuthenticationError
+from anvil.client._shared.connection_error import ConnectionError
+from anvil.client._shared.not_found_error import NotFoundError
+from anvil.client._shared.rate_limit_error import RateLimitError
+from anvil.client._shared.server_error import ServerError
+from anvil.client._shared.validation_error import ValidationError
 
 
 class TestErrorHierarchy:

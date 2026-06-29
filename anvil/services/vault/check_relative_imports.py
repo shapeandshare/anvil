@@ -68,6 +68,12 @@ def _in_triple_quoted(source: str, lineno: int) -> bool:
     for i, line in enumerate(source.splitlines(), 1):
         stripped = line.strip()
         if stripped.startswith(('"""', "'''")):
+            # Single-line docstring: both opening and closing delimiters
+            # on the same line — no state change.
+            if len(stripped) > 3 and stripped.endswith(stripped[:3]):
+                if i >= lineno:
+                    break
+                continue
             in_docstring = not in_docstring
         if i >= lineno:
             break

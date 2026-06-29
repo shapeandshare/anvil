@@ -90,7 +90,7 @@ def _extract_guarded_imports(source: str, filepath: str) -> list[GuardedImport]:
         if stripped == "" or stripped.startswith("#"):
             continue
 
-        # Exit guard on any non-indented line (back to module level).
+# Exit guard on any non-indented line (back to module level).
         # Use the raw *line* (not *stripped*) to detect indentation.
         if line and not line.startswith((" ", "\t")):
             in_guard = False

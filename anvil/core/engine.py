@@ -145,6 +145,8 @@ class LlamaModel:
         self.state_dict["rms_final"] = [Value(1.0) for _ in range(n_embd)]
 
         self.chars = None  # type: list[str] | None
+        self.tokenizer_family: str = "char"
+        self.serialization_type: str = "char_json"
         self.params: list[Value] = []
         for mat in self.state_dict.values():
             if _is_matrix_state_val(mat):
@@ -314,6 +316,8 @@ class LlamaModel:
             "n_layer": self.n_layer,
             "block_size": self.block_size,
             "intermediate_size": self.intermediate_size,
+            "tokenizer_family": "char",
+            "serialization_type": "char_json",
             "chars": chars,
             "state_dict": serialized,
         }
@@ -370,6 +374,8 @@ class LlamaModel:
                     mat[i].data = val
 
         model.chars = data.get("chars")
+        model.tokenizer_family = data.get("tokenizer_family", "char")
+        model.serialization_type = data.get("serialization_type", "char_json")
         return model
 
     def forward_introspect(self, token_ids: list[int]) -> dict[str, Any]:
@@ -516,7 +522,7 @@ def train(
     beta1: float = 0.85,
     beta2: float = 0.99,
     temperature: float = 0.5,
-    progress_callback: Callable[[int, float, int, None], Any] | None = None,
+    progress_callback: Callable[..., Any] | None = None,
     optimizer_state_callback: (
         Callable[[int, list[float], list[float], list[float]], Any] | None
     ) = None,
@@ -553,7 +559,7 @@ def train(
     temperature : float, optional
         Sampling temperature. Defaults to 0.5.
     progress_callback : callable or None, optional
-        Called each step with ``(step, loss, tokens, grad_norm)``.
+        Called each step with ``(step, loss, *, tokens, grad_norm)``.
     optimizer_state_callback : callable or None, optional
         Called each step with ``(step, m, v, grads)``.
     stop_check : callable or None, optional
@@ -644,7 +650,7 @@ def train(
         for p in model.params:
             p.grad = 0
         if progress_callback:
-            progress_callback(step, loss.data, n, None)
+            progress_callback(step, loss.data, tokens=n, grad_norm=None)
 
     samples = []
     for _ in range(20):

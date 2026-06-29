@@ -27,7 +27,7 @@ from contextlib import asynccontextmanager
 from importlib.metadata import version as _get_version
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -332,6 +332,38 @@ app = FastAPI(
     version=anvil_version,
     lifespan=lifespan,
 )
+
+
+@app.exception_handler(HTTPException)
+async def _http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+    """Default HTTP exception handler — returns structured JSON."""
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+
+try:
+    from ..services._shared.tokenizer_load_error import TokenizerLoadError
+except ImportError:
+    TokenizerLoadError = None  # type: ignore[assignment,misc]
+
+if TokenizerLoadError is not None:
+
+    @app.exception_handler(TokenizerLoadError)
+    async def _tokenizer_load_error_handler(
+        request: Request, exc: TokenizerLoadError
+    ) -> JSONResponse:
+        """Handle tokenizer load failures with structured error responses."""
+        return JSONResponse(
+            status_code=422,
+            content={
+                "detail": {
+                    "type": "tokenizer_load_error",
+                    "message": str(exc),
+                    "file": exc.file_path,
+                    "cause": exc.cause,
+                }
+            },
+        )
+
 
 HERE = Path(__file__).parent
 templates = Jinja2Templates(directory=str(HERE / "templates"))

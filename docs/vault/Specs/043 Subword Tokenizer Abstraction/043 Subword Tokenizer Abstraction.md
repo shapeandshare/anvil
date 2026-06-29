@@ -33,7 +33,7 @@ PEFT (044).
 
 ## Artifacts
 
-- [[043 Subword Tokenizer Abstraction - spec|spec]]
+- [[spec|spec]]
 
 ## References
 

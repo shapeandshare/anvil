@@ -13,7 +13,7 @@ related:
   - '[[038 Fine-Tuning Arc]]'
   - '[[Reference/FineTuningArchitectureDecisions]]'
 created: '2026-06-28'
-updated: '2026-06-28'
+updated: '2026-06-28'  # +7 clarification items, +rejected alternatives +FR-014b/015b, +contracts+plan
 ---
 
 # Feature Specification: Subword Tokenizer Abstraction
@@ -52,7 +52,9 @@ models, subword for imported HF models — with no caller assuming a fixed schem
 
 **Independent Test**: Round-trip encode→decode arbitrary text through (a) the char-level tokenizer and
 (b) a TinyLlama subword tokenizer via the same abstraction; verify both reproduce the input and that the
-existing char-level training/inference paths are unchanged under contract tests.
+existing char-level training/inference paths are unchanged under contract tests. Contract tests MUST
+include unicode edge cases: emoji (surrogate pairs), CJK ideographs, combining diacritics, and null
+character.
 
 **Acceptance Scenarios**:
 
@@ -65,20 +67,26 @@ existing char-level training/inference paths are unchanged under contract tests.
 
 ### Edge Cases
 
-- Subword tokenizer files missing for an imported model → fail fast ("download assets first", links 042).
-- Unknown tokenizer family → tracked but flagged not-runnable (links 049).
-- Char-level vocabulary drift vs a loaded checkpoint → reject mismatched vocab rather than mis-decode.
+- Subword tokenizer files missing for an imported model → raise `TokenizerLoadError` with descriptive message; API returns 422/500.
+- Corrupt `tokenizer.json` or SentencePiece parse failure → raise `TokenizerLoadError` with diagnostic detail (file path, parse error, line/offset where applicable).
+- Unknown tokenizer family → raise `TokenizerLoadError`, flagged not-runnable (links 049).
+- Char-level vocabulary drift vs a loaded checkpoint → raise `TokenizerLoadError`, reject mismatched vocab rather than mis-decode.
+- Unsupported serialization format (WordPiece-only, GGUF-embedded) → raise `TokenizerLoadError`, flagged not-runnable per FR-031.
 
 ## Requirements
 
 - **FR-014**: Tokenization MUST be abstracted so a model carries its tokenizer as a first-class artifact;
   encode/decode MUST resolve from the attached tokenizer.
+- **FR-014b**: Tokenizer load failures MUST raise a typed `TokenizerLoadError` exception with a
+  descriptive message containing the file path and root cause, never silently fall back to char-level.
 - **FR-015**: The abstraction MUST support both anvil's character-level vocabulary and HuggingFace
   subword tokenizers, and MUST record which family a given model uses for downstream inference/eval.
 - **FR-014a**: The existing char-level behavior MUST be provably identical post-abstraction (contract
   tests against the pre-abstraction implementation).
 - **FR-015a**: The subword tokenizer implementation MUST live behind the `[finetune]` extra and MUST NOT
   be importable in a base install.
+- **FR-015b**: Tokenizer family and serialization type MUST be logged at INFO level at load time and on
+  each encode/decode dispatch for debuggability.
 - **FR-031**: The abstraction MUST support, in v1, HF fast tokenizers (`tokenizer.json`) and
   SentencePiece (`tokenizer.model` / `sentencepiece.model`) as used by the Llama family, and MUST record
   the serialization type on the model. Other serializations (e.g. WordPiece-only, GGUF-embedded
@@ -92,10 +100,23 @@ existing char-level training/inference paths are unchanged under contract tests.
   dispatch; `tokenizer.json` and SentencePiece both load.
 - **SC-004 (NMRG)**: Pre-existing tests pass unmodified; base install imports no subword tokenizer deps.
 
+## Clarifications
+
+### Session 2026-06-28
+
+- Q: How is a tokenizer attached to a model at the data/storage level? → A: Alongside — tokenizer is a separate artifact co-located with model files in the same storage path.
+- Q: Can a model's tokenizer be swapped after creation? → A: Immutable — tokenizer is set at model creation/import and never changed; a fine-tuned model with a different tokenizer is a new model artifact.
+- Q: Should tokenizer family dispatch be logged for debugging? → A: INFO log — log tokenizer family + serialization type at load time and on each encode/decode dispatch.
+- Q: Are there rejected alternatives worth documenting? → A: Yes — record "Replace char-level with HF subword everywhere" and "Force all tokenizers through HF-compatible interface" as rejected alternatives.
+- Q: How should the tokenizer be serialized on model export? → A: Alongside (flat, same directory as model artifacts), matching HuggingFace's own convention — tokenizer files sit beside `model.safetensors` and `config.json` in the export directory, enabling direct `AutoTokenizer.from_pretrained()` consumption.
+- Q: What should happen at the API/error surface when tokenizer loading fails? → A: Fail fast with structured error — raise a typed `TokenizerLoadError` exception; API translates to 422/500 with error detail.
+- Q: Should unicode edge cases be explicitly tested? → A: Yes, in contract tests — emoji (surrogate pairs), CJK ideographs, combining diacritics, and null character.
+
 ## Key Entities
 
-- **Tokenizer (abstraction)**: a model-attached tokenizer; char-level (native) or subword (HF).
-- **TokenizerFamily**: recorded discriminator (`char` | `subword`) on a model.
+- **Tokenizer (abstraction)**: a model-attached tokenizer; char-level (native) or subword (HF). Immutable after model creation.
+- **TokenizerFamily**: recorded discriminator (`char` | `subword`) on a model. Inference dispatch checks this value to select the appropriate tokenizer implementation for encode/decode.
+- **Tokenizer attachment**: tokenizer artifact lives alongside model files in the same `FileStore` path, not inlined or registry-referenced. On export, tokenizer files sit flat beside `model.safetensors` and `config.json` in the export directory (matching HuggingFace convention for direct `AutoTokenizer.from_pretrained()` consumption).
 
 ## Definition of Done
 
@@ -105,3 +126,14 @@ existing char-level training/inference paths are unchanged under contract tests.
 ## Assumptions
 
 - Spec 008's note that the char-level tokenizer is anvil's own format is extended, not replaced.
+
+## Rejected Alternatives
+
+1. **Replace char-level entirely with HF subword** — Rejected because it breaks the zero-dependency core
+   engine principle (`anvil/core/` has no pip dependencies). Subword tokenizers depend on
+   `transformers`/`tokenizers` which would become a core dependency. Char-level tokenization is also
+   pedagogically essential for the learning path.
+2. **Force all tokenizers through a single HF-compatible interface** — Rejected because it would require
+   the char-level tokenizer to implement HuggingFace's `PreTrainedTokenizerFast` protocol — a leaky
+   abstraction that couples anvil's core to an external contract. The abstraction boundary should be
+   anvil-owned, not HF-owned.

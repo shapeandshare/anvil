@@ -187,16 +187,32 @@ def mock_model():
     model._cos_table = [[0.5, 0.5] for _ in range(64)]
     model._sin_table = [[0.5, 0.5] for _ in range(64)]
     model.params = [Value(0.1) for _ in range(10)]
+    model.tokenizer_family = "char"
+    model.serialization_type = "char_json"
     return model
+
+
+def _make_mock_tokenizer(chars=None):
+    """Create a mock Tokenizer satisfying the Tokenizer ABC protocol."""
+    tok = MagicMock()
+    if chars is None:
+        chars = ["a", "b", "c", "d"]
+    tok.chars = chars
+    bos_id = len(chars)
+    char_to_id = {ch: i for i, ch in enumerate(chars)}
+    tok.encode.side_effect = lambda text: [bos_id] + [char_to_id[ch] for ch in text if ch in char_to_id] + [bos_id]
+    tok.decode.side_effect = lambda ids: "".join(chars[i] for i in ids if i < len(chars))
+    tok.vocab_size = bos_id + 1
+    tok.bos_id = bos_id
+    return tok
 
 
 @pytest.fixture
 def mock_loaded(mock_model):
-    """LoadedModel wrapping the mock model, with a real Vocabulary."""
+    """LoadedModel wrapping the mock model, with a mock tokenizer."""
     from anvil.services.inference.loaded_model import LoadedModel
 
-    chars = ["a", "b", "c", "d"]
-    loaded = LoadedModel(mock_model, chars, 1, 1, "test")
+    loaded = LoadedModel(mock_model, _make_mock_tokenizer(), 1, 1, "test")
     return loaded
 
 
@@ -217,7 +233,7 @@ def test_loaded_model_vocab():
 def test_loaded_model_info(mock_model):
     from anvil.services.inference.loaded_model import LoadedModel
 
-    loaded = LoadedModel(mock_model, ["a", "b"], None, None, "no-id-test")
+    loaded = LoadedModel(mock_model, _make_mock_tokenizer(["a", "b"]), None, None, "no-id-test")
     info = loaded.info()
     assert info["id"] is None
     assert info["version"] is None

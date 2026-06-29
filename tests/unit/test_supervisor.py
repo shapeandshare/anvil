@@ -16,6 +16,7 @@ import signal
 import subprocess
 import tempfile
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -166,3 +167,38 @@ class TestProcessSupervisor:
             log = Path(tmp) / "logger.log"
             assert log.exists()
             assert log.stat().st_size > 0
+
+    def test_stop_sigkill_fallback(self):
+        """SIGTERM timeout triggers SIGKILL fallback in stop()."""
+        with tempfile.TemporaryDirectory() as tmp:
+            sv = ProcessSupervisor(log_dir=tmp)
+
+            mock_proc = MagicMock()
+            mock_proc.pid = 12345
+            mock_proc.poll.return_value = None
+            mock_proc.wait.side_effect = subprocess.TimeoutExpired(
+                cmd="mock", timeout=10
+            )
+            sv._processes["test"] = mock_proc
+
+            killpg_signals: list[int] = []
+
+            def _tracking_killpg(pgid: int, sig: int) -> None:
+                killpg_signals.append(sig)
+
+            with (
+                patch.object(os, "killpg", _tracking_killpg),
+                patch.object(os, "getpgid", return_value=999),
+            ):
+                sv.stop("test")
+
+            assert (
+                len(killpg_signals) == 2
+            ), f"expected 2 killpg calls, got {len(killpg_signals)}"
+            assert killpg_signals[0] == signal.SIGTERM, "first killpg should be SIGTERM"
+            assert (
+                killpg_signals[1] == signal.SIGKILL
+            ), "second killpg should be SIGKILL"
+            assert (
+                "test" not in sv._processes
+            ), "process should be removed from tracking dict"
