@@ -37,9 +37,9 @@ from .stream_event_type import StreamEventType
 from .validation_error import ValidationError
 
 try:
-    import aiofiles  # type: ignore[import-untyped]
+    import aiofiles
 except ImportError:
-    aiofiles = None
+    aiofiles = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
 

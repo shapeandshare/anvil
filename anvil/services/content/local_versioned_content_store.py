@@ -24,7 +24,7 @@ import uuid
 from collections.abc import AsyncIterator
 from pathlib import Path
 
-from aiofiles import open as async_open  # type: ignore[import-untyped]
+from aiofiles import open as async_open
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...config import get_config

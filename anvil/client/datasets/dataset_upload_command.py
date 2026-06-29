@@ -17,9 +17,9 @@ from .._shared.abstract_command import AbstractCommand
 from .._shared.http_method import HttpMethod
 
 try:
-    import aiofiles  # type: ignore[import-untyped]
+    import aiofiles
 except ImportError:
-    aiofiles = None
+    aiofiles = None  # type: ignore[assignment]
 
 
 class DatasetUploadCommand(AbstractCommand):

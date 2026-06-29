@@ -20,9 +20,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...db.models.fine_tune_dataset import FineTuneDataset
+from ...db.models.sample import Sample
+from ...db.repositories.curation import SampleRepository
+from ...db.repositories.fine_tune_datasets import FineTuneDatasetRepository
 from ...db.session import AsyncSessionLocal
 from ...services._shared.fine_tune_dataset_status import FineTuneDatasetStatus
 from ...services.finetuning.chat_template_service import ChatTemplateService
+from ...services.finetuning.preparation_job import run_preparation
 from ...storage.local import LocalFileStore
 from ...workbench import AnvilWorkbench
 from ..deps import get_workbench
@@ -208,10 +212,6 @@ async def _run_preparation_worker(job_id: int, batch_size: int) -> None:
     batch_size : int
         Records per batch.
     """
-    from ...db.repositories.curation import SampleRepository
-    from ...db.repositories.fine_tune_datasets import FineTuneDatasetRepository
-    from ...services.finetuning.preparation_job import run_preparation
-
     try:
         async with AsyncSessionLocal() as session:
             workbench = AnvilWorkbench(session)
@@ -267,8 +267,6 @@ async def _samples_to_records(
     (one JSONL record). Non-JSON samples are emitted as an unparseable
     marker so they are counted as failed records (skip-and-continue).
     """
-    from ...db.models.sample import Sample
-
     iterable = list(samples) if isinstance(samples, (list, tuple)) else []
     records: list[dict[str, Any]] = []
     for sample in iterable:
@@ -296,8 +294,6 @@ async def _read_text(store: LocalFileStore, path: str) -> str:
 
 async def _mark_failed(job_id: int, error: str) -> None:
     """Transition a job to ``failed`` with an error summary."""
-    from ...db.repositories.fine_tune_datasets import FineTuneDatasetRepository
-
     async with AsyncSessionLocal() as session:
         repo = FineTuneDatasetRepository(session)
         summary = json.dumps(
@@ -471,9 +467,7 @@ async def retry_fine_tune_dataset(
             detail=f"Cannot retry: status is '{ftd.status}', expected 'failed'",
         )
 
-    from ...db.models.fine_tune_dataset import FineTuneDataset as FTDM
-
-    new_entry = FTDM(
+    new_entry = FineTuneDataset(
         dataset_id=ftd.dataset_id,
         chat_template_id=ftd.chat_template_id,
         base_model_ref=ftd.base_model_ref,
