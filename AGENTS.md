@@ -452,6 +452,8 @@ SomeException
 - N/A — static content pages (opencode/cosmic-eagle)
 - Python 3.11+ + FastAPI, async SQLAlchemy, Jinja2, MLflow (existing — no new deps) (014-model-warm-start)
 - MLflow Model Registry (registered_models / model_versions tables) — lineage via tags (014-model-warm-start)
+- Python 3.11+ + FastAPI, async SQLAlchemy + aiosqlite, Jinja2 (existing stack); no new runtime deps (053-fine-tuning-dataset-preparation)
+- `LocalFileStore` at `data/datasets/<id>/prepared/`; SQLite (anvil-state.db) for metadata (053-fine-tuning-dataset-preparation)
 
 ## Recent Changes
 - 025-ux-rules-integration: Added Python 3.11+ (existing repo convention) + Stdlib only — `ux_lint.py` (re/ sys/ os/), `ux_review.py` (stdlib + urllib for OpenAI-compatible API calls)
