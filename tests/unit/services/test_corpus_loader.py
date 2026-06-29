@@ -142,3 +142,61 @@ class TestCorpusLoaderIntegration:
         loader = CorpusLoader(block_size=16)
         result = loader.ingest(sample_dir, max_files=1)
         assert len(result.files) <= 1
+
+
+class TestCorpusLoaderScan:
+    def test_scan_basic(self, sample_dir):
+        loader = CorpusLoader()
+        result = loader.scan(sample_dir)
+        assert result.file_count > 0
+        assert result.total_bytes > 0
+        assert len(result.sizes) == result.file_count
+
+    def test_scan_empty_dir(self, tmp_path):
+        loader = CorpusLoader()
+        result = loader.scan(str(tmp_path))
+        assert result.file_count == 0
+        assert result.total_bytes == 0
+
+    def test_scan_with_include(self, sample_dir):
+        loader = CorpusLoader()
+        result = loader.scan(sample_dir, include_patterns=["*.py"])
+        assert result.file_count >= 2
+
+    def test_scan_max_files(self, sample_dir):
+        loader = CorpusLoader()
+        result = loader.scan(sample_dir, max_files=1)
+        assert result.file_count <= 1
+
+    def test_scan_not_a_directory(self, sample_dir):
+        loader = CorpusLoader()
+        f = Path(sample_dir) / "main.py"
+        import pytest
+
+        with pytest.raises(NotADirectoryError):
+            loader.scan(str(f))
+
+    def test_scan_nonexistent(self, sample_dir):
+        loader = CorpusLoader()
+        import pytest
+
+        with pytest.raises(NotADirectoryError):
+            loader.scan("/nonexistent/path")
+
+
+class TestCorpusLoaderEdgeCases:
+    def test_make_chunker_invalid_strategy(self, sample_dir):
+        loader = CorpusLoader()
+        chunker = loader._make_chunker("windowed", 0.5)
+        from anvil.services.chunking.window_chunker import FixedSizeWindowChunker
+
+        assert isinstance(chunker, FixedSizeWindowChunker)
+
+    def test_ingest_not_a_directory(self, tmp_path):
+        loader = CorpusLoader()
+        f = tmp_path / "file.txt"
+        f.write_text("hello")
+        import pytest
+
+        with pytest.raises(NotADirectoryError):
+            loader.ingest(str(f))

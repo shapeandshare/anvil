@@ -53,3 +53,4 @@ docs/vault/_meta/audit/
 
 # Sisyphus agent working directory
 .sisyphus/
+mlflow.db
