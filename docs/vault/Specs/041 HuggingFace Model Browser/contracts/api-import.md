@@ -1,57 +1,69 @@
-# API Contract: `POST /v1/hf-browser/import` — Model Import
+# Import Action: Reuse Existing `POST /v1/models/import`
 
 **Feature**: 041 HuggingFace Model Browser | **Date**: 2026-06-28
 
-Imports a HuggingFace model into the local registry. Delegates entirely to spec 040's `ModelImportService`.
+> **DECISION (post-review)**: This spec does **NOT** introduce a new import endpoint. The existing spec 040
+> route `POST /v1/models/import` already performs HuggingFace imports. Adding a second `/v1/hf-browser/import`
+> endpoint would violate Constitution Article XI §11.4 (Reuse First) and create two parallel ways to import.
+> The browser UI's "Import" button calls the existing route directly.
 
-## Request
+## Existing Endpoint (spec 040 — already implemented)
 
-**Method**: `POST`
-**Path**: `/v1/hf-browser/import`
-**Content-Type**: `application/json`
+**Route**: `POST /v1/models/import` (in `anvil/api/v1/models.py`)
+**Status**: `202 Accepted`
 
-**Body**:
+**Request body** (`ImportModelBody`, `extra="forbid"`):
 
 ```json
 {
-  "hf_id": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-  "architecture": "LlamaForCausalLM"
+  "source": "huggingface",
+  "identifier": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+  "revision": "main",
+  "name": "TinyLlama 1.1B Chat"
 }
 ```
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `hf_id` | `str` | Yes | HuggingFace model ID to import |
-| `architecture` | `str` | Yes | Model architecture class (for registry metadata) |
+| `source` | `str` | Yes | `"huggingface"` or `"local"` (a `SourceType` value) |
+| `identifier` | `str` | Yes | HF repo ID (the browser passes the catalog/search `hf_id` here) |
+| `revision` | `str` | No | Source revision. Default `"main"` |
+| `name` | `str \| None` | No | Optional display name for the registry entry |
 
-## Response
+> **There is NO `architecture` field.** The import service derives `architecture_family` from the model's
+> `config.json` and sets `runnable_status` itself by comparing against `_ALLOWED_ARCHITECTURES`. The browser
+> MUST NOT attempt to pass an architecture.
 
-### Success
-
-**Status**: `202 Accepted`
+**Response**:
 
 ```json
-{
-  "status": "accepted",
-  "job_id": "uuid-string",
-  "message": "Import job created"
-}
+{ "job_id": 123, "status": "queued" }
 ```
 
-### Errors
+**Errors**: `422` if the source type is invalid (raised as `HTTPException` from a `ValueError`).
 
-| Status | Condition | Body |
-|--------|-----------|------|
-| `400` | Missing or invalid fields | `{"error": "hf_id and architecture are required", "code": "INVALID_INPUT"}` |
-| `503` | `huggingface_hub` not installed | `{"error": "HF Hub support requires [finetune] extra", "code": "EXTRA_MISSING"}` |
-| `409` | Model already imported | `{"error": "Model already exists in registry", "code": "ALREADY_EXISTS", "existing_id": N}` |
-
-## Delegation
-
-This endpoint does NOT implement import logic. It delegates to:
+## Underlying Service API (spec 040)
 
 ```python
-workbench.model_import.create_job(hf_id=hf_id, architecture=architecture)
+# anvil/workbench.py  →  property `model_imports` (plural)
+job_id: int = await workbench.model_imports.submit_import(
+    source="huggingface",
+    identifier=hf_id,          # NOT hf_id= keyword on a create_job method
+    revision="main",
+    name=display_name,
+)
 ```
 
-For full import job lifecycle, job status polling, and error handling, see spec 040 contracts.
+Related existing routes the browser MAY use for status/feedback:
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `GET` | `/v1/models/import/{job_id}/status` | Poll import job status |
+| `GET` | `/v1/models/external` | List imported external models |
+| `GET` | `/v1/models/external/{model_id}` | Get a single imported model |
+
+## Browser Responsibility
+
+The HF Browser page's "Import" button issues a client-side `POST /v1/models/import` with
+`source="huggingface"` and `identifier=<hf_id>`. It then optionally polls
+`GET /v1/models/import/{job_id}/status` to show progress. No new server route is added by this spec.

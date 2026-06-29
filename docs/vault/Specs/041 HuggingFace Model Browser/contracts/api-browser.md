@@ -16,10 +16,12 @@ Renders the HF Model Browser standalone page with search bar, curated catalog di
 
 | Variable | Type | Description |
 |----------|------|-------------|
-| `catalog` | `list[dict]` | Pre-loaded curated catalog entries (serialized `CatalogEntry`) |
-| `allow_list` | `list[str]` | Architecture allow-list values for display |
-| `host_device` | `str` | Detected compute backend name (e.g. `"cuda"`, `"mps"`, `"cpu"`) |
-| `related_lessons` | `list[dict]` | Related lesson links per existing pattern |
+| `catalog` | `list[dict]` | Pre-loaded curated catalog entries, each annotated with computed `eligible: bool` and `runnable_status` (RUNNABLE/TRACK_ONLY) |
+| `allow_list` | `list[str]` | Architecture allow-list values from spec 040's `_ALLOWED_ARCHITECTURES` (for display) |
+| `accepted_format` | `str` | Accepted weight format from spec 040's `_ACCEPTED_FORMATS` (`"safetensors"`) |
+| `host_backend` | `str` | Detected GPU backend from `detect_gpu()` (`"cuda"`, `"mps"`, or `"cpu"` when none) |
+| `host_ram_gb` | `float` | Detected total system RAM (`psutil.virtual_memory().total`) for eligibility transparency |
+| `lesson_049_available` | `bool` | Whether the spec 049 architecture-differences lesson exists (controls link rendering) |
 | `hf_available` | `bool` | Whether `huggingface_hub` is importable (i.e., `[finetune]` extra is installed) |
 
 **Auth**: Session required — added to `PAGE_PREFIXES` in `auth.py`
@@ -69,19 +71,6 @@ Searches HuggingFace Hub via `huggingface_hub.HfApi.list_models()`. Available on
 
 ## Import Action
 
-### `POST /v1/hf-browser/import` — Import a model from HF
-
-Triggers the spec 040 import flow via `ModelImportService`.
-
-**Request body**:
-
-```json
-{
-  "hf_id": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-  "architecture": "LlamaForCausalLM"
-}
-```
-
-**Response**: `202 Accepted` — triggers async import job
-
-Delegates entirely to spec 040's import paradigm. See spec 040 contracts for full import response/error contract.
+The browser does **not** add a new import endpoint. The "Import" button reuses the existing spec 040 route
+`POST /v1/models/import` (`source="huggingface"`, `identifier=<hf_id>`). See `contracts/api-import.md` for
+the full contract.

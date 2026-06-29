@@ -34,7 +34,7 @@
 |----------|-----------|------------------------|
 | `ModelBrowserService` in `anvil/services/inference/` with lazy property on `AnvilWorkbench` | Follows the established service wiring pattern (Article VII). `inference/` domain sub-package already exists and is semantically correct. | New top-level `anvil/services/model_browser/` — 12+ peer modules threshold not met; domain belongs in `inference` |
 
-**Wiring pattern** (per existing convention):
+**Wiring pattern** (per existing convention — note: NO `self.compute.device`, that property does not exist):
 ```python
 # anvil/workbench.py
 self._model_browser: ModelBrowserService | None = None
@@ -42,12 +42,11 @@ self._model_browser: ModelBrowserService | None = None
 @property
 def model_browser(self) -> ModelBrowserService:
     if self._model_browser is None:
-        self._model_browser = ModelBrowserService(
-            catalog_path=self._paths.catalog_path,
-            device_detector=self.compute.device,
-        )
+        self._model_browser = ModelBrowserService()  # loads bundled YAML; calls detect_gpu()/psutil internally
     return self._model_browser
 ```
+
+**Correction (post-review)**: `anvil/services/compute/resolve.py` only returns a `DeviceType` (cpu/cuda/mps) — NOT RAM/VRAM quantities. Resource detection for eligibility uses `detect_gpu()` (`anvil/gpu.py`, returns `GpuInfo` with `memory_total_gb`) and `psutil.virtual_memory()` (psutil is a core dependency). There is no `workbench.compute` property.
 
 Note: `AnvilWorkbench` is NOT created at startup — it's created **per-request** by `get_workbench()` dependency (`anvil/api/deps.py`). Each request gets a fresh `AsyncSession` and workbench instance.
 
@@ -69,28 +68,29 @@ class HubClient:
 
 | Decision | Rationale |
 |----------|-----------|
-| Python `StrEnum` in `anvil/services/inference/` — v1: `LlamaForCausalLM` | Simplest approach (Article XI). Single source of truth, mypy-checkable, trivially extensible via enum addition. No config file needed until v2 adds multiple architectures. |
+| **Reuse** spec 040's existing `_ALLOWED_ARCHITECTURES`, `_ACCEPTED_FORMATS`, and `RunnableStatus` | Constitution Article XI §11.4 (Reuse First). These already exist in `anvil/services/model_import/model_import_service.py` and `anvil/services/_shared/runnable_status.py`. Defining a parallel `RunnableArchitecture` enum would be a duplicate source of truth (reject-worthy). |
 
 ## Eligibility Computation
 
 | Decision | Rationale |
 |----------|-----------|
-| Pure function comparing `ResourceEnvelope` against detected device from `anvil/services/compute/resolve.py` | Reuses existing device detection (FR-008a). Pure function is trivially unit-testable (Article IV). Catalog YAML holds `min_vram_per_backend` dict keyed by backend name. |
+| Pure function `check_eligibility(envelope, gpu, ram_total_gb)` using `detect_gpu()` (`anvil/gpu.py`) + `psutil` | `anvil/services/compute/resolve.py` returns only a device *type*, not quantities. `detect_gpu()` returns `GpuInfo.memory_total_gb`; `psutil.virtual_memory()` gives RAM (psutil is core). Pure function is trivially unit-testable (Article IV). MPS VRAM is a unified-RAM proxy (best-effort). |
 
 ## Auto-Import Entry Point
 
 | Decision | Rationale |
 |----------|-----------|
-| Import button triggers existing `ModelImportService` from spec 040 via `workbench.model_import` | Per spec Assumptions section: "Importing delegates entirely to spec 040." The import flow is already implemented — this spec only owns discovery/UI and the catalog. |
+| Import button calls existing `POST /v1/models/import` (spec 040); service API is `workbench.model_imports.submit_import(source, identifier, *, revision, name)` | The import flow + route are already implemented. **Correction**: property is `model_imports` (plural), method is `submit_import` (not `create_job`), and there is NO `architecture` argument — it is auto-derived from the model config. No new import endpoint is added. |
 
 ## Dependency Table
 
 | Dependency | Where Declared | Why |
 |-----------|---------------|-----|
 | `huggingface_hub` | `[finetune]` extra (existing) | HF Hub API client — `HfApi.list_models()`, `HfApi.model_info()` |
-| `PyYAML` | Core deps (existing) | Parse `curated-models.yaml` catalog |
+| `PyYAML` | **Must be ADDED to core deps** | Parse `curated-models.yaml`. **Correction**: currently only a transitive dep (via mlflow et al.), NOT declared in `pyproject.toml`. Must be promoted to `[project.dependencies]` (FR-007b). |
+| `psutil` | Core deps (existing, line 28) | System RAM detection for eligibility |
 | `Pydantic` | Core deps (existing) | `CatalogEntry`, `ResourceEnvelope` validation models |
-| No new runtime deps | — | All dependencies already present in the project |
+| `detect_gpu()` | Existing module `anvil/gpu.py` | GPU backend + VRAM detection for eligibility |
 
 ## HF Hub API Rate Limiting
 

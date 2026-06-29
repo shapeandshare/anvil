@@ -8,16 +8,21 @@
 
 Create `anvil/data/curated-models.yaml` with initial entries (TinyLlama-class models). Add `"data/curated-models.yaml"` to `[tool.setuptools.package-data]` in `pyproject.toml`.
 
+### 0. Declare PyYAML
+
+Add `pyyaml>=6,<7` to `[project.dependencies]` in `pyproject.toml` (currently only transitive).
+
 ### 2. Add Pydantic models
 
-Create `anvil/services/inference/model_browser_types.py` with `CatalogEntry`, `ResourceEnvelope`, `CuratedCatalog`, and `RunnableArchitecture`.
+Create `anvil/services/inference/model_browser_types.py` with `CatalogEntry`, `ResourceEnvelope`, `CuratedCatalog`. **Reuse** spec 040's `_ALLOWED_ARCHITECTURES`, `_ACCEPTED_FORMATS`, and `RunnableStatus` — do not define a new architecture enum.
 
 ### 3. Build the service
 
 Create `anvil/services/inference/model_browser.py` with `ModelBrowserService`:
-- `load_catalog()` → parse YAML → validate with Pydantic → cache in memory
-- `check_eligibility(entry, detected_device)` → pure function comparing envelope against host
-- `get_allow_list()` → return the `RunnableArchitecture` enum values
+- `load_catalog()` → parse YAML (PyYAML) → validate with Pydantic → cache in memory
+- `check_eligibility(envelope, gpu, ram_total_gb)` → pure function (RAM always; VRAM only if GPU present; MPS best-effort)
+- gathers detection inputs via `detect_gpu()` (`anvil/gpu.py`) + `psutil.virtual_memory()`
+- `runnable_status(entry)` → compare against imported `_ALLOWED_ARCHITECTURES` → `RunnableStatus`
 
 ### 4. Build the HF Hub client (behind `[finetune]`)
 
@@ -34,7 +39,7 @@ Add to `anvil/workbench.py`:
 
 ### 6. Create the route
 
-Add to `anvil/api/v1/pages.py`:
+Add a page route to `anvil/api/v1/pages.py` and a search JSON route to a new `anvil/api/v1/hf_browser_api.py` (register it in `router.py`):
 ```python
 @router.get("/hf-browser", response_class=HTMLResponse)
 async def hf_browser_page(
@@ -48,8 +53,9 @@ async def hf_browser_page(
 
 Create `anvil/api/templates/hf_browser.html` extending `base.html`, with:
 - Search bar for live HF Hub search
-- Curated catalog cards with eligibility badges
-- Detail panel on card selection
+- Curated catalog cards with eligibility badges (computed against host RAM/VRAM)
+- Detail panel on card selection; "Import" button POSTs to the existing `/v1/models/import`
+- Lesson-049 link only when available (graceful omission otherwise)
 - Graceful offline messaging when HF API unavailable
 
 ### 8. Register in auth + nav
@@ -65,14 +71,14 @@ Create `anvil/api/templates/hf_browser.html` extending `base.html`, with:
 
 ### 10. Import action
 
-Wire the "Import" button to call `workbench.model_import` (spec 040) — this delegates entirely to the existing import flow.
+Wire the "Import" button to issue a client-side `POST /v1/models/import` with `{source:"huggingface", identifier:<hf_id>}` (the existing spec 040 route — service property is `workbench.model_imports.submit_import(...)`). No architecture is passed; the import service derives it.
 
 ## Key Files
 
 | File | Action |
 |------|--------|
 | `anvil/data/curated-models.yaml` | Create |
-| `pyproject.toml` | Add `"data/curated-models.yaml"` to package-data |
+| `pyproject.toml` | Add `"data/curated-models.yaml"` to package-data; add `pyyaml` to core deps |
 | `anvil/services/inference/model_browser_types.py` | Create (Pydantic models) |
 | `anvil/services/inference/model_browser.py` | Create (service) |
 | `anvil/services/inference_hub/hub_client.py` | Create (HF client) |

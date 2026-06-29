@@ -113,24 +113,30 @@ class CuratedCatalog(BaseModel):
     )
 ```
 
-### Architecture Allow-List
+### Architecture Allow-List & Accepted Format (REUSE — do not redefine)
+
+The runnable architecture allow-list and accepted weight format already exist in spec 040 and MUST be
+reused as the single source of truth (Constitution Article XI §11.4 — Reuse First). Do **not** create a
+parallel `RunnableArchitecture` enum.
 
 ```python
-# anvil/services/inference/allow_list.py (or within model_browser_types.py)
-
-from enum import StrEnum
-
-
-class RunnableArchitecture(StrEnum):
-    """Architecture classes eligible for local fine-tuning (v1 allow-list).
-
-    A model whose ``architecture`` does not match any member of this
-    enum is shown as **track-but-not-run** — importable as metadata,
-    but fine-tune/inference disabled.
-    """
-
-    LLAMA_FOR_CAUSAL_LM = "LlamaForCausalLM"
+# anvil/services/model_import/model_import_service.py  (EXISTING — spec 040)
+_ALLOWED_ARCHITECTURES: frozenset[str] = frozenset({"LlamaForCausalLM"})
+_ACCEPTED_FORMATS: frozenset[str] = frozenset({"safetensors"})
 ```
+
+The "track-but-not-run" concept is also already modeled by the existing `RunnableStatus` enum — reuse it:
+
+```python
+# anvil/services/_shared/runnable_status.py  (EXISTING — spec 040)
+class RunnableStatus(StrEnum):
+    RUNNABLE = "runnable"
+    TRACK_ONLY = "track_only"
+```
+
+`ModelBrowserService` MUST import these (do not copy the literal strings). If these constants need to be
+shared more broadly, promote them to a `_shared` location in a separate refactor commit (Article X §10.9),
+but this spec does not require that — a direct import is sufficient.
 
 ### HF Search Result (runtime)
 
@@ -154,16 +160,44 @@ class HfSearchResult(BaseModel):
     is_curated: bool = Field(default=False, description="Whether this model is in the curated catalog")
 ```
 
+## Eligibility Algorithm (inputs grounded in real detection)
+
+`check_eligibility` is a pure function with signature:
+
+```python
+def check_eligibility(envelope: ResourceEnvelope, gpu: GpuInfo, ram_total_gb: float) -> bool:
+    # 1. RAM check (always applies)
+    if ram_total_gb < envelope.min_ram_gb:
+        return False
+    # 2. VRAM check (only when a GPU backend is detected)
+    if gpu.available and gpu.backend is not None:
+        backend = str(gpu.backend)  # "cuda" | "mps"
+        required = envelope.min_vram_per_backend.get(backend)
+        detected = gpu.memory_total_gb  # NOTE: on MPS this is unified system RAM (best-effort)
+        if required is not None and detected is not None and detected < required:
+            return False
+    # CPU-only host: VRAM check skipped — RAM is the binding constraint.
+    return True
+```
+
+Inputs come from existing code:
+- `gpu: GpuInfo` ← `detect_gpu()` in `anvil/gpu.py` (fields: `available`, `backend`, `memory_total_gb`).
+- `ram_total_gb: float` ← `psutil.virtual_memory().total / (1024**3)` (psutil is a **core** dependency).
+
+There is **no** `workbench.compute.device` property; `anvil/services/compute/resolve.py` returns only a
+device *type* (`DeviceType`), not quantities. The service layer is responsible for calling `detect_gpu()`
+and `psutil` and passing the values into this pure function (keeps the function unit-testable).
+
 ## Validation Rules
 
 | Field | Rule | Enforcement |
 |-------|------|-------------|
 | `CatalogEntry.hf_id` | Must be non-empty, valid HF ID format (`org/name`) | Pydantic `Field(min_length=1)` + regex |
+| `CatalogEntry.architecture` | SHOULD match `_ALLOWED_ARCHITECTURES` for runnable entries; otherwise rendered track-only | Compared at load against spec 040 constant |
 | `CatalogEntry.resource_envelope` | Required for catalog entries | Pydantic model required |
 | `ResourceEnvelope.min_ram_gb` | Must be >= 0 | `Field(ge=0)` |
-| `ResourceEnvelope.min_vram_per_backend` | Must contain at least `cpu` key | Runtime validation in service layer |
+| `ResourceEnvelope.min_vram_per_backend` | Must contain at least `cpu` key | `field_validator` in the Pydantic model |
 | `ResourceEnvelope.supported_methods` | Must have at least one method | `Field(min_length=1)` |
-| `RunnableArchitecture` | Values must match HF architecture class strings | `StrEnum` — compile-time check |
 
 ## State Transitions
 
@@ -183,7 +217,13 @@ CuratedCatalog (YAML file)
               └── supported_methods: list[str]
 
 ModelBrowserService
-  ├── loads CuratedCatalog from YAML (1)
-  ├── eligibility: CatalogEntry × detected_device → bool
-  └── delegates import to ModelImportService (spec 040)
+  ├── loads CuratedCatalog from YAML (1)  [PyYAML — must be declared core dep]
+  ├── eligibility: ResourceEnvelope × GpuInfo × ram_total_gb → bool  [pure function]
+  ├── reuses spec 040 _ALLOWED_ARCHITECTURES / _ACCEPTED_FORMATS / RunnableStatus
+  └── import → workbench.model_imports.submit_import(source="huggingface", identifier=hf_id)
+                (or the existing POST /v1/models/import route)
 ```
+
+> **Note on `min_vram_per_backend` keys**: keys are `DeviceType` values as strings (`"cuda"`, `"mps"`,
+> `"cpu"`) to match `GpuInfo.backend`. The catalog author MUST use these exact backend names so the
+> eligibility lookup (`envelope.min_vram_per_backend.get(str(gpu.backend))`) resolves correctly.
