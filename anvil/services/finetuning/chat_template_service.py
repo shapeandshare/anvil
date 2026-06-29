@@ -85,7 +85,7 @@ class ChatTemplateService:
             msg = "template_string must be non-empty"
             raise ValueError(msg)
 
-        if tokenizer_family not in TokenizerFamily._value2member_map_:
+        if tokenizer_family not in {m.value for m in TokenizerFamily}:
             msg = f"invalid tokenizer_family: {tokenizer_family}"
             raise ValueError(msg)
 
