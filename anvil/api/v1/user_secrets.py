@@ -55,7 +55,7 @@ async def set_secret(
     """Encrypt and store a secret for the current user."""
     user_id = _current_user_id()
     await workbench.user_secrets.set_secret(user_id, body.key, body.value)
-    logger.info("Secret %s set for user %s", body.key, user_id)
+    logger.info("Secret set for user %s (key length=%d)", user_id, len(body.key))
     return {"status": "created"}
 
 

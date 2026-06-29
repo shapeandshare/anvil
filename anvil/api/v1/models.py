@@ -170,7 +170,16 @@ async def get_external_model(
 # ── Model asset download (feature 042) ──────────────────────────────
 
 
-@router.post("/models/{model_id}/download", status_code=202)
+@router.post(
+    "/models/{model_id}/download",
+    status_code=202,
+    responses={
+        404: {"description": "Model not found"},
+        409: {
+            "description": "Assets already available, or a download is already in progress"
+        },
+    },
+)
 async def download_model_assets(
     model_id: int,
     workbench: AnvilWorkbench = Depends(get_workbench),
@@ -211,7 +220,12 @@ def _fire_background_download(job_id: int) -> None:
     )
 
 
-@router.get("/models/{model_id}/download/{job_id}/status")
+@router.get(
+    "/models/{model_id}/download/{job_id}/status",
+    responses={
+        404: {"description": "Download job not found"},
+    },
+)
 async def asset_download_status(
     model_id: int,
     job_id: int,
