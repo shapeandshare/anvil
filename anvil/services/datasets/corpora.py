@@ -16,8 +16,7 @@ import json
 from collections.abc import Sequence
 from pathlib import Path
 
-from ...db.models.corpus import Corpus
-from ...db.models.corpus import CorpusFile
+from ...db.models.corpus import Corpus, CorpusFile
 from ...db.repositories.corpora import CorpusRepository
 from ..chunking.base import Chunker as BaseChunker
 from ..chunking.file_chunker import FileAsDocChunker

@@ -13,7 +13,15 @@ three classes share the same module scope.
 
 from __future__ import annotations
 
-from sqlalchemy import Boolean, Float, ForeignKey, Index, Integer, String, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ...services.content.content_corpus_status import ContentCorpusStatus
