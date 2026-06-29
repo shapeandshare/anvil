@@ -137,7 +137,7 @@ def _extension(filename: str) -> str:
 
 def _reject_unsupported(filename: str, detected: str, hint: str) -> None:
     """Raise a typed ``ModelSourceError`` for an unsupported format."""
-    msg = f"Unsupported weight format detected in {filename!r}: {detected}. " f"{hint}"
+    msg = f"Unsupported weight format detected in {filename!r}: {detected}. {hint}"
     logger.warning(msg)
     raise ModelSourceError(
         code="unsupported_format",

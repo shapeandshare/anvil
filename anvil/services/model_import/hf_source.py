@@ -28,6 +28,9 @@ _TOKENIZER_PATTERNS: frozenset[str] = frozenset(
 _CONFIG_FILES: frozenset[str] = frozenset({"config.json"})
 """Configuration files to download."""
 
+_MISSING_EXTRA_MSG = "Install anvil[finetune] to import from HuggingFace Hub"
+"""Reusable message for ``ModelSourceError`` when the finetune extra is missing."""
+
 
 class HfHubSource:
     """Resolve model metadata from the HuggingFace Hub API.
@@ -79,7 +82,7 @@ class HfHubSource:
         if not self._available:
             raise ModelSourceError(
                 code="missing_extra",
-                message="Install anvil[finetune] to import from HuggingFace Hub",
+                message=_MISSING_EXTRA_MSG,
                 source=self.name,
             )
 
@@ -121,7 +124,7 @@ class HfHubSource:
         if not self._available:
             raise ModelSourceError(
                 code="missing_extra",
-                message="Install anvil[finetune] to import from HuggingFace Hub",
+                message=_MISSING_EXTRA_MSG,
                 source=self.name,
             )
         effective_token = token or os.environ.get("HF_TOKEN")
@@ -166,7 +169,7 @@ class HfHubSource:
         if not self._available:
             raise ModelSourceError(
                 code="missing_extra",
-                message="Install anvil[finetune] to import from HuggingFace Hub",
+                message=_MISSING_EXTRA_MSG,
                 source=self.name,
             )
         effective_token = token or os.environ.get("HF_TOKEN")
@@ -192,7 +195,7 @@ async def _do_resolve(
     except ImportError:
         raise ModelSourceError(
             code="missing_extra",
-            message="Install anvil[finetune] to import from HuggingFace Hub",
+            message=_MISSING_EXTRA_MSG,
             source="huggingface",
         ) from None
 
@@ -279,7 +282,7 @@ async def _do_list_files(
     except ImportError:
         raise ModelSourceError(
             code="missing_extra",
-            message="Install anvil[finetune] to import from HuggingFace Hub",
+            message=_MISSING_EXTRA_MSG,
             source="huggingface",
         ) from None
 
@@ -321,7 +324,7 @@ async def _do_download(
     except ImportError:
         raise ModelSourceError(
             code="missing_extra",
-            message="Install anvil[finetune] to import from HuggingFace Hub",
+            message=_MISSING_EXTRA_MSG,
             source="huggingface",
         ) from None
 
