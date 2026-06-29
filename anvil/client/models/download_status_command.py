@@ -16,9 +16,7 @@ class DownloadStatusCommand(AbstractCommand):
     ``GET /v1/models/{model_id}/download/{job_id}/status``.
     """
 
-    async def execute(
-        self, model_id: int, job_id: int
-    ) -> dict[str, object]:
+    async def execute(self, model_id: int, job_id: int) -> dict[str, object]:
         """Return the current download job status with progress.
 
         Parameters

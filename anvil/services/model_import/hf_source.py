@@ -339,9 +339,7 @@ async def _do_download(
         loop = asyncio.get_event_loop()
         local_path = await loop.run_in_executor(None, _download)
         loop2 = asyncio.get_event_loop()
-        data = await loop2.run_in_executor(
-            None, _read_file, local_path
-        )
+        data = await loop2.run_in_executor(None, _read_file, local_path)
         return data
     except Exception as exc:
         _raise_hf_error(exc, identifier, revision)
