@@ -69,9 +69,7 @@ class UserSecretRepository:
         result = await self._session.execute(stmt)
         return result.scalars().all()
 
-    async def upsert(
-        self, user_id: str, key: str, encrypted_value: str
-    ) -> UserSecret:
+    async def upsert(self, user_id: str, key: str, encrypted_value: str) -> UserSecret:
         """Create or update a secret for a user.
 
         Parameters
@@ -94,9 +92,7 @@ class UserSecretRepository:
             await self._session.flush()
             await self._session.refresh(existing)
             return existing
-        secret = UserSecret(
-            user_id=user_id, key=key, encrypted_value=encrypted_value
-        )
+        secret = UserSecret(user_id=user_id, key=key, encrypted_value=encrypted_value)
         self._session.add(secret)
         await self._session.flush()
         await self._session.refresh(secret)

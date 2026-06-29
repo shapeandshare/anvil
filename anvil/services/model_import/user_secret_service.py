@@ -11,8 +11,8 @@ precedence-based token resolver: ``UserSecret (DB) > env var``.
 
 from __future__ import annotations
 
-import os
 import logging
+import os
 
 from ...db.repositories.user_secret_repository import UserSecretRepository
 from .._shared.encryption import EncryptionService
@@ -59,9 +59,7 @@ class UserSecretService:
             return None
         return self._encryption.decrypt(secret.encrypted_value)
 
-    async def set_secret(
-        self, user_id: str, key: str, value: str
-    ) -> None:
+    async def set_secret(self, user_id: str, key: str, value: str) -> None:
         """Encrypt and store (upsert) a secret.
 
         Parameters
@@ -104,9 +102,7 @@ class UserSecretService:
         secrets = await self._repo.get_all_for_user(user_id)
         return [s.key for s in secrets]
 
-    async def resolve_token(
-        self, user_id: str, key: str, env_var: str
-    ) -> str | None:
+    async def resolve_token(self, user_id: str, key: str, env_var: str) -> str | None:
         """Resolve a credential via precedence: UserSecret > env var.
 
         Parameters

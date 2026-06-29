@@ -57,9 +57,7 @@ async def test_get_by_model_and_type(in_memory_session: AsyncSession) -> None:
         )
     )
 
-    weights = await repo.get_by_model_and_type(
-        1, str(ModelAssetType.WEIGHTS)
-    )
+    weights = await repo.get_by_model_and_type(1, str(ModelAssetType.WEIGHTS))
     assert len(weights) == 1
     assert weights[0].filename == "model-00001-of-00002.safetensors"
 

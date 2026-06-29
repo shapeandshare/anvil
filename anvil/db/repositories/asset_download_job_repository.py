@@ -9,12 +9,10 @@ from __future__ import annotations
 
 from datetime import datetime
 
-
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.asset_download_job import AssetDownloadJob
-
 
 """Repository for ``AssetDownloadJob`` CRUD operations."""
 
@@ -112,9 +110,7 @@ class AssetDownloadJobRepository:
         await self._session.refresh(job)
         return job
 
-    async def get_active_for_model(
-        self, external_model_id: int
-    ) -> bool:
+    async def get_active_for_model(self, external_model_id: int) -> bool:
         """Return ``True`` if the model has any in-flight download job.
 
         An in-flight job has status ``"queued"`` or ``"downloading"``.

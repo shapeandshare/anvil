@@ -1,6 +1,7 @@
 """Unit tests for the AES-256-GCM encryption service."""
 
 import pytest
+
 from anvil.services._shared.encryption import EncryptionService
 
 

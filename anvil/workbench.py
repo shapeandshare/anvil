@@ -21,6 +21,7 @@ from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .config import get_config
+from .db.repositories.asset_download_job_repository import AssetDownloadJobRepository
 from .db.repositories.audit_events import AuditEventRepository
 from .db.repositories.backup_operations import BackupOperationRepository
 from .db.repositories.content_blobs import ContentBlobRepository
@@ -38,11 +39,11 @@ from .db.repositories.instance_registry import (
     create_registry_session,
 )
 from .db.repositories.licenses import LicenseRepository
-from .db.repositories.model_import_jobs import ModelImportJobRepository
 from .db.repositories.model_asset_repository import ModelAssetRepository
-from .db.repositories.asset_download_job_repository import AssetDownloadJobRepository
-from .db.repositories.user_secret_repository import UserSecretRepository
+from .db.repositories.model_import_jobs import ModelImportJobRepository
 from .db.repositories.runtime_config import RuntimeConfigRepository
+from .db.repositories.user_secret_repository import UserSecretRepository
+from .services._shared.encryption import EncryptionService
 from .services._shared.source_type import SourceType
 from .services.content.composition_service import CompositionService
 from .services.content.corpus_service import CorpusService as ContentCorpusService
@@ -69,10 +70,9 @@ from .services.inference.model_browser import ModelBrowserService
 from .services.instances.instance_lifecycle_service import InstanceLifecycleService
 from .services.model_import.hf_source import HfHubSource
 from .services.model_import.local_source import LocalSource
-from .services.model_import.model_import_service import ModelImportService
 from .services.model_import.model_asset_service import ModelAssetService
+from .services.model_import.model_import_service import ModelImportService
 from .services.model_import.user_secret_service import UserSecretService
-from .services._shared.encryption import EncryptionService
 from .services.runtime_config.runtime_config_service import RuntimeConfigService
 from .services.tracking.tracking import TrackingService
 from .services.training.training import TrainingService
@@ -546,9 +546,7 @@ class AnvilWorkbench:
     def asset_download_job_repo(self) -> AssetDownloadJobRepository:
         """Lazily-initialised ``AssetDownloadJobRepository`` bound to *session*."""
         if self._asset_download_job_repo is None:
-            self._asset_download_job_repo = AssetDownloadJobRepository(
-                self._session
-            )
+            self._asset_download_job_repo = AssetDownloadJobRepository(self._session)
         return self._asset_download_job_repo
 
     @property

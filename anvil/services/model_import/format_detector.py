@@ -103,9 +103,7 @@ def check_weight_format(filename: str, header: bytes) -> None:
 
 def _looks_like_pickle(data: bytes) -> bool:
     """Check if data starts with a Python pickle protocol marker."""
-    return len(data) >= 2 and (
-        data[0] == 0x80 or data[:2] in (b"\x00\x00",)
-    )
+    return len(data) >= 2 and (data[0] == 0x80 or data[:2] in (b"\x00\x00",))
 
 
 def _looks_like_safetensors(data: bytes) -> bool:
@@ -137,14 +135,9 @@ def _extension(filename: str) -> str:
     return filename[idx:] if idx >= 0 else ""
 
 
-def _reject_unsupported(
-    filename: str, detected: str, hint: str
-) -> None:
+def _reject_unsupported(filename: str, detected: str, hint: str) -> None:
     """Raise a typed ``ModelSourceError`` for an unsupported format."""
-    msg = (
-        f"Unsupported weight format detected in {filename!r}: {detected}. "
-        f"{hint}"
-    )
+    msg = f"Unsupported weight format detected in {filename!r}: {detected}. " f"{hint}"
     logger.warning(msg)
     raise ModelSourceError(
         code="unsupported_format",

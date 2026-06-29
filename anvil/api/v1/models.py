@@ -198,9 +198,7 @@ def _fire_background_download(job_id: int) -> None:
 
     _task = asyncio.create_task(_worker())
     _task.add_done_callback(
-        lambda t: logger.debug(
-            "Background asset download %d done: %s", job_id, t
-        )
+        lambda t: logger.debug("Background asset download %d done: %s", job_id, t)
     )
 
 
@@ -213,9 +211,7 @@ async def asset_download_status(
     """Poll the status of an asset download job with aggregate progress."""
     status = await workbench.model_assets.get_job_status(job_id)
     if status is None:
-        raise HTTPException(
-            status_code=404, detail="Download job not found"
-        )
+        raise HTTPException(status_code=404, detail="Download job not found")
     return status
 
 

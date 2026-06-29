@@ -13,9 +13,7 @@ from datetime import UTC, datetime
 
 from ...db.models.asset_download_job import AssetDownloadJob
 from ...db.models.model_asset import ModelAsset, ModelAssetStatus
-from ...db.repositories.asset_download_job_repository import (
-    AssetDownloadJobRepository,
-)
+from ...db.repositories.asset_download_job_repository import AssetDownloadJobRepository
 from ...db.repositories.external_models import ExternalModelRepository
 from ...db.repositories.model_asset_repository import ModelAssetRepository
 from ...storage.interface import FileStore
@@ -88,18 +86,14 @@ class ModelAssetService:
         """
         model = await self._model_repo.get(external_model_id)
         if model is None:
-            raise ModelNotFoundError(
-                f"External model not found: {external_model_id}"
-            )
+            raise ModelNotFoundError(f"External model not found: {external_model_id}")
 
         if model.asset_availability == str(AssetState.ASSETS_AVAILABLE):
             raise ModelAssetAlreadyAvailableError(
                 f"Assets already available for model {external_model_id}"
             )
 
-        existing_jobs = await self._job_repo.get_active_for_model(
-            external_model_id
-        )
+        existing_jobs = await self._job_repo.get_active_for_model(external_model_id)
         if existing_jobs:
             raise DuplicateDownloadError(
                 f"A download job is already in progress for model "
@@ -113,9 +107,7 @@ class ModelAssetService:
         job = await self._job_repo.add(job)
         return job.id
 
-    async def get_job_status(
-        self, job_id: int
-    ) -> dict[str, object] | None:
+    async def get_job_status(self, job_id: int) -> dict[str, object] | None:
         """Return the current status and aggregate progress of a download job.
 
         Parameters
@@ -134,19 +126,13 @@ class ModelAssetService:
 
         assets = await self._asset_repo.get_by_model(job.external_model_id)
         total = len(assets)
-        completed = sum(
-            1 for a in assets if a.status == "available"
-        )
+        completed = sum(1 for a in assets if a.status == "available")
 
         return {
             "job_id": job.id,
             "status": job.status,
-            "started_at": job.started_at.isoformat()
-            if job.started_at
-            else None,
-            "finished_at": job.finished_at.isoformat()
-            if job.finished_at
-            else None,
+            "started_at": job.started_at.isoformat() if job.started_at else None,
+            "finished_at": job.finished_at.isoformat() if job.finished_at else None,
             "error_code": job.error_code,
             "error_message": job.error_message,
             "total_assets": total,
@@ -246,16 +232,13 @@ class ModelAssetService:
                 # 3. Handle resumability via downloaded_bytes + Range header
                 # 4. Use hf_source._huggingface_hub_available() guard
 
-                await self._asset_repo.update_progress(
-                    updated.id, updated.size_bytes
-                )
+                await self._asset_repo.update_progress(updated.id, updated.size_bytes)
                 await self._asset_repo.update_status(
                     updated.id,
                     str(ModelAssetStatus.AVAILABLE),
                     sha256="stub_hash_unimplemented",
                     storage_path=(
-                        f"models/{model_id}/assets/stub/"
-                        f"{updated.filename}"
+                        f"models/{model_id}/assets/stub/" f"{updated.filename}"
                     ),
                 )
             except Exception:
