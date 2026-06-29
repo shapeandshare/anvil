@@ -30,7 +30,8 @@ dependencies = [
     "mlflow>=3.1,<4",  # resolved version: 3.13.0
     "safetensors>=0.4,<1",
     "numpy>=1.24,<2",
-    "networkx>=3.6.1",
+"networkx>=3.6.1",
+    "pyyaml>=6,<7",
 ]
 
 [tool.setuptools.packages.find]
@@ -46,6 +47,7 @@ anvil = [
     "data/demo/**/*.txt",
     "data/demo/**/*.md",
     "data/demo/**/*.json",
+    "data/curated-models.yaml",
     "api/static/**/*",
     "api/templates/**/*",
 ]
