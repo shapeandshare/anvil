@@ -30,9 +30,12 @@ from anvil.db.repositories.content_corpora import ContentCorpusRepository
 from anvil.services.content.local_versioned_content_store import (
     LocalVersionedContentStore,
 )
-from anvil.services.content.manifest import Manifest, ManifestEntry, compute_manifest_digest
+from anvil.services.content.manifest import (
+    Manifest,
+    ManifestEntry,
+    compute_manifest_digest,
+)
 from anvil.services.content.version_ref import VersionRef
-
 
 # ── Test data constants ──────────────────────────────────────────────
 
@@ -249,9 +252,7 @@ class TestFreezeAndResolve:
 
         # Verify all digests are different (unique versions)
         digests = {ref1.manifest_digest, ref2.manifest_digest, ref3.manifest_digest}
-        assert len(digests) == 3, (
-            "Each freeze should produce a unique manifest digest"
-        )
+        assert len(digests) == 3, "Each freeze should produce a unique manifest digest"
 
         # Verify each version resolves correctly
         for ref, expected_count in [(ref1, 1), (ref2, 2), (ref3, 3)]:
@@ -309,9 +310,7 @@ class TestFreezeEdgeCases:
             ManifestEntry(path="comp-a.bin", content_hash=_DOC2_HASH),
             ManifestEntry(path="comp-b.bin", content_hash=_DOC3_HASH),
         ]
-        ref_comp = await store.freeze_version(
-            "test-corpus", composition=composition
-        )
+        ref_comp = await store.freeze_version("test-corpus", composition=composition)
         manifest_comp = await store.resolve(ref_comp)
 
         assert len(manifest_comp.entries) == 2

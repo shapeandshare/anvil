@@ -134,9 +134,7 @@ class TestRestoreEngineHappyPath:
         assert "Verifying extracted files" in step_texts
         assert "Swapping files (atomic)" in step_texts
         assert "Cleaning up" in step_texts
-        assert "Restore complete" in step_texts or "Complete" in " ".join(
-            step_texts
-        )
+        assert "Restore complete" in step_texts or "Complete" in " ".join(step_texts)
 
     async def test_journal_written_during_swap(self, tmp_path: Path, monkeypatch):
         """Journal file exists after swap phase starts (FR-030)."""

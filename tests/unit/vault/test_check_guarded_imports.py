@@ -23,7 +23,6 @@ from anvil.services.vault.check_guarded_imports import (
     scan_file,
 )
 
-
 ########################################################################
 # _extract_guarded_imports tests
 ########################################################################
@@ -316,7 +315,9 @@ class TestScanDirectory:
 class TestMain:
     """Tests for the CLI entry point."""
 
-    def test_clean_exits_0(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_clean_exits_0(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Clean directory exits with code 0."""
         monkeypatch.setenv("ANVIL_ROOT", str(tmp_path))
         p = tmp_path / "test.py"
@@ -327,7 +328,9 @@ class TestMain:
             main()
         assert exc.value.code == 0
 
-    def test_violation_exits_1(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_violation_exits_1(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Directory with violations exits with code 1."""
         monkeypatch.setenv("ANVIL_ROOT", str(tmp_path))
         p = tmp_path / "test.py"
@@ -345,7 +348,9 @@ class TestMain:
             main()
         assert exc.value.code == 1
 
-    def test_nonexistent_root_fallback(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_nonexistent_root_fallback(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """When ANVIL_ROOT points to non-existent dir, falls back to 'anvil'."""
         monkeypatch.setenv("ANVIL_ROOT", str(tmp_path / "nonexistent"))
         monkeypatch.chdir(tmp_path)
@@ -356,7 +361,9 @@ class TestMain:
         # Falls back to 'anvil' which doesn't exist in tmp_path
         assert exc.value.code == 1
 
-    def test_violation_with_future_not_flagged(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_violation_with_future_not_flagged(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Annotation-only with __future__ is not flagged."""
         monkeypatch.setenv("ANVIL_ROOT", str(tmp_path))
         p = tmp_path / "test.py"

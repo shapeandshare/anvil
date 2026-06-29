@@ -25,7 +25,6 @@ from anvil.services.vault.check_one_class import (
     scan_file,
 )
 
-
 ########################################################################
 # _has_suppression tests
 ########################################################################
@@ -70,6 +69,7 @@ class TestIsEnumClass:
     def test_direct_enum_inheritance(self) -> None:
         """Class inheriting from Enum is detected."""
         import ast
+
         node = ast.parse("class Color(Enum):\n    RED = 1\n").body[0]
         assert isinstance(node, ast.ClassDef)
         assert _is_enum_class(node) is True
@@ -77,6 +77,7 @@ class TestIsEnumClass:
     def test_enum_attribute_inheritance(self) -> None:
         """Class inheriting from enum.Enum is detected."""
         import ast
+
         node = ast.parse("class Color(enum.Enum):\n    RED = 1\n").body[0]
         assert isinstance(node, ast.ClassDef)
         assert _is_enum_class(node) is True
@@ -84,6 +85,7 @@ class TestIsEnumClass:
     def test_regular_class(self) -> None:
         """Regular class returns False."""
         import ast
+
         node = ast.parse("class MyClass:\n    pass\n").body[0]
         assert isinstance(node, ast.ClassDef)
         assert _is_enum_class(node) is False
@@ -91,6 +93,7 @@ class TestIsEnumClass:
     def test_other_inheritance(self) -> None:
         """Class inheriting from something else returns False."""
         import ast
+
         node = ast.parse("class MyClass(Base):\n    pass\n").body[0]
         assert isinstance(node, ast.ClassDef)
         assert _is_enum_class(node) is False
@@ -107,6 +110,7 @@ class TestIsExceptionClass:
     def test_direct_exception_inheritance(self) -> None:
         """Class inheriting from Exception is detected."""
         import ast
+
         node = ast.parse("class MyError(Exception):\n    pass\n").body[0]
         assert isinstance(node, ast.ClassDef)
         assert _is_exception_class(node) is True
@@ -114,6 +118,7 @@ class TestIsExceptionClass:
     def test_exception_attribute_inheritance(self) -> None:
         """Class inheriting from exceptions.Exception is detected."""
         import ast
+
         node = ast.parse("class MyError(exceptions.Exception):\n    pass\n").body[0]
         assert isinstance(node, ast.ClassDef)
         assert _is_exception_class(node) is True
@@ -121,6 +126,7 @@ class TestIsExceptionClass:
     def test_regular_class(self) -> None:
         """Regular class returns False."""
         import ast
+
         node = ast.parse("class MyClass:\n    pass\n").body[0]
         assert isinstance(node, ast.ClassDef)
         assert _is_exception_class(node) is False
@@ -318,7 +324,9 @@ class TestScanDirectory:
 class TestMain:
     """Tests for the CLI entry point."""
 
-    def test_clean_exits_0(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_clean_exits_0(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Clean directory exits with code 0."""
         monkeypatch.setenv("ANVIL_ROOT", str(tmp_path))
         p = tmp_path / "test.py"
@@ -329,7 +337,9 @@ class TestMain:
             main()
         assert exc.value.code == 0
 
-    def test_violation_exits_1(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_violation_exits_1(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Directory with violations exits with code 1."""
         monkeypatch.setenv("ANVIL_ROOT", str(tmp_path))
         p = tmp_path / "test.py"
@@ -340,7 +350,9 @@ class TestMain:
             main()
         assert exc.value.code == 1
 
-    def test_nonexistent_root_exits_1(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_nonexistent_root_exits_1(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Non-existent root directory exits with code 1."""
         monkeypatch.setenv("ANVIL_ROOT", str(tmp_path / "nonexistent"))
         monkeypatch.chdir(tmp_path)

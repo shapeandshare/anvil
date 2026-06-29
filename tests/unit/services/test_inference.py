@@ -18,9 +18,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from anvil.core.autograd import Value
-
 from anvil.services.inference.inference import _project_to_2d, _top_k_logits
-
 
 # ============================================================================
 # Pure helper function tests — no mocking needed, fast and real.
@@ -200,8 +198,14 @@ def _make_mock_tokenizer(chars=None):
     tok.chars = chars
     bos_id = len(chars)
     char_to_id = {ch: i for i, ch in enumerate(chars)}
-    tok.encode.side_effect = lambda text: [bos_id] + [char_to_id[ch] for ch in text if ch in char_to_id] + [bos_id]
-    tok.decode.side_effect = lambda ids: "".join(chars[i] for i in ids if i < len(chars))
+    tok.encode.side_effect = (
+        lambda text: [bos_id]
+        + [char_to_id[ch] for ch in text if ch in char_to_id]
+        + [bos_id]
+    )
+    tok.decode.side_effect = lambda ids: "".join(
+        chars[i] for i in ids if i < len(chars)
+    )
     tok.vocab_size = bos_id + 1
     tok.bos_id = bos_id
     return tok
@@ -233,7 +237,9 @@ def test_loaded_model_vocab():
 def test_loaded_model_info(mock_model):
     from anvil.services.inference.loaded_model import LoadedModel
 
-    loaded = LoadedModel(mock_model, _make_mock_tokenizer(["a", "b"]), None, None, "no-id-test")
+    loaded = LoadedModel(
+        mock_model, _make_mock_tokenizer(["a", "b"]), None, None, "no-id-test"
+    )
     info = loaded.info()
     assert info["id"] is None
     assert info["version"] is None
@@ -295,12 +301,8 @@ def test_load_model_mlflow_fallback(demo_service, mock_model, tmp_path):
             "anvil.services.inference.inference.LlamaModel.load",
             return_value=mock_model,
         ),
-        patch(
-            "anvil.services.inference.inference.TrackingService"
-        ) as MockTracking,
-        patch(
-            "anvil.services.inference.inference.MlflowClient"
-        ) as MockMlflowClient,
+        patch("anvil.services.inference.inference.TrackingService") as MockTracking,
+        patch("anvil.services.inference.inference.MlflowClient") as MockMlflowClient,
     ):
         mock_tracking = MockTracking.return_value
         mock_tracking.list_registered_models = AsyncMock(
@@ -323,9 +325,7 @@ def test_load_model_mlflow_no_candidate(demo_service):
     """load_model raises when MLflow returns no matching model name."""
     with (
         patch.object(Path, "exists", return_value=False),
-        patch(
-            "anvil.services.inference.inference.TrackingService"
-        ) as MockTracking,
+        patch("anvil.services.inference.inference.TrackingService") as MockTracking,
     ):
         mock_tracking = MockTracking.return_value
         mock_tracking.list_registered_models = AsyncMock(
@@ -339,21 +339,15 @@ def test_load_model_mlflow_server_error(demo_service):
     """load_model catches MLflow server errors and raises ValueError."""
     with (
         patch.object(Path, "exists", return_value=False),
-        patch(
-            "anvil.services.inference.inference.TrackingService"
-        ) as MockTracking,
-        patch(
-            "anvil.services.inference.inference.MlflowClient"
-        ) as MockMlflowClient,
+        patch("anvil.services.inference.inference.TrackingService") as MockTracking,
+        patch("anvil.services.inference.inference.MlflowClient") as MockMlflowClient,
     ):
         mock_tracking = MockTracking.return_value
         mock_tracking.list_registered_models = AsyncMock(
             return_value=[{"name": "dataset-42", "id": 42}]
         )
         mock_client = MagicMock()
-        mock_client.search_model_versions.side_effect = ConnectionError(
-            "MLflow down"
-        )
+        mock_client.search_model_versions.side_effect = ConnectionError("MLflow down")
         MockMlflowClient.return_value = mock_client
         with pytest.raises(ValueError, match="Model not found"):
             _run(demo_service.load_model(model_id=42))
@@ -380,9 +374,7 @@ def test_resolve_default_id_cached(demo_service):
 
 
 def test_resolve_default_id_from_demo_model(demo_service):
-    with patch(
-        "anvil.services.inference.inference.TrackingService"
-    ) as MockTracking:
+    with patch("anvil.services.inference.inference.TrackingService") as MockTracking:
         mock_tracking = MockTracking.return_value
         mock_tracking.list_registered_models = AsyncMock(
             return_value=[
@@ -396,9 +388,7 @@ def test_resolve_default_id_from_demo_model(demo_service):
 
 
 def test_resolve_default_id_fallback_to_first(demo_service):
-    with patch(
-        "anvil.services.inference.inference.TrackingService"
-    ) as MockTracking:
+    with patch("anvil.services.inference.inference.TrackingService") as MockTracking:
         mock_tracking = MockTracking.return_value
         mock_tracking.list_registered_models = AsyncMock(
             return_value=[
@@ -412,9 +402,7 @@ def test_resolve_default_id_fallback_to_first(demo_service):
 
 
 def test_resolve_default_id_skips_models_without_id(demo_service):
-    with patch(
-        "anvil.services.inference.inference.TrackingService"
-    ) as MockTracking:
+    with patch("anvil.services.inference.inference.TrackingService") as MockTracking:
         mock_tracking = MockTracking.return_value
         mock_tracking.list_registered_models = AsyncMock(
             return_value=[
@@ -428,9 +416,7 @@ def test_resolve_default_id_skips_models_without_id(demo_service):
 
 def test_resolve_default_id_filesystem_fallback(demo_service):
     with (
-        patch(
-            "anvil.services.inference.inference.TrackingService"
-        ) as MockTracking,
+        patch("anvil.services.inference.inference.TrackingService") as MockTracking,
         patch.object(Path, "exists", return_value=True),
         patch.object(Path, "iterdir", return_value=[]),
     ):
@@ -444,16 +430,12 @@ def test_resolve_default_id_filesystem_fallback(demo_service):
 
 def test_resolve_default_id_raises_when_nothing_found(demo_service):
     with (
-        patch(
-            "anvil.services.inference.inference.TrackingService"
-        ) as MockTracking,
+        patch("anvil.services.inference.inference.TrackingService") as MockTracking,
         patch.object(Path, "exists", return_value=False),
     ):
         mock_tracking = MockTracking.return_value
         mock_tracking.list_registered_models = AsyncMock(return_value=[])
-        with pytest.raises(
-            ValueError, match="No models available. Train or bootstrap"
-        ):
+        with pytest.raises(ValueError, match="No models available. Train or bootstrap"):
             _run(demo_service._resolve_default_id())
 
 
@@ -549,9 +531,7 @@ def test_attention_long_input_trimmed(demo_service, mock_loaded):
 
 
 def test_sampling_distribution_basic(demo_service, mock_loaded):
-    result = demo_service.sampling_distribution(
-        "a", 0.5, None, mock_loaded
-    )
+    result = demo_service.sampling_distribution("a", 0.5, None, mock_loaded)
     assert "model" in result
     assert "tokens" in result
     assert result["temperature"] == 0.5
@@ -565,35 +545,27 @@ def test_sampling_distribution_basic(demo_service, mock_loaded):
 
 
 def test_sampling_with_top_k(demo_service, mock_loaded):
-    result = demo_service.sampling_distribution(
-        "a", 1.0, 2, mock_loaded
-    )
+    result = demo_service.sampling_distribution("a", 1.0, 2, mock_loaded)
     tokens = result["tokens"]
     nonzero = sum(1 for t in tokens if t["prob"] > 0)
     assert nonzero <= 2
 
 
 def test_sampling_distribution_empty_prompt(demo_service, mock_loaded):
-    result = demo_service.sampling_distribution(
-        "", 1.0, None, mock_loaded
-    )
+    result = demo_service.sampling_distribution("", 1.0, None, mock_loaded)
     tokens = result["tokens"]
     probs = [t["prob"] for t in tokens]
     assert abs(sum(probs) - 1.0) < 1e-5
 
 
 def test_sampling_distribution_low_temperature(demo_service, mock_loaded):
-    result = demo_service.sampling_distribution(
-        "a", 0.01, 1, mock_loaded
-    )
+    result = demo_service.sampling_distribution("a", 0.01, 1, mock_loaded)
     nonzero = sum(1 for t in result["tokens"] if t["prob"] > 0)
     assert nonzero == 1
 
 
 def test_sampling_distribution_metadata(demo_service, mock_loaded):
-    result = demo_service.sampling_distribution(
-        "ab", 0.8, 10, mock_loaded
-    )
+    result = demo_service.sampling_distribution("ab", 0.8, 10, mock_loaded)
     assert result["prompt"] == "ab"
     assert result["temperature"] == 0.8
     assert result["top_k"] == 10

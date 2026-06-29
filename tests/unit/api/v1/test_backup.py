@@ -108,7 +108,9 @@ class TestCreateBackup:
         self, client, mock_workbench, mock_backup_service, override_dep
     ):
         mock_backup_service.create_backup = AsyncMock(
-            side_effect=RuntimeError("A backup or restore operation is already in progress")
+            side_effect=RuntimeError(
+                "A backup or restore operation is already in progress"
+            )
         )
         resp = await client.post("/v1/backup")
         assert resp.status_code == 409
@@ -183,7 +185,9 @@ class TestRestoreBackup:
         self, client, mock_workbench, mock_backup_service, override_dep
     ):
         mock_backup_service.restore = AsyncMock(
-            side_effect=RuntimeError("A backup or restore operation is already in progress")
+            side_effect=RuntimeError(
+                "A backup or restore operation is already in progress"
+            )
         )
         resp = await client.post(
             "/v1/backup/20260101T120000Z-abc123/restore",

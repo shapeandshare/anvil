@@ -211,9 +211,7 @@ class TestListServices:
 class TestServiceLogs:
     """Retrieve the last N lines of a service log file."""
 
-    async def _make_log(
-        self, tmp_path: Path, name: str, lines: list[str]
-    ) -> Path:
+    async def _make_log(self, tmp_path: Path, name: str, lines: list[str]) -> Path:
         """Create a log file under tmp_path/logs/{name}.log."""
         log_dir = tmp_path / "logs"
         log_dir.mkdir(exist_ok=True)
@@ -282,9 +280,7 @@ class TestServiceLogs:
 class TestRestartAllServices:
     """Restart all managed services."""
 
-    async def test_restart_with_mlflow_running(
-        self, client, mlflow_running
-    ) -> None:
+    async def test_restart_with_mlflow_running(self, client, mlflow_running) -> None:
         """Running MLflow is stopped then started."""
         mlflow = app.state.mlflow
         resp = await client.post("/v1/services/restart-all")
@@ -295,9 +291,7 @@ class TestRestartAllServices:
         mlflow.async_stop.assert_awaited_once()
         mlflow.start.assert_called_once()
 
-    async def test_restart_with_mlflow_stopped(
-        self, client, mlflow_stopped
-    ) -> None:
+    async def test_restart_with_mlflow_stopped(self, client, mlflow_stopped) -> None:
         """Stopped MLflow is started (async_stop not called)."""
         mlflow = app.state.mlflow
         resp = await client.post("/v1/services/restart-all")
@@ -332,9 +326,7 @@ class TestClearServiceLogs:
         assert resp.json() == {"status": "cleared"}
         assert log_dir.joinpath("web.log").read_text() == ""
 
-    async def test_clear_missing_log_file(
-        self, client, monkeypatch, tmp_path
-    ) -> None:
+    async def test_clear_missing_log_file(self, client, monkeypatch, tmp_path) -> None:
         """No log file exists — returns 'no_logs'."""
         monkeypatch.chdir(tmp_path)
         (tmp_path / "logs").mkdir()
@@ -366,9 +358,7 @@ class TestClearServiceLogs:
 class TestStartService:
     """Start a named service."""
 
-    async def test_start_mlflow_not_running(
-        self, client, mlflow_stopped
-    ) -> None:
+    async def test_start_mlflow_not_running(self, client, mlflow_stopped) -> None:
         """Starts MLflow when it is stopped."""
         mlflow = app.state.mlflow
         resp = await client.post("/v1/services/mlflow/start")
@@ -380,9 +370,7 @@ class TestStartService:
         }
         mlflow.start.assert_called_once()
 
-    async def test_start_mlflow_already_running(
-        self, client, mlflow_running
-    ) -> None:
+    async def test_start_mlflow_already_running(self, client, mlflow_running) -> None:
         """Starting an already-running MLflow skips the start call."""
         mlflow = app.state.mlflow
         resp = await client.post("/v1/services/mlflow/start")
@@ -390,9 +378,7 @@ class TestStartService:
         # When already running, start() is not called (no-op)
         mlflow.start.assert_not_called()
 
-    async def test_start_mlflow_not_initialized(
-        self, client, mlflow_none
-    ) -> None:
+    async def test_start_mlflow_not_initialized(self, client, mlflow_none) -> None:
         """MLflow not initialized — returns 400."""
         resp = await client.post("/v1/services/mlflow/start")
         assert resp.status_code == 400
@@ -421,18 +407,14 @@ class TestStopService:
         assert resp.json() == {"status": "stopped", "name": "mlflow"}
         mlflow.async_stop.assert_awaited_once()
 
-    async def test_stop_mlflow_not_running(
-        self, client, mlflow_stopped
-    ) -> None:
+    async def test_stop_mlflow_not_running(self, client, mlflow_stopped) -> None:
         """Stopping a stopped MLflow is a no-op."""
         mlflow = app.state.mlflow
         resp = await client.post("/v1/services/mlflow/stop")
         assert resp.status_code == 200
         mlflow.async_stop.assert_not_called()
 
-    async def test_stop_mlflow_not_initialized(
-        self, client, mlflow_none
-    ) -> None:
+    async def test_stop_mlflow_not_initialized(self, client, mlflow_none) -> None:
         """MLflow not initialized — returns 400."""
         resp = await client.post("/v1/services/mlflow/stop")
         assert resp.status_code == 400
@@ -453,9 +435,7 @@ class TestStopService:
 class TestRestartService:
     """Restart a named service."""
 
-    async def test_restart_mlflow_running(
-        self, client, mlflow_running
-    ) -> None:
+    async def test_restart_mlflow_running(self, client, mlflow_running) -> None:
         """Running MLflow is restarted (stopped then started)."""
         mlflow = app.state.mlflow
         resp = await client.post("/v1/services/mlflow/restart")
@@ -464,9 +444,7 @@ class TestRestartService:
         mlflow.async_stop.assert_awaited_once()
         mlflow.start.assert_called_once()
 
-    async def test_restart_mlflow_stopped(
-        self, client, mlflow_stopped
-    ) -> None:
+    async def test_restart_mlflow_stopped(self, client, mlflow_stopped) -> None:
         """Stopped MLflow is started."""
         mlflow = app.state.mlflow
         resp = await client.post("/v1/services/mlflow/restart")
@@ -474,9 +452,7 @@ class TestRestartService:
         mlflow.async_stop.assert_not_called()
         mlflow.start.assert_called_once()
 
-    async def test_restart_mlflow_not_initialized(
-        self, client, mlflow_none
-    ) -> None:
+    async def test_restart_mlflow_not_initialized(self, client, mlflow_none) -> None:
         """MLflow not initialized — returns 400."""
         resp = await client.post("/v1/services/mlflow/restart")
         assert resp.status_code == 400
@@ -497,9 +473,7 @@ class TestRestartService:
 class TestKillServicePort:
     """Kill processes occupying a service's port."""
 
-    async def test_kill_mlflow_port_no_processes(
-        self, client, mlflow_none
-    ) -> None:
+    async def test_kill_mlflow_port_no_processes(self, client, mlflow_none) -> None:
         """Port is scanned; no processes found — returns empty killed list."""
         with (
             patch("anvil.api.v1.health_ops._poll_port", return_value=[]),
@@ -512,9 +486,7 @@ class TestKillServicePort:
         assert resp.json()["port"] == 5001
         mock_kill.assert_not_called()
 
-    async def test_kill_mlflow_port_kills_processes(
-        self, client, mlflow_none
-    ) -> None:
+    async def test_kill_mlflow_port_kills_processes(self, client, mlflow_none) -> None:
         """Found PIDs are killed with SIGKILL."""
         with (
             patch("anvil.api.v1.health_ops._poll_port", return_value=[1234, 5678]),

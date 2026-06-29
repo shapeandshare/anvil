@@ -140,11 +140,14 @@ class TestStop:
         cfg["log_dir"] = str(tmp_path / "logs")
         (tmp_path / "logs").mkdir()
         import subprocess
+
         svc = MLflowService()
         svc.process = MagicMock()
         svc.process.poll.return_value = None
         svc.process.pid = 12345
-        svc.process.wait.side_effect = subprocess.TimeoutExpired(cmd="mlflow", timeout=10)
+        svc.process.wait.side_effect = subprocess.TimeoutExpired(
+            cmd="mlflow", timeout=10
+        )
         with patch("anvil.supervisor.services.os") as mock_os:
             mock_os.killpg = MagicMock()
             mock_os.getpgid.return_value = 9999

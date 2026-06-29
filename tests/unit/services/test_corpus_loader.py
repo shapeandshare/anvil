@@ -172,12 +172,14 @@ class TestCorpusLoaderScan:
         loader = CorpusLoader()
         f = Path(sample_dir) / "main.py"
         import pytest
+
         with pytest.raises(NotADirectoryError):
             loader.scan(str(f))
 
     def test_scan_nonexistent(self, sample_dir):
         loader = CorpusLoader()
         import pytest
+
         with pytest.raises(NotADirectoryError):
             loader.scan("/nonexistent/path")
 
@@ -187,6 +189,7 @@ class TestCorpusLoaderEdgeCases:
         loader = CorpusLoader()
         chunker = loader._make_chunker("windowed", 0.5)
         from anvil.services.chunking.window_chunker import FixedSizeWindowChunker
+
         assert isinstance(chunker, FixedSizeWindowChunker)
 
     def test_ingest_not_a_directory(self, tmp_path):
@@ -194,5 +197,6 @@ class TestCorpusLoaderEdgeCases:
         f = tmp_path / "file.txt"
         f.write_text("hello")
         import pytest
+
         with pytest.raises(NotADirectoryError):
             loader.ingest(str(f))

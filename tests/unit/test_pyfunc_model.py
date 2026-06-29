@@ -51,7 +51,11 @@ def _make_model_dir(tmp_path: Path, has_weights: bool = True) -> Path:
         (model_dir / "model.safetensors").write_bytes(b"\x00" * 8)
     with open(model_dir / "tokenizer.json", "w") as f:
         json.dump(
-            {"vocab": {"a": 0, "b": 1, "c": 2}, "chars": ["a", "b", "c"], "bos_token_id": 0},
+            {
+                "vocab": {"a": 0, "b": 1, "c": 2},
+                "chars": ["a", "b", "c"],
+                "bos_token_id": 0,
+            },
             f,
         )
     return model_dir

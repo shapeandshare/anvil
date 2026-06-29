@@ -628,9 +628,13 @@ class TestBootstrapCorpusAdvanced:
         # Verify the service orchestration.
         svc._corpus_svc.create.assert_awaited_once()
         svc._corpus_svc.ingest.assert_awaited_once_with(42)
-        svc._assign_provenance.assert_awaited_once_with(mock_corpus, {
-            "source": "Test", "license": "MIT",
-        })
+        svc._assign_provenance.assert_awaited_once_with(
+            mock_corpus,
+            {
+                "source": "Test",
+                "license": "MIT",
+            },
+        )
 
     async def test_exception_during_create(self, monkeypatch, tmp_path) -> None:
         """_bootstrap_corpus catches exception from corpus service."""
@@ -648,9 +652,7 @@ class TestBootstrapCorpusAdvanced:
         svc._dataset_repo = MagicMock()
         svc._corpus_loader = MagicMock()
         svc._corpus_svc = MagicMock()
-        svc._corpus_svc.create = AsyncMock(
-            side_effect=RuntimeError("disk full")
-        )
+        svc._corpus_svc.create = AsyncMock(side_effect=RuntimeError("disk full"))
         svc._dataset_svc = MagicMock()
         svc._license_repo = None
         svc._provenance_manifest = {
@@ -733,17 +735,19 @@ class TestBootstrapDatasetAdvanced:
             "small/names": {"source": "Test", "license": "MIT"},
         }
 
-        with patch.object(
-            db_mod, "DatasetImportService", return_value=mock_import_svc
-        ):
+        with patch.object(db_mod, "DatasetImportService", return_value=mock_import_svc):
             result_obj = BootstrapResult()
             ok = await svc._bootstrap_dataset(item, result_obj)
         assert ok is True
 
         svc._dataset_svc.create_dataset.assert_awaited_once()
-        svc._assign_provenance.assert_awaited_once_with(mock_dataset, {
-            "source": "Test", "license": "MIT",
-        })
+        svc._assign_provenance.assert_awaited_once_with(
+            mock_dataset,
+            {
+                "source": "Test",
+                "license": "MIT",
+            },
+        )
 
     async def test_exception_during_create(self, monkeypatch, tmp_path) -> None:
         """_bootstrap_dataset catches exception from dataset service."""
@@ -870,9 +874,7 @@ class TestAssignProvenance:
             "anvil.services.demo.demo_bootstrap.LicenseRepository",
             return_value=mock_lic_repo,
         ) as mock_repo_cls:
-            await svc._assign_provenance(
-                mock_entity, {"source": "", "license": "MIT"}
-            )
+            await svc._assign_provenance(mock_entity, {"source": "", "license": "MIT"})
 
         mock_repo_cls.assert_called_once_with(svc._session)
         assert svc._license_repo is mock_lic_repo
@@ -965,9 +967,7 @@ class TestBootstrapAllAdvanced:
 
         mock_import_svc = MagicMock()
         mock_import_svc.commit_import = AsyncMock()
-        with patch.object(
-            db_mod, "DatasetImportService", return_value=mock_import_svc
-        ):
+        with patch.object(db_mod, "DatasetImportService", return_value=mock_import_svc):
             result = await svc.bootstrap_all()
 
         assert result.corpora_created == 2
@@ -1018,9 +1018,7 @@ class TestBootstrapAllAdvanced:
 
         mock_import_svc = MagicMock()
         mock_import_svc.commit_import = AsyncMock()
-        with patch.object(
-            db_mod, "DatasetImportService", return_value=mock_import_svc
-        ):
+        with patch.object(db_mod, "DatasetImportService", return_value=mock_import_svc):
             result = await svc.bootstrap_all()
 
         # 1 corpus (small/names dir), 1 dataset (names.txt), script.py ignored.
@@ -1048,9 +1046,7 @@ class TestBootstrapAllAdvanced:
         svc._dataset_repo = MagicMock()
         svc._corpus_loader = MagicMock()
         svc._corpus_svc = MagicMock()
-        svc._corpus_svc.create = AsyncMock(
-            side_effect=RuntimeError("unexpected error")
-        )
+        svc._corpus_svc.create = AsyncMock(side_effect=RuntimeError("unexpected error"))
         svc._dataset_svc = MagicMock()
         svc._assign_provenance = AsyncMock()
         svc._license_repo = None

@@ -59,9 +59,7 @@ def content_dir(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def service(
-    in_memory_session: AsyncSession, content_dir: Path
-) -> RetentionService:
+def service(in_memory_session: AsyncSession, content_dir: Path) -> RetentionService:
     """Build a ``RetentionService`` with real repos and the in-memory
     DB session.
     """
@@ -105,7 +103,11 @@ class TestEmptyCorpus:
     async def test_collect_garbage_empty(self, service: RetentionService) -> None:
         """collect_garbage on an empty DB and empty disk returns zeroes."""
         result = await service.collect_garbage()
-        assert result == {"blobs_removed": 0, "versions_protected": 0, "sessions_cleaned": 0}
+        assert result == {
+            "blobs_removed": 0,
+            "versions_protected": 0,
+            "sessions_cleaned": 0,
+        }
 
 
 ########################################################################
@@ -117,7 +119,10 @@ class TestProtectedVersions:
     """Versions retain their blobs via VersionRunRef or ContentTag."""
 
     async def test_protected_by_run_ref(
-        self, in_memory_session: AsyncSession, service: RetentionService, content_dir: Path
+        self,
+        in_memory_session: AsyncSession,
+        service: RetentionService,
+        content_dir: Path,
     ) -> None:
         """A version with a VersionRunRef is retention-protected; its
         blobs are kept.
@@ -136,7 +141,9 @@ class TestProtectedVersions:
         entry = ContentEntry(version_id=v.id, path="f.txt", content_hash=blob_hash)
         in_memory_session.add(entry)
 
-        ref = VersionRunRef(version_id=v.id, mlflow_run_id="run1", corpus_ref="corpus:1")
+        ref = VersionRunRef(
+            version_id=v.id, mlflow_run_id="run1", corpus_ref="corpus:1"
+        )
         in_memory_session.add(ref)
         await in_memory_session.flush()
 
@@ -145,7 +152,10 @@ class TestProtectedVersions:
         assert result["blobs_removed"] == 0
 
     async def test_protected_by_gc_tag(
-        self, in_memory_session: AsyncSession, service: RetentionService, content_dir: Path
+        self,
+        in_memory_session: AsyncSession,
+        service: RetentionService,
+        content_dir: Path,
     ) -> None:
         """A version with a gc_protected ContentTag retains its blobs."""
         blob_hash = "b" * 64
@@ -170,7 +180,10 @@ class TestProtectedVersions:
         assert result["blobs_removed"] == 0
 
     async def test_unprotected_version_blobs_removed(
-        self, in_memory_session: AsyncSession, service: RetentionService, content_dir: Path
+        self,
+        in_memory_session: AsyncSession,
+        service: RetentionService,
+        content_dir: Path,
     ) -> None:
         """A version with NO run ref and NO gc_protected tag is NOT
         protected — its blobs ARE removed.
@@ -196,7 +209,10 @@ class TestProtectedVersions:
         assert not _blob_path(content_dir, blob_hash).exists()
 
     async def test_tag_with_gc_protected_false(
-        self, in_memory_session: AsyncSession, service: RetentionService, content_dir: Path
+        self,
+        in_memory_session: AsyncSession,
+        service: RetentionService,
+        content_dir: Path,
     ) -> None:
         """A ContentTag with gc_protected=False does NOT protect the
         version.
@@ -232,7 +248,10 @@ class TestStaleSessionCleanup:
     """Aged-out FAILED sessions get their staging areas removed."""
 
     async def test_expired_failed_session_cleaned(
-        self, in_memory_session: AsyncSession, service: RetentionService, content_dir: Path
+        self,
+        in_memory_session: AsyncSession,
+        service: RetentionService,
+        content_dir: Path,
     ) -> None:
         """A FAILED session closed >30 days ago is cleaned."""
         old = datetime.now() - timedelta(days=31)
@@ -252,7 +271,10 @@ class TestStaleSessionCleanup:
         assert not (content_dir / "staging" / "old-session").exists()
 
     async def test_recent_failed_session_preserved(
-        self, in_memory_session: AsyncSession, service: RetentionService, content_dir: Path
+        self,
+        in_memory_session: AsyncSession,
+        service: RetentionService,
+        content_dir: Path,
     ) -> None:
         """A FAILED session closed only 1 day ago is NOT cleaned."""
         recent = datetime.now() - timedelta(days=1)
@@ -272,7 +294,10 @@ class TestStaleSessionCleanup:
         assert (content_dir / "staging" / "recent-session").exists()
 
     async def test_open_session_not_cleaned(
-        self, in_memory_session: AsyncSession, service: RetentionService, content_dir: Path
+        self,
+        in_memory_session: AsyncSession,
+        service: RetentionService,
+        content_dir: Path,
     ) -> None:
         """An OPEN session (not FAILED) is never cleaned regardless of
         age.
@@ -293,7 +318,10 @@ class TestStaleSessionCleanup:
         assert result["sessions_cleaned"] == 0
 
     async def test_failed_session_no_closed_at(
-        self, in_memory_session: AsyncSession, service: RetentionService, content_dir: Path
+        self,
+        in_memory_session: AsyncSession,
+        service: RetentionService,
+        content_dir: Path,
     ) -> None:
         """A FAILED session with closed_at=None is NOT cleaned."""
         sess = IngestSession(
@@ -320,7 +348,10 @@ class TestUnreferencedBlobs:
     """Blobs whose hashes aren't in any protected version are removed."""
 
     async def test_orphan_blob_removed(
-        self, in_memory_session: AsyncSession, service: RetentionService, content_dir: Path
+        self,
+        in_memory_session: AsyncSession,
+        service: RetentionService,
+        content_dir: Path,
     ) -> None:
         """A blob with no version entries at all is removed."""
         h = "e" * 64
@@ -334,7 +365,10 @@ class TestUnreferencedBlobs:
         assert not _blob_path(content_dir, h).exists()
 
     async def test_blob_with_no_disk_file(
-        self, in_memory_session: AsyncSession, service: RetentionService, content_dir: Path
+        self,
+        in_memory_session: AsyncSession,
+        service: RetentionService,
+        content_dir: Path,
     ) -> None:
         """An orphan blob with no on-disk file still removes the DB row
         (disk unlink is skipped).
@@ -351,7 +385,10 @@ class TestUnreferencedBlobs:
         assert h not in hashes
 
     async def test_multiple_protected_and_orphan_blobs(
-        self, in_memory_session: AsyncSession, service: RetentionService, content_dir: Path
+        self,
+        in_memory_session: AsyncSession,
+        service: RetentionService,
+        content_dir: Path,
     ) -> None:
         """Mix of protected and orphan blobs: only orphanes removed."""
         keep_h = "g" * 64
@@ -370,7 +407,9 @@ class TestUnreferencedBlobs:
 
         entry = ContentEntry(version_id=v.id, path="k.txt", content_hash=keep_h)
         in_memory_session.add(entry)
-        ref = VersionRunRef(version_id=v.id, mlflow_run_id="run2", corpus_ref="corpus:5")
+        ref = VersionRunRef(
+            version_id=v.id, mlflow_run_id="run2", corpus_ref="corpus:5"
+        )
         in_memory_session.add(ref)
         await in_memory_session.flush()
 
@@ -390,7 +429,10 @@ class TestDiskCleanup:
     """Edge cases around deleting blob files from disk."""
 
     async def test_blob_missing_disk_file_does_not_raise(
-        self, in_memory_session: AsyncSession, service: RetentionService, content_dir: Path
+        self,
+        in_memory_session: AsyncSession,
+        service: RetentionService,
+        content_dir: Path,
     ) -> None:
         """If an orphan blob's disk file is already missing, the
         service does not raise.

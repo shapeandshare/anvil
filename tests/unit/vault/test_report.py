@@ -17,10 +17,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from pathlib import Path
 
-from anvil.services.vault.report import (
-    _note_title,
-    render_markdown,
-)
+from anvil.services.vault.report import _note_title, render_markdown
 from anvil.services.vault.types_connectivity_metrics import ConnectivityMetrics
 from anvil.services.vault.types_graph_health_report import GraphHealthReport
 from anvil.services.vault.types_health_score import HealthScore

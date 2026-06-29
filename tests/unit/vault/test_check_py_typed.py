@@ -24,7 +24,6 @@ from anvil.services.vault.check_py_typed import (
     main,
 )
 
-
 ########################################################################
 # _resolve_repo_root tests
 ########################################################################
@@ -38,7 +37,9 @@ class TestResolveRepoRoot:
         result = _resolve_repo_root(str(tmp_path))
         assert result == tmp_path.resolve()
 
-    def test_env_var_used(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_env_var_used(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """ANVIL_REPO_ROOT env var is used when no argument."""
         monkeypatch.setenv("ANVIL_REPO_ROOT", str(tmp_path))
         result = _resolve_repo_root(None)
@@ -50,7 +51,9 @@ class TestResolveRepoRoot:
         result = _resolve_repo_root(None)
         assert result == Path.cwd().resolve()
 
-    def test_explicit_overrides_env(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_explicit_overrides_env(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Explicit argument takes priority over env var."""
         monkeypatch.setenv("ANVIL_REPO_ROOT", "/nonexistent")
         result = _resolve_repo_root(str(tmp_path))
@@ -130,9 +133,7 @@ class TestCheckPackageDataConfigured:
     def test_configured_returns_none(self, tmp_path: Path) -> None:
         """Returns None when py.typed is listed in pyproject.toml."""
         pyproject = tmp_path / "pyproject.toml"
-        pyproject.write_text(
-            "[tool.setuptools.package-data]\nanvil = [\"py.typed\"]\n"
-        )
+        pyproject.write_text('[tool.setuptools.package-data]\nanvil = ["py.typed"]\n')
         assert check_package_data_configured(tmp_path) is None
 
     def test_missing_pyproject_returns_error(self, tmp_path: Path) -> None:
@@ -152,9 +153,7 @@ class TestCheckPackageDataConfigured:
     def test_missing_entry_returns_error(self, tmp_path: Path) -> None:
         """Returns error when py.typed is not in the package-data list."""
         pyproject = tmp_path / "pyproject.toml"
-        pyproject.write_text(
-            "[tool.setuptools.package-data]\nanvil = [\"other_file\"]\n"
-        )
+        pyproject.write_text('[tool.setuptools.package-data]\nanvil = ["other_file"]\n')
         error = check_package_data_configured(tmp_path)
         assert error is not None
         assert "not listed" in error
@@ -171,7 +170,7 @@ class TestCheckPackageDataConfigured:
         """Returns error when anvil entry is absent from package-data."""
         pyproject = tmp_path / "pyproject.toml"
         pyproject.write_text(
-            "[tool.setuptools.package-data]\nother_pkg = [\"py.typed\"]\n"
+            '[tool.setuptools.package-data]\nother_pkg = ["py.typed"]\n'
         )
         error = check_package_data_configured(tmp_path)
         assert error is not None
@@ -192,9 +191,7 @@ class TestMain:
         anvil_dir.mkdir()
         (anvil_dir / "py.typed").write_text("")
         pyproject = tmp_path / "pyproject.toml"
-        pyproject.write_text(
-            "[tool.setuptools.package-data]\nanvil = [\"py.typed\"]\n"
-        )
+        pyproject.write_text('[tool.setuptools.package-data]\nanvil = ["py.typed"]\n')
         monkeypatch.setenv("ANVIL_REPO_ROOT", str(tmp_path))
         with pytest.raises(SystemExit) as exc:
             main([str(tmp_path)])
@@ -214,9 +211,7 @@ class TestMain:
         anvil_dir.mkdir()
         (anvil_dir / "py.typed").write_text("content")
         pyproject = tmp_path / "pyproject.toml"
-        pyproject.write_text(
-            "[tool.setuptools.package-data]\nanvil = [\"py.typed\"]\n"
-        )
+        pyproject.write_text('[tool.setuptools.package-data]\nanvil = ["py.typed"]\n')
         with pytest.raises(SystemExit) as exc:
             main([str(tmp_path)])
         assert exc.value.code == 1
@@ -230,7 +225,9 @@ class TestMain:
             main([str(tmp_path)])
         assert exc.value.code == 1
 
-    def test_no_args_uses_cwd(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_no_args_uses_cwd(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """No args uses CWD (or env) as repo root."""
         monkeypatch.chdir(tmp_path)
         # No anvil dir in tmp_path - should fail

@@ -29,7 +29,6 @@ from anvil.services.vault.migrate_specs import (
     verify_migration,
 )
 
-
 ##############################################################################
 # slug_to_title
 ##############################################################################
@@ -121,10 +120,7 @@ def test_spec_dirname_to_title() -> None:
 
 def test_spec_dirname_to_title_with_acronym() -> None:
     """Acronym overrides apply to spec titles."""
-    assert (
-        spec_dirname_to_title("042-api-ux-enhancement")
-        == "042 API UX Enhancement"
-    )
+    assert spec_dirname_to_title("042-api-ux-enhancement") == "042 API UX Enhancement"
 
 
 ##############################################################################
@@ -255,9 +251,7 @@ def test_extract_summary_only_headings() -> None:
 
 def test_extract_summary_clarifications_skip_h3() -> None:
     """Skip ### lines inside Clarifications section."""
-    content = (
-        "## Clarifications\n\n### Sub-header\n\nThis is the summary."
-    )
+    content = "## Clarifications\n\n### Sub-header\n\nThis is the summary."
     assert extract_summary(content) == "This is the summary."
 
 

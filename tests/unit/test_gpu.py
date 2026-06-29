@@ -66,7 +66,9 @@ def test_detect_gpu_no_torch(monkeypatch) -> None:
 def test_detect_gpu_mps_available(monkeypatch) -> None:
     mps_b = _MockModule(is_available=lambda: True)
     cuda_b = _MockModule(is_available=lambda: False)
-    mock_torch = _MockModule(__version__="2.1.0", backends=_MockModule(mps=mps_b), cuda=cuda_b)
+    mock_torch = _MockModule(
+        __version__="2.1.0", backends=_MockModule(mps=mps_b), cuda=cuda_b
+    )
     monkeypatch.setitem(sys.modules, "torch", mock_torch)
     monkeypatch.setattr("anvil.gpu._get_mps_device_name", lambda: "Apple M2")
     monkeypatch.setattr("anvil.gpu._get_mps_memory", lambda: 16.0)
@@ -81,7 +83,9 @@ def test_detect_gpu_mps_available(monkeypatch) -> None:
 def test_detect_gpu_mps_memory_fails_gracefully(monkeypatch) -> None:
     mps_b = _MockModule(is_available=lambda: True)
     cuda_b = _MockModule(is_available=lambda: False)
-    mock_torch = _MockModule(__version__="2.1.0", backends=_MockModule(mps=mps_b), cuda=cuda_b)
+    mock_torch = _MockModule(
+        __version__="2.1.0", backends=_MockModule(mps=mps_b), cuda=cuda_b
+    )
     monkeypatch.setitem(sys.modules, "torch", mock_torch)
     monkeypatch.setattr("anvil.gpu._get_mps_device_name", lambda: "Apple M2")
 
@@ -192,6 +196,7 @@ def test_get_mps_device_name_arm64(monkeypatch) -> None:
         lambda *a, **kw: _MockModule(stdout="Apple M2 Pro\n", stderr="", returncode=0),
     )
     from anvil.gpu import _get_mps_device_name
+
     assert _get_mps_device_name() == "Apple M2 Pro"
 
 
@@ -203,12 +208,14 @@ def test_get_mps_device_name_arm64_sysctl_fails(monkeypatch) -> None:
 
     monkeypatch.setattr("subprocess.run", _raise_notfound)
     from anvil.gpu import _get_mps_device_name
+
     assert _get_mps_device_name() == "Apple Silicon"
 
 
 def test_get_mps_device_name_non_arm64(monkeypatch) -> None:
     monkeypatch.setattr("platform.machine", lambda: "x86_64")
     from anvil.gpu import _get_mps_device_name
+
     assert _get_mps_device_name() == "MPS (x86_64)"
 
 
@@ -216,14 +223,18 @@ def test_get_mps_device_name_non_arm64(monkeypatch) -> None:
 
 
 def test_get_mps_memory_with_psutil(monkeypatch) -> None:
-    monkeypatch.setattr("psutil.virtual_memory", lambda: _MockModule(total=16 * 1024**3))
+    monkeypatch.setattr(
+        "psutil.virtual_memory", lambda: _MockModule(total=16 * 1024**3)
+    )
     from anvil.gpu import _get_mps_memory
+
     assert _get_mps_memory() == pytest.approx(16.0, rel=0.1)
 
 
 def test_get_mps_memory_without_psutil(monkeypatch) -> None:
     monkeypatch.setitem(sys.modules, "psutil", None)
     from anvil.gpu import _get_mps_memory
+
     assert _get_mps_memory() is None
 
 
@@ -242,12 +253,16 @@ def test_resolve_device_falls_back_to_cpu(monkeypatch) -> None:
 
 
 def test_resolve_device_detects_cuda(monkeypatch) -> None:
-    monkeypatch.setattr("anvil.gpu.detect_gpu", lambda: GpuInfo(available=True, backend=DeviceType.CUDA))
+    monkeypatch.setattr(
+        "anvil.gpu.detect_gpu", lambda: GpuInfo(available=True, backend=DeviceType.CUDA)
+    )
     assert resolve_device() == "cuda:0"
 
 
 def test_resolve_device_detects_mps(monkeypatch) -> None:
-    monkeypatch.setattr("anvil.gpu.detect_gpu", lambda: GpuInfo(available=True, backend=DeviceType.MPS))
+    monkeypatch.setattr(
+        "anvil.gpu.detect_gpu", lambda: GpuInfo(available=True, backend=DeviceType.MPS)
+    )
     assert resolve_device() == "mps"
 
 

@@ -29,7 +29,6 @@ from anvil.api.v1 import training as training_module
 from anvil.gpu import GpuInfo
 from anvil.services.compute.training_engine import TrainingEngine
 
-
 ####################################################################
 # Helpers
 ####################################################################
@@ -87,9 +86,7 @@ def _patch_tracking(**kwargs) -> MagicMock:
     mock.log_final_metric = kwargs.get("log_final_metric", AsyncMock())
     mock.log_dataset_input = kwargs.get("log_dataset_input", AsyncMock())
     mock.log_corpus_input = kwargs.get("log_corpus_input", AsyncMock())
-    mock.register_source_model = kwargs.get(
-        "register_source_model", AsyncMock()
-    )
+    mock.register_source_model = kwargs.get("register_source_model", AsyncMock())
     mock.is_degraded = kwargs.get("is_degraded", False)
     return mock
 
@@ -104,12 +101,8 @@ def _default_patches():
     mock_tracking = _patch_tracking()
 
     stack = contextlib.ExitStack()
-    stack.enter_context(
-        patch.object(training_module, "svc", mock_svc)
-    )
-    stack.enter_context(
-        patch.object(training_module, "tracking_svc", mock_tracking)
-    )
+    stack.enter_context(patch.object(training_module, "svc", mock_svc))
+    stack.enter_context(patch.object(training_module, "tracking_svc", mock_tracking))
     stack.enter_context(
         patch(
             "anvil.api.v1.training.resolve_backend",
@@ -153,23 +146,17 @@ class TestValidateHparams:
 
     def test_raises_when_n_head_exceeds_n_embd(self):
         with pytest.raises(Exception) as exc:
-            training_module._validate_hparams(
-                n_embd=4, n_head=8, _block_size=16
-            )
+            training_module._validate_hparams(n_embd=4, n_head=8, _block_size=16)
         assert "exceeds" in str(exc.value)
 
     def test_raises_when_not_divisible(self):
         with pytest.raises(Exception) as exc:
-            training_module._validate_hparams(
-                n_embd=15, n_head=4, _block_size=16
-            )
+            training_module._validate_hparams(n_embd=15, n_head=4, _block_size=16)
         assert "not divisible" in str(exc.value)
 
     def test_raises_when_head_dim_odd(self):
         with pytest.raises(Exception) as exc:
-            training_module._validate_hparams(
-                n_embd=12, n_head=4, _block_size=16
-            )
+            training_module._validate_hparams(n_embd=12, n_head=4, _block_size=16)
         assert "odd" in str(exc.value) or "even" in str(exc.value)
 
 
@@ -187,9 +174,7 @@ class TestResolveTrainingBackend:
         assert isinstance(device, str)
 
     def test_resolves_local_cpu_backend(self):
-        engine, device = training_module._resolve_training_backend(
-            "local-cpu"
-        )
+        engine, device = training_module._resolve_training_backend("local-cpu")
         assert engine == TrainingEngine.STDLIB
         assert device == "cpu"
 
@@ -214,9 +199,7 @@ class TestStartTraining:
     async def test_starts_training_successfully(self, client):
         """Happy path: training starts and returns run_id."""
         with _default_patches():
-            resp = await client.post(
-                "/v1/training/start", json=_make_config()
-            )
+            resp = await client.post("/v1/training/start", json=_make_config())
         assert resp.status_code == 200
         data = resp.json()
         assert data["run_id"] == 42
@@ -323,9 +306,7 @@ class TestStartTraining:
                 return_value=GpuInfo(available=False),
             ),
         ):
-            resp = await client.post(
-                "/v1/training/start", json=_make_config()
-            )
+            resp = await client.post("/v1/training/start", json=_make_config())
         assert resp.status_code == 200
         data = resp.json()
         assert data["tracking"] == "degraded"
@@ -342,9 +323,7 @@ class TestTrainingRunStatus:
     async def test_returns_active_for_running_run(self, client):
         """Returns status 'active' for a known run ID."""
         mock_queue = MagicMock()
-        with patch.object(
-            training_module.svc, "get_queue", return_value=mock_queue
-        ):
+        with patch.object(training_module.svc, "get_queue", return_value=mock_queue):
             resp = await client.get("/v1/training/1/status")
         assert resp.status_code == 200
         data = resp.json()
@@ -353,9 +332,7 @@ class TestTrainingRunStatus:
 
     async def test_returns_404_for_unknown_run(self, client):
         """Returns 404 for a run that does not exist."""
-        with patch.object(
-            training_module.svc, "get_queue", return_value=None
-        ):
+        with patch.object(training_module.svc, "get_queue", return_value=None):
             resp = await client.get("/v1/training/99999/status")
         assert resp.status_code == 404
         assert "not found" in resp.json()["detail"].lower()
@@ -399,9 +376,7 @@ class TestStreamTraining:
 
     async def test_streams_error_for_unknown_run(self, client):
         """Returns SSE error event for unknown run."""
-        with patch.object(
-            training_module.svc, "get_queue", return_value=None
-        ):
+        with patch.object(training_module.svc, "get_queue", return_value=None):
             resp = await client.get("/v1/training/stream/99999")
         assert resp.status_code == 200
         content = resp.text
@@ -470,9 +445,7 @@ class TestStopTraining:
         """Stops a run and returns stopped status."""
         q: asyncio.Queue[dict] = asyncio.Queue()
         with (
-            patch.object(
-                training_module.svc, "get_queue", return_value=q
-            ),
+            patch.object(training_module.svc, "get_queue", return_value=q),
             patch.object(training_module.svc, "stop_run"),
         ):
             resp = await client.post("/v1/training/1/stop")
@@ -483,9 +456,7 @@ class TestStopTraining:
     async def test_stops_run_gracefully_when_no_queue(self, client):
         """Stops gracefully even when queue is missing."""
         with (
-            patch.object(
-                training_module.svc, "get_queue", return_value=None
-            ),
+            patch.object(training_module.svc, "get_queue", return_value=None),
             patch.object(training_module.svc, "stop_run"),
         ):
             resp = await client.post("/v1/training/99999/stop")
@@ -496,9 +467,7 @@ class TestStopTraining:
         """Stop pushes an error event to the run's SSE queue."""
         q: asyncio.Queue[dict] = asyncio.Queue()
         with (
-            patch.object(
-                training_module.svc, "get_queue", return_value=q
-            ),
+            patch.object(training_module.svc, "get_queue", return_value=q),
             patch.object(training_module.svc, "stop_run"),
         ):
             resp = await client.post("/v1/training/1/stop")
@@ -546,9 +515,7 @@ class TestForwardPassGraph:
             "edges": [{"from": 0, "to": 1}],
         }
 
-        with patch(
-            "anvil.api.v1.training.InferenceService", return_value=mock_inf
-        ):
+        with patch("anvil.api.v1.training.InferenceService", return_value=mock_inf):
             resp = await client.get("/v1/forward-pass/graph")
         assert resp.status_code == 200
         data = resp.json()
@@ -558,15 +525,11 @@ class TestForwardPassGraph:
 
     async def test_returns_404_when_demo_model_missing(self, client):
         """Returns 404 when InferenceService.load_model raises."""
-        with patch(
-            "anvil.api.v1.training.InferenceService"
-        ) as mock_inf_cls:
+        with patch("anvil.api.v1.training.InferenceService") as mock_inf_cls:
             mock_inf = MagicMock()
             mock_inf_cls.return_value = mock_inf
             mock_inf.load_model = AsyncMock(
-                side_effect=ValueError(
-                    "Demo model not found. Run training first."
-                )
+                side_effect=ValueError("Demo model not found. Run training first.")
             )
             resp = await client.get("/v1/forward-pass/graph")
         assert resp.status_code == 404
@@ -588,9 +551,7 @@ class TestSetModelsDir:
         orig = training_module._get_models_dir()
         training_module.set_models_dir(Path("/tmp/test-models"))
         try:
-            assert training_module._get_models_dir() == Path(
-                "/tmp/test-models"
-            )
+            assert training_module._get_models_dir() == Path("/tmp/test-models")
         finally:
             training_module.set_models_dir(None)
         assert training_module._get_models_dir() == orig
@@ -616,15 +577,9 @@ class TestWarmStart:
     async def test_rejects_missing_base_model(self, client):
         """Returns 422 when base_model_ref model cannot be loaded."""
         with (
-            patch(
-                "anvil.api.v1.training.InferenceService"
-            ) as mock_inf_cls,
-            patch.object(
-                training_module, "svc", _patch_svc()
-            ),
-            patch.object(
-                training_module, "tracking_svc", _patch_tracking()
-            ),
+            patch("anvil.api.v1.training.InferenceService") as mock_inf_cls,
+            patch.object(training_module, "svc", _patch_svc()),
+            patch.object(training_module, "tracking_svc", _patch_tracking()),
             patch(
                 "anvil.api.v1.training.resolve_backend",
                 return_value={
@@ -653,20 +608,14 @@ class TestWarmStart:
     async def test_rejects_arch_mismatch_n_embd(self, client):
         """Returns 422 when base_model_ref n_embd doesn't match."""
         base = self._make_base_model(n_embd=32)
-        with (
-            patch(
-                "anvil.api.v1.training.InferenceService"
-            ) as mock_inf_cls,
-        ):
+        with (patch("anvil.api.v1.training.InferenceService") as mock_inf_cls,):
             mock_inf = MagicMock()
             mock_inf_cls.return_value = mock_inf
             mock_inf.load_model = AsyncMock(return_value=base)
 
             resp = await client.post(
                 "/v1/training/start",
-                json=_make_config(
-                    {"base_model_ref": 1, "n_embd": 16}
-                ),
+                json=_make_config({"base_model_ref": 1, "n_embd": 16}),
             )
         assert resp.status_code == 422
         assert "n_embd" in resp.json()["detail"]
@@ -674,20 +623,14 @@ class TestWarmStart:
     async def test_rejects_arch_mismatch_n_head(self, client):
         """Returns 422 when base_model_ref n_head doesn't match."""
         base = self._make_base_model(n_head=8)
-        with (
-            patch(
-                "anvil.api.v1.training.InferenceService"
-            ) as mock_inf_cls,
-        ):
+        with (patch("anvil.api.v1.training.InferenceService") as mock_inf_cls,):
             mock_inf = MagicMock()
             mock_inf_cls.return_value = mock_inf
             mock_inf.load_model = AsyncMock(return_value=base)
 
             resp = await client.post(
                 "/v1/training/start",
-                json=_make_config(
-                    {"base_model_ref": 1, "n_head": 4}
-                ),
+                json=_make_config({"base_model_ref": 1, "n_head": 4}),
             )
         assert resp.status_code == 422
         assert "n_head" in resp.json()["detail"]
@@ -695,20 +638,14 @@ class TestWarmStart:
     async def test_rejects_arch_mismatch_n_layer(self, client):
         """Returns 422 when base_model_ref n_layer doesn't match."""
         base = self._make_base_model(n_layer=4)
-        with (
-            patch(
-                "anvil.api.v1.training.InferenceService"
-            ) as mock_inf_cls,
-        ):
+        with (patch("anvil.api.v1.training.InferenceService") as mock_inf_cls,):
             mock_inf = MagicMock()
             mock_inf_cls.return_value = mock_inf
             mock_inf.load_model = AsyncMock(return_value=base)
 
             resp = await client.post(
                 "/v1/training/start",
-                json=_make_config(
-                    {"base_model_ref": 1, "n_layer": 1}
-                ),
+                json=_make_config({"base_model_ref": 1, "n_layer": 1}),
             )
         assert resp.status_code == 422
         assert "n_layer" in resp.json()["detail"]
@@ -716,20 +653,14 @@ class TestWarmStart:
     async def test_rejects_arch_mismatch_block_size(self, client):
         """Returns 422 when base_model_ref block_size doesn't match."""
         base = self._make_base_model(block_size=32)
-        with (
-            patch(
-                "anvil.api.v1.training.InferenceService"
-            ) as mock_inf_cls,
-        ):
+        with (patch("anvil.api.v1.training.InferenceService") as mock_inf_cls,):
             mock_inf = MagicMock()
             mock_inf_cls.return_value = mock_inf
             mock_inf.load_model = AsyncMock(return_value=base)
 
             resp = await client.post(
                 "/v1/training/start",
-                json=_make_config(
-                    {"base_model_ref": 1, "block_size": 16}
-                ),
+                json=_make_config({"base_model_ref": 1, "block_size": 16}),
             )
         assert resp.status_code == 422
         assert "block_size" in resp.json()["detail"]
@@ -738,15 +669,9 @@ class TestWarmStart:
         """Successful warm-start with matching architecture."""
         base = self._make_base_model()
         with (
-            patch(
-                "anvil.api.v1.training.InferenceService"
-            ) as mock_inf_cls,
-            patch.object(
-                training_module, "svc", _patch_svc()
-            ),
-            patch.object(
-                training_module, "tracking_svc", _patch_tracking()
-            ),
+            patch("anvil.api.v1.training.InferenceService") as mock_inf_cls,
+            patch.object(training_module, "svc", _patch_svc()),
+            patch.object(training_module, "tracking_svc", _patch_tracking()),
             patch(
                 "anvil.api.v1.training.resolve_backend",
                 return_value={
@@ -830,11 +755,7 @@ class TestEstimateMemory:
             memory_total_gb=0.5,
             memory_available_gb=0.3,
         )
-        config = MagicMock(
-            n_embd=256, n_head=8, n_layer=12, block_size=512
-        )
+        config = MagicMock(n_embd=256, n_head=8, n_layer=12, block_size=512)
         with pytest.raises(Exception) as exc:
-            training_module._estimate_memory(
-                TrainingEngine.TORCH, config, gpu_info
-            )
+            training_module._estimate_memory(TrainingEngine.TORCH, config, gpu_info)
         assert "OOM" in str(exc.value)

@@ -1164,10 +1164,18 @@ class TestImportMain:
         )
         svc_instance.run_import.assert_awaited_once_with(7)
 
-    @patch("sys.argv", [
-        "import_main", "huggingface", "org/model",
-        "--name", "my-model", "--revision", "v2",
-    ])
+    @patch(
+        "sys.argv",
+        [
+            "import_main",
+            "huggingface",
+            "org/model",
+            "--name",
+            "my-model",
+            "--revision",
+            "v2",
+        ],
+    )
     @patch("anvil.cli.AsyncSessionLocal")
     @patch("anvil.cli.ExternalModelRepository")
     @patch("anvil.cli.ModelImportJobRepository")
@@ -1353,7 +1361,10 @@ class TestTrainArgs:
     @patch("anvil.cli.TrainingService")
     @patch("anvil.cli.TrackingService")
     @patch("anvil.cli.resolve_backend")
-    @patch("sys.argv", ["train", "--corpus", "5", "--backend", "local-cpu", "--device", "cpu"])
+    @patch(
+        "sys.argv",
+        ["train", "--corpus", "5", "--backend", "local-cpu", "--device", "cpu"],
+    )
     def test_with_corpus_and_backend_args(
         self,
         mock_resolve: MagicMock,
@@ -1383,13 +1394,15 @@ class TestTrainArgs:
         training_instance.start_training = AsyncMock()
 
         queue: asyncio.Queue = asyncio.Queue()
-        queue.put_nowait({
-            "event": "complete",
-            "data": (
-                '{"step": 1000, "final_loss": 0.05, '
-                '"device": "cpu", "samples": []}'
-            ),
-        })
+        queue.put_nowait(
+            {
+                "event": "complete",
+                "data": (
+                    '{"step": 1000, "final_loss": 0.05, '
+                    '"device": "cpu", "samples": []}'
+                ),
+            }
+        )
         training_instance.get_queue = MagicMock(return_value=queue)
 
         train()
@@ -1434,13 +1447,15 @@ class TestTrainArgs:
         training_instance.start_training = AsyncMock()
 
         queue: asyncio.Queue = asyncio.Queue()
-        queue.put_nowait({
-            "event": "complete",
-            "data": (
-                '{"step": 500, "final_loss": 0.1, '
-                '"device": "cpu", "samples": []}'
-            ),
-        })
+        queue.put_nowait(
+            {
+                "event": "complete",
+                "data": (
+                    '{"step": 500, "final_loss": 0.1, '
+                    '"device": "cpu", "samples": []}'
+                ),
+            }
+        )
         training_instance.get_queue = MagicMock(return_value=queue)
 
         train()

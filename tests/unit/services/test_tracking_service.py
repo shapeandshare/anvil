@@ -22,7 +22,6 @@ import pytest
 
 from anvil.config import get_config
 
-
 ########################################################################
 # Fake MLflow data classes
 ########################################################################
@@ -568,7 +567,9 @@ class TestLogMetric:
         await svc.log_metric(run_id, "loss", 0.5)
         client = svc._client
         assert client is not None
-        assert any(m["key"] == "loss" and m["value"] == 0.5 for m in client.logged_metrics)
+        assert any(
+            m["key"] == "loss" and m["value"] == 0.5 for m in client.logged_metrics
+        )
 
     @pytest.mark.asyncio
     async def test_degraded_noop(self, svc: Any) -> None:
@@ -943,9 +944,7 @@ class TestEvalDatasets:
     @pytest.mark.asyncio
     async def test_create_raises_when_genai_unavailable(self, svc: Any) -> None:
         """Raises CapabilityUnavailable when genai datasets not supported."""
-        from anvil.services._shared.capability_unavailable import (
-            CapabilityUnavailable,
-        )
+        from anvil.services._shared.capability_unavailable import CapabilityUnavailable
 
         with patch.object(svc, "capabilities") as mock_caps:
             mock_caps.return_value.genai_datasets = False
@@ -994,9 +993,7 @@ class TestEvalDatasets:
     @pytest.mark.asyncio
     async def test_append_raises_when_genai_unavailable(self, svc: Any) -> None:
         """Raises CapabilityUnavailable when genai datasets not supported."""
-        from anvil.services._shared.capability_unavailable import (
-            CapabilityUnavailable,
-        )
+        from anvil.services._shared.capability_unavailable import CapabilityUnavailable
 
         with patch.object(svc, "capabilities") as mock_caps:
             mock_caps.return_value.genai_datasets = False
@@ -1026,9 +1023,7 @@ class TestEvalDatasets:
     @pytest.mark.asyncio
     async def test_get_raises_when_genai_unavailable(self, svc: Any) -> None:
         """Raises CapabilityUnavailable when genai datasets not supported."""
-        from anvil.services._shared.capability_unavailable import (
-            CapabilityUnavailable,
-        )
+        from anvil.services._shared.capability_unavailable import CapabilityUnavailable
 
         with patch.object(svc, "capabilities") as mock_caps:
             mock_caps.return_value.genai_datasets = False
@@ -1040,9 +1035,7 @@ class TestEvalDatasets:
         """Retrieves an eval dataset by name."""
         with (
             patch.object(svc, "capabilities") as mock_caps,
-            patch(
-                "anvil.services.tracking.tracking._get_dataset_sync"
-            ) as mock_get,
+            patch("anvil.services.tracking.tracking._get_dataset_sync") as mock_get,
         ):
             mock_caps.return_value.genai_datasets = True
             mock_caps.return_value.server_backed = True
@@ -1057,9 +1050,7 @@ class TestEvalDatasets:
         """Returns None when eval dataset is not found."""
         with (
             patch.object(svc, "capabilities") as mock_caps,
-            patch(
-                "anvil.services.tracking.tracking._get_dataset_sync"
-            ) as mock_get,
+            patch("anvil.services.tracking.tracking._get_dataset_sync") as mock_get,
         ):
             mock_caps.return_value.genai_datasets = True
             mock_caps.return_value.server_backed = True
@@ -1127,8 +1118,8 @@ class TestSystemMetrics:
         raise, and that we can reset for clean isolation.
         """
         from anvil.services.tracking.tracking import (
-            _system_metrics_enabled,
             TrackingService,
+            _system_metrics_enabled,
         )
 
         saved = _system_metrics_enabled
@@ -1528,7 +1519,9 @@ class TestGetSafetensorsArtifacts:
     async def test_client_not_initialized(self, svc: Any) -> None:
         """Returns error when lazy_init fails."""
         svc._client = None
-        with patch.object(svc, "_lazy_init", side_effect=RuntimeError("client not initialized")):
+        with patch.object(
+            svc, "_lazy_init", side_effect=RuntimeError("client not initialized")
+        ):
             result = await svc.get_safetensors_artifacts("run_1")
         assert result["available"] is False
         assert "client not initialized" in (result["error"] or "")
@@ -1833,8 +1826,7 @@ class TestLogCorpusLifecycleEvent:
             for t in client.set_tag_calls
         )
         assert any(
-            t["key"] == "custom" and t["value"] == "value"
-            for t in client.set_tag_calls
+            t["key"] == "custom" and t["value"] == "value" for t in client.set_tag_calls
         )
 
 
@@ -1938,9 +1930,10 @@ class TestDegradedMode:
         """All methods no-op in degraded mode without raising."""
         svc._degraded = True
 
-        assert await svc.start_run(
-            run_name="x", params={}, engine_backend="s", device="c"
-        ) == ""
+        assert (
+            await svc.start_run(run_name="x", params={}, engine_backend="s", device="c")
+            == ""
+        )
         await svc.log_metric("x", "k", 1.0)
         await svc.log_final_metric("x", "k", 1.0)
         await svc.finish_run("x")
@@ -1960,8 +1953,7 @@ class TestDegradedMode:
             == ""
         )
         assert (
-            await svc.log_corpus_lifecycle_event(corpus_id=1, event_type="ingest")
-            == ""
+            await svc.log_corpus_lifecycle_event(corpus_id=1, event_type="ingest") == ""
         )
         assert await svc.list_experiments() == []
         assert await svc.get_experiment(1) is None
@@ -2155,7 +2147,9 @@ class TestExceptionPathsWithClient:
         svc._client.log_artifact = MagicMock(  # type: ignore[method-assign]
             side_effect=ValueError("MLflow error")
         )
-        await svc.log_artifacts(run_id, model_path="/fake/model.json")  # Should not raise
+        await svc.log_artifacts(
+            run_id, model_path="/fake/model.json"
+        )  # Should not raise
 
 
 ########################################################################
@@ -2387,9 +2381,7 @@ class TestLifecycleEventsEmptyStartRun:
             tracking_uri="http://127.0.0.1:5000",
             client_factory=lambda uri: FailCreateRunClient(uri),
         )
-        run_id = await svc.log_corpus_lifecycle_event(
-            corpus_id=7, event_type="ingest"
-        )
+        run_id = await svc.log_corpus_lifecycle_event(corpus_id=7, event_type="ingest")
         assert run_id == ""
 
     @pytest.mark.asyncio
@@ -2436,9 +2428,7 @@ class TestListExperimentsClientNone:
         """Returns empty list when experiment_id is not set."""
         svc._lazy_init()
         svc._experiment_id = None
-        with patch.object(
-            svc, "_lazy_init"
-        ) as mock_init:
+        with patch.object(svc, "_lazy_init") as mock_init:
             mock_init.return_value = svc._client
             result = await svc.list_experiments()
         assert result == []
@@ -2465,9 +2455,7 @@ class TestGetExperimentClientNone:
         """Returns None when experiment_id is not set."""
         svc._lazy_init()
         svc._experiment_id = None
-        with patch.object(
-            svc, "_lazy_init"
-        ) as mock_init:
+        with patch.object(svc, "_lazy_init") as mock_init:
             mock_init.return_value = svc._client
             result = await svc.get_experiment(1)
         assert result is None
@@ -2542,7 +2530,9 @@ class TestModuleSyncFunctionsCoverage:
         from anvil.services.tracking.tracking import _create_dataset_sync
 
         mock_ds = MagicMock()
-        with patch("anvil.services.tracking.tracking.create_dataset", return_value=mock_ds):
+        with patch(
+            "anvil.services.tracking.tracking.create_dataset", return_value=mock_ds
+        ):
             result = _create_dataset_sync("my-ds", {"tag": "val"})
             assert result is mock_ds
 
@@ -2551,7 +2541,9 @@ class TestModuleSyncFunctionsCoverage:
         from anvil.services.tracking.tracking import _create_dataset_sync
 
         mock_ds = MagicMock()
-        with patch("anvil.services.tracking.tracking.create_dataset", return_value=mock_ds):
+        with patch(
+            "anvil.services.tracking.tracking.create_dataset", return_value=mock_ds
+        ):
             result = _create_dataset_sync("my-ds", None)
             assert result is mock_ds
 
@@ -2560,9 +2552,7 @@ class TestModuleSyncFunctionsCoverage:
         from anvil.services.tracking.tracking import _append_records_sync
 
         mock_get = MagicMock(return_value=None)
-        with (
-            patch("anvil.services.tracking.tracking.get_dataset", mock_get),
-        ):
+        with (patch("anvil.services.tracking.tracking.get_dataset", mock_get),):
             with pytest.raises(ValueError, match="not found"):
                 _append_records_sync("missing-ds", [{"a": 1}])
 
@@ -2571,7 +2561,9 @@ class TestModuleSyncFunctionsCoverage:
         from anvil.services.tracking.tracking import _append_records_sync
 
         mock_ds = MagicMock()
-        with patch("anvil.services.tracking.tracking.get_dataset", return_value=mock_ds):
+        with patch(
+            "anvil.services.tracking.tracking.get_dataset", return_value=mock_ds
+        ):
             count = _append_records_sync("my-ds", [{"a": 1}, {"b": 2}])
             assert count == 2
             mock_ds.merge_records.assert_called_once_with([{"a": 1}, {"b": 2}])
@@ -2625,9 +2617,7 @@ class TestModuleImportFallback:
 
         original_import = builtins.__import__
 
-        def _failing_import(
-            name: str, *args: Any, **kwargs: Any
-        ) -> Any:
+        def _failing_import(name: str, *args: Any, **kwargs: Any) -> Any:
             if "genai.datasets" in name:
                 msg = f"No module named {name}"
                 raise ImportError(msg)

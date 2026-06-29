@@ -17,7 +17,6 @@ from anvil.services.backup.progress_event import ProgressEvent
 from anvil.services.backup.restore_preview import RestorePreview
 from anvil.services.backup.verify_result import VerifyResult
 
-
 ###############################################################################
 # FakeRepo — minimal async repo mock
 ###############################################################################
@@ -493,9 +492,7 @@ class TestRestore:
         with pytest.raises(ValueError, match="Backup not found"):
             await svc.restore(backup_id="nonexistent", confirm="RESTORE", repo=repo)
 
-    async def test_raises_for_blocked_schema(
-        self, tmp_path: PosixPath
-    ):
+    async def test_raises_for_blocked_schema(self, tmp_path: PosixPath):
         """Restore raises PermissionError when schema is blocked."""
         svc = make_svc(tmp_path)
         repo = FakeRepo()
@@ -518,9 +515,7 @@ class TestRestore:
             ),
         ):
             with pytest.raises(PermissionError, match="Restore blocked"):
-                await svc.restore(
-                    backup_id="some-backup", confirm="RESTORE", repo=repo
-                )
+                await svc.restore(backup_id="some-backup", confirm="RESTORE", repo=repo)
 
     async def test_successful_restore(self, tmp_path: PosixPath) -> None:
         """Successful restore returns operation id and safety snapshot id."""
@@ -637,9 +632,7 @@ class TestDeleteBackup:
         result = await svc.create_backup(repo=repo)
         archive_path = tmp_path / "backups" / f"backup-{result.backup_id}.tar.gz"
         assert archive_path.exists()
-        await svc.delete_backup(
-            result.backup_id, repo=repo, confirm_last=True
-        )
+        await svc.delete_backup(result.backup_id, repo=repo, confirm_last=True)
         assert not archive_path.exists()
 
     async def test_raises_for_missing(self, tmp_path: PosixPath):
@@ -664,9 +657,7 @@ class TestDeleteBackup:
         repo = FakeRepo()
         op = _op("last-one")
         await repo.add(op)
-        with pytest.raises(
-            PermissionError, match="only remaining backup"
-        ):
+        with pytest.raises(PermissionError, match="only remaining backup"):
             await svc.delete_backup("last-one", repo=repo, confirm_last=False)
 
     async def test_confirm_last_allows_deletion(self, tmp_path: PosixPath):
@@ -678,9 +669,7 @@ class TestDeleteBackup:
         await svc.delete_backup("last-one", repo=repo, confirm_last=True)
         assert await repo.get_by_backup_id("last-one") is None
 
-    async def test_confirm_last_not_needed_with_multiple(
-        self, tmp_path: PosixPath
-    ):
+    async def test_confirm_last_not_needed_with_multiple(self, tmp_path: PosixPath):
         """confirm_last is not needed when other restorable backups remain."""
         svc = make_svc(tmp_path)
         repo = FakeRepo()
@@ -838,9 +827,7 @@ class TestRecoverInterruptedRestore:
 
         assert "Restore journal found" in caplog.text
 
-    async def test_clears_journal_after_recovery(
-        self, tmp_path: PosixPath
-    ):
+    async def test_clears_journal_after_recovery(self, tmp_path: PosixPath):
         """After recover, the journal file is removed."""
         import json
 
@@ -955,9 +942,7 @@ class TestRotation:
 class TestErrorHandling:
     """Edge-case error handling."""
 
-    async def test_create_backup_lock_actual_conflict(
-        self, tmp_path: PosixPath
-    ):
+    async def test_create_backup_lock_actual_conflict(self, tmp_path: PosixPath):
         """If the lock is held, create_backup raises RuntimeError."""
         svc = make_svc(tmp_path)
         repo = FakeRepo()
@@ -966,17 +951,13 @@ class TestErrorHandling:
         acquired = await svc._lock.try_acquire("manual", "lock-holder")  # type: ignore[attr-defined]  # noqa: E501
         assert acquired is True
 
-        with pytest.raises(
-            RuntimeError, match="already in progress"
-        ):
+        with pytest.raises(RuntimeError, match="already in progress"):
             await svc.create_backup(repo=repo)
 
         # Release so cleanup doesn't fail.
         svc._lock.release()  # type: ignore[attr-defined]
 
-    async def test_restore_lock_actual_conflict(
-        self, tmp_path: PosixPath
-    ) -> None:
+    async def test_restore_lock_actual_conflict(self, tmp_path: PosixPath) -> None:
         """Restore raises RuntimeError when lock is held."""
         svc = make_svc(tmp_path)
         repo = FakeRepo()
@@ -996,11 +977,7 @@ class TestErrorHandling:
                 return_value=mock_manifest,
             ),
         ):
-            with pytest.raises(
-                RuntimeError, match="already in progress"
-            ):
-                await svc.restore(
-                    backup_id="some-backup", confirm="RESTORE", repo=repo
-                )
+            with pytest.raises(RuntimeError, match="already in progress"):
+                await svc.restore(backup_id="some-backup", confirm="RESTORE", repo=repo)
 
         svc._lock.release()  # type: ignore[attr-defined]

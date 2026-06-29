@@ -99,7 +99,11 @@ class TestFindChainGaps:
         """Missing edge between a and b when both share a common predecessor is a gap."""
         G = nx.DiGraph()
         G.add_edges_from([("b", "a"), ("b", "c"), ("a", "c")])
-        notes = {"a": _meta("a"), "b": _meta("b", tags=["type/principle"]), "c": _meta("c")}
+        notes = {
+            "a": _meta("a"),
+            "b": _meta("b", tags=["type/principle"]),
+            "c": _meta("c"),
+        }
         gaps = _find_chain_gaps(G, notes)
         assert ("a", "c", "b") in gaps
 

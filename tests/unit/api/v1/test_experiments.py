@@ -26,7 +26,6 @@ from anvil.api.v1.experiments import (
 )
 from anvil.services.tracking.tracking import TrackingService
 
-
 ####################################################################
 # Helper: fake MLflow client
 ####################################################################
@@ -84,7 +83,9 @@ class _FakeMlflowClient:
             return run
         raise MlflowException("Run not found")
 
-    def search_runs(self, experiment_ids, order_by=None, filter_string=None, max_results=100):
+    def search_runs(
+        self, experiment_ids, order_by=None, filter_string=None, max_results=100
+    ):
         return list(self._runs.values())
 
     def get_metric_history(self, run_id, metric_name):
@@ -211,7 +212,8 @@ class TestBuildMlflowUrl:
     def test_builds_url_when_exp_id_provided(self):
         request = MagicMock()
         with patch(
-            "anvil.api.v1.experiments.get_mlflow_browser_uri", return_value="http://localhost:5001"
+            "anvil.api.v1.experiments.get_mlflow_browser_uri",
+            return_value="http://localhost:5001",
         ):
             url = _build_mlflow_url(request, "exp_1")
         assert url == "http://localhost:5001/#/experiments/exp_1"
@@ -302,7 +304,9 @@ class TestListExperiments:
         ):
             mock_client = MagicMock()
             mock_client_cls.return_value = mock_client
-            mock_client.get_experiment_by_name.return_value = SimpleNamespace(experiment_id="exp_1")
+            mock_client.get_experiment_by_name.return_value = SimpleNamespace(
+                experiment_id="exp_1"
+            )
             resp = await client.get("/v1/experiments")
         assert resp.status_code == 200
         data = resp.json()
@@ -374,7 +378,9 @@ class TestCompareExperiments:
             "get_experiment",
             side_effect=_fake_get_experiment,
         ):
-            resp = await client.get("/v1/experiments/compare?experiment_ids=1&experiment_ids=2&experiment_ids=999")
+            resp = await client.get(
+                "/v1/experiments/compare?experiment_ids=1&experiment_ids=2&experiment_ids=999"
+            )
         assert resp.status_code == 200
         data = resp.json()
         assert len(data["experiments"]) == 2
@@ -389,7 +395,9 @@ class TestCompareExperiments:
     async def test_compare_handles_all_missing(self, client):
         """Returns empty list when all IDs are missing."""
         with patch.object(TrackingService, "get_experiment", return_value=None):
-            resp = await client.get("/v1/experiments/compare?experiment_ids=999&experiment_ids=888")
+            resp = await client.get(
+                "/v1/experiments/compare?experiment_ids=999&experiment_ids=888"
+            )
         assert resp.status_code == 200
         assert resp.json()["experiments"] == []
 
@@ -408,14 +416,16 @@ class TestGetExperiment:
         model_path = Path(f"data/models/experiment_{exp_id}.json")
         model_path.parent.mkdir(parents=True, exist_ok=True)
         model_path.write_text(
-            json.dumps({
-                "vocab_size": 100,
-                "n_embd": 16,
-                "n_head": 4,
-                "n_layer": 1,
-                "block_size": 16,
-                "state_dict": {},
-            })
+            json.dumps(
+                {
+                    "vocab_size": 100,
+                    "n_embd": 16,
+                    "n_head": 4,
+                    "n_layer": 1,
+                    "block_size": 16,
+                    "state_dict": {},
+                }
+            )
         )
 
         async def _fake_get_experiment(eid: int) -> dict | None:
@@ -700,7 +710,9 @@ class TestGetExperiment:
                 TrackingService, "get_experiment", side_effect=_fake_get_experiment
             ),
             patch("anvil.api.v1.experiments.Path.exists", return_value=False),
-            patch("anvil.api.v1.experiments.AsyncSessionLocal", return_value=fake_session),
+            patch(
+                "anvil.api.v1.experiments.AsyncSessionLocal", return_value=fake_session
+            ),
         ):
             fake_repo = AsyncMock()
             fake_repo.get.return_value = fake_ds
@@ -924,9 +936,7 @@ class TestDeleteExperiment:
             patch.object(
                 TrackingService, "get_experiment", side_effect=_fake_get_experiment
             ),
-            patch.object(
-                TrackingService, "_lazy_init", return_value=mock_client
-            ),
+            patch.object(TrackingService, "_lazy_init", return_value=mock_client),
         ):
             resp = await client.delete("/v1/experiments/1")
         assert resp.status_code == 200
@@ -972,9 +982,7 @@ class TestDeleteExperiment:
             patch.object(
                 TrackingService, "get_experiment", side_effect=_fake_get_experiment
             ),
-            patch.object(
-                TrackingService, "_lazy_init", return_value=delete_mock
-            ),
+            patch.object(TrackingService, "_lazy_init", return_value=delete_mock),
             patch("anvil.api.v1.experiments.MlflowException", MlflowException),
         ):
             resp = await client.delete("/v1/experiments/1")
@@ -1308,7 +1316,9 @@ class TestDownloadArtifact:
         ):
             mock_client = MagicMock()
             mock_client_cls.return_value = mock_client
-            mock_client.download_artifacts.side_effect = MlflowException("download failed")
+            mock_client.download_artifacts.side_effect = MlflowException(
+                "download failed"
+            )
             resp = await client.get(
                 f"/v1/experiments/{exp_id}/runs/{mlflow_run_id}/download",
                 params={"path": "model.safetensors"},
@@ -1385,14 +1395,16 @@ class TestRetryExport:
         model_path = Path(f"data/models/experiment_{exp_id}.json")
         model_path.parent.mkdir(parents=True, exist_ok=True)
         model_path.write_text(
-            json.dumps({
-                "vocab_size": 100,
-                "n_embd": 16,
-                "n_head": 4,
-                "n_layer": 1,
-                "block_size": 16,
-                "state_dict": {},
-            })
+            json.dumps(
+                {
+                    "vocab_size": 100,
+                    "n_embd": 16,
+                    "n_head": 4,
+                    "n_layer": 1,
+                    "block_size": 16,
+                    "state_dict": {},
+                }
+            )
         )
 
         async def _fake_get_experiment(eid: int) -> dict | None:
@@ -1450,13 +1462,15 @@ class TestRetryExport:
         model_path = Path(f"data/models/experiment_{exp_id}.json")
         model_path.parent.mkdir(parents=True, exist_ok=True)
         model_path.write_text(
-            json.dumps({
-                "vocab_size": 100,
-                "n_embd": 16,
-                "n_head": 4,
-                "n_layer": 1,
-                "block_size": 16,
-            })
+            json.dumps(
+                {
+                    "vocab_size": 100,
+                    "n_embd": 16,
+                    "n_head": 4,
+                    "n_layer": 1,
+                    "block_size": 16,
+                }
+            )
         )
 
         async def _fake_get_experiment(eid: int) -> dict | None:
@@ -1493,13 +1507,15 @@ class TestRetryExport:
         model_path = Path(f"data/models/experiment_{exp_id}.json")
         model_path.parent.mkdir(parents=True, exist_ok=True)
         model_path.write_text(
-            json.dumps({
-                "vocab_size": 100,
-                "n_embd": 16,
-                "n_head": 4,
-                "n_layer": 1,
-                "block_size": 16,
-            })
+            json.dumps(
+                {
+                    "vocab_size": 100,
+                    "n_embd": 16,
+                    "n_head": 4,
+                    "n_layer": 1,
+                    "block_size": 16,
+                }
+            )
         )
 
         async def _fake_get_experiment(eid: int) -> dict | None:

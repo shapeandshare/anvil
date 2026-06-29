@@ -245,6 +245,7 @@ async def test_deregister_non_existent_is_idempotent(
 # method so it raises the correct exception type but with a message
 # that does NOT match any of the unique/integrity patterns.
 
+
 @pytest.mark.asyncio
 async def test_register_non_unique_error_re_raises(
     registry_session: AsyncSession,

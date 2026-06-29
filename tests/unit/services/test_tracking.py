@@ -532,8 +532,7 @@ class TestLogMetric:
         client = svc._client
         assert client is not None
         assert any(
-            m["key"] == "loss" and m["value"] == 0.5
-            for m in client.logged_metrics
+            m["key"] == "loss" and m["value"] == 0.5 for m in client.logged_metrics
         )
 
     @pytest.mark.asyncio
@@ -749,9 +748,10 @@ class TestDegradedMode:
     async def test_degraded_noop_on_all_operations(self, svc: Any) -> None:
         """All methods no-op in degraded mode without raising."""
         svc._degraded = True
-        assert await svc.start_run(
-            run_name="x", params={}, engine_backend="s", device="c"
-        ) == ""
+        assert (
+            await svc.start_run(run_name="x", params={}, engine_backend="s", device="c")
+            == ""
+        )
         await svc.log_metric("x", "k", 1.0)
         await svc.log_final_metric("x", "k", 1.0)
         await svc.finish_run("x")
@@ -766,8 +766,13 @@ class TestDegradedMode:
             "error": None,
         }
         assert await svc.register_source_model(run_id="x") == {}
-        assert await svc.log_dataset_lifecycle_event(dataset_id=1, event_type="create") == ""
-        assert await svc.log_corpus_lifecycle_event(corpus_id=1, event_type="ingest") == ""
+        assert (
+            await svc.log_dataset_lifecycle_event(dataset_id=1, event_type="create")
+            == ""
+        )
+        assert (
+            await svc.log_corpus_lifecycle_event(corpus_id=1, event_type="ingest") == ""
+        )
         assert await svc.list_experiments() == []
         assert await svc.get_experiment(1) is None
         assert await svc.list_registered_models() == []
@@ -1097,9 +1102,7 @@ class TestModuleSyncFunctions:
 
     def test_create_dataset_sync_raises_when_not_available(self) -> None:
         """Raises ImportError when mlflow.genai.datasets is not available."""
-        with patch(
-            "anvil.services.tracking.tracking.create_dataset", None
-        ):
+        with patch("anvil.services.tracking.tracking.create_dataset", None):
             with pytest.raises(ImportError, match="mlflow.genai.datasets"):
                 _create_dataset_sync("test", {})
 
@@ -1332,9 +1335,7 @@ class TestRegisterSourceModel:
     async def test_sanitizes_name(self, svc: Any) -> None:
         """Sanitizes model names containing '/' or ':'."""
         await svc._lazy_init()
-        result = await svc.register_source_model(
-            run_id="run_1", name="my/model:1"
-        )
+        result = await svc.register_source_model(run_id="run_1", name="my/model:1")
         assert result["name"] == "my-model-1"
 
 
@@ -1496,9 +1497,7 @@ class TestLogCorpusLifecycleEvent:
             tracking_uri="http://127.0.0.1:5000",
             client_factory=lambda uri: FailingLazyClient(uri),
         )
-        run_id = await svc.log_corpus_lifecycle_event(
-            corpus_id=7, event_type="ingest"
-        )
+        run_id = await svc.log_corpus_lifecycle_event(corpus_id=7, event_type="ingest")
         assert run_id == ""
         assert svc.is_degraded
 
@@ -1524,8 +1523,7 @@ class TestLogCorpusLifecycleEvent:
             for t in client.set_tag_calls
         )
         assert any(
-            t["key"] == "custom" and t["value"] == "value"
-            for t in client.set_tag_calls
+            t["key"] == "custom" and t["value"] == "value" for t in client.set_tag_calls
         )
 
 
@@ -1643,9 +1641,7 @@ class TestListExperiments:
         svc._experiment_id = None  # force lazy_init to fail somehow
         svc._client = None
         # Make lazy_init raise Exception
-        with patch.object(
-            svc, "_lazy_init", side_effect=RuntimeError("boom")
-        ):
+        with patch.object(svc, "_lazy_init", side_effect=RuntimeError("boom")):
             result = await svc.list_experiments()
             assert result == []
 
@@ -1743,9 +1739,7 @@ class TestGetExperiment:
         """Returns None when lazy_init fails."""
         svc._client = None
         svc._experiment_id = None
-        with patch.object(
-            svc, "_lazy_init", side_effect=RuntimeError("boom")
-        ):
+        with patch.object(svc, "_lazy_init", side_effect=RuntimeError("boom")):
             result = await svc.get_experiment(1)
             assert result is None
 
@@ -1788,9 +1782,7 @@ class TestListRegisteredModels:
     @pytest.mark.asyncio
     async def test_lazy_init_exception(self, svc: Any) -> None:
         """Returns empty list when lazy_init fails."""
-        with patch.object(
-            svc, "_lazy_init", side_effect=RuntimeError("boom")
-        ):
+        with patch.object(svc, "_lazy_init", side_effect=RuntimeError("boom")):
             result = await svc.list_registered_models()
             assert result == []
 
@@ -1921,8 +1913,7 @@ class TestAllDegradedPaths:
         """log_corpus_lifecycle_event returns '' when degraded."""
         svc._degraded = True
         assert (
-            await svc.log_corpus_lifecycle_event(corpus_id=1, event_type="ingest")
-            == ""
+            await svc.log_corpus_lifecycle_event(corpus_id=1, event_type="ingest") == ""
         )
 
     @pytest.mark.asyncio

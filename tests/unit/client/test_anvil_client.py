@@ -18,11 +18,6 @@ import pytest
 from anvil.client._shared.server_config import ServerConfig
 from anvil.client._shared.transport import Transport
 from anvil.client.anvil_client import AnvilClient
-
-####################################################################
-# Sub-client types (for isinstance checks)
-####################################################################
-
 from anvil.client.compute.compute_client import ComputeClient
 from anvil.client.content.content_client import ContentClient
 from anvil.client.corpora.corpora_client import CorporaClient
@@ -36,6 +31,11 @@ from anvil.client.models.models_client import ModelsClient
 from anvil.client.registry.registry_client import RegistryClient
 from anvil.client.services.services_client import ServicesClient
 from anvil.client.training.training_client import TrainingClient
+
+####################################################################
+# Sub-client types (for isinstance checks)
+####################################################################
+
 
 
 ####################################################################

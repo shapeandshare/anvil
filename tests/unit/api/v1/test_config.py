@@ -49,7 +49,9 @@ def override_dep(mock_workbench):
 
 
 class TestListConfig:
-    async def test_returns_all_settings(self, client, mock_workbench, sample_setting, override_dep):
+    async def test_returns_all_settings(
+        self, client, mock_workbench, sample_setting, override_dep
+    ):
         mock_workbench.runtime_config.get_all = AsyncMock(return_value=[sample_setting])
         resp = await client.get("/v1/config")
         assert resp.status_code == 200
@@ -66,7 +68,9 @@ class TestListConfig:
 
 
 class TestGetConfig:
-    async def test_get_existing(self, client, mock_workbench, sample_setting, override_dep):
+    async def test_get_existing(
+        self, client, mock_workbench, sample_setting, override_dep
+    ):
         mock_workbench.runtime_config.get = AsyncMock(return_value=sample_setting)
         resp = await client.get("/v1/config/app.max_workers")
         assert resp.status_code == 200
@@ -79,8 +83,12 @@ class TestGetConfig:
 
 
 class TestUpdateConfig:
-    async def test_update_success(self, client, mock_workbench, sample_setting, override_dep):
-        mock_workbench.runtime_config.set_override = AsyncMock(return_value=sample_setting)
+    async def test_update_success(
+        self, client, mock_workbench, sample_setting, override_dep
+    ):
+        mock_workbench.runtime_config.set_override = AsyncMock(
+            return_value=sample_setting
+        )
         mock_workbench.audit.record = AsyncMock()
         resp = await client.put("/v1/config/app.max_workers", json={"value": "8"})
         assert resp.status_code == 200
@@ -102,8 +110,12 @@ class TestUpdateConfig:
 
 
 class TestResetConfig:
-    async def test_reset_success(self, client, mock_workbench, sample_setting, override_dep):
-        mock_workbench.runtime_config.reset_override = AsyncMock(return_value=sample_setting)
+    async def test_reset_success(
+        self, client, mock_workbench, sample_setting, override_dep
+    ):
+        mock_workbench.runtime_config.reset_override = AsyncMock(
+            return_value=sample_setting
+        )
         mock_workbench.audit.record = AsyncMock()
         resp = await client.post("/v1/config/app.max_workers/reset")
         assert resp.status_code == 200

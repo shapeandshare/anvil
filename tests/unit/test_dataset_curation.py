@@ -21,7 +21,6 @@ from anvil.services.datasets.dataset_curation import DatasetCurationService
 from anvil.services.datasets.metrics_result import MetricsResult
 from anvil.storage.local import LocalFileStore
 
-
 ##############################################################################
 # Helpers
 ##############################################################################
@@ -283,7 +282,9 @@ class TestFilterByLength:
         """Samples longer than max_length are removed."""
         ds = await _create_dataset(in_memory_session)
         await _create_sample(in_memory_session, ds.id, "hi", index=0)  # len 2
-        await _create_sample(in_memory_session, ds.id, "hello world and more", index=1)  # len 20
+        await _create_sample(
+            in_memory_session, ds.id, "hello world and more", index=1
+        )  # len 20
 
         svc = DatasetCurationService(in_memory_session, ds.id)
         result = await svc.filter_by_length(max_length=10)
@@ -381,11 +382,17 @@ class TestRegexReplace:
         store = LocalFileStore(str(store_root))
 
         s1 = await _create_sample(
-            in_memory_session, ds.id, "hello world", index=0,
+            in_memory_session,
+            ds.id,
+            "hello world",
+            index=0,
             file_path="s1.txt",
         )
         s2 = await _create_sample(
-            in_memory_session, ds.id, "goodbye world", index=1,
+            in_memory_session,
+            ds.id,
+            "goodbye world",
+            index=1,
             file_path="s2.txt",
         )
 
@@ -408,7 +415,10 @@ class TestRegexReplace:
         store = LocalFileStore(str(store_root))
 
         await _create_sample(
-            in_memory_session, ds.id, "hello world", index=0,
+            in_memory_session,
+            ds.id,
+            "hello world",
+            index=0,
             file_path="s1.txt",
         )
         await store.put("s1.txt", _async_bytes(b"hello world"))
@@ -426,7 +436,10 @@ class TestRegexReplace:
         store = LocalFileStore(str(store_root))
 
         await _create_sample(
-            in_memory_session, ds.id, "Hello World", index=0,
+            in_memory_session,
+            ds.id,
+            "Hello World",
+            index=0,
             file_path="s1.txt",
         )
         await store.put("s1.txt", _async_bytes(b"Hello World"))
@@ -444,7 +457,10 @@ class TestRegexReplace:
         store = LocalFileStore(str(store_root))
 
         await _create_sample(
-            in_memory_session, ds.id, "Hello World", index=0,
+            in_memory_session,
+            ds.id,
+            "Hello World",
+            index=0,
             file_path="s1.txt",
         )
         await store.put("s1.txt", _async_bytes(b"Hello World"))
@@ -462,7 +478,10 @@ class TestRegexReplace:
         store = LocalFileStore(str(store_root))
 
         await _create_sample(
-            in_memory_session, ds.id, "foo bar baz", index=0,
+            in_memory_session,
+            ds.id,
+            "foo bar baz",
+            index=0,
             file_path="s1.txt",
         )
         await store.put("s1.txt", _async_bytes(b"foo bar baz"))
@@ -472,7 +491,9 @@ class TestRegexReplace:
 
         assert result["samples_affected"] == 1
 
-    async def test_regex_replace_updates_hash_and_length(self, in_memory_session, tmp_path):
+    async def test_regex_replace_updates_hash_and_length(
+        self, in_memory_session, tmp_path
+    ):
         """After replacement, sample content_hash and length are recalculated."""
         ds = await _create_dataset(in_memory_session)
         store_root = tmp_path / "store"
@@ -480,7 +501,10 @@ class TestRegexReplace:
         store = LocalFileStore(str(store_root))
 
         await _create_sample(
-            in_memory_session, ds.id, "hello world", index=0,
+            in_memory_session,
+            ds.id,
+            "hello world",
+            index=0,
             file_path="s1.txt",
         )
         await store.put("s1.txt", _async_bytes(b"hello world"))
@@ -514,7 +538,10 @@ class TestRegexReplace:
         store = LocalFileStore(str(store_root))
 
         await _create_sample(
-            in_memory_session, ds.id, "hello world", index=0,
+            in_memory_session,
+            ds.id,
+            "hello world",
+            index=0,
             file_path="s1.txt",
         )
         await store.put("s1.txt", _async_bytes(b"hello world"))
@@ -531,7 +558,9 @@ class TestRegexReplace:
         assert params["replacement"] == "there"
         assert params["case_sensitive"] is False
 
-    async def test_regex_replace_updates_curation_version(self, in_memory_session, tmp_path):
+    async def test_regex_replace_updates_curation_version(
+        self, in_memory_session, tmp_path
+    ):
         """Regex replace bumps curation_version."""
         ds = await _create_dataset(in_memory_session)
         store_root = tmp_path / "store"
@@ -539,7 +568,10 @@ class TestRegexReplace:
         store = LocalFileStore(str(store_root))
 
         await _create_sample(
-            in_memory_session, ds.id, "hello world", index=0,
+            in_memory_session,
+            ds.id,
+            "hello world",
+            index=0,
             file_path="s1.txt",
         )
         await store.put("s1.txt", _async_bytes(b"hello world"))
@@ -588,7 +620,9 @@ class TestDeleteSample:
         s = await _create_sample(in_memory_session, ds1.id, "belongs to ds1", index=0)
 
         svc = DatasetCurationService(in_memory_session, ds2.id)
-        with pytest.raises(ValueError, match=f"Sample {s.id} not found in dataset {ds2.id}"):
+        with pytest.raises(
+            ValueError, match=f"Sample {s.id} not found in dataset {ds2.id}"
+        ):
             await svc.delete_sample(s.id)
 
     async def test_delete_sample_unknown_dataset(self, in_memory_session):

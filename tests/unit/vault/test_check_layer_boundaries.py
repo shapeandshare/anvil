@@ -24,7 +24,6 @@ from anvil.services.vault.check_layer_boundaries import (
     scan_file,
 )
 
-
 ########################################################################
 # _classify_file tests
 ########################################################################
@@ -102,7 +101,9 @@ class TestCheckImports:
     def test_services_importing_api_flagged(self) -> None:
         """Services importing from anvil.api is a violation."""
         source = "from anvil.api import something\n"
-        issues = _check_imports(source, "anvil/services/training/service.py", "services")
+        issues = _check_imports(
+            source, "anvil/services/training/service.py", "services"
+        )
         assert len(issues) == 1
 
     def test_repositories_importing_services_flagged(self) -> None:
@@ -243,7 +244,9 @@ class TestScanDirectory:
 class TestMain:
     """Tests for the CLI entry point."""
 
-    def test_clean_exits_0(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_clean_exits_0(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Clean directory exits with code 0."""
         monkeypatch.setenv("ANVIL_ROOT", str(tmp_path))
         # Layer detection requires relative path prefixes — absolute paths
@@ -256,7 +259,9 @@ class TestMain:
             main()
         assert exc.value.code == 0
 
-    def test_nonexistent_root_exits_1(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_nonexistent_root_exits_1(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Non-existent root directory exits with code 1."""
         monkeypatch.setenv("ANVIL_ROOT", str(tmp_path / "nonexistent"))
         monkeypatch.chdir(tmp_path)

@@ -20,12 +20,11 @@ import pytest
 
 from anvil.services.training.torch_engine import (
     _TORCH_AVAILABLE,
-    torch_available,
     TorchLlamaModel,
-    train_torch,
     load_torch_weights_from_lists,
+    torch_available,
+    train_torch,
 )
-
 
 ########################################################################
 # Fake torch primitives — real classes so isinstance() checks work

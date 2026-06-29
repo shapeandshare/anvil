@@ -19,7 +19,6 @@ from anvil.services.vault.scanner import (
 )
 from anvil.services.vault.types_note_metadata import NoteMetadata
 
-
 ##############################################################################
 # should_exclude
 ##############################################################################
@@ -238,9 +237,7 @@ def test_scan_all_notes_excludes_excluded_dirs(tmp_path: Path) -> None:
 
 def test_scan_all_notes_excludes_scaffold(tmp_path: Path) -> None:
     """Scaffold files are skipped (not added to notes dict)."""
-    scaffold = (
-        tmp_path / "Specs" / "001-foo" / "checklists" / "checklist.md"
-    )
+    scaffold = tmp_path / "Specs" / "001-foo" / "checklists" / "checklist.md"
     scaffold.parent.mkdir(parents=True)
     scaffold.write_text("Checklist content")
 
@@ -343,9 +340,7 @@ def test_scan_all_notes_dates_parsed(tmp_path: Path) -> None:
 def test_scan_all_notes_date_with_z_suffix(tmp_path: Path) -> None:
     """ISO dates with Z suffix are parsed."""
     note = tmp_path / "znote.md"
-    note.write_text(
-        "---\ncreated: 2024-01-01T00:00:00.000Z\n---\nBody."
-    )
+    note.write_text("---\ncreated: 2024-01-01T00:00:00.000Z\n---\nBody.")
     runner = GraphHealthRunner(vault_root=tmp_path, repo_root=tmp_path)
     runner.scan_all_notes()
     meta = runner.notes["znote"]
@@ -447,10 +442,7 @@ def test_resolve_wikilink_simple() -> None:
 
 def test_resolve_wikilink_with_dir() -> None:
     """A path-style target is stripped to the last segment."""
-    assert (
-        GraphHealthRunner._resolve_wikilink("foo/bar/baz")
-        == "baz"
-    )
+    assert GraphHealthRunner._resolve_wikilink("foo/bar/baz") == "baz"
 
 
 def test_resolve_wikilink_single_dir() -> None:

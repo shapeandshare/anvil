@@ -180,9 +180,7 @@ class TestTextBodyEndpoints:
     async def test_model_not_found_file_not_found(
         self, client, _mock_svc, path_suffix: str, body: dict, expected: dict
     ):
-        _mock_svc.load_model = AsyncMock(
-            side_effect=FileNotFoundError("No such file")
-        )
+        _mock_svc.load_model = AsyncMock(side_effect=FileNotFoundError("No such file"))
         resp = await client.post(
             f"/v1/inference/{path_suffix}",
             json={**body, "model_id": 99},
@@ -251,9 +249,7 @@ class TestQueryParamEndpoints:
     """
 
     @pytest.mark.parametrize("path_suffix,expected", QUERY_PARAM_ENDPOINTS)
-    async def test_success(
-        self, client, _mock_svc, path_suffix: str, expected: dict
-    ):
+    async def test_success(self, client, _mock_svc, path_suffix: str, expected: dict):
         resp = await client.get(f"/v1/inference/{path_suffix}")
         assert resp.status_code == 200
         assert resp.json() == expected
@@ -262,9 +258,7 @@ class TestQueryParamEndpoints:
     async def test_with_model_id(
         self, client, _mock_svc, path_suffix: str, expected: dict
     ):
-        resp = await client.get(
-            f"/v1/inference/{path_suffix}?model_id=7&version=2"
-        )
+        resp = await client.get(f"/v1/inference/{path_suffix}?model_id=7&version=2")
         assert resp.status_code == 200
         assert resp.json() == expected
         _mock_svc.load_model.assert_called_with(7, 2)
@@ -273,9 +267,7 @@ class TestQueryParamEndpoints:
     async def test_model_not_found(
         self, client, _mock_svc, path_suffix: str, expected: dict
     ):
-        _mock_svc.load_model = AsyncMock(
-            side_effect=ValueError("Model not found")
-        )
+        _mock_svc.load_model = AsyncMock(side_effect=ValueError("Model not found"))
         resp = await client.get(f"/v1/inference/{path_suffix}?model_id=99")
         assert resp.status_code == 404
         assert "Model not found" in resp.json()["detail"]
@@ -311,9 +303,7 @@ class TestSamplingDistribution:
         )
 
     async def test_model_not_found(self, client, _mock_svc):
-        _mock_svc.load_model = AsyncMock(
-            side_effect=ValueError("Model not found")
-        )
+        _mock_svc.load_model = AsyncMock(side_effect=ValueError("Model not found"))
         resp = await client.post(
             "/v1/inference/sampling-distribution",
             json={"prompt": "hello", "model_id": 99},
@@ -368,9 +358,7 @@ class TestEdgeCases:
         await client.post("/v1/inference/tokenize", json={"text": "hi"})
         _mock_svc.load_model.assert_called_with(None, None)
 
-    async def test_param_overrides_svc_mock(
-        self, client, _mock_svc
-    ):
+    async def test_param_overrides_svc_mock(self, client, _mock_svc):
         """Test that reassigning ``_mock_svc.sampling_distribution``
         is respected by the route."""
         custom_resp = {"custom": True}

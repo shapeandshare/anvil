@@ -17,7 +17,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from httpx import AsyncClient
 
-
 pytestmark = pytest.mark.asyncio
 
 
@@ -74,12 +73,8 @@ class TestCorporaCRUD:
         p1.mkdir()
         p2 = tmp_path / "corp2"
         p2.mkdir()
-        await client.post(
-            "/v1/corpora", json={"name": "List-A", "root_path": str(p1)}
-        )
-        await client.post(
-            "/v1/corpora", json={"name": "List-B", "root_path": str(p2)}
-        )
+        await client.post("/v1/corpora", json={"name": "List-A", "root_path": str(p1)})
+        await client.post("/v1/corpora", json={"name": "List-B", "root_path": str(p2)})
         r = await client.get("/v1/corpora")
         assert r.status_code == 200
         names = [c["name"] for c in r.json()["data"]]
@@ -232,9 +227,7 @@ class TestCorporaIngest:
         r = await client.get(f"/v1/corpora/{cid}/files/99999")
         assert r.status_code == 404
 
-    async def test_list_files_filtered_by_language(
-        self, client: AsyncClient, tmp_path
-    ):
+    async def test_list_files_filtered_by_language(self, client: AsyncClient, tmp_path):
         """List files filtered by language."""
         (tmp_path / "s.py").write_text("x=1\n")
         (tmp_path / "d.md").write_text("# title\n")
@@ -348,9 +341,7 @@ class TestCorporaPathOperations:
 class TestCorporaTrackingDegradation:
     """Tests that corpus endpoints handle MLflow tracking degradation."""
 
-    async def test_create_corpus_tracking_failure(
-        self, client: AsyncClient, tmp_path
-    ):
+    async def test_create_corpus_tracking_failure(self, client: AsyncClient, tmp_path):
         """Create corpus succeeds even when MLflow tracking is degraded."""
         (tmp_path / "f.txt").write_text("data\n")
         with patch(

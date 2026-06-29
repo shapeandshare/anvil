@@ -255,9 +255,7 @@ class TestListCorpora:
         assert data[1]["name"] == "Corpus B"
         assert r.json()["error"] is None
 
-    async def test_list_empty(
-        self, client: AsyncClient, mock_workbench, override_dep
-    ):
+    async def test_list_empty(self, client: AsyncClient, mock_workbench, override_dep):
         """List corpora when none exist returns empty list."""
         mock_workbench.corpora.list_all = AsyncMock(return_value=[])
 
@@ -273,9 +271,7 @@ class TestListCorpora:
 class TestGetCorpus:
     """Tests for GET /v1/corpora/{corpus_id}."""
 
-    async def test_get_corpus(
-        self, client: AsyncClient, mock_workbench, override_dep
-    ):
+    async def test_get_corpus(self, client: AsyncClient, mock_workbench, override_dep):
         """Get a single corpus by ID."""
         mock_corpus = _make_corpus(corpus_id=1, name="Get-It")
         mock_workbench.corpora.get = AsyncMock(return_value=mock_corpus)
@@ -375,7 +371,9 @@ class TestDeleteCorpus:
         attempt to connect to MLflow (which would hang without a server)."""
         mock_tracking_instance = MagicMock()
         mock_tracking_instance.is_degraded = True
-        return patch("anvil.api.v1.corpora.TrackingService", return_value=mock_tracking_instance)
+        return patch(
+            "anvil.api.v1.corpora.TrackingService", return_value=mock_tracking_instance
+        )
 
     async def test_delete_corpus(
         self, client: AsyncClient, mock_workbench, override_dep
@@ -408,9 +406,7 @@ class TestDeleteCorpus:
 class TestForkCorpus:
     """Tests for POST /v1/corpora/{corpus_id}/fork."""
 
-    async def test_fork_corpus(
-        self, client: AsyncClient, mock_workbench, override_dep
-    ):
+    async def test_fork_corpus(self, client: AsyncClient, mock_workbench, override_dep):
         """Fork a corpus."""
         forked = _make_corpus(
             corpus_id=2,
@@ -573,9 +569,7 @@ class TestIngestCorpus:
 class TestListCorpusFiles:
     """Tests for GET /v1/corpora/{corpus_id}/files."""
 
-    async def test_list_files(
-        self, client: AsyncClient, mock_workbench, override_dep
-    ):
+    async def test_list_files(self, client: AsyncClient, mock_workbench, override_dep):
         """List files in a corpus."""
         f1 = _make_corpus_file(file_id=1, corpus_id=1, relative_path="a.py")
         f2 = _make_corpus_file(file_id=2, corpus_id=1, relative_path="b.py")

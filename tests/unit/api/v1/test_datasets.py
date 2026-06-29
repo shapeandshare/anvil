@@ -181,9 +181,7 @@ def override_dep(mock_workbench):
 class TestListDatasets:
     """Tests for GET /v1/datasets."""
 
-    async def test_returns_all_datasets(
-        self, client, mock_workbench, override_dep
-    ):
+    async def test_returns_all_datasets(self, client, mock_workbench, override_dep):
         """Happy path: list returns all datasets."""
         d1 = _make_mock_dataset(1, name="ds-a")
         d2 = _make_mock_dataset(2, name="ds-b")
@@ -207,9 +205,7 @@ class TestListDatasets:
         assert resp.status_code == 200
         assert resp.json()["data"]["datasets"] == []
 
-    async def test_search_by_query(
-        self, client, mock_workbench, override_dep
-    ):
+    async def test_search_by_query(self, client, mock_workbench, override_dep):
         """When ``q`` is provided, delegates to search_datasets."""
         d1 = _make_mock_dataset(1, name="search-hit")
         mock_workbench.datasets.search_datasets.return_value = [d1]
@@ -217,9 +213,7 @@ class TestListDatasets:
         resp = await client.get("/v1/datasets", params={"q": "search"})
         assert resp.status_code == 200
         assert len(resp.json()["data"]["datasets"]) == 1
-        mock_workbench.datasets.search_datasets.assert_awaited_once_with(
-            "search"
-        )
+        mock_workbench.datasets.search_datasets.assert_awaited_once_with("search")
         mock_workbench.datasets.list_datasets.assert_not_awaited()
 
 
@@ -231,9 +225,7 @@ class TestListDatasets:
 class TestCreateDataset:
     """Tests for POST /v1/datasets."""
 
-    async def test_creates_successfully(
-        self, client, mock_workbench, override_dep
-    ):
+    async def test_creates_successfully(self, client, mock_workbench, override_dep):
         """Happy path: dataset created with name and description."""
         new_ds = _make_mock_dataset(1, name="my-ds", description="My dataset")
         mock_workbench.datasets.create_dataset.return_value = new_ds
@@ -258,22 +250,14 @@ class TestCreateDataset:
         new_ds = _make_mock_dataset(2, name="minimal")
         mock_workbench.datasets.create_dataset.return_value = new_ds
 
-        resp = await client.post(
-            "/v1/datasets", json={"name": "minimal"}
-        )
+        resp = await client.post("/v1/datasets", json={"name": "minimal"})
         assert resp.status_code == 200
         assert resp.json()["data"]["name"] == "minimal"
-        mock_workbench.datasets.create_dataset.assert_awaited_once_with(
-            "minimal", None
-        )
+        mock_workbench.datasets.create_dataset.assert_awaited_once_with("minimal", None)
 
-    async def test_rejects_empty_name(
-        self, client, mock_workbench, override_dep
-    ):
+    async def test_rejects_empty_name(self, client, mock_workbench, override_dep):
         """Validation: empty name returns 422."""
-        resp = await client.post(
-            "/v1/datasets", json={"name": "   "}
-        )
+        resp = await client.post("/v1/datasets", json={"name": "   "})
         assert resp.status_code == 422
         assert "empty" in resp.json()["detail"].lower()
         mock_workbench.datasets.create_dataset.assert_not_awaited()
@@ -287,9 +271,7 @@ class TestCreateDataset:
 class TestGetDataset:
     """Tests for GET /v1/datasets/{id}."""
 
-    async def test_returns_dataset(
-        self, client, mock_workbench, override_dep
-    ):
+    async def test_returns_dataset(self, client, mock_workbench, override_dep):
         """Happy path: existing dataset returned."""
         ds = _make_mock_dataset(42, name="target-ds")
         mock_workbench.datasets.get_dataset.return_value = ds
@@ -337,16 +319,12 @@ class TestUpdateDataset:
             1, name="new-name", description="new desc"
         )
 
-    async def test_updates_name_only(
-        self, client, mock_workbench, override_dep
-    ):
+    async def test_updates_name_only(self, client, mock_workbench, override_dep):
         """Happy path: only name supplied."""
         updated = _make_mock_dataset(1, name="only-name")
         mock_workbench.datasets.update_dataset.return_value = updated
 
-        resp = await client.put(
-            "/v1/datasets/1", json={"name": "only-name"}
-        )
+        resp = await client.put("/v1/datasets/1", json={"name": "only-name"})
         assert resp.status_code == 200
         assert resp.json()["data"]["name"] == "only-name"
 
@@ -371,9 +349,7 @@ class TestUpdateDataset:
 class TestDeleteDataset:
     """Tests for DELETE /v1/datasets/{id}."""
 
-    async def test_deletes_successfully(
-        self, client, mock_workbench, override_dep
-    ):
+    async def test_deletes_successfully(self, client, mock_workbench, override_dep):
         """Happy path: dataset deleted, lifecycle event logged."""
         ds = _make_mock_dataset(1, name="delete-me")
         mock_workbench.datasets.get_dataset.return_value = ds
@@ -406,9 +382,7 @@ class TestDeleteDataset:
         assert resp.status_code == 409
         assert "demo" in resp.json()["detail"].lower()
 
-    async def test_deletes_demo_with_force(
-        self, client, mock_workbench, override_dep
-    ):
+    async def test_deletes_demo_with_force(self, client, mock_workbench, override_dep):
         """Happy path: demo dataset deleted with force=true."""
         ds = _make_mock_dataset(1, name="Demo - Sample")
         mock_workbench.datasets.get_dataset.return_value = ds
@@ -440,9 +414,7 @@ class TestDeleteDataset:
 class TestUploadDataset:
     """Tests for POST /v1/datasets/upload."""
 
-    async def test_upload_successfully(
-        self, client, mock_workbench, override_dep
-    ):
+    async def test_upload_successfully(self, client, mock_workbench, override_dep):
         """Happy path: file uploaded and dataset created."""
         ds = _make_mock_dataset(
             1,
@@ -466,13 +438,15 @@ class TestUploadDataset:
         mock_workbench.session.refresh.assert_awaited_once_with(ds)
         mock_workbench.audit.record.assert_awaited_once()
 
-    async def test_upload_empty_file(
-        self, client, mock_workbench, override_dep
-    ):
+    async def test_upload_empty_file(self, client, mock_workbench, override_dep):
         """Edge case: empty file results in zero samples."""
         ds = _make_mock_dataset(
-            2, name="empty.txt", filename="empty.txt",
-            sample_count=0, vocabulary_size=0, document_count=0,
+            2,
+            name="empty.txt",
+            filename="empty.txt",
+            sample_count=0,
+            vocabulary_size=0,
+            document_count=0,
         )
         mock_workbench.datasets.create_dataset.return_value = ds
 
@@ -506,9 +480,7 @@ class TestUploadDataset:
 class TestExportDataset:
     """Tests for GET /v1/datasets/{id}/export."""
 
-    async def test_export_txt(
-        self, client, mock_workbench, override_dep
-    ):
+    async def test_export_txt(self, client, mock_workbench, override_dep):
         """Happy path: export as txt."""
         export_svc = MagicMock()
         export_svc.export_txt = _make_string_gen("line1\n", "line2\n")
@@ -520,9 +492,7 @@ class TestExportDataset:
         assert "attachment" in resp.headers["content-disposition"]
         assert resp.text == "line1\nline2\n"
 
-    async def test_export_csv(
-        self, client, mock_workbench, override_dep
-    ):
+    async def test_export_csv(self, client, mock_workbench, override_dep):
         """Happy path: export as csv."""
         export_svc = MagicMock()
         export_svc.export_csv = _make_string_gen("a,b\n", "1,2\n")
@@ -532,9 +502,7 @@ class TestExportDataset:
         assert resp.status_code == 200
         assert resp.headers["content-type"].startswith("text/csv")
 
-    async def test_export_jsonl(
-        self, client, mock_workbench, override_dep
-    ):
+    async def test_export_jsonl(self, client, mock_workbench, override_dep):
         """Happy path: export as jsonl."""
         export_svc = MagicMock()
         export_svc.export_jsonl = _make_string_gen('{"a":1}\n', '{"b":2}\n')
@@ -548,9 +516,7 @@ class TestExportDataset:
         self, client, mock_workbench, override_dep
     ):
         """Error: unsupported format returns 422."""
-        resp = await client.get(
-            "/v1/datasets/1/export", params={"format": "xml"}
-        )
+        resp = await client.get("/v1/datasets/1/export", params={"format": "xml"})
         assert resp.status_code == 422
         assert "unsupported" in resp.json()["detail"].lower()
 
@@ -574,9 +540,7 @@ class TestListSamples:
         sample.length = 13
         sample.content_hash = "abc123"
         sample.file_path = "samples/10.txt"
-        curation_svc.get_active_samples = AsyncMock(
-            return_value=([sample], 1)
-        )
+        curation_svc.get_active_samples = AsyncMock(return_value=([sample], 1))
         mock_workbench.dataset_curation.return_value = curation_svc
 
         # Mock store.get to return content bytes
@@ -607,9 +571,7 @@ class TestListSamples:
             params={"offset": "10", "limit": "5", "search": "foo"},
         )
         assert resp.status_code == 200
-        curation_svc.get_active_samples.assert_awaited_once_with(
-            10, 5, "foo"
-        )
+        curation_svc.get_active_samples.assert_awaited_once_with(10, 5, "foo")
 
     async def test_truncates_preview_to_200_chars(
         self, client, mock_workbench, override_dep
@@ -622,9 +584,7 @@ class TestListSamples:
         sample.length = 500
         sample.content_hash = "xyz"
         sample.file_path = "samples/1.txt"
-        curation_svc.get_active_samples = AsyncMock(
-            return_value=([sample], 1)
-        )
+        curation_svc.get_active_samples = AsyncMock(return_value=([sample], 1))
         mock_workbench.dataset_curation.return_value = curation_svc
         mock_workbench.store.get = _make_async_gen("x" * 500)
 
@@ -642,9 +602,7 @@ class TestListSamples:
 class TestCuratePage:
     """Tests for GET /v1/datasets/{id}/curate."""
 
-    async def test_renders_curation_page(
-        self, client, mock_workbench, override_dep
-    ):
+    async def test_renders_curation_page(self, client, mock_workbench, override_dep):
         """Happy path: renders curation template for existing dataset."""
         ds = _make_mock_dataset(1, name="curatable")
         mock_workbench.dataset_repo.get.return_value = ds
@@ -731,9 +689,7 @@ class TestCurateDedup:
 class TestCurateFilter:
     """Tests for POST /v1/datasets/{id}/curate/filter."""
 
-    async def test_filters_by_length(
-        self, client, mock_workbench, override_dep
-    ):
+    async def test_filters_by_length(self, client, mock_workbench, override_dep):
         """Happy path: filter by min/max length."""
         curation_svc = MagicMock()
         result = MagicMock()
@@ -753,9 +709,7 @@ class TestCurateFilter:
         assert body["data"]["samples_removed"] == 30
         curation_svc.filter_by_length.assert_awaited_once_with(10, 500)
 
-    async def test_filter_no_bounds(
-        self, client, mock_workbench, override_dep
-    ):
+    async def test_filter_no_bounds(self, client, mock_workbench, override_dep):
         """Edge case: filter with no bounds (both None)."""
         curation_svc = MagicMock()
         result = MagicMock()
@@ -797,9 +751,7 @@ class TestCurateFilter:
 class TestCurateReplace:
     """Tests for POST /v1/datasets/{id}/curate/replace."""
 
-    async def test_regex_replace(
-        self, client, mock_workbench, override_dep
-    ):
+    async def test_regex_replace(self, client, mock_workbench, override_dep):
         """Happy path: regex replace operation."""
         curation_svc = MagicMock()
         curation_svc.regex_replace = AsyncMock(
@@ -820,13 +772,9 @@ class TestCurateReplace:
         body = resp.json()
         assert body["data"]["operation_id"] == "op-4"
         assert body["data"]["samples_affected"] == 20
-        curation_svc.regex_replace.assert_awaited_once_with(
-            "foo", "bar", True
-        )
+        curation_svc.regex_replace.assert_awaited_once_with("foo", "bar", True)
 
-    async def test_case_insensitive(
-        self, client, mock_workbench, override_dep
-    ):
+    async def test_case_insensitive(self, client, mock_workbench, override_dep):
         """Happy path: case-insensitive replace."""
         curation_svc = MagicMock()
         curation_svc.regex_replace = AsyncMock(
@@ -844,9 +792,7 @@ class TestCurateReplace:
             json={"pattern": "foo", "replacement": "bar", "case_sensitive": False},
         )
         assert resp.status_code == 200
-        curation_svc.regex_replace.assert_awaited_once_with(
-            "foo", "bar", False
-        )
+        curation_svc.regex_replace.assert_awaited_once_with("foo", "bar", False)
 
     async def test_returns_404_on_value_error(
         self, client, mock_workbench, override_dep

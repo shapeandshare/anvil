@@ -46,13 +46,15 @@ from anvil.services.vault.types_scored_pair import ScoredPair
 def simple_graph() -> nx.DiGraph:
     """Return a small directed wikilink graph for testing."""
     g = nx.DiGraph()
-    g.add_edges_from([
-        ("note_a", "note_b"),
-        ("note_b", "note_c"),
-        ("note_a", "note_c"),
-        ("note_c", "note_d"),
-        ("note_d", "note_a"),
-    ])
+    g.add_edges_from(
+        [
+            ("note_a", "note_b"),
+            ("note_b", "note_c"),
+            ("note_a", "note_c"),
+            ("note_c", "note_d"),
+            ("note_d", "note_a"),
+        ]
+    )
     return g
 
 
@@ -60,11 +62,13 @@ def simple_graph() -> nx.DiGraph:
 def isolated_graph() -> nx.DiGraph:
     """Return a graph with two disconnected components."""
     g = nx.DiGraph()
-    g.add_edges_from([
-        ("a1", "a2"),
-        ("a2", "a1"),
-        ("b1", "b2"),
-    ])
+    g.add_edges_from(
+        [
+            ("a1", "a2"),
+            ("a2", "a1"),
+            ("b1", "b2"),
+        ]
+    )
     return g
 
 
@@ -137,12 +141,8 @@ class TestComputeTfidf:
         """Notes with completely different content get low cosine similarity."""
         note_a_path = tmp_path / "note_a.md"
         note_b_path = tmp_path / "note_b.md"
-        note_a_path.write_text(
-            "quantum physics mechanics wave function particle"
-        )
-        note_b_path.write_text(
-            "cooking recipes pasta italian cuisine tomato sauce"
-        )
+        note_a_path.write_text("quantum physics mechanics wave function particle")
+        note_b_path.write_text("cooking recipes pasta italian cuisine tomato sauce")
 
         notes = {
             "note_a": NoteMetadata(path=note_a_path, stem="note_a"),
@@ -166,9 +166,7 @@ class TestComputeTfidf:
     def test_skips_frontmatter(self, tmp_path: Path) -> None:
         """Frontmatter (YAML between --- delimiters) is excluded from body."""
         note_path = tmp_path / "note.md"
-        note_path.write_text(
-            "---\ntitle: Test\n---\nactual body text here for content"
-        )
+        note_path.write_text("---\ntitle: Test\n---\nactual body text here for content")
         notes = {
             "note": NoteMetadata(path=note_path, stem="note"),
         }
@@ -244,9 +242,7 @@ class TestComputeLinkPrediction:
 
     def test_empty_missing_returns_empty(self) -> None:
         """Empty missing_reciprocals returns an empty LinkPredictionResult."""
-        result = compute_link_prediction(
-            nx.DiGraph(), {}, [], []
-        )
+        result = compute_link_prediction(nx.DiGraph(), {}, [], [])
         assert result.scored_pairs == []
 
     def test_scores_all_pairs(self, simple_graph: nx.DiGraph) -> None:
@@ -254,9 +250,7 @@ class TestComputeLinkPrediction:
         missing = [("note_b", "note_d")]
         notes = {}
         communities = [["note_a", "note_b", "note_c", "note_d"]]
-        result = compute_link_prediction(
-            simple_graph, notes, communities, missing
-        )
+        result = compute_link_prediction(simple_graph, notes, communities, missing)
         assert len(result.scored_pairs) == 1
         pair = result.scored_pairs[0]
         assert pair.source == "note_b"
@@ -288,9 +282,7 @@ class TestComputeLinkPrediction:
         communities = [["a", "b"]]
         missing = [("b", "a")]
         weights = {"adamic_adar": 1.0, "tfidf": 0.0, "community_match": 0.0}
-        result = compute_link_prediction(
-            g, {}, communities, missing, weights=weights
-        )
+        result = compute_link_prediction(g, {}, communities, missing, weights=weights)
         pair = result.scored_pairs[0]
         # With these weights, ensemble == adamic_adar (since others are 0).
         # Adamic-Adar for a single-edge graph is 0, so ensemble = 0.
@@ -300,14 +292,16 @@ class TestComputeLinkPrediction:
         """Scored pairs are sorted by ensemble score descending."""
         g = nx.DiGraph()
         # Create a more connected subgraph so scores differ
-        g.add_edges_from([
-            ("a1", "b1"),
-            ("a1", "c1"),
-            ("b1", "c1"),
-            ("b1", "a1"),
-            ("c1", "a1"),
-            ("x1", "y1"),
-        ])
+        g.add_edges_from(
+            [
+                ("a1", "b1"),
+                ("a1", "c1"),
+                ("b1", "c1"),
+                ("b1", "a1"),
+                ("c1", "a1"),
+                ("x1", "y1"),
+            ]
+        )
         communities = [["a1", "b1", "c1"], ["x1", "y1"]]
         missing = [("c1", "b1"), ("y1", "x1")]
         result = compute_link_prediction(g, {}, communities, missing)
@@ -386,16 +380,12 @@ class TestFilterByState:
             ScoredPair(source="e", target="f", ensemble_score=0.3),
         ]
 
-    def test_no_state_keeps_all(
-        self, scored_pairs: list[ScoredPair]
-    ) -> None:
+    def test_no_state_keeps_all(self, scored_pairs: list[ScoredPair]) -> None:
         """When state is None/empty, all pairs pass through."""
         assert filter_by_state(scored_pairs) == scored_pairs
         assert filter_by_state(scored_pairs, state={}) == scored_pairs
 
-    def test_open_entries_pass_through(
-        self, scored_pairs: list[ScoredPair]
-    ) -> None:
+    def test_open_entries_pass_through(self, scored_pairs: list[ScoredPair]) -> None:
         """Pairs with state='open' are included."""
         state = {"(a, b)": {"state": "open"}}
         filtered = filter_by_state(scored_pairs, state=state)
@@ -455,9 +445,7 @@ class TestFilterByState:
         assert len(filtered) == 2
         assert all(p.source != "a" for p in filtered)
 
-    def test_unknown_state_passes_through(
-        self, scored_pairs: list[ScoredPair]
-    ) -> None:
+    def test_unknown_state_passes_through(self, scored_pairs: list[ScoredPair]) -> None:
         """An unrecognised state value passes the pair through."""
         state = {"(a, b)": {"state": "unknown_value"}}
         filtered = filter_by_state(scored_pairs, state=state)
@@ -575,9 +563,7 @@ class TestApplyFix:
     """Tests for the auto-fix (reciprocal link insertion)."""
 
     @patch("anvil.services.vault.prediction._is_working_tree_dirty")
-    def test_dirty_tree_returns_false(
-        self, mock_dirty, tmp_path: Path
-    ) -> None:
+    def test_dirty_tree_returns_false(self, mock_dirty, tmp_path: Path) -> None:
         """When the working tree is dirty, no fix is applied."""
         mock_dirty.return_value = True
         scored = [
@@ -595,9 +581,7 @@ class TestApplyFix:
         assert apply_fix(scored, notes) is False
 
     @patch("anvil.services.vault.prediction._is_working_tree_dirty")
-    def test_below_threshold_no_fix(
-        self, mock_dirty, tmp_path: Path
-    ) -> None:
+    def test_below_threshold_no_fix(self, mock_dirty, tmp_path: Path) -> None:
         """Candidates below threshold are not applied."""
         mock_dirty.return_value = False
         scored = [
@@ -615,9 +599,7 @@ class TestApplyFix:
         assert apply_fix(scored, notes) is False
 
     @patch("anvil.services.vault.prediction._is_working_tree_dirty")
-    def test_inserts_related_link(
-        self, mock_dirty, tmp_path: Path
-    ) -> None:
+    def test_inserts_related_link(self, mock_dirty, tmp_path: Path) -> None:
         """A high-confidence candidate gets a related: link inserted."""
         mock_dirty.return_value = False
         scored = [
@@ -628,9 +610,7 @@ class TestApplyFix:
             )
         ]
         tgt_path = tmp_path / "tgt_note.md"
-        tgt_path.write_text(
-            "---\ntitle: Target\ncreated: 2025-01-01\n---\nbody text"
-        )
+        tgt_path.write_text("---\ntitle: Target\ncreated: 2025-01-01\n---\nbody text")
         notes = {
             "tgt_note": NoteMetadata(path=tgt_path, stem="tgt_note"),
         }
@@ -640,9 +620,7 @@ class TestApplyFix:
         assert "related:" in content
 
     @patch("anvil.services.vault.prediction._is_working_tree_dirty")
-    def test_skips_if_already_present(
-        self, mock_dirty, tmp_path: Path
-    ) -> None:
+    def test_skips_if_already_present(self, mock_dirty, tmp_path: Path) -> None:
         """If the source is already linked in the target, no change."""
         mock_dirty.return_value = False
         scored = [
@@ -653,18 +631,14 @@ class TestApplyFix:
             )
         ]
         tgt_path = tmp_path / "tgt_note.md"
-        tgt_path.write_text(
-            "---\ntitle: Target\n---\nSome text [[src_note]] more text"
-        )
+        tgt_path.write_text("---\ntitle: Target\n---\nSome text [[src_note]] more text")
         notes = {
             "tgt_note": NoteMetadata(path=tgt_path, stem="tgt_note"),
         }
         assert apply_fix(scored, notes) is False
 
     @patch("anvil.services.vault.prediction._is_working_tree_dirty")
-    def test_appends_to_existing_related(
-        self, mock_dirty, tmp_path: Path
-    ) -> None:
+    def test_appends_to_existing_related(self, mock_dirty, tmp_path: Path) -> None:
         """When related: already exists, the new link is appended."""
         mock_dirty.return_value = False
         scored = [
@@ -676,8 +650,7 @@ class TestApplyFix:
         ]
         tgt_path = tmp_path / "existing.md"
         tgt_path.write_text(
-            "---\ntitle: Existing\nrelated:\n"
-            "  - '[[old_note]]'\n---\nbody"
+            "---\ntitle: Existing\nrelated:\n" "  - '[[old_note]]'\n---\nbody"
         )
         notes = {
             "existing": NoteMetadata(path=tgt_path, stem="existing"),
@@ -688,9 +661,7 @@ class TestApplyFix:
         assert "[[old_note]]" in content
 
     @patch("anvil.services.vault.prediction._is_working_tree_dirty")
-    def test_skip_missing_target_note(
-        self, mock_dirty, tmp_path: Path
-    ) -> None:
+    def test_skip_missing_target_note(self, mock_dirty, tmp_path: Path) -> None:
         """When the target note has no metadata entry, skip."""
         mock_dirty.return_value = False
         scored = [
@@ -703,9 +674,7 @@ class TestApplyFix:
         assert apply_fix(scored, {}) is False
 
     @patch("anvil.services.vault.prediction._is_working_tree_dirty")
-    def test_skip_missing_file_on_disk(
-        self, mock_dirty, tmp_path: Path
-    ) -> None:
+    def test_skip_missing_file_on_disk(self, mock_dirty, tmp_path: Path) -> None:
         """When the target file does not exist on disk, skip."""
         mock_dirty.return_value = False
         scored = [
@@ -716,16 +685,12 @@ class TestApplyFix:
             )
         ]
         notes = {
-            "missing": NoteMetadata(
-                path=tmp_path / "nonexistent.md", stem="missing"
-            ),
+            "missing": NoteMetadata(path=tmp_path / "nonexistent.md", stem="missing"),
         }
         assert apply_fix(scored, notes) is False
 
     @patch("anvil.services.vault.prediction._is_working_tree_dirty")
-    def test_no_frontmatter_skips(
-        self, mock_dirty, tmp_path: Path
-    ) -> None:
+    def test_no_frontmatter_skips(self, mock_dirty, tmp_path: Path) -> None:
         """A note without frontmatter (no --- delimiter) is skipped."""
         mock_dirty.return_value = False
         scored = [

@@ -23,7 +23,6 @@ from anvil.services.vault.check_relative_imports import (
     scan_file,
 )
 
-
 ########################################################################
 # _in_triple_quoted tests
 ########################################################################
@@ -122,21 +121,14 @@ class TestScanFile:
     def test_docstring_not_flagged(self, tmp_path: Path) -> None:
         """Absolute import inside docstring is not flagged."""
         p = tmp_path / "test.py"
-        p.write_text(
-            '"""\n'
-            "from anvil.core import engine\n"
-            '"""\n'
-            "x = 1\n"
-        )
+        p.write_text('"""\n' "from anvil.core import engine\n" '"""\n' "x = 1\n")
         result = scan_file(p)
         assert len(result.violations) == 0
 
     def test_suppression_comment_allowed(self, tmp_path: Path) -> None:
         """Absolute import with suppression comment is allowed."""
         p = tmp_path / "test.py"
-        p.write_text(
-            "from anvil.core import engine  # relative-imports:allow\n"
-        )
+        p.write_text("from anvil.core import engine  # relative-imports:allow\n")
         result = scan_file(p)
         assert len(result.violations) == 0
 
@@ -158,8 +150,7 @@ class TestScanFile:
         """Multiple absolute imports are all flagged."""
         p = tmp_path / "test.py"
         p.write_text(
-            "from anvil.core import engine\n"
-            "from anvil.services import training\n"
+            "from anvil.core import engine\n" "from anvil.services import training\n"
         )
         result = scan_file(p)
         assert len(result.violations) == 2
@@ -212,7 +203,9 @@ class TestScanDirectory:
 class TestMain:
     """Tests for the CLI entry point."""
 
-    def test_clean_exits_0(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_clean_exits_0(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Clean directory exits with code 0."""
         monkeypatch.setenv("ANVIL_ROOT", str(tmp_path))
         p = tmp_path / "test.py"
@@ -223,7 +216,9 @@ class TestMain:
             main()
         assert exc.value.code == 0
 
-    def test_violation_exits_1(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_violation_exits_1(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Directory with violations exits with code 1."""
         monkeypatch.setenv("ANVIL_ROOT", str(tmp_path))
         p = tmp_path / "test.py"
@@ -234,7 +229,9 @@ class TestMain:
             main()
         assert exc.value.code == 1
 
-    def test_nonexistent_root_exits_1(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_nonexistent_root_exits_1(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Non-existent root directory exits with code 1."""
         monkeypatch.setenv("ANVIL_ROOT", str(tmp_path / "nonexistent"))
         monkeypatch.chdir(tmp_path)

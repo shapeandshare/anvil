@@ -25,7 +25,6 @@ from anvil.services.vault.types_graph_health_report import GraphHealthReport
 from anvil.services.vault.types_health_score import HealthScore
 from anvil.services.vault.types_mechanical_report import MechanicalReport
 
-
 ######################################################################
 # Helpers
 ######################################################################
@@ -301,36 +300,28 @@ class TestMainDispatch:
     """Tests for ``main()`` dispatch to the correct handler."""
 
     @patch("anvil.services.vault.cli.check_adr_unique_main")
-    def test_dispatch_check_adrs(
-        self, mock_check: MagicMock
-    ) -> None:
+    def test_dispatch_check_adrs(self, mock_check: MagicMock) -> None:
         """Verify ``check-adrs`` dispatches correctly."""
         with patch.dict("os.environ", clear=True):
             main(["check-adrs"])
         mock_check.assert_called_once()
 
     @patch("anvil.services.vault.cli.check_guarded_imports_main")
-    def test_dispatch_check_guarded_imports(
-        self, mock_check: MagicMock
-    ) -> None:
+    def test_dispatch_check_guarded_imports(self, mock_check: MagicMock) -> None:
         """Verify ``check-guarded-imports`` dispatches correctly."""
         with patch.dict("os.environ", clear=True):
             main(["check-guarded-imports"])
         mock_check.assert_called_once()
 
     @patch("anvil.services.vault.cli.check_bump_scope_main")
-    def test_dispatch_check_bump_scope(
-        self, mock_check: MagicMock
-    ) -> None:
+    def test_dispatch_check_bump_scope(self, mock_check: MagicMock) -> None:
         """Verify ``check-bump-scope`` dispatches correctly."""
         with patch.dict("os.environ", clear=True):
             main(["check-bump-scope"])
         mock_check.assert_called_once()
 
     @patch("anvil.services.vault.cli.bump_version_main")
-    def test_dispatch_bump_patch(
-        self, mock_check: MagicMock
-    ) -> None:
+    def test_dispatch_bump_patch(self, mock_check: MagicMock) -> None:
         """Verify ``bump-patch`` dispatches correctly."""
         main(["bump-patch"])
         mock_check.assert_called_once()
@@ -348,33 +339,25 @@ class TestMainDispatch:
         mock_check.assert_called_once_with(increment="MINOR")
 
     @patch("anvil.services.vault.cli.detect_increment_main")
-    def test_dispatch_detect_increment(
-        self, mock_check: MagicMock
-    ) -> None:
+    def test_dispatch_detect_increment(self, mock_check: MagicMock) -> None:
         """Verify ``detect-increment`` dispatches correctly."""
         main(["detect-increment"])
         mock_check.assert_called_once()
 
     @patch("anvil.services.vault.cli.check_version_main")
-    def test_dispatch_check_version(
-        self, mock_check: MagicMock
-    ) -> None:
+    def test_dispatch_check_version(self, mock_check: MagicMock) -> None:
         """Verify ``check-version`` dispatches correctly."""
         main(["check-version"])
         mock_check.assert_called_once()
 
     @patch("anvil.services.vault.cli.build_notes_main")
-    def test_dispatch_build_notes(
-        self, mock_check: MagicMock
-    ) -> None:
+    def test_dispatch_build_notes(self, mock_check: MagicMock) -> None:
         """Verify ``build-notes`` dispatches correctly."""
         main(["build-notes"])
         mock_check.assert_called_once()
 
     @patch("anvil.services.vault.cli.migrate_specs_run")
-    def test_dispatch_migrate_specs_dry_run(
-        self, mock_check: MagicMock
-    ) -> None:
+    def test_dispatch_migrate_specs_dry_run(self, mock_check: MagicMock) -> None:
         """Verify ``migrate-specs --dry-run`` dispatches."""
         mock_check.return_value = 0
         with pytest.raises(SystemExit):
@@ -388,9 +371,7 @@ class TestMainDispatch:
         )
 
     @patch("anvil.services.vault.cli.migrate_specs_run")
-    def test_dispatch_migrate_specs_apply(
-        self, mock_check: MagicMock
-    ) -> None:
+    def test_dispatch_migrate_specs_apply(self, mock_check: MagicMock) -> None:
         """Verify ``migrate-specs --apply`` dispatches."""
         mock_check.return_value = 0
         with pytest.raises(SystemExit):
@@ -404,67 +385,51 @@ class TestMainDispatch:
         )
 
     @patch("anvil.services.vault.cli.check_init_py_ownership_main")
-    def test_dispatch_check_init_py(
-        self, mock_check: MagicMock
-    ) -> None:
+    def test_dispatch_check_init_py(self, mock_check: MagicMock) -> None:
         """Verify ``check-init-py`` dispatches."""
         main(["check-init-py"])
         mock_check.assert_called_once()
 
     @patch("anvil.services.vault.cli.check_relative_imports_main")
-    def test_dispatch_check_relative_imports(
-        self, mock_check: MagicMock
-    ) -> None:
+    def test_dispatch_check_relative_imports(self, mock_check: MagicMock) -> None:
         """Verify ``check-relative-imports`` dispatches."""
         main(["check-relative-imports"])
         mock_check.assert_called_once()
 
     @patch("anvil.services.vault.cli.check_one_class_main")
-    def test_dispatch_check_one_class(
-        self, mock_check: MagicMock
-    ) -> None:
+    def test_dispatch_check_one_class(self, mock_check: MagicMock) -> None:
         """Verify ``check-one-class`` dispatches."""
         with patch.dict("os.environ", clear=True):
             main(["check-one-class"])
         mock_check.assert_called_once()
 
     @patch("anvil.services.vault.cli.check_import_placement_main")
-    def test_dispatch_check_import_placement(
-        self, mock_check: MagicMock
-    ) -> None:
+    def test_dispatch_check_import_placement(self, mock_check: MagicMock) -> None:
         """Verify ``check-import-placement`` dispatches."""
         main(["check-import-placement"])
         mock_check.assert_called_once()
 
     @patch("anvil.services.vault.cli.check_nesting_depth_main")
-    def test_dispatch_check_nesting(
-        self, mock_check: MagicMock
-    ) -> None:
+    def test_dispatch_check_nesting(self, mock_check: MagicMock) -> None:
         """Verify ``check-nesting`` dispatches."""
         main(["check-nesting"])
         mock_check.assert_called_once()
 
     @patch("anvil.services.vault.cli.check_py_typed_main")
-    def test_dispatch_check_py_typed(
-        self, mock_check: MagicMock
-    ) -> None:
+    def test_dispatch_check_py_typed(self, mock_check: MagicMock) -> None:
         """Verify ``check-py-typed`` dispatches."""
         main(["check-py-typed"])
         mock_check.assert_called_once()
 
     @patch("anvil.services.vault.cli.check_core_deps_main")
-    def test_dispatch_check_core_deps(
-        self, mock_check: MagicMock
-    ) -> None:
+    def test_dispatch_check_core_deps(self, mock_check: MagicMock) -> None:
         """Verify ``check-core-deps`` dispatches."""
         with patch.dict("os.environ", clear=True):
             main(["check-core-deps"])
         mock_check.assert_called_once()
 
     @patch("anvil.services.vault.cli.check_layer_boundaries_main")
-    def test_dispatch_check_layers(
-        self, mock_check: MagicMock
-    ) -> None:
+    def test_dispatch_check_layers(self, mock_check: MagicMock) -> None:
         """Verify ``check-layers`` dispatches."""
         main(["check-layers"])
         mock_check.assert_called_once()
@@ -562,9 +527,7 @@ class TestCmdAudit:
         assert "warn.md" in captured.out
         assert "minor issue" in captured.out
 
-    def test_audit_no_graph_health(
-        self, capsys: pytest.CaptureFixture[str]
-    ) -> None:
+    def test_audit_no_graph_health(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Verify ``--skip-graph-health`` skips graph health."""
         mock_svc = MagicMock()
         mock_svc.run_full_audit = AsyncMock(
@@ -584,9 +547,7 @@ class TestCmdAudit:
         assert "0 errors" in captured.out
         assert "Graph health" not in captured.out
 
-    def test_audit_diff_mode(
-        self, capsys: pytest.CaptureFixture[str]
-    ) -> None:
+    def test_audit_diff_mode(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Verify ``--diff`` mode prints proposed fixes (still exits 1)."""
         fixable_error = _finding(
             note_path="fixable.md", message="can be fixed", fixable=True
@@ -641,13 +602,9 @@ class TestCmdAudit:
         captured = capsys.readouterr()
         assert "No fixable issues found." in captured.out
 
-    def test_audit_apply_mode(
-        self, capsys: pytest.CaptureFixture[str]
-    ) -> None:
+    def test_audit_apply_mode(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Verify ``--apply`` mode prints fixed items (still exits 1)."""
-        fixable = _finding(
-            note_path="fixed.md", message="applied fix", fixable=True
-        )
+        fixable = _finding(note_path="fixed.md", message="applied fix", fixable=True)
 
         mock_svc = MagicMock()
         mock_svc.run_full_audit = AsyncMock(
@@ -751,9 +708,7 @@ class TestMainErrorHandling:
         captured = capsys.readouterr()
         assert "usage:" in captured.out
 
-    def test_main_with_none_argv(
-        self, capsys: pytest.CaptureFixture[str]
-    ) -> None:
+    def test_main_with_none_argv(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Verify ``main()`` with ``None`` argv (defaults to empty list)."""
         with patch.object(sys, "argv", ["anvil-vault"]):
             with pytest.raises(SystemExit) as exc:

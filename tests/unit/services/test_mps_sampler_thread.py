@@ -19,7 +19,6 @@ import pytest
 
 from anvil.services.tracking.mps_sampler_thread import MPSSamplerThread
 
-
 ########################################################################
 # Helpers
 ########################################################################
@@ -183,9 +182,7 @@ class TestMPSSamplerThread:
             # Verify log_metric was called with step=0 for the first call
             calls = svc.log_metric.await_args_list
             # Filter calls for the util metric
-            util_calls = [
-                c for c in calls if c.args[1] == "system/gpu_util_pct"
-            ]
+            util_calls = [c for c in calls if c.args[1] == "system/gpu_util_pct"]
             assert len(util_calls) >= 1
             # First call should have step=0 in kwargs
             assert util_calls[0].kwargs.get("step") == 0

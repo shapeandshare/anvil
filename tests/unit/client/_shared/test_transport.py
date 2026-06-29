@@ -113,7 +113,10 @@ class TestTransportRequestSuccess:
         transport._client.request = AsyncMock(return_value=mock_resp)
 
         result = await transport.request(
-            HttpMethod.POST, "/v1/test", json={"key": "val"}, response_model=_DummyResult
+            HttpMethod.POST,
+            "/v1/test",
+            json={"key": "val"},
+            response_model=_DummyResult,
         )
         assert result.ok is True
         call_kwargs = transport._client.request.call_args.kwargs
@@ -127,7 +130,10 @@ class TestTransportRequestSuccess:
         transport._client.request = AsyncMock(return_value=mock_resp)
 
         result = await transport.request(
-            HttpMethod.PUT, "/v1/test/1", json={"name": "new"}, response_model=_DummyResult
+            HttpMethod.PUT,
+            "/v1/test/1",
+            json={"name": "new"},
+            response_model=_DummyResult,
         )
         assert result.ok is True
         call_kwargs = transport._client.request.call_args.kwargs
@@ -235,7 +241,9 @@ class TestTransportHeaders:
         mock_resp = _mock_response(200, {"data": {"ok": True}, "error": None})
         transport._client.request = AsyncMock(return_value=mock_resp)
 
-        await transport.request(HttpMethod.POST, "/v1/test", response_model=_DummyResult)
+        await transport.request(
+            HttpMethod.POST, "/v1/test", response_model=_DummyResult
+        )
         call_kwargs = transport._client.request.call_args.kwargs
         assert call_kwargs.get("headers", {}).get("X-CSRF-Token") == "csrf-secret"
 
@@ -285,7 +293,9 @@ class TestTransportErrorHandling:
         transport._client.request = AsyncMock(return_value=mock_resp)
 
         with pytest.raises(AuthenticationError) as exc:
-            await transport.request(HttpMethod.GET, "/v1/secret", response_model=_DummyResult)
+            await transport.request(
+                HttpMethod.GET, "/v1/secret", response_model=_DummyResult
+            )
         assert exc.value.status_code == 401
 
     @pytest.mark.asyncio
@@ -296,7 +306,9 @@ class TestTransportErrorHandling:
         transport._client.request = AsyncMock(return_value=mock_resp)
 
         with pytest.raises(AuthenticationError) as exc:
-            await transport.request(HttpMethod.GET, "/v1/secret", response_model=_DummyResult)
+            await transport.request(
+                HttpMethod.GET, "/v1/secret", response_model=_DummyResult
+            )
         assert exc.value.status_code == 403
 
     @pytest.mark.asyncio
@@ -307,7 +319,9 @@ class TestTransportErrorHandling:
         transport._client.request = AsyncMock(return_value=mock_resp)
 
         with pytest.raises(NotFoundError) as exc:
-            await transport.request(HttpMethod.GET, "/v1/missing", response_model=_DummyResult)
+            await transport.request(
+                HttpMethod.GET, "/v1/missing", response_model=_DummyResult
+            )
         assert "not found" in str(exc.value)
 
     @pytest.mark.asyncio
@@ -331,7 +345,9 @@ class TestTransportErrorHandling:
         transport._client.request = AsyncMock(return_value=mock_resp)
 
         with pytest.raises(RateLimitError) as exc:
-            await transport.request(HttpMethod.GET, "/v1/rate", response_model=_DummyResult)
+            await transport.request(
+                HttpMethod.GET, "/v1/rate", response_model=_DummyResult
+            )
         assert exc.value.status_code == 429
 
     @pytest.mark.asyncio
@@ -380,7 +396,9 @@ class TestTransportErrorHandling:
         transport._client.request = AsyncMock(side_effect=httpx.ConnectError("refused"))
 
         with pytest.raises(ConnectionError) as exc:
-            await transport.request(HttpMethod.GET, "/v1/test", response_model=_DummyResult)
+            await transport.request(
+                HttpMethod.GET, "/v1/test", response_model=_DummyResult
+            )
         assert "refused" in str(exc.value)
 
     @pytest.mark.asyncio
@@ -523,7 +541,9 @@ class TestTransportRetry:
         config = ServerConfig(retry_count=1, retry_backoff=10.0)
         transport = Transport(config)
         err_resp = _mock_response(
-            429, {"data": None, "error": "rate limited"}, headers={"Retry-After": "0.01"}
+            429,
+            {"data": None, "error": "rate limited"},
+            headers={"Retry-After": "0.01"},
         )
         ok_resp = _mock_response(200, {"data": {"ok": True}, "error": None})
 
@@ -677,7 +697,9 @@ class TestTransportDownload:
         dest = tmp_path / "model.safetensors"
         with patch("anvil.client._shared.transport.aiofiles") as mock_aiofiles:
             mock_file = AsyncMock()
-            mock_aiofiles.open.return_value.__aenter__ = AsyncMock(return_value=mock_file)
+            mock_aiofiles.open.return_value.__aenter__ = AsyncMock(
+                return_value=mock_file
+            )
             mock_aiofiles.open.return_value.__aexit__ = AsyncMock()
             result = await transport.download("/v1/artifact", dest=dest)
             assert result == dest

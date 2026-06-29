@@ -120,7 +120,11 @@ class TestLoadDocs:
 
             mock_store = mock_store_cls.return_value
             mock_manifest = MagicMock()
-            mock_manifest.chunk_cfg = {"strategy": "windowed", "block_size": 8, "chunk_overlap": 0.5}
+            mock_manifest.chunk_cfg = {
+                "strategy": "windowed",
+                "block_size": 8,
+                "chunk_overlap": 0.5,
+            }
             mock_store.resolve = AsyncMock(return_value=mock_manifest)
             mock_store.open_blob = AsyncMock()
             mock_store.open_blob.return_value.__aiter__.return_value = [b"hello chunk "]
@@ -602,7 +606,9 @@ class TestStartTraining:
         ):
             mock_backend = MagicMock()
             mock_backend.run = AsyncMock(
-                side_effect=DivergenceError(5, cast(DivergenceReason, DivergenceReason.LOSS_NAN))
+                side_effect=DivergenceError(
+                    5, cast(DivergenceReason, DivergenceReason.LOSS_NAN)
+                )
             )
             mock_get_backend.return_value = mock_backend
 

@@ -7,12 +7,11 @@ importing any anvil.cli functions.
 from __future__ import annotations
 
 import sys
-from unittest.mock import AsyncMock, MagicMock, patch
-
+import unittest.mock
 
 # Patch mlflow BEFORE any anvil imports to prevent import-time hangs
 from types import ModuleType
-import unittest.mock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 # Build a realistic mlflow mock module tree
 _mlflow = ModuleType("mlflow")

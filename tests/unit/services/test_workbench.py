@@ -14,7 +14,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from anvil.workbench import AnvilWorkbench
 
-
 # ============================================================================
 # Helpers
 # ============================================================================
@@ -34,7 +33,9 @@ class TestInit:
     """AnvilWorkbench.__init__ tests."""
 
     @pytest.mark.asyncio
-    async def test_init_with_session_only(self, in_memory_session: AsyncSession) -> None:
+    async def test_init_with_session_only(
+        self, in_memory_session: AsyncSession
+    ) -> None:
         """Default init stores session and leaves paths & registry as None."""
         wb = AnvilWorkbench(in_memory_session)
         assert wb._session is in_memory_session
@@ -395,7 +396,9 @@ class TestContentServices:
 
     @pytest.mark.asyncio
     async def test_content_corpora(self, in_memory_session: AsyncSession) -> None:
-        from anvil.services.content.corpus_service import CorpusService as ContentCorpusService
+        from anvil.services.content.corpus_service import (
+            CorpusService as ContentCorpusService,
+        )
 
         wb = AnvilWorkbench(in_memory_session)
         svc = wb.content_corpora
@@ -496,9 +499,7 @@ class TestInstanceLifecycle:
         self, in_memory_session: AsyncSession
     ) -> None:
         """instance_registry uses the provided registry_session."""
-        from anvil.db.repositories.instance_registry import (
-            InstanceRegistryRepository,
-        )
+        from anvil.db.repositories.instance_registry import InstanceRegistryRepository
 
         reg_session = _mock_registry_session()
         wb = AnvilWorkbench(
@@ -515,9 +516,7 @@ class TestInstanceLifecycle:
         self, in_memory_session: AsyncSession
     ) -> None:
         """Without a registry_session, calls create_registry_session()."""
-        from anvil.db.repositories.instance_registry import (
-            InstanceRegistryRepository,
-        )
+        from anvil.db.repositories.instance_registry import InstanceRegistryRepository
 
         mock_session = _mock_registry_session()
 
@@ -571,9 +570,7 @@ class TestModelImportServices:
 
     @pytest.mark.asyncio
     async def test_model_imports(self, in_memory_session: AsyncSession) -> None:
-        from anvil.services.model_import.model_import_service import (
-            ModelImportService,
-        )
+        from anvil.services.model_import.model_import_service import ModelImportService
 
         wb = AnvilWorkbench(in_memory_session)
         svc = wb.model_imports
@@ -656,9 +653,7 @@ class TestLazyInitialization:
         assert wb.audit is wb._audit
 
     @pytest.mark.asyncio
-    async def test_content_store_is_lazy(
-        self, in_memory_session: AsyncSession
-    ) -> None:
+    async def test_content_store_is_lazy(self, in_memory_session: AsyncSession) -> None:
         wb = AnvilWorkbench(in_memory_session)
         assert wb._content_store is None
         _ = wb.content_store
@@ -684,9 +679,7 @@ class TestLazyInitialization:
         assert wb.runtime_config is wb._runtime_config
 
     @pytest.mark.asyncio
-    async def test_model_imports_is_lazy(
-        self, in_memory_session: AsyncSession
-    ) -> None:
+    async def test_model_imports_is_lazy(self, in_memory_session: AsyncSession) -> None:
         wb = AnvilWorkbench(in_memory_session)
         assert wb._model_imports is None
         _ = wb.model_imports
@@ -760,9 +753,7 @@ class TestLazyInitialization:
         assert wb.content_imports is wb._content_imports
 
     @pytest.mark.asyncio
-    async def test_content_locks_is_lazy(
-        self, in_memory_session: AsyncSession
-    ) -> None:
+    async def test_content_locks_is_lazy(self, in_memory_session: AsyncSession) -> None:
         wb = AnvilWorkbench(in_memory_session)
         assert wb._content_locks is None
         _ = wb.content_locks

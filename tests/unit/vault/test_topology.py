@@ -184,9 +184,7 @@ class TestComputeTopological:
         G = nx.DiGraph()
         for i in range(25):
             G.add_edge(f"n{i}", f"n{(i + 1) % 25}")
-        notes = {
-            f"n{i}": _meta(f"n{i}", tags=["type/principle"]) for i in range(25)
-        }
+        notes = {f"n{i}": _meta(f"n{i}", tags=["type/principle"]) for i in range(25)}
         metrics = compute_topological(G, notes)
         assert metrics.information_sink_rate == 0.0
         assert metrics.information_sink_class == "healthy"
@@ -199,9 +197,7 @@ class TestComputeTopological:
             G.add_edge(f"n{i}", f"n{(i + 1) % 18}")
         # Add a dedicated sink: total nodes = 20, 1 sink = 5%
         G.add_edge("n0", "the_sink")
-        notes = {
-            f"n{i}": _meta(f"n{i}", tags=["type/principle"]) for i in range(18)
-        }
+        notes = {f"n{i}": _meta(f"n{i}", tags=["type/principle"]) for i in range(18)}
         notes["the_sink"] = _meta("the_sink", tags=["type/principle"])
         metrics = compute_topological(G, notes)
         assert 0 < metrics.information_sink_rate <= 10

@@ -131,7 +131,9 @@ class TestDeleteDataset:
 
 class TestSearchDatasets:
     async def test_search(self, service, mock_repo):
-        mock_repo.search.return_value = [Dataset(id=1, name="found", description=None, filename="f", file_path="p")]
+        mock_repo.search.return_value = [
+            Dataset(id=1, name="found", description=None, filename="f", file_path="p")
+        ]
         result = await service.search_datasets("query")
         assert len(result) == 1
 

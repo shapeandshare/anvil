@@ -91,13 +91,19 @@ class TestCorpusServiceCreate:
 
     async def test_create_invalid_strategy_type(self, corpus_svc, tmp_path):
         import pytest
+
         with pytest.raises(TypeError):
-            await corpus_svc.create(name="bad", root_path=str(tmp_path), chunking_strategy=123)
+            await corpus_svc.create(
+                name="bad", root_path=str(tmp_path), chunking_strategy=123
+            )
 
     async def test_create_invalid_overlap(self, corpus_svc, tmp_path):
         import pytest
+
         with pytest.raises(ValueError):
-            await corpus_svc.create(name="bad", root_path=str(tmp_path), chunk_overlap=1.5)
+            await corpus_svc.create(
+                name="bad", root_path=str(tmp_path), chunk_overlap=1.5
+            )
 
     async def test_create_with_patterns(self, corpus_svc, tmp_path):
         saved = await corpus_svc.create(
@@ -120,6 +126,7 @@ class TestCorpusServiceFork:
 
     async def test_fork_missing_source(self, corpus_svc):
         import pytest
+
         with pytest.raises(ValueError, match="not found"):
             await corpus_svc.fork(9999, name="ghost")
 
@@ -159,15 +166,18 @@ class TestCorpusServiceGetFile:
 class TestCorpusServiceIngest:
     async def test_ingest_missing_corpus(self, corpus_svc):
         import pytest
+
         with pytest.raises(ValueError, match="not found"):
             await corpus_svc.ingest(9999)
 
     async def test_load_docs_missing(self, corpus_svc):
         import pytest
+
         with pytest.raises(ValueError, match="not found"):
             await corpus_svc.load_docs(9999)
 
     async def test_scan_and_chunk_missing(self, corpus_svc):
         import pytest
+
         with pytest.raises(ValueError, match="not found"):
             await corpus_svc.scan_and_chunk(9999)

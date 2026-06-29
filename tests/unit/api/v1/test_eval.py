@@ -42,10 +42,13 @@ class TestEvalPerplexity:
 
     async def test_perplexity_computed_successfully(self, client, mock_loaded):
         """Happy path: perplexity computed for a valid model and text."""
+
         class FakeValue:
             data = 0.5
+
             def log(self):
                 return FakeValue()
+
             def __neg__(self):
                 return FakeValue()
 

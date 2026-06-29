@@ -24,7 +24,6 @@ from anvil.services.vault.check_init_py_ownership import (
     scan_directory,
 )
 
-
 ########################################################################
 # _has_py_files tests
 ########################################################################
@@ -112,9 +111,7 @@ class TestInitPyIsBare:
         """File with copyright header and docstring is bare."""
         p = tmp_path / "__init__.py"
         p.write_text(
-            "# Copyright 2026\n"
-            "# License MIT\n"
-            '"""Package docstring."""\n'
+            "# Copyright 2026\n" "# License MIT\n" '"""Package docstring."""\n'
         )
         assert _init_py_is_bare(p) is True
 
@@ -201,7 +198,9 @@ class TestScanDirectory:
         scans = scan_directory(tmp_path)
         violations = self._count_violations(scans)
         assert violations == 1
-        assert any("Missing __init__.py" in v.message for s in scans for v in s.violations)
+        assert any(
+            "Missing __init__.py" in v.message for s in scans for v in s.violations
+        )
 
     def test_data_dir_with_init_py(self, tmp_path: Path) -> None:
         """Data directory with __init__.py has a violation."""
@@ -250,7 +249,9 @@ class TestScanDirectory:
     @staticmethod
     def _assert_no_violations(scans: list[PackageScan]) -> None:
         for s in scans:
-            assert len(s.violations) == 0, f"Unexpected violations in {s.dirpath}: {s.violations}"
+            assert (
+                len(s.violations) == 0
+            ), f"Unexpected violations in {s.dirpath}: {s.violations}"
 
 
 ########################################################################
@@ -261,7 +262,9 @@ class TestScanDirectory:
 class TestMain:
     """Tests for the CLI entry point."""
 
-    def test_clean_exits_0(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_clean_exits_0(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Clean directory exits with code 0."""
         monkeypatch.setenv("ANVIL_ROOT", str(tmp_path))
         pkg = tmp_path / "mypkg"
@@ -274,7 +277,9 @@ class TestMain:
             main()
         assert exc.value.code == 0
 
-    def test_violation_exits_1(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_violation_exits_1(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Directory with violations exits with code 1."""
         monkeypatch.setenv("ANVIL_ROOT", str(tmp_path))
         pkg = tmp_path / "mypkg"
@@ -286,7 +291,9 @@ class TestMain:
             main()
         assert exc.value.code == 1
 
-    def test_nonexistent_root_exits_1(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_nonexistent_root_exits_1(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Non-existent root directory exits with code 1."""
         monkeypatch.setenv("ANVIL_ROOT", str(tmp_path / "nonexistent"))
         monkeypatch.chdir(tmp_path)

@@ -23,7 +23,6 @@ from anvil.services.vault.check_import_placement import (
     scan_file,
 )
 
-
 ########################################################################
 # _scan_source_for_imports tests
 ########################################################################
@@ -262,7 +261,9 @@ class TestScanDirectory:
 class TestMain:
     """Tests for the CLI entry point."""
 
-    def test_clean_exits_0(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_clean_exits_0(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Clean directory exits with code 0."""
         monkeypatch.setenv("ANVIL_ROOT", str(tmp_path))
         p = tmp_path / "test.py"
@@ -273,7 +274,9 @@ class TestMain:
             main()
         assert exc.value.code == 0
 
-    def test_violation_exits_1(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_violation_exits_1(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Directory with violations exits with code 1."""
         monkeypatch.setenv("ANVIL_ROOT", str(tmp_path))
         p = tmp_path / "test.py"
@@ -284,7 +287,9 @@ class TestMain:
             main()
         assert exc.value.code == 1
 
-    def test_nonexistent_root_exits_1(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_nonexistent_root_exits_1(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Non-existent root directory exits with code 1."""
         monkeypatch.setenv("ANVIL_ROOT", str(tmp_path / "nonexistent"))
         monkeypatch.chdir(tmp_path)

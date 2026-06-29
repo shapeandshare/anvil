@@ -128,9 +128,7 @@ class TestArchiveReaderVerify:
         # Re-pack with a wrong manifest entry.
         with tarfile.open(archive_path, "r:gz") as tar:
             members = tar.getmembers()
-            original_manifest = json.loads(
-                tar.extractfile("manifest.json").read()
-            )
+            original_manifest = json.loads(tar.extractfile("manifest.json").read())
 
         # Tweak the sha256 in the manifest.
         original_manifest["entries"][0]["sha256"] = "0" * 64
@@ -139,9 +137,7 @@ class TestArchiveReaderVerify:
         tmp_archive = backup_dir / "tmp-repack.tar.gz"
         with tarfile.open(tmp_archive, "w:gz") as out:
             info = tarfile.TarInfo(name="manifest.json")
-            manifest_bytes = json.dumps(
-                original_manifest, indent=2
-            ).encode("utf-8")
+            manifest_bytes = json.dumps(original_manifest, indent=2).encode("utf-8")
             info.size = len(manifest_bytes)
             out.addfile(info, __import__("io").BytesIO(manifest_bytes))
             for member in members:

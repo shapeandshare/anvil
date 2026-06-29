@@ -23,7 +23,6 @@ from anvil.services.vault.check_adr_unique import (
     main,
 )
 
-
 ########################################################################
 # _extract_adr_numbers tests
 ########################################################################
@@ -212,7 +211,9 @@ class TestValidateAdrs:
 class TestMain:
     """Tests for the CLI entry point."""
 
-    def test_valid_exits_0(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_valid_exits_0(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Valid ADRs exit with code 0."""
         (tmp_path / "ADR-001-first.md").write_text("# ADR 1")
         monkeypatch.setenv("ANVIL_DECISIONS_DIR", str(tmp_path))
@@ -220,7 +221,9 @@ class TestMain:
             main()
         assert exc.value.code == 0
 
-    def test_duplicate_exits_1(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_duplicate_exits_1(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Duplicate ADRs exit with code 1."""
         (tmp_path / "ADR-001-first.md").write_text("# ADR 1")
         (tmp_path / "ADR-001-second.md").write_text("# ADR 1 again")
@@ -229,7 +232,9 @@ class TestMain:
             main()
         assert exc.value.code == 1
 
-    def test_off_pattern_exits_1(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_off_pattern_exits_1(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Off-pattern files exit with code 1."""
         (tmp_path / "001-decision.md").write_text("# decision")
         monkeypatch.setenv("ANVIL_DECISIONS_DIR", str(tmp_path))

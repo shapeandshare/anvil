@@ -14,7 +14,6 @@ import pytest
 
 from anvil.services.vault.detect_increment import _merge_message, main
 
-
 ##############################################################################
 # _merge_message
 ##############################################################################
@@ -84,9 +83,13 @@ def _run_main(
         patch(
             "anvil.services.vault.detect_increment.classify_increment",
             wraps=lambda msg: (
-                "MAJOR" if "BREAKING" in msg.upper() else "MINOR"
-                if msg.startswith("feat") else "PATCH"
-                if msg.startswith("fix") else "NONE"
+                "MAJOR"
+                if "BREAKING" in msg.upper()
+                else (
+                    "MINOR"
+                    if msg.startswith("feat")
+                    else "PATCH" if msg.startswith("fix") else "NONE"
+                )
             ),
         ),
         patch(

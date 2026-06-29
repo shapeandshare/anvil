@@ -39,7 +39,6 @@ from anvil.services.instances.cli import (
 )
 from anvil.services.instances.instance_status import InstanceStatus
 
-
 ########################################################################
 # build_parser tests
 ########################################################################
@@ -57,9 +56,7 @@ class TestBuildParser:
     def test_create_subcommand(self) -> None:
         """``create`` subcommand requires ``name`` and ``--workspace``."""
         parser = build_parser()
-        args = parser.parse_args(
-            ["create", "my-instance", "--workspace", "/tmp/ws"]
-        )
+        args = parser.parse_args(["create", "my-instance", "--workspace", "/tmp/ws"])
         assert args.command == "create"
         assert args.name == "my-instance"
         assert args.workspace == Path("/tmp/ws")
@@ -137,9 +134,7 @@ class TestBuildParser:
     def test_destroy_subcommand(self) -> None:
         """``destroy`` requires ``name`` and ``--yes``."""
         parser = build_parser()
-        args = parser.parse_args(
-            ["destroy", "my-instance", "--yes"]
-        )
+        args = parser.parse_args(["destroy", "my-instance", "--yes"])
         assert args.command == "destroy"
         assert args.name == "my-instance"
         assert args.yes is True
@@ -226,9 +221,7 @@ class TestCmdStart:
         assert "my-instance" in captured.out
         assert "started" in captured.out
 
-    async def test_start_value_error(
-        self, mock_wb: MagicMock
-    ) -> None:
+    async def test_start_value_error(self, mock_wb: MagicMock) -> None:
         """ValueError from start prints error and exits."""
         mock_wb.instances.start.side_effect = ValueError("bad name")
         args = argparse.Namespace(name="bad-name")
@@ -249,9 +242,7 @@ class TestCmdStop:
         captured = capsys.readouterr()
         assert "stopped" in captured.out
 
-    async def test_stop_not_found(
-        self, mock_wb: MagicMock
-    ) -> None:
+    async def test_stop_not_found(self, mock_wb: MagicMock) -> None:
         """FileNotFoundError from stop exits."""
         mock_wb.instances.stop.side_effect = FileNotFoundError("no pid")
         args = argparse.Namespace(name="ghost")
@@ -272,9 +263,7 @@ class TestCmdRestart:
         captured = capsys.readouterr()
         assert "restarted" in captured.out
 
-    async def test_restart_error(
-        self, mock_wb: MagicMock
-    ) -> None:
+    async def test_restart_error(self, mock_wb: MagicMock) -> None:
         """RuntimeError from restart exits."""
         mock_wb.instances.restart.side_effect = RuntimeError("timeout")
         args = argparse.Namespace(name="broken")
@@ -354,11 +343,11 @@ class TestCmdList:
 class TestCmdDestroy:
     """``_cmd_destroy`` checks --yes and dispatches."""
 
-    async def test_destroy_missing_confirmation(
-        self, mock_wb: MagicMock
-    ) -> None:
+    async def test_destroy_missing_confirmation(self, mock_wb: MagicMock) -> None:
         """Without --yes, destroy prints error and exits."""
-        args = argparse.Namespace(name="my-instance", yes=False, keep_data=False, force=False)
+        args = argparse.Namespace(
+            name="my-instance", yes=False, keep_data=False, force=False
+        )
         with pytest.raises(SystemExit):
             await _cmd_destroy(args, mock_wb)
 
@@ -390,9 +379,7 @@ class TestCmdDestroy:
         captured = capsys.readouterr()
         assert "data preserved" in captured.out
 
-    async def test_destroy_error(
-        self, mock_wb: MagicMock
-    ) -> None:
+    async def test_destroy_error(self, mock_wb: MagicMock) -> None:
         """RuntimeError from destroy exits."""
         mock_wb.instances.destroy.side_effect = RuntimeError("stale lock")
         args = argparse.Namespace(
@@ -474,9 +461,7 @@ class TestMain:
     """``main()`` entry point with mocked async dispatch."""
 
     @patch("anvil.services.instances.cli.asyncio.run")
-    def test_main_no_command_exits(
-        self, mock_run: MagicMock
-    ) -> None:
+    def test_main_no_command_exits(self, mock_run: MagicMock) -> None:
         """``main()`` with no command prints help and exits."""
         with pytest.raises(SystemExit) as exc_info:
             main([])
@@ -484,9 +469,7 @@ class TestMain:
         mock_run.assert_not_called()
 
     @patch("anvil.services.instances.cli.asyncio.run")
-    def test_main_create(
-        self, mock_run: MagicMock
-    ) -> None:
+    def test_main_create(self, mock_run: MagicMock) -> None:
         """``main()`` dispatches ``create``."""
         main(["create", "my-instance", "--workspace", "/tmp/ws"])
         mock_run.assert_called_once()

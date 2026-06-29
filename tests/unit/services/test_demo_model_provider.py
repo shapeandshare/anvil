@@ -365,14 +365,10 @@ class TestDemoModelProviderLoadDemoDocs:
                 )
 
                 mock_bootstrap = mock_bootstrap_cls.return_value
-                mock_bootstrap.get_default_corpus = AsyncMock(
-                    return_value=fake_corpus
-                )
+                mock_bootstrap.get_default_corpus = AsyncMock(return_value=fake_corpus)
 
                 mock_corpus_svc = mock_corpus_svc_cls.return_value
-                mock_corpus_svc.load_docs = AsyncMock(
-                    return_value=["doc_a", "doc_b"]
-                )
+                mock_corpus_svc.load_docs = AsyncMock(return_value=["doc_a", "doc_b"])
 
                 result = DemoModelProvider._load_demo_docs()
 

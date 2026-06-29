@@ -26,10 +26,7 @@ from anvil.api.app import app
 from anvil.api.deps import get_workbench
 from anvil.api.v1.content import _injection_queue
 from anvil.services.content.ingest_status import IngestStatus
-from anvil.services.content.validation_report import (
-    ValidationProblem,
-    ValidationReport,
-)
+from anvil.services.content.validation_report import ValidationProblem, ValidationReport
 
 pytestmark = pytest.mark.asyncio
 
@@ -652,8 +649,8 @@ class TestOpenSession:
     ) -> None:
         """ValueError from open_session yields 422."""
         mock_workbench.content_corpus_repo.get.return_value = _make_mock_corpus(id=1)
-        mock_workbench.content_source_repo.get_by_slug.return_value = (
-            _make_mock_source(id=2)
+        mock_workbench.content_source_repo.get_by_slug.return_value = _make_mock_source(
+            id=2
         )
         mock_workbench.content_ingestion.open_session.side_effect = ValueError(
             "already open"
@@ -672,8 +669,8 @@ class TestOpenSession:
     ) -> None:
         """If the created session is not fetchable, return 404."""
         mock_workbench.content_corpus_repo.get.return_value = _make_mock_corpus(id=1)
-        mock_workbench.content_source_repo.get_by_slug.return_value = (
-            _make_mock_source(id=2)
+        mock_workbench.content_source_repo.get_by_slug.return_value = _make_mock_source(
+            id=2
         )
         mock_workbench.content_ingestion.open_session.return_value = MagicMock(
             session_id=10
@@ -742,9 +739,7 @@ class TestStageFile:
         override_dep: None,
     ) -> None:
         """Session in non-open status returns 422."""
-        mock_session = _make_mock_session(
-            id=5, status=IngestStatus.ACCEPTED
-        )
+        mock_session = _make_mock_session(id=5, status=IngestStatus.ACCEPTED)
         mock_workbench.content_ingest_session_repo.get.return_value = mock_session
         resp = await client.post(
             "/v1/content/sessions/5/stage?path=doc.txt",
@@ -830,9 +825,7 @@ class TestAcceptSession:
         override_dep: None,
     ) -> None:
         """Accepts session and returns version metadata."""
-        mock_session = _make_mock_session(
-            id=5, status=IngestStatus.OPEN
-        )
+        mock_session = _make_mock_session(id=5, status=IngestStatus.OPEN)
         mock_workbench.content_ingest_session_repo.get.return_value = mock_session
         mock_workbench.content_ingestion.accept.return_value = MagicMock(
             version_id=100,
@@ -1188,9 +1181,7 @@ class TestGetVersionLineage:
         mock_workbench.content_version_repo.get_run_refs.return_value = [
             _make_mock_run_ref(mlflow_run_id="run_1", corpus_ref="corpus@1")
         ]
-        mock_session = _make_mock_session(
-            accepted_version_id=10, source_id=5
-        )
+        mock_session = _make_mock_session(accepted_version_id=10, source_id=5)
         mock_workbench.content_ingest_session_repo.get_by_accepted_version.return_value = (
             mock_session
         )
@@ -1320,9 +1311,7 @@ class TestRevertCorpus:
         """Reverts corpus to a prior version."""
         mock_corpus = _make_mock_corpus(id=1)
         mock_workbench.content_corpus_repo.get.return_value = mock_corpus
-        mock_target = _make_mock_version(
-            id=5, corpus_id=1, version_number=2
-        )
+        mock_target = _make_mock_version(id=5, corpus_id=1, version_number=2)
         mock_workbench.content_version_repo.get.return_value = mock_target
         mock_workbench.content_corpora.revert.return_value = MagicMock(
             version_id=10,

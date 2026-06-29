@@ -58,8 +58,11 @@ class TestListAuditEvents:
 class TestVerifyAuditChain:
     async def test_chain_valid(self, client, mock_workbench, override_dep):
         from anvil.services.governance.chain_verify_result import ChainVerifyResult
+
         mock_workbench.audit.verify_chain = AsyncMock(
-            return_value=ChainVerifyResult(valid=True, break_at_sequence=None, entries_checked=5)
+            return_value=ChainVerifyResult(
+                valid=True, break_at_sequence=None, entries_checked=5
+            )
         )
         resp = await client.get("/v1/governance/audit/verify")
         assert resp.status_code == 200

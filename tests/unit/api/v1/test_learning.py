@@ -12,7 +12,6 @@ import pytest
 
 import anvil.api.v1.learning as learning_mod
 
-
 ####################################################################
 # Helper: known page groups
 ####################################################################
@@ -76,9 +75,9 @@ class TestLearnPages:
         """Every known learn page returns HTTP 200 with ``text/html``."""
         r = await client.get(path)
         assert r.status_code == 200, f"{path} expected 200, got {r.status_code}"
-        assert "text/html" in r.headers.get("content-type", ""), (
-            f"{path} expected text/html content type"
-        )
+        assert "text/html" in r.headers.get(
+            "content-type", ""
+        ), f"{path} expected text/html content type"
 
     @pytest.mark.parametrize("path,_template,_text", LEARN_PAGES)
     @pytest.mark.asyncio
@@ -88,9 +87,7 @@ class TestLearnPages:
         """Each page's HTML body contains the expected content fragment."""
         r = await client.get(path)
         assert r.status_code == 200
-        assert _text in r.text, (
-            f"Expected text {_text!r} not found in {path} response"
-        )
+        assert _text in r.text, f"Expected text {_text!r} not found in {path} response"
 
     @pytest.mark.parametrize("path,_template,_text", LEARN_PAGES)
     @pytest.mark.asyncio
@@ -100,9 +97,9 @@ class TestLearnPages:
         """Each page returns well-formed HTML structure (doctype, html tag)."""
         r = await client.get(path)
         assert r.status_code == 200
-        assert "<!DOCTYPE html>" in r.text or "<!doctype html>" in r.text, (
-            f"{path} missing DOCTYPE"
-        )
+        assert (
+            "<!DOCTYPE html>" in r.text or "<!doctype html>" in r.text
+        ), f"{path} missing DOCTYPE"
         assert "<html" in r.text, f"{path} missing <html> tag"
         assert "</html>" in r.text, f"{path} missing </html> tag"
 
@@ -119,9 +116,9 @@ class TestInvalidLearnPage:
     async def test_invalid_page_returns_404(self, client) -> None:
         """A non-existent learn page returns HTTP 404."""
         r = await client.get(INVALID_PAGE)
-        assert r.status_code == 404, (
-            f"Expected 404 for {INVALID_PAGE}, got {r.status_code}"
-        )
+        assert (
+            r.status_code == 404
+        ), f"Expected 404 for {INVALID_PAGE}, got {r.status_code}"
 
     @pytest.mark.asyncio
     async def test_invalid_page_detail(self, client) -> None:
@@ -143,9 +140,9 @@ class TestLearningRouter:
     def test_router_has_expected_route_count(self) -> None:
         """The learning router registers 30 routes."""
         routes = learning_mod.router.routes
-        assert len(routes) == 30, (
-            f"Expected 30 routes on learning router, got {len(routes)}"
-        )
+        assert (
+            len(routes) == 30
+        ), f"Expected 30 routes on learning router, got {len(routes)}"
 
     def test_router_includes_all_learn_paths(self) -> None:
         """All known learn pages exist as registered routes."""
@@ -153,17 +150,17 @@ class TestLearningRouter:
         for path, _template, _text in LEARN_PAGES:
             # Strip /v1 prefix — router paths are relative
             suffix = path.replace("/v1", "", 1)
-            assert suffix in registered_paths, (
-                f"Route {suffix} not found in learning router"
-            )
+            assert (
+                suffix in registered_paths
+            ), f"Route {suffix} not found in learning router"
 
     def test_invalid_learn_path_not_in_router(self) -> None:
         """The non-existent page is NOT a registered route."""
         suffix = INVALID_PAGE.replace("/v1", "", 1)
         registered_paths = {r.path for r in learning_mod.router.routes}
-        assert suffix not in registered_paths, (
-            f"Route {suffix} should not exist in learning router"
-        )
+        assert (
+            suffix not in registered_paths
+        ), f"Route {suffix} should not exist in learning router"
 
 
 ####################################################################
@@ -250,13 +247,13 @@ class TestLearningArcData:
         """``LEARNING_ARC_LESSONS`` does not include additional or ops."""
         lesson_keys = {item["key"] for item in learning_mod.LEARNING_ARC_LESSONS}
         for item in learning_mod.LEARNING_ARC_ADDITIONAL:
-            assert item["key"] not in lesson_keys, (
-                f"Additional key {item['key']} found in lessons"
-            )
+            assert (
+                item["key"] not in lesson_keys
+            ), f"Additional key {item['key']} found in lessons"
         for item in learning_mod.OPS_ARC:
-            assert item["key"] not in lesson_keys, (
-                f"Ops key {item['key']} found in lessons"
-            )
+            assert (
+                item["key"] not in lesson_keys
+            ), f"Ops key {item['key']} found in lessons"
 
     def test_learning_arc_lessons_plus_ops_covers_learning_arc(self) -> None:
         """Every key in ``LEARNING_ARC`` appears in lessons, additional, or ops."""
@@ -266,6 +263,6 @@ class TestLearningArcData:
         covered_keys = lesson_keys | additional_keys | ops_keys
         arc_keys = {item["key"] for item in learning_mod.LEARNING_ARC}
         uncovered = arc_keys - covered_keys
-        assert not uncovered, (
-            f"LEARNING_ARC keys not covered by lessons/additional/ops: {uncovered}"
-        )
+        assert (
+            not uncovered
+        ), f"LEARNING_ARC keys not covered by lessons/additional/ops: {uncovered}"

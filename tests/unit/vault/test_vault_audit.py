@@ -43,7 +43,6 @@ from anvil.services.vault.vault_audit import (
     validate_schema,
 )
 
-
 ########################################################################
 # Pure function tests
 ########################################################################
@@ -193,9 +192,7 @@ class TestIsSpecSubfile:
         """A path inside a scaffold subdir at depth is not a subfile."""
         vault_root = tmp_path / "docs" / "vault"
         # Specs / 001 / checklists / sub / nested.md — scaffold at position 2
-        file_path = (
-            vault_root / "Specs" / "001" / "checklists" / "sub" / "nested.md"
-        )
+        file_path = vault_root / "Specs" / "001" / "checklists" / "sub" / "nested.md"
         assert _is_spec_subfile(file_path, vault_root) is False
 
 
@@ -236,7 +233,9 @@ class TestParseFrontmatter:
     def test_crlf_line_endings(self, tmp_path: Path) -> None:
         """Windows-style CRLF frontmatter delimiters are handled."""
         md_file = tmp_path / "note.md"
-        md_file.write_bytes(b"---\r\ntitle: CRLF Note\r\ntags:\r\n  - type/design\r\n---\r\n\r\nBody.\r\n")
+        md_file.write_bytes(
+            b"---\r\ntitle: CRLF Note\r\ntags:\r\n  - type/design\r\n---\r\n\r\nBody.\r\n"
+        )
         result = parse_frontmatter(md_file)
         assert result.get("title") == "CRLF Note"
         assert "type/design" in result.get("tags", [])
@@ -244,9 +243,7 @@ class TestParseFrontmatter:
     def test_nfc_normalization(self, tmp_path: Path) -> None:
         """Frontmatter values are NFC-normalized."""
         md_file = tmp_path / "note.md"
-        md_file.write_text(
-            "---\ntitle: caf\u00e9\n---\n\nBody.\n"
-        )
+        md_file.write_text("---\ntitle: caf\u00e9\n---\n\nBody.\n")
         result = parse_frontmatter(md_file)
         # already NFC
         assert result["title"] == "caf\u00e9"
@@ -297,7 +294,7 @@ class TestExtractWikilinks:
 
     def test_leading_punct_inside_brackets_skipped(self) -> None:
         """Wikilink target starting with ! - \" ' $ inside [[ ]] is skipped."""
-        text = 'See [[!image.png]] and [[KeepMe]].'
+        text = "See [[!image.png]] and [[KeepMe]]."
         result = extract_wikilinks(text)
         assert result == ["KeepMe"]
 
@@ -421,7 +418,9 @@ class TestValidateSchema:
     def test_missing_frontmatter(self, tmp_path: Path) -> None:
         """An empty frontmatter dict produces a WARN."""
         findings = validate_schema(tmp_path / "note.md", {}, "note.md")
-        assert any(f.severity == "WARN" and "no frontmatter" in f.message for f in findings)
+        assert any(
+            f.severity == "WARN" and "no frontmatter" in f.message for f in findings
+        )
 
     def test_missing_required_fields(self, tmp_path: Path) -> None:
         """Missing required fields produce ERROR findings."""
@@ -432,7 +431,12 @@ class TestValidateSchema:
 
     def test_missing_type_tag(self, tmp_path: Path) -> None:
         """No type tag at all produces an ERROR."""
-        fm = {"title": "Test", "tags": ["status/draft"], "created": "2026-01-01", "updated": "2026-06-01"}
+        fm = {
+            "title": "Test",
+            "tags": ["status/draft"],
+            "created": "2026-01-01",
+            "updated": "2026-06-01",
+        }
         findings = validate_schema(tmp_path / "note.md", fm, "note.md")
         assert any(f.rule == "missing_type_tag" for f in findings)
 
@@ -528,7 +532,9 @@ class TestValidateSchema:
             "updated": "2026-06-01",
         }
         findings = validate_schema(tmp_path / "note.md", fm, "note.md")
-        assert any(f.rule == "invalid_date" and "created" in f.message for f in findings)
+        assert any(
+            f.rule == "invalid_date" and "created" in f.message for f in findings
+        )
 
     def test_invalid_date_updated(self, tmp_path: Path) -> None:
         """An invalid updated date produces an ERROR."""
@@ -539,7 +545,9 @@ class TestValidateSchema:
             "updated": "bad-date",
         }
         findings = validate_schema(tmp_path / "note.md", fm, "note.md")
-        assert any(f.rule == "invalid_date" and "updated" in f.message for f in findings)
+        assert any(
+            f.rule == "invalid_date" and "updated" in f.message for f in findings
+        )
 
     def test_non_string_tags_skipped(self, tmp_path: Path) -> None:
         """Non-string tags are skipped without error."""

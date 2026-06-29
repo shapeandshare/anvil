@@ -184,7 +184,9 @@ class TestRegisterModel:
         assert resp.status_code == 400
         assert "must be FINISHED" in resp.json()["detail"]
 
-    async def test_experiment_no_mlflow_run(self, client, mock_tracking_service) -> None:
+    async def test_experiment_no_mlflow_run(
+        self, client, mock_tracking_service
+    ) -> None:
         """Experiment lacks an MLflow run ID → 400."""
         mock_tracking_service.get_experiment = AsyncMock(
             return_value={
@@ -232,7 +234,9 @@ class TestListRegisteredModels:
         assert resp.status_code == 200
         assert resp.json() == {"models": []}
 
-    async def test_search_param_passthrough(self, client, mock_tracking_service) -> None:
+    async def test_search_param_passthrough(
+        self, client, mock_tracking_service
+    ) -> None:
         """``search`` query parameter forwarded to service."""
         mock_tracking_service.list_registered_models = AsyncMock(return_value=[])
 
@@ -253,7 +257,9 @@ class TestGetModel:
     ) -> None:
         """String ``model_id`` used directly as the MLflow model name."""
         mock_tracking_service.list_registered_models = AsyncMock(return_value=[])
-        mock_mlflow_client.get_registered_model.return_value = _make_registered_model("my-model")
+        mock_mlflow_client.get_registered_model.return_value = _make_registered_model(
+            "my-model"
+        )
         mock_mlflow_client.search_model_versions.return_value = []
 
         resp = await client.get("/v1/registry/models/my-model")
@@ -272,7 +278,9 @@ class TestGetModel:
                 {"name": "other-model", "id": 2},
             ]
         )
-        mock_mlflow_client.get_registered_model.return_value = _make_registered_model("dataset-1")
+        mock_mlflow_client.get_registered_model.return_value = _make_registered_model(
+            "dataset-1"
+        )
         mock_mlflow_client.search_model_versions.return_value = []
 
         resp = await client.get("/v1/registry/models/1")
@@ -292,7 +300,9 @@ class TestGetModel:
     ) -> None:
         """Versions enriched with run metadata."""
         mock_tracking_service.list_registered_models = AsyncMock(return_value=[])
-        mock_mlflow_client.get_registered_model.return_value = _make_registered_model("mymodel")
+        mock_mlflow_client.get_registered_model.return_value = _make_registered_model(
+            "mymodel"
+        )
 
         v1 = _make_version(1, "run-1")
         v2 = _make_version(2, "run-2")

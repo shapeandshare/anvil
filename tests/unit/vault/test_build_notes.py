@@ -7,13 +7,11 @@ temporary files to simulate CHANGELOG.md content.
 from __future__ import annotations
 
 import os
-
 from pathlib import Path
 
 import pytest
 
 from anvil.services.vault.build_notes import _extract_changelog_entry
-
 
 ##############################################################################
 # _extract_changelog_entry
@@ -44,16 +42,16 @@ def test_extract_last_entry(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
     """The last changelog entry (no following ##) is extracted."""
     monkeypatch.chdir(tmp_path)
     changelog = tmp_path / "CHANGELOG.md"
-    changelog.write_text(
-        "# Changelog\n\n" "## v1.0.0\n\n" "Initial release.\n"
-    )
+    changelog.write_text("# Changelog\n\n" "## v1.0.0\n\n" "Initial release.\n")
 
     entry = _extract_changelog_entry("1.0.0")
     assert entry is not None
     assert entry == "Initial release."
 
 
-def test_extract_entry_with_dashes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_extract_entry_with_dashes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Horizontal rules (---) inside entries are stripped."""
     monkeypatch.chdir(tmp_path)
     changelog = tmp_path / "CHANGELOG.md"
@@ -74,7 +72,9 @@ def test_extract_entry_with_dashes(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     assert "- Feature B" in entry
 
 
-def test_extract_entry_not_found(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_extract_entry_not_found(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """A version not in the changelog returns None."""
     monkeypatch.chdir(tmp_path)
     changelog = tmp_path / "CHANGELOG.md"
@@ -101,16 +101,14 @@ def test_extract_empty_entry(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) ->
     assert entry is None
 
 
-def test_extract_multiline_entry(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_extract_multiline_entry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Multi-line entries are preserved."""
     monkeypatch.chdir(tmp_path)
     changelog = tmp_path / "CHANGELOG.md"
     changelog.write_text(
-        "## v0.5.0\n\n"
-        "- Line one\n"
-        "- Line two\n"
-        "\n"
-        "More details.\n"
+        "## v0.5.0\n\n" "- Line one\n" "- Line two\n" "\n" "More details.\n"
     )
 
     entry = _extract_changelog_entry("0.5.0")
@@ -120,7 +118,9 @@ def test_extract_multiline_entry(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     assert "More details." in entry
 
 
-def test_extract_version_with_v_prefix(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_extract_version_with_v_prefix(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """The version passed to the function does not include 'v' prefix."""
     monkeypatch.chdir(tmp_path)
     changelog = tmp_path / "CHANGELOG.md"
@@ -131,7 +131,9 @@ def test_extract_version_with_v_prefix(tmp_path: Path, monkeypatch: pytest.Monke
     assert entry == "Content."
 
 
-def test_extract_respects_version_boundary(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_extract_respects_version_boundary(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Extraction stops at the next ## v line."""
     monkeypatch.chdir(tmp_path)
     changelog = tmp_path / "CHANGELOG.md"
