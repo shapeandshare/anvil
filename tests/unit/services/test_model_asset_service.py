@@ -212,7 +212,9 @@ def _wire_download_service(
 
     created_assets: list[ModelAsset] = []
 
-    async def _add(asset: ModelAsset) -> ModelAsset:
+    def _add(
+        asset: ModelAsset,
+    ) -> ModelAsset:  # noqa: RUF100  # used as AsyncMock side_effect
         asset.id = len(created_assets) + 1
         asset.downloaded_bytes = 0
         asset.sha256 = None
@@ -222,7 +224,9 @@ def _wire_download_service(
 
     statuses: dict[int, str] = {}
 
-    async def _update_status(asset_id, status, **kwargs):
+    def _update_status(
+        asset_id, status, **kwargs
+    ):  # noqa: RUF100  # used as AsyncMock side_effect
         statuses[asset_id] = status
         return MagicMock()
 
@@ -320,7 +324,7 @@ class TestRunDownload:
 
     @pytest.mark.asyncio
     async def test_run_download_empty_file_list_fails(self, tmp_path) -> None:
-        svc, job_repo, model_repo, _ = _wire_download_service(tmp_path, [], b"")
+        svc, job_repo, _model_repo, _ = _wire_download_service(tmp_path, [], b"")
 
         await svc.run_download(42)
 

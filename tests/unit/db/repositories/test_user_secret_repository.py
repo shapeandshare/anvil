@@ -67,7 +67,7 @@ async def test_delete(in_memory_session: AsyncSession) -> None:
 async def test_delete_idempotent(in_memory_session: AsyncSession) -> None:
     repo = UserSecretRepository(in_memory_session)
     await repo.delete("user1", "nonexistent")
-    assert True  # no exception raised
+    # No exception raised — idempotent delete is a no-op for missing keys
 
 
 @pytest.mark.asyncio

@@ -40,7 +40,7 @@ async def test_add_and_get_by_model(in_memory_session: AsyncSession) -> None:
 @pytest.mark.asyncio
 async def test_get_by_model_and_type(in_memory_session: AsyncSession) -> None:
     repo = ModelAssetRepository(in_memory_session)
-    w1 = await repo.add(
+    _ = await repo.add(
         ModelAsset(
             external_model_id=1,
             asset_type=str(ModelAssetType.WEIGHTS),
