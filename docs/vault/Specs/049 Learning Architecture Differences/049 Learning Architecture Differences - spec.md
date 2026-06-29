@@ -36,10 +36,19 @@ flags (041).
 
 | Dimension | Scope |
 |-----------|-------|
-| **Owned FRs** | FR-025, FR-026 (architecture aspect), FR-032 (allow-list lesson) |
-| **Owned decisions** | FT-AD-9, FT-AD-10, FT-AD-11 (allow-list aspect) |
+| **Owned FRs** | FR-025 (sole), FR-025a (sole), FR-026 *architecture aspect* (shared with 048 — concepts aspect), FR-032 *allow-list lesson/rationale* (shared with 041/042/043 — publish/detect aspects) |
+| **Owned decisions** | FT-AD-9 (shared with 044), FT-AD-10 *architecture-differences page* (shared with 048 — concepts pages), FT-AD-11 *allow-list teaching/rationale aspect* (shared with 041/042/043 — publish/fail-closed aspects) |
 | **Depends on** | Existing learning content system; conceptually pairs with 048; cross-links 041 |
 | **Invariant risk** | **NONE** — content + UI only |
+
+---
+
+## Clarifications
+
+### Session 2026-06-28
+
+- Q: What page format should the architecture-differences module use? → A: Single page with expandable/collapsible sections (accordion pattern). Each architecture dimension (tokenization, attention, parameters, context, allow-list) gets its own collapsible section, keeping all content on one URL for self-paced exploration.
+- Q: Where should cross-links from 041 eligibility flags land within the module? → A: Link directly to the allow-list section via anchor ID. The user's intent ("why can't I run this?") is best served by landing on the allow-list explanation, with the other accordion sections available for further exploration.
 
 ---
 
@@ -74,21 +83,36 @@ anvil's limited execution scope without claiming exhaustive support.
 - **FR-025**: The learning arc MUST include an architecture-differences module explaining tokenization,
   attention/parameter/context differences and their fine-tuning implications, explicitly scoping that
   anvil executes a limited architecture set while teaching the broader landscape.
-- **FR-026 (architecture)**: This spec provides the architecture-differences learning content paired with
-  the catalog/eligibility features (041) and the external engine (044).
+  - **UX**: The module MUST use a single-page layout with expandable/collapsible sections (accordion
+    pattern), one per architecture dimension (tokenization, attention, parameters, context, allow-list),
+    enabling self-paced exploration without page navigation.
+- **FR-026 (architecture aspect — shared with 048)**: This spec MUST deliver the architecture-differences
+  facet of the "each shippable capability ships with its learning content" requirement (FT-AD-10). The
+  conceptual facet (what fine-tuning is, LoRA, fine-tune vs prompt vs RAG) is owned by spec 048; this spec
+  owns the architecture-differences page that frames the catalog/eligibility features (041) and the external
+  engine (044). Together 048 + 049 satisfy FR-026 for the pedagogy track.
 - **FR-025a**: The module MUST cross-link from the catalog's not-eligible/unknown-architecture flags so
   the limitation is always one click from its explanation.
-- **FR-032**: The module MUST present and explain the concrete runnable **architecture allow-list** (v1:
-  `LlamaForCausalLM`) and the accepted weight format (safetensors) — teaching *why* the boundary exists
-  (tokenizer/weight-format/architecture differences) and what "track-but-not-run" means — so the
-  published allow-list (surfaced in 041) is paired with its rationale. It MUST also frame GGUF as a
-  deferred, planned type (FT-AD-11; specs 050–052) rather than an unsupported dead end.
+  - **UX**: Cross-links from 041 eligibility flags MUST land on the module's allow-list section via
+    anchor ID, delivering the user directly to the explanation most relevant to their intent.
+- **FR-032 (lesson/rationale aspect — shared with 041/042/043)**: The module MUST present and explain the
+  concrete runnable **architecture allow-list** (v1: `LlamaForCausalLM`) and the accepted weight format
+  (v1: `safetensors` only) — teaching *why* the boundary exists (tokenizer/weight-format/architecture
+  differences) and what "track-but-not-run" means — so the allow-list **published by 041** (which owns the
+  publish/surface aspect of FR-032; detection/acquisition aspects in 042/043) is paired with its rationale.
+  The taught values MUST stay consistent with the single source of truth in code
+  (`_ALLOWED_ARCHITECTURES` / `_ACCEPTED_FORMATS` in `anvil/services/model_import/model_import_service.py`).
+  It MUST also frame GGUF as a deferred, planned type (FT-AD-11; specs 050–052) rather than an unsupported
+  dead end.
 
 ## Success Criteria
 
 - **SC-001**: The module explains architecture differences and implications without claiming exhaustive
   execution support.
-- **SC-002**: It is cross-linked from the catalog eligibility flags (041).
+- **SC-002**: It is cross-linked from the catalog eligibility flags (041). *Cross-spec dependency*: this
+  module provides the anchor target (`#allow-list`, FR-025a); the **emitting** link from a `track_only`
+  catalog entry is added in the 041 model-detail UI (see tasks.md T016). SC-002 is satisfied only when
+  both sides land.
 - **SC-003**: It contrasts anvil's char-level mini-Llama with TinyLlama-class and larger families.
 - **SC-004**: The runnable allow-list and accepted format are explained with rationale, and GGUF is
   framed as deferred/planned (not a dead end).
