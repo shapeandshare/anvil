@@ -7,8 +7,7 @@
 
 import pytest
 
-from anvil.db.models.corpus import Corpus
-from anvil.db.models.corpus_file import CorpusFile
+from anvil.db.models.corpus import Corpus, CorpusFile
 
 
 class TestCorpusModel:

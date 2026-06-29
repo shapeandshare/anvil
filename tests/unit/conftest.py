@@ -27,7 +27,6 @@ from anvil.db.models import (  # isort: skip
     audit_event,
     backup_operation,
     corpus,
-    corpus_file,
     curation_operation,
     dataset,
     import_source,
