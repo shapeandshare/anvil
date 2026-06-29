@@ -16,6 +16,7 @@ from pathlib import Path
 import pytest
 
 from anvil.storage.local import LocalFileStore
+from anvil.workspace.workspace_paths import WorkspacePaths
 
 
 class _BytesStream:
@@ -33,6 +34,22 @@ class _BytesStream:
             raise StopAsyncIteration
         self._consumed = True
         return self._data
+
+
+class TestConstructor:
+    """Tests for LocalFileStore.__init__ constructor paths."""
+
+    def test_default_base_path_uses_data_storage(self, tmp_path):
+        """Constructing with no args defaults base_path to data/storage."""
+        store = LocalFileStore()
+        assert store.base_path.name == "storage"
+        assert store.base_path.parent.name == "data"
+
+    def test_paths_constructor_uses_storage_dir(self, tmp_path):
+        """Constructing with WorkspacePaths uses its storage_dir."""
+        paths = WorkspacePaths(root=tmp_path)
+        store = LocalFileStore(paths=paths)
+        assert store.base_path == (tmp_path / "data" / "storage")
 
 
 class TestResolve:
@@ -90,6 +107,35 @@ class TestPutAndGet:
                 await store.put("fail.bin", _FailingStream())
             full = store._resolve("fail.bin")
             assert not full.exists()
+
+
+class TestGetEdgeCases:
+    """Tests for get() edge cases — missing files."""
+
+    async def test_get_nonexistent_raises(self, tmp_path):
+        """get() on a path that does not exist raises FileNotFoundError."""
+        store = LocalFileStore(str(tmp_path))
+        with pytest.raises(FileNotFoundError):
+            _ = [c async for c in store.get("missing.txt")]
+
+
+class TestPutOverwrite:
+    """Tests that put() correctly overwrites existing files."""
+
+    async def test_put_overwrites_existing_content(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = LocalFileStore(tmp)
+            await store.put("overwrite.txt", _BytesStream(b"original"))
+            await store.put("overwrite.txt", _BytesStream(b"replacement"))
+            chunks = [c async for c in store.get("overwrite.txt")]
+            assert b"".join(chunks) == b"replacement"
+
+    async def test_put_overwrite_updates_etag(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = LocalFileStore(tmp)
+            etag1 = await store.put("etag.txt", _BytesStream(b"first"))
+            etag2 = await store.put("etag.txt", _BytesStream(b"second"))
+            assert etag1 != etag2
 
 
 class TestDelete:

@@ -16,8 +16,7 @@ from collections.abc import Sequence
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..models.content_entry import ContentEntry
-from ..models.content_version import ContentVersion
+from ..models.content_corpus import ContentEntry, ContentVersion
 from ..models.content_version_run_ref import VersionRunRef
 
 
