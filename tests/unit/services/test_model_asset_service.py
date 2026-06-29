@@ -320,9 +320,7 @@ class TestRunDownload:
 
     @pytest.mark.asyncio
     async def test_run_download_empty_file_list_fails(self, tmp_path) -> None:
-        svc, job_repo, model_repo, _ = _wire_download_service(
-            tmp_path, [], b""
-        )
+        svc, job_repo, model_repo, _ = _wire_download_service(tmp_path, [], b"")
 
         await svc.run_download(42)
 
