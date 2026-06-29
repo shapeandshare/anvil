@@ -27,11 +27,11 @@ updated: '2026-06-28'
 
 **Purpose**: Review existing code to identify exact insertion points, template patterns, and accordion/CSS conventions before making changes.
 
-- [ ] T001 Review `LEARNING_ARC` list in `anvil/api/v1/learning.py` around lines 168-195 to confirm exact insertion point after `"finetune-vs-prompt-vs-rag"` entry (line ~191), before `"chunking"` (line ~193)
-- [ ] T002 Review route handler pattern in `anvil/api/v1/learning.py` — examine `finetune_vs_prompt_vs_rag_page` (the last 048 handler, around line 2362) to confirm handler signature: `@router.get` decorator → `async def ...(request) -> HTMLResponse` → docstring → `return ...TemplateResponse(request, "archetypes/concept.html", {"steps": ..._STEPS, **_arc_context("...")})` — note this spec uses a DIFFERENT template (`architecture-differences.html`)
-- [ ] T003 Review the accordion/FAQ pattern in `anvil/api/templates/archetypes/faq.html` and `anvil/api/static/css/components.css` (`.faq-item`, `.faq-question`, `.faq-answer`, `.faq-toggle` classes around lines 800-870) to understand the collapsible section pattern to reuse in the new template
-- [ ] T004 Review the FAQ accordion JS pattern — `toggleFaq()` function in `anvil/api/templates/archetypes/faq.html` or `anvil/api/templates/partials/faq-common.html`. Note: the new template will embed an inline version with CSP nonce
-- [ ] T005 Review existing e2e test pattern in `tests/e2e/api/test_pages.py` — look at `test_learn_finetune_vs_prompt_vs_rag` or similar for the exact assertion pattern (200, content-type, title in body) to replicate
+- [X] T001 Review `LEARNING_ARC` list in `anvil/api/v1/learning.py` around lines 168-195 to confirm exact insertion point after `"finetune-vs-prompt-vs-rag"` entry (line ~191), before `"chunking"` (line ~193)
+- [X] T002 Review route handler pattern in `anvil/api/v1/learning.py` — examine `finetune_vs_prompt_vs_rag_page` (the last 048 handler, around line 2362) to confirm handler signature: `@router.get` decorator → `async def ...(request) -> HTMLResponse` → docstring → `return ...TemplateResponse(request, "archetypes/concept.html", {"steps": ..._STEPS, **_arc_context("...")})` — note this spec uses a DIFFERENT template (`architecture-differences.html`)
+- [X] T003 Review the accordion/FAQ pattern in `anvil/api/templates/archetypes/faq.html` and `anvil/api/static/css/components.css` (`.faq-item`, `.faq-question`, `.faq-answer`, `.faq-toggle` classes around lines 800-870) to understand the collapsible section pattern to reuse in the new template
+- [X] T004 Review the FAQ accordion JS pattern — `toggleFaq()` function in `anvil/api/templates/archetypes/faq.html` or `anvil/api/templates/partials/faq-common.html`. Note: the new template will embed an inline version with CSP nonce
+- [X] T005 Review existing e2e test pattern in `tests/e2e/api/test_pages.py` — look at `test_learn_finetune_vs_prompt_vs_rag` or similar for the exact assertion pattern (200, content-type, title in body) to replicate
 
 ---
 
@@ -39,7 +39,7 @@ updated: '2026-06-28'
 
 **Purpose**: Define the content data that the route handler and template will reference — MUST be complete before routes and template can be connected.
 
-- [ ] T006 Define `ARCHITECTURE_DIFFERENCES_STEPS` array (5 sections) in `anvil/api/v1/learning.py`:
+- [X] T006 Define `ARCHITECTURE_DIFFERENCES_STEPS` array (5 sections) in `anvil/api/v1/learning.py`:
   - Section `tokenization`: explain char-level vs subword/BPE tokenization, vocabulary size differences, fine-tuning implications
   - Section `attention`: explain multi-head vs grouped-query vs multi-query attention, KV cache implications, weight portability
   - Section `parameters`: explain parameter scaling (4K vs 1.1B+), n_embd/n_layer scaling, fine-tuning method implications
@@ -63,7 +63,7 @@ updated: '2026-06-28'
 
 > **NOTE**: The codebase convention (Constitution Article IV — TDD) is one `test_learn_<name>` e2e route test per lesson. This NEW route requires a NEW test. SC-005 NMRG only means *pre-existing* tests stay unmodified — it does not exempt new public routes from coverage.
 
-- [ ] T007 [P] [US1] Add `test_learn_architecture_differences` in `tests/e2e/api/test_pages.py` — GET `/v1/learn/architecture-differences`:
+- [X] T007 [P] [US1] Add `test_learn_architecture_differences` in `tests/e2e/api/test_pages.py` — GET `/v1/learn/architecture-differences`:
   - Asserts `r.status_code == 200`
   - Asserts `"text/html" in r.headers["content-type"]`
   - Asserts all 5 section titles appear in `r.text`: `"Tokenization Differences"`, `"Attention Variants"`, `"Parameter Scaling"`, `"Context Length"`, `"Architecture Allow-List"`
@@ -72,9 +72,9 @@ updated: '2026-06-28'
 
 ### Implementation for User Story 1
 
-- [ ] T008 [US1] Add `"architecture-differences"` entry to `LEARNING_ARC` in `anvil/api/v1/learning.py` after `"finetune-vs-prompt-vs-rag"` entry, before `"chunking"` entry — key: `"architecture-differences"`, title: `"Architecture Differences"`, path: `"/v1/learn/architecture-differences"`, desc: `"How model architectures differ — tokenization, attention variants, parameter scaling, context length — and what those differences mean for fine-tuning."`
-- [ ] T009 [P] [US1] Add `architecture_differences_page` route handler in `anvil/api/v1/learning.py` after `finetune_vs_prompt_vs_rag_page` — `@router.get("/learn/architecture-differences", response_class=HTMLResponse)` → `async def architecture_differences_page(request: Request) -> HTMLResponse` → docstring → `return ...TemplateResponse(request, "archetypes/architecture-differences.html", {"steps": ARCHITECTURE_DIFFERENCES_STEPS, **_arc_context("architecture-differences")})`
-- [ ] T010 [P] [US1] Create accordion template in `anvil/api/templates/archetypes/architecture-differences.html` — extends `base.html`, imports `archetypes.css`, renders:
+- [X] T008 [US1] Add `"architecture-differences"` entry to `LEARNING_ARC` in `anvil/api/v1/learning.py` after `"finetune-vs-prompt-vs-rag"` entry, before `"chunking"` entry — key: `"architecture-differences"`, title: `"Architecture Differences"`, path: `"/v1/learn/architecture-differences"`, desc: `"How model architectures differ — tokenization, attention variants, parameter scaling, context length — and what those differences mean for fine-tuning."`
+- [X] T009 [P] [US1] Add `architecture_differences_page` route handler in `anvil/api/v1/learning.py` after `finetune_vs_prompt_vs_rag_page` — `@router.get("/learn/architecture-differences", response_class=HTMLResponse)` → `async def architecture_differences_page(request: Request) -> HTMLResponse` → docstring → `return ...TemplateResponse(request, "archetypes/architecture-differences.html", {"steps": ARCHITECTURE_DIFFERENCES_STEPS, **_arc_context("architecture-differences")})`
+- [X] T010 [P] [US1] Create accordion template in `anvil/api/templates/archetypes/architecture-differences.html` — extends `base.html`, imports `archetypes.css`, renders:
   - `.concept-lesson-header` block with arc navigation (title, "Back to Learning Index", prev/next links — reuse same pattern as `concept.html` lines 13-23)
   - Introduction paragraph (single `<p>` setting context: "anvil trains a char-level mini-Llama. This page explains how production architectures differ and what that means for fine-tuning.")
   - Accordion section loop: for each step, render a `.faq-item.section-card` with `id="{{ step.key }}"` containing `.faq-question.section-card__header` with `.section-card__title` and `.faq-toggle`, plus `.faq-answer.section-card__content` with `{{ step.body | safe }}`
@@ -91,12 +91,12 @@ updated: '2026-06-28'
 
 **Purpose**: Final validation and compliance checks.
 
-- [ ] T011 Verify `make test` passes — pre-existing tests unmodified (SC-005 NMRG) AND new test T007 passes
-- [ ] T012 Verify `make lint` passes on `anvil/api/v1/learning.py` (no new Python code beyond steps array and route)
-- [ ] T013 Verify new page renders at `/v1/learn/architecture-differences` with correct prev/next navigation (previous: "Fine-Tune vs Prompt vs RAG", next: "Chunking Strategies"), verify entry appears in `/v1/learn` index between those entries
-- [ ] T014 Verify anchor auto-open: navigate to `/v1/learn/architecture-differences#allow-list` — confirm allow-list section is open on page load
-- [ ] T015 [P] **UX compliance gate**: run `make ux-lint` on changed UI files (`architecture-differences.html`) — must pass GATE: PASS before merge
-- [ ] T016 [US1] Add cross-link FROM 041 external model detail to 049: in `anvil/api/templates/archetypes/models.html` or the external model detail rendering code, display a link to `/v1/learn/architecture-differences#allow-list` when a model has `runnable_status: "track_only"`. This ensures the "not eligible / unknown architecture" flag in the catalog (041) links into the architecture-differences module per FR-025a. (Requires coordination with 041 template changes; the anchor target `#allow-list` is already supported by T010.)
+- [X] T011 Verify `make test` passes — pre-existing tests unmodified (SC-005 NMRG) AND new test T007 passes
+- [X] T012 Verify `make lint` passes on `anvil/api/v1/learning.py` (no new Python code beyond steps array and route)
+- [X] T013 Verify new page renders at `/v1/learn/architecture-differences` with correct prev/next navigation (previous: "Fine-Tune vs Prompt vs RAG", next: "Chunking Strategies"), verify entry appears in `/v1/learn` index between those entries
+- [X] T014 Verify anchor auto-open: navigate to `/v1/learn/architecture-differences#allow-list` — confirm allow-list section is open on page load
+- [X] T015 [P] **UX compliance gate**: run `make ux-lint` on changed UI files (`architecture-differences.html`) — must pass GATE: PASS before merge
+- [X] T016 [US1] Add cross-link FROM 041 external model detail to 049: in `anvil/api/templates/archetypes/models.html` or the external model detail rendering code, display a link to `/v1/learn/architecture-differences#allow-list` when a model has `runnable_status: "track_only"`. This ensures the "not eligible / unknown architecture" flag in the catalog (041) links into the architecture-differences module per FR-025a. (Requires coordination with 041 template changes; the anchor target `#allow-list` is already supported by T010.)
 
 ---
 
