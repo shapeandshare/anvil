@@ -7,20 +7,34 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
-from collections.abc import Sequence
+import os
+import shutil
+from collections.abc import AsyncIterator, Sequence
 from datetime import UTC, datetime
 
+import aiofiles  # type: ignore[import-untyped]
+
 from ...db.models.asset_download_job import AssetDownloadJob
-from ...db.models.model_asset import ModelAsset, ModelAssetStatus
+from ...db.models.model_asset import ModelAsset, ModelAssetStatus, ModelAssetType
 from ...db.repositories.asset_download_job_repository import AssetDownloadJobRepository
 from ...db.repositories.external_models import ExternalModelRepository
 from ...db.repositories.model_asset_repository import ModelAssetRepository
 from ...storage.interface import FileStore
 from .._shared.asset_download_job_status import AssetDownloadJobStatus
 from .._shared.asset_state import AssetState
+from .._shared.import_types import ModelSourceError
+from .format_detector import check_weight_format
+from .hf_source import HfHubSource
+from .user_secret_service import UserSecretService
 
 logger = logging.getLogger(__name__)
+
+_CHUNK_SIZE = 65536
+_HF_TOKEN_KEY = "hf_token"
+_HF_TOKEN_ENV = "HF_TOKEN"
+_DEFAULT_USER = "default"
 
 
 class DuplicateDownloadError(Exception):
@@ -50,14 +64,15 @@ class ModelAssetService:
         asset_download_job_repo: AssetDownloadJobRepository,
         external_model_repo: ExternalModelRepository,
         store: FileStore,
-        hf_source: object | None = None,
+        hf_source: HfHubSource | None = None,
+        user_secret_service: UserSecretService | None = None,
     ) -> None:
         self._asset_repo = model_asset_repo
         self._job_repo = asset_download_job_repo
         self._model_repo = external_model_repo
         self._store = store
-        # HF source set externally for late binding
         self._hf_source = hf_source
+        self._user_secrets = user_secret_service
 
     async def submit_download(
         self,
@@ -126,7 +141,9 @@ class ModelAssetService:
 
         assets = await self._asset_repo.get_by_model(job.external_model_id)
         total = len(assets)
-        completed = sum(1 for a in assets if a.status == "available")
+        completed = sum(
+            1 for a in assets if a.status == str(ModelAssetStatus.AVAILABLE)
+        )
 
         return {
             "job_id": job.id,
@@ -171,9 +188,15 @@ class ModelAssetService:
     async def run_download(self, job_id: int) -> None:
         """Execute a queued download job (called by the async background worker).
 
-        Sets the job to ``DOWNLOADING``, transitions the model to
-        ``ASSETS_PENDING``, then iterates each pending ``ModelAsset`` row,
-        downloading the file and storing it through the ``FileStore`` seam.
+        Resolves the upstream file list, pre-creates one ``ModelAsset`` row per
+        file, then downloads each file through the injected ``HfHubSource``,
+        verifies weight-file format (FR-033), computes a SHA-256 content hash
+        (FR-012a), and streams it into the ``FileStore`` seam (FR-010a/FR-011)
+        at ``models/{model_id}/assets/{sha256}/{filename}`` (FR-011a).
+
+        On full success the model's ``asset_availability`` becomes
+        ``ASSETS_AVAILABLE``; on any failure it reverts to ``METADATA_ONLY``
+        and the job is marked ``FAILED`` (FR-012b / SC-006).
 
         Parameters
         ----------
@@ -185,92 +208,217 @@ class ModelAssetService:
             logger.error("Download job %d not found", job_id)
             return
 
-        # Mark the job as started.
-        job = await self._job_repo.update_status(
+        await self._job_repo.update_status(
             job_id,
             str(AssetDownloadJobStatus.DOWNLOADING),
             started_at=datetime.now(UTC),
         )
-        if job is None:
+
+        model = await self._model_repo.get(job.external_model_id)
+        if model is None:
+            await self._job_repo.update_status(
+                job_id,
+                str(AssetDownloadJobStatus.FAILED),
+                error_code="model_not_found",
+                error_message=f"Model {job.external_model_id} not found",
+                finished_at=datetime.now(UTC),
+            )
             return
 
         model_id = job.external_model_id
+        await self._model_repo.update_fields(
+            model_id, asset_availability=str(AssetState.ASSETS_PENDING)
+        )
 
-        # Mark the model as having assets in progress.
-        model = await self._model_repo.get(model_id)
-        if model is not None:
-            await self._model_repo.update_fields(
-                model_id,
-                asset_availability=str(AssetState.ASSETS_PENDING),
-            )
-
-        # Retrieve pre-created (or create) asset rows.
-        assets = await self._asset_repo.get_by_model(model_id)
-        if not assets:
-            logger.warning(
-                "No assets to download for model %d (job %d)",
-                model_id,
+        if self._hf_source is None:
+            await self._fail_and_revert(
                 job_id,
+                model_id,
+                "missing_extra",
+                "Asset download source is not configured",
             )
+            return
+
+        token = await self._resolve_token()
+        identifier = model.source_identifier
+        revision = model.revision_sha or "main"
+
+        try:
+            file_list = await self._hf_source.list_asset_files(
+                identifier, revision=revision, token=token
+            )
+        except ModelSourceError as exc:
+            await self._fail_and_revert(job_id, model_id, exc.code, exc.message)
+            return
+
+        if not file_list:
+            await self._fail_and_revert(
+                job_id, model_id, "no_assets", "No downloadable assets found"
+            )
+            return
+
+        created: list[ModelAsset] = []
+        for entry in file_list:
+            asset = await self._asset_repo.add(
+                ModelAsset(
+                    external_model_id=model_id,
+                    asset_type=entry["asset_type"],
+                    filename=entry["filename"],
+                    size_bytes=0,
+                    format=_format_for(entry["asset_type"], entry["filename"]),
+                )
+            )
+            created.append(asset)
 
         all_ok = True
-        for asset_inner in assets:
-            try:
-                updated = await self._asset_repo.update_status(
-                    asset_inner.id,
-                    str(ModelAssetStatus.DOWNLOADING),
-                )
-                if updated is None:
-                    continue
-
-                # TODO(T016): actual HF download logic.
-                # In the current state, this stub skips each asset.
-                # Implementation requires:
-                # 1. Resolve file list via HfApi.list_repo_files()
-                # 2. For each file: download stream → SHA-256 hash →
-                #    FileStore.put() → update status → progress tracking
-                # 3. Handle resumability via downloaded_bytes + Range header
-                # 4. Use hf_source._huggingface_hub_available() guard
-
-                await self._asset_repo.update_progress(updated.id, updated.size_bytes)
-                await self._asset_repo.update_status(
-                    updated.id,
-                    str(ModelAssetStatus.AVAILABLE),
-                    sha256="stub_hash_unimplemented",
-                    storage_path=(
-                        f"models/{model_id}/assets/stub/" f"{updated.filename}"
-                    ),
-                )
-            except Exception:
-                logger.exception(
-                    "Failed to download asset %d (job %d)",
-                    asset_inner.id,
-                    job_id,
-                )
-                await self._asset_repo.update_status(
-                    asset_inner.id,
-                    str(ModelAssetStatus.UNAVAILABLE),
-                )
+        for asset in created:
+            if not await self._download_one(
+                asset, identifier, revision, token, model_id
+            ):
                 all_ok = False
 
-        # Re-check all assets for final availability.
-        if all_ok and assets:
-            model = await self._model_repo.get(model_id)
-            if model is not None:
-                await self._model_repo.update_fields(
-                    model_id,
-                    asset_availability=str(AssetState.ASSETS_AVAILABLE),
-                )
+        if all_ok:
+            await self._model_repo.update_fields(
+                model_id, asset_availability=str(AssetState.ASSETS_AVAILABLE)
+            )
             await self._job_repo.update_status(
                 job_id,
                 str(AssetDownloadJobStatus.COMPLETE),
                 finished_at=datetime.now(UTC),
             )
         else:
-            await self._job_repo.update_status(
+            await self._fail_and_revert(
                 job_id,
-                str(AssetDownloadJobStatus.FAILED),
-                error_code="download_failed",
-                error_message="One or more asset downloads failed",
-                finished_at=datetime.now(UTC),
+                model_id,
+                "download_failed",
+                "One or more asset downloads failed",
             )
+
+    ####################################################################
+    # Internal helpers
+    ####################################################################
+
+    async def _download_one(
+        self,
+        asset: ModelAsset,
+        identifier: str,
+        revision: str,
+        token: str | None,
+        model_id: int,
+    ) -> bool:
+        """Download, verify, hash, and store a single asset. Returns success."""
+        assert self._hf_source is not None
+        await self._asset_repo.update_status(
+            asset.id, str(ModelAssetStatus.DOWNLOADING)
+        )
+        tmp_path: str | None = None
+        try:
+            tmp_path = await self._hf_source.download_asset_to_path(
+                identifier, asset.filename, revision=revision, token=token
+            )
+
+            if asset.asset_type == str(ModelAssetType.WEIGHTS):
+                header = await self._read_header(tmp_path)
+                check_weight_format(asset.filename, header)
+
+            sha256, size = await self._hash_and_size(tmp_path)
+            storage_path = f"models/{model_id}/assets/{sha256}/{asset.filename}"
+            await self._store.put(storage_path, self._file_stream(tmp_path))
+
+            await self._asset_repo.update_progress(asset.id, size)
+            await self._asset_repo.update_status(
+                asset.id,
+                str(ModelAssetStatus.AVAILABLE),
+                sha256=sha256,
+                storage_path=storage_path,
+                size_bytes=size,
+            )
+            return True
+        except ModelSourceError as exc:
+            logger.warning(
+                "Rejected asset %s (%s): %s",
+                asset.filename,
+                exc.code,
+                exc.message,
+            )
+            await self._asset_repo.update_status(
+                asset.id, str(ModelAssetStatus.UNAVAILABLE)
+            )
+            return False
+        except Exception:
+            logger.exception("Failed to download asset %d", asset.id)
+            await self._asset_repo.update_status(
+                asset.id, str(ModelAssetStatus.UNAVAILABLE)
+            )
+            return False
+        finally:
+            if tmp_path is not None:
+                _cleanup_temp(tmp_path)
+
+    async def _resolve_token(self) -> str | None:
+        """Resolve the HF token via UserSecret > HF_TOKEN env var (FR-010d)."""
+        if self._user_secrets is not None:
+            return await self._user_secrets.resolve_token(
+                _DEFAULT_USER, _HF_TOKEN_KEY, _HF_TOKEN_ENV
+            )
+        return os.environ.get(_HF_TOKEN_ENV)
+
+    async def _fail_and_revert(
+        self,
+        job_id: int,
+        model_id: int,
+        error_code: str,
+        error_message: str,
+    ) -> None:
+        """Mark the job FAILED and revert the model to METADATA_ONLY (SC-006)."""
+        await self._model_repo.update_fields(
+            model_id, asset_availability=str(AssetState.METADATA_ONLY)
+        )
+        await self._job_repo.update_status(
+            job_id,
+            str(AssetDownloadJobStatus.FAILED),
+            error_code=error_code,
+            error_message=error_message,
+            finished_at=datetime.now(UTC),
+        )
+
+    async def _read_header(self, path: str, num_bytes: int = 8) -> bytes:
+        """Read the first ``num_bytes`` of a file for format detection."""
+        async with aiofiles.open(path, "rb") as handle:
+            header: bytes = await handle.read(num_bytes)
+            return header
+
+    async def _hash_and_size(self, path: str) -> tuple[str, int]:
+        """Stream a file to compute its SHA-256 hash and byte size."""
+        hasher = hashlib.sha256()
+        size = 0
+        async with aiofiles.open(path, "rb") as handle:
+            while chunk := await handle.read(_CHUNK_SIZE):
+                hasher.update(chunk)
+                size += len(chunk)
+        return hasher.hexdigest(), size
+
+    async def _file_stream(self, path: str) -> AsyncIterator[bytes]:
+        """Yield a file's contents in chunks for streaming to the store."""
+        async with aiofiles.open(path, "rb") as handle:
+            while chunk := await handle.read(_CHUNK_SIZE):
+                yield chunk
+
+
+def _format_for(asset_type: str, filename: str) -> str:
+    """Return the format string for an asset based on type and filename."""
+    if asset_type == str(ModelAssetType.WEIGHTS):
+        return "safetensors"
+    if filename.endswith(".json"):
+        return "json"
+    return "tokenizer"
+
+
+def _cleanup_temp(path: str) -> None:
+    """Remove the ``anvil_hf_`` temporary directory holding a downloaded file."""
+    current = os.path.dirname(os.path.abspath(path))
+    while current and current != os.path.dirname(current):
+        if os.path.basename(current).startswith("anvil_hf_"):
+            shutil.rmtree(current, ignore_errors=True)
+            return
+        current = os.path.dirname(current)

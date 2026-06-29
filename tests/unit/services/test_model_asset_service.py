@@ -177,38 +177,122 @@ class TestGetJobStatus:
         assert result["assets"][1]["sha256"] is None
 
 
+def _safetensors_bytes() -> bytes:
+    """Return a minimal valid safetensors byte payload for format detection."""
+    import struct
+
+    header = b'{"__metadata__":{}}'
+    return struct.pack("<Q", len(header)) + header + b"\x00\x00"
+
+
+def _wire_download_service(
+    tmp_path,
+    file_list: list[dict[str, str]],
+    download_bytes: bytes,
+):
+    """Build a ModelAssetService with a real store + mocked HF source."""
+    from anvil.storage.local import LocalFileStore
+
+    store = LocalFileStore(str(tmp_path / "storage"))
+
+    mock_model = MagicMock()
+    mock_model.id = 1
+    mock_model.source_identifier = "test/model"
+    mock_model.revision_sha = "main"
+    mock_model_repo = MagicMock()
+    mock_model_repo.get = AsyncMock(return_value=mock_model)
+    mock_model_repo.update_fields = AsyncMock()
+
+    mock_job = MagicMock()
+    mock_job.id = 42
+    mock_job.external_model_id = 1
+    mock_job_repo = MagicMock()
+    mock_job_repo.get = AsyncMock(return_value=mock_job)
+    mock_job_repo.update_status = AsyncMock(return_value=mock_job)
+
+    created_assets: list[ModelAsset] = []
+
+    async def _add(asset: ModelAsset) -> ModelAsset:
+        asset.id = len(created_assets) + 1
+        asset.downloaded_bytes = 0
+        asset.sha256 = None
+        asset.storage_path = None
+        created_assets.append(asset)
+        return asset
+
+    statuses: dict[int, str] = {}
+
+    async def _update_status(asset_id, status, **kwargs):
+        statuses[asset_id] = status
+        return MagicMock()
+
+    mock_asset_repo = MagicMock()
+    mock_asset_repo.add = AsyncMock(side_effect=_add)
+    mock_asset_repo.update_status = AsyncMock(side_effect=_update_status)
+    mock_asset_repo.update_progress = AsyncMock()
+
+    download_file = tmp_path / "downloaded.safetensors"
+    download_file.write_bytes(download_bytes)
+
+    mock_hf = MagicMock()
+    mock_hf.list_asset_files = AsyncMock(return_value=file_list)
+    mock_hf.download_asset_to_path = AsyncMock(return_value=str(download_file))
+
+    svc = ModelAssetService(
+        model_asset_repo=mock_asset_repo,
+        asset_download_job_repo=mock_job_repo,
+        external_model_repo=mock_model_repo,
+        store=store,
+        hf_source=mock_hf,
+    )
+    return svc, mock_job_repo, mock_model_repo, statuses
+
+
 class TestRunDownload:
-    """run_download() state transitions."""
+    """run_download() real download, hashing, storage, and state transitions."""
 
     @pytest.mark.asyncio
-    async def test_run_download_success(self) -> None:
-        svc = _make_service()
-
-        mock_job = MagicMock()
-        mock_job.id = 42
-        mock_job.external_model_id = 1
-        mock_job.status = str(AssetDownloadJobStatus.QUEUED)
-
-        svc._job_repo.get = AsyncMock(return_value=mock_job)
-        svc._job_repo.update_status = AsyncMock(return_value=mock_job)
-
-        mock_model = MagicMock()
-        mock_model.id = 1
-        svc._model_repo.get = AsyncMock(return_value=mock_model)
-
-        asset = MagicMock(spec=ModelAsset)
-        asset.id = 10
-        asset.filename = "model.safetensors"
-        asset.size_bytes = 1000
-        svc._asset_repo.get_by_model = AsyncMock(return_value=[asset])
-        svc._asset_repo.update_status = AsyncMock(return_value=asset)
-        svc._asset_repo.update_progress = AsyncMock()
+    async def test_run_download_success_stores_and_hashes(self, tmp_path) -> None:
+        payload = _safetensors_bytes()
+        svc, job_repo, model_repo, statuses = _wire_download_service(
+            tmp_path,
+            [{"asset_type": "weights", "filename": "model.safetensors"}],
+            payload,
+        )
 
         await svc.run_download(42)
 
-        update_calls = svc._job_repo.update_status.call_args_list
-        last_args = update_calls[-1]
-        assert last_args[0][1] == str(AssetDownloadJobStatus.COMPLETE)
+        last = job_repo.update_status.call_args_list[-1]
+        assert last[0][1] == str(AssetDownloadJobStatus.COMPLETE)
+        assert statuses[1] == str(ModelAssetStatus.AVAILABLE)
+
+        import hashlib
+
+        expected_sha = hashlib.sha256(payload).hexdigest()
+        stored = tmp_path / "storage" / "models" / "1" / "assets" / expected_sha
+        assert (stored / "model.safetensors").exists()
+
+        model_repo.update_fields.assert_any_call(
+            1, asset_availability=str(AssetState.ASSETS_AVAILABLE)
+        )
+
+    @pytest.mark.asyncio
+    async def test_run_download_rejects_bad_format(self, tmp_path) -> None:
+        pickle_bytes = b"\x80\x04\x95abcdefgh"
+        svc, job_repo, model_repo, statuses = _wire_download_service(
+            tmp_path,
+            [{"asset_type": "weights", "filename": "model.safetensors"}],
+            pickle_bytes,
+        )
+
+        await svc.run_download(42)
+
+        last = job_repo.update_status.call_args_list[-1]
+        assert last[0][1] == str(AssetDownloadJobStatus.FAILED)
+        assert statuses[1] == str(ModelAssetStatus.UNAVAILABLE)
+        model_repo.update_fields.assert_any_call(
+            1, asset_availability=str(AssetState.METADATA_ONLY)
+        )
 
     @pytest.mark.asyncio
     async def test_run_download_job_not_found(self) -> None:
@@ -217,36 +301,31 @@ class TestRunDownload:
         await svc.run_download(999)
 
     @pytest.mark.asyncio
-    async def test_run_download_asset_skipped(self) -> None:
+    async def test_run_download_no_hf_source_fails(self) -> None:
         svc = _make_service()
-
         mock_job = MagicMock()
         mock_job.id = 42
         mock_job.external_model_id = 1
-        mock_job.status = str(AssetDownloadJobStatus.QUEUED)
-
         svc._job_repo.get = AsyncMock(return_value=mock_job)
         svc._job_repo.update_status = AsyncMock(return_value=mock_job)
-
         mock_model = MagicMock()
         mock_model.id = 1
         svc._model_repo.get = AsyncMock(return_value=mock_model)
 
-        # Create a fresh mock repo with explicit AsyncMocks for asset methods
-        asset_mock = MagicMock()
-        asset_mock.id = 10
-        asset_mock.filename = "model.safetensors"
-        asset_mock.size_bytes = 1000
-        asset_mock.status = None
+        await svc.run_download(42)
 
-        mock_asset_repo = MagicMock()
-        mock_asset_repo.get_by_model = AsyncMock(return_value=[asset_mock])
-        mock_asset_repo.update_status = AsyncMock(return_value=None)
-        mock_asset_repo.update_progress = AsyncMock()
-        svc._asset_repo = mock_asset_repo
+        last = svc._job_repo.update_status.call_args_list[-1]
+        assert last[0][1] == str(AssetDownloadJobStatus.FAILED)
+        assert last.kwargs["error_code"] == "missing_extra"
+
+    @pytest.mark.asyncio
+    async def test_run_download_empty_file_list_fails(self, tmp_path) -> None:
+        svc, job_repo, model_repo, _ = _wire_download_service(
+            tmp_path, [], b""
+        )
 
         await svc.run_download(42)
 
-        update_calls = svc._job_repo.update_status.call_args_list
-        last_args = update_calls[-1]
-        assert last_args[0][1] == str(AssetDownloadJobStatus.COMPLETE)
+        last = job_repo.update_status.call_args_list[-1]
+        assert last[0][1] == str(AssetDownloadJobStatus.FAILED)
+        assert last.kwargs["error_code"] == "no_assets"

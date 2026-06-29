@@ -164,6 +164,7 @@ class AnvilWorkbench:
         self._user_secret_repo: UserSecretRepository | None = None
         self._user_secrets: UserSecretService | None = None
         self._model_assets: ModelAssetService | None = None
+        self._model_store: LocalFileStore | None = None
 
     # ── Stateless service accessors ─────────────────────────────────────
 
@@ -567,6 +568,22 @@ class AnvilWorkbench:
         return self._user_secrets
 
     @property
+    def model_store(self) -> LocalFileStore:
+        """Lazily-initialised ``LocalFileStore`` rooted at the storage dir.
+
+        Asset paths embed the ``models/{model_id}/assets/{sha256}/`` prefix
+        (FR-011a), so the store roots at the generic storage directory.
+        """
+        if self._model_store is None:
+            storage_path = (
+                str(self._paths.storage_dir)
+                if self._paths is not None
+                else "data/storage"
+            )
+            self._model_store = LocalFileStore(storage_path)
+        return self._model_store
+
+    @property
     def model_assets(self) -> ModelAssetService:
         """Lazily-initialised ``ModelAssetService`` wired to *session*."""
         if self._model_assets is None:
@@ -574,7 +591,9 @@ class AnvilWorkbench:
                 self.model_asset_repo,
                 self.asset_download_job_repo,
                 self.external_model_repo,
-                self.store,
+                self.model_store,
+                hf_source=HfHubSource(),
+                user_secret_service=self.user_secrets,
             )
         return self._model_assets
 

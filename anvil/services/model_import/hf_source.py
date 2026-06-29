@@ -127,15 +127,20 @@ class HfHubSource:
         effective_token = token or os.environ.get("HF_TOKEN")
         return await _do_list_files(identifier, revision, effective_token)
 
-    async def download_asset(
+    async def download_asset_to_path(
         self,
         identifier: str,
         filename: str,
         *,
         revision: str = "main",
         token: str | None = None,
-    ) -> bytes:
-        """Download a single asset file from the HF Hub.
+    ) -> str:
+        """Download a single asset file from the HF Hub to a local path.
+
+        The file is downloaded to a temporary directory; the caller is
+        responsible for streaming it to managed storage and cleaning up
+        the temporary path. Returning a path (rather than bytes) lets the
+        caller stream the file without buffering it fully in memory (FR-010a).
 
         Parameters
         ----------
@@ -150,8 +155,8 @@ class HfHubSource:
 
         Returns
         -------
-        bytes
-            The file contents.
+        str
+            Absolute local path to the downloaded file.
 
         Raises
         ------
@@ -309,8 +314,8 @@ async def _do_download(
     filename: str,
     revision: str,
     token: str | None,
-) -> bytes:
-    """Download a single file from the HF Hub."""
+) -> str:
+    """Download a single file from the HF Hub, returning its local path."""
     try:
         from huggingface_hub import hf_hub_download
     except ImportError:
@@ -337,20 +342,10 @@ async def _do_download(
 
     try:
         loop = asyncio.get_event_loop()
-        local_path = await loop.run_in_executor(None, _download)
-        loop2 = asyncio.get_event_loop()
-        data = await loop2.run_in_executor(None, _read_file, local_path)
-        return data
+        return await loop.run_in_executor(None, _download)
     except Exception as exc:
         _raise_hf_error(exc, identifier, revision)
-        # unreachable: _raise_hf_error always raises
-        raise
-
-
-def _read_file(path: str) -> bytes:
-    """Read a file from disk (run_in_executor helper)."""
-    with open(path, "rb") as f:
-        return f.read()
+        raise  # unreachable: _raise_hf_error always raises
 
 
 def _raise_hf_error(exc: Exception, identifier: str, revision: str) -> None:

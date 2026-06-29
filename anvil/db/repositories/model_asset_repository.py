@@ -101,6 +101,7 @@ class ModelAssetRepository:
         *,
         sha256: str | None = None,
         storage_path: str | None = None,
+        size_bytes: int | None = None,
     ) -> ModelAsset | None:
         """Update the lifecycle status of an asset.
 
@@ -114,6 +115,8 @@ class ModelAssetRepository:
             SHA-256 hash, set when ``AVAILABLE``.
         storage_path : str | None
             Storage path, set when ``AVAILABLE``.
+        size_bytes : int | None
+            Total file size in bytes, recorded once known.
 
         Returns
         -------
@@ -128,6 +131,8 @@ class ModelAssetRepository:
             asset.sha256 = sha256
         if storage_path is not None:
             asset.storage_path = storage_path
+        if size_bytes is not None:
+            asset.size_bytes = size_bytes
         await self._session.flush()
         await self._session.refresh(asset)
         return asset
