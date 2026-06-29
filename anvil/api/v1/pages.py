@@ -18,6 +18,8 @@ from fastapi.responses import HTMLResponse
 
 from ...api.deps import get_workbench
 from ...db.models.license_entry import LicenseEntry
+from ...services.inference.model_browser import ModelBrowserService
+from ...services.model_import.model_import_service import _ALLOWED_ARCHITECTURES
 from ...workbench import AnvilWorkbench
 from .learning import _arc_context as _ctx
 from .learning import related_lessons
@@ -277,4 +279,66 @@ async def about_page(
         request,
         "about.html",
         {"licenses": licenses},
+    )
+
+
+@router.get("/hf-browser", response_class=HTMLResponse)
+async def hf_browser_page(
+    request: Request,
+    workbench: AnvilWorkbench = Depends(get_workbench),
+) -> HTMLResponse:
+    """Render the HuggingFace Model Browser page.
+
+    Builds a catalog context with hardware eligibility computed for
+    each curated entry, along with host resource info and feature
+    flags for the template layer.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming HTTP request.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench for model browser access.
+
+    Returns
+    -------
+    HTMLResponse
+        Rendered ``hf_browser.html`` template.
+    """
+    browser = workbench.model_browser
+    gpu, ram_gb = browser.detect_resources()
+    catalog: list[dict[str, object]] = []
+    for entry in browser.catalog:
+        eligible = ModelBrowserService.check_eligibility(
+            entry.resource_envelope, gpu, ram_gb
+        )
+        runnable = browser.runnable_status(entry.architecture)
+        catalog.append(
+            {
+                "hf_id": entry.hf_id,
+                "display_name": entry.display_name,
+                "params": entry.params,
+                "license": entry.license,
+                "architecture": entry.architecture,
+                "tokenizer_family": entry.tokenizer_family,
+                "url": entry.url,
+                "tags": entry.tags,
+                "resource_envelope": entry.resource_envelope,
+                "eligible": eligible,
+                "runnable_status": runnable,
+            }
+        )
+    host_backend = str(gpu.backend) if gpu.backend else "cpu"
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
+        request,
+        "hf_browser.html",
+        {
+            "catalog": catalog,
+            "allow_list": list(_ALLOWED_ARCHITECTURES),
+            "accepted_format": browser.accepted_format(),
+            "host_backend": host_backend,
+            "host_ram_gb": ram_gb,
+            "lesson_049_available": False,
+            "hf_available": browser.hf_available(),
+        },
     )

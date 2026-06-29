@@ -28,6 +28,7 @@ from .eval_datasets import router as eval_datasets_router
 from .experiments import router as experiments_router
 from .governance import router as governance_router
 from .health_ops import router as health_ops_router
+from .hf_browser_api import router as hf_browser_api_router
 from .inference import router as inference_router
 from .learning import router as learning_router
 from .models import router as models_router
@@ -47,6 +48,7 @@ router.include_router(inference_router)
 router.include_router(compute_router)
 router.include_router(config_router)
 router.include_router(governance_router)
+router.include_router(hf_browser_api_router)
 router.include_router(health_ops_router)
 router.include_router(pages_router)
 router.include_router(learning_router)
