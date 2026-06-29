@@ -5,6 +5,12 @@
 
 """SQLAlchemy ORM model definitions.
 
-Each module in this package defines a single ORM model class
+Most modules in this package define a single ORM model class
 representing a persistent entity in the anvil application database.
+The following modules contain multiple co-dependent model classes
+grouped together to eliminate circular import cycles between
+bidirectional ORM relationships:
+
+- ``content_corpus`` — ContentCorpus, ContentVersion, ContentEntry
+- ``corpus`` — Corpus, CorpusFile
 """

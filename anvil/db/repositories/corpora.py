@@ -10,8 +10,7 @@ from collections.abc import Sequence
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..models.corpus import Corpus
-from ..models.corpus_file import CorpusFile
+from ..models.corpus import Corpus, CorpusFile
 
 
 class CorpusRepository:
