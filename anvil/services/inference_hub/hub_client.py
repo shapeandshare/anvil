@@ -15,6 +15,11 @@ from __future__ import annotations
 import time
 from typing import Any
 
+try:
+    from huggingface_hub import HfApi  # finetune extra
+except ImportError:
+    HfApi = None
+
 
 class HubClient:
     """Wraps ``huggingface_hub.HfApi`` with in-memory TTL caching.
@@ -33,8 +38,12 @@ class HubClient:
     """
 
     def __init__(self, token: str | None = None) -> None:
-        from huggingface_hub import HfApi  # finetune extra
-
+        if HfApi is None:
+            msg = (
+                "huggingface_hub is required. "
+                "Install with: pip install anvil[finetune]"
+            )
+            raise RuntimeError(msg)
         self._api = HfApi(token=token)
 
         # Search cache: key -> (timestamp, results_list)

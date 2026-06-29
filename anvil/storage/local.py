@@ -15,7 +15,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import aiofiles
+import aiofiles  # type: ignore[import-untyped]
 
 from .interface import FileInfo, FileStore  # type: ignore[attr-defined]
 

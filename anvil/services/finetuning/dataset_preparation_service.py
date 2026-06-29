@@ -12,6 +12,8 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from .chat_template_service import ChatTemplateService
+
 
 def validate_record(
     record: dict[str, Any],
@@ -140,8 +142,6 @@ class DatasetPreparationService:
             The resolved template with optional warning, or ``None`` if
             no session is available for deriving/caching defaults.
         """
-        from .chat_template_service import ChatTemplateService
-
         if self._session is None:
             return None
 

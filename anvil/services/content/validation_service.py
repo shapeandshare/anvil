@@ -15,7 +15,7 @@ and sensitive-info scanning.
 import re
 from pathlib import Path
 
-from aiofiles import open as async_open
+from aiofiles import open as async_open  # type: ignore[import-untyped]
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -233,7 +233,7 @@ class ValidationService:
         blob_path = Path(content_dir) / "blobs" / content_hash[:2] / content_hash
         try:
             async with async_open(str(blob_path), "rb") as f:
-                return await f.read()
+                return await f.read()  # type: ignore[no-any-return]
         except FileNotFoundError:
             return None
 
