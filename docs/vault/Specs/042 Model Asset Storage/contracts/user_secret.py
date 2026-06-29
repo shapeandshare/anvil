@@ -44,9 +44,7 @@ class UserSecretService(Protocol):
         """List all secret key names for a user. Never returns values."""
         ...
 
-    async def resolve_token(
-        self, user_id: str, key: str, env_var: str
-    ) -> str | None:
+    async def resolve_token(self, user_id: str, key: str, env_var: str) -> str | None:
         """Resolve a credential via precedence chain: UserSecret > env var.
 
         Returns ``None`` only if neither source has the credential
