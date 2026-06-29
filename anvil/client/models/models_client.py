@@ -8,6 +8,8 @@
 from __future__ import annotations
 
 from .._shared.transport import Transport
+from .download_assets_command import DownloadAssetsCommand
+from .download_status_command import DownloadStatusCommand
 from .models_get_command import ModelsGetCommand
 from .models_get_status_command import ModelsGetStatusCommand
 from .models_import_command import ModelsImportCommand
@@ -26,6 +28,8 @@ class ModelsClient:
         self._import_cmd = ModelsImportCommand(transport)
         self._status_cmd = ModelsGetStatusCommand(transport)
         self._get_cmd = ModelsGetCommand(transport)
+        self._download_cmd = DownloadAssetsCommand(transport)
+        self._download_status_cmd = DownloadStatusCommand(transport)
 
     async def import_model(
         self,
@@ -90,3 +94,38 @@ class ModelsClient:
             Model metadata response.
         """
         return await self._get_cmd.execute(model_id)
+
+    async def download_assets(self, model_id: int) -> dict[str, object]:
+        """Trigger async download of model assets.
+
+        Parameters
+        ----------
+        model_id : int
+            External model primary key.
+
+        Returns
+        -------
+        dict
+            Response with ``job_id`` and ``status`` keys.
+        """
+        return await self._download_cmd.execute(model_id)
+
+    async def get_download_status(
+        self, model_id: int, job_id: int
+    ) -> dict[str, object]:
+        """Poll the status of an asset download job.
+
+        Parameters
+        ----------
+        model_id : int
+            External model primary key.
+        job_id : int
+            Download job ID from ``download_assets()``.
+
+        Returns
+        -------
+        dict
+            Job status with ``status``, ``total_assets``,
+            ``completed_assets``, and per-asset detail.
+        """
+        return await self._download_status_cmd.execute(model_id, job_id)

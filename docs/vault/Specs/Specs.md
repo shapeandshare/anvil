@@ -53,6 +53,7 @@ Start here to see what has been specified, what is in progress, and what shipped
 - [[Specs/035 SaaS CLI Remote/035 SaaS CLI Remote|035 SaaS CLI Remote]]
 - [[Specs/036 SaaS Observability MLflow Proxy/036 SaaS Observability MLflow Proxy|036 SaaS Observability MLflow Proxy]]
 - [[Specs/037 SaaS Resilience DR/037 SaaS Resilience DR|037 SaaS Resilience DR]]
+- [[Specs/042 Model Asset Storage/042 Model Asset Storage|042 Model Asset Storage]]
 - [[Specs/056 Reverse-Proxy Registry/056 Reverse-Proxy Registry|056 Reverse-Proxy Registry]]
 
 ## Reverse-Proxy / Single-Origin Consolidation (ADR-035 → ADR-037 → 056)

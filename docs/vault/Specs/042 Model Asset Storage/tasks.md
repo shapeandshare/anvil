@@ -65,7 +65,7 @@
 ### Implementation for User Story 1
 
 - [X] T015 [US1] Implement `UserSecretService` in `anvil/services/model_import/user_secret_service.py` — get_secret(), set_secret(), delete_secret(), resolve_token() with UserSecret > env var precedence
-- [ ] T016 [P] [US1] Add HF file discovery + download methods to `anvil/services/model_import/hf_source.py` — list_repo_files(), download_file() via hf_hub_download, wrapped in run_in_executor
+- [X] T016 [P] [US1] Add HF file discovery + download methods to `anvil/services/model_import/hf_source.py` — list_repo_files(), download_file() via hf_hub_download, wrapped in run_in_executor
 - [X] T017 [P] [US1] Create `anvil/services/model_import/format_detector.py` — format verification via safetensors.safe_open() (FR-033), reject non-safetensors weight formats (FR-030)
 - [X] T018 [US1] Implement `ModelAssetService` in `anvil/services/model_import/model_asset_service.py` — submit_download() (create job + pre-create ModelAsset rows), run_download() (resolve files → stream → SHA-256 → FileStore.put() → update status), get_job_status() (aggregate + per-asset), model-level lock check
 - [X] T019 [US1] Expose ModelAssetService via `AnvilWorkbench` in `anvil/workbench.py` — add `model_assets` property, wire dependencies
@@ -73,7 +73,7 @@
 - [X] T021 [US1] Add `GET /v1/models/{id}/download/{job_id}/status` route returning job + aggregate progress in `anvil/api/v1/models.py`
 - [X] T022 [US1] Add `GET /v1/models/{id}/assets` route returning ModelAsset list in `anvil/api/v1/models.py`
 - [X] T023 [US1] Add `POST /v1/user/secrets` and `GET /v1/user/secrets` routes in `anvil/api/v1/user_secrets.py` for HF token management
-- [ ] T024 [P] [US1] Add SDK client commands — `anvil/client/models/download_assets_command.py` (POST) and `anvil/client/models/download_status_command.py` (GET status)
+- [X] T024 [P] [US1] Add SDK client commands — `anvil/client/models/download_assets_command.py` (POST) and `anvil/client/models/download_status_command.py` (GET status)
 
 **Checkpoint**: At this point, the learner can download model assets end-to-end, track progress, and the model entry flips to ASSETS_AVAILABLE
 
