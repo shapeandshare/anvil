@@ -156,7 +156,8 @@ class TestDeduplicate:
 
     async def test_deduplicate_removes_duplicates(self, in_memory_session):
         """Duplicates found but not removed (known bug: `not Sample.is_removed`
-        evaluates to Python False, producing WHERE false in the inner query)."""
+        evaluates to Python False, producing WHERE false in the inner query).
+        """
         ds = await _create_dataset(in_memory_session)
         text = "duplicate text"
         await _create_sample(in_memory_session, ds.id, text, index=0)
@@ -208,7 +209,8 @@ class TestDeduplicate:
 
     async def test_deduplicate_records_operation(self, in_memory_session):
         """Dedup creates a CurationOperation row — sample_count_after equals
-        samples_before due to inner query bug (WHERE false)."""
+        samples_before due to inner query bug (WHERE false).
+        """
         ds = await _create_dataset(in_memory_session)
         await _create_sample(in_memory_session, ds.id, "dup", index=0)
         await _create_sample(in_memory_session, ds.id, "dup", index=1)
@@ -250,7 +252,8 @@ class TestFilterByLength:
 
     async def test_filter_no_bounds(self, in_memory_session):
         """No min/max → all active samples match the WHERE clause and are
-        removed (known bug: conditions list should only filter on bounds)."""
+        removed (known bug: conditions list should only filter on bounds).
+        """
         ds = await _create_dataset(in_memory_session)
         await _create_sample(in_memory_session, ds.id, "short", index=0)
         await _create_sample(in_memory_session, ds.id, "a longer sample here", index=1)
@@ -296,7 +299,8 @@ class TestFilterByLength:
 
     async def test_filter_min_and_max(self, in_memory_session):
         """Both bounds — conditions are ANDed, so nothing matches both
-        ``len < min_length AND len > max_length`` (known bug: should be OR)."""
+        ``len < min_length AND len > max_length`` (known bug: should be OR).
+        """
         ds = await _create_dataset(in_memory_session)
         await _create_sample(in_memory_session, ds.id, "a", index=0)
         await _create_sample(in_memory_session, ds.id, "abcde", index=1)

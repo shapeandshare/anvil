@@ -193,7 +193,8 @@ class TestTextBodyEndpoints:
         self, client, _mock_svc, path_suffix: str, body: dict, expected: dict
     ):
         """Service methods wrapped in ``_call_or_400`` raise ``KeyError``
-        for characters not in the vocabulary → HTTP 400."""
+        for characters not in the vocabulary → HTTP 400.
+        """
         # Map path_suffix → corresponding service attribute
         svc_attr = path_suffix.replace("-", "_")
         svc_method = {
@@ -327,7 +328,8 @@ class TestSamplingDistribution:
 
     async def test_empty_prompt_allowed(self, client, _mock_svc):
         """The schema allows empty prompt (``prompt: str = ""``),
-        so the request succeeds."""
+        so the request succeeds.
+        """
         resp = await client.post(
             "/v1/inference/sampling-distribution",
             json={"prompt": ""},
@@ -354,13 +356,15 @@ class TestEdgeCases:
 
     async def test_load_model_defaults_to_none(self, client, _mock_svc):
         """When neither ``model_id`` nor ``version`` are supplied,
-        ``load_model`` is called with ``None, None``."""
+        ``load_model`` is called with ``None, None``.
+        """
         await client.post("/v1/inference/tokenize", json={"text": "hi"})
         _mock_svc.load_model.assert_called_with(None, None)
 
     async def test_param_overrides_svc_mock(self, client, _mock_svc):
         """Test that reassigning ``_mock_svc.sampling_distribution``
-        is respected by the route."""
+        is respected by the route.
+        """
         custom_resp = {"custom": True}
         _mock_svc.sampling_distribution = MagicMock(return_value=custom_resp)
         resp = await client.post(

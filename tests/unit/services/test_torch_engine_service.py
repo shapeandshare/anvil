@@ -575,17 +575,17 @@ class TestTrainTorch:
     TRAIN_DOCS = ["hello world", "goodbye moon", "abc"]
 
     def _train(self, **kwargs):
-        defaults = dict(
-            docs=self.TRAIN_DOCS,
-            device="cpu",
-            num_steps=5,
-            block_size=8,
-            n_embd=8,
-            n_head=4,
-            n_layer=1,
-            learning_rate=0.01,
-            temperature=0.5,
-        )
+        defaults = {
+            "docs": self.TRAIN_DOCS,
+            "device": "cpu",
+            "num_steps": 5,
+            "block_size": 8,
+            "n_embd": 8,
+            "n_head": 4,
+            "n_layer": 1,
+            "learning_rate": 0.01,
+            "temperature": 0.5,
+        }
         defaults.update(kwargs)
         return train_torch(**defaults)
 
@@ -680,18 +680,18 @@ class TestProgressCallback:
         self._train_with_cb(None)
 
     def _train_with_cb(self, cb):
-        defaults = dict(
-            docs=["hello world", "goodbye moon", "abc"],
-            device="cpu",
-            num_steps=5,
-            block_size=8,
-            n_embd=8,
-            n_head=4,
-            n_layer=1,
-            learning_rate=0.01,
-            temperature=0.5,
-            progress_callback=cb,
-        )
+        defaults = {
+            "docs": ["hello world", "goodbye moon", "abc"],
+            "device": "cpu",
+            "num_steps": 5,
+            "block_size": 8,
+            "n_embd": 8,
+            "n_head": 4,
+            "n_layer": 1,
+            "learning_rate": 0.01,
+            "temperature": 0.5,
+            "progress_callback": cb,
+        }
         return train_torch(**defaults)
 
 
@@ -729,19 +729,19 @@ class TestStopCheck:
         assert len(calls) == 5
 
     def _train_with_stop(self, cb, stop_check_fn):
-        defaults = dict(
-            docs=["hello world", "goodbye moon", "abc"],
-            device="cpu",
-            num_steps=5,
-            block_size=8,
-            n_embd=8,
-            n_head=4,
-            n_layer=1,
-            learning_rate=0.01,
-            temperature=0.5,
-            progress_callback=cb,
-            stop_check=stop_check_fn,
-        )
+        defaults = {
+            "docs": ["hello world", "goodbye moon", "abc"],
+            "device": "cpu",
+            "num_steps": 5,
+            "block_size": 8,
+            "n_embd": 8,
+            "n_head": 4,
+            "n_layer": 1,
+            "learning_rate": 0.01,
+            "temperature": 0.5,
+            "progress_callback": cb,
+            "stop_check": stop_check_fn,
+        }
         return train_torch(**defaults)
 
 

@@ -7,7 +7,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 
 import pytest
 from pydantic import ValidationError
@@ -28,7 +28,7 @@ class TestDatasetConstruction:
         assert ds.updated_at is None
 
     def test_full_construction(self) -> None:
-        dt = datetime(2026, 6, 1, 12, 0, 0, tzinfo=timezone.utc)
+        dt = datetime(2026, 6, 1, 12, 0, 0, tzinfo=UTC)
         ds = Dataset(
             id=42,
             name="full-dataset",

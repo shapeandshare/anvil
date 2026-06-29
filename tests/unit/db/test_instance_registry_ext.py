@@ -176,7 +176,8 @@ async def test_find_workspace_overlap_subdirectory(
     registry_session: AsyncSession,
 ) -> None:
     """find_workspace_overlap matches when root is a subdirectory
-    of an existing workspace_root."""
+    of an existing workspace_root.
+    """
     repo = InstanceRegistryRepository(registry_session)
     await repo.register(_record(name="parent", workspace_root="/app/ws"))
     await registry_session.commit()
@@ -191,7 +192,8 @@ async def test_find_workspace_overlap_parent_directory(
     registry_session: AsyncSession,
 ) -> None:
     """find_workspace_overlap matches when an existing record is a
-    subdirectory of root."""
+    subdirectory of root.
+    """
     repo = InstanceRegistryRepository(registry_session)
     await repo.register(_record(name="child", workspace_root="/app/ws/subdir"))
     await registry_session.commit()

@@ -23,7 +23,8 @@ from anvil._pyfunc_model import AnvilPyfuncModel
 
 class _MockModule:
     """Generic module stand-in for mocking. Supports context manager
-    protocol and subscript access via a stored ``_getitem`` lambda."""
+    protocol and subscript access via a stored ``_getitem`` lambda.
+    """
 
     def __init__(self, **attrs: Any) -> None:
         for k, v in attrs.items():

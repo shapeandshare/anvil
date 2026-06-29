@@ -35,9 +35,9 @@ sys.modules["mlflow.exceptions"] = _mlflow.exceptions
 sys.modules["mlflow.genai"] = _mlflow.genai
 sys.modules["mlflow.genai.datasets"] = _mlflow.genai.datasets
 
-import pytest  # noqa: E402
+import pytest
 
-from anvil.cli import db_main  # noqa: E402
+from anvil.cli import db_main
 
 
 @pytest.fixture

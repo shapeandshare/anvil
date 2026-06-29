@@ -2018,7 +2018,8 @@ class TestDegradedMode:
 
 class TestModuleSyncFunctions:
     """Tests for module-level helper functions (_create_dataset_sync,
-    _append_records_sync, _get_dataset_sync)."""
+    _append_records_sync, _get_dataset_sync).
+    """
 
     def test_create_dataset_sync_raises_when_not_available(self) -> None:
         """Raises ImportError when mlflow.genai.datasets is not available."""
@@ -2087,7 +2088,8 @@ class TestLazyInit:
 class TestExceptionPathsWithClient:
     """Tests that exception catches work when client exists but MLflow
     calls raise — distinguishes from test_exception_caught which sets
-    client to None to exercise the guard."""
+    client to None to exercise the guard.
+    """
 
     @pytest.mark.asyncio
     async def test_log_metric_exception_with_client(self, svc: Any) -> None:
@@ -2598,7 +2600,8 @@ class TestSystemMetricsCoverage:
 
 class TestModuleImportFallback:
     """Exercises the except ImportError path in the module-level
-    try/except for mlflow.genai.datasets."""
+    try/except for mlflow.genai.datasets.
+    """
 
     def test_import_error_sets_fallbacks_to_none(self) -> None:
         """Sets create_dataset and get_dataset to None on ImportError."""

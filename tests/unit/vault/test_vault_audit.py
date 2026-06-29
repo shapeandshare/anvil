@@ -131,7 +131,8 @@ class TestIsScaffoldPath:
 
     def test_scaffold_shallow_path_not_scaffold(self, tmp_path: Path) -> None:
         """Specs/*/<scaffold> without a file beneath is not scaffold
-        (need 4 parts: Specs / <dir> / <scaffold> / <file>)."""
+        (need 4 parts: Specs / <dir> / <scaffold> / <file>).
+        """
         vault_root = tmp_path / "docs" / "vault"
         file_path = vault_root / "Specs" / "001 Design" / "checklists"
         # This is a directory, not a file — but treated as path
@@ -293,7 +294,7 @@ class TestExtractWikilinks:
         assert result == ["DoExtract"]
 
     def test_leading_punct_inside_brackets_skipped(self) -> None:
-        """Wikilink target starting with ! - \" ' $ inside [[ ]] is skipped."""
+        r"""Wikilink target starting with ! - \" ' $ inside [[ ]] is skipped."""
         text = "See [[!image.png]] and [[KeepMe]]."
         result = extract_wikilinks(text)
         assert result == ["KeepMe"]

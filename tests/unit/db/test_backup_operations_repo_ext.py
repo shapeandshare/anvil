@@ -72,7 +72,8 @@ async def test_get_by_backup_id_returns_none(db_session: AsyncSession) -> None:
 async def test_get_all_returns_all_records(db_session: AsyncSession) -> None:
     """get_all returns all records regardless of order (created_at
     has second-level precision so same-second inserts have undefined
-    order)."""
+    order).
+    """
     repo = BackupOperationRepository(db_session)
     await repo.add(BackupOperation(backup_id="rec-a", operation_type="backup"))
     await repo.add(BackupOperation(backup_id="rec-b", operation_type="backup"))
@@ -90,7 +91,8 @@ async def test_get_all_returns_all_records(db_session: AsyncSession) -> None:
 @pytest.mark.asyncio
 async def test_get_all_restorable_multiple_types(db_session: AsyncSession) -> None:
     """get_all_restorable returns only non-safety operations
-    when mixed with other types."""
+    when mixed with other types.
+    """
     repo = BackupOperationRepository(db_session)
     await repo.add(BackupOperation(backup_id="backup-1", operation_type="backup"))
     await repo.add(BackupOperation(backup_id="restore-1", operation_type="restore"))
@@ -141,7 +143,7 @@ async def test_update_fields_nonexistent(db_session: AsyncSession) -> None:
 
 @pytest.mark.asyncio
 async def test_delete_idempotent(db_session: AsyncSession) -> None:
-    """delete does not raise on non-existent backup_id."""
+    """Delete does not raise on non-existent backup_id."""
     repo = BackupOperationRepository(db_session)
     await repo.delete("never-existed")
     # No exception is the pass condition.

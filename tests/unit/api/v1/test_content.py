@@ -16,7 +16,7 @@ mount at ``/v1``.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -33,7 +33,7 @@ pytestmark = pytest.mark.asyncio
 
 # ── Shared datetime for use across mocks ──────────────────────────────
 
-_NOW = datetime.now(timezone.utc)
+_NOW = datetime.now(UTC)
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────
@@ -1026,7 +1026,8 @@ class TestFreezeVersion:
         override_dep: None,
     ) -> None:
         """Freezing with a composition body delegates to
-        content_composition.freeze."""
+        content_composition.freeze.
+        """
         mock_corpus = _make_mock_corpus(id=1, slug="test-corpus")
         mock_workbench.content_corpus_repo.get.return_value = mock_corpus
         mock_workbench.content_composition.freeze.return_value = MagicMock(

@@ -95,7 +95,7 @@ class TestScanFile:
         assert "from anvil.core" in result.violations[0].line_text
 
     def test_import_anvil_dot_flagged(self, tmp_path: Path) -> None:
-        """import anvil.X is flagged."""
+        """Import anvil.X is flagged."""
         p = tmp_path / "test.py"
         p.write_text("import anvil.core\n")
         result = scan_file(p)

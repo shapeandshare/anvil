@@ -368,7 +368,8 @@ class TestDeleteCorpus:
     @staticmethod
     def _patch_tracking():
         """Patch TrackingService inside delete_corpus so it doesn't
-        attempt to connect to MLflow (which would hang without a server)."""
+        attempt to connect to MLflow (which would hang without a server).
+        """
         mock_tracking_instance = MagicMock()
         mock_tracking_instance.is_degraded = True
         return patch(

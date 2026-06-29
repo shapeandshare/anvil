@@ -898,7 +898,8 @@ class TestRotation:
 
     async def test_rotation_with_existing_backups(self, tmp_path: PosixPath):
         """When quota is exceeded and existing backups can be rotated,
-        creation succeeds with rotated IDs."""
+        creation succeeds with rotated IDs.
+        """
         svc = make_svc(tmp_path, quota_bytes=1)
         repo = FakeRepo()
 
@@ -948,7 +949,7 @@ class TestErrorHandling:
         repo = FakeRepo()
 
         # Acquire the lock manually.
-        acquired = await svc._lock.try_acquire("manual", "lock-holder")  # type: ignore[attr-defined]  # noqa: E501
+        acquired = await svc._lock.try_acquire("manual", "lock-holder")  # type: ignore[attr-defined]
         assert acquired is True
 
         with pytest.raises(RuntimeError, match="already in progress"):
@@ -968,7 +969,7 @@ class TestErrorHandling:
         mock_manifest.deployment_version = "1.0.0"
         mock_manifest.created_at = datetime.now(UTC)
 
-        acquired = await svc._lock.try_acquire("manual", "lock-holder")  # type: ignore[attr-defined]  # noqa: E501
+        acquired = await svc._lock.try_acquire("manual", "lock-holder")  # type: ignore[attr-defined]
         assert acquired is True
 
         with (

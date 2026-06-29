@@ -586,7 +586,8 @@ class TestModelImportServices:
 
 class TestFactoryMethods:
     """dataset_import / dataset_curation / dataset_export return fresh
-    instances every call."""
+    instances every call.
+    """
 
     @pytest.mark.asyncio
     async def test_dataset_import(self, in_memory_session: AsyncSession) -> None:

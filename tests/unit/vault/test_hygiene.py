@@ -751,7 +751,8 @@ class TestCheckRelativeImports:
 
     def test_type_checking_top_level_import_not_flagged(self, tmp_path: Path) -> None:
         """Verify top-level ``import anvil.`` (no ``from``) is flagged,
-        but ``from`` form is also detected."""
+        but ``from`` form is also detected.
+        """
         f = tmp_path / "good.py"
         f.write_text("import anvil.core\n")
         result = ri_scan_file(f)
