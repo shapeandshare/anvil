@@ -89,6 +89,51 @@ class FakeMlflowClient:
     def search_runs(self, experiment_ids: list[str], filter_string: str):
         return self.searched_runs
 
+    def set_tag(self, run_id: str, key: str, value: str):
+        if not hasattr(self, "set_tag_calls"):
+            self.set_tag_calls: list[dict] = []
+        self.set_tag_calls.append({"run_id": run_id, "key": key, "value": value})
+
+    def search_registered_models(self, filter_string: str | None = None) -> list:
+        return getattr(self, "_registered_models", [])
+
+    def create_registered_model(self, name: str):
+        if not hasattr(self, "_registered_models"):
+            self._registered_models: list = []
+        rm = MagicMock()
+        rm.name = name
+        self._registered_models.append(rm)
+        return rm
+
+    def create_model_version(self, name: str, source: str, run_id: str):
+        if not hasattr(self, "_model_versions"):
+            self._model_versions: list = []
+        mv = MagicMock()
+        mv.version = 1
+        mv.run_id = run_id
+        mv.source = source
+        mv.creation_timestamp = None
+        self._model_versions.append(mv)
+        return mv
+
+    def search_model_versions(self, filter_string: str) -> list:
+        return getattr(self, "_model_versions", [])
+
+    def list_artifacts(self, run_id: str):
+        fa = MagicMock()
+        fa.path = "model.safetensors"
+        fa.file_size = 1024
+        fb = MagicMock()
+        fb.path = "config.json"
+        fb.file_size = 256
+        return [fa, fb]
+
+    def get_run(self, run_id: str):
+        run = MagicMock()
+        run.data.metrics = {"final_loss": 0.1}
+        run.data.tags = {"anvil.experiment_id": "42"}
+        return run
+
 
 def fake_client_factory(tracking_uri: str) -> FakeMlflowClient:
     return FakeMlflowClient(tracking_uri)
@@ -170,7 +215,7 @@ async def test_fail_run(svc):
     run_id = await svc.start_run(
         run_name="fail", params={}, engine_backend="stdlib", device="cpu"
     )
-    await svc.fail_run(run_id, reason="oops")
+    await svc.fail_run(run_id, _reason="oops")
     client = svc._client
     assert any(
         c["run_id"] == run_id and c["status"] == "FAILED"
@@ -184,7 +229,7 @@ async def test_log_artifacts(svc):
         run_name="artifacts", params={}, engine_backend="stdlib", device="cpu"
     )
     await svc.log_artifacts(
-        run_id, model_path="/fake/model.json", samples="test", vocab=None
+        run_id, model_path="/fake/model.json", _samples="test", _vocab=None
     )
     client = svc._client
     assert len(client.log_artifact_calls) > 0
@@ -258,6 +303,70 @@ async def test_reconcile_orphans(svc):
     assert isinstance(result, list)
 
 
+@pytest.mark.asyncio
+async def test_set_tag(svc):
+    run_id = await svc.start_run(
+        run_name="tag-test", params={}, engine_backend="stdlib", device="cpu"
+    )
+    await svc.set_tag(run_id, "key1", "val1")
+    client = svc._client
+    assert any(
+        c["run_id"] == run_id and c["key"] == "key1" and c["value"] == "val1"
+        for c in client.set_tag_calls
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_safetensors_artifacts(svc):
+    run_id = await svc.start_run(
+        run_name="safetensors-test",
+        params={},
+        engine_backend="stdlib",
+        device="cpu",
+    )
+    result = await svc.get_safetensors_artifacts(run_id)
+    assert result["available"] is True
+    assert any(f["is_safetensors"] for f in result["files"])
+
+
+@pytest.mark.asyncio
+async def test_register_source_model(svc):
+    run_id = await svc.start_run(
+        run_name="register-test",
+        params={},
+        engine_backend="stdlib",
+        device="cpu",
+    )
+    result = await svc.register_source_model(run_id=run_id, name="test-model")
+    assert result["name"] == "test-model"
+    assert result["version"] == 1
+    assert result["run_id"] == run_id
+
+
+@pytest.mark.asyncio
+async def test_list_registered_models(svc):
+    models = await svc.list_registered_models()
+    assert isinstance(models, list)
+
+
+@pytest.mark.asyncio
+async def test_list_experiments():
+    from anvil.services.tracking.tracking import TrackingService
+
+    svc2 = TrackingService(
+        tracking_uri="http://127.0.0.1:5000", client_factory=fake_client_factory
+    )
+    exp = await svc2.list_experiments()
+    assert isinstance(exp, list)
+
+
+def test_enable_system_metrics():
+    from anvil.services.tracking.tracking import TrackingService
+
+    TrackingService.enable_system_metrics()
+    TrackingService.enable_system_metrics()
+
+
 class TestLogDatasetInput:
     @pytest.mark.asyncio
     async def test_calls_log_input_and_returns_digest(self, svc):
@@ -266,16 +375,12 @@ class TestLogDatasetInput:
         )
 
         mock_session = AsyncMock()
+        mock_resolver = AsyncMock()
+        mock_resolver.resolve_dataset.return_value = ("fake_dataset", "abc123digest")
         with patch(
-            "anvil.services.tracking.mlflow_inputs.MlflowInputResolver"
-        ) as resolver_cls:
-            mock_resolver = AsyncMock()
-            resolver_cls.return_value = mock_resolver
-            mock_resolver.resolve_dataset.return_value = (
-                "fake_dataset",
-                "abc123digest",
-            )
-
+            "anvil.services.tracking.tracking.MlflowInputResolver",
+            return_value=mock_resolver,
+        ):
             digest = await svc.log_dataset_input(
                 run_id, dataset_id=1, role="training", session=mock_session
             )
@@ -304,14 +409,13 @@ class TestLogDatasetInput:
             run_name="fail-resolver", params={}, engine_backend="stdlib", device="cpu"
         )
 
+        mock_session = AsyncMock()
+        mock_resolver = AsyncMock()
+        mock_resolver.resolve_dataset.side_effect = ValueError("boom")
         with patch(
-            "anvil.services.tracking.mlflow_inputs.MlflowInputResolver"
-        ) as resolver_cls:
-            mock_session = AsyncMock()
-            mock_resolver = AsyncMock()
-            resolver_cls.return_value = mock_resolver
-            mock_resolver.resolve_dataset.side_effect = ValueError("boom")
-
+            "anvil.services.tracking.tracking.MlflowInputResolver",
+            return_value=mock_resolver,
+        ):
             digest = await svc.log_dataset_input(
                 run_id, dataset_id=1, session=mock_session
             )
@@ -326,17 +430,16 @@ class TestLogCorpusInput:
         )
 
         mock_session = AsyncMock()
+        mock_resolver = AsyncMock()
+        mock_resolver.resolve_corpus.return_value = (
+            "fake_meta_ds",
+            ["/tmp/a.py", "/tmp/b.py"],
+            "corpus_digest",
+        )
         with patch(
-            "anvil.services.tracking.mlflow_inputs.MlflowInputResolver"
-        ) as resolver_cls:
-            mock_resolver = AsyncMock()
-            resolver_cls.return_value = mock_resolver
-            mock_resolver.resolve_corpus.return_value = (
-                "fake_meta_ds",
-                ["/tmp/a.py", "/tmp/b.py"],
-                "corpus_digest",
-            )
-
+            "anvil.services.tracking.tracking.MlflowInputResolver",
+            return_value=mock_resolver,
+        ):
             digest = await svc.log_corpus_input(
                 run_id, corpus_id=1, session=mock_session
             )
@@ -366,14 +469,13 @@ class TestLogCorpusInput:
             run_name="fail-corpus", params={}, engine_backend="stdlib", device="cpu"
         )
 
+        mock_session = AsyncMock()
+        mock_resolver = AsyncMock()
+        mock_resolver.resolve_corpus.side_effect = ValueError("boom")
         with patch(
-            "anvil.services.tracking.mlflow_inputs.MlflowInputResolver"
-        ) as resolver_cls:
-            mock_session = AsyncMock()
-            mock_resolver = AsyncMock()
-            resolver_cls.return_value = mock_resolver
-            mock_resolver.resolve_corpus.side_effect = ValueError("boom")
-
+            "anvil.services.tracking.tracking.MlflowInputResolver",
+            return_value=mock_resolver,
+        ):
             digest = await svc.log_corpus_input(
                 run_id, corpus_id=1, session=mock_session
             )

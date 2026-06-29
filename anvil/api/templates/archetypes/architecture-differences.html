@@ -1,0 +1,76 @@
+<!--
+  ~ Copyright © 2026 Josh Burt
+  ~
+  ~ This source code is licensed under the MIT license found in the
+  ~ LICENSE file in the root directory of this source tree.
+-->
+
+{% extends "base.html" %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
+{% block content %}
+<div class="concept-lesson">
+  {% if arc %}
+  <div class="concept-lesson-header">
+    <h1 class="concept-lesson-title">{{ arc[current_index].title }} <span class="lesson-count">&mdash; Lesson {{ current_index + 1 }} of {{ arc|length }}</span></h1>
+    <nav class="learn-arc-nav" aria-label="Lesson navigation">
+      <div class="learn-arc-links">
+        <a href="/v1/learn" class="btn btn-secondary">&larr; Back to Learning Index</a>
+        {% if prev %}
+        <a href="{{ prev.path }}" class="btn btn-secondary">&larr; {{ prev.title }}</a>
+        {% endif %}
+        {% if next %}
+        <a href="{{ next.path }}" class="btn btn-secondary">{{ next.title }} &rarr;</a>
+        {% endif %}
+      </div>
+    </nav>
+  </div>
+  {% endif %}
+
+  <p class="page-intro" style="max-width: 640px; margin: var(--space-4) auto;">
+    anvil trains a char-level mini-Llama with a single runnable architecture
+    (<b>LlamaForCausalLM</b>). This page explains how production architectures differ
+    &mdash; tokenization, attention, parameter scale, and context &mdash; and what
+    those differences mean when you fine-tune a model.
+  </p>
+
+  <div style="max-width: 640px; margin: 0 auto;">
+    {% for step in steps %}
+    {# ux-lint:allow-next established FAQ accordion pattern; keyboard support via faq-common.html #}
+    <div class="faq-item section-card" style="cursor: pointer; margin-bottom: var(--space-2);" id="{{ step.key }}" onclick="toggleFaq(this)" tabindex="0" role="button" aria-expanded="false">
+      <div class="faq-question section-card__header" style="margin-bottom: 0; cursor: pointer;">
+        <span class="section-card__title">{{ step.title }}</span>
+        <span class="faq-toggle text-mono type-caption-1" style="flex-shrink:0;">[+]</span>
+      </div>
+      <div class="faq-answer section-card__content" style="display: none; margin-top: var(--space-3);">
+        {{ step.body | safe }}  {# ux-lint:allow step body is compile-time HTML content defined in ARCHITECTURE_DIFFERENCES_STEPS #}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+{% include "partials/faq-common.html" %}
+<script nonce="{{ request.state.csp_nonce }}">
+(function() {
+  /* ── Auto-open section for anchor-ID cross-linking from 041 ── */
+  var hash = window.location.hash;
+  if (hash) {
+    var el = document.getElementById(hash.replace('#', ''));
+    if (el && el.classList.contains('faq-item')) {
+      setTimeout(function() { globalThis.toggleFaq(el); }, 100);
+    }
+  }
+})();
+</script>
+{% endblock %}
+{% block didyouknow_banner %}
+<div id="didyouknow-banner" class="didyouknow">
+  <span class="didyouknow__icon" aria-hidden="true">&#9670;</span>
+  <div>
+    <div class="didyouknow__label">&#9670; Did You Know?</div>
+    <span id="didyouknow-text"></span>
+  </div>
+  <button type="button" class="didyouknow__dismiss" aria-label="Dismiss">&#10005;</button>
+</div>
+{% endblock %}

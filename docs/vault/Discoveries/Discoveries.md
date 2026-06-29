@@ -42,9 +42,10 @@ Non-obvious constraints, gaps, and conflicts discovered during agent sessions. E
 
 - [[Discoveries/sonarcloud-mcp-env-passthrough|SonarCloud MCP Docker Env Passthrough Bug]] — The `sonarcloud` MCP in `opencode.json` used Docker env passthrough (`-e VARNAME` without `=VALUE`), which failed because the vars weren't in the shell environment. Fixed by inlining the project constants matching `shared/sonar.mk`.
 - [[Discoveries/github-token-ci-trigger-restriction|GITHUB_TOKEN CI Trigger Restriction]] — PRs opened by `GITHUB_TOKEN` do not trigger CI checks under branch protection, forcing a fine-grained PAT (`BUMP_PAT`) for auto-merge release workflows. A non-obvious GitHub platform constraint.
+## Discoveries from this session (2026-06-28 — Coverage fix)
 
-## Discoveries from this session
-- [[Discoveries/pre-commit-and-pr-ready-tooling-pattern|Pre-commit and pr-ready Tooling Pattern]] — `make format` and `make typecheck` were documented stubs with no recipes (silent no-ops), and the CI `typecheck` gate was passing without running mypy. The `pr-ready` target and pre-commit hook close the gap between local dev and CI enforcement.
+- [[Discoveries/stripped-vs-line-indent-type-checking-bug|Stripped-vs-Line Indent Bug in TYPE_CHECKING Detection]] — Two vault check modules used `line.strip()` to check indentation inside TYPE_CHECKING blocks, causing indented imports to exit the guard prematurely. Also fixed `_in_triple_quoted` single-line docstring handling. 8 pre-existing test failures resolved.
+- [[Sessions/2026-06-28-coverage-fix-session|Session Log: 2026-06-28 Coverage Fix]] — Full session log for the 10-item coverage burst.
 
 ## Discoveries from this session (2026-06-22 — Modal local-mode boundary)
 

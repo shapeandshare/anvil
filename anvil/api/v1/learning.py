@@ -190,6 +190,12 @@ LEARNING_ARC = [
         "desc": "When to fine-tune, when to prompt-engineer, and when to use retrieval-augmented generation — a decision comparison.",
     },
     {
+        "key": "architecture-differences",
+        "title": "Architecture Differences",
+        "path": "/v1/learn/architecture-differences",
+        "desc": "How model architectures differ — tokenization, attention variants, parameter scaling, context length — and what those differences mean for fine-tuning.",
+    },
+    {
         "key": "chunking",
         "title": "Chunking Strategies",
         "path": "/v1/learn/chunking",
@@ -1355,6 +1361,90 @@ FINETUNE_VS_PROMPT_VS_RAG_STEPS = [
     },
 ]
 
+ARCHITECTURE_DIFFERENCES_STEPS = [
+    {
+        "key": "tokenization",
+        "title": "Tokenization Differences",
+        "body": (
+            "<p>anvil's char-level mini-Llama tokenizer maps each character independently "
+            "&mdash; every letter, space, and punctuation mark is one token (vocab_size = number of "
+            "unique characters in the training data + BOS). Production models use subword "
+            "tokenizers (BPE, Unigram, WordPiece) with vocabularies of 16K&ndash;128K tokens.</p>"
+            "<p><b>Fine-tuning implications:</b> A model trained with a char-level tokenizer "
+            "cannot load subword-pretrained weights. The tokenizer is baked into the embedding "
+            "matrix dimensions. Adding new tokens (e.g., domain-specific terms) requires "
+            "vocabulary extension or adapter-based approaches like LoRA.</p>"
+        ),
+    },
+    {
+        "key": "attention",
+        "title": "Attention Variants",
+        "body": (
+            "<p>anvil uses full multi-head causal attention with n_head heads, each with "
+            "its own Q, K, V, and O projections per layer. Production models increasingly "
+            "use grouped-query attention (GQA) or multi-query attention (MQA) where "
+            "multiple heads share K and V projections to reduce KV cache size at inference.</p>"
+            "<p><b>Fine-tuning implications:</b> GQA/MQA weights have different tensor shapes "
+            "than full multi-head attention. A checkpoint converted between architectures "
+            "requires projected weight remapping. LoRA adapters are architecture-independent "
+            "as long as the target module shapes match.</p>"
+        ),
+    },
+    {
+        "key": "parameters",
+        "title": "Parameter Scaling",
+        "body": (
+            "<p>anvil's default model uses n_embd=16, n_layer=1, n_head=4 &asymp; 4K parameters. "
+            "TinyLlama-class models (n_embd=2048, n_layer=22, n_head=32) have ~1.1B parameters. "
+            "The embedding matrix alone (vocab_size &times; n_embd) scales linearly; the attention "
+            "projections (n_embd&sup2; per head) scale quadratically.</p>"
+            "<p><b>Fine-tuning implications:</b> Parameter scale determines what fine-tuning "
+            "methods are practical. Full fine-tuning of a 1B-parameter model requires ~20GB "
+            "VRAM for optimizer states alone. LoRA fine-tunes &lt; 1% of parameters per rank-8 "
+            "adapter, making it feasible on consumer GPUs. Warm-start (spec 039) works at any "
+            "scale because it updates the same parameter count as training.</p>"
+        ),
+    },
+    {
+        "key": "context",
+        "title": "Context Length",
+        "body": (
+            "<p>anvil processes sequences up to the training <code>block_size</code> "
+            "(default: 16 tokens). Production models support 4K&ndash;128K+ tokens of context. "
+            "RoPE (Rotary Position Embedding) enables some context extrapolation &mdash; "
+            "models can generalize to slightly longer sequences than trained on &mdash; "
+            "but quality degrades beyond the trained range.</p>"
+            "<p><b>Fine-tuning implications:</b> Fine-tuning with longer contexts requires "
+            "RoPE extension (e.g., YaRN, NTK-aware scaling). The tokenizer also matters: "
+            "char-level tokenizers create very long token sequences for the same text, "
+            "so effective context in character tokens is much shorter than subword tokens.</p>"
+        ),
+    },
+    {
+        "key": "allow-list",
+        "title": "Architecture Allow-List",
+        "body": (
+            "<p>anvil executes a limited, explicit set of architectures. The v1 allow-list "
+            "is <b>LlamaForCausalLM</b> with <b>safetensors</b> weight files &mdash; the same "
+            "format exported by anvil's own training pipeline (spec 042). "
+            "This guarantee is possible because:</p>"
+            "<ul>"
+            "<li><b>Tokenizer compatibility:</b> Weight loading requires matching vocab_size "
+            "and embedding dimensions; mismatched tokenizers must be adapted separately.</li>"
+            "<li><b>Weight format:</b> safetensors is the universal exchange format &mdash; no "
+            "pickle security risks, no framework-specific serialization.</li>"
+            "<li><b>Architecture differences:</b> Different attention mechanisms, MLP "
+            "configurations, norm placements, and position encodings require different "
+            "forward-pass implementations.</li>"
+            "</ul>"
+            "<p>Models outside the allow-list are <b>tracked but not runnable</b> &mdash; "
+            "the catalog (041) records them with eligibility flags, and this module explains "
+            "why they cannot execute. GGUF models (specs 050&ndash;052) are a planned, deferred "
+            "type that will expand the allow-list in a future release.</p>"
+        ),
+    },
+]
+
 CLOUD_COMPUTE_STEPS = [
     {
         "key": "why-cloud-compute",
@@ -2368,6 +2458,23 @@ async def finetune_vs_prompt_vs_rag_page(request: Request) -> HTMLResponse:
         {
             "steps": FINETUNE_VS_PROMPT_VS_RAG_STEPS,
             **_arc_context("finetune-vs-prompt-vs-rag"),
+        },
+    )
+
+
+@router.get("/learn/architecture-differences", response_class=HTMLResponse)
+async def architecture_differences_page(request: Request) -> HTMLResponse:
+    """Render the architecture-differences accordion module.
+
+    Uses a custom accordion template (not the carousel ``concept.html``)
+    because FR-025 UX requires expandable/collapsible sections layout.
+    """
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
+        request,
+        "archetypes/architecture-differences.html",
+        {
+            "steps": ARCHITECTURE_DIFFERENCES_STEPS,
+            **_arc_context("architecture-differences"),
         },
     )
 

@@ -23,8 +23,8 @@ Cross-linked from catalog eligibility flags (041).
 
 ## Owned
 
-- **FRs**: FR-025, FR-026 (architecture), FR-032 (allow-list lesson)
-- **Decisions**: FT-AD-9, FT-AD-10, FT-AD-11 (allow-list aspect)
+- **FRs**: FR-025 (sole), FR-025a (sole), FR-026 *architecture aspect* (shared with 048), FR-032 *allow-list lesson/rationale* (shared with 041/042/043)
+- **Decisions**: FT-AD-9 (shared with 044), FT-AD-10 *architecture-differences page* (shared with 048), FT-AD-11 *allow-list teaching aspect* (shared with 041/042/043)
 
 ## Dependencies
 

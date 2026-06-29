@@ -352,6 +352,21 @@ async def test_learn_finetune_vs_prompt_vs_rag(client: httpx.AsyncClient) -> Non
 
 
 @pytest.mark.asyncio
+async def test_learn_architecture_differences(client: httpx.AsyncClient) -> None:
+    """GET /v1/learn/architecture-differences renders the accordion module."""
+    r = await client.get("/v1/learn/architecture-differences")
+    assert r.status_code == 200
+    assert "text/html" in r.headers["content-type"]
+    assert "Tokenization Differences" in r.text
+    assert "Attention Variants" in r.text
+    assert "Parameter Scaling" in r.text
+    assert "Context Length" in r.text
+    assert "Architecture Allow-List" in r.text
+    assert 'id="allow-list"' in r.text
+    assert "Fine-Tune vs Prompt vs RAG" in r.text or "Chunking Strategies" in r.text
+
+
+@pytest.mark.asyncio
 async def test_models_page(client: httpx.AsyncClient) -> None:
     """GET /v1/models-page renders the model registry page."""
     r = await client.get("/v1/models-page")

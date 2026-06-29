@@ -22,9 +22,9 @@ def mock_migration_service():
     """Patch MigrationService so CLI tests don't touch real DB.
 
     Since db_main() imports MigrationService inside _run(), we
-    patch at the source (anvil.db.migration.MigrationService).
+    patch at the CLI binding (anvil.cli.MigrationService).
     """
-    with patch("anvil.db.migration.MigrationService") as mock_cls:
+    with patch("anvil.cli.MigrationService") as mock_cls:
         instance = MagicMock()
         instance.upgrade = AsyncMock(return_value=(None, "abc123"))
         instance.downgrade = AsyncMock(return_value="def456")
@@ -75,7 +75,7 @@ class TestDbMain:
         with pytest.raises(SystemExit):
             db_main(["revision"])
 
-    @patch("anvil.db.migration.MigrationService")
+    @patch("anvil.cli.MigrationService")
     def test_migration_error_exits_with_code_1(self, mock_cls: MagicMock):
         from anvil.db.migration_error import MigrationError
 
@@ -432,10 +432,10 @@ class TestCorpusMain:
             "0.3",
         ],
     )
-    @patch("anvil.db.session.AsyncSessionLocal")
-    @patch("anvil.services.datasets.corpora.CorpusService")
-    @patch("anvil.db.repositories.corpora.CorpusRepository")
-    @patch("anvil.services.datasets.corpus_loader.CorpusLoader")
+    @patch("anvil.cli.AsyncSessionLocal")
+    @patch("anvil.cli.CorpusService")
+    @patch("anvil.cli.CorpusRepository")
+    @patch("anvil.cli.CorpusLoader")
     def test_create(
         self,
         mock_loader_cls: MagicMock,
@@ -467,10 +467,10 @@ class TestCorpusMain:
         )
 
     @patch("sys.argv", ["corpus_main", "ingest", "1"])
-    @patch("anvil.db.session.AsyncSessionLocal")
-    @patch("anvil.services.datasets.corpora.CorpusService")
-    @patch("anvil.db.repositories.corpora.CorpusRepository")
-    @patch("anvil.services.datasets.corpus_loader.CorpusLoader")
+    @patch("anvil.cli.AsyncSessionLocal")
+    @patch("anvil.cli.CorpusService")
+    @patch("anvil.cli.CorpusRepository")
+    @patch("anvil.cli.CorpusLoader")
     def test_ingest(
         self,
         mock_loader_cls: MagicMock,
@@ -495,10 +495,10 @@ class TestCorpusMain:
         mock_svc_cls.return_value.ingest.assert_awaited_once_with(1)
 
     @patch("sys.argv", ["corpus_main", "list"])
-    @patch("anvil.db.session.AsyncSessionLocal")
-    @patch("anvil.services.datasets.corpora.CorpusService")
-    @patch("anvil.db.repositories.corpora.CorpusRepository")
-    @patch("anvil.services.datasets.corpus_loader.CorpusLoader")
+    @patch("anvil.cli.AsyncSessionLocal")
+    @patch("anvil.cli.CorpusService")
+    @patch("anvil.cli.CorpusRepository")
+    @patch("anvil.cli.CorpusLoader")
     def test_list_corpora(
         self,
         mock_loader_cls: MagicMock,
@@ -529,16 +529,16 @@ class TestCorpusMain:
             document_count=30,
             chunking_strategy="line",
         )
-        mock_svc_cls.return_value.list = AsyncMock(return_value=[c1, c2])
+        mock_svc_cls.return_value.list_all = AsyncMock(return_value=[c1, c2])
 
         corpus_main()
-        mock_svc_cls.return_value.list.assert_awaited_once()
+        mock_svc_cls.return_value.list_all.assert_awaited_once()
 
     @patch("sys.argv", ["corpus_main", "show", "1"])
-    @patch("anvil.db.session.AsyncSessionLocal")
-    @patch("anvil.services.datasets.corpora.CorpusService")
-    @patch("anvil.db.repositories.corpora.CorpusRepository")
-    @patch("anvil.services.datasets.corpus_loader.CorpusLoader")
+    @patch("anvil.cli.AsyncSessionLocal")
+    @patch("anvil.cli.CorpusService")
+    @patch("anvil.cli.CorpusRepository")
+    @patch("anvil.cli.CorpusLoader")
     def test_show_found(
         self,
         mock_loader_cls: MagicMock,
@@ -567,10 +567,10 @@ class TestCorpusMain:
         mock_svc_cls.return_value.get.assert_awaited_once_with(1)
 
     @patch("sys.argv", ["corpus_main", "show", "999"])
-    @patch("anvil.db.session.AsyncSessionLocal")
-    @patch("anvil.services.datasets.corpora.CorpusService")
-    @patch("anvil.db.repositories.corpora.CorpusRepository")
-    @patch("anvil.services.datasets.corpus_loader.CorpusLoader")
+    @patch("anvil.cli.AsyncSessionLocal")
+    @patch("anvil.cli.CorpusService")
+    @patch("anvil.cli.CorpusRepository")
+    @patch("anvil.cli.CorpusLoader")
     def test_show_not_found(
         self,
         mock_loader_cls: MagicMock,
@@ -591,10 +591,10 @@ class TestCorpusMain:
         mock_svc_cls.return_value.get.assert_awaited_once_with(999)
 
     @patch("sys.argv", ["corpus_main", "delete", "1"])
-    @patch("anvil.db.session.AsyncSessionLocal")
-    @patch("anvil.services.datasets.corpora.CorpusService")
-    @patch("anvil.db.repositories.corpora.CorpusRepository")
-    @patch("anvil.services.datasets.corpus_loader.CorpusLoader")
+    @patch("anvil.cli.AsyncSessionLocal")
+    @patch("anvil.cli.CorpusService")
+    @patch("anvil.cli.CorpusRepository")
+    @patch("anvil.cli.CorpusLoader")
     def test_delete_found(
         self,
         mock_loader_cls: MagicMock,
@@ -615,10 +615,10 @@ class TestCorpusMain:
         mock_svc_cls.return_value.delete.assert_awaited_once_with(1)
 
     @patch("sys.argv", ["corpus_main", "delete", "999"])
-    @patch("anvil.db.session.AsyncSessionLocal")
-    @patch("anvil.services.datasets.corpora.CorpusService")
-    @patch("anvil.db.repositories.corpora.CorpusRepository")
-    @patch("anvil.services.datasets.corpus_loader.CorpusLoader")
+    @patch("anvil.cli.AsyncSessionLocal")
+    @patch("anvil.cli.CorpusService")
+    @patch("anvil.cli.CorpusRepository")
+    @patch("anvil.cli.CorpusLoader")
     def test_delete_not_found(
         self,
         mock_loader_cls: MagicMock,
@@ -639,10 +639,10 @@ class TestCorpusMain:
         mock_svc_cls.return_value.delete.assert_awaited_once_with(999)
 
     @patch("sys.argv", ["corpus_main", "files", "1"])
-    @patch("anvil.db.session.AsyncSessionLocal")
-    @patch("anvil.services.datasets.corpora.CorpusService")
-    @patch("anvil.db.repositories.corpora.CorpusRepository")
-    @patch("anvil.services.datasets.corpus_loader.CorpusLoader")
+    @patch("anvil.cli.AsyncSessionLocal")
+    @patch("anvil.cli.CorpusService")
+    @patch("anvil.cli.CorpusRepository")
+    @patch("anvil.cli.CorpusLoader")
     def test_files(
         self,
         mock_loader_cls: MagicMock,
@@ -674,8 +674,8 @@ class TestBootstrapDatasets:
     """Verify bootstrap_datasets_main() dry-run and live flows."""
 
     @patch("sys.argv", ["bootstrap_datasets_main", "--dry-run"])
-    @patch("anvil.db.session.AsyncSessionLocal")
-    @patch("anvil.services.demo.demo_bootstrap.DemoBootstrapService")
+    @patch("anvil.cli.AsyncSessionLocal")
+    @patch("anvil.cli.DemoBootstrapService")
     def test_dry_run(
         self,
         mock_bootstrap_cls: MagicMock,
@@ -702,8 +702,8 @@ class TestBootstrapDatasets:
         mock_bootstrap_cls.return_value.bootstrap_all.assert_awaited_once()
 
     @patch("sys.argv", ["bootstrap_datasets_main"])
-    @patch("anvil.db.session.AsyncSessionLocal")
-    @patch("anvil.services.demo.demo_bootstrap.DemoBootstrapService")
+    @patch("anvil.cli.AsyncSessionLocal")
+    @patch("anvil.cli.DemoBootstrapService")
     def test_live_no_errors(
         self,
         mock_bootstrap_cls: MagicMock,
@@ -732,8 +732,8 @@ class TestBootstrapDatasets:
         mock_session.commit.assert_awaited_once()
 
     @patch("sys.argv", ["bootstrap_datasets_main"])
-    @patch("anvil.db.session.AsyncSessionLocal")
-    @patch("anvil.services.demo.demo_bootstrap.DemoBootstrapService")
+    @patch("anvil.cli.AsyncSessionLocal")
+    @patch("anvil.cli.DemoBootstrapService")
     def test_live_with_errors(
         self,
         mock_bootstrap_cls: MagicMock,
@@ -770,10 +770,10 @@ class TestBootstrapDatasets:
 class TestLoadDocs:
     """Verify _load_docs() dispatches to CorpusService or DemoBootstrapService."""
 
-    @patch("anvil.db.session.AsyncSessionLocal")
-    @patch("anvil.services.datasets.corpora.CorpusService")
-    @patch("anvil.db.repositories.corpora.CorpusRepository")
-    @patch("anvil.services.datasets.corpus_loader.CorpusLoader")
+    @patch("anvil.cli.AsyncSessionLocal")
+    @patch("anvil.cli.CorpusService")
+    @patch("anvil.cli.CorpusRepository")
+    @patch("anvil.cli.CorpusLoader")
     def test_with_corpus_id(
         self,
         mock_loader_cls: MagicMock,
@@ -794,11 +794,11 @@ class TestLoadDocs:
         assert result == ["doc1", "doc2"]
         mock_svc_cls.return_value.load_docs.assert_awaited_once_with(42)
 
-    @patch("anvil.db.session.AsyncSessionLocal")
-    @patch("anvil.services.datasets.corpora.CorpusService")
-    @patch("anvil.db.repositories.corpora.CorpusRepository")
-    @patch("anvil.services.datasets.corpus_loader.CorpusLoader")
-    @patch("anvil.services.demo.demo_bootstrap.DemoBootstrapService")
+    @patch("anvil.cli.AsyncSessionLocal")
+    @patch("anvil.cli.CorpusService")
+    @patch("anvil.cli.CorpusRepository")
+    @patch("anvil.cli.CorpusLoader")
+    @patch("anvil.cli.DemoBootstrapService")
     def test_without_corpus_id(
         self,
         mock_demo_cls: MagicMock,
@@ -825,8 +825,8 @@ class TestLoadDocs:
         assert result == ["default-doc"]
         mock_svc_cls.return_value.load_docs.assert_awaited_once_with(1)
 
-    @patch("anvil.db.session.AsyncSessionLocal")
-    @patch("anvil.services.demo.demo_bootstrap.DemoBootstrapService")
+    @patch("anvil.cli.AsyncSessionLocal")
+    @patch("anvil.cli.DemoBootstrapService")
     def test_without_corpus_id_raises_when_no_demo(
         self,
         mock_demo_cls: MagicMock,
@@ -854,9 +854,9 @@ class TestTrain:
     """Verify train() argument parsing, service setup, and event loop."""
 
     @patch("sys.exit")
-    @patch("anvil.services.training.training.TrainingService")
-    @patch("anvil.services.tracking.tracking.TrackingService")
-    @patch("anvil.services.compute.resolve.resolve_backend")
+    @patch("anvil.cli.TrainingService")
+    @patch("anvil.cli.TrackingService")
+    @patch("anvil.cli.resolve_backend")
     def test_basic_flow(
         self,
         mock_resolve: MagicMock,
@@ -903,9 +903,9 @@ class TestTrain:
         mock_exit.assert_called_once_with(0)
 
     @patch("sys.exit")
-    @patch("anvil.services.training.training.TrainingService")
-    @patch("anvil.services.tracking.tracking.TrackingService")
-    @patch("anvil.services.compute.resolve.resolve_backend")
+    @patch("anvil.cli.TrainingService")
+    @patch("anvil.cli.TrackingService")
+    @patch("anvil.cli.resolve_backend")
     def test_training_error(
         self,
         mock_resolve: MagicMock,
@@ -937,9 +937,9 @@ class TestTrain:
         mock_exit.assert_not_called()
 
     @patch("sys.exit")
-    @patch("anvil.services.training.training.TrainingService")
-    @patch("anvil.services.tracking.tracking.TrackingService")
-    @patch("anvil.services.compute.resolve.resolve_backend")
+    @patch("anvil.cli.TrainingService")
+    @patch("anvil.cli.TrackingService")
+    @patch("anvil.cli.resolve_backend")
     def test_queue_metrics_then_complete(
         self,
         mock_resolve: MagicMock,
@@ -988,9 +988,9 @@ class TestTrain:
         mock_exit.assert_called_once_with(0)
 
     @patch("sys.exit")
-    @patch("anvil.services.training.training.TrainingService")
-    @patch("anvil.services.tracking.tracking.TrackingService")
-    @patch("anvil.services.compute.resolve.resolve_backend")
+    @patch("anvil.cli.TrainingService")
+    @patch("anvil.cli.TrackingService")
+    @patch("anvil.cli.resolve_backend")
     def test_queue_error_event(
         self,
         mock_resolve: MagicMock,
