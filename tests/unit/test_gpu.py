@@ -21,7 +21,6 @@ import pytest
 import anvil.gpu as gpu_module
 from anvil.services._shared.device_type import DeviceType
 
-
 ######################################################################
 # Mock torch factory
 ######################################################################

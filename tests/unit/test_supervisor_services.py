@@ -27,7 +27,6 @@ from anvil.config import get_config
 from anvil.supervisor.services import MLflowService
 from anvil.workspace.workspace_paths import WorkspacePaths
 
-
 ####################################################################
 # Fixtures
 ####################################################################
