@@ -59,8 +59,8 @@
 
 ### Tests for User Story 1
 
-- [ ] T013 [P] [US1] Write unit tests for ModelAssetService (submit + run + status) in `tests/unit/services/test_model_asset_service.py`
-- [ ] T014 [P] [US1] Write e2e tests for download endpoints in `tests/e2e/test_model_assets.py` — happy path, gated model with token, unsupported format rejection, concurrent download rejection
+- [X] T013 [P] [US1] Write unit tests for ModelAssetService (submit + run + status) in `tests/unit/services/test_model_asset_service.py`
+- [X] T014 [P] [US1] Write e2e tests for download endpoints in `tests/e2e/test_model_assets.py` — happy path, gated model with token, unsupported format rejection, concurrent download rejection
 
 ### Implementation for User Story 1
 
@@ -83,10 +83,10 @@
 
 **Purpose**: Improvements that affect multiple areas
 
-- [ ] T025 [P] Run `make lint`, `make typecheck`, `make test` — fix any failures introduced by this feature
-- [ ] T026 [P] Update `docs/vault/Specs/Specs.md` — add 042 entry to the spec index
-- [ ] T027 [P] Verify Alembic migration is reversible: `alembic downgrade -1` then `alembic upgrade +1`
-- [ ] T028 [P] Run `make vault-audit` — must report 0 errors
+- [X] T025 [P] Run `make lint`, `make typecheck`, `make test` — fix any failures introduced by this feature
+- [X] T026 [P] Update `docs/vault/Specs/Specs.md` — add 042 entry to the spec index
+- [X] T027 [P] Verify Alembic migration is reversible: `alembic downgrade -1` then `alembic upgrade +1`
+- [X] T028 [P] Run `make vault-audit` — must report 0 errors
 
 ---
 

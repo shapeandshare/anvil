@@ -22,6 +22,7 @@ import os
 import secrets
 from pathlib import Path
 
+from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 logger = logging.getLogger(__name__)
@@ -92,7 +93,10 @@ class EncryptionService:
             raise ValueError("Token too short: missing nonce or ciphertext")
         nonce, ct = data[:12], data[12:]
         aesgcm = AESGCM(self._key_bytes)
-        return aesgcm.decrypt(nonce, ct, None).decode("utf-8")
+        try:
+            return aesgcm.decrypt(nonce, ct, None).decode("utf-8")
+        except InvalidTag as exc:
+            raise ValueError("Decryption failed: invalid key or tampered data") from exc
 
     ####################################################################
     # Internal helpers
@@ -108,18 +112,18 @@ class EncryptionService:
         """
         env_key = os.environ.get("ANVIL_MASTER_SECRET")
         if env_key:
-            self._key_bytes = env_key.encode("utf-8")
+            self._key_bytes = bytes.fromhex(env_key)
             os.environ.pop("ANVIL_MASTER_SECRET", None)
             logger.debug("Using master key from ANVIL_MASTER_SECRET environment")
             return
 
         if self._key_path.exists():
             raw = self._key_path.read_text(encoding="utf-8").strip()
-            self._key_bytes = raw.encode("utf-8")
+            self._key_bytes = bytes.fromhex(raw)
             logger.debug("Loaded master key from %s", self._key_path)
             return
 
-        self._key_bytes = secrets.token_urlsafe(32).encode("utf-8")
+        self._key_bytes = secrets.token_bytes(32)
         self._persist()
         logger.debug("Generated and persisted new master key to %s", self._key_path)
 
@@ -128,5 +132,5 @@ class EncryptionService:
         if self._key_bytes is None:
             return
         self._key_path.parent.mkdir(parents=True, exist_ok=True)
-        self._key_path.write_text(self._key_bytes.decode("utf-8"), encoding="utf-8")
+        self._key_path.write_text(self._key_bytes.hex(), encoding="utf-8")
         self._key_path.chmod(0o600)

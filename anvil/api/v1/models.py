@@ -14,6 +14,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
 
 from ...db.session import AsyncSessionLocal
+from ...services.model_import.model_asset_service import (
+    DuplicateDownloadError,
+    ModelAssetAlreadyAvailableError,
+    ModelNotFoundError,
+)
 from ...workbench import AnvilWorkbench
 from ..deps import get_workbench
 
@@ -176,8 +181,12 @@ async def download_model_assets(
     """
     try:
         job_id = await workbench.model_assets.submit_download(model_id)
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except ModelNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ModelAssetAlreadyAvailableError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except DuplicateDownloadError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
     _fire_background_download(job_id)
 

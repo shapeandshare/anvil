@@ -10,7 +10,9 @@ class TestEncryptionService:
 
     def test_encrypt_decrypt_roundtrip(self, tmp_path) -> None:
         key_file = tmp_path / ".master_key"
-        key_file.write_text("test-master-key-32bytes-token-urlsafe")
+        key_file.write_text(
+            "bc9b9c4dfe60df8d23b9e1369b58043c9398aa1c2ae60f9c3f9e65a1ccfc7c01"
+        )
         svc = EncryptionService(key_path=str(key_file))
         plaintext = "hf_token_abc123"
         token = svc.encrypt(plaintext)
@@ -19,7 +21,9 @@ class TestEncryptionService:
 
     def test_different_nonces_per_encryption(self, tmp_path) -> None:
         key_file = tmp_path / ".master_key"
-        key_file.write_text("test-master-key-32bytes-token-urlsafe")
+        key_file.write_text(
+            "bc9b9c4dfe60df8d23b9e1369b58043c9398aa1c2ae60f9c3f9e65a1ccfc7c01"
+        )
         svc = EncryptionService(key_path=str(key_file))
         t1 = svc.encrypt("same-value")
         t2 = svc.encrypt("same-value")
@@ -27,9 +31,13 @@ class TestEncryptionService:
 
     def test_wrong_key_fails(self, tmp_path) -> None:
         key1_file = tmp_path / "key1"
-        key1_file.write_text("aaa-key-32bytes-token-urlsafe-aaa")
+        key1_file.write_text(
+            "0000000000000000000000000000000000000000000000000000000000000000"
+        )
         key2_file = tmp_path / "key2"
-        key2_file.write_text("bbb-key-32bytes-token-urlsafe-bbb")
+        key2_file.write_text(
+            "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        )
         svc1 = EncryptionService(key_path=str(key1_file))
         svc2 = EncryptionService(key_path=str(key2_file))
         token = svc1.encrypt("secret")
@@ -38,7 +46,9 @@ class TestEncryptionService:
 
     def test_tampered_ciphertext_raises(self, tmp_path) -> None:
         key_file = tmp_path / ".master_key"
-        key_file.write_text("test-master-key-32bytes-token-urlsafe")
+        key_file.write_text(
+            "bc9b9c4dfe60df8d23b9e1369b58043c9398aa1c2ae60f9c3f9e65a1ccfc7c01"
+        )
         svc = EncryptionService(key_path=str(key_file))
         token = svc.encrypt("secret")
         # Flip a byte in the base64 payload
