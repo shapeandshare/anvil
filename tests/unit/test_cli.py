@@ -6,7 +6,7 @@
 """Unit tests for CLI functions, including db_main subcommands."""
 
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import pytest
 
@@ -1029,4 +1029,424 @@ class TestTrain:
         training_instance.get_queue = MagicMock(return_value=queue)
 
         train()
+        mock_exit.assert_called_once_with(0)
+
+
+# ======================================================================
+# main() — top-level entry point (--show-api-key, --version, serve)
+# ======================================================================
+
+
+class TestMain:
+    """Verify main() dispatches to show_api_key, version print, or serve."""
+
+    @patch("anvil.cli.serve")
+    @patch("anvil.cli.show_api_key")
+    @patch("sys.argv", ["anvil", "--show-api-key"])
+    def test_show_api_key_flag(
+        self,
+        mock_show_key: MagicMock,
+        mock_serve: MagicMock,
+    ):
+        from anvil.cli import main
+
+        main()
+        mock_show_key.assert_called_once()
+        mock_serve.assert_not_called()
+
+    @patch("anvil.cli.serve")
+    @patch("builtins.print")
+    @patch("anvil.cli.__version__", "1.2.3")
+    @patch("sys.argv", ["anvil", "--version"])
+    def test_version_flag(
+        self,
+        mock_print: MagicMock,
+        mock_serve: MagicMock,
+    ):
+        from anvil.cli import main
+
+        main()
+        mock_print.assert_called_once_with("1.2.3")
+        mock_serve.assert_not_called()
+
+    @patch("anvil.cli.serve")
+    @patch("sys.argv", ["anvil"])
+    def test_fallthrough_to_serve(
+        self,
+        mock_serve: MagicMock,
+    ):
+        from anvil.cli import main
+
+        main()
+        mock_serve.assert_called_once()
+
+
+# ======================================================================
+# import_main() — external model import CLI (T040)
+# ======================================================================
+
+
+class TestImportMain:
+    """Verify import_main() argument parsing and service delegation."""
+
+    @patch("sys.argv", ["import_main", "huggingface", "org/model"])
+    @patch("anvil.cli.AsyncSessionLocal")
+    @patch("anvil.cli.ExternalModelRepository")
+    @patch("anvil.cli.ModelImportJobRepository")
+    @patch("anvil.cli.ModelImportService")
+    @patch("anvil.cli.HfHubSource")
+    @patch("anvil.cli.LocalSource")
+    def test_huggingface_source(
+        self,
+        mock_local_cls: MagicMock,
+        mock_hf_cls: MagicMock,
+        mock_svc_cls: MagicMock,
+        mock_job_repo_cls: MagicMock,
+        mock_ext_repo_cls: MagicMock,
+        mock_session_factory: MagicMock,
+    ):
+        from anvil.cli import import_main
+
+        mock_session = AsyncMock()
+        mock_session_factory.return_value = mock_session
+        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session.__aexit__ = AsyncMock(return_value=None)
+
+        svc_instance = mock_svc_cls.return_value
+        svc_instance.submit_import = AsyncMock(return_value=42)
+        svc_instance.run_import = AsyncMock()
+
+        import_main()
+
+        svc_instance.submit_import.assert_awaited_once_with(
+            source="huggingface",
+            identifier="org/model",
+            revision="main",
+            name=None,
+        )
+        svc_instance.run_import.assert_awaited_once_with(42)
+        mock_session.commit.assert_awaited_once()
+
+    @patch("sys.argv", ["import_main", "local", "/path/to/model"])
+    @patch("anvil.cli.AsyncSessionLocal")
+    @patch("anvil.cli.ExternalModelRepository")
+    @patch("anvil.cli.ModelImportJobRepository")
+    @patch("anvil.cli.ModelImportService")
+    @patch("anvil.cli.HfHubSource")
+    @patch("anvil.cli.LocalSource")
+    def test_local_source(
+        self,
+        mock_local_cls: MagicMock,
+        mock_hf_cls: MagicMock,
+        mock_svc_cls: MagicMock,
+        mock_job_repo_cls: MagicMock,
+        mock_ext_repo_cls: MagicMock,
+        mock_session_factory: MagicMock,
+    ):
+        from anvil.cli import import_main
+
+        mock_session = AsyncMock()
+        mock_session_factory.return_value = mock_session
+        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session.__aexit__ = AsyncMock(return_value=None)
+
+        svc_instance = mock_svc_cls.return_value
+        svc_instance.submit_import = AsyncMock(return_value=7)
+        svc_instance.run_import = AsyncMock()
+
+        import_main()
+
+        svc_instance.submit_import.assert_awaited_once_with(
+            source="local",
+            identifier="/path/to/model",
+            revision="main",
+            name=None,
+        )
+        svc_instance.run_import.assert_awaited_once_with(7)
+
+    @patch("sys.argv", [
+        "import_main", "huggingface", "org/model",
+        "--name", "my-model", "--revision", "v2",
+    ])
+    @patch("anvil.cli.AsyncSessionLocal")
+    @patch("anvil.cli.ExternalModelRepository")
+    @patch("anvil.cli.ModelImportJobRepository")
+    @patch("anvil.cli.ModelImportService")
+    @patch("anvil.cli.HfHubSource")
+    @patch("anvil.cli.LocalSource")
+    def test_with_name_and_revision(
+        self,
+        mock_local_cls: MagicMock,
+        mock_hf_cls: MagicMock,
+        mock_svc_cls: MagicMock,
+        mock_job_repo_cls: MagicMock,
+        mock_ext_repo_cls: MagicMock,
+        mock_session_factory: MagicMock,
+    ):
+        from anvil.cli import import_main
+
+        mock_session = AsyncMock()
+        mock_session_factory.return_value = mock_session
+        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session.__aexit__ = AsyncMock(return_value=None)
+
+        svc_instance = mock_svc_cls.return_value
+        svc_instance.submit_import = AsyncMock(return_value=99)
+        svc_instance.run_import = AsyncMock()
+
+        import_main()
+
+        svc_instance.submit_import.assert_awaited_once_with(
+            source="huggingface",
+            identifier="org/model",
+            revision="v2",
+            name="my-model",
+        )
+        svc_instance.run_import.assert_awaited_once_with(99)
+
+
+# ======================================================================
+# import_status_main() — import job status CLI
+# ======================================================================
+
+
+class TestImportStatusMain:
+    """Verify import_status_main() argument parsing and output."""
+
+    @patch("sys.argv", ["import_status_main", "42"])
+    @patch("anvil.cli.AsyncSessionLocal")
+    @patch("anvil.cli.ExternalModelRepository")
+    @patch("anvil.cli.ModelImportJobRepository")
+    @patch("anvil.cli.ModelImportService")
+    def test_job_found(
+        self,
+        mock_svc_cls: MagicMock,
+        mock_job_repo_cls: MagicMock,
+        mock_ext_repo_cls: MagicMock,
+        mock_session_factory: MagicMock,
+    ):
+        from anvil.cli import import_status_main
+
+        mock_session = AsyncMock()
+        mock_session_factory.return_value = mock_session
+        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session.__aexit__ = AsyncMock(return_value=None)
+
+        mock_job = MagicMock()
+        mock_job.status = "completed"
+        mock_job.error_code = None
+        mock_job.error_message = None
+        mock_job.external_model_id = 1
+
+        svc_instance = mock_svc_cls.return_value
+        svc_instance.get_job_status = AsyncMock(return_value=mock_job)
+
+        import_status_main()
+
+        svc_instance.get_job_status.assert_awaited_once_with(42)
+
+    @patch("sys.argv", ["import_status_main", "999"])
+    @patch("anvil.cli.AsyncSessionLocal")
+    @patch("anvil.cli.ExternalModelRepository")
+    @patch("anvil.cli.ModelImportJobRepository")
+    @patch("anvil.cli.ModelImportService")
+    def test_job_not_found(
+        self,
+        mock_svc_cls: MagicMock,
+        mock_job_repo_cls: MagicMock,
+        mock_ext_repo_cls: MagicMock,
+        mock_session_factory: MagicMock,
+    ):
+        from anvil.cli import import_status_main
+
+        mock_session = AsyncMock()
+        mock_session_factory.return_value = mock_session
+        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session.__aexit__ = AsyncMock(return_value=None)
+
+        svc_instance = mock_svc_cls.return_value
+        svc_instance.get_job_status = AsyncMock(return_value=None)
+
+        with pytest.raises(SystemExit):
+            import_status_main()
+
+        svc_instance.get_job_status.assert_awaited_once_with(999)
+
+    @patch("sys.argv", ["import_status_main", "7"])
+    @patch("anvil.cli.AsyncSessionLocal")
+    @patch("anvil.cli.ExternalModelRepository")
+    @patch("anvil.cli.ModelImportJobRepository")
+    @patch("anvil.cli.ModelImportService")
+    def test_job_with_error(
+        self,
+        mock_svc_cls: MagicMock,
+        mock_job_repo_cls: MagicMock,
+        mock_ext_repo_cls: MagicMock,
+        mock_session_factory: MagicMock,
+    ):
+        from anvil.cli import import_status_main
+
+        mock_session = AsyncMock()
+        mock_session_factory.return_value = mock_session
+        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session.__aexit__ = AsyncMock(return_value=None)
+
+        mock_job = MagicMock()
+        mock_job.status = "failed"
+        mock_job.error_code = "E001"
+        mock_job.error_message = "Network error"
+        mock_job.external_model_id = None
+
+        svc_instance = mock_svc_cls.return_value
+        svc_instance.get_job_status = AsyncMock(return_value=mock_job)
+
+        import_status_main()
+
+        svc_instance.get_job_status.assert_awaited_once_with(7)
+
+
+# ======================================================================
+# db_main — verify subcommand (missing from original coverage)
+# ======================================================================
+
+
+class TestDbMainVerify:
+    """Verify db_main 'verify' subcommand."""
+
+    @patch("anvil.cli.MigrationService")
+    def test_verify_all_tables_present(
+        self,
+        mock_migration_cls: MagicMock,
+    ):
+        """Verify exits 0 when all tables exist."""
+        mock_migration_cls.verify_table_integrity = AsyncMock(return_value=[])
+
+        db_main(["verify"])
+
+        mock_migration_cls.verify_table_integrity.assert_awaited_once()
+
+    @patch("anvil.cli.MigrationService")
+    def test_verify_missing_tables(
+        self,
+        mock_migration_cls: MagicMock,
+    ):
+        """Verify exits 1 when tables are missing."""
+        mock_migration_cls.verify_table_integrity = AsyncMock(
+            return_value=["missing_table"]
+        )
+
+        with pytest.raises(SystemExit):
+            db_main(["verify"])
+
+        mock_migration_cls.verify_table_integrity.assert_awaited_once()
+
+
+# ======================================================================
+# train() — additional argument parsing tests
+# ======================================================================
+
+
+class TestTrainArgs:
+    """Verify train() parses --corpus, --backend, --device correctly."""
+
+    @patch("sys.exit")
+    @patch("anvil.cli.TrainingService")
+    @patch("anvil.cli.TrackingService")
+    @patch("anvil.cli.resolve_backend")
+    @patch("sys.argv", ["train", "--corpus", "5", "--backend", "local-cpu", "--device", "cpu"])
+    def test_with_corpus_and_backend_args(
+        self,
+        mock_resolve: MagicMock,
+        mock_tracking_cls: MagicMock,
+        mock_training_cls: MagicMock,
+        mock_exit: MagicMock,
+    ):
+        import asyncio
+
+        from anvil.cli import train
+
+        mock_resolve.return_value = {
+            "engine": "local-stdlib",
+            "device": "cpu",
+            "backend": "local-cpu",
+        }
+
+        tracking_instance = mock_tracking_cls.return_value
+        tracking_instance.start_run = AsyncMock(return_value="run_abc")
+        tracking_instance.log_metric = AsyncMock()
+        tracking_instance.finish_run = AsyncMock()
+        tracking_instance.log_final_metric = AsyncMock()
+        tracking_instance.register_source_model = AsyncMock()
+
+        training_instance = mock_training_cls.return_value
+        training_instance.reserve_run = MagicMock(return_value="local_001")
+        training_instance.start_training = AsyncMock()
+
+        queue: asyncio.Queue = asyncio.Queue()
+        queue.put_nowait({
+            "event": "complete",
+            "data": (
+                '{"step": 1000, "final_loss": 0.05, '
+                '"device": "cpu", "samples": []}'
+            ),
+        })
+        training_instance.get_queue = MagicMock(return_value=queue)
+
+        train()
+
+        mock_resolve.assert_called_once_with(
+            {"compute_backend": "local-cpu", "device": "cpu"}
+        )
+        tracking_instance.start_run.assert_awaited_once()
+        mock_exit.assert_called_once_with(0)
+
+    @patch("sys.exit")
+    @patch("anvil.cli.TrainingService")
+    @patch("anvil.cli.TrackingService")
+    @patch("anvil.cli.resolve_backend")
+    @patch("sys.argv", ["train", "--dataset", "10"])
+    def test_with_dataset_arg(
+        self,
+        mock_resolve: MagicMock,
+        mock_tracking_cls: MagicMock,
+        mock_training_cls: MagicMock,
+        mock_exit: MagicMock,
+    ):
+        import asyncio
+
+        from anvil.cli import train
+
+        mock_resolve.return_value = {
+            "engine": "local-stdlib",
+            "device": "cpu",
+            "backend": "auto",
+        }
+
+        tracking_instance = mock_tracking_cls.return_value
+        tracking_instance.start_run = AsyncMock(return_value="run_abc")
+        tracking_instance.log_metric = AsyncMock()
+        tracking_instance.finish_run = AsyncMock()
+        tracking_instance.log_final_metric = AsyncMock()
+        tracking_instance.register_source_model = AsyncMock()
+
+        training_instance = mock_training_cls.return_value
+        training_instance.reserve_run = MagicMock(return_value="local_001")
+        training_instance.start_training = AsyncMock()
+
+        queue: asyncio.Queue = asyncio.Queue()
+        queue.put_nowait({
+            "event": "complete",
+            "data": (
+                '{"step": 500, "final_loss": 0.1, '
+                '"device": "cpu", "samples": []}'
+            ),
+        })
+        training_instance.get_queue = MagicMock(return_value=queue)
+
+        train()
+
+        mock_resolve.assert_called_once_with(
+            {"compute_backend": "auto", "device": None}
+        )
+        tracking_instance.start_run.assert_awaited_once()
         mock_exit.assert_called_once_with(0)

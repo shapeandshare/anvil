@@ -125,3 +125,99 @@ def test_unknown_backend_raises():
 
     with pytest.raises(ComputeBackendUnavailable):
         resolve_backend({"compute_backend": "nonexistent"})
+
+
+def test_auto_falls_back_to_cpu_when_gpu_detected_but_torch_unavailable(monkeypatch):
+    """D4: GPU detected but torch missing → silent fallback to stdlib+cpu."""
+    from anvil.services.compute.resolve import resolve_backend
+
+    monkeypatch.setattr(
+        "anvil.services.compute.resolve._detect_device",
+        lambda: "cuda",
+    )
+    monkeypatch.setattr(
+        "anvil.services.compute.resolve._torch_available",
+        lambda: False,
+    )
+    result = resolve_backend({"compute_backend": "auto"})
+    assert result["engine"] == "stdlib"
+    assert result["device"] == "cpu"
+    assert result["backend"] == "local"
+
+
+def test_local_gpu_falls_back_when_gpu_detected_but_torch_unavailable(monkeypatch):
+    """D4: GPU exists but torch is not installed → silent fallback."""
+    from anvil.services.compute.resolve import resolve_backend
+
+    monkeypatch.setattr(
+        "anvil.services.compute.resolve._detect_device",
+        lambda: "cuda",
+    )
+    monkeypatch.setattr(
+        "anvil.services.compute.resolve._torch_available",
+        lambda: False,
+    )
+    result = resolve_backend({"compute_backend": "local-gpu"})
+    assert result["engine"] == "stdlib"
+    assert result["device"] == "cpu"
+    assert result["backend"] == "local"
+
+
+def test_auto_uses_mps_when_available(monkeypatch):
+    """Apple Silicon MPS detection works with torch available."""
+    from anvil.services.compute.resolve import resolve_backend
+
+    monkeypatch.setattr(
+        "anvil.services.compute.resolve._detect_device",
+        lambda: "mps",
+    )
+    monkeypatch.setattr(
+        "anvil.services.compute.resolve._torch_available",
+        lambda: True,
+    )
+    result = resolve_backend({"compute_backend": "auto"})
+    assert result["engine"] == "torch"
+    assert result["device"] == "mps"
+    assert result["backend"] == "local"
+
+
+def test_local_gpu_uses_mps_when_available(monkeypatch):
+    """local-gpu resolves to torch+mps on Apple Silicon."""
+    from anvil.services.compute.resolve import resolve_backend
+
+    monkeypatch.setattr(
+        "anvil.services.compute.resolve._detect_device",
+        lambda: "mps",
+    )
+    monkeypatch.setattr(
+        "anvil.services.compute.resolve._torch_available",
+        lambda: True,
+    )
+    result = resolve_backend({"compute_backend": "local-gpu"})
+    assert result["engine"] == "torch"
+    assert result["device"] == "mps"
+    assert result["backend"] == "local"
+
+
+def test_modal_full_return_dict(monkeypatch):
+    """Modal backend returns all expected keys."""
+    from anvil.services.compute.resolve import resolve_backend
+
+    monkeypatch.setattr(
+        "anvil.services.compute.resolve._modal_available",
+        lambda: True,
+    )
+    result = resolve_backend({"compute_backend": "modal"})
+    assert result == {
+        "engine": "torch",
+        "device": "cuda",
+        "backend": "modal",
+    }
+
+
+def test_resolve_cache_not_exposed():
+    """_RESOLUTION_CACHE exists as module-level dict."""
+    from anvil.services.compute import resolve as resolve_mod
+
+    assert hasattr(resolve_mod, "_RESOLUTION_CACHE")
+    assert isinstance(resolve_mod._RESOLUTION_CACHE, dict)
