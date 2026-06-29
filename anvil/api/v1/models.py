@@ -160,3 +160,85 @@ async def get_external_model(
         "created_at": model.created_at.isoformat(),
         "updated_at": model.updated_at.isoformat(),
     }
+
+
+# ── Model asset download (feature 042) ──────────────────────────────
+
+
+@router.post("/models/{model_id}/download", status_code=202)
+async def download_model_assets(
+    model_id: int,
+    workbench: AnvilWorkbench = Depends(get_workbench),
+) -> dict[str, object]:
+    """Trigger async download of model assets (weights, tokenizer, config).
+
+    Returns HTTP 202 with a ``job_id`` for status polling.
+    """
+    try:
+        job_id = await workbench.model_assets.submit_download(model_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    _fire_background_download(job_id)
+
+    return {"job_id": job_id, "status": "queued"}
+
+
+def _fire_background_download(job_id: int) -> None:
+    """Start the asset download worker in a background task."""
+
+    async def _worker() -> None:
+        try:
+            async with AsyncSessionLocal() as session:
+                wb = AnvilWorkbench(session)
+                await wb.model_assets.run_download(job_id)
+                await session.commit()
+        except Exception:
+            logger.exception("Background asset download job %d failed", job_id)
+
+    _task = asyncio.create_task(_worker())
+    _task.add_done_callback(
+        lambda t: logger.debug(
+            "Background asset download %d done: %s", job_id, t
+        )
+    )
+
+
+@router.get("/models/{model_id}/download/{job_id}/status")
+async def asset_download_status(
+    model_id: int,
+    job_id: int,
+    workbench: AnvilWorkbench = Depends(get_workbench),
+) -> dict[str, object]:
+    """Poll the status of an asset download job with aggregate progress."""
+    status = await workbench.model_assets.get_job_status(job_id)
+    if status is None:
+        raise HTTPException(
+            status_code=404, detail="Download job not found"
+        )
+    return status
+
+
+@router.get("/models/{model_id}/assets")
+async def list_model_assets(
+    model_id: int,
+    workbench: AnvilWorkbench = Depends(get_workbench),
+) -> dict[str, object]:
+    """Return all assets for a model (read-only)."""
+    assets = await workbench.model_assets.get_assets_for_model(model_id)
+    return {
+        "data": [
+            {
+                "id": a.id,
+                "asset_type": a.asset_type,
+                "filename": a.filename,
+                "status": a.status,
+                "size_bytes": a.size_bytes,
+                "downloaded_bytes": a.downloaded_bytes,
+                "sha256": a.sha256,
+                "format": a.format,
+                "created_at": a.created_at.isoformat(),
+            }
+            for a in assets
+        ]
+    }

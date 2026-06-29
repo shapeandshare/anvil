@@ -23,14 +23,14 @@
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 Create `anvil/db/models/model_asset.py` — ModelAsset ORM model with ModelAssetType (WEIGHTS/TOKENIZER/CONFIG) and ModelAssetStatus (PENDING/DOWNLOADING/AVAILABLE/UNAVAILABLE/CHECKSUM_MISMATCH) StrEnums, plus TimestampMixin
-- [ ] T002 [P] Create `anvil/db/models/asset_download_job.py` — AssetDownloadJob ORM model with FK to external_models, status, error fields, TimestampMixin
-- [ ] T003 [P] Create `anvil/db/models/user_secret.py` — UserSecret ORM model with user_id, key (unique per user), encrypted_value, TimestampMixin
-- [ ] T004 [P] Create `anvil/services/_shared/asset_download_job_status.py` — AssetDownloadJobStatus StrEnum (QUEUED/DOWNLOADING/COMPLETE/FAILED)
-- [ ] T005 [P] Create `anvil/db/repositories/model_asset_repository.py` — CRUD with get_by_model(), get_by_model_and_type(), add(), update_status(), update_progress()
-- [ ] T006 [P] Create `anvil/db/repositories/asset_download_job_repository.py` — CRUD with get(), add(), update_status()
-- [ ] T007 [P] Create `anvil/db/repositories/user_secret_repository.py` — CRUD with get(), get_all_for_user(), upsert(), delete()
-- [ ] T008 Generate Alembic migration for new tables (model_assets, asset_download_jobs, user_secrets) via `make db-revision`
+- [X] T001 Create `anvil/db/models/model_asset.py` — ModelAsset ORM model with ModelAssetType (WEIGHTS/TOKENIZER/CONFIG) and ModelAssetStatus (PENDING/DOWNLOADING/AVAILABLE/UNAVAILABLE/CHECKSUM_MISMATCH) StrEnums, plus TimestampMixin
+- [X] T002 [P] Create `anvil/db/models/asset_download_job.py` — AssetDownloadJob ORM model with FK to external_models, status, error fields, TimestampMixin
+- [X] T003 [P] Create `anvil/db/models/user_secret.py` — UserSecret ORM model with user_id, key (unique per user), encrypted_value, TimestampMixin
+- [X] T004 [P] Create `anvil/services/_shared/asset_download_job_status.py` — AssetDownloadJobStatus StrEnum (QUEUED/DOWNLOADING/COMPLETE/FAILED)
+- [X] T005 [P] Create `anvil/db/repositories/model_asset_repository.py` — CRUD with get_by_model(), get_by_model_and_type(), add(), update_status(), update_progress()
+- [X] T006 [P] Create `anvil/db/repositories/asset_download_job_repository.py` — CRUD with get(), add(), update_status()
+- [X] T007 [P] Create `anvil/db/repositories/user_secret_repository.py` — CRUD with get(), get_all_for_user(), upsert(), delete()
+- [X] T008 Generate Alembic migration for new tables (model_assets, asset_download_jobs, user_secrets)
 
 **Checkpoint**: All new ORM models, enums, repositories, and migrations exist — foundational layer is ready
 
@@ -42,10 +42,10 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T009 Create `anvil/services/_shared/encryption.py` — AES-256-GCM encrypt/decrypt via `cryptography` library, following ApiKeyStore pattern for key management (ANVIL_MASTER_SECRET env var with 0600 perms fallback)
-- [ ] T010 [P] Write unit tests for encryption in `tests/unit/services/test_encryption.py` — encrypt/decrypt roundtrip, key rotation, tampered ciphertext rejection
-- [ ] T011 [P] Write unit tests for ModelAssetRepository in `tests/unit/db/repositories/test_model_asset_repository.py`
-- [ ] T012 [P] Write unit tests for UserSecretRepository in `tests/unit/db/repositories/test_user_secret_repository.py`
+- [X] T009 Create `anvil/services/_shared/encryption.py` — AES-256-GCM encrypt/decrypt via `cryptography` library, following ApiKeyStore pattern for key management (ANVIL_MASTER_SECRET env var with 0600 perms fallback)
+- [X] T010 [P] Write unit tests for encryption in `tests/unit/services/test_encryption.py` — encrypt/decrypt roundtrip, key rotation, tampered ciphertext rejection
+- [X] T011 [P] Write unit tests for ModelAssetRepository in `tests/unit/db/repositories/test_model_asset_repository.py`
+- [X] T012 [P] Write unit tests for UserSecretRepository in `tests/unit/db/repositories/test_user_secret_repository.py`
 
 **Checkpoint**: Foundation ready — encryption works, repos tested, user story implementation can begin
 
@@ -64,15 +64,15 @@
 
 ### Implementation for User Story 1
 
-- [ ] T015 [US1] Implement `UserSecretService` in `anvil/services/model_import/user_secret_service.py` — get_secret(), set_secret(), delete_secret(), resolve_token() with UserSecret > env var precedence
+- [X] T015 [US1] Implement `UserSecretService` in `anvil/services/model_import/user_secret_service.py` — get_secret(), set_secret(), delete_secret(), resolve_token() with UserSecret > env var precedence
 - [ ] T016 [P] [US1] Add HF file discovery + download methods to `anvil/services/model_import/hf_source.py` — list_repo_files(), download_file() via hf_hub_download, wrapped in run_in_executor
-- [ ] T017 [P] [US1] Create `anvil/services/model_import/format_detector.py` — format verification via safetensors.safe_open() (FR-033), reject non-safetensors weight formats (FR-030)
-- [ ] T018 [US1] Implement `ModelAssetService` in `anvil/services/model_import/model_asset_service.py` — submit_download() (create job + pre-create ModelAsset rows), run_download() (resolve files → stream → SHA-256 → FileStore.put() → update status), get_job_status() (aggregate + per-asset), model-level lock check
-- [ ] T019 [US1] Expose ModelAssetService via `AnvilWorkbench` in `anvil/workbench.py` — add `model_assets` property, wire dependencies
-- [ ] T020 [US1] Add `POST /v1/models/{id}/download` route returning HTTP 202 + job_id in `anvil/api/v1/models.py` — follow _fire_background_import() pattern
-- [ ] T021 [US1] Add `GET /v1/models/{id}/download/{job_id}/status` route returning job + aggregate progress in `anvil/api/v1/models.py`
-- [ ] T022 [US1] Add `GET /v1/models/{id}/assets` route returning ModelAsset list in `anvil/api/v1/models.py`
-- [ ] T023 [US1] Add `POST /v1/user/secrets` and `GET /v1/user/secrets` routes in `anvil/api/v1/` (new secrets module) for HF token management
+- [X] T017 [P] [US1] Create `anvil/services/model_import/format_detector.py` — format verification via safetensors.safe_open() (FR-033), reject non-safetensors weight formats (FR-030)
+- [X] T018 [US1] Implement `ModelAssetService` in `anvil/services/model_import/model_asset_service.py` — submit_download() (create job + pre-create ModelAsset rows), run_download() (resolve files → stream → SHA-256 → FileStore.put() → update status), get_job_status() (aggregate + per-asset), model-level lock check
+- [X] T019 [US1] Expose ModelAssetService via `AnvilWorkbench` in `anvil/workbench.py` — add `model_assets` property, wire dependencies
+- [X] T020 [US1] Add `POST /v1/models/{id}/download` route returning HTTP 202 + job_id in `anvil/api/v1/models.py` — follow _fire_background_import() pattern
+- [X] T021 [US1] Add `GET /v1/models/{id}/download/{job_id}/status` route returning job + aggregate progress in `anvil/api/v1/models.py`
+- [X] T022 [US1] Add `GET /v1/models/{id}/assets` route returning ModelAsset list in `anvil/api/v1/models.py`
+- [X] T023 [US1] Add `POST /v1/user/secrets` and `GET /v1/user/secrets` routes in `anvil/api/v1/user_secrets.py` for HF token management
 - [ ] T024 [P] [US1] Add SDK client commands — `anvil/client/models/download_assets_command.py` (POST) and `anvil/client/models/download_status_command.py` (GET status)
 
 **Checkpoint**: At this point, the learner can download model assets end-to-end, track progress, and the model entry flips to ASSETS_AVAILABLE

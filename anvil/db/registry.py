@@ -20,6 +20,9 @@ from . import models  # noqa: F401  — registers models via models/__init__.py
 from .base import Base
 from .models import external_model  # noqa: F401
 from .models import model_import_job  # noqa: F401
+from .models import asset_download_job  # noqa: F401
+from .models import model_asset  # noqa: F401
+from .models import user_secret  # noqa: F401
 
 
 def get_expected_tables() -> frozenset[str]:
