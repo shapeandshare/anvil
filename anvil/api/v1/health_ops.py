@@ -95,19 +95,20 @@ async def health() -> dict[str, Any]:
 
 
 @router.get("/health/detailed")
-async def health_detailed() -> dict[str, Any]:
+async def health_detailed(
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
+) -> dict[str, Any]:
     """Return detailed system health metrics.
 
     Provides version, uptime, CPU, memory, disk, GPU, database
-    connectivity, and schema version.  This endpoint requires
-    authentication (unlike the bare ``GET /v1/health`` liveness check).
+    connectivity, schema version, MLflow process health, and
+    tracking service status.  This endpoint requires authentication
+    (unlike the bare ``GET /v1/health`` liveness check).
 
-    Returns
-    -------
-    dict
-        ``status``, ``version``, ``uptime_seconds``, ``system`` metrics,
-        ``gpu`` details, ``database`` connectivity and schema version,
-        ``mlflow`` connectivity, and ``docs`` links.
+    Parameters
+    ----------
+    workbench : AnvilWorkbench
+        Session-bound workbench injected via FastAPI dependency.
     """
     cpu_percent = psutil.cpu_percent(interval=0)
     mem = psutil.virtual_memory()
@@ -178,6 +179,7 @@ async def health_detailed() -> dict[str, Any]:
             "status": mlflow_status,
             "error": mlflow_error,
         },
+        "tracking": workbench.tracking.tracking_status.model_dump(),
         "docs": {
             "swagger": "/docs",
             "redoc": "/redoc",
