@@ -1,4 +1,4 @@
-"""Rev 006: Create chat_templates and fine_tune_datasets tables.
+"""Rev 007: Create chat_templates and fine_tune_datasets tables.
 
 Creates the ``chat_templates`` table for tracking chat templates (the
 Jinja-like template strings that render prompts/responses for fine-tuning)
@@ -9,8 +9,8 @@ datasets as first-class, versioned entities (spec 053).
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "006"
-down_revision: str | None = "005"
+revision: str = "007"
+down_revision: str | None = "006"
 branch_labels: str | None = None
 depends_on: str | None = None
 
