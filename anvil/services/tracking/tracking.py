@@ -9,26 +9,27 @@ Provides the ``TrackingService`` class for managing MLflow experiment runs,
 logging metrics and parameters, managing datasets and model registry,
 and recording dataset/corpus lifecycle events.
 
-.. note::
-
-   Broad ``except Exception`` is used pervasively because MLflow raises
-   a wide variety of exception types (network, server, auth, data) that
-   do not share a common base beyond ``Exception``. Narrowing to
-   ``mlflow.MlflowException`` at each site would introduce an import
-   dependency and still miss non-MLflow failures (e.g. socket errors).
-   The pattern is intentional: all such catches either enter degraded
-   mode or silently skip the failed operation.
+The service uses a typed ``DegradedState`` state machine instead of a raw
+boolean for degraded mode.  Known MLflow/transport exceptions enter
+degraded mode; unexpected exceptions (``TypeError``, ``AttributeError``)
+propagate to the caller.  Automatic reconnection with exponential backoff
+is attempted for transient failures (``DegradedReason.UNREACHABLE``).
 """
 
 # pylint: disable=broad-exception-caught
 
 import asyncio
+import logging
+import random
+import threading
+import time
 from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
 import mlflow
 import mlflow.entities
+from mlflow.exceptions import MlflowException
 from mlflow.tracking import MlflowClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -37,6 +38,7 @@ from ...db.session import AsyncSessionLocal
 from .._shared.capability_unavailable import CapabilityUnavailable
 from .mlflow_capabilities import TrackingCapabilities, detect_capabilities
 from .mlflow_inputs import MlflowInputResolver
+from .tracking_status import DegradedReason, DegradedState, TrackingStatus
 
 try:
     from mlflow.genai.datasets import create_dataset, get_dataset
@@ -44,17 +46,39 @@ except ImportError:
     create_dataset = None
     get_dataset = None
 
+logger = logging.getLogger(__name__)
+
 _system_metrics_enabled = False
 _MlflowClientLike = Any
+
+# Known transient/operational exceptions that should enter degraded mode.
+# These cover MLflow API errors, HTTP transport failures, and stdlib
+# connection/timeout errors.  Everything else (TypeError, AttributeError,
+# ValueError from bad caller args) must propagate.
+_TRANSIENT_EXCEPTIONS = (
+    MlflowException,
+    ConnectionError,
+    TimeoutError,
+    OSError,
+)
+
+_BACKOFF_INITIAL = 1.0
+"""float: Initial backoff delay in seconds for reconnection retries."""
+_BACKOFF_MULTIPLIER = 2.0
+"""float: Multiplier applied to the backoff delay after each retry."""
+_BACKOFF_MAX = 30.0
+"""float: Maximum backoff delay in seconds."""
+_BACKOFF_JITTER = 0.25
+"""float: Fraction of the current delay used as jitter ( ±25% )."""
 
 
 class TrackingService:
     """Manages MLflow experiment tracking: runs, metrics, artifacts, and registry.
 
     Wraps ``mlflow.tracking.MlflowClient`` with async-friendly methods
-    and a ``_degraded`` mode that silently no-ops when MLflow is
-    unavailable. Supports dataset/corpus lifecycle events, model
-    registration, eval dataset management, and system metrics logging.
+    and a ``DegradedState`` state machine that gracefully degrades when
+    MLflow is unavailable and recovers automatically from transient
+    failures.  See ``tracking_status.py`` for the state machine model.
     """
 
     def __init__(
@@ -80,7 +104,7 @@ class TrackingService:
         cfg = get_config()
         self._tracking_uri = tracking_uri or cfg["mlflow_uri"]
         self._experiment_name = experiment_name
-        self._degraded = False
+        self._state: DegradedState = DegradedState.active()
 
         if client_factory is not None:
             self._client_factory: Callable[[str], _MlflowClientLike] = client_factory
@@ -89,19 +113,159 @@ class TrackingService:
 
         self._client: _MlflowClientLike | None = None
         self._experiment_id: str | None = None
+        self._lock: asyncio.Lock = asyncio.Lock()
+        self._thread_lock: threading.Lock = threading.Lock()
+
+    ########################################################################
+    # Public accessors
+    ########################################################################
+
+    @property
+    def is_degraded(self) -> bool:
+        """Whether the service is in degraded mode (MLflow unavailable)."""
+        return self._state.status == "degraded"
+
+    @property
+    def tracking_status(self) -> TrackingStatus:
+        """Return the current tracking status for the health endpoint.
+
+        Returns
+        -------
+        TrackingStatus
+            Pydantic model with ``status``, ``reason``, ``message``,
+            and ``last_attempt``.
+        """
+        return TrackingStatus(
+            status=self._state.status,
+            reason=self._state.reason,
+            message=self._state.message,
+            last_attempt=self._state.last_attempt,
+        )
+
+    ########################################################################
+    # Lazy initialisation
+    ########################################################################
+
+    def _classify_exception(self, exc: BaseException) -> tuple[DegradedReason, str]:
+        """Classify an exception into a ``DegradedReason`` and human-readable
+        message.
+
+        Parameters
+        ----------
+        exc : BaseException
+            The exception to classify.
+
+        Returns
+        -------
+        tuple[DegradedReason, str]
+            The reason and a human-readable message.
+        """
+        if isinstance(exc, (ConnectionError, TimeoutError, OSError)):
+            return DegradedReason.UNREACHABLE, (
+                f"MLflow server at {self._tracking_uri} is unreachable: {exc}"
+            )
+        if isinstance(exc, MlflowException):
+            code = getattr(exc, "error_code", None)
+            if code in ("UNAUTHENTICATED", "PERMISSION_DENIED"):
+                return DegradedReason.AUTH_FAILURE, (
+                    f"MLflow authentication failed (HTTP {code}): {exc}"
+                )
+            if code in ("BAD_REQUEST", "INVALID_PARAMETER_VALUE"):
+                return DegradedReason.INCOMPATIBLE_VERSION, (
+                    f"MLflow request rejected (HTTP {code}): {exc}"
+                )
+            return DegradedReason.PERMANENT_ERROR, (f"MLflow error: {exc}")
+        return DegradedReason.UNKNOWN, (f"Unexpected tracking error: {exc}")
+
+    def _maybe_reconnect_sync(self) -> bool:
+        """Attempt to reconnect to MLflow synchronously (runs in executor).
+
+        Applies exponential backoff with jitter.  Only retries when the
+        degraded reason is ``UNREACHABLE``.  State mutations are protected
+        by a ``threading.Lock`` since this runs in the executor thread pool.
+
+        Returns
+        -------
+        bool
+            ``True`` if reconnected successfully, ``False`` otherwise.
+        """
+        # Fast path: already active (check without lock for performance).
+        if self._state.status == "active":
+            return True
+        if not self._state.reason or not self._state.reason.should_retry:
+            return False
+
+        with self._thread_lock:
+            # Double-check after acquiring lock — another thread may
+            # have recovered while we were waiting.  mypy flags this
+            # as a non-overlapping check in the single-threaded view,
+            # but it is deliberate in the concurrent view.
+            if self._state.status == "active":  # type: ignore[comparison-overlap]
+                return True
+
+            delay = min(
+                _BACKOFF_INITIAL * (_BACKOFF_MULTIPLIER**self._state.retry_count),
+                _BACKOFF_MAX,
+            )
+            jitter = delay * random.uniform(-_BACKOFF_JITTER, _BACKOFF_JITTER)
+            time.sleep(max(0.0, delay + jitter))
+
+            try:
+                client = self._client_factory(self._tracking_uri)
+                exp = client.get_experiment_by_name(self._experiment_name)
+                if exp:
+                    self._experiment_id = exp.experiment_id
+                else:
+                    self._experiment_id = client.create_experiment(
+                        self._experiment_name
+                    )
+                self._client = client
+                self._state = DegradedState.active()
+                logger.warning(
+                    "Tracking service recovered — MLflow reconnected to %s",
+                    self._tracking_uri,
+                )
+                return True
+            except _TRANSIENT_EXCEPTIONS as exc:
+                self._state.retry_count += 1
+                self._state.last_attempt = time.time()
+                reason, msg = self._classify_exception(exc)
+                self._state.reason = reason
+                self._state.message = msg
+                logger.warning(
+                    "Tracking service still degraded (attempt %d): %s",
+                    self._state.retry_count,
+                    msg,
+                )
+                return False
 
     def _lazy_init(self) -> _MlflowClientLike:
         """Lazily initialise the MLflow client and experiment.
 
-        Creates or retrieves the configured experiment on first call.
+        If the service is degraded, attempts automatic reconnection
+        via ``_maybe_reconnect_sync`` before returning the cached
+        client.
 
         Returns
         -------
         _MlflowClientLike
             The initialised MLflow client.
+
+        Raises
+        ------
+        MlflowException
+            If MLflow raises an error during initialisation.
+        ConnectionError
+        TimeoutError
+        OSError
+            Transport-level failures that should enter degraded mode.
         """
         if self._client is not None:
-            return self._client
+            if self._state.status == "degraded":
+                self._maybe_reconnect_sync()
+            if self._client is not None:
+                return self._client
+
         client = self._client_factory(self._tracking_uri)
         exp = client.get_experiment_by_name(self._experiment_name)
         if exp:
@@ -110,17 +274,6 @@ class TrackingService:
             self._experiment_id = client.create_experiment(self._experiment_name)
         self._client = client
         return client
-
-    @property
-    def is_degraded(self) -> bool:
-        """Whether the service is in degraded mode (MLflow unavailable).
-
-        Returns
-        -------
-        bool
-            ``True`` if MLflow operations are being silently skipped.
-        """
-        return self._degraded
 
     @staticmethod
     def enable_system_metrics() -> None:
@@ -152,6 +305,10 @@ class TrackingService:
             None, lambda: detect_capabilities(self._tracking_uri)
         )
 
+    ########################################################################
+    # Run lifecycle
+    ########################################################################
+
     async def start_run(
         self,
         *,
@@ -180,13 +337,14 @@ class TrackingService:
         str
             The MLflow run ID, or empty string if degraded.
         """
-        if self._degraded:
+        if self._state.status == "degraded":
             return ""
 
         loop = asyncio.get_event_loop()
 
         try:
-            client = await loop.run_in_executor(None, self._lazy_init)
+            async with self._lock:
+                client = await loop.run_in_executor(None, self._lazy_init)
             effective_run_name = (
                 run_name or f"run-{datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')}"
             )
@@ -222,11 +380,15 @@ class TrackingService:
 
             return run_id
 
-        except ConnectionError:
-            self._degraded = True
-            return ""
-        except Exception:
-            self._degraded = True
+        except _TRANSIENT_EXCEPTIONS as exc:
+            reason, msg = self._classify_exception(exc)
+            async with self._lock:
+                self._state = DegradedState.degraded(reason, msg)
+            logger.warning(
+                "Tracking service entered degraded mode: %s — %s",
+                reason.value,
+                msg,
+            )
             return ""
 
     async def log_metric(
@@ -244,9 +406,16 @@ class TrackingService:
             Metric value.
         step : int, optional
             Metric step (batch/epoch number). Defaults to ``None``.
+
+        Raises
+        ------
+        ValueError
+            If *run_id* is empty.
         """
-        if self._degraded or not run_id:
+        if self._state.status == "degraded":
             return
+        if not run_id:
+            raise ValueError("run_id must not be empty")
         loop = asyncio.get_event_loop()
         try:
             client = self._client
@@ -254,7 +423,7 @@ class TrackingService:
                 await loop.run_in_executor(
                     None, lambda: client.log_metric(run_id, key, value, step=step)
                 )
-        except Exception:
+        except _TRANSIENT_EXCEPTIONS:
             pass
 
     async def log_final_metric(self, run_id: str, key: str, value: float) -> None:
@@ -268,9 +437,16 @@ class TrackingService:
             Metric name.
         value : float
             Metric value.
+
+        Raises
+        ------
+        ValueError
+            If *run_id* is empty.
         """
-        if self._degraded or not run_id:
+        if self._state.status == "degraded":
             return
+        if not run_id:
+            raise ValueError("run_id must not be empty")
         await self.log_metric(run_id, key, value)
 
     async def finish_run(self, run_id: str) -> None:
@@ -280,9 +456,16 @@ class TrackingService:
         ----------
         run_id : str
             The MLflow run ID.
+
+        Raises
+        ------
+        ValueError
+            If *run_id* is empty.
         """
-        if self._degraded or not run_id:
+        if self._state.status == "degraded":
             return
+        if not run_id:
+            raise ValueError("run_id must not be empty")
         loop = asyncio.get_event_loop()
         try:
             client = self._client
@@ -290,7 +473,7 @@ class TrackingService:
                 await loop.run_in_executor(
                     None, lambda: client.set_terminated(run_id, status="FINISHED")
                 )
-        except Exception:
+        except _TRANSIENT_EXCEPTIONS:
             pass
 
     async def fail_run(self, run_id: str, *, _reason: str | None = None) -> None:
@@ -302,9 +485,16 @@ class TrackingService:
             The MLflow run ID.
         reason : str, optional
             Optional failure reason. Defaults to ``None``.
+
+        Raises
+        ------
+        ValueError
+            If *run_id* is empty.
         """
-        if self._degraded or not run_id:
+        if self._state.status == "degraded":
             return
+        if not run_id:
+            raise ValueError("run_id must not be empty")
         loop = asyncio.get_event_loop()
         try:
             client = self._client
@@ -312,7 +502,7 @@ class TrackingService:
                 await loop.run_in_executor(
                     None, lambda: client.set_terminated(run_id, status="FAILED")
                 )
-        except Exception:
+        except _TRANSIENT_EXCEPTIONS:
             pass
 
     async def set_tag(self, run_id: str, key: str, value: str) -> None:
@@ -326,9 +516,16 @@ class TrackingService:
             Tag key.
         value : str
             Tag value.
+
+        Raises
+        ------
+        ValueError
+            If *run_id* is empty.
         """
-        if self._degraded or not run_id:
+        if self._state.status == "degraded":
             return
+        if not run_id:
+            raise ValueError("run_id must not be empty")
         loop = asyncio.get_event_loop()
         try:
             client = self._client
@@ -336,8 +533,12 @@ class TrackingService:
                 await loop.run_in_executor(
                     None, lambda: client.set_tag(run_id, key, value)
                 )
-        except Exception:
+        except _TRANSIENT_EXCEPTIONS:
             pass
+
+    ########################################################################
+    # Artifacts
+    ########################################################################
 
     async def log_artifacts(
         self,
@@ -374,9 +575,16 @@ class TrackingService:
             Path to a samples file.
         vocab : Any, optional
             Path to a vocabulary file (legacy parameter).
+
+        Raises
+        ------
+        ValueError
+            If *run_id* is empty.
         """
-        if self._degraded or not run_id:
+        if self._state.status == "degraded":
             return
+        if not run_id:
+            raise ValueError("run_id must not be empty")
         loop = asyncio.get_event_loop()
         try:
             client = self._client
@@ -410,8 +618,12 @@ class TrackingService:
                         None,
                         lambda: client.log_artifact(run_id, conda_path),
                     )
-        except Exception:
+        except _TRANSIENT_EXCEPTIONS:
             pass
+
+    ########################################################################
+    # Dataset / Corpus input logging
+    ########################################################################
 
     async def log_dataset_input(
         self,
@@ -438,9 +650,16 @@ class TrackingService:
         -------
         str
             Content digest of the dataset, or empty string on failure.
+
+        Raises
+        ------
+        ValueError
+            If *run_id* is empty.
         """
-        if self._degraded or not run_id:
+        if self._state.status == "degraded":
             return ""
+        if not run_id:
+            raise ValueError("run_id must not be empty")
         if session is not None:
             try:
                 resolver = MlflowInputResolver(session)
@@ -456,7 +675,7 @@ class TrackingService:
                     ),
                 )
                 return digest
-            except Exception:
+            except _TRANSIENT_EXCEPTIONS:
                 return ""
         else:
             async with AsyncSessionLocal() as sess:
@@ -474,7 +693,7 @@ class TrackingService:
                         ),
                     )
                     return digest
-                except Exception:
+                except _TRANSIENT_EXCEPTIONS:
                     return ""
 
     async def log_corpus_input(
@@ -499,9 +718,16 @@ class TrackingService:
         -------
         str
             Content digest of the corpus, or empty string on failure.
+
+        Raises
+        ------
+        ValueError
+            If *run_id* is empty.
         """
-        if self._degraded or not run_id:
+        if self._state.status == "degraded":
             return ""
+        if not run_id:
+            raise ValueError("run_id must not be empty")
         if session is not None:
             try:
                 resolver = MlflowInputResolver(session)
@@ -518,10 +744,11 @@ class TrackingService:
                 )
                 for artifact_path in artifact_paths:
                     await asyncio.get_event_loop().run_in_executor(
-                        None, lambda p=artifact_path: client.log_artifact(run_id, p)  # type: ignore[misc]
+                        None,
+                        lambda p=artifact_path: client.log_artifact(run_id, p),  # type: ignore[misc]
                     )
                 return digest
-            except Exception:
+            except _TRANSIENT_EXCEPTIONS:
                 return ""
         else:
             async with AsyncSessionLocal() as sess:
@@ -544,8 +771,12 @@ class TrackingService:
                             lambda p=artifact_path: client.log_artifact(run_id, p),  # type: ignore[misc]
                         )
                     return digest
-                except Exception:
+                except _TRANSIENT_EXCEPTIONS:
                     return ""
+
+    ########################################################################
+    # Evaluation datasets
+    ########################################################################
 
     async def create_eval_dataset(
         self,
@@ -650,6 +881,10 @@ class TrackingService:
             lambda: _get_dataset_sync(name),
         )
 
+    ########################################################################
+    # Orphan reconciliation
+    ########################################################################
+
     async def reconcile_orphans(self) -> list[str]:
         """Reconcile orphaned RUNNING MLflow runs by marking them KILLED.
 
@@ -683,9 +918,13 @@ class TrackingService:
                         ),
                     )
                     reconciled.append(run.info.run_id)
-        except Exception:
+        except _TRANSIENT_EXCEPTIONS:
             pass
         return reconciled
+
+    ########################################################################
+    # Safetensors artifact query
+    ########################################################################
 
     async def get_safetensors_artifacts(self, run_id: str) -> dict[str, Any]:
         """Query MLflow for safetensors artifact info for a given run.
@@ -694,9 +933,16 @@ class TrackingService:
           available: bool
           files: list of {path, file_size, is_safetensors, is_config, is_tokenizer}
           error: str or None
+
+        Raises
+        ------
+        ValueError
+            If *run_id* is empty.
         """
-        if self._degraded or not run_id:
+        if self._state.status == "degraded":
             return {"available": False, "files": [], "error": None}
+        if not run_id:
+            raise ValueError("run_id must not be empty")
         loop = asyncio.get_event_loop()
         try:
             await loop.run_in_executor(None, self._lazy_init)
@@ -753,13 +999,17 @@ class TrackingService:
                 "files": safetensors_files,
                 "error": None,
             }
-        except Exception as e:
+        except _TRANSIENT_EXCEPTIONS as e:
             return {"available": False, "files": [], "error": str(e)}
 
     @staticmethod
     def _sanitize_model_name(name: str) -> str:
         """MLflow model registry rejects names containing '/' or ':'."""
         return name.replace("/", "-").replace(":", "-")
+
+    ########################################################################
+    # Model registry
+    ########################################################################
 
     async def register_source_model(
         self,
@@ -793,9 +1043,16 @@ class TrackingService:
         dict
             Result dict from the MLflow registry operation, or empty
             dict if in degraded mode.
+
+        Raises
+        ------
+        ValueError
+            If *run_id* is empty.
         """
-        if self._degraded or not run_id:
+        if self._state.status == "degraded":
             return {}
+        if not run_id:
+            raise ValueError("run_id must not be empty")
         if name:
             registry_name = self._sanitize_model_name(name)
         elif dataset_id is not None:
@@ -815,7 +1072,7 @@ class TrackingService:
                 None,
                 lambda: client.create_registered_model(registry_name),
             )
-        except Exception:
+        except _TRANSIENT_EXCEPTIONS:
             pass
 
         version = await loop.run_in_executor(
@@ -833,6 +1090,10 @@ class TrackingService:
             "source": f"runs:/{run_id}/{artifact_path}",
         }
 
+    ########################################################################
+    # Lifecycle events
+    ########################################################################
+
     async def log_dataset_lifecycle_event(
         self,
         *,
@@ -849,14 +1110,21 @@ class TrackingService:
 
         Returns: MLflow run_id or "" if degraded
         """
-        if self._degraded:
+        if self._state.status == "degraded":
             return ""
 
         loop = asyncio.get_event_loop()
         try:
             await loop.run_in_executor(None, self._lazy_init)
-        except Exception:
-            self._degraded = True
+        except _TRANSIENT_EXCEPTIONS as exc:
+            reason, msg = self._classify_exception(exc)
+            async with self._lock:
+                self._state = DegradedState.degraded(reason, msg)
+            logger.warning(
+                "Tracking service entered degraded mode: %s — %s",
+                reason.value,
+                msg,
+            )
             return ""
 
         run_id = await self.start_run(
@@ -868,7 +1136,6 @@ class TrackingService:
         if not run_id:
             return ""
 
-        # Set tags for identification
         await self.set_tag(run_id, "anvil.entity_type", "dataset")
         await self.set_tag(run_id, "anvil.entity_id", str(dataset_id))
         await self.set_tag(run_id, "anvil.event", f"dataset-{event_type}")
@@ -894,14 +1161,21 @@ class TrackingService:
 
         Returns: MLflow run_id or "" if degraded
         """
-        if self._degraded:
+        if self._state.status == "degraded":
             return ""
 
         loop = asyncio.get_event_loop()
         try:
             await loop.run_in_executor(None, self._lazy_init)
-        except Exception:
-            self._degraded = True
+        except _TRANSIENT_EXCEPTIONS as exc:
+            reason, msg = self._classify_exception(exc)
+            async with self._lock:
+                self._state = DegradedState.degraded(reason, msg)
+            logger.warning(
+                "Tracking service entered degraded mode: %s — %s",
+                reason.value,
+                msg,
+            )
             return ""
 
         run_id = await self.start_run(
@@ -924,6 +1198,10 @@ class TrackingService:
         await self.finish_run(run_id)
         return run_id
 
+    ########################################################################
+    # Query methods
+    ########################################################################
+
     async def list_experiments(
         self,
         max_results: int = 100,
@@ -931,15 +1209,20 @@ class TrackingService:
         """Query all MLflow runs for the 'anvil' experiment.
 
         Returns list of dicts with keys matching the current GET /v1/experiments response shape.
+
+        Raises
+        ------
+        ValueError
+            If *run_id* is empty.
         """
-        if self._degraded:
+        if self._state.status == "degraded":
             return []
         loop = asyncio.get_event_loop()
         try:
             client = await loop.run_in_executor(None, self._lazy_init)
             if client is None or not self._experiment_id:
                 return []
-        except Exception:
+        except _TRANSIENT_EXCEPTIONS:
             return []
 
         try:
@@ -951,7 +1234,7 @@ class TrackingService:
                     max_results=max_results,
                 ),
             )
-        except Exception:
+        except _TRANSIENT_EXCEPTIONS:
             return []
 
         result = []
@@ -974,7 +1257,6 @@ class TrackingService:
             except (ValueError, TypeError):
                 exp_id = None
 
-            # Normalize MLflow status to lowercase for frontend consistency
             raw_status = (run.info.status or "RUNNING").lower()
             result.append(
                 {
@@ -994,7 +1276,7 @@ class TrackingService:
                         str(run.info.start_time) if run.info.start_time else ""
                     ),
                     "config_id": None,
-                    "artifact_available": False,  # Caller can set this after checking
+                    "artifact_available": False,
                 }
             )
         return result
@@ -1008,14 +1290,14 @@ class TrackingService:
         Returns the same dict shape as list_experiments, plus extra detail fields,
         or None if not found.
         """
-        if self._degraded:
+        if self._state.status == "degraded":
             return None
         loop = asyncio.get_event_loop()
         try:
             client = await loop.run_in_executor(None, self._lazy_init)
             if client is None or not self._experiment_id:
                 return None
-        except Exception:
+        except _TRANSIENT_EXCEPTIONS:
             return None
 
         try:
@@ -1027,7 +1309,7 @@ class TrackingService:
                     max_results=1,
                 ),
             )
-        except Exception:
+        except _TRANSIENT_EXCEPTIONS:
             return None
 
         if not runs:
@@ -1072,14 +1354,14 @@ class TrackingService:
           created_at: MLflow model creation timestamp (string or None)
           total_versions: total number of versions (int or 0)
         """
-        if self._degraded:
+        if self._state.status == "degraded":
             return []
         loop = asyncio.get_event_loop()
         try:
             client = await loop.run_in_executor(None, self._lazy_init)
             if client is None:
                 return []
-        except Exception:
+        except _TRANSIENT_EXCEPTIONS:
             return []
 
         try:
@@ -1092,7 +1374,7 @@ class TrackingService:
                     filter_string=filter_string,
                 ),
             )
-        except Exception:
+        except _TRANSIENT_EXCEPTIONS:
             return []
 
         result = []
@@ -1109,12 +1391,12 @@ class TrackingService:
                 )
                 latest = sorted_versions[0]
 
-                # Get run data for final_loss and experiment_id tag
                 final_loss = None
                 experiment_id = None
                 try:
                     run = await loop.run_in_executor(
-                        None, lambda rid=latest.run_id: client.get_run(rid)  # type: ignore[misc]
+                        None,
+                        lambda rid=latest.run_id: client.get_run(rid),  # type: ignore[misc]
                     )
                     if run and run.data:
                         if run.data.metrics:
@@ -1122,10 +1404,9 @@ class TrackingService:
                         raw = run.data.tags.get("anvil.experiment_id")
                         if raw is not None:
                             experiment_id = int(raw)
-                except Exception:
+                except _TRANSIENT_EXCEPTIONS:
                     pass
 
-                # Count total versions
                 all_versions = await loop.run_in_executor(
                     None,
                     lambda name=rm.name: client.search_model_versions(f"name='{name}'"),  # type: ignore[misc]
@@ -1153,52 +1434,21 @@ class TrackingService:
                         "total_versions": total_versions,
                     }
                 )
-            except Exception:
+            except _TRANSIENT_EXCEPTIONS:
                 continue
 
         return result
 
 
 def _create_dataset_sync(name: str, tags: dict[str, Any] | None) -> Any:
-    """Synchronously create an MLflow managed evaluation dataset.
-
-    Parameters
-    ----------
-    name : str
-        Dataset name.
-    tags : dict or None
-        Optional tags.
-
-    Returns
-    -------
-    Any
-        The created MLflow dataset object.
-    """
+    """Synchronously create an MLflow managed evaluation dataset."""
     if create_dataset is None:
         raise ImportError("mlflow.genai.datasets is not available")
     return create_dataset(name=name, tags=tags or {})
 
 
 def _append_records_sync(name: str, records: list[dict[str, Any]]) -> int:
-    """Synchronously append evaluation records to an MLflow dataset.
-
-    Parameters
-    ----------
-    name : str
-        Dataset name.
-    records : list[dict]
-        Records to append.
-
-    Returns
-    -------
-    int
-        Number of records appended.
-
-    Raises
-    ------
-    ValueError
-        If the dataset is not found.
-    """
+    """Synchronously append evaluation records to an MLflow dataset."""
     if get_dataset is None:
         raise ImportError("mlflow.genai.datasets is not available")
     ds = get_dataset(name=name)
@@ -1209,21 +1459,10 @@ def _append_records_sync(name: str, records: list[dict[str, Any]]) -> int:
 
 
 def _get_dataset_sync(name: str) -> Any | None:
-    """Synchronously retrieve an MLflow managed evaluation dataset by name.
-
-    Parameters
-    ----------
-    name : str
-        Dataset name.
-
-    Returns
-    -------
-    Any or None
-        The MLflow dataset object, or ``None`` if not found.
-    """
+    """Synchronously retrieve an MLflow managed evaluation dataset by name."""
     if get_dataset is None:
         return None
     try:
         return get_dataset(name=name)
-    except Exception:
+    except _TRANSIENT_EXCEPTIONS:
         return None

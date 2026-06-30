@@ -100,6 +100,17 @@ window.ANVIL_VERSION = '{{ version }}';
     <span class="ambient-p" style="--x: 92%; --d: 6.5s; --s: 10s"></span>
   </div>
   <main class="app-main">
+    {% block degraded_banner %}
+    <div id="degraded-banner" class="section-card section-card--banner" style="display:none;margin-bottom:var(--space-3);">
+      <div class="section-card__content" style="display:flex;align-items:center;gap:var(--space-3);">
+        <span style="font-size:1.2rem;flex-shrink:0;color:var(--accent-warn);">&#9888;</span>
+        <div style="flex:1;">
+          <div style="font-family:var(--font-body);font-weight:600;font-size:var(--text-footnote);color:var(--accent-warn);">MLflow Unavailable</div>
+          <div id="degraded-banner-msg" style="font-size:var(--text-caption-2);color:var(--text-tertiary);margin-top:2px;">Experiment tracking is disabled. All other features work normally.</div>
+        </div>
+      </div>
+    </div>
+    {% endblock %}
     {% block didyouknow_banner %}{% endblock %}
     {% block content %}{% endblock %}
   </main>
@@ -160,6 +171,18 @@ window.apiFetch = function(url, opts) {
   }
   return fetch(url, opts);
 };
+
+/* Degraded tracking mode banner — checks health endpoint and toggles banner visibility */
+(function() {
+  fetch('/v1/health/detailed').then(function(r) { return r.json(); }).then(function(data) {
+    var banner = document.getElementById('degraded-banner');
+    var msg = document.getElementById('degraded-banner-msg');
+    if (banner && data.tracking && data.tracking.status === 'degraded') {
+      if (msg && data.tracking.message) msg.textContent = data.tracking.message;
+      banner.style.display = '';
+    }
+  }).catch(function() {});
+})();
 </script>
 <div id="modals-container">{% block modals %}{% endblock %}</div>
 {% block scripts %}{% endblock %}
