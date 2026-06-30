@@ -15,7 +15,7 @@ from __future__ import annotations
 import logging
 import struct
 
-from anvil.services._shared.import_types import ModelSourceError
+from .._shared.import_types import ModelSourceError
 
 logger = logging.getLogger(__name__)
 
