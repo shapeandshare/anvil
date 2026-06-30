@@ -1,6 +1,6 @@
 """Add model_assets, asset_download_jobs, user_secrets tables.
 
-Revision ID: 05e6dc15c1c0
+Revision ID: 006
 Revises: 005
 Create Date: 2026-06-28
 """
@@ -10,7 +10,7 @@ from __future__ import annotations
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "05e6dc15c1c0"
+revision: str = "006"
 down_revision: str | None = "005"
 branch_labels: str | None = None
 depends_on: str | None = None

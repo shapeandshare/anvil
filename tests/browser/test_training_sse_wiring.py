@@ -66,7 +66,9 @@ class TestTrainingSseWiring:
         assert tabs.nth(1).text_content() == "Configure"
         assert tabs.nth(2).text_content() == "Forge"
 
-        banner = page.locator(".section-card--banner")
+        banner = page.locator(".section-card--banner").filter(
+            has_text="How Training Works"
+        )
         banner.wait_for(state="visible", timeout=5000)
         assert "How Training Works" in (banner.text_content() or "")
         assert banner.locator('a[href*="training-loop"]').is_visible()

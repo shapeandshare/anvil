@@ -14,11 +14,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from anvil.services.tracking.tracking_status import (
-    DegradedReason,
-    DegradedState,
-    TrackingStatus,
-)
+from anvil.services.tracking.degraded_reason import DegradedReason
+from anvil.services.tracking.degraded_state import DegradedState
+from anvil.services.tracking.tracking_status import TrackingStatus
 
 ############################################################################
 # Fixtures
