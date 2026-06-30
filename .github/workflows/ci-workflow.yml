@@ -158,10 +158,11 @@ jobs:
       - name: Run tests with coverage (prerequisite for SonarCloud)
         run: make test
       - name: Run SonarCloud scan
-        uses: SonarSource/sonarcloud-github-action@ba3875ecf642b2129de2b589510c81a8b53dbf4e  # master
+        uses: SonarSource/sonarqube-scan-action@v8.2.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_SCANNER_OPTS: "-Dsonar.scanner.skipJreProvisioning=true"
 
   # ── Vault audit gate ──
   vault-audit:
