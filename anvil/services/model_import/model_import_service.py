@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from collections.abc import Sequence
 from datetime import UTC, datetime
 
@@ -21,6 +22,14 @@ from .._shared.model_import_job_status import ModelImportJobStatus
 from .._shared.runnable_status import RunnableStatus
 from .._shared.source_type import SourceType
 from .model_source import ModelSource
+from .user_secret_service import UserSecretService
+
+_HF_TOKEN_KEY = "hf_token"
+"""UserSecret key for the HuggingFace Hub token."""
+_HF_TOKEN_ENV = "HF_TOKEN"
+"""Environment-variable fallback for the HF token."""
+_DEFAULT_USER = "default"
+"""Single local-mode user ID for token resolution."""
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +54,10 @@ class ModelImportService:
         Repository for ``ModelImportJob`` CRUD.
     sources : dict[SourceType, ModelSource]
         Registered source resolvers keyed by ``SourceType``.
+    user_secret_service : UserSecretService | None
+        Optional service for resolving HF tokens from the encrypted
+        UserSecret store.  When ``None`` (CLI path), falls back to
+        the ``HF_TOKEN`` environment variable.
     """
 
     def __init__(
@@ -52,10 +65,12 @@ class ModelImportService:
         external_model_repo: external_models_repo.ExternalModelRepository,
         model_import_job_repo: model_import_jobs_repo.ModelImportJobRepository,
         sources: dict[SourceType, ModelSource],
+        user_secret_service: UserSecretService | None = None,
     ) -> None:
         self._external_model_repo = external_model_repo
         self._model_import_job_repo = model_import_job_repo
         self._sources = sources
+        self._user_secrets = user_secret_service
 
     async def submit_import(
         self,
@@ -140,9 +155,11 @@ class ModelImportService:
                 error_message=f"Unknown source type: {job.source_type}",
             )
 
+        token = await self._resolve_token()
+
         try:
             metadata = await source.resolve_metadata(
-                job.source_identifier, revision=job.revision
+                job.source_identifier, revision=job.revision, token=token
             )
         except ModelSourceError as exc:
             return await self._fail_job(
@@ -220,6 +237,18 @@ class ModelImportService:
         )
         assert job is not None
         return job
+
+    async def _resolve_token(self) -> str | None:
+        """Resolve the HF token via UserSecret > HF_TOKEN env var.
+
+        Matches the precedence in ``ModelAssetService._resolve_token``
+        (FR-010d): encrypted DB secret first, then environment variable.
+        """
+        if self._user_secrets is not None:
+            return await self._user_secrets.resolve_token(
+                _DEFAULT_USER, _HF_TOKEN_KEY, _HF_TOKEN_ENV
+            )
+        return os.environ.get(_HF_TOKEN_ENV)
 
     async def get_job_status(self, job_id: int) -> ModelImportJob | None:
         """Return the current state of an import job.

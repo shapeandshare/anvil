@@ -14,6 +14,7 @@ is not available.
 from __future__ import annotations
 
 import asyncio
+import os
 from typing import Any
 
 from fastapi import APIRouter, Query
@@ -50,7 +51,7 @@ async def search_hf_models(
     try:
         from ...services.inference_hub.hub_client import HubClient  # finetune extra
 
-        client = HubClient()
+        client = HubClient(token=os.environ.get("HF_TOKEN"))
     except ImportError:
         return JSONResponse(
             status_code=503,
