@@ -19,7 +19,7 @@ from aiofiles import open as async_open  # type: ignore[import-untyped]
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...db.models.content_entry import ContentEntry
+from ...db.models.content_corpus import ContentEntry
 from .staged_entry import StagedEntry
 from .validation_report import ValidationProblem, ValidationReport
 
