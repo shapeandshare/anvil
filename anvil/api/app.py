@@ -186,7 +186,7 @@ async def _seed_license_catalog() -> None:
                     "Seeded %d licenses into the approved-license catalog", count
                 )
             await session.commit()
-    except (ValueError, RuntimeError):
+    except Exception:
         logger.warning("License seeding failed during startup", exc_info=True)
 
 
