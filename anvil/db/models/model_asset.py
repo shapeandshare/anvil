@@ -1,3 +1,4 @@
+# one-class:allow — enums StrEnum and ModelAsset are tightly coupled
 # Copyright © 2026 Josh Burt
 #
 # This source code is licensed under the MIT license found in the
