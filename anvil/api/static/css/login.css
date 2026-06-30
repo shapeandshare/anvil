@@ -69,27 +69,6 @@
   color: var(--text, #ffffff);
 }
 
-.login-card__input {
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md, 10px);
-  padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
-  color: var(--text);
-  font-size: var(--font-size-base, 1rem);
-  font-family: var(--font-mono, "SF Mono", "JetBrains Mono", monospace);
-  transition: border-color 0.15s ease;
-  outline: none;
-}
-
-.login-card__input:focus {
-  border-color: var(--accent, #ff9f0a);
-  box-shadow: 0 0 0 2px rgba(255, 159, 10, 0.2);
-}
-
-.login-card__input::placeholder {
-  color: var(--text-tertiary);
-}
-
 .login-card__error {
   font-size: var(--font-size-sm, 0.875rem);
   color: var(--danger, #ff453a);
