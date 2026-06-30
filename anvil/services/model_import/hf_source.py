@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import tempfile
 from typing import TYPE_CHECKING
 
 from .._shared.import_types import ModelMetadata, ModelSourceError
@@ -327,8 +328,6 @@ async def _do_download(
             message=_MISSING_EXTRA_MSG,
             source="huggingface",
         ) from None
-
-    import tempfile
 
     def _download() -> str:
         local_dir = tempfile.mkdtemp(prefix="anvil_hf_")
