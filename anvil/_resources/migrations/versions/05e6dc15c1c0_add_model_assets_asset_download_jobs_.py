@@ -15,9 +15,6 @@ down_revision: str | None = "005"
 branch_labels: str | None = None
 depends_on: str | None = None
 
-_CURRENT_TS = sa.text("(CURRENT_TIMESTAMP)")
-"""Reusable default for server_default timestamps."""
-
 
 def upgrade() -> None:
     """Add three new tables for model asset storage (spec 042)."""
@@ -30,13 +27,13 @@ def upgrade() -> None:
         sa.Column(
             "created_at",
             sa.DateTime(),
-            server_default=_CURRENT_TS,
+            server_default=sa.text("(CURRENT_TIMESTAMP)"),
             nullable=False,
         ),
         sa.Column(
             "updated_at",
             sa.DateTime(),
-            server_default=_CURRENT_TS,
+            server_default=sa.text("(CURRENT_TIMESTAMP)"),
             nullable=False,
         ),
         sa.PrimaryKeyConstraint("id"),
@@ -54,13 +51,13 @@ def upgrade() -> None:
         sa.Column(
             "created_at",
             sa.DateTime(),
-            server_default=_CURRENT_TS,
+            server_default=sa.text("(CURRENT_TIMESTAMP)"),
             nullable=False,
         ),
         sa.Column(
             "updated_at",
             sa.DateTime(),
-            server_default=_CURRENT_TS,
+            server_default=sa.text("(CURRENT_TIMESTAMP)"),
             nullable=False,
         ),
         sa.ForeignKeyConstraint(
@@ -84,13 +81,13 @@ def upgrade() -> None:
         sa.Column(
             "created_at",
             sa.DateTime(),
-            server_default=_CURRENT_TS,
+            server_default=sa.text("(CURRENT_TIMESTAMP)"),
             nullable=False,
         ),
         sa.Column(
             "updated_at",
             sa.DateTime(),
-            server_default=_CURRENT_TS,
+            server_default=sa.text("(CURRENT_TIMESTAMP)"),
             nullable=False,
         ),
         sa.ForeignKeyConstraint(
