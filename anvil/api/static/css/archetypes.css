@@ -22,8 +22,7 @@
 .param-block { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-2) var(--space-3); background: var(--surface-2); border-radius: var(--radius); border-left: 3px solid var(--accent); }
 .param-label-row { display: flex; align-items: center; gap: var(--space-1); }
 .param-label { font-family: var(--font-body); font-size: var(--text-footnote); font-weight: 600; color: var(--text); }
-.param-block input { width: 100%; padding: var(--space-2) var(--space-3); background: var(--surface); border: none; border-radius: var(--radius-sm); color: var(--text); font-family: var(--font-mono); font-size: var(--text-mono); box-sizing: border-box; outline: none; /* ux-lint:allow param-block input :focus styled via box-shadow transition */ transition: box-shadow var(--dur-fast) var(--ease); }
-.param-block input:focus { box-shadow: 0 0 0 2px var(--accent); }
+.param-block input { width: 100%; box-sizing: border-box; }
 .param-desc { margin: 0; font-family: var(--font-body); font-size: var(--text-caption-1); line-height: 1.5; color: var(--text-tertiary); }
 .param-desc code { background: var(--surface); padding: 0 4px; border-radius: var(--radius-sm); font-size: var(--text-caption-1); }
 

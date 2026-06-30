@@ -21,6 +21,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from anvil.config import get_config
+from anvil.services.tracking.degraded_reason import DegradedReason
+from anvil.services.tracking.degraded_state import DegradedState
 
 ########################################################################
 # Fake MLflow data classes
@@ -394,7 +396,7 @@ class TestStartRun:
     @pytest.mark.asyncio
     async def test_degraded_returns_empty(self, svc: Any) -> None:
         """Returns empty string when in degraded mode."""
-        svc._degraded = True
+        svc._state = DegradedState.degraded(DegradedReason.UNREACHABLE, "")
         run_id = await svc.start_run(
             run_name="degraded",
             params={},
@@ -423,8 +425,8 @@ class TestStartRun:
         assert svc.is_degraded is True
 
     @pytest.mark.asyncio
-    async def test_generic_exception_enters_degraded(self) -> None:
-        """Enters degraded mode on generic Exception."""
+    async def test_generic_exception_propagates(self) -> None:
+        """Propagates unexpected exceptions instead of entering degraded mode."""
         from anvil.services.tracking.tracking import TrackingService
 
         def broken_factory(tracking_uri: str) -> FakeMlflowClient:
@@ -435,11 +437,10 @@ class TestStartRun:
         svc = TrackingService(
             tracking_uri="http://broken:5000", client_factory=broken_factory
         )
-        run_id = await svc.start_run(
-            run_name="fail", params={}, engine_backend="stdlib", device="cpu"
-        )
-        assert run_id == ""
-        assert svc.is_degraded is True
+        with pytest.raises(RuntimeError, match="Something went wrong"):
+            await svc.start_run(
+                run_name="fail", params={}, engine_backend="stdlib", device="cpu"
+            )
 
 
 ########################################################################
@@ -467,15 +468,16 @@ class TestFinishRun:
     @pytest.mark.asyncio
     async def test_degraded_noop(self, svc: Any) -> None:
         """No-ops when in degraded mode."""
-        svc._degraded = True
+        svc._state = DegradedState.degraded(DegradedReason.UNREACHABLE, "")
         await svc.finish_run("run_1")
         client = svc._client
         assert client is None or len(client.set_terminated_calls) == 0
 
     @pytest.mark.asyncio
-    async def test_empty_run_id_noop(self, svc: Any) -> None:
-        """No-ops when run_id is empty."""
-        await svc.finish_run("")
+    async def test_empty_run_id_raises_value_error(self, svc: Any) -> None:
+        """Raises ValueError when run_id is empty."""
+        with pytest.raises(ValueError, match="run_id must not be empty"):
+            await svc.finish_run("")
 
     @pytest.mark.asyncio
     async def test_exception_caught(self, svc: Any) -> None:
@@ -515,13 +517,14 @@ class TestFailRun:
     @pytest.mark.asyncio
     async def test_degraded_noop(self, svc: Any) -> None:
         """No-ops when in degraded mode."""
-        svc._degraded = True
+        svc._state = DegradedState.degraded(DegradedReason.UNREACHABLE, "")
         await svc.fail_run("run_1")
 
     @pytest.mark.asyncio
-    async def test_empty_run_id_noop(self, svc: Any) -> None:
-        """No-ops when run_id is empty."""
-        await svc.fail_run("")
+    async def test_empty_run_id_raises_value_error(self, svc: Any) -> None:
+        """Raises ValueError when run_id is empty."""
+        with pytest.raises(ValueError, match="run_id must not be empty"):
+            await svc.fail_run("")
 
     @pytest.mark.asyncio
     async def test_exception_caught(self, svc: Any) -> None:
@@ -574,15 +577,16 @@ class TestLogMetric:
     @pytest.mark.asyncio
     async def test_degraded_noop(self, svc: Any) -> None:
         """No-ops when in degraded mode."""
-        svc._degraded = True
+        svc._state = DegradedState.degraded(DegradedReason.UNREACHABLE, "")
         await svc.log_metric("run_1", "loss", 0.5)
         client = svc._client
         assert client is None or len(client.logged_metrics) == 0
 
     @pytest.mark.asyncio
-    async def test_empty_run_id_noop(self, svc: Any) -> None:
-        """No-ops when run_id is empty."""
-        await svc.log_metric("", "loss", 0.5)
+    async def test_empty_run_id_raises_value_error(self, svc: Any) -> None:
+        """Raises ValueError when run_id is empty."""
+        with pytest.raises(ValueError, match="run_id must not be empty"):
+            await svc.log_metric("", "loss", 0.5)
 
     @pytest.mark.asyncio
     async def test_exception_caught(self, svc: Any) -> None:
@@ -611,13 +615,14 @@ class TestLogFinalMetric:
     @pytest.mark.asyncio
     async def test_degraded_noop(self, svc: Any) -> None:
         """No-ops when in degraded mode."""
-        svc._degraded = True
+        svc._state = DegradedState.degraded(DegradedReason.UNREACHABLE, "")
         await svc.log_final_metric("run_1", "final_loss", 0.3)
 
     @pytest.mark.asyncio
-    async def test_empty_run_id_noop(self, svc: Any) -> None:
-        """No-ops when run_id is empty."""
-        await svc.log_final_metric("", "final_loss", 0.3)
+    async def test_empty_run_id_raises_value_error(self, svc: Any) -> None:
+        """Raises ValueError when run_id is empty."""
+        with pytest.raises(ValueError, match="run_id must not be empty"):
+            await svc.log_final_metric("", "final_loss", 0.3)
 
 
 class TestSetTag:
@@ -640,13 +645,14 @@ class TestSetTag:
     @pytest.mark.asyncio
     async def test_degraded_noop(self, svc: Any) -> None:
         """No-ops when in degraded mode."""
-        svc._degraded = True
+        svc._state = DegradedState.degraded(DegradedReason.UNREACHABLE, "")
         await svc.set_tag("run_1", "anvil.foo", "bar")
 
     @pytest.mark.asyncio
-    async def test_empty_run_id_noop(self, svc: Any) -> None:
-        """No-ops when run_id is empty."""
-        await svc.set_tag("", "anvil.foo", "bar")
+    async def test_empty_run_id_raises_value_error(self, svc: Any) -> None:
+        """Raises ValueError when run_id is empty."""
+        with pytest.raises(ValueError, match="run_id must not be empty"):
+            await svc.set_tag("", "anvil.foo", "bar")
 
     @pytest.mark.asyncio
     async def test_exception_caught(self, svc: Any) -> None:
@@ -720,13 +726,14 @@ class TestLogArtifacts:
     @pytest.mark.asyncio
     async def test_degraded_noop(self, svc: Any) -> None:
         """No-ops when in degraded mode."""
-        svc._degraded = True
+        svc._state = DegradedState.degraded(DegradedReason.UNREACHABLE, "")
         await svc.log_artifacts("run_1", model_path="/fake/model.json")
 
     @pytest.mark.asyncio
-    async def test_empty_run_id_noop(self, svc: Any) -> None:
-        """No-ops when run_id is empty."""
-        await svc.log_artifacts("", model_path="/fake/model.json")
+    async def test_empty_run_id_raises_value_error(self, svc: Any) -> None:
+        """Raises ValueError when run_id is empty."""
+        with pytest.raises(ValueError, match="run_id must not be empty"):
+            await svc.log_artifacts("", model_path="/fake/model.json")
 
     @pytest.mark.asyncio
     async def test_exception_caught(self, svc: Any) -> None:
@@ -790,15 +797,15 @@ class TestLogDatasetInput:
     @pytest.mark.asyncio
     async def test_degraded_returns_empty_string(self, svc: Any) -> None:
         """Returns empty string when degraded."""
-        svc._degraded = True
+        svc._state = DegradedState.degraded(DegradedReason.UNREACHABLE, "")
         digest = await svc.log_dataset_input("run_1", dataset_id=1)
         assert digest == ""
 
     @pytest.mark.asyncio
-    async def test_no_run_id_returns_empty_string(self, svc: Any) -> None:
-        """Returns empty string when run_id is empty."""
-        digest = await svc.log_dataset_input("", dataset_id=1)
-        assert digest == ""
+    async def test_no_run_id_raises_value_error(self, svc: Any) -> None:
+        """Raises ValueError when run_id is empty."""
+        with pytest.raises(ValueError, match="run_id must not be empty"):
+            await svc.log_dataset_input("", dataset_id=1)
 
     @pytest.mark.asyncio
     async def test_resolver_failure_returns_empty_string(self, svc: Any) -> None:
@@ -813,7 +820,9 @@ class TestLogDatasetInput:
             mock_session = AsyncMock()
             mock_resolver = AsyncMock()
             resolver_cls.return_value = mock_resolver
-            mock_resolver.resolve_dataset.side_effect = ValueError("boom")
+            mock_resolver.resolve_dataset.side_effect = ConnectionError(
+                "tracking unavailable"
+            )
 
             digest = await svc.log_dataset_input(
                 run_id, dataset_id=1, session=mock_session
@@ -883,15 +892,15 @@ class TestLogCorpusInput:
     @pytest.mark.asyncio
     async def test_degraded_returns_empty_string(self, svc: Any) -> None:
         """Returns empty string when degraded."""
-        svc._degraded = True
+        svc._state = DegradedState.degraded(DegradedReason.UNREACHABLE, "")
         digest = await svc.log_corpus_input("run_1", corpus_id=1)
         assert digest == ""
 
     @pytest.mark.asyncio
-    async def test_no_run_id_returns_empty_string(self, svc: Any) -> None:
-        """Returns empty string when run_id is empty."""
-        digest = await svc.log_corpus_input("", corpus_id=1)
-        assert digest == ""
+    async def test_no_run_id_raises_value_error(self, svc: Any) -> None:
+        """Raises ValueError when run_id is empty."""
+        with pytest.raises(ValueError, match="run_id must not be empty"):
+            await svc.log_corpus_input("", corpus_id=1)
 
     @pytest.mark.asyncio
     async def test_resolver_failure_returns_empty_string(self, svc: Any) -> None:
@@ -906,7 +915,9 @@ class TestLogCorpusInput:
             mock_session = AsyncMock()
             mock_resolver = AsyncMock()
             resolver_cls.return_value = mock_resolver
-            mock_resolver.resolve_corpus.side_effect = ValueError("boom")
+            mock_resolver.resolve_corpus.side_effect = ConnectionError(
+                "tracking unavailable"
+            )
 
             digest = await svc.log_corpus_input(
                 run_id, corpus_id=1, session=mock_session
@@ -1102,7 +1113,7 @@ class TestSystemMetrics:
         tracking_mod._system_metrics_enabled = False
         with patch(
             "anvil.services.tracking.tracking.mlflow.enable_system_metrics_logging",
-            side_effect=RuntimeError("not available"),
+            side_effect=ConnectionError("not available"),
         ):
             from anvil.services.tracking.tracking import TrackingService
 
@@ -1151,7 +1162,7 @@ class TestListExperiments:
     @pytest.mark.asyncio
     async def test_degraded_returns_empty_list(self, svc: Any) -> None:
         """Returns empty list when degraded."""
-        svc._degraded = True
+        svc._state = DegradedState.degraded(DegradedReason.UNREACHABLE, "")
         result = await svc.list_experiments()
         assert result == []
 
@@ -1166,7 +1177,7 @@ class TestListExperiments:
         """Returns empty list when lazy_init raises."""
         svc._experiment_id = None
         svc._client = None
-        with patch.object(svc, "_lazy_init", side_effect=RuntimeError("boom")):
+        with patch.object(svc, "_lazy_init", side_effect=ConnectionError("boom")):
             result = await svc.list_experiments()
             assert result == []
 
@@ -1262,7 +1273,7 @@ class TestListExperiments:
         assert client is not None
 
         def failing_search(*args: Any, **kwargs: Any) -> list[Any]:
-            raise RuntimeError("search failed")
+            raise ConnectionError("search failed")
 
         client.search_runs = failing_search  # type: ignore[assignment]
 
@@ -1299,7 +1310,7 @@ class TestGetExperiment:
     @pytest.mark.asyncio
     async def test_degraded_returns_none(self, svc: Any) -> None:
         """Returns None when degraded."""
-        svc._degraded = True
+        svc._state = DegradedState.degraded(DegradedReason.UNREACHABLE, "")
         result = await svc.get_experiment(1)
         assert result is None
 
@@ -1318,7 +1329,7 @@ class TestGetExperiment:
         """Returns None when lazy_init fails."""
         svc._client = None
         svc._experiment_id = None
-        with patch.object(svc, "_lazy_init", side_effect=RuntimeError("boom")):
+        with patch.object(svc, "_lazy_init", side_effect=ConnectionError("boom")):
             result = await svc.get_experiment(1)
             assert result is None
 
@@ -1330,7 +1341,7 @@ class TestGetExperiment:
         assert client is not None
 
         def failing_search(*args: Any, **kwargs: Any) -> list[Any]:
-            raise RuntimeError("search failed")
+            raise ConnectionError("search failed")
 
         client.search_runs = failing_search  # type: ignore[assignment]
 
@@ -1505,22 +1516,22 @@ class TestGetSafetensorsArtifacts:
     @pytest.mark.asyncio
     async def test_degraded_returns_empty(self, svc: Any) -> None:
         """Returns empty dict when in degraded mode."""
-        svc._degraded = True
+        svc._state = DegradedState.degraded(DegradedReason.UNREACHABLE, "")
         result = await svc.get_safetensors_artifacts("run_1")
         assert result == {"available": False, "files": [], "error": None}
 
     @pytest.mark.asyncio
-    async def test_empty_run_id_returns_empty(self, svc: Any) -> None:
-        """Returns empty dict when run_id is empty."""
-        result = await svc.get_safetensors_artifacts("")
-        assert result == {"available": False, "files": [], "error": None}
+    async def test_empty_run_id_raises_value_error(self, svc: Any) -> None:
+        """Raises ValueError when run_id is empty."""
+        with pytest.raises(ValueError, match="run_id must not be empty"):
+            await svc.get_safetensors_artifacts("")
 
     @pytest.mark.asyncio
     async def test_client_not_initialized(self, svc: Any) -> None:
         """Returns error when lazy_init fails."""
         svc._client = None
         with patch.object(
-            svc, "_lazy_init", side_effect=RuntimeError("client not initialized")
+            svc, "_lazy_init", side_effect=ConnectionError("client not initialized")
         ):
             result = await svc.get_safetensors_artifacts("run_1")
         assert result["available"] is False
@@ -1560,7 +1571,7 @@ class TestGetSafetensorsArtifacts:
     async def test_exception_returns_error(self, svc: Any) -> None:
         """Returns error dict on exception."""
         svc._client = MagicMock()
-        svc._client.list_artifacts.side_effect = RuntimeError("boom")
+        svc._client.list_artifacts.side_effect = ConnectionError("boom")
         result = await svc.get_safetensors_artifacts("run_1")
         assert result["available"] is False
         assert "boom" in (result["error"] or "")
@@ -1577,15 +1588,15 @@ class TestRegisterSourceModel:
     @pytest.mark.asyncio
     async def test_degraded_returns_empty_dict(self, svc: Any) -> None:
         """Returns empty dict when degraded."""
-        svc._degraded = True
+        svc._state = DegradedState.degraded(DegradedReason.UNREACHABLE, "")
         result = await svc.register_source_model(run_id="run_1")
         assert result == {}
 
     @pytest.mark.asyncio
-    async def test_empty_run_id_returns_empty_dict(self, svc: Any) -> None:
-        """Returns empty dict when run_id is empty."""
-        result = await svc.register_source_model(run_id="")
-        assert result == {}
+    async def test_empty_run_id_raises_value_error(self, svc: Any) -> None:
+        """Raises ValueError when run_id is empty."""
+        with pytest.raises(ValueError, match="run_id must not be empty"):
+            await svc.register_source_model(run_id="")
 
     @pytest.mark.asyncio
     async def test_no_client_returns_empty_dict(self, svc: Any) -> None:
@@ -1672,7 +1683,7 @@ class TestLogDatasetLifecycleEvent:
         svc = TrackingService(
             tracking_uri="http://127.0.0.1:5000", client_factory=fake_client_factory
         )
-        svc._degraded = True
+        svc._state = DegradedState.degraded(DegradedReason.UNREACHABLE, "")
         run_id = await svc.log_dataset_lifecycle_event(
             dataset_id=42, event_type="create"
         )
@@ -1716,7 +1727,7 @@ class TestLogDatasetLifecycleEvent:
 
         class FailingLazyClient(FakeMlflowClient):
             def get_experiment_by_name(self, name: str) -> FakeExperiment | None:
-                raise RuntimeError("DB unavailable")
+                raise ConnectionError("DB unavailable")
 
         svc = TrackingService(
             tracking_uri="http://127.0.0.1:5000",
@@ -1769,7 +1780,7 @@ class TestLogCorpusLifecycleEvent:
         svc = TrackingService(
             tracking_uri="http://127.0.0.1:5000", client_factory=fake_client_factory
         )
-        svc._degraded = True
+        svc._state = DegradedState.degraded(DegradedReason.UNREACHABLE, "")
         run_id = await svc.log_corpus_lifecycle_event(corpus_id=7, event_type="ingest")
         assert run_id == ""
 
@@ -1795,7 +1806,7 @@ class TestLogCorpusLifecycleEvent:
 
         class FailingLazyClient(FakeMlflowClient):
             def get_experiment_by_name(self, name: str) -> FakeExperiment | None:
-                raise RuntimeError("DB unavailable")
+                raise ConnectionError("DB unavailable")
 
         svc = TrackingService(
             tracking_uri="http://127.0.0.1:5000",
@@ -1841,7 +1852,7 @@ class TestListRegisteredModels:
     @pytest.mark.asyncio
     async def test_degraded_returns_empty_list(self, svc: Any) -> None:
         """Returns empty list when degraded."""
-        svc._degraded = True
+        svc._state = DegradedState.degraded(DegradedReason.UNREACHABLE, "")
         result = await svc.list_registered_models()
         assert result == []
 
@@ -1855,7 +1866,7 @@ class TestListRegisteredModels:
     @pytest.mark.asyncio
     async def test_lazy_init_exception_returns_empty_list(self, svc: Any) -> None:
         """Returns empty list when lazy_init fails."""
-        with patch.object(svc, "_lazy_init", side_effect=RuntimeError("boom")):
+        with patch.object(svc, "_lazy_init", side_effect=ConnectionError("boom")):
             result = await svc.list_registered_models()
             assert result == []
 
@@ -1909,7 +1920,7 @@ class TestListRegisteredModels:
         assert client is not None
 
         def failing_search(*args: Any, **kwargs: Any) -> list[Any]:
-            raise RuntimeError("search failed")
+            raise ConnectionError("search failed")
 
         client.search_registered_models = failing_search  # type: ignore[assignment]
 
@@ -1928,7 +1939,7 @@ class TestDegradedMode:
     @pytest.mark.asyncio
     async def test_all_operations_noop_in_degraded_mode(self, svc: Any) -> None:
         """All methods no-op in degraded mode without raising."""
-        svc._degraded = True
+        svc._state = DegradedState.degraded(DegradedReason.UNREACHABLE, "")
 
         assert (
             await svc.start_run(run_name="x", params={}, engine_backend="s", device="c")
@@ -1987,8 +1998,8 @@ class TestDegradedMode:
         assert len(svc._client.set_terminated_calls) == 0
 
     @pytest.mark.asyncio
-    async def test_enters_degraded_on_generic_exception(self) -> None:
-        """Enters degraded mode on generic Exception."""
+    async def test_generic_exception_propagates(self) -> None:
+        """Propagates generic Exception instead of entering degraded mode."""
         from anvil.services.tracking.tracking import TrackingService
 
         class BrokenClient(FakeMlflowClient):
@@ -2004,11 +2015,10 @@ class TestDegradedMode:
             tracking_uri="http://broken:5000",
             client_factory=lambda uri: BrokenClient(uri),
         )
-        run_id = await svc.start_run(
-            run_name="d", params={}, engine_backend="stdlib", device="cpu"
-        )
-        assert svc.is_degraded
-        assert run_id == ""
+        with pytest.raises(RuntimeError, match="Something broke"):
+            await svc.start_run(
+                run_name="d", params={}, engine_backend="stdlib", device="cpu"
+            )
 
 
 ########################################################################
@@ -2050,7 +2060,7 @@ class TestModuleSyncFunctions:
 
         with patch(
             "anvil.services.tracking.tracking.get_dataset",
-            side_effect=ValueError("not found"),
+            side_effect=ConnectionError("not found"),
         ):
             assert _get_dataset_sync("test") is None
 
@@ -2099,7 +2109,7 @@ class TestExceptionPathsWithClient:
         )
         assert svc._client is not None
         svc._client.log_metric = MagicMock(  # type: ignore[method-assign]
-            side_effect=ValueError("MLflow error")
+            side_effect=ConnectionError("MLflow error")
         )
         await svc.log_metric(run_id, "loss", 0.5)  # Should not raise
 
@@ -2111,7 +2121,7 @@ class TestExceptionPathsWithClient:
         )
         assert svc._client is not None
         svc._client.set_terminated = MagicMock(  # type: ignore[method-assign]
-            side_effect=ValueError("MLflow error")
+            side_effect=ConnectionError("MLflow error")
         )
         await svc.finish_run(run_id)  # Should not raise
 
@@ -2123,7 +2133,7 @@ class TestExceptionPathsWithClient:
         )
         assert svc._client is not None
         svc._client.set_terminated = MagicMock(  # type: ignore[method-assign]
-            side_effect=ValueError("MLflow error")
+            side_effect=ConnectionError("MLflow error")
         )
         await svc.fail_run(run_id)  # Should not raise
 
@@ -2135,7 +2145,7 @@ class TestExceptionPathsWithClient:
         )
         assert svc._client is not None
         svc._client.set_tag = MagicMock(  # type: ignore[method-assign]
-            side_effect=ValueError("MLflow error")
+            side_effect=ConnectionError("MLflow error")
         )
         await svc.set_tag(run_id, "k", "v")  # Should not raise
 
@@ -2147,7 +2157,7 @@ class TestExceptionPathsWithClient:
         )
         assert svc._client is not None
         svc._client.log_artifact = MagicMock(  # type: ignore[method-assign]
-            side_effect=ValueError("MLflow error")
+            side_effect=ConnectionError("MLflow error")
         )
         await svc.log_artifacts(
             run_id, model_path="/fake/model.json"
@@ -2185,7 +2195,9 @@ class TestLogDatasetInputNoSession:
             mock_session_local.return_value.__aenter__.return_value = mock_session
             mock_resolver = AsyncMock()
             resolver_cls.return_value = mock_resolver
-            mock_resolver.resolve_dataset.side_effect = ValueError("boom")
+            mock_resolver.resolve_dataset.side_effect = ConnectionError(
+                "tracking unavailable"
+            )
 
             digest = await svc.log_dataset_input(run_id, dataset_id=1)
             assert digest == ""
@@ -2261,7 +2273,9 @@ class TestLogCorpusInputNoSession:
             mock_session_local.return_value.__aenter__.return_value = mock_session
             mock_resolver = AsyncMock()
             resolver_cls.return_value = mock_resolver
-            mock_resolver.resolve_corpus.side_effect = ValueError("boom")
+            mock_resolver.resolve_corpus.side_effect = ConnectionError(
+                "tracking unavailable"
+            )
 
             digest = await svc.log_corpus_input(run_id, corpus_id=1)
             assert digest == ""
@@ -2283,7 +2297,7 @@ class TestReconcileOrphansException:
         assert client is not None
 
         def failing_search(*args: Any, **kwargs: Any) -> list[Any]:
-            raise RuntimeError("search failed")
+            raise ConnectionError("search failed")
 
         client.search_runs = failing_search  # type: ignore[assignment]
         result = await svc.reconcile_orphans()
@@ -2323,7 +2337,7 @@ class TestRegisterSourceModelException:
         client = svc._client
         assert client is not None
         client.create_registered_model = MagicMock(  # type: ignore[method-assign]
-            side_effect=ValueError("already exists")
+            side_effect=ConnectionError("already exists")
         )
         result = await svc.register_source_model(
             run_id="run_1", name="existing-model", artifact_path="model.json"
@@ -2390,7 +2404,7 @@ class TestLifecycleEventsEmptyStartRun:
     async def test_dataset_event_start_run_empty_with_mock(self, svc: Any) -> None:
         """Returns '' when start_run returns empty using mocked start_run."""
         svc._lazy_init()
-        svc._degraded = False
+        svc._state = DegradedState.active()
         with patch.object(svc, "start_run", return_value=""):
             run_id = await svc.log_dataset_lifecycle_event(
                 dataset_id=42, event_type="create"
@@ -2401,7 +2415,7 @@ class TestLifecycleEventsEmptyStartRun:
     async def test_corpus_event_start_run_empty_with_mock(self, svc: Any) -> None:
         """Returns '' when start_run returns empty using mocked start_run."""
         svc._lazy_init()
-        svc._degraded = False
+        svc._state = DegradedState.active()
         with patch.object(svc, "start_run", return_value=""):
             run_id = await svc.log_corpus_lifecycle_event(
                 corpus_id=7, event_type="ingest"
@@ -2492,7 +2506,7 @@ class TestListRegisteredModelsExceptions:
         ]
 
         def failing_get_run(rid: str) -> FakeRun:
-            raise RuntimeError("get_run failed")
+            raise ConnectionError("get_run failed")
 
         client.get_run = failing_get_run  # type: ignore[method-assign]
 
@@ -2510,7 +2524,7 @@ class TestListRegisteredModelsExceptions:
         def failing_search_versions(
             filter_string: str,
         ) -> list[FakeModelVersion]:
-            raise RuntimeError("search_model_versions failed")
+            raise ConnectionError("search_model_versions failed")
 
         client.search_model_versions = failing_search_versions  # type: ignore[method-assign]
         client.registered_models = [FakeRegisteredModel(name="broken-model")]

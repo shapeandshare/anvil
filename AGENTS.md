@@ -463,6 +463,8 @@ SomeException
 - CSS3 (Custom Properties), HTML5, JavaScript (minor template edits) + None new — reuses existing design tokens (`--surface-2`, `--separator`, `--accent`, `--radius-sm`, `--text`, `--text-tertiary`) (058-text-input-theme-consistency)
 - Python 3.11+ (PEP 604, `StrEnum`, `from __future__ import annotations`) + `cryptography` (already transitive dep via mlflow — AES-256-GCM cipher); `boto3` (Phase 3 only, via `[aws]` extra, behind `_saas` boundary) (058-at-rest-secret-encryption)
 - SQLite (anvil-state.db, WAL mode) via async SQLAlchemy — `user_secrets` table; `LocalFileStore` for key ring persistence (`data/.key_ring.json`, `0600`) (058-at-rest-secret-encryption)
+- Python 3.11+ (PEP 604, `StrEnum`, `from __future__ import annotations`) + FastAPI, async SQLAlchemy + aiosqlite, Alembic, Jinja2, stdlib (`sqlite3`, `hashlib`, `shutil`, `tarfile`, `pathlib`). **No new runtime dependencies** — per spec constraints and Constitution Article I/XI. (061-resilient-startup-recovery)
+- SQLite (WAL mode) via async SQLAlchemy; filesystem for backup/quarantine artifacts at `data/backups/`; `LocalFileStore` for blobs (061-resilient-startup-recovery)
 
 ## Recent Changes
 - 025-ux-rules-integration: Added Python 3.11+ (existing repo convention) + Stdlib only — `ux_lint.py` (re/ sys/ os/), `ux_review.py` (stdlib + urllib for OpenAI-compatible API calls)
