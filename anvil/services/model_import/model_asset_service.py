@@ -25,9 +25,9 @@ from ...storage.interface import FileStore
 from .._shared.asset_download_job_status import AssetDownloadJobStatus
 from .._shared.asset_state import AssetState
 from .._shared.import_types import ModelSourceError
+from ..secrets.user_secret_service import UserSecretService
 from .format_detector import check_weight_format
 from .hf_source import HfHubSource
-from .user_secret_service import UserSecretService
 
 logger = logging.getLogger(__name__)
 

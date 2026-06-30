@@ -7,7 +7,7 @@
 
 from __future__ import annotations
 
-from sqlalchemy import Integer, String, Text, UniqueConstraint
+from sqlalchemy import Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..base import Base
@@ -29,6 +29,9 @@ class UserSecret(Base, TimestampMixin):
         User identifier (255 chars).
     key : str
         Secret key name, e.g. ``"hf_token"`` (100 chars). Unique per user.
+    key_id : str
+        Encryption key identifier (UUID, 36 chars). Indexed for
+        re-encryption sweep queries.
     encrypted_value : str
         AES-256-GCM encrypted, base64-encoded value.
     created_at : datetime
@@ -40,9 +43,11 @@ class UserSecret(Base, TimestampMixin):
     __tablename__ = "user_secrets"
     __table_args__ = (
         UniqueConstraint("user_id", "key", name="uq_user_secrets_user_key"),
+        Index("ix_user_secrets_key_id", "key_id"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[str] = mapped_column(String(255), nullable=False)
     key: Mapped[str] = mapped_column(String(100), nullable=False)
+    key_id: Mapped[str] = mapped_column(String(36), nullable=False, server_default="")
     encrypted_value: Mapped[str] = mapped_column(Text, nullable=False)

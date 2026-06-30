@@ -77,3 +77,83 @@ def _current_user_id() -> str:
     this would extract the Cognito sub from the JWT.
     """
     return "default"
+
+
+########################################################################
+# Admin: key rotation lifecycle (spec 058)
+########################################################################
+
+
+@router.post("/admin/secrets/rotate")
+async def admin_rotate(
+    wb: AnvilWorkbench = Depends(get_workbench),
+) -> dict[str, str]:
+    """Trigger key rotation.
+
+    Promotes the current key to previous and generates a new current
+    key.  The caller must then run the re-encryption sweep and expire
+    the previous key.
+
+    Returns
+    -------
+    dict
+        ``{"status": "accepted", "kid": "<new-key-id>"}``.
+    """
+    svc = wb.secret_rotation_service
+    new_kid = await svc.rotate()
+    return {"status": "accepted", "kid": new_kid}
+
+
+@router.get("/admin/secrets/rotation-status")
+async def admin_rotation_status(
+    wb: AnvilWorkbench = Depends(get_workbench),
+) -> dict[str, object]:
+    """Return the current ring state and per-kid row counts.
+
+    Returns
+    -------
+    dict
+        Dict with ``current``, ``previous``, and ``rows_by_kid`` keys.
+    """
+    svc = wb.secret_rotation_service
+    return await svc.rotation_status_with_counts()
+
+
+@router.post("/admin/secrets/sweep")
+async def admin_sweep(
+    wb: AnvilWorkbench = Depends(get_workbench),
+) -> dict[str, int]:
+    """Trigger the re-encryption sweep.
+
+    Re-encrypts all secrets still referencing the previous key under
+    the current key.  Idempotent — re-running skips already-rotated
+    rows.
+
+    Returns
+    -------
+    dict
+        ``{"rows_processed": <int>}``.
+    """
+    svc = wb.secret_rotation_service
+    count = await svc.reencrypt_sweep()
+    return {"rows_processed": count}
+
+
+@router.post("/admin/secrets/expire-previous")
+async def admin_expire_previous(
+    wb: AnvilWorkbench = Depends(get_workbench),
+) -> dict[str, str | None]:
+    """Expire the previous key.
+
+    Removes the previous key from the ring.  Fails with
+    ``SweepIncompleteError`` if residual rows still reference the
+    previous key.
+
+    Returns
+    -------
+    dict
+        ``{"status": "ok"|"noop", "expired_kid": <str>|null}``.
+    """
+    svc = wb.secret_rotation_service
+    expired = await svc.expire_previous()
+    return {"status": "ok" if expired else "noop", "expired_kid": expired}
