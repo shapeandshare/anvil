@@ -55,6 +55,8 @@ Start here to see what has been specified, what is in progress, and what shipped
 - [[Specs/037 SaaS Resilience DR/037 SaaS Resilience DR|037 SaaS Resilience DR]]
 - [[Specs/042 Model Asset Storage/042 Model Asset Storage|042 Model Asset Storage]]
 - [[Specs/056 Reverse-Proxy Registry/056 Reverse-Proxy Registry|056 Reverse-Proxy Registry]]
+- [[Specs/058 At-Rest Secret Encryption/058 At-Rest Secret Encryption|058 At-Rest Secret Encryption]]
+- [[Specs/059 Local Key Custody Hardening/059 Local Key Custody Hardening|059 Local Key Custody Hardening]] (deferred)
 
 ## Reverse-Proxy / Single-Origin Consolidation (ADR-035 → ADR-037 → 056)
 
