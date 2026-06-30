@@ -10,6 +10,7 @@ tags:
   - spec/042
 status: draft
 source: agent
+aliases: HF Token Resolution Fix
 created: '2026-06-29'
 updated: '2026-06-29'
 related:

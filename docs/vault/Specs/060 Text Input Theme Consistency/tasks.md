@@ -26,10 +26,10 @@
 
 **Purpose**: Load all design documents and understand the full scope before editing
 
-- [ ] T001 Read `docs/vault/Specs/060 Text Input Theme Consistency/plan.md` to understand technical approach and project structure
-- [ ] T002 Read `docs/vault/Specs/060 Text Input Theme Consistency/quickstart.md` for the ordered implementation guide
-- [ ] T003 Read `docs/vault/Specs/060 Text Input Theme Consistency/research.md` for key decisions (border strategy, focus pattern, widget handling, disabled/readonly)
-- [ ] T004 Run `make ux-lint` on current state to establish S4 baseline (no regressions expected on unchanged CSS)
+- [X] T001 Read `docs/vault/Specs/060 Text Input Theme Consistency/plan.md` to understand technical approach and project structure
+- [X] T002 Read `docs/vault/Specs/060 Text Input Theme Consistency/quickstart.md` for the ordered implementation guide
+- [X] T003 Read `docs/vault/Specs/060 Text Input Theme Consistency/research.md` for key decisions (border strategy, focus pattern, widget handling, disabled/readonly)
+- [X] T004 Run `make ux-lint` on current state to establish S4 baseline (no regressions expected on unchanged CSS)
 
 ---
 
@@ -39,12 +39,12 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T005 [P] Add `border: 1px solid var(--separator)` to `.form-input`, `.form-select`, `.widget-input` in `anvil/api/static/css/components.css` (was `border: none`)
-- [ ] T006 [P] Change `border-radius` on `.form-input`, `.form-select`, `.widget-input` from `var(--radius)` (13px) to `var(--radius-sm)` (8px) in `anvil/api/static/css/components.css`
-- [ ] T007 [P] Add `min-height: var(--touch-min)` to `.form-input`, `.form-select` in `anvil/api/static/css/components.css`
-- [ ] T008 [P] Migrate focus ring from `:focus` to `:focus-visible` with `:focus` fallback on `.form-input`, `.form-select`, `.widget-input` in `anvil/api/static/css/components.css`
-- [ ] T009 [P] Add `.form-input:disabled` and `.form-input[readonly]` state rules in `anvil/api/static/css/components.css`
-- [ ] T010 [P] Add `.form-input:hover:not(:disabled)` with subtle border color change (`var(--text-tertiary)`) in `anvil/api/static/css/components.css`
+- [X] T005 [P] Add `border: 1px solid var(--separator)` to `.form-input`, `.form-select`, `.widget-input` in `anvil/api/static/css/components.css` (was `border: none`)
+- [X] T006 [P] Change `border-radius` on `.form-input`, `.form-select`, `.widget-input` from `var(--radius)` (13px) to `var(--radius-sm)` (8px) in `anvil/api/static/css/components.css`
+- [X] T007 [P] Add `min-height: var(--touch-min)` to `.form-input`, `.form-select` in `anvil/api/static/css/components.css`
+- [X] T008 [P] Migrate focus ring from `:focus` to `:focus-visible` with `:focus` fallback on `.form-input`, `.form-select`, `.widget-input` in `anvil/api/static/css/components.css`
+- [X] T009 [P] Add `.form-input:disabled` and `.form-input[readonly]` state rules in `anvil/api/static/css/components.css`
+- [X] T010 [P] Add `.form-input:hover:not(:disabled)` with subtle border color change (`var(--text-tertiary)`) in `anvil/api/static/css/components.css`
 
 **Checkpoint**: Core input class updated — all inputs using `.form-input` now have consistent border, radius, focus, hover, disabled, and readonly styling.
 
@@ -58,14 +58,14 @@
 
 ### Implementation for User Story 1
 
-- [ ] T011 [US1] Migrate `class="input"` to `class="form-input"` on config modal in `anvil/api/templates/config.html` line 307
-- [ ] T012 [US1] Add `class="form-input"` to all 7 bare `<input type="number">` elements in `anvil/api/templates/archetypes/training.html` (lines 116, 122, 128, 135, 142, 148, 154)
-- [ ] T013 [US1] Simplify `.param-block input` in `anvil/api/static/css/archetypes.css` — remove redundant visual properties (background, border, border-radius, color, font-family, font-size, outline, transition) — let `.form-input` handle them. Keep only `width: 100%` and `box-sizing: border-box`.
-- [ ] T014 [US1] Migrate `class="login-card__input"` to `class="form-input"` in `anvil/api/templates/login.html` line 24
-- [ ] T015 [US1] Remove `.login-card__input` rule block (lines 72-91) from `anvil/api/static/css/login.css` — `.form-input` now covers all visual properties
-- [ ] T016 [US1] Remove `.terminal-input` selectors from `anvil/api/static/css/components.css` — consolidate into `.form-input` (they share identical rules). Ensure `input[type="file"]::file-selector-button` styling (lines 65-71) is preserved under `.form-input`
-- [ ] T017 [P] [US1] Remove `border: none` from `.widget-input` in `anvil/api/static/css/components.css` — let it inherit the new border from shared tokens (keep its mono font and width:100%)
-- [ ] T018 [US1] Fix compute backend `<select>` inline styles in `anvil/api/templates/archetypes/training.html` line 161 — remove inline background, border, color, border-radius, font-size; apply `class="form-input"`
+- [X] T011 [US1] Migrate `class="input"` to `class="form-input"` on config modal in `anvil/api/templates/config.html` line 307
+- [X] T012 [US1] Add `class="form-input"` to all 7 bare `<input type="number">` elements in `anvil/api/templates/archetypes/training.html` (lines 116, 122, 128, 135, 142, 148, 154)
+- [X] T013 [US1] Simplify `.param-block input` in `anvil/api/static/css/archetypes.css` — remove redundant visual properties (background, border, border-radius, color, font-family, font-size, outline, transition) — let `.form-input` handle them. Keep only `width: 100%` and `box-sizing: border-box`.
+- [X] T014 [US1] Migrate `class="login-card__input"` to `class="form-input"` in `anvil/api/templates/login.html` line 24
+- [X] T015 [US1] Remove `.login-card__input` rule block (lines 72-91) from `anvil/api/static/css/login.css` — `.form-input` now covers all visual properties
+- [X] T016 [US1] Remove `.terminal-input` selectors from `anvil/api/static/css/components.css` — consolidate into `.form-input` (they share identical rules). Ensure `input[type="file"]::file-selector-button` styling (lines 65-71) is preserved under `.form-input`
+- [X] T017 [P] [US1] Remove `border: none` from `.widget-input` in `anvil/api/static/css/components.css` — let it inherit the new border from shared tokens (keep its mono font and width:100%)
+- [X] T018 [US1] Fix compute backend `<select>` inline styles in `anvil/api/templates/archetypes/training.html` line 161 — remove inline background, border, color, border-radius, font-size; apply `class="form-input"`
 
 **Checkpoint**: All inputs across all templates now use `.form-input` or `.widget-input` (aligned tokens) — consistent appearance achieved in default theme.
 
@@ -79,9 +79,9 @@
 
 ### Implementation for User Story 2
 
-- [ ] T019 [US2] Verify base token coverage — confirm `.form-input` uses only `--surface-2`, `--separator`, `--accent`, `--text-tertiary`, `--radius-sm`, `--touch-min`, `--text` — all tokens that themes override. Search `anvil/api/static/css/components.css` lines 44-52 and 190-191 for any hardcoded values.
-- [ ] T020 [US2] Audit all 23 theme CSS files in `anvil/api/static/css/themes/` for input legibility — activate each theme in a browser, navigate to the training page, and visually confirm inputs are readable (text visible, boundary clear, focus ring visible)
-- [ ] T021 [US2] If any themes produce unreadable inputs (invisible boundaries, illegible text, invisible focus ring), add theme-specific input overrides in the respective `themes/<id>.css` file (document each override in research.md)
+- [X] T019 [US2] Verify base token coverage — confirm `.form-input` uses only `--surface-2`, `--separator`, `--accent`, `--text-tertiary`, `--radius-sm`, `--touch-min`, `--text` — all tokens that themes override. Search `anvil/api/static/css/components.css` lines 44-52 and 190-191 for any hardcoded values.
+- [X] T020 [US2] Audit all 23 theme CSS files in `anvil/api/static/css/themes/` for input legibility — activate each theme in a browser, navigate to the training page, and visually confirm inputs are readable (text visible, boundary clear, focus ring visible)
+- [X] T021 [US2] If any themes produce unreadable inputs (invisible boundaries, illegible text, invisible focus ring), add theme-specific input overrides in the respective `themes/<id>.css` file (document each override in research.md)
 
 **Checkpoint**: All 23 themes produce readable, visually distinct inputs that adopt the theme's color palette.
 
@@ -95,10 +95,10 @@
 
 ### Implementation for User Story 3
 
-- [ ] T022 [US3] Verify `.form-input` and `.form-select` have `min-height: var(--touch-min)` — already added in T007. Confirm in `anvil/api/static/css/components.css`
-- [ ] T023 [US3] Verify `.widget-input` also has `min-height: var(--touch-min)` — add if missing in `anvil/api/static/css/components.css` line 190
-- [ ] T024 [US3] Verify login page — since login input now uses `.form-input`, it should inherit `min-height` automatically. Confirm in `anvil/api/templates/login.html`
-- [ ] T025 [US3] On mobile viewport (≤480px), verify 8px vertical gap between adjacent inputs — check forms on training, datasets, and config pages at phone width
+- [X] T022 [US3] Verify `.form-input` and `.form-select` have `min-height: var(--touch-min)` — already added in T007. Confirm in `anvil/api/static/css/components.css`
+- [X] T023 [US3] Verify `.widget-input` also has `min-height: var(--touch-min)` — add if missing in `anvil/api/static/css/components.css` line 190
+- [X] T024 [US3] Verify login page — since login input now uses `.form-input`, it should inherit `min-height` automatically. Confirm in `anvil/api/templates/login.html`
+- [X] T025 [US3] On mobile viewport (≤480px), verify 8px vertical gap between adjacent inputs — check forms on training, datasets, and config pages at phone width
 
 **Checkpoint**: All inputs meet iOS HIG 44px touch target on mobile viewports.
 
@@ -108,9 +108,9 @@
 
 **Purpose**: Validation, visual QA, and cleanup
 
-- [ ] T026 [P] Run `make ux-lint` on all changed CSS/template files — must pass GATE: PASS
-- [ ] T027 [P] Run `make lint` to verify no Python/style regressions
-- [ ] T028 Visual audit checklist — open each page and verify:
+- [X] T026 [P] Run `make ux-lint` on all changed CSS/template files — must pass GATE: PASS
+- [X] T027 [P] Run `make lint` to verify no Python/style regressions
+- [X] T028 Visual audit checklist — open each page and verify:
   - Training page (all 7 param inputs + compute backend select) in dark and light mode
   - Datasets page (search, create, corpus wizard, inline-edit inputs)
   - Config page (modal edit input)
@@ -122,9 +122,9 @@
   - Activate Old Growth theme (dark-only, high saturation) — verify legibility
   - Activate Forge theme (dark-only) — verify focus ring visible
   - Set viewport to 480px — verify 44px touch target on at least 3 pages
-- [ ] T029 Run `make ux-lint` final pass — must pass GATE: PASS
-- [ ] T030 Verify inputs under "Reduce effects" mode — enable the "Reduce effects" toggle in the theme picker, confirm inputs display with solid backgrounds, visible borders, and no decorative/animating effects
-- [ ] T031 Update `docs/vault/Sessions/` with a session log noting all files modified and key decisions
+- [X] T029 Run `make ux-lint` final pass — must pass GATE: PASS
+- [X] T030 Verify inputs under "Reduce effects" mode — enable the "Reduce effects" toggle in the theme picker, confirm inputs display with solid backgrounds, visible borders, and no decorative/animating effects
+- [X] T031 Update `docs/vault/Sessions/` with a session log noting all files modified and key decisions
 
 ---
 
