@@ -58,6 +58,27 @@
   </div>
 </div>
 
+{# ── Secrets section: API tokens (encrypted at rest) ── #}
+<div class="section-card" style="--stagger-i: 2">
+  <div class="section-card__header">
+    <span class="section-card__icon">&#128273;</span>
+    <h2 class="section-card__title">Secrets</h2>
+  </div>
+
+  <div class="help-box" style="margin-bottom:var(--space-3);">
+    <div class="help-title">API Tokens</div>
+    API tokens are encrypted at rest (AES-256-GCM) and used for HuggingFace Hub operations — importing models and downloading assets. Set <code class="cmd">hf_token</code> to authenticate with the HuggingFace Hub.
+  </div>
+
+  <div id="secrets-list">
+    <span class="text-muted type-subhead">Loading secrets&hellip;</span>
+  </div>
+
+  <div style="margin-top:var(--space-3);">
+    <button type="button" class="btn btn-primary" id="secret-set-btn" style="display:none;">Set Token</button>
+  </div>
+</div>
+
 <style>
 /* ── Config section cards ── */
 .config-section { margin-bottom: var(--space-6); }
@@ -413,6 +434,193 @@
     } else if (action === 'reset') {
       promptReset(key);
     }
+  });
+
+  // ── Secrets management ──
+
+  function escHtml(str) {
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+  }
+
+  window.loadSecrets = async function loadSecrets() {
+    var container = document.getElementById('secrets-list');
+    var setBtn = document.getElementById('secret-set-btn');
+    if (!container) return;
+    try {
+      var resp = await window.apiFetch('/v1/user/secrets');
+      if (!resp.ok) {
+        container.innerHTML = '<span class="text-muted type-subhead">Could not load secrets.</span>';
+        return;
+      }
+      var data = await resp.json();
+      var keys = data.data || [];
+      var hasHfToken = false;
+      var html = '';
+      for (var si = 0; si < keys.length; si++) {
+        if (keys[si] === 'hf_token') {
+          hasHfToken = true;
+          html += '<div class="config-row row-entrance" style="--row-i:0">'
+            + '<div class="config-row__top">'
+            + '<div class="config-row__info">'
+            + '<div class="config-row__name">hf_token <span class="badge badge-green">&#9679;&#9679;&#9679;&#9679;&#9679;</span></div>'
+            + '<div class="config-row__desc">HuggingFace Hub API token. Used for model imports and asset downloads.</div>'
+            + '</div>'
+            + '<div class="config-row__actions">'
+            + '<button type="button" class="btn btn-secondary btn-sm secret-set-btn" data-label="Update">Update</button>'
+            + '<button type="button" class="btn btn-secondary btn-sm" style="color:var(--accent-red);border-color:var(--accent-red);" data-secret-action="delete" data-secret-key="hf_token" data-label="Clear">Clear</button>'
+            + '</div>'
+            + '</div>'
+            + '</div>';
+        }
+      }
+      if (!hasHfToken) {
+        html = '<div class="config-row row-entrance" style="--row-i:0">'
+          + '<div class="config-row__top">'
+          + '<div class="config-row__info">'
+          + '<div class="config-row__name">hf_token</div>'
+          + '<div class="config-row__desc" style="color:var(--text-tertiary);">HuggingFace Hub API token — not configured. Set one to import models from the Hub.</div>'
+          + '</div>'
+          + '<div class="config-row__actions">'
+          + '<button type="button" class="btn btn-primary btn-sm secret-set-btn" data-label="Set Token">Set Token</button>'
+          + '</div>'
+          + '</div>'
+          + '</div>';
+      }
+      container.innerHTML = html;
+      setBtn.style.display = 'none';
+    } catch(e) {
+      container.innerHTML = '<span class="text-muted type-subhead">Could not load secrets.</span>';
+    }
+  };
+
+  function promptSecret() {
+    var overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.innerHTML = '<div class="modal-dialog">'
+      + '<div class="modal-dialog__header">'
+      + '<div class="modal-dialog__icon" style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent);">&#128273;</div>'
+      + '<h3 class="modal-dialog__title">Set HuggingFace Token</h3></div>'
+      + '<div class="modal-dialog__body">'
+      + '<label for="secret-input" style="display:block;font-size:var(--text-footnote);color:var(--text-secondary);margin-bottom:var(--space-1);">HF Token <code class="cmd">hf_xxxx...</code></label>'
+      + '<input type="password" id="secret-input" class="input" autocomplete="off" spellcheck="false" placeholder="hf_" style="width:100%;box-sizing:border-box;font-family:var(--font-mono);">'
+      + '</div>'
+      + '<div class="modal-dialog__actions">'
+      + '<button type="button" class="modal-dialog__btn modal-dialog__btn--cancel" id="secret-modal-cancel">Cancel</button>'
+      + '<button type="button" class="modal-dialog__btn modal-dialog__btn--confirm" style="color:var(--accent);" id="secret-modal-save">Save</button>'
+      + '</div></div>';
+
+    document.body.appendChild(overlay);
+    document.getElementById('secret-modal-cancel').focus();
+
+    var close = function() {
+      overlay.classList.add('modal-overlay--closing');
+      setTimeout(function() { overlay.remove(); }, 250);
+    };
+
+    document.getElementById('secret-modal-cancel').addEventListener('click', close);
+    document.getElementById('secret-modal-save').addEventListener('click', async function() {
+      var value = document.getElementById('secret-input').value;
+      if (!value || value.trim() === '') {
+        toast('Token value is required', 'error');
+        return;
+      }
+      close();
+      try {
+        var resp = await window.apiFetch('/v1/user/secrets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: 'hf_token', value: value.trim() })
+        });
+        if (resp.ok) {
+          toast('HF token saved', 'success');
+          window.loadSecrets();
+        } else {
+          var data = await resp.json();
+          toast(data.detail || 'Failed to save token', 'error');
+        }
+      } catch(e) {
+        toast('Network error', 'error');
+      }
+    });
+
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) close(); });
+    document.addEventListener('keydown', function handler(e) {
+      if (e.key === 'Escape') { close(); document.removeEventListener('keydown', handler); }
+    });
+
+    setTimeout(function() {
+      var input = document.getElementById('secret-input');
+      if (input) { input.focus(); }
+    }, 100);
+  }
+
+  function promptClearSecret(key) {
+    var overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.innerHTML = '<div class="modal-dialog">'
+      + '<div class="modal-dialog__header">'
+      + '<div class="modal-dialog__icon" style="background:color-mix(in srgb,var(--accent-red) 15%,transparent);color:var(--accent-red);">&#9888;</div>'
+      + '<h3 class="modal-dialog__title">Clear ' + escHtml(key) + '</h3></div>'
+      + '<div class="modal-dialog__body"><p class="modal-dialog__message">Remove the <strong class="cmd">' + escHtml(key) + '</strong> token? The system will fall back to the <code class="cmd">HF_TOKEN</code> environment variable if set.</p></div>'
+      + '<div class="modal-dialog__actions">'
+      + '<button type="button" class="modal-dialog__btn modal-dialog__btn--cancel" id="secret-clear-cancel">Cancel</button>'
+      + '<button type="button" class="modal-dialog__btn modal-dialog__btn--confirm" style="color:var(--accent-red);" id="secret-clear-confirm">Clear</button>'
+      + '</div></div>';
+
+    document.body.appendChild(overlay);
+    document.getElementById('secret-clear-cancel').focus();
+
+    var close = function() {
+      overlay.classList.add('modal-overlay--closing');
+      setTimeout(function() { overlay.remove(); }, 250);
+    };
+
+    document.getElementById('secret-clear-cancel').addEventListener('click', close);
+    document.getElementById('secret-clear-confirm').addEventListener('click', async function() {
+      close();
+      try {
+        var resp = await window.apiFetch('/v1/user/secrets?key=' + encodeURIComponent(key), { method: 'DELETE' });
+        if (resp.ok) {
+          toast(key + ' cleared', 'success');
+          window.loadSecrets();
+        } else {
+          var data = await resp.json();
+          toast(data.detail || 'Failed to clear ' + key, 'error');
+        }
+      } catch(e) {
+        toast('Network error', 'error');
+      }
+    });
+
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) close(); });
+    document.addEventListener('keydown', function handler(e) {
+      if (e.key === 'Escape') { close(); document.removeEventListener('keydown', handler); }
+    });
+  }
+
+  window.loadSecrets();
+
+  document.getElementById('secrets-list').addEventListener('click', function(e) {
+    var setBtn = e.target.closest('.secret-set-btn');
+    if (setBtn) {
+      promptSecret();
+      return;
+    }
+    var delBtn = e.target.closest('[data-secret-action="delete"]');
+    if (delBtn) {
+      promptClearSecret(delBtn.dataset.secretKey);
+      return;
+    }
+  });
+
+  document.getElementById('secret-set-btn').addEventListener('click', function() {
+    promptSecret();
   });
 })();
 </script>

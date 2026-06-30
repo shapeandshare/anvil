@@ -534,6 +534,7 @@ class AnvilWorkbench:
                     SourceType.HUGGINGFACE: HfHubSource(),
                     SourceType.LOCAL: LocalSource(),
                 },
+                user_secret_service=self.user_secrets,
             )
         return self._model_imports
 
