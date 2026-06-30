@@ -1,6 +1,6 @@
 # Implementation Plan: Degraded Mode Recovery
 
-**Branch**: `opencode/silent-wizard` | **Date**: 2026-06-29 | **Spec**: [spec.md](./spec.md)
+**Branch**: `057-degraded-mode-recovery` | **Date**: 2026-06-29 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `docs/vault/Specs/057-degraded-mode-recovery/spec.md`
 
 ## Summary
@@ -61,7 +61,9 @@ docs/vault/Specs/057-degraded-mode-recovery/
 # Single project — existing structure, no new files needed
 anvil/services/tracking/
 ├── tracking.py                # TrackingService — primary change target
-├── tracking_status.py         # NEW: DegradedState, DegradedReason, TrackingStatus entities
+├── tracking_status.py         # NEW: TrackingStatus entity (health endpoint response block)
+├── degraded_state.py          # NEW: DegradedState entity (internal service health state)
+├── degraded_reason.py         # NEW: DegradedReason enum (failure cause classification)
 ├── mlflow_capabilities.py     # Existing — no change
 └── mlflow_inputs.py           # Existing — no change
 
