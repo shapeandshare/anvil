@@ -20,7 +20,6 @@ from anvil.services.tracking.tracking_status import (
     TrackingStatus,
 )
 
-
 ############################################################################
 # Fixtures
 ############################################################################
@@ -316,9 +315,9 @@ class TestLoggingOnTransitions:
             await tracking_service.start_run(engine_backend="test", device="cpu")
 
         warn_records = [r for r in caplog.records if r.levelno == logging.WARN]
-        assert any("degraded" in r.getMessage().lower() for r in warn_records), (
-            f"No WARN log about degraded entry found. Records: {[r.getMessage() for r in warn_records]}"
-        )
+        assert any(
+            "degraded" in r.getMessage().lower() for r in warn_records
+        ), f"No WARN log about degraded entry found. Records: {[r.getMessage() for r in warn_records]}"
 
 
 ############################################################################
