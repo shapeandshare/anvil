@@ -11,14 +11,10 @@ Verifies that ``torch_Tensor`` is importable at runtime (not hidden behind
 
 import pytest
 
-from anvil.core.torch_engine import (
-    _TORCH_AVAILABLE,
-    torch_available,
-    torch_Tensor,
-    train_torch,
-)
+from anvil.services.training.torch_engine import _TORCH_AVAILABLE, torch_available
 
 
+@pytest.mark.skipif(not _TORCH_AVAILABLE, reason="torch not installed")
 def test_torch_tensor_importable_at_runtime():
     """torch_Tensor must be importable outside TYPE_CHECKING.
 
@@ -26,6 +22,8 @@ def test_torch_tensor_importable_at_runtime():
     ``if TYPE_CHECKING:`` but used at runtime via ``cast(torch_Tensor, ...)``
     on line 323, causing ``NameError`` when the torch backend ran.
     """
+    from anvil.services.training.torch_engine import torch_Tensor
+
     # torch_Tensor should be available as a class, not just a type alias
     assert torch_Tensor is not None
     # It should be torch.Tensor
@@ -41,6 +39,8 @@ def test_torch_available_true():
 @pytest.mark.skipif(not _TORCH_AVAILABLE, reason="torch not installed")
 def test_train_torch_runs():
     """train_torch runs a small model end-to-end without error."""
+    from anvil.services.training.torch_engine import train_torch
+
     docs = ["hello world"]
     raw_weights, final_loss, samples, uchars = train_torch(
         docs,

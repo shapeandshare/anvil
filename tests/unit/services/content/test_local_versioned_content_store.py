@@ -23,9 +23,7 @@ import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from anvil.db.models.content_blob import ContentBlob
-from anvil.db.models.content_corpus import ContentCorpus
-from anvil.db.models.content_entry import ContentEntry
-from anvil.db.models.content_version import ContentVersion
+from anvil.db.models.content_corpus import ContentCorpus, ContentEntry, ContentVersion
 from anvil.db.repositories.content_corpora import ContentCorpusRepository
 from anvil.services.content.local_versioned_content_store import (
     LocalVersionedContentStore,
