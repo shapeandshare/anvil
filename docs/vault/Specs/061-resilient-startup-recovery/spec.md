@@ -21,6 +21,11 @@ Every requirement below is subordinate to this invariant. Any behavior that coul
 
 ## Clarifications
 
+### Session 2026-06-30
+
+- Q: How does the recovery surface handle auth when the app DB (which backs auth) is itself broken? → A: **Auth-exempt read-only surface + recovery token for actions.** The recovery page and read-only endpoints (backup listing, DB state display) are auth-exempt. All state-altering recovery actions (restore, quarantine+reset, retry-migrations) require a pre-configured bearer token from `ANVIL_RECOVERY_KEY` env var. This prevents the DB-deadlock while gating destructive operations.
+- Q: Where should snapshot/quarantine artifacts be stored on the filesystem? → A: **`data/backups/quarantine/`** — alongside the existing 027 backup directory tree, keeping all recovery artifacts in one discoverable location and simplifying space accounting.
+
 ### Session 2026-06-29
 
 - Q: How should "fresh DB" be distinguished from "existing but broken DB" so we never reinitialize real data? → A: **Provenance, not contents.** A state is `fresh` ONLY if the DB file did not exist before this startup AND no `-wal`/`-shm` sidecars exist. Any pre-existing DB artifact — even a zero-byte file — is treated as existing user state and is never auto-reinitialized.
@@ -160,7 +165,7 @@ Orchestrators and operators can distinguish "the process is alive" from "the app
 
 #### Preservation (Data-Safety Invariant)
 
-- **FR-006 (Snapshot before remediation)**: Before any remediation that could alter, replace, reset, or reinterpret the DB, the system MUST snapshot the full DB trio (`.db`, `-wal`, `-shm`) plus metadata (size, sha256, timestamp, detected state) to a preserved location.
+- **FR-006 (Snapshot before remediation)**: Before any remediation that could alter, replace, reset, or reinterpret the DB, the system MUST snapshot the full DB trio (`.db`, `-wal`, `-shm`) plus metadata (size, sha256, timestamp, detected state) to `data/backups/quarantine/<timestamp>/` alongside the existing 027 backup tree.
 - **FR-007 (Never delete the only copy)**: The system MUST NEVER `rm`/truncate/overwrite the only copy of the app DB as an automatic action. Resets MUST move the suspect DB to a timestamped quarantine path (copy/rename that preserves bytes), never delete it.
 - **FR-008 (Refuse-unsafe-on-no-space)**: If a required preserving snapshot cannot be written (e.g. insufficient space), the system MUST refuse the destructive action and report the shortfall rather than proceeding.
 - **FR-009 (Preserved-artifact visibility)**: The location of every preserved/quarantined artifact MUST be surfaced in logs and in the recovery UI/API.
@@ -168,6 +173,7 @@ Orchestrators and operators can distinguish "the process is alive" from "the app
 #### Maintenance / Recovery Mode
 
 - **FR-010 (Boot into maintenance mode, never exit)**: On `desynced` or `corrupt` classification, the system MUST NOT call `sys.exit`. It MUST bind the configured port and enter a maintenance/recovery mode.
+- **FR-010a (Auth-exempt recovery surface)**: The recovery page, state display, backup listing, liveness, and readiness endpoints MUST be auth-exempt so they remain reachable when the app DB (which backs auth) is broken. State-altering recovery actions MUST require a bearer token from `ANVIL_RECOVERY_KEY` env var; if unset, such actions are rejected with a clear message.
 - **FR-011 (Read-only safety in maintenance mode)**: In maintenance mode the system MUST NOT perform writes against the suspect app DB except via an explicit, operator-confirmed recovery action.
 - **FR-012 (Route isolation)**: In maintenance mode, normal application routes MUST be disabled or return a clear "recovery mode" response; only the recovery surface, liveness, readiness, static assets, and (read-only) backup listing are served.
 - **FR-013 (Recovery surface)**: The system MUST serve a recovery page (and a backing API) that displays the detected DB state, the cause, the preserved-artifact location(s), the available backups, and the operator-gated recovery actions.
@@ -220,7 +226,7 @@ Orchestrators and operators can distinguish "the process is alive" from "the app
 - The app DB is SQLite in WAL mode accessed via async SQLAlchemy + `aiosqlite`; large blobs (models, datasets, `mlruns`) live on the filesystem, not in the DB.
 - The existing 027 `BackupService`, `SnapshotPlanner`, `RestoreEngine`, and `RestoreJournal` are available and are the canonical mechanism for snapshot/restore; this spec composes with them rather than replacing them.
 - The existing `MigrationService.verify_table_integrity()` and `get_expected_tables()` are available and accurate enough to detect missing tables.
-- Recovery operations are performed by a trusted operator (single-tenant local deployment, or an authenticated operator in SaaS); the recovery surface is behind the app's existing auth except for the auth-exempt liveness check.
+- Recovery operations are performed by a trusted operator (single-tenant local deployment, or an authenticated operator in SaaS); the recovery surface read-only views (page, state display, backup listing) and the liveness/readiness endpoints are auth-exempt. State-altering actions require a pre-configured bearer token (`ANVIL_RECOVERY_KEY` envar) to prevent the DB-deadlock where auth depends on a broken database.
 - Per Constitution Article XI (Simplicity First / Boring Technology), the implementation prefers stdlib + the existing backup stack; no new runtime dependency is introduced for detection, preservation, or maintenance mode.
 - "Restore from backup" is acknowledged to be a rollback to backup time; recovering data committed after the last backup is explicitly out of scope (see honest failure modes in `research.md`).
 - Auto-restore-on-corruption is off by default; the universal default is preserve + maintenance mode + operator decision.
