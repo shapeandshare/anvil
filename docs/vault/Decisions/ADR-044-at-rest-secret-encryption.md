@@ -7,8 +7,8 @@ tags:
   - domain/infrastructure
   - domain/database
 created: '2026-06-29'
-updated: '2026-06-29'
-status: status/draft
+updated: '2026-06-30'
+status: status/reviewed
 source: agent
 aliases:
   - 'ADR-044: At-Rest Secret Encryption — Key Ring & KMS Envelope'
@@ -29,7 +29,7 @@ code-refs:
 
 ## Status
 
-Draft
+Reviewed
 
 Implements [[Specs/058 At-Rest Secret Encryption/058 At-Rest Secret Encryption|spec 058]].
 

@@ -21,8 +21,8 @@ from .._shared.import_types import ModelSourceError
 from .._shared.model_import_job_status import ModelImportJobStatus
 from .._shared.runnable_status import RunnableStatus
 from .._shared.source_type import SourceType
+from ..secrets.user_secret_service import UserSecretService
 from .model_source import ModelSource
-from .user_secret_service import UserSecretService
 
 _HF_TOKEN_KEY = "hf_token"
 """UserSecret key for the HuggingFace Hub token."""

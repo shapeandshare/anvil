@@ -44,7 +44,8 @@ from .db.repositories.model_asset_repository import ModelAssetRepository
 from .db.repositories.model_import_jobs import ModelImportJobRepository
 from .db.repositories.runtime_config import RuntimeConfigRepository
 from .db.repositories.user_secret_repository import UserSecretRepository
-from .services._shared.encryption import EncryptionService
+from .services._shared.encryption import LocalEncryptionService
+from .services._shared.key_ring import KeyRing
 from .services._shared.source_type import SourceType
 from .services.content.composition_service import CompositionService
 from .services.content.corpus_service import CorpusService as ContentCorpusService
@@ -73,8 +74,9 @@ from .services.model_import.hf_source import HfHubSource
 from .services.model_import.local_source import LocalSource
 from .services.model_import.model_asset_service import ModelAssetService
 from .services.model_import.model_import_service import ModelImportService
-from .services.model_import.user_secret_service import UserSecretService
 from .services.runtime_config.runtime_config_service import RuntimeConfigService
+from .services.secrets.secret_rotation_service import SecretRotationService
+from .services.secrets.user_secret_service import UserSecretService
 from .services.tracking.tracking import TrackingService
 from .services.training.training import TrainingService
 from .storage.local import LocalFileStore
@@ -166,6 +168,7 @@ class AnvilWorkbench:
         self._asset_download_job_repo: AssetDownloadJobRepository | None = None
         self._user_secret_repo: UserSecretRepository | None = None
         self._user_secrets: UserSecretService | None = None
+        self._secret_rotation: SecretRotationService | None = None
         self._model_assets: ModelAssetService | None = None
         self._model_store: LocalFileStore | None = None
 
@@ -574,9 +577,30 @@ class AnvilWorkbench:
         if self._user_secrets is None:
             self._user_secrets = UserSecretService(
                 self.user_secret_repo,
-                EncryptionService(),
+                LocalEncryptionService(
+                    key_ring=KeyRing.load(seed_from_env="ANVIL_MASTER_SECRET")
+                ),
             )
         return self._user_secrets
+
+    @property
+    def secret_rotation_service(self) -> SecretRotationService:
+        """Lazily-initialised ``SecretRotationService`` wired to *session*.
+
+        Shares the same ``LocalEncryptionService`` and ``KeyRing``
+        instances as ``user_secrets`` so that rotation operations
+        are consistent with the active encryption state.
+        """
+        if self._secret_rotation is None:
+            encryption = self.user_secrets._encryption
+            if not isinstance(encryption, LocalEncryptionService):
+                raise TypeError("Expected LocalEncryptionService")
+            self._secret_rotation = SecretRotationService(
+                self.user_secret_repo,
+                encryption,
+                encryption._key_ring,
+            )
+        return self._secret_rotation
 
     @property
     def model_store(self) -> LocalFileStore:
