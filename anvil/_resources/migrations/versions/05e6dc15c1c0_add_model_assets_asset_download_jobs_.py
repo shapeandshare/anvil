@@ -1,7 +1,7 @@
 """Add model_assets, asset_download_jobs, user_secrets tables.
 
 Revision ID: 05e6dc15c1c0
-Revises: 005
+Revises: 3506b790f713
 Create Date: 2026-06-28
 """
 
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "05e6dc15c1c0"
-down_revision: str | None = "005"
+down_revision: str | None = "3506b790f713"
 branch_labels: str | None = None
 depends_on: str | None = None
 
