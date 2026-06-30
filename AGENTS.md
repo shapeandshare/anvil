@@ -1,6 +1,6 @@
 # anvil — Agent Guidelines
 
-**Last updated**: 2026-06-29 (constitution v1.8.0: Article XI Simplicity First / Boring Technology + ADR-041; sonarcloud-tooling + content-repository-016-mvp; scripts-python-over-bash + package-module-migration, testing-guide consolidation; OWASP remediation spec 017 + ADRs 035/036; whole-API e2e test suite 017)
+**Last updated**: 2026-06-30 (constitution v1.8.0: Article XI Simplicity First / Boring Technology + ADR-041; sonarcloud-tooling + content-repository-016-mvp; scripts-python-over-bash + package-module-migration, testing-guide consolidation; OWASP remediation spec 017 + ADRs 035/036; whole-API e2e test suite 017)
 
 ## Project Overview
 
@@ -461,6 +461,8 @@ SomeException
 - Python 3.11+ (existing repo convention) + FastAPI, async SQLAlchemy + aiosqlite, `safetensors`, `huggingface_hub` (behind `[finetune]` extra), `httpx`, `numpy` — all existing deps; no new runtime deps introduced (042-model-asset-storage)
 - SQLite (app DB, WAL mode), `LocalFileStore` (local), `VersionedContentStore`/LakeFS (SaaS, spec 019/AD-17) (042-model-asset-storage)
 - CSS3 (Custom Properties), HTML5, JavaScript (minor template edits) + None new — reuses existing design tokens (`--surface-2`, `--separator`, `--accent`, `--radius-sm`, `--text`, `--text-tertiary`) (058-text-input-theme-consistency)
+- Python 3.11+ (PEP 604, `StrEnum`, `from __future__ import annotations`) + FastAPI, async SQLAlchemy + aiosqlite, Alembic, Jinja2, stdlib (`sqlite3`, `hashlib`, `shutil`, `tarfile`, `pathlib`). **No new runtime dependencies** — per spec constraints and Constitution Article I/XI. (061-resilient-startup-recovery)
+- SQLite (WAL mode) via async SQLAlchemy; filesystem for backup/quarantine artifacts at `data/backups/`; `LocalFileStore` for blobs (061-resilient-startup-recovery)
 
 ## Recent Changes
 - 025-ux-rules-integration: Added Python 3.11+ (existing repo convention) + Stdlib only — `ux_lint.py` (re/ sys/ os/), `ux_review.py` (stdlib + urllib for OpenAI-compatible API calls)
