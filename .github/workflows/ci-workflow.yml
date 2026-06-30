@@ -145,6 +145,7 @@ jobs:
     timeout-minutes: 20
     needs: bump-scope-guard
     if: needs.bump-scope-guard.outputs.scope != 'version-only'
+    continue-on-error: true  # v1: non-blocking; requires valid SONAR_TOKEN secret
     steps:
       - uses: actions/checkout@v4
         with:
