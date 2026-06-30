@@ -116,7 +116,7 @@ def test_warm_start_initial_loss_below_from_scratch(tmp_path):
     # Capture step-0 loss from a from-scratch training
     fs_initial = [None]
 
-    def _fs_cb(step, loss, *args):
+    def _fs_cb(step, loss, **kwargs):
         if step == 0:
             fs_initial[0] = loss
 
@@ -131,7 +131,7 @@ def test_warm_start_initial_loss_below_from_scratch(tmp_path):
     # Capture step-0 loss from a warm-start training
     ws_initial = [None]
 
-    def _ws_cb(step, loss, *args):
+    def _ws_cb(step, loss, **kwargs):
         if step == 0:
             ws_initial[0] = loss
 

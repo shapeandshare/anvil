@@ -16,7 +16,7 @@ mount at ``/v1``.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone, UTC
+from datetime import UTC, datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest

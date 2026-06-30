@@ -25,16 +25,15 @@ def test_detect_capabilities_file_store():
 
 
 def test_detect_capabilities_genai_unavailable(monkeypatch):
-    import builtins
+    import importlib.util
 
-    original_import = builtins.__import__
-
-    def fake_import(name, *args, **kwargs):
-        if name == "mlflow.genai.datasets":
-            raise ImportError("no genai")
-        return original_import(name, *args, **kwargs)
-
-    monkeypatch.setattr(builtins, "__import__", fake_import)
+    monkeypatch.setattr(
+        importlib.util,
+        "find_spec",
+        lambda name: (
+            None if name == "mlflow.genai.datasets" else importlib.util.find_spec(name)
+        ),
+    )
     caps = detect_capabilities("http://127.0.0.1:5000")
     assert caps.genai_datasets is False
 

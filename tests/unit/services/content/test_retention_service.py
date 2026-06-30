@@ -33,10 +33,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 # Import all model modules so their tables register on Base.metadata
 # before the in_memory_session fixture creates them.
 from anvil.db.models.content_blob import ContentBlob
-from anvil.db.models.content_entry import ContentEntry
+from anvil.db.models.content_corpus import ContentEntry, ContentVersion
 from anvil.db.models.content_ingest_session import IngestSession
 from anvil.db.models.content_tag import ContentTag
-from anvil.db.models.content_version import ContentVersion
 from anvil.db.models.content_version_run_ref import VersionRunRef
 from anvil.db.repositories.content_blobs import ContentBlobRepository
 from anvil.db.repositories.content_corpora import ContentCorpusRepository

@@ -27,9 +27,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from anvil.services.tracking.tracking import TrackingService
-
 from anvil.services.tracking.tracking import (
+    TrackingService,
     _append_records_sync,
     _create_dataset_sync,
     _get_dataset_sync,
