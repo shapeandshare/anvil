@@ -36,6 +36,7 @@ from .models import router as models_router
 from .pages import router as pages_router
 from .registry import router as registry_router
 from .training import router as training_router
+from .user_secrets import router as user_secrets_router
 
 router = APIRouter()
 router.include_router(training_router)
@@ -57,6 +58,7 @@ router.include_router(content_router)
 router.include_router(backup_router)
 router.include_router(models_router)
 router.include_router(fine_tune_datasets_router)
+router.include_router(user_secrets_router)
 
 MODELS_DIR = Path("data/models")
 """Path: Default models directory (mirrors ``workspace_paths.models_dir``)."""

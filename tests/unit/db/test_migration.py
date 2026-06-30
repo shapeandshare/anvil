@@ -135,7 +135,7 @@ class TestUpgrade:
 class TestVerifySchema:
     """Verify MigrationService.verify_schema()."""
 
-    @patch("alembic.script.ScriptDirectory")
+    @patch("anvil.db.migration.ScriptDirectory")
     @patch.object(MigrationService, "current")
     async def test_verify_passes_when_matched(
         self,
@@ -149,7 +149,7 @@ class TestVerifySchema:
         )
         await svc.verify_schema()  # should not raise
 
-    @patch("alembic.script.ScriptDirectory")
+    @patch("anvil.db.migration.ScriptDirectory")
     @patch.object(MigrationService, "current")
     async def test_verify_raises_when_ahead(
         self,
@@ -164,7 +164,7 @@ class TestVerifySchema:
         with pytest.raises(MigrationError, match="AHEAD"):
             await svc.verify_schema()
 
-    @patch("alembic.script.ScriptDirectory")
+    @patch("anvil.db.migration.ScriptDirectory")
     @patch.object(MigrationService, "current")
     async def test_verify_raises_when_behind(
         self,
@@ -201,7 +201,7 @@ class TestCurrent:
 class TestHistory:
     """Verify MigrationService.history()."""
 
-    @patch("alembic.script.ScriptDirectory")
+    @patch("anvil.db.migration.ScriptDirectory")
     async def test_history_returns_list(
         self, mock_script_dir_cls: MagicMock, svc: MigrationService
     ):
@@ -278,7 +278,7 @@ class TestCreateRevision:
     """Verify MigrationService.create_revision()."""
 
     @patch("anvil.db.migration.command.revision")
-    @patch("alembic.script.ScriptDirectory")
+    @patch("anvil.db.migration.ScriptDirectory")
     async def test_create_revision_returns_head(
         self,
         mock_script_dir_cls: MagicMock,

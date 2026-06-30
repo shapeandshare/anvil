@@ -33,8 +33,6 @@ class HubClient:
     Parameters
     ----------
     token : str | None
-        HuggingFace Hub API token.  Passed through to ``HfApi``; many
-        public models do not require one, but gated models do.
     """
 
     def __init__(self, token: str | None = None) -> None:

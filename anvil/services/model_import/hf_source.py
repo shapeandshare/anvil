@@ -9,12 +9,28 @@ from __future__ import annotations
 
 import asyncio
 import os
+import tempfile
 from typing import TYPE_CHECKING
 
 from .._shared.import_types import ModelMetadata, ModelSourceError
 
 if TYPE_CHECKING:
     from huggingface_hub.hf_api import ModelInfo
+
+
+_WEIGHT_EXTENSIONS: frozenset[str] = frozenset({".safetensors"})
+"""Accepted weight-file extensions (v1 only — FR-030)."""
+
+_TOKENIZER_PATTERNS: frozenset[str] = frozenset(
+    {"tokenizer.json", "tokenizer_config.json"}
+)
+"""Tokenizer files to download."""
+
+_CONFIG_FILES: frozenset[str] = frozenset({"config.json"})
+"""Configuration files to download."""
+
+_MISSING_EXTRA_MSG = "Install anvil[finetune] to import from HuggingFace Hub"
+"""Reusable message for ``ModelSourceError`` when the finetune extra is missing."""
 
 
 class HfHubSource:
@@ -67,12 +83,98 @@ class HfHubSource:
         if not self._available:
             raise ModelSourceError(
                 code="missing_extra",
-                message="Install anvil[finetune] to import from HuggingFace Hub",
+                message=_MISSING_EXTRA_MSG,
                 source=self.name,
             )
 
         effective_token = token or os.environ.get("HF_TOKEN")
         return await _do_resolve(identifier, revision, effective_token)
+
+    async def list_asset_files(
+        self,
+        identifier: str,
+        *,
+        revision: str = "main",
+        token: str | None = None,
+    ) -> list[dict[str, str]]:
+        """Resolve the list of asset files for a model.
+
+        Returns filenames for config, tokenizer, and safetensors weight
+        files grouped by ``asset_type`` (``"config"``, ``"tokenizer"``,
+        ``"weights"``).
+
+        Parameters
+        ----------
+        identifier : str
+            HF repo ID.
+        revision : str
+            Branch, tag, or commit SHA.
+        token : str | None
+            HF Hub API token.
+
+        Returns
+        -------
+        list[dict[str, str]]
+            Each entry has ``{"asset_type": ..., "filename": ...}``.
+
+        Raises
+        ------
+        ModelSourceError
+            On network/auth/parse failures.
+        """
+        if not self._available:
+            raise ModelSourceError(
+                code="missing_extra",
+                message=_MISSING_EXTRA_MSG,
+                source=self.name,
+            )
+        effective_token = token or os.environ.get("HF_TOKEN")
+        return await _do_list_files(identifier, revision, effective_token)
+
+    async def download_asset_to_path(
+        self,
+        identifier: str,
+        filename: str,
+        *,
+        revision: str = "main",
+        token: str | None = None,
+    ) -> str:
+        """Download a single asset file from the HF Hub to a local path.
+
+        The file is downloaded to a temporary directory; the caller is
+        responsible for streaming it to managed storage and cleaning up
+        the temporary path. Returning a path (rather than bytes) lets the
+        caller stream the file without buffering it fully in memory (FR-010a).
+
+        Parameters
+        ----------
+        identifier : str
+            HF repo ID.
+        filename : str
+            Path within the repo (e.g. ``"model.safetensors"``).
+        revision : str
+            Branch, tag, or commit SHA.
+        token : str | None
+            HF Hub API token.
+
+        Returns
+        -------
+        str
+            Absolute local path to the downloaded file.
+
+        Raises
+        ------
+        ModelSourceError
+            On network/auth/not-found errors.
+        """
+        if not self._available:
+            raise ModelSourceError(
+                code="missing_extra",
+                message=_MISSING_EXTRA_MSG,
+                source=self.name,
+            )
+        effective_token = token or os.environ.get("HF_TOKEN")
+        return await _do_download(identifier, filename, revision, effective_token)
 
 
 def _huggingface_hub_available() -> bool:
@@ -94,7 +196,7 @@ async def _do_resolve(
     except ImportError:
         raise ModelSourceError(
             code="missing_extra",
-            message="Install anvil[finetune] to import from HuggingFace Hub",
+            message=_MISSING_EXTRA_MSG,
             source="huggingface",
         ) from None
 
@@ -170,3 +272,131 @@ async def _do_resolve(
         revision_sha=info.sha or revision,
         config_json=str(info.config) if info.config is not None else None,
     )
+
+
+async def _do_list_files(
+    identifier: str, revision: str, token: str | None
+) -> list[dict[str, str]]:
+    """List asset files for a model repo on the HF Hub."""
+    try:
+        from huggingface_hub import HfApi
+    except ImportError:
+        raise ModelSourceError(
+            code="missing_extra",
+            message=_MISSING_EXTRA_MSG,
+            source="huggingface",
+        ) from None
+
+    api = HfApi(token=token)
+
+    def _list_all() -> list[str]:
+        return list(api.list_repo_files(identifier, revision=revision))
+
+    try:
+        loop = asyncio.get_event_loop()
+        all_files: list[str] = await loop.run_in_executor(None, _list_all)
+    except Exception as exc:
+        _raise_hf_error(exc, identifier, revision)
+        raise  # unreachable: _raise_hf_error always raises
+
+    assets: list[dict[str, str]] = []
+
+    for fname in all_files:
+        if fname in _CONFIG_FILES:
+            assets.append({"asset_type": "config", "filename": fname})
+        elif fname in _TOKENIZER_PATTERNS:
+            assets.append({"asset_type": "tokenizer", "filename": fname})
+        elif any(fname.endswith(ext) for ext in _WEIGHT_EXTENSIONS):
+            assets.append({"asset_type": "weights", "filename": fname})
+        # Silently skip non-asset files (e.g. README.md, .gitattributes)
+
+    return assets
+
+
+async def _do_download(
+    identifier: str,
+    filename: str,
+    revision: str,
+    token: str | None,
+) -> str:
+    """Download a single file from the HF Hub, returning its local path."""
+    try:
+        from huggingface_hub import hf_hub_download
+    except ImportError:
+        raise ModelSourceError(
+            code="missing_extra",
+            message=_MISSING_EXTRA_MSG,
+            source="huggingface",
+        ) from None
+
+    def _download() -> str:
+        local_dir = tempfile.mkdtemp(prefix="anvil_hf_")
+        return str(
+            hf_hub_download(
+                repo_id=identifier,
+                filename=filename,
+                revision=revision,
+                token=token,
+                local_dir=local_dir,
+                local_files_only=False,
+            )
+        )
+
+    try:
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, _download)
+    except Exception as exc:
+        _raise_hf_error(exc, identifier, revision)
+        raise  # unreachable: _raise_hf_error always raises
+
+
+def _raise_hf_error(exc: Exception, identifier: str, revision: str) -> None:
+    """Translate HF Hub exceptions into typed ``ModelSourceError``.
+
+    Parameters
+    ----------
+    exc : Exception
+        The caught exception from huggingface_hub.
+    identifier : str
+        HF repo ID (for error messages).
+    revision : str
+        Source revision (for error messages).
+
+    Raises
+    ------
+    ModelSourceError
+        Always raised with an appropriate error code.
+    """
+    exc_name = type(exc).__name__
+    exc_str = str(exc)
+
+    if "404" in exc_str or "not found" in exc_str.lower():
+        raise ModelSourceError(
+            code="not_found",
+            message=f"File not found: {identifier} @ {revision}",
+            source="huggingface",
+        ) from exc
+    if "401" in exc_str or "403" in exc_str or "authorization" in exc_str.lower():
+        raise ModelSourceError(
+            code="auth_required",
+            message=f"Gated model requires HF_TOKEN: {identifier}",
+            source="huggingface",
+        ) from exc
+    if "429" in exc_str or "rate" in exc_str.lower():
+        raise ModelSourceError(
+            code="rate_limited",
+            message="HF Hub API rate limit exceeded",
+            source="huggingface",
+        ) from exc
+    if "connection" in exc_str.lower() or "timeout" in exc_str.lower():
+        raise ModelSourceError(
+            code="network_error",
+            message=f"Network error contacting HF Hub: {exc_str[:100]}",
+            source="huggingface",
+        ) from exc
+
+    raise ModelSourceError(
+        code="parse_failure",
+        message=f"HF Hub error ({exc_name}): {exc_str[:200]}",
+        source="huggingface",
+    ) from exc

@@ -458,6 +458,8 @@ SomeException
 - `LocalFileStore` at `data/datasets/<id>/prepared/`; SQLite (anvil-state.db) for metadata (053-fine-tuning-dataset-preparation)
 - Python 3.11+ (PEP 604, `StrEnum`, `from __future__ import annotations`) + FastAPI + Jinja2 (existing), PyYAML (existing), `huggingface_hub` (behind `[finetune]` extra), Pydantic (existing) (041-huggingface-model-browser)
 - In-repo YAML file (`curated-models.yaml`) bundled with the Python package; in-memory cache for HF API results with configurable TTL (041-huggingface-model-browser)
+- Python 3.11+ (existing repo convention) + FastAPI, async SQLAlchemy + aiosqlite, `safetensors`, `huggingface_hub` (behind `[finetune]` extra), `httpx`, `numpy` — all existing deps; no new runtime deps introduced (042-model-asset-storage)
+- SQLite (app DB, WAL mode), `LocalFileStore` (local), `VersionedContentStore`/LakeFS (SaaS, spec 019/AD-17) (042-model-asset-storage)
 
 ## Recent Changes
 - 025-ux-rules-integration: Added Python 3.11+ (existing repo convention) + Stdlib only — `ux_lint.py` (re/ sys/ os/), `ux_review.py` (stdlib + urllib for OpenAI-compatible API calls)

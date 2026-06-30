@@ -13,6 +13,9 @@ _ALLOWED_FILES: set[str] = {
     "result.py",
     "compute_status.py",
     "demo_model_provider.py",
+    "model_asset.py",
+    "backup_status.py",
+    "cli.py",
 }
 
 

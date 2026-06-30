@@ -266,7 +266,7 @@ class GovernanceService:
     async def validate_bundled(
         self,
         *,
-        _source_description: str,
+        source_description: str,
         license_identifier: str,
     ) -> tuple[bool, str | None]:
         """Validate a bundled sample's provenance (VR-P1).
