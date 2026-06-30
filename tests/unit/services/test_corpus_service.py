@@ -58,7 +58,7 @@ async def test_create_validates_overlap(svc):
 async def test_list_corpora(svc):
     await svc.create(name="a", root_path="/a")
     await svc.create(name="b", root_path="/b")
-    corpora = await svc.list()
+    corpora = await svc.list_all()
     assert len(corpora) >= 2
 
 

@@ -112,7 +112,8 @@ def scan_file(filepath: Path) -> ScanResult:
         if in_type_checking:
             if stripped == "" or stripped.startswith("#"):
                 continue
-            if stripped and not line.startswith((" ", "\t")):
+            # Use the raw *line* (not *stripped*) to detect indentation.
+            if line and not line.startswith((" ", "\t")):
                 in_type_checking = False
             else:
                 continue  # Still inside the TYPE_CHECKING block

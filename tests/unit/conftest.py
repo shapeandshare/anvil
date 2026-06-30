@@ -27,7 +27,6 @@ from anvil.db.models import (  # isort: skip
     audit_event,
     backup_operation,
     corpus,
-    corpus_file,
     curation_operation,
     dataset,
     import_source,
@@ -35,6 +34,9 @@ from anvil.db.models import (  # isort: skip
     sample,
     training_config,
 )
+from anvil.db.models import model_asset  # isort: skip
+from anvil.db.models import user_secret  # isort: skip
+from anvil.db.models import asset_download_job  # isort: skip
 
 
 @pytest_asyncio.fixture(loop_scope="function")

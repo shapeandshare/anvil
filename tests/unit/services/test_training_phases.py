@@ -372,9 +372,10 @@ class TestStartTrainingPhases:
                     run_id=run_id,
                 )
 
-        # Queue should have an error event
+        # Queue should have the error event but still be available for SSE
         queue = svc.get_queue(run_id)
-        assert queue is None or queue.empty()  # cleaned up
+        assert queue is not None
+        assert not queue.empty()
 
     async def test_backend_failure_emits_error_event(self, svc):
         """Backend returning FAILED emits error event, not complete, and skips on_complete."""

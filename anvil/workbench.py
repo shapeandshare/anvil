@@ -21,6 +21,7 @@ from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .config import get_config
+from .db.repositories.asset_download_job_repository import AssetDownloadJobRepository
 from .db.repositories.audit_events import AuditEventRepository
 from .db.repositories.backup_operations import BackupOperationRepository
 from .db.repositories.content_blobs import ContentBlobRepository
@@ -38,8 +39,11 @@ from .db.repositories.instance_registry import (
     create_registry_session,
 )
 from .db.repositories.licenses import LicenseRepository
+from .db.repositories.model_asset_repository import ModelAssetRepository
 from .db.repositories.model_import_jobs import ModelImportJobRepository
 from .db.repositories.runtime_config import RuntimeConfigRepository
+from .db.repositories.user_secret_repository import UserSecretRepository
+from .services._shared.encryption import EncryptionService
 from .services._shared.source_type import SourceType
 from .services.content.composition_service import CompositionService
 from .services.content.corpus_service import CorpusService as ContentCorpusService
@@ -66,7 +70,9 @@ from .services.inference.model_browser import ModelBrowserService
 from .services.instances.instance_lifecycle_service import InstanceLifecycleService
 from .services.model_import.hf_source import HfHubSource
 from .services.model_import.local_source import LocalSource
+from .services.model_import.model_asset_service import ModelAssetService
 from .services.model_import.model_import_service import ModelImportService
+from .services.model_import.user_secret_service import UserSecretService
 from .services.runtime_config.runtime_config_service import RuntimeConfigService
 from .services.tracking.tracking import TrackingService
 from .services.training.training import TrainingService
@@ -152,6 +158,13 @@ class AnvilWorkbench:
         self._model_imports: ModelImportService | None = None
         # HuggingFace Model Browser (feature 041).
         self._model_browser: ModelBrowserService | None = None
+        # Model asset storage (feature 042).
+        self._model_asset_repo: ModelAssetRepository | None = None
+        self._asset_download_job_repo: AssetDownloadJobRepository | None = None
+        self._user_secret_repo: UserSecretRepository | None = None
+        self._user_secrets: UserSecretService | None = None
+        self._model_assets: ModelAssetService | None = None
+        self._model_store: LocalFileStore | None = None
 
     # ── Stateless service accessors ─────────────────────────────────────
 
@@ -520,6 +533,69 @@ class AnvilWorkbench:
         if self._model_browser is None:
             self._model_browser = ModelBrowserService()
         return self._model_browser
+
+    # ── Model asset storage (feature 042) ────────────────────────────────
+
+    @property
+    def model_asset_repo(self) -> ModelAssetRepository:
+        """Lazily-initialised ``ModelAssetRepository`` bound to *session*."""
+        if self._model_asset_repo is None:
+            self._model_asset_repo = ModelAssetRepository(self._session)
+        return self._model_asset_repo
+
+    @property
+    def asset_download_job_repo(self) -> AssetDownloadJobRepository:
+        """Lazily-initialised ``AssetDownloadJobRepository`` bound to *session*."""
+        if self._asset_download_job_repo is None:
+            self._asset_download_job_repo = AssetDownloadJobRepository(self._session)
+        return self._asset_download_job_repo
+
+    @property
+    def user_secret_repo(self) -> UserSecretRepository:
+        """Lazily-initialised ``UserSecretRepository`` bound to *session*."""
+        if self._user_secret_repo is None:
+            self._user_secret_repo = UserSecretRepository(self._session)
+        return self._user_secret_repo
+
+    @property
+    def user_secrets(self) -> UserSecretService:
+        """Lazily-initialised ``UserSecretService`` wired to *session*."""
+        if self._user_secrets is None:
+            self._user_secrets = UserSecretService(
+                self.user_secret_repo,
+                EncryptionService(),
+            )
+        return self._user_secrets
+
+    @property
+    def model_store(self) -> LocalFileStore:
+        """Lazily-initialised ``LocalFileStore`` rooted at the storage dir.
+
+        Asset paths embed the ``models/{model_id}/assets/{sha256}/`` prefix
+        (FR-011a), so the store roots at the generic storage directory.
+        """
+        if self._model_store is None:
+            storage_path = (
+                str(self._paths.storage_dir)
+                if self._paths is not None
+                else "data/storage"
+            )
+            self._model_store = LocalFileStore(storage_path)
+        return self._model_store
+
+    @property
+    def model_assets(self) -> ModelAssetService:
+        """Lazily-initialised ``ModelAssetService`` wired to *session*."""
+        if self._model_assets is None:
+            self._model_assets = ModelAssetService(
+                self.model_asset_repo,
+                self.asset_download_job_repo,
+                self.external_model_repo,
+                self.model_store,
+                hf_source=HfHubSource(),
+                user_secret_service=self.user_secrets,
+            )
+        return self._model_assets
 
     # ── Session lifecycle ───────────────────────────────────────────────
 

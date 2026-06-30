@@ -28,12 +28,16 @@ class HubClient:
     Parameters
     ----------
     token : str | None
-        HuggingFace Hub API token.  Passed through to ``HfApi``; many
-        public models do not require one, but gated models do.
     """
 
     def __init__(self, token: str | None = None) -> None:
-        from huggingface_hub import HfApi  # finetune extra
+        try:
+            from huggingface_hub import HfApi
+        except ImportError:
+            raise ImportError(
+                "HuggingFace Hub client requires the [finetune] extra. "
+                "Run: pip install anvil[finetune]"
+            ) from None
 
         self._api = HfApi(token=token)
 
