@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import shutil
 from datetime import UTC, datetime
 from pathlib import Path
@@ -38,6 +39,33 @@ except ImportError:
     _MERGE_DEPS_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
+
+# ── Path sanitisation ────────────────────────────────────────────────────
+
+
+def _safe_path_component(name: str, max_len: int = 128) -> str:
+    """Sanitise a user-controlled string for safe use as a filesystem component.
+
+    Allows only ``[a-zA-Z0-9._-]`` and truncates to *max_len*.
+    Raises ``ValueError`` if the result is empty after sanitisation.
+
+    Parameters
+    ----------
+    name : str
+        The raw string (e.g. ``adapter_id``).
+    max_len : int
+        Maximum length of the sanitised component (default ``128``).
+
+    Returns
+    -------
+    str
+        Safe path component.
+    """
+    safe = re.sub(r"[^a-zA-Z0-9._-]", "_", name)[:max_len]
+    if not safe:
+        raise ValueError(f"Path component {name!r} is empty after sanitisation")
+    return safe
+
 
 # ── License restrictions ─────────────────────────────────────────────
 
@@ -134,7 +162,9 @@ class AdapterMergeService:
 
         source_identifier = await self._resolve_source_identifier(model_id)
 
-        merged_path = f"models/{model_id}/merged/{adapter_id}/"
+        safe_model_id = str(_safe_path_component(str(model_id)))
+        safe_adapter_id = _safe_path_component(adapter_id)
+        merged_path = f"models/{safe_model_id}/merged/{safe_adapter_id}/"
 
         base_model = AutoModelForCausalLM.from_pretrained(
             source_identifier,
@@ -233,13 +263,17 @@ class AdapterMergeService:
             return {"error": msg}
 
         # ── Export directly to HF format ─────────────────────────
-        final_path = Path(f"data/storage/models/{model_id}/merged/{adapter_id}/")
+        safe_model_id = str(_safe_path_component(str(model_id)))
+        safe_adapter_id = _safe_path_component(adapter_id)
+        final_path = Path(
+            f"data/storage/models/{safe_model_id}/merged/{safe_adapter_id}/"
+        )
         tmp_dir: str | None = None
 
         try:
             # Stage on the same filesystem as destination for atomic
             # os.replace
-            tmp_dir = str(final_path.parent / f".{adapter_id}.tmp-{uuid4().hex}")
+            tmp_dir = str(final_path.parent / f".{safe_adapter_id}.tmp-{uuid4().hex}")
             tmp_path = Path(tmp_dir)
             tmp_path.mkdir(parents=True, exist_ok=True)  # noqa: ASYNC240
 
@@ -258,7 +292,7 @@ class AdapterMergeService:
 
             # ── Atomic publish ───────────────────────────────────
             if final_path.exists():  # noqa: ASYNC240  # unavoidable sync I/O
-                backup = final_path.parent / f".{adapter_id}.bak-{uuid4().hex}"
+                backup = final_path.parent / f".{safe_adapter_id}.bak-{uuid4().hex}"
                 os.replace(str(final_path), str(backup))
                 try:
                     os.replace(str(tmp_path), str(final_path))

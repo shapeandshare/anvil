@@ -33,6 +33,7 @@ from ...db.session import AsyncSessionLocal
 from ..tracking.tracking import TrackingService
 from .loaded_model import LoadedModel
 from .tokenizer_factory import create_tokenizer
+from .transformers_tokenizer_adapter import TransformersTokenizerAdapter
 
 try:
     from peft import PeftModel
@@ -173,64 +174,6 @@ def _hf_state_dict_to_anvil_format(
 
 
 logger = logging.getLogger("anvil.services.inference.tokenizer")
-
-
-class _TransformersTokenizerAdapter(Tokenizer):
-    """Wrap a ``transformers.PreTrainedTokenizer`` to satisfy the ``Tokenizer`` interface.
-
-    Used when composing adapters for HuggingFace subword models whose
-    tokenizer does not map directly to the anvil built-in formats.
-    Requires the ``[finetune]`` extra.
-
-    Parameters
-    ----------
-    tokenizer : transformers.PreTrainedTokenizer
-        A loaded HF tokenizer instance.
-    """
-
-    def __init__(self, tokenizer: Any) -> None:
-        self._tokenizer = tokenizer
-
-    def encode(self, text: str) -> list[int]:
-        """Encode text using the HF tokenizer.
-
-        Parameters
-        ----------
-        text : str
-            Input text.
-
-        Returns
-        -------
-        list of int
-            Token ID sequence.
-        """
-        return self._tokenizer.encode(text)  # type: ignore[no-any-return]
-
-    def decode(self, ids: list[int]) -> str:
-        """Decode token IDs using the HF tokenizer.
-
-        Parameters
-        ----------
-        ids : list of int
-            Token ID sequence.
-
-        Returns
-        -------
-        str
-            Decoded text with special tokens stripped.
-        """
-        return str(self._tokenizer.decode(ids, skip_special_tokens=True))
-
-    @property
-    def vocab_size(self) -> int:
-        """Total vocabulary size."""
-        return int(self._tokenizer.vocab_size)
-
-    @property
-    def bos_id(self) -> int | None:
-        """BOS token ID from the HF tokenizer."""
-        val: int | None = self._tokenizer.bos_token_id
-        return val
 
 
 def _is_bos(token_id: int, bos_id: int | None) -> bool:
@@ -817,20 +760,12 @@ class InferenceService:
         Returns
         -------
         Tokenizer
-            A tokenizer instance matching the base model's vocabulary.
+            An adapter instance wrapping the HF tokenizer.
         """
-        if not _TRANSFORMERS_AVAILABLE:
-            raise RuntimeError(
-                "Adapter inference requires transformers. "
-                "Install: pip install anvil[finetune]"
-            )
-        try:
-            from transformers import AutoTokenizer
+        from transformers import AutoTokenizer  # [finetune] extra
 
-            hf_tok = AutoTokenizer.from_pretrained(source_id)
-            return _TransformersTokenizerAdapter(hf_tok)
-        except Exception as e:
-            raise ValueError(f"Failed to load tokenizer for {source_id!r}: {e}") from e
+        hf_tok = AutoTokenizer.from_pretrained(source_id)
+        return TransformersTokenizerAdapter(hf_tok)
 
     async def _resolve_default_id(self) -> int:
         """Resolve the default model (demo) to its numeric experiment ID.
