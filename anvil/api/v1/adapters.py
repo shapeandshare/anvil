@@ -11,8 +11,6 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from ...services.training.merge_service import AdapterMergeService
-from ...storage.local import LocalFileStore
 from ...workbench import AnvilWorkbench
 from ..deps import get_workbench
 
@@ -123,8 +121,9 @@ async def merge_adapter(
     """Merge a LoRA adapter into its base model.
 
     Produces a standalone merged model artifact with no adapter
-    dependency. The original adapter files are deleted and the
-    adapter is marked as merged.
+    dependency. The original adapter files are preserved (non-
+    destructive). Call ``.../merge-and-export`` for the full
+    pipeline including safetensors conversion and MLflow lineage.
 
     Parameters
     ----------
@@ -145,10 +144,8 @@ async def merge_adapter(
     HTTPException
         If the adapter is not found (404) or merge fails (500).
     """
-    store = LocalFileStore()
-    merge_svc = AdapterMergeService(workbench.lora_adapter_repo, store)
     try:
-        merged_path = await merge_svc.merge(model_id, adapter_id)
+        merged_path = await workbench.merge_service.merge(model_id, adapter_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except RuntimeError as e:
@@ -156,3 +153,46 @@ async def merge_adapter(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
     return {"merged_path": merged_path}
+
+
+@router.post("/models/{model_id}/adapters/{adapter_id}/merge-and-export")
+async def merge_and_export_adapter(
+    model_id: int,
+    adapter_id: str,
+    workbench: AnvilWorkbench = Depends(get_workbench),
+) -> dict[str, Any]:
+    """Full merge+export pipeline with safetensors and MLflow lineage.
+
+    Merges the LoRA adapter into the base model, exports directly to
+    HuggingFace format (safetensors + config + tokenizer), publishes
+    atomically, and registers MLflow lineage.
+
+    Parameters
+    ----------
+    model_id : int
+        The base model's external model ID.
+    adapter_id : str
+        Adapter identifier (e.g. ``"run_42"``).
+    workbench : AnvilWorkbench
+        Request-scoped workbench.
+
+    Returns
+    -------
+    dict
+        ``path`` — the storage path of the merged artifact, and
+        ``lineage`` — MLflow registration result.
+
+    Raises
+    ------
+    HTTPException
+        If the adapter is not found (404), export fails (500), or
+        license check fails.
+    """
+    result = await workbench.merge_service.merge_and_export(model_id, adapter_id)
+    if "error" in result:
+        err = str(result["error"])
+        if "not found" in err or "license" in err:
+            raise HTTPException(status_code=404, detail=err)
+        logger.exception("Merge+export failed for %s/%s: %s", model_id, adapter_id, err)
+        raise HTTPException(status_code=500, detail=err)
+    return result
