@@ -225,9 +225,9 @@
       <span class="output-indicator" id="output-indicator"></span>
       <span class="output-toggle-icon collapsed" id="output-toggle-icon">▼</span>
     </div>
+    <div id="output-actions" class="output-actions"></div>
     <div id="output-body" class="section-card__content-collapsible collapsed">
       <pre class="loss-display" id="loss-display"></pre>
-      <div id="output-actions" class="output-actions"></div>
     </div>
   </div>
 {% endblock %}
@@ -798,24 +798,6 @@ var gpuToggle = document.getElementById('compute_backend');
     updateModelStats(cid, did);
   };
 
-  /* ── Register Model Modal ── */
-  window.openRegisterModal = function(experimentId) {
-    var name = prompt('Register model from Experiment #' + experimentId + '\n\nEnter a name for this model:');
-    if (!name || !name.trim()) return;
-    var desc = prompt('Optional description (or leave blank):');
-    globalThis.apiFetch('/v1/registry/models', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ experiment_id: experimentId, name: name.trim(), description: desc || null }),
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      if (data.detail) { alert('Error: ' + data.detail); }
-      else { alert('Registered as "' + data.name + '" v' + data.version); }
-    })
-    .catch(function(err) { alert('Registration failed: ' + err); });
-  };
-
   /* ── Multi-run session persistence ── */
   function saveTrainingState() {
     if (!session || session.state === 'idle') return;
@@ -1078,7 +1060,6 @@ var gpuToggle = document.getElementById('compute_backend');
       html += '<span class="action-text">Experiment #' + latest.id + ' &mdash; loss ' + finalLoss + ' ' + qualityBadge + '</span>';
 
       html += '<div class="action-buttons">';
-      html += '<button class="action-btn" onclick="openRegisterModal(' + latest.id + ')">register model</button>';
       html += '<a class="action-btn" href="/v1/experiments-page">view all experiments &rarr;</a>';
       html += '<a class="btn btn-secondary" href="' + (expData.mlflow_url || '#') + '" target="_blank">mlflow &rarr;</a>';
       html += '</div>';
@@ -1400,7 +1381,7 @@ var gpuToggle = document.getElementById('compute_backend');
         if (prevBadge) prevBadge.remove();
       }
 
-      /* 9. Refresh output actions (register model, view experiments, mlflow link) */
+      /* 9. Refresh output actions (view experiments, mlflow link) */
       if (exp.final_loss != null) {
         refreshOutputActions({
           experiments: [exp],
