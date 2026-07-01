@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from ...db.models.external_model import ExternalModel
 from ...db.repositories.external_models import ExternalModelRepository
 from ...db.repositories.lora_adapter_repository import LoRAAdapterRepository
 from ...storage.local import LocalFileStore
@@ -376,8 +377,6 @@ class AdapterMergeService:
             raise RuntimeError(
                 f"Cannot resolve base model {model_id}: no ExternalModelRepository"
             )
-        from ...db.models.external_model import ExternalModel
-
         model: ExternalModel | None = await self._external_model_repo.get(model_id)
         if model is None:
             raise RuntimeError(f"External model {model_id!r} not found")
@@ -399,8 +398,6 @@ class AdapterMergeService:
         """
         if self._external_model_repo is None:
             return True, ""
-
-        from ...db.models.external_model import ExternalModel
 
         model: ExternalModel | None = await self._external_model_repo.get(model_id)
         if model is None:

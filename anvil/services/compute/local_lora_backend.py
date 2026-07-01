@@ -208,9 +208,9 @@ def _run_real_lora(
         If ``stop_check()`` returns ``True`` during training.
     """
     # Lazy imports — these are optional dependencies behind ``[finetune]``.
-    import torch
-    import transformers
-    from peft import LoraConfig, get_peft_model
+    import torch  # import-placement:allow
+    import transformers  # import-placement:allow
+    from peft import LoraConfig, get_peft_model  # import-placement:allow
 
     # ── resolve model path (v1 placeholder) ────────────────────────────
     if base_model_ref is not None:
@@ -222,7 +222,7 @@ def _run_real_lora(
     # ── configure quantization for QLoRA ───────────────────────────────
     quantization_config: Any = None
     if method == "qlora" and _bitsandbytes_available():
-        from transformers import BitsAndBytesConfig
+        from transformers import BitsAndBytesConfig  # import-placement:allow
 
         quantization_config = BitsAndBytesConfig(
             load_in_4bit=True,

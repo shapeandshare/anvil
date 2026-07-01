@@ -43,7 +43,7 @@ except ImportError:
     _PEFT_AVAILABLE = False
 
 try:
-    from transformers import AutoModelForCausalLM
+    from transformers import AutoModelForCausalLM, AutoTokenizer  # [finetune]
 
     _TRANSFORMERS_AVAILABLE = True
 except ImportError:
@@ -762,8 +762,6 @@ class InferenceService:
         Tokenizer
             An adapter instance wrapping the HF tokenizer.
         """
-        from transformers import AutoTokenizer  # [finetune] extra
-
         hf_tok = AutoTokenizer.from_pretrained(source_id)
         return TransformersTokenizerAdapter(hf_tok)
 
