@@ -120,3 +120,51 @@ class TestExternalModelImportApi:
             },
         )
         assert resp.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_list_import_jobs(self, client):
+        """GET /v1/models/import/jobs returns the list of import jobs."""
+        resp = await client.post(
+            "/v1/models/import",
+            json={
+                "source": "huggingface",
+                "identifier": "org/list-me",
+                "name": "list-test",
+            },
+        )
+        assert resp.status_code == 202
+        first_job_id = resp.json()["job_id"]
+
+        list_resp = await client.get("/v1/models/import/jobs")
+        assert list_resp.status_code == 200
+        data = list_resp.json()
+        assert "data" in data
+        assert len(data["data"]) >= 1
+        assert any(j["job_id"] == first_job_id for j in data["data"])
+
+    @pytest.mark.asyncio
+    async def test_retry_import_job(self, client):
+        """POST /v1/models/import/{job_id}/retry returns 202 with a new job_id."""
+        resp = await client.post(
+            "/v1/models/import",
+            json={
+                "source": "huggingface",
+                "identifier": "org/retry-target",
+                "name": "retry-test",
+            },
+        )
+        assert resp.status_code == 202
+        original_id = resp.json()["job_id"]
+
+        retry_resp = await client.post(f"/v1/models/import/{original_id}/retry")
+        assert retry_resp.status_code == 202
+        retry_data = retry_resp.json()
+        assert "job_id" in retry_data
+        assert retry_data["job_id"] != original_id
+        assert retry_data["status"] == "queued"
+
+    @pytest.mark.asyncio
+    async def test_retry_missing_job_returns_404(self, client):
+        """POST /v1/models/import/999999/retry returns 404."""
+        resp = await client.post("/v1/models/import/999999/retry")
+        assert resp.status_code == 404

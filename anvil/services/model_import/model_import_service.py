@@ -265,6 +265,46 @@ class ModelImportService:
         """
         return await self._model_import_job_repo.get(job_id)
 
+    async def list_jobs(self) -> Sequence[ModelImportJob]:
+        """Return all import jobs, newest first.
+
+        Returns
+        -------
+        Sequence[ModelImportJob]
+            All import job entries.
+        """
+        return await self._model_import_job_repo.list_all()
+
+    async def retry_import(self, job_id: int) -> int:
+        """Re-submit a failed (or any) import job, creating a new job entry.
+
+        Fetches the existing job's source/identifier/revision and submits
+        a fresh import with the same parameters.
+
+        Parameters
+        ----------
+        job_id : int
+            Primary key of the job to retry.
+
+        Returns
+        -------
+        int
+            The new job's primary key.
+
+        Raises
+        ------
+        ValueError
+            If no job exists with the given ``job_id``.
+        """
+        job = await self._model_import_job_repo.get(job_id)
+        if job is None:
+            raise ValueError(f"Import job not found: {job_id}")
+        return await self.submit_import(
+            source=job.source_type,
+            identifier=job.source_identifier,
+            revision=job.revision,
+        )
+
     async def get_external_model(self, model_id: int) -> ExternalModel | None:
         """Return an external model by primary key.
 

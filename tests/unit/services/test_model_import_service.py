@@ -127,3 +127,51 @@ async def test_submit_unknown_source_raises(svc_factory):
         svc = make(session, _FakeSource())
         with pytest.raises(ValueError):
             await svc.submit_import(source="local", identifier="/test/x")
+
+
+@pytest.mark.asyncio
+async def test_list_jobs_returns_all(svc_factory):
+    """list_jobs returns all submitted import jobs."""
+    maker, make = svc_factory
+    async with maker() as session:
+        svc = make(session, _FakeSource())
+        j1 = await svc.submit_import(source="huggingface", identifier="org/job-a")
+        j2 = await svc.submit_import(source="huggingface", identifier="org/job-b")
+        jobs = await svc.list_jobs()
+        assert len(jobs) >= 2
+        ids = {j.id for j in jobs}
+        assert j1 in ids
+        assert j2 in ids
+
+
+@pytest.mark.asyncio
+async def test_retry_import_creates_new_job(svc_factory):
+    """retry_import creates a new job with the same source_identifier."""
+    maker, make = svc_factory
+    async with maker() as session:
+        svc = make(session, _FakeSource(fail=True))
+        original_id = await svc.submit_import(
+            source="huggingface", identifier="org/retry-me"
+        )
+        await svc.run_import(original_id)
+        original_job = await svc.get_job_status(original_id)
+        assert original_job is not None
+        assert original_job.status == "failed"
+
+        new_id = await svc.retry_import(original_id)
+        assert new_id != original_id
+
+        new_job = await svc.get_job_status(new_id)
+        assert new_job is not None
+        assert new_job.source_identifier == "org/retry-me"
+        assert new_job.status == "queued"
+
+
+@pytest.mark.asyncio
+async def test_retry_missing_job_raises(svc_factory):
+    """retry_import on a missing job raises ValueError."""
+    maker, make = svc_factory
+    async with maker() as session:
+        svc = make(session, _FakeSource())
+        with pytest.raises(ValueError, match="Import job not found: 9999"):
+            await svc.retry_import(9999)

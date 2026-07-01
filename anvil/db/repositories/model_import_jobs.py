@@ -7,8 +7,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import datetime
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.model_import_job import ModelImportJob
@@ -40,6 +42,19 @@ class ModelImportJobRepository:
             The matching job, or ``None`` if not found.
         """
         return await self._session.get(ModelImportJob, id)
+
+    async def list_all(self) -> Sequence[ModelImportJob]:
+        """Return all import jobs ordered by creation time (newest first).
+
+        Returns
+        -------
+        Sequence[ModelImportJob]
+            All import job entries.
+        """
+        result = await self._session.execute(
+            select(ModelImportJob).order_by(ModelImportJob.created_at.desc())
+        )
+        return result.scalars().all()
 
     async def add(self, job: ModelImportJob) -> ModelImportJob:
         """Persist a new import job.
