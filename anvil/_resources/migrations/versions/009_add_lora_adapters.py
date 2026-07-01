@@ -48,6 +48,11 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint(
+            "external_model_id",
+            "adapter_id",
+            name="uq_lora_adapters_model_adapter",
+        ),
         sa.ForeignKeyConstraint(
             ["external_model_id"],
             ["external_models.id"],
@@ -58,11 +63,6 @@ def upgrade() -> None:
         "ix_lora_adapters_external_model_id",
         "lora_adapters",
         ["external_model_id"],
-    )
-    op.create_unique_constraint(
-        "uq_lora_adapters_model_adapter",
-        "lora_adapters",
-        ["external_model_id", "adapter_id"],
     )
 
 
