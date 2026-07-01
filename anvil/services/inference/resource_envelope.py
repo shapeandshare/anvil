@@ -22,6 +22,10 @@ class ResourceEnvelope(BaseModel):
         ``"cpu"`` key.
     supported_methods : list[str]
         Supported fine-tuning methods. Must contain at least one entry.
+    default_target_modules : list[str] | None
+        Default LoRA target modules for this architecture
+        (e.g. ``["q_proj", "v_proj"]`` for Llama). ``None`` if the
+        model does not support LoRA or defaults are not specified.
     """
 
     min_ram_gb: float = Field(ge=0, description="Minimum system RAM in GB")
@@ -30,6 +34,9 @@ class ResourceEnvelope(BaseModel):
     )
     supported_methods: list[str] = Field(
         min_length=1, description="Supported fine-tuning methods"
+    )
+    default_target_modules: list[str] | None = Field(
+        default=None, description="Default LoRA target modules per architecture"
     )
 
     @field_validator("min_vram_per_backend")

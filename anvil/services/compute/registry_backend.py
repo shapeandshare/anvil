@@ -17,10 +17,13 @@ class RegistryBackend(StrEnum):
         Local stdlib backend (``"local-stdlib"``).
     LOCAL_TORCH : str
         Local PyTorch backend (``"local-torch"``).
+    LOCAL_LORA : str
+        Local LoRA fine-tuning backend (``"local-lora"``).
     MODAL : str
         Modal cloud GPU backend (``"modal"``).
     """
 
     LOCAL_STDLIB = "local-stdlib"
     LOCAL_TORCH = "local-torch"
+    LOCAL_LORA = "local-lora"
     MODAL = "modal"

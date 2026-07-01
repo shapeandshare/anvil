@@ -17,6 +17,7 @@ from pathlib import Path
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 
+from .adapters import router as adapters_router
 from .backup import router as backup_router
 from .compute import router as compute_router
 from .config import router as config_router
@@ -59,6 +60,7 @@ router.include_router(backup_router)
 router.include_router(models_router)
 router.include_router(fine_tune_datasets_router)
 router.include_router(user_secrets_router)
+router.include_router(adapters_router)
 
 MODELS_DIR = Path("data/models")
 """Path: Default models directory (mirrors ``workspace_paths.models_dir``)."""

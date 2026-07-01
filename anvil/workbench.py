@@ -40,6 +40,7 @@ from .db.repositories.instance_registry import (
     create_registry_session,
 )
 from .db.repositories.licenses import LicenseRepository
+from .db.repositories.lora_adapter_repository import LoRAAdapterRepository
 from .db.repositories.model_asset_repository import ModelAssetRepository
 from .db.repositories.model_import_jobs import ModelImportJobRepository
 from .db.repositories.runtime_config import RuntimeConfigRepository
@@ -171,6 +172,8 @@ class AnvilWorkbench:
         self._secret_rotation: SecretRotationService | None = None
         self._model_assets: ModelAssetService | None = None
         self._model_store: LocalFileStore | None = None
+        # LoRA fine-tuning (feature 044).
+        self._lora_adapter_repo: LoRAAdapterRepository | None = None
 
     # ── Stateless service accessors ─────────────────────────────────────
 
@@ -556,6 +559,13 @@ class AnvilWorkbench:
         if self._model_asset_repo is None:
             self._model_asset_repo = ModelAssetRepository(self._session)
         return self._model_asset_repo
+
+    @property
+    def lora_adapter_repo(self) -> LoRAAdapterRepository:
+        """Lazily-initialised ``LoRAAdapterRepository`` bound to *session*."""
+        if self._lora_adapter_repo is None:
+            self._lora_adapter_repo = LoRAAdapterRepository(self._session)
+        return self._lora_adapter_repo
 
     @property
     def asset_download_job_repo(self) -> AssetDownloadJobRepository:

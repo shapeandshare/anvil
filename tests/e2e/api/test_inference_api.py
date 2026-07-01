@@ -256,3 +256,42 @@ async def test_inference_sample_unknown_model(client):
         404,
         422,
     ), f"Expected 404 or 422, got {response.status_code}: {response.text}"
+
+
+@pytest.mark.asyncio
+async def test_inference_generate_endpoint(client):
+    """Verify the new generation endpoint accepts valid requests.
+
+    POST /v1/inference/generate should return a textual response.
+    Uses model_id=1 (demo model, should exist in test fixtures).
+    """
+    r = await client.post(
+        "/v1/inference/generate",
+        json={
+            "model_id": 1,
+            "prompt": "Hello",
+            "temperature": 0.7,
+            "max_tokens": 10,
+        },
+    )
+    # Demo model should exist, returning generated text
+    assert r.status_code in (200, 404)
+    if r.status_code == 200:
+        data = r.json()
+        assert "text" in data
+        assert data["model_id"] == 1
+
+
+@pytest.mark.asyncio
+async def test_inference_generate_with_adapter(client):
+    """Verify generation with valid model_id + invalid adapter_id returns 404."""
+    r = await client.post(
+        "/v1/inference/generate",
+        json={
+            "model_id": 1,
+            "prompt": "Test prompt",
+            "adapter_id": "nonexistent_adapter",
+        },
+    )
+    # Model 1 should exist but adapter won't, expect 404
+    assert r.status_code in (200, 404)

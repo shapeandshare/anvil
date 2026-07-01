@@ -23,69 +23,13 @@ catalog:
         mps: 6.0
       supported_methods:
         - "lora"
-
-  - hf_id: "TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T"
-    display_name: "TinyLlama 1.1B (3T tokens)"
-    params: "1.1B"
-    license: "Apache-2.0"
-    architecture: "LlamaForCausalLM"
-    tokenizer_family: "SentencePiece"
-    url: "https://huggingface.co/TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T"
-    tags:
-      - "tiny"
-      - "base"
-      - "pretrained"
-    resource_envelope:
-      min_ram_gb: 8.0
-      min_vram_per_backend:
-        cpu: 0
-        cuda: 4.0
-        mps: 6.0
-      supported_methods:
-        - "lora"
-
-  # --- Track-only (not in v1 allow-list) ---
-  - hf_id: "google/gemma-2-2b-it"
-    display_name: "Gemma 2 2B IT"
-    params: "2B"
-    license: "Gemma"
-    architecture: "GemmaForCausalLM"
-    tokenizer_family: "SentencePiece"
-    url: "https://huggingface.co/google/gemma-2-2b-it"
-    tags:
-      - "gemma"
-      - "instruction"
-      - "google"
-    resource_envelope:
-      min_ram_gb: 8.0
-      min_vram_per_backend:
-        cpu: 0
-        cuda: 6.0
-        mps: 8.0
-      supported_methods:
-        - "lora"
-
-  - hf_id: "facebook/opt-125m"
-    display_name: "OPT 125M"
-    params: "125M"
-    license: "MIT"
-    architecture: "OPTForCausalLM"
-    tokenizer_family: "BPE"
-    url: "https://huggingface.co/facebook/opt-125m"
-    tags:
-      - "opt"
-      - "base"
-      - "pretrained"
-      - "meta"
-    resource_envelope:
-      min_ram_gb: 2.0
-      min_vram_per_backend:
-        cpu: 0
-        cuda: 0.5
-        mps: 1.0
-      supported_methods:
-        - "lora"
         - "full"
+      default_target_modules:
+        - "q_proj"
+        - "v_proj"
+      default_target_modules:
+        - "q_proj"
+        - "v_proj"
 
   - hf_id: "Qwen/Qwen2.5-0.5B-Instruct"
     display_name: "Qwen 2.5 0.5B Instruct"

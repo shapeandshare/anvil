@@ -23,6 +23,7 @@ from .inference_schemas import (
     InferenceAutogradBody,
     InferenceBackwardBody,
     InferenceEmbeddingsBody,
+    InferenceGenerateBody,
     InferenceLossBody,
     InferenceSamplingBody,
     InferenceTokenizeBody,
@@ -356,3 +357,47 @@ async def inference_model_params(
     except (ValueError, FileNotFoundError) as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     return _svc.model_params(loaded)
+
+
+@router.post("/inference/generate")
+async def inference_generate(body: InferenceGenerateBody) -> dict[str, Any]:
+    """Generate text from a prompt using a model with optional LoRA adapter.
+
+    Parameters
+    ----------
+    body : InferenceGenerateBody
+        Request body with ``model_id``, ``prompt``, optional ``adapter_id``,
+        ``temperature``, and ``max_tokens``.
+
+    Returns
+    -------
+    dict
+        Generated text with ``"text"``, ``"model_id"``, and optionally
+        ``"adapter_id"`` fields.
+
+    Raises
+    ------
+    HTTPException
+        If the model is not found (404), or adapter not found (404).
+    """
+    try:
+        loaded = await _svc.load_model(
+            model_id=body.model_id,
+            adapter_id=body.adapter_id,
+        )
+    except (ValueError, FileNotFoundError) as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+    generated = _svc.generate(
+        loaded,
+        prompt=body.prompt,
+        temperature=body.temperature,
+        max_tokens=body.max_tokens,
+    )
+    result: dict[str, Any] = {
+        "text": generated,
+        "model_id": body.model_id,
+    }
+    if body.adapter_id is not None:
+        result["adapter_id"] = body.adapter_id
+    return result

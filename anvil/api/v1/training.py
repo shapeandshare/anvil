@@ -94,6 +94,21 @@ class TrainConfig(BaseModel):
         (``n_embd``, ``n_head``, ``n_layer``, ``block_size``) are
         inherited from the base model and explicit overrides are
         rejected with HTTP 422.
+    method : str
+        Training method. ``"full"`` (default, from-scratch pretraining),
+        ``"lora"``, or ``"qlora"``. When ``"full"``, existing behavior is
+        unchanged and ``lora_*`` fields must be absent.
+    lora_rank : int | None
+        LoRA rank ``r``. Required when ``method`` is ``"lora"`` or ``"qlora"``.
+    lora_alpha : float | None
+        LoRA scaling alpha. Required when method is LoRA/QLoRA.
+    lora_target_modules : list[str] | None
+        Target module names (e.g. ``["q_proj", "v_proj"]``). Defaults to
+        per-architecture values from the curated catalog if omitted.
+    lora_dropout : float | None
+        LoRA dropout rate. Range ``[0, 1]``.
+    lora_bias : str | None
+        LoRA bias setting: ``"none"``, ``"all"``, or ``"lora_only"``.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -113,6 +128,13 @@ class TrainConfig(BaseModel):
     content_version_id: int | None = None
     device: str | None = None
     base_model_ref: int | None = None
+
+    method: str = Field(default="full")
+    lora_rank: int | None = Field(default=None, ge=1, le=1024)
+    lora_alpha: float | None = Field(default=None, gt=0)
+    lora_target_modules: list[str] | None = None
+    lora_dropout: float | None = Field(default=None, ge=0, le=1)
+    lora_bias: str | None = None
 
 
 router = APIRouter()
@@ -221,6 +243,7 @@ def _validate_hparams(
 
 def _resolve_training_backend(
     compute_backend: str | None,
+    method: str = "full",
 ) -> tuple[TrainingEngine, str]:
     """Resolve compute backend and device for training.
 
@@ -228,6 +251,9 @@ def _resolve_training_backend(
     ----------
     compute_backend : str | None
         Compute backend identifier (e.g. ``"auto"``, ``"local-torch"``).
+    method : str, optional
+        Training method (``"full"``, ``"lora"``, ``"qlora"``).
+        Defaults to ``"full"``.
 
     Returns
     -------
@@ -240,7 +266,9 @@ def _resolve_training_backend(
         With status 422 if the requested backend is unavailable.
     """
     try:
-        resolved = resolve_backend({"compute_backend": compute_backend})
+        resolved = resolve_backend(
+            {"compute_backend": compute_backend, "method": method}
+        )
     except ComputeBackendUnavailable as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
     return resolved["engine"], resolved["device"]
@@ -596,7 +624,49 @@ async def start_training(config: TrainConfig) -> dict[str, Any]:
     """
     _validate_hparams(config.n_embd, config.n_head, config.block_size)
 
-    if config.base_model_ref is not None:
+    # ── LoRA/QLoRA validation ──────────────────────────────────────────
+    method = config.method or "full"
+
+    if method in ("lora", "qlora"):
+        if config.base_model_ref is None:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    "base_model_ref is required when method is "
+                    f"{method!r}. Select an imported HuggingFace model "
+                    "to fine-tune."
+                ),
+            )
+        if config.lora_rank is None:
+            raise HTTPException(
+                status_code=422,
+                detail="lora_rank is required when method is {method!r}.",
+            )
+    elif method == "full":
+        if any(
+            v is not None
+            for v in (
+                config.lora_rank,
+                config.lora_alpha,
+                config.lora_target_modules,
+                config.lora_dropout,
+                config.lora_bias,
+            )
+        ):
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    "lora_* fields are not allowed when method is 'full'. "
+                    "Set method to 'lora' or 'qlora' for LoRA fine-tuning."
+                ),
+            )
+    else:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Unknown method: {method!r}. Must be 'full', 'lora', or 'qlora'.",
+        )
+
+    if config.base_model_ref is not None and method == "full":
         inference = InferenceService()
         try:
             base_model = await inference.load_model(model_id=config.base_model_ref)
@@ -640,7 +710,9 @@ async def start_training(config: TrainConfig) -> dict[str, Any]:
                 ),
             )
 
-    engine_backend, device = _resolve_training_backend(config.compute_backend)
+    engine_backend, device = _resolve_training_backend(
+        config.compute_backend, method=method
+    )
 
     gpu_info = detect_gpu()
     memory_est = _estimate_memory(engine_backend, config, gpu_info)

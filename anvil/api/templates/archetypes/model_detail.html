@@ -38,6 +38,15 @@
       <div style="margin-top:var(--space-4);">
         <button class="btn btn-secondary" onclick="deleteModel()" style="color:var(--danger);">Delete Entire Model</button>
       </div>
+      <!-- Merge Adapter button (spec 044) -->
+      <div id="merge-section" class="action-block" style="display:none;">
+        <h3>LoRA Adapters</h3>
+        <p class="action-desc" id="adapter-status">No adapters found for this model.</p>
+        <div id="adapter-list"></div>
+        <button id="merge-adapter-btn" class="btn btn-primary" style="display:none;" onclick="window.mergeSelectedAdapter()">
+          Merge Selected Adapter
+        </button>
+      </div>
     </div>
     {% endif %}
   </div>
@@ -197,6 +206,46 @@
   };
 
   loadModelDetail();
+
+  // spec 044: Load adapters for this model and show merge UI
+  if (modelId) {
+    fetch('/v1/models/' + modelId + '/adapters')
+      .then(function(r) { return r.json(); })
+      .then(function(adapters) {
+        var section = document.getElementById('merge-section');
+        var status = document.getElementById('adapter-status');
+        var list = document.getElementById('adapter-list');
+        var btn = document.getElementById('merge-adapter-btn');
+        if (!section) return;
+        section.style.display = 'block';
+        if (!adapters || adapters.length === 0) {
+          status.textContent = 'No LoRA adapters found for this model.';
+          return;
+        }
+        status.textContent = adapters.length + ' LoRA adapter(s) found:';
+        var htmlStr = '<select id="adapter-select" class="form-input">';
+        adapters.forEach(function(a) {
+          htmlStr += '<option value="' + a.adapter_id + '">'
+            + a.adapter_id + (a.merged_at ? ' (merged)' : '') + '</option>';
+        });
+        htmlStr += '</select>';
+        list.innerHTML = htmlStr;
+        btn.style.display = 'inline-block';
+      });
+  }
+
+  window.mergeSelectedAdapter = function() {
+    var sel = document.getElementById('adapter-select');
+    if (!sel || !sel.value) return;
+    if (!confirm('Merge adapter ' + sel.value + ' into the base model? This cannot be undone.')) return;
+    fetch('/v1/models/' + modelId + '/adapters/' + sel.value + '/merge', { method: 'POST' })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        alert('Adapter merged successfully: ' + data.merged_path);
+        location.reload();
+      })
+      .catch(function(err) { alert('Merge failed: ' + err.message); });
+  };
 })();
 </script>
 {% endif %}
