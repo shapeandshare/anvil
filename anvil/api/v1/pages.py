@@ -328,6 +328,23 @@ async def hf_browser_page(
                 "runnable_status": runnable,
             }
         )
+    import_jobs_raw = await workbench.model_imports.list_jobs()
+    import_jobs: list[dict[str, object]] = [
+        {
+            "job_id": j.id,
+            "status": j.status,
+            "source_type": j.source_type,
+            "source_identifier": j.source_identifier,
+            "revision": j.revision,
+            "started_at": j.started_at.isoformat() if j.started_at else None,
+            "finished_at": j.finished_at.isoformat() if j.finished_at else None,
+            "error_code": j.error_code,
+            "error_message": j.error_message,
+            "external_model_id": j.external_model_id,
+            "created_at": j.created_at.isoformat(),
+        }
+        for j in import_jobs_raw
+    ]
     host_backend = str(gpu.backend) if gpu.backend else "cpu"
     return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
@@ -338,6 +355,7 @@ async def hf_browser_page(
             "accepted_format": browser.accepted_format(),
             "host_backend": host_backend,
             "host_ram_gb": ram_gb,
+            "import_jobs": import_jobs,
             "lesson_049_available": False,
             "hf_available": browser.hf_available(),
         },

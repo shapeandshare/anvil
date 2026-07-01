@@ -90,6 +90,38 @@ def _fire_background_import(job_id: int) -> None:
     )
 
 
+@router.get("/models/import/jobs")
+async def list_import_jobs(
+    workbench: AnvilWorkbench = Depends(get_workbench),
+) -> dict[str, object]:
+    """Return all model-import jobs, newest first.
+
+    Returns
+    -------
+    dict
+        A JSON body with a ``"data"`` key containing a list of job dicts.
+    """
+    jobs = await workbench.model_imports.list_jobs()
+    return {
+        "data": [
+            {
+                "job_id": j.id,
+                "status": j.status,
+                "source_type": j.source_type,
+                "source_identifier": j.source_identifier,
+                "revision": j.revision,
+                "started_at": j.started_at.isoformat() if j.started_at else None,
+                "finished_at": j.finished_at.isoformat() if j.finished_at else None,
+                "error_code": j.error_code,
+                "error_message": j.error_message,
+                "external_model_id": j.external_model_id,
+                "created_at": j.created_at.isoformat(),
+            }
+            for j in jobs
+        ]
+    }
+
+
 @router.get("/models/import/{job_id}/status")
 async def import_job_status(
     job_id: int,
@@ -109,6 +141,41 @@ async def import_job_status(
         "error_message": job.error_message,
         "external_model_id": job.external_model_id,
     }
+
+
+@router.post("/models/import/{job_id}/retry", status_code=202)
+async def retry_import_job(
+    job_id: int,
+    workbench: AnvilWorkbench = Depends(get_workbench),
+) -> dict[str, object]:
+    """Re-submit a model-import job, creating a new job entry.
+
+    Creates a fresh ``ModelImportJob`` with the same source/identifier/
+    revision as the original and fires a background resolution task.
+
+    Parameters
+    ----------
+    job_id : int
+        Primary key of the job to retry.
+
+    Returns
+    -------
+    dict
+        A JSON body with the new ``job_id`` and ``"queued"`` status.
+
+    Raises
+    ------
+    HTTPException
+        404 if the original job is not found.
+    """
+    try:
+        new_job_id = await workbench.model_imports.retry_import(job_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    _fire_background_import(new_job_id)
+
+    return {"job_id": new_job_id, "status": "queued"}
 
 
 @router.get("/models/external")

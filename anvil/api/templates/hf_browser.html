@@ -51,8 +51,52 @@
   </div>
 </div>
 
-{# ── Curated catalog ── #}
+{# ── Import Jobs ── #}
 <div class="section-card" style="--stagger-i: 2">
+  <div class="section-card__content">
+    <h2 class="type-title-2" style="margin:0 0 var(--space-2) 0;">
+      Import Jobs
+      <span class="type-caption-1" style="color:var(--text-tertiary);font-weight:400;"> · <span id="import-jobs-count">{{ import_jobs|length }}</span> jobs</span>
+    </h2>
+    <div id="import-jobs-list">
+      {% if import_jobs %}
+        {% for j in import_jobs %}
+        <div data-job-id="{{ j.job_id }}" data-status="{{ j.status }}">
+          <div style="display:flex;align-items:center;gap:var(--space-2);padding:var(--space-2) 0;border-bottom:1px solid var(--border);">
+            <span class="type-caption-1" translate="no" style="flex:1;word-break:break-all;">{{ j.source_identifier }}</span>
+            {% if j.status == "complete" %}
+            <span class="badge badge-green">complete</span>
+            {% elif j.status == "failed" %}
+            <span class="badge badge-red">failed</span>
+            {% elif j.status == "resolving" %}
+            <span class="badge badge-cyan"><span class="badge__pulse"></span>resolving</span>
+            {% else %}
+            <span class="badge" style="background:var(--text-tertiary);">queued</span>
+            {% endif %}
+            <span class="type-caption-2 job-when" style="color:var(--text-tertiary);font-variant-numeric:tabular-nums;white-space:nowrap;" data-ts="{{ j.created_at }}">—</span>
+            <div style="display:flex;gap:var(--space-1);flex-shrink:0;">
+              {% if j.status == "complete" and j.external_model_id %}
+              <a class="btn btn-sm btn-secondary" href="/v1/model-detail/{{ j.external_model_id }}">View →</a>
+              {% elif j.status == "failed" %}
+              <button class="btn btn-sm btn-primary job-retry-btn" data-job-id="{{ j.job_id }}">Retry</button>
+              <button class="btn btn-sm btn-secondary job-dismiss-btn">Dismiss</button>
+              {% endif %}
+            </div>
+          </div>
+          {% if j.status == "failed" and j.error_code %}
+          <div class="type-caption-2" style="color:var(--danger);padding:0 0 var(--space-1) 0;">{{ j.error_code }}: {{ j.error_message }}</div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+      <div class="type-subhead" style="color:var(--text-tertiary);padding:var(--space-2) 0;">No import jobs yet.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{# ── Curated catalog ── #}
+<div class="section-card" style="--stagger-i: 3">
   <div class="section-card__content">
     <h2 class="type-title-2" style="margin:0 0 var(--space-2) 0;">
       Curated Catalog
@@ -144,7 +188,7 @@
       btn.disabled = true;
       btn.textContent = 'importing...';
       try {
-        var resp = await fetch('/v1/models/import', {
+        var resp = await window.apiFetch('/v1/models/import', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ source: 'huggingface', identifier: hfId, name: name })
@@ -154,6 +198,7 @@
           btn.textContent = 'imported (job #' + data.job_id + ')';
           btn.classList.remove('btn-primary');
           btn.classList.add('btn-success');
+          fetchJobs();
         } else {
           btn.textContent = 'import failed';
           btn.disabled = false;
@@ -212,13 +257,13 @@
           b.disabled = true;
           b.textContent = 'importing...';
           try {
-            var r = await fetch('/v1/models/import', {
+            var r = await window.apiFetch('/v1/models/import', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ source: 'huggingface', identifier: hid, name: nm })
             });
             var d = await r.json();
-            b.textContent = r.ok ? 'done' : 'failed';
+            if (r.ok) { b.textContent = 'done'; fetchJobs(); } else { b.textContent = 'failed'; }
           } catch (err) {
             b.textContent = 'error';
           }
@@ -232,6 +277,157 @@
   searchBtn.addEventListener('click', doSearch);
   searchInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') doSearch(); });
   {% endif %}
+
+  /* ── Import Jobs: polling, retry, dismiss ── */
+  var _pollTimer = null;
+
+  function escHtml(s) {
+    if (s == null) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function relTime(iso) {
+    if (!iso) return '\u2014';
+    var diff = Date.now() - new Date(iso).getTime();
+    if (diff < 0) return 'just now';
+    var sec = Math.floor(diff / 1000);
+    if (sec < 60) return 'just now';
+    var min = Math.floor(sec / 60);
+    if (min < 60) return min + 'm ago';
+    var hr = Math.floor(min / 60);
+    if (hr < 24) return hr + 'h ago';
+    var d = Math.floor(hr / 24);
+    return d + 'd ago';
+  }
+
+  function statusPill(status) {
+    if (status === 'complete') return '<span class="badge badge-green">complete</span>';
+    if (status === 'failed') return '<span class="badge badge-red">failed</span>';
+    if (status === 'resolving') return '<span class="badge badge-cyan"><span class="badge__pulse"></span>resolving</span>';
+    return '<span class="badge" style="background:var(--text-tertiary);">queued</span>';
+  }
+
+  function activeExists(jobs) {
+    for (var i = 0; i < jobs.length; i++) {
+      if (jobs[i].status === 'queued' || jobs[i].status === 'resolving') return true;
+    }
+    return false;
+  }
+
+  function renderJobs(jobs) {
+    var container = document.getElementById('import-jobs-list');
+    var countEl = document.getElementById('import-jobs-count');
+    if (!container) return;
+    if (countEl) countEl.textContent = String(jobs.length);
+    if (!jobs || jobs.length === 0) {
+      container.innerHTML = '<div class="type-subhead" style="color:var(--text-tertiary);padding:var(--space-2) 0;">No import jobs yet.</div>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < jobs.length; i++) {
+      var j = jobs[i];
+      html += '<div data-job-id="' + j.job_id + '" data-status="' + j.status + '">'
+        + '<div style="display:flex;align-items:center;gap:var(--space-2);padding:var(--space-2) 0;border-bottom:1px solid var(--border);">'
+        + '<span class="type-caption-1" translate="no" style="flex:1;word-break:break-all;">' + escHtml(j.source_identifier) + '</span>'
+        + statusPill(j.status)
+        + '<span class="type-caption-2 job-when" style="color:var(--text-tertiary);font-variant-numeric:tabular-nums;white-space:nowrap;" data-ts="' + (j.created_at || '') + '">' + relTime(j.created_at) + '</span>'
+        + '<div style="display:flex;gap:var(--space-1);flex-shrink:0;">'
+        + (j.status === 'complete' && j.external_model_id
+          ? '<a class="btn btn-sm btn-secondary" href="/v1/model-detail/' + j.external_model_id + '">View \u2192</a>'
+          : (j.status === 'failed'
+            ? '<button class="btn btn-sm btn-primary job-retry-btn" data-job-id="' + j.job_id + '">Retry</button><button class="btn btn-sm btn-secondary job-dismiss-btn">Dismiss</button>'
+            : ''))
+        + '</div></div>'
+        + (j.status === 'failed' && j.error_code
+          ? '<div class="type-caption-2" style="color:var(--danger);padding:0 0 var(--space-1) 0;">' + escHtml(j.error_code) + ': ' + escHtml(j.error_message) + '</div>'
+          : '')
+        + '</div>';
+    }
+    container.innerHTML = html;
+    /* Re-wire retry and dismiss */
+    container.querySelectorAll('.job-retry-btn').forEach(function(b) {
+      b.addEventListener('click', retryJob);
+    });
+    container.querySelectorAll('.job-dismiss-btn').forEach(function(b) {
+      b.addEventListener('click', dismissJob);
+    });
+  }
+
+  function retryJob(e) {
+    var btn = e.currentTarget;
+    var jobId = btn.getAttribute('data-job-id');
+    btn.disabled = true;
+    btn.textContent = 'retrying\u2026';
+    window.apiFetch('/v1/models/import/' + jobId + '/retry', { method: 'POST' }).then(function(r) {
+      if (r.ok) {
+        fetchJobs();
+      } else {
+        btn.disabled = false;
+        btn.textContent = 'Retry';
+      }
+    }).catch(function() {
+      btn.disabled = false;
+      btn.textContent = 'Retry';
+    });
+  }
+
+  function dismissJob(e) {
+    var btn = e.currentTarget;
+    var wrapper = btn.closest('[data-job-id]');
+    if (wrapper) {
+      wrapper.parentNode.removeChild(wrapper);
+      var countEl = document.getElementById('import-jobs-count');
+      var container = document.getElementById('import-jobs-list');
+      var remaining = container ? container.querySelectorAll('[data-job-id]').length : 0;
+      if (countEl) countEl.textContent = String(remaining);
+      if (remaining === 0) {
+        container.innerHTML = '<div class="type-subhead" style="color:var(--text-tertiary);padding:var(--space-2) 0;">No import jobs yet.</div>';
+      }
+    }
+  }
+
+  function fetchJobs() {
+    if (_pollTimer) {
+      clearTimeout(_pollTimer);
+      _pollTimer = null;
+    }
+    fetch('/v1/models/import/jobs').then(function(r) {
+      if (!r.ok) throw new Error('Fetch failed');
+      return r.json();
+    }).then(function(data) {
+      var jobs = data.data || [];
+      renderJobs(jobs);
+      if (activeExists(jobs)) {
+        _pollTimer = setTimeout(fetchJobs, 2000);
+      }
+    }).catch(function(err) {
+      console.error('fetchJobs error:', err);
+    });
+  }
+
+  /* Format initial job-when times */
+  document.querySelectorAll('.job-when').forEach(function(el) {
+    var ts = el.getAttribute('data-ts');
+    el.textContent = relTime(ts);
+  });
+
+  /* Kick off polling if any active jobs exist server-rendered */
+  var hasActive = false;
+  document.querySelectorAll('#import-jobs-list [data-status]').forEach(function(el) {
+    var s = el.getAttribute('data-status');
+    if (s === 'queued' || s === 'resolving') hasActive = true;
+  });
+  if (hasActive) {
+    _pollTimer = setTimeout(fetchJobs, 2000);
+  }
+
+  /* Wire retry + dismiss for server-rendered rows */
+  document.querySelectorAll('.job-retry-btn').forEach(function(b) {
+    b.addEventListener('click', retryJob);
+  });
+  document.querySelectorAll('.job-dismiss-btn').forEach(function(b) {
+    b.addEventListener('click', dismissJob);
+  });
 })();
 </script>
 
