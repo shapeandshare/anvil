@@ -387,6 +387,8 @@ async def inference_generate(body: InferenceGenerateBody) -> dict[str, Any]:
         )
     except (ValueError, FileNotFoundError) as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
     generated = _svc.generate(
         loaded,
