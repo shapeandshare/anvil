@@ -77,10 +77,14 @@ def resolve_backend(config: dict[str, Any]) -> dict[str, Any]:
     """Map ``compute_backend`` string to a resolved engine + device.
 
     D4 rule:
-    - ``auto`` / ``local-cpu`` / ``local-gpu`` silently fall back to CPU
-      if the preferred engine/accelerator is missing.
-    - ``modal`` **must not** silently fall back to local -- raises
-      ``ComputeBackendUnavailable`` if not available.
+    - AUTO: auto-detect
+    - LOCAL_CPU: stdlib, CPU
+    - LOCAL_GPU: torch, detected device (or falls back to CPU + stdlib)
+    - MODAL: Modal cloud
+
+    When ``config["method"]`` is ``"lora"`` or ``"qlora"`` the routing
+    is forced to the ``local-lora`` backend with torch engine and
+    auto-detected device, regardless of ``compute_backend``.
 
     Parameters
     ----------
@@ -103,6 +107,16 @@ def resolve_backend(config: dict[str, Any]) -> dict[str, Any]:
     """
     compute_backend_default: str = ComputeBackend.AUTO
     backend = config.get("compute_backend", compute_backend_default)
+
+    # LoRA/QLoRA fine-tuning: always route to local-lora torch backend.
+    method = config.get("method", "full")
+    if method in ("lora", "qlora"):
+        device = _detect_device()
+        return {
+            "engine": TrainingEngine.TORCH,
+            "device": device,
+            "backend": ComputeBackendResult.LOCAL,
+        }
 
     if backend == ComputeBackend.MODAL:
         if not _modal_available():

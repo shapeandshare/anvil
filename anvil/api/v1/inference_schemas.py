@@ -137,19 +137,46 @@ class InferenceAutogradBody(BaseModel):
 
 
 class InferenceLossBody(BaseModel):
-    """Request body for the loss breakdown endpoint.
+    """Request body for the loss-breakdown endpoint.
 
     Parameters
     ----------
     text : str
-        Input text. Must be between 1 and 100 000 characters.
-    model_id : str | None, optional
-        Model identifier. Defaults to ``None``.
+        Input text for loss computation.
+    model_id : int | None, optional
+        Model identifier.
     version : int | None, optional
-        Model version. Defaults to ``None``.
+        Model version.
     """
 
-    text: str = Field(min_length=1, max_length=100_000)
+    text: str = Field(min_length=1, max_length=10_000)
     model_id: int | None = None
     version: int | None = None
+    model_config = ConfigDict(extra="forbid")
+
+
+class InferenceGenerateBody(BaseModel):
+    """Request body for the text-generation endpoint.
+
+    Parameters
+    ----------
+    model_id : int
+        Model identifier.
+    prompt : str
+        Input prompt for generation.
+    adapter_id : str | None, optional
+        LoRA adapter identifier (e.g. ``"run_42"``). When provided,
+        generation composes base weights + adapter. When absent,
+        base-only generation is used.
+    temperature : float, optional
+        Sampling temperature. Default ``0.7``.
+    max_tokens : int, optional
+        Maximum tokens to generate. Default ``100``.
+    """
+
+    model_id: int
+    prompt: str = Field(min_length=1, max_length=10_000)
+    adapter_id: str | None = None
+    temperature: float = Field(default=0.7, ge=0, le=2.0)
+    max_tokens: int = Field(default=100, ge=1, le=2048)
     model_config = ConfigDict(extra="forbid")

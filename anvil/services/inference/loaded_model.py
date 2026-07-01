@@ -6,7 +6,8 @@
 """Loaded model container — holds a ``LlamaModel`` with its tokenizer and metadata.
 
 Provides the ``LoadedModel`` class for encapsulating a trained model
-together with its tokenizer and registry metadata.
+together with its tokenizer and registry metadata.  Optionally carries
+a reference to a LoRA adapter artifact path.
 """
 
 from typing import Any
@@ -26,6 +27,7 @@ class LoadedModel:
         version: int | None,
         name: str,
         is_demo: bool = False,
+        adapter_path: str | None = None,
     ):
         self.model = model
         self.tokenizer = tokenizer
@@ -33,6 +35,7 @@ class LoadedModel:
         self.version = version
         self.name = name
         self.is_demo = is_demo
+        self.adapter_path = adapter_path
 
     @property
     def chars(self) -> list[str]:

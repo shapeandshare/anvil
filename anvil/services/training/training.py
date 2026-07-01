@@ -602,6 +602,13 @@ class TrainingService:
             return run_id
 
         # ── emit complete SSE event ───────────────────────────────────
+        adapter_data: dict[str, object] = {}
+        adapter_path = result.artifact_uris.get("adapter_path", "")
+        if adapter_path:
+            adapter_data["adapter_path"] = adapter_path
+            # Derive adapter_id from run_id for the UI
+            adapter_data["adapter_id"] = f"run_{run_id}"
+
         await queue.put(
             {
                 "event": "complete",
@@ -610,6 +617,7 @@ class TrainingService:
                         "final_loss": result.final_loss,
                         "samples": result.samples,
                         "device": device,
+                        **adapter_data,
                     }
                 ),
             }

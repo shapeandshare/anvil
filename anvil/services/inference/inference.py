@@ -152,6 +152,7 @@ class InferenceService:
         self,
         model_id: int | None = None,
         version: int | None = None,
+        adapter_id: str | None = None,
     ) -> LoadedModel:
         """Load a model by experiment ID and optional version.
 
@@ -166,11 +167,16 @@ class InferenceService:
             The experiment ID. ``None`` resolves a default (demo model).
         version : int, optional
             Model version in the registry. Defaults to ``1``.
+        adapter_id : str, optional
+            LoRA adapter identifier. When provided, the adapter path
+            is resolved from the storage layout and recorded on the
+            returned ``LoadedModel`` instance.
 
         Returns
         -------
         LoadedModel
-            Container with the loaded model, vocabulary, and metadata.
+            Container with the loaded model, vocabulary, metadata, and
+            optional ``adapter_path``.
 
         Raises
         ------
@@ -184,7 +190,14 @@ class InferenceService:
         cache_key = (model_id, version)
         if cache_key in self._cache:
             gpt_model, tokenizer = self._cache[cache_key]
-            return LoadedModel(gpt_model, tokenizer, model_id, version, "cached")
+            return LoadedModel(
+                gpt_model,
+                tokenizer,
+                model_id,
+                version,
+                "cached",
+                adapter_path=self._resolve_adapter_path(model_id, adapter_id),
+            )
 
         # Primary path: load from saved experiment artifact
         model_path = Path(f"data/models/experiment_{model_id}.json")
@@ -200,7 +213,14 @@ class InferenceService:
                 artifact_dir=str(model_path.parent),
             )
             self._cache[cache_key] = (gpt_model, tokenizer)
-            return LoadedModel(gpt_model, tokenizer, model_id, version, name)
+            return LoadedModel(
+                gpt_model,
+                tokenizer,
+                model_id,
+                version,
+                name,
+                adapter_path=self._resolve_adapter_path(model_id, adapter_id),
+            )
 
         # Fallback: try loading from MLflow Model Registry
         tracking_svc = TrackingService()
@@ -247,12 +267,42 @@ class InferenceService:
                         )
                         self._cache[cache_key] = (gpt_model, tokenizer)
                         return LoadedModel(
-                            gpt_model, tokenizer, model_id, version, model_name
+                            gpt_model,
+                            tokenizer,
+                            model_id,
+                            version,
+                            model_name,
+                            adapter_path=self._resolve_adapter_path(
+                                model_id, adapter_id
+                            ),
                         )
             except Exception:  # pylint: disable=broad-exception-caught
                 pass
 
         raise ValueError(f"Model not found: model_id={model_id}, version={version}")
+
+    @staticmethod
+    def _resolve_adapter_path(
+        model_id: int | None, adapter_id: str | None
+    ) -> str | None:
+        """Resolve the filesystem path for a LoRA adapter.
+
+        Parameters
+        ----------
+        model_id : int | None
+            The model's experiment ID.
+        adapter_id : str | None
+            The adapter's scoped identifier, or ``None``.
+
+        Returns
+        -------
+        str | None
+            The resolved adapter path, or ``None`` if ``adapter_id``
+            is ``None``.
+        """
+        if adapter_id is None or model_id is None:
+            return None
+        return str(Path(f"models/{model_id}/adapters/{adapter_id}/"))
 
     async def _resolve_default_id(self) -> int:
         """Resolve the default model (demo) to its numeric experiment ID.
@@ -985,3 +1035,67 @@ class InferenceService:
             "vocab_size": loaded.model.vocab_size,
             "groups": groups,
         }
+
+    def generate(
+        self,
+        loaded: LoadedModel,
+        *,
+        prompt: str,
+        temperature: float = 0.7,
+        max_tokens: int = 100,
+    ) -> str:
+        """Generate text from a prompt using the loaded model.
+
+        Parameters
+        ----------
+        loaded : LoadedModel
+            The loaded model and vocabulary.
+        prompt : str
+            Input prompt text.
+        temperature : float, optional
+            Sampling temperature. Default ``0.7``.
+        max_tokens : int, optional
+            Maximum tokens to generate. Default ``100``.
+
+        Returns
+        -------
+        str
+            The generated text.
+        """
+        model = loaded.model
+        tokenizer = loaded.tokenizer
+
+        # Encode prompt
+        input_ids = tokenizer.encode(prompt)
+        if not input_ids:
+            return ""
+
+        generated = list(input_ids)
+        for _ in range(max_tokens):
+            logits = model._forward(generated)  # type: ignore[attr-defined]
+            if logits is None or not logits:
+                break
+
+            # Apply temperature
+            last_logits = logits[-1]
+            if temperature > 0:
+                last_logits = [val / temperature for val in last_logits]
+
+            # Sample
+            import random
+
+            exp_logits = [math.exp(v) for v in last_logits]
+            total = sum(exp_logits)
+            if total <= 0:
+                break
+            probs = [v / total for v in exp_logits]
+            next_id = random.choices(range(len(probs)), weights=probs, k=1)[0]
+            generated.append(next_id)
+
+            # Stop at EOS (token id 0)
+            if next_id == 0:
+                break
+
+        # Decode
+        output = tokenizer.decode(generated)
+        return output[len(prompt) :]

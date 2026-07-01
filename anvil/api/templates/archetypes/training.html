@@ -167,6 +167,51 @@
           <p class="param-desc" id="gpu-status">Checking compute backends...</p>
         </div>
       </div>
+
+      {# ── LoRA / QLoRA Fine-Tuning Configuration ── #}
+      <div class="param-block">
+        <div class="param-label-row"><label class="param-label" for="method">Training Method</label>
+        <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">Full retraining (from scratch), LoRA (Low-Rank Adaptation), or QLoRA (quantized 4-bit LoRA). LoRA/QLoRA train small adapter modules instead of all weights.</span></span></div>
+        <select id="method" class="form-input" style="width:100%;">
+          <option value="full">From scratch</option>
+          <option value="lora">LoRA</option>
+          <option value="qlora">QLoRA 4-bit</option>
+        </select>
+        <p class="param-desc">Full retraining for new architectures, LoRA/QLoRA for parameter-efficient fine-tuning.</p>
+      </div>
+
+      <div id="qlora-warning" class="ds-warn" style="display:none; margin-top: 8px;">
+        ⚠️ QLoRA requires an NVIDIA GPU with CUDA and the bitsandbytes library.
+        On macOS or systems without a CUDA GPU, QLoRA will automatically fall back
+        to regular LoRA.
+      </div>
+
+      <div id="lora-params" style="display:none;">
+        <div class="param-block">
+          <div class="param-label-row"><label class="param-label" for="lora_rank">LoRA Rank</label>
+          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">The rank of the low-rank adaptation matrices. Higher = more adaptation capacity, more parameters. 8–16 for small models, 32–64 for larger ones.</span></span></div>
+          <input type="number" id="lora_rank" class="form-input" value="8" min="1" max="1024">
+          <p class="param-desc">Rank — higher = more capacity. Typical range: 4–64.</p>
+        </div>
+        <div class="param-block">
+          <div class="param-label-row"><label class="param-label" for="lora_alpha">LoRA Alpha</label>
+          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">Scaling factor for LoRA adaptations. The effective update magnitude is alpha / rank. Higher values = stronger adaptation. Usually 2× the rank.</span></span></div>
+          <input type="number" id="lora_alpha" class="form-input" value="16" step="0.5" min="1">
+          <p class="param-desc">Scaling factor — effective strength = alpha / rank. Typically 2× rank.</p>
+        </div>
+        <div class="param-block">
+          <div class="param-label-row"><label class="param-label" for="lora_target_modules">LoRA Target Modules</label>
+          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">Comma-separated list of module names to apply LoRA to. Common targets: q_proj, v_proj, k_proj, o_proj, gate_proj, up_proj, down_proj.</span></span></div>
+          <input type="text" id="lora_target_modules" class="form-input" value="q_proj,v_proj">
+          <p class="param-desc">Comma-separated module names. Typical: <code>q_proj,v_proj</code> or all linear layers.</p>
+        </div>
+        <div class="param-block">
+          <div class="param-label-row"><label class="param-label" for="lora_dropout">LoRA Dropout</label>
+          <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">Dropout probability applied to LoRA adapter layers. Helps prevent overfitting. 0.0–0.1 typical, 0.05 is a safe default.</span></span></div>
+          <input type="number" id="lora_dropout" class="form-input" value="0.05" step="0.01" min="0" max="1">
+          <p class="param-desc">Dropout probability — 0.0–0.1 typical. Helps prevent overfitting during fine-tuning.</p>
+        </div>
+      </div>
     </div>
 
     <div id="config-mem-estimate" class="config-mem-estimate"></div>
@@ -651,6 +696,19 @@ var gpuToggle = document.getElementById('compute_backend');
     });
   }
 
+  /* ── LoRA visibility sync ── */
+  function _syncLoraVisibility() {
+    var method = document.getElementById('method').value;
+    var loraParams = document.getElementById('lora-params');
+    if (loraParams) {
+      loraParams.style.display = (method === 'full') ? 'none' : 'block';
+    }
+    var qloraWarning = document.getElementById('qlora-warning');
+    if (qloraWarning) {
+      qloraWarning.style.display = (method === 'qlora') ? 'block' : 'none';
+    }
+  }
+
   function loadCorpora() {
     fetch('/v1/corpora').then(function(r) { return r.json(); }).then(function(data) {
       if (data.data && data.data.length) {
@@ -831,6 +889,11 @@ var gpuToggle = document.getElementById('compute_backend');
         learning_rate: document.getElementById('learning_rate').value,
         temperature: document.getElementById('temperature').value,
         compute_backend: document.getElementById('compute_backend').value,
+        method: document.getElementById('method').value,
+        lora_rank: document.getElementById('lora_rank').value,
+        lora_alpha: document.getElementById('lora_alpha').value,
+        lora_target_modules: document.getElementById('lora_target_modules').value,
+        lora_dropout: document.getElementById('lora_dropout').value,
         corpus_id: corpusSelect.value,
         dataset_id: datasetSelect.value,
       },
@@ -994,9 +1057,16 @@ var gpuToggle = document.getElementById('compute_backend');
       if (c.learning_rate) document.getElementById('learning_rate').value = c.learning_rate;
       if (c.temperature) document.getElementById('temperature').value = c.temperature;
       if (c.compute_backend) document.getElementById('compute_backend').value = c.compute_backend;
+      if (c.method) document.getElementById('method').value = c.method;
+      if (c.lora_rank) document.getElementById('lora_rank').value = c.lora_rank;
+      if (c.lora_alpha) document.getElementById('lora_alpha').value = c.lora_alpha;
+      if (c.lora_target_modules) document.getElementById('lora_target_modules').value = c.lora_target_modules;
+      if (c.lora_dropout != null) document.getElementById('lora_dropout').value = c.lora_dropout;
       if (c.corpus_id) { corpusSelect.value = c.corpus_id; }
       if (c.dataset_id) { datasetSelect.value = c.dataset_id; }
     }
+    /* Apply method-dependent visibility after restoring method value */
+    _syncLoraVisibility();
     updateDataContext();
     updateModelStats();
 
@@ -1111,6 +1181,11 @@ var gpuToggle = document.getElementById('compute_backend');
       learning_rate: parseFloat(document.getElementById('learning_rate').value),
       temperature: parseFloat(document.getElementById('temperature').value),
       compute_backend: document.getElementById('compute_backend').value,
+      method: document.getElementById('method').value,
+      lora_rank: Number.parseInt(document.getElementById('lora_rank').value),
+      lora_alpha: parseFloat(document.getElementById('lora_alpha').value),
+      lora_target_modules: document.getElementById('lora_target_modules').value,
+      lora_dropout: parseFloat(document.getElementById('lora_dropout').value),
     };
 
     var cid = corpusSelect.value;
@@ -1122,8 +1197,11 @@ var gpuToggle = document.getElementById('compute_backend');
       dataLabel = corpusCache[cid] ? corpusCache[cid].name : 'corpus #' + cid;
     }
 
+    var methodLabel = config.method === 'lora' ? 'LoRA (r=' + config.lora_rank + ')' : config.method === 'qlora' ? 'QLoRA (r=' + config.lora_rank + ')' : 'Full';
+
     modalSummary.innerHTML =
       '<div class="modal-dialog__config-item"><span class="modal-dialog__config-label">Data</span><span class="modal-dialog__config-value">' + escHtml(dataLabel) + '</span></div>'
+      + '<div class="modal-dialog__config-item"><span class="modal-dialog__config-label">Method</span><span class="modal-dialog__config-value">' + methodLabel + '</span></div>'
       + '<div class="modal-dialog__config-item"><span class="modal-dialog__config-label">Backend</span><span class="modal-dialog__config-value">' + escHtml(config.compute_backend) + '</span></div>'
       + '<div class="modal-dialog__config-item"><span class="modal-dialog__config-label">Arch</span><span class="modal-dialog__config-value">' + config.n_layer + 'L\u00d7' + config.n_embd + 'd</span></div>'
       + '<div class="modal-dialog__config-item"><span class="modal-dialog__config-label">Steps</span><span class="modal-dialog__config-value">' + config.num_steps + '</span></div>'
@@ -1172,6 +1250,11 @@ var gpuToggle = document.getElementById('compute_backend');
       learning_rate: parseFloat(document.getElementById('learning_rate').value),
       temperature: parseFloat(document.getElementById('temperature').value),
       compute_backend: document.getElementById('compute_backend').value,
+      method: document.getElementById('method').value,
+      lora_rank: Number.parseInt(document.getElementById('lora_rank').value),
+      lora_alpha: parseFloat(document.getElementById('lora_alpha').value),
+      lora_target_modules: document.getElementById('lora_target_modules').value,
+      lora_dropout: parseFloat(document.getElementById('lora_dropout').value),
     };
     var cid = corpusSelect.value;
     var did = datasetSelect.value;
@@ -1329,8 +1412,14 @@ var gpuToggle = document.getElementById('compute_backend');
       if (hp.num_steps) document.getElementById('num_steps').value = hp.num_steps;
       if (hp.learning_rate) document.getElementById('learning_rate').value = hp.learning_rate;
       if (hp.temperature) document.getElementById('temperature').value = hp.temperature;
+      if (hp.method) document.getElementById('method').value = hp.method;
+      if (hp.lora_rank) document.getElementById('lora_rank').value = hp.lora_rank;
+      if (hp.lora_alpha) document.getElementById('lora_alpha').value = hp.lora_alpha;
+      if (hp.lora_target_modules) document.getElementById('lora_target_modules').value = hp.lora_target_modules;
+      if (hp.lora_dropout != null) document.getElementById('lora_dropout').value = hp.lora_dropout;
 
-      /* 2. Restore compute backend selector from MLflow params */
+      /* 2. Apply method-dependent visibility */
+      _syncLoraVisibility();
       var mlflowParams = exp.mlflow && exp.mlflow.params ? exp.mlflow.params : {};
       if (mlflowParams.compute_backend) {
         document.getElementById('compute_backend').value = mlflowParams.compute_backend;
@@ -1466,6 +1555,13 @@ var gpuToggle = document.getElementById('compute_backend');
       emptyWarn.style.display = 'none';
     }
   }
+
+  /* ── Method selector show/hide LoRA fields ── */
+  var methodSel = document.getElementById('method');
+  if (methodSel) {
+    methodSel.addEventListener('change', _syncLoraVisibility);
+  }
+  _syncLoraVisibility();
 
   corpusSelect.addEventListener('change', function () { handleDataSourceChange('corpus'); });
   datasetSelect.addEventListener('change', function () { handleDataSourceChange('dataset'); });
