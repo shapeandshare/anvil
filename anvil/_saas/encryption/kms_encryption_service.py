@@ -20,8 +20,8 @@ from typing import Any
 from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-from anvil.services._shared.encryption_envelope import EncryptionEnvelope
-from anvil.services._shared.encryption_errors import (
+from ...services._shared.encryption_envelope import EncryptionEnvelope
+from ...services._shared.encryption_errors import (
     InvalidCiphertextError,
     UnknownKeyIdError,
 )
