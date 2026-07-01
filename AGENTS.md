@@ -1,6 +1,6 @@
 # anvil — Agent Guidelines
 
-**Last updated**: 2026-06-30 (constitution v1.8.0: Article XI Simplicity First / Boring Technology + ADR-041; sonarcloud-tooling + content-repository-016-mvp; scripts-python-over-bash + package-module-migration, testing-guide consolidation; OWASP remediation spec 017 + ADRs 035/036; whole-API e2e test suite 017)
+**Last updated**: 2026-07-01 (constitution v1.8.0: Article XI Simplicity First / Boring Technology + ADR-041; sonarcloud-tooling + content-repository-016-mvp; scripts-python-over-bash + package-module-migration, testing-guide consolidation; OWASP remediation spec 017 + ADRs 035/036; whole-API e2e test suite 017)
 
 ## Project Overview
 
@@ -467,6 +467,8 @@ SomeException
 - SQLite (WAL mode) via async SQLAlchemy; filesystem for backup/quarantine artifacts at `data/backups/`; `LocalFileStore` for blobs (061-resilient-startup-recovery)
 - Python 3.11+ (PEP 604, `StrEnum`, `from __future__ import annotations`) + `peft`, `bitsandbytes` (behind `[finetune]` extra); reuses existing `torch`, (062-local-lora-fine-tuning)
 - `LocalFileStore` — adapters at `models/{base_model_id}/adapters/{run_id}/` using existing (062-local-lora-fine-tuning)
+- Python 3.11+ (`from __future__ import annotations`, PEP 604, `StrEnum`) + FastAPI, async SQLAlchemy, `safetensors`, `numpy` (existing); `peft`, `transformers`, `torch` (behind `[finetune]` extra — same as 044) (045-adapter-inference-export)
+- `LocalFileStore` at `data/models/{base_model_id}/adapters/{adapter_id}/` (existing 044 layout); merged artifacts at `data/models/{base_model_id}/merged/{adapter_id}/` (045-adapter-inference-export)
 
 ## Recent Changes
 - 025-ux-rules-integration: Added Python 3.11+ (existing repo convention) + Stdlib only — `ux_lint.py` (re/ sys/ os/), `ux_review.py` (stdlib + urllib for OpenAI-compatible API calls)
