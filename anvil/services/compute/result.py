@@ -8,6 +8,24 @@
 The key design seam: local backends return a model object in-process;
 remote backends produce artifacts in cloud/S3. ``ComputeResult``
 normalises both paths into a single typed value.
+
+The model supports three mutually exclusive result shapes:
+
+**Local path** (``model is not None``)
+    ``on_complete`` runs local safetensors export + MLflow
+    ``log_artifact`` using the in-process model object.
+
+**Remote path** (``exported_remotely is True``)
+    MLflow logging happened inside the remote job already.
+    ``on_complete`` does metadata-only ``register_model(runs:/...)``,
+    skipping local export entirely.
+
+**Adapter path** (``adapter_id is not None``)
+    Result of a LoRA/QLoRA fine-tuning run. The adapter weights are
+    stored as a distinct artifact at the path in
+    ``artifact_uris["adapter_path"]``, separate from the base model.
+    The ``adapter_id`` field carries the scoped identifier for
+    downstream consumption (inference composition, merge, etc.).
 """
 
 from pydantic import BaseModel, Field
@@ -20,7 +38,7 @@ from .training_engine import TrainingEngine
 class ComputeResult(BaseModel):
     """Normalised result of a training run, regardless of where it executed.
 
-    The model supports two mutually exclusive paths:
+    The model supports three mutually exclusive paths:
 
     **Local path** (``model is not None``)
         ``on_complete`` runs local safetensors export + MLflow
@@ -31,12 +49,18 @@ class ComputeResult(BaseModel):
         ``on_complete`` does metadata-only ``register_model(runs:/...)``,
         skipping local export entirely.
 
+    **Adapter path** (``adapter_id is not None``)
+        LoRA/QLoRA fine-tuning result. Adapter weights are stored as a
+        distinct artifact; ``adapter_id`` identifies them for downstream
+        consumption (inference composition, merge, etc.).
+
     Parameters
     ----------
     status : ComputeStatus
         Final lifecycle status of the compute run.
     model : object | None
-        In-process ``LlamaModel`` instance, or ``None`` for remote runs.
+        In-process ``LlamaModel`` instance, or ``None`` for remote or
+        adapter runs.
     final_loss : float | None
         Final training loss value, or ``None`` on failure.
     samples : list[str]
@@ -47,6 +71,10 @@ class ComputeResult(BaseModel):
         ``True`` if artifact export was handled by the remote backend.
     artifact_uris : dict[str, str]
         Mapping of artifact names to URIs (e.g. ``{"mlflow_run_id": "..."}``).
+        For adapter results, contains ``{"adapter_path": "..."}``.
+    adapter_id : str | None
+        Scoped LoRA adapter identifier (e.g. ``"run_42"``). ``None``
+        for local/remote full-weight results.
     remote_job_id : str | None
         Backend-specific identifier for the remote job, if applicable.
     remote_mlflow_run_id : str | None
@@ -82,6 +110,10 @@ class ComputeResult(BaseModel):
 
     # Mapping of artifact names to URIs (e.g. ``{"mlflow_run_id": "..."}``).
     artifact_uris: dict[str, str] = Field(default_factory=dict)
+
+    # Scoped LoRA adapter identifier (e.g. ``"run_42"``), or ``None``
+    # for local/remote full-weight results.
+    adapter_id: str | None = None
 
     # Backend-specific identifier for the remote job, if applicable.
     remote_job_id: str | None = None

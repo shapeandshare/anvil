@@ -34,7 +34,7 @@ def upgrade() -> None:
         sa.Column("lora_bias", sa.String(length=20), nullable=True),
         sa.Column("final_loss", sa.Float(), nullable=True),
         sa.Column("final_step", sa.Integer(), nullable=True),
-        sa.Column("merged_at", sa.Integer(), nullable=True),
+        sa.Column("merged_at", sa.DateTime(), nullable=True),
         sa.Column(
             "created_at",
             sa.DateTime(),
