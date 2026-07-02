@@ -473,6 +473,7 @@ SomeException
 - SQLite (anvil-state.db, WAL mode) via async SQLAlchemy; MLflow for eval dataset records; `LocalFileStore` for model artifacts (054-fine-tuned-model-evaluation)
 - Python 3.11+ (PEP 604, `StrEnum`, `from __future__ import annotations`) + No new runtime deps — extends existing FastAPI, async SQLAlchemy, aiosqlite; SaaS backend behind `[finetune]` extra (spec 047) (046-fine-tune-compute-routing)
 - `LocalFileStore` (local adapters at `data/adapters/`); SQLite (anvil-state.db) for job metadata (046-fine-tune-compute-routing)
+- SQLite (anvil-state.db, WAL mode) via async SQLAlchemy; LakeFS for base model assets + adapter artifacts; LocalFileStore for local fallback (047-saas-fine-tuning-pipeline)
 - Python 3.11+ (PEP 604, `StrEnum`, `from __future__ import annotations`) + FastAPI, async SQLAlchemy + aiosqlite, Alembic, Jinja2, MLflow, Pydantic — all existing (055-interactive-teaching-loop)
 - SQLite (anvil-state.db, WAL) — new `TeachingSession` table via async SQLAlchemy + Alembic migration; MLflow runs + artifacts for TeachingRound data (055-interactive-teaching-loop)
 

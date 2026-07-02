@@ -534,6 +534,10 @@ class TrainingService:
             method = config.get("method", "full")
             if method in ("lora", "qlora"):
                 backend_name = RegistryBackend.LOCAL_LORA
+        elif backend_name == ComputeBackendResult.SAAS:
+            method = config.get("method", "full")
+            if method in ("lora", "qlora"):
+                backend_name = RegistryBackend.SAAS_FINETUNE
 
         # Inject device into config so backends can read it
         config["device"] = device
@@ -557,7 +561,7 @@ class TrainingService:
         )
 
         # ── remote: emit submitted event before launching ─────────────
-        if backend_name == ComputeBackendResult.MODAL:
+        if backend_name in (ComputeBackendResult.MODAL, RegistryBackend.SAAS_FINETUNE):
             try:
                 queue.put_nowait(
                     {

@@ -54,6 +54,7 @@ async def test_on_complete_writes_model_artifact():
         result.uchars = list("abcdefg")
         result.model = MagicMock()
         result.model.save = MagicMock()
+        result.adapter_id = None
 
         await run_svc._on_complete(
             result=result,
@@ -85,13 +86,14 @@ async def test_on_complete_calls_mlflow_registration():
         result.uchars = []
         result.model = MagicMock()
         result.model.save = MagicMock()
+        result.adapter_id = None
 
         await run_svc._on_complete(
             result=result,
             config_dict={},
             mlflow_run_id="mlflow_1",
             experiment_id=99,
-            dataset_id=10,
+            dataset_id=None,
             corpus_id=None,
             mps_thread=None,
             run_id=42,
@@ -118,6 +120,7 @@ async def test_on_complete_sets_finished_tags():
         result.uchars = []
         result.model = MagicMock()
         result.model.save = MagicMock()
+        result.adapter_id = None
 
         await run_svc._on_complete(
             result=result,
@@ -150,6 +153,7 @@ async def test_on_complete_warm_start_tags():
         result.uchars = []
         result.model = MagicMock()
         result.model.save = MagicMock()
+        result.adapter_id = None
 
         await run_svc._on_complete(
             result=result,

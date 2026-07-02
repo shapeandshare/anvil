@@ -966,6 +966,21 @@ class TrainingRunService:
         if mps_thread is not None:
             mps_thread.stop()
 
+        # ── Adapter persistence (047) ────────────────────────────────
+        if result.adapter_id is not None:
+            from ...db.repositories.lora_adapter_repository import (  # lazy: 047 cycle
+                LoRAAdapterRepository,
+            )
+            from ..training.adapter_persistence import (  # lazy: 047 cycle
+                AdapterPersistenceService,
+            )
+
+            async with AsyncSessionLocal() as sess:
+                repo = LoRAAdapterRepository(sess)
+                persistence = AdapterPersistenceService(repo)
+                await persistence.persist(result, config_dict, run_id=run_id)
+
+        # ── MLflow model registration ────────────────────────────────
         if mlflow_run_id:
             registry_name: str | None = None
             if dataset_id is not None:
