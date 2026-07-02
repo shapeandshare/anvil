@@ -59,6 +59,4 @@ class TeachingSession(Base, TimestampMixin):
     current_base_experiment_id: Mapped[int | None] = mapped_column(
         Integer, nullable=True
     )
-    status: Mapped[str] = mapped_column(
-        String(16), default=TeachingSessionStatus.DRAFT
-    )
+    status: Mapped[str] = mapped_column(String(16), default=TeachingSessionStatus.DRAFT)

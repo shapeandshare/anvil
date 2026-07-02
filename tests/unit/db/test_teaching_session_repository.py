@@ -13,9 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from anvil.db.base import Base
 from anvil.db.models.teaching_session import TeachingSession
 from anvil.db.models.teaching_session_status import TeachingSessionStatus
-from anvil.db.repositories.teaching_session_repository import (
-    TeachingSessionRepository,
-)
+from anvil.db.repositories.teaching_session_repository import TeachingSessionRepository
 from anvil.db.session import AsyncSessionLocal, async_engine
 
 

@@ -47,9 +47,7 @@ from .db.repositories.lora_adapter_repository import LoRAAdapterRepository
 from .db.repositories.model_asset_repository import ModelAssetRepository
 from .db.repositories.model_import_jobs import ModelImportJobRepository
 from .db.repositories.runtime_config import RuntimeConfigRepository
-from .db.repositories.teaching_session_repository import (
-    TeachingSessionRepository,
-)
+from .db.repositories.teaching_session_repository import TeachingSessionRepository
 from .db.repositories.user_secret_repository import UserSecretRepository
 from .services._shared.encryption import LocalEncryptionService
 from .services._shared.key_ring import KeyRing

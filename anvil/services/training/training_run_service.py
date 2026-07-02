@@ -96,7 +96,9 @@ class TrainingRunService:
         self,
         config: TrainingRunConfig,
         on_progress: Callable[[int, float], None] | None = None,
-        on_complete_extra: Callable[[ComputeResult, dict[str, Any]], Awaitable[None]] | None = None,
+        on_complete_extra: (
+            Callable[[ComputeResult, dict[str, Any]], Awaitable[None]] | None
+        ) = None,
     ) -> dict[str, Any]:
         """Validate, set up, and launch a training run in the background.
 
@@ -168,9 +170,7 @@ class TrainingRunService:
         # ── Background task setup ─────────────────────────────────────
         mps_thread: MPSSamplerThread | None = None
         if mlflow_run_id and MPSMetricsCollector.is_available():
-            mps_thread = MPSSamplerThread(
-                self._tracking, mlflow_run_id, interval=5.0
-            )
+            mps_thread = MPSSamplerThread(self._tracking, mlflow_run_id, interval=5.0)
             mps_thread.start()
 
         event_loop = asyncio.get_event_loop()
@@ -180,9 +180,7 @@ class TrainingRunService:
             if mlflow_run_id is None:
                 return
             asyncio.run_coroutine_threadsafe(
-                self._tracking.log_metric(
-                    mlflow_run_id, "loss", loss, step=step
-                ),
+                self._tracking.log_metric(mlflow_run_id, "loss", loss, step=step),
                 event_loop,
             )
 
@@ -194,6 +192,7 @@ class TrainingRunService:
         async def _run_training() -> None:
             """Coroutine wrapper that runs training and handles exceptions."""
             try:
+
                 async def _completion_wrapper(
                     result: ComputeResult,
                     config_dict: dict[str, Any],
@@ -227,15 +226,11 @@ class TrainingRunService:
                         }
                     )
                 if mlflow_run_id:
-                    await self._tracking.fail_run(
-                        mlflow_run_id, _reason=str(exc)
-                    )
+                    await self._tracking.fail_run(mlflow_run_id, _reason=str(exc))
                     await self._tracking.set_tag(
                         mlflow_run_id, "anvil.status", "failed"
                     )
-                    await self._tracking.set_tag(
-                        mlflow_run_id, "anvil.error", str(exc)
-                    )
+                    await self._tracking.set_tag(mlflow_run_id, "anvil.error", str(exc))
                 if mps_thread is not None:
                     mps_thread.stop()
 
@@ -339,9 +334,7 @@ class TrainingRunService:
                     " to fine-tune."
                 )
             if config.lora_rank is None:
-                raise ValueError(
-                    "lora_rank is required when method is {method!r}."
-                )
+                raise ValueError("lora_rank is required when method is {method!r}.")
         elif method == "full":
             if any(
                 v is not None
@@ -360,13 +353,10 @@ class TrainingRunService:
                 )
         else:
             raise ValueError(
-                f"Unknown method: {method!r}. Must be 'full', 'lora', or"
-                " 'qlora'."
+                f"Unknown method: {method!r}. Must be 'full', 'lora', or" " 'qlora'."
             )
 
-    async def _validate_warm_start(
-        self, config: TrainingRunConfig
-    ) -> None:
+    async def _validate_warm_start(self, config: TrainingRunConfig) -> None:
         """Validate warm-start architecture consistency.
 
         When ``base_model_ref`` is set with ``method='full'``, loads the
@@ -386,9 +376,7 @@ class TrainingRunService:
             return
         inference = InferenceService()
         try:
-            base_model = await inference.load_model(
-                model_id=config.base_model_ref
-            )
+            base_model = await inference.load_model(model_id=config.base_model_ref)
         except ValueError as e:
             raise ValueError(str(e)) from None
 
@@ -581,9 +569,7 @@ class TrainingRunService:
                 "anvil.experiment_id",
                 str(experiment_id),
             )
-            await self._tracking.set_tag(
-                mlflow_run_id, "anvil.status", "running"
-            )
+            await self._tracking.set_tag(mlflow_run_id, "anvil.status", "running")
 
         return mlflow_run_id, experiment_id
 
@@ -611,9 +597,7 @@ class TrainingRunService:
         content_version_id : int | None
             Optional content version ID.
         """
-        from ...db.repositories.content_versions import (
-            ContentVersionRepository,
-        )
+        from ...db.repositories.content_versions import ContentVersionRepository
         from ...db.repositories.corpora import CorpusRepository
         from ...db.repositories.datasets import DatasetRepository
         from ...db.session import AsyncSessionLocal
@@ -749,26 +733,18 @@ class TrainingRunService:
                                     json.dump(
                                         {
                                             "version_id": version.id,
-                                            "version_number": (
-                                                version.version_number
-                                            ),
+                                            "version_number": (version.version_number),
                                             "manifest_digest": (
                                                 version.manifest_digest
                                             ),
                                             "label": version.label,
-                                            "entry_count": (
-                                                version.entry_count
-                                            ),
-                                            "total_bytes": (
-                                                version.total_bytes
-                                            ),
+                                            "entry_count": (version.entry_count),
+                                            "total_bytes": (version.total_bytes),
                                         },
                                         f,
                                     )
                                     fpath = f.name
-                                client.log_artifact(
-                                    mlflow_run_id, fpath
-                                )
+                                client.log_artifact(mlflow_run_id, fpath)
                                 os.unlink(fpath)
 
                             await asyncio.get_event_loop().run_in_executor(
@@ -843,9 +819,7 @@ class TrainingRunService:
             )
 
             if config_dict.get("base_model_ref") is not None:
-                await self._tracking.set_tag(
-                    mlflow_run_id, "anvil.warm_start", "true"
-                )
+                await self._tracking.set_tag(mlflow_run_id, "anvil.warm_start", "true")
                 await self._tracking.set_tag(
                     mlflow_run_id,
                     "anvil.base_model_ref",
@@ -898,9 +872,7 @@ class TrainingRunService:
                             loop = asyncio.get_event_loop()
                             await loop.run_in_executor(
                                 None,
-                                lambda: client.log_artifact(
-                                    mlflow_run_id, model_path
-                                ),
+                                lambda: client.log_artifact(mlflow_run_id, model_path),
                             )
                     except Exception:  # pylint: disable=broad-exception-caught
                         pass
@@ -923,9 +895,7 @@ class TrainingRunService:
                         await queue.put(
                             {
                                 "event": "export_error",
-                                "data": json.dumps(
-                                    {"error": export_result["error"]}
-                                ),
+                                "data": json.dumps({"error": export_result["error"]}),
                             }
                         )
                 else:
@@ -975,14 +945,11 @@ class TrainingRunService:
                                     )
                         except Exception:  # pylint: disable=broad-exception-caught
                             logger.exception(
-                                "Failed to log safetensors artifacts to"
-                                " MLflow"
+                                "Failed to log safetensors artifacts to" " MLflow"
                             )
 
         if mlflow_run_id:
-            await self._tracking.set_tag(
-                mlflow_run_id, "anvil.status", "finished"
-            )
+            await self._tracking.set_tag(mlflow_run_id, "anvil.status", "finished")
             await self._tracking.set_tag(
                 mlflow_run_id,
                 "anvil.final_loss",

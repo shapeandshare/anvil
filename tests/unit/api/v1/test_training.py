@@ -28,9 +28,7 @@ import pytest
 from anvil.api.v1 import training as training_module
 from anvil.gpu import GpuInfo
 from anvil.services.compute.training_engine import TrainingEngine
-from anvil.services.training.training_run_service import (
-    TrainingRunService,
-)
+from anvil.services.training.training_run_service import TrainingRunService
 
 ####################################################################
 # Helpers
@@ -201,8 +199,7 @@ class TestResolveTrainingBackend:
             TrainingRunService._resolve_training_backend("modal")
         msg = str(exc.value)
         assert any(
-            keyword in msg.lower()
-            for keyword in ["modal", "unavailable", "backend"]
+            keyword in msg.lower() for keyword in ["modal", "unavailable", "backend"]
         )
 
 
@@ -902,9 +899,7 @@ class TestEstimateMemory:
     """Tests for the ``_estimate_memory`` helper (now on TrainingRunService)."""
 
     def test_returns_none_for_non_torch_backend(self):
-        from anvil.services.training.training_run_config import (
-            TrainingRunConfig,
-        )
+        from anvil.services.training.training_run_config import TrainingRunConfig
 
         gpu_info = GpuInfo(available=False)
         config = TrainingRunConfig()
@@ -914,9 +909,7 @@ class TestEstimateMemory:
         assert result is None
 
     def test_raises_oom_for_torch_with_tiny_gpu(self):
-        from anvil.services.training.training_run_config import (
-            TrainingRunConfig,
-        )
+        from anvil.services.training.training_run_config import TrainingRunConfig
 
         gpu_info = GpuInfo(
             available=True,
@@ -927,7 +920,5 @@ class TestEstimateMemory:
         )
         config = TrainingRunConfig(n_embd=256, n_head=8, n_layer=12, block_size=512)
         with pytest.raises(Exception) as exc:
-            TrainingRunService._estimate_memory(
-                TrainingEngine.TORCH, config, gpu_info
-            )
+            TrainingRunService._estimate_memory(TrainingEngine.TORCH, config, gpu_info)
         assert "OOM" in str(exc.value)

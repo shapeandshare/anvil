@@ -36,8 +36,8 @@ from .learning import router as learning_router
 from .models import router as models_router
 from .pages import router as pages_router
 from .registry import router as registry_router
-from .training import router as training_router
 from .teach import router as teach_router
+from .training import router as training_router
 from .user_secrets import router as user_secrets_router
 
 router = APIRouter()

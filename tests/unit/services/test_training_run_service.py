@@ -15,9 +15,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from anvil.services.training.training_run_config import TrainingRunConfig
-from anvil.services.training.training_run_service import (
-    TrainingRunService,
-)
+from anvil.services.training.training_run_service import TrainingRunService
 
 
 def _make_training_run_svc(tmpdir: str) -> TrainingRunService:

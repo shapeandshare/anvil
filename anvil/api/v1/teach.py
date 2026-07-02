@@ -264,9 +264,7 @@ async def list_rounds(
                     "created_at": exp.get("created_at"),
                 }
             )
-    session_rounds.sort(
-        key=lambda r: int(r["round_index"]) if r["round_index"] else 0
-    )
+    session_rounds.sort(key=lambda r: int(r["round_index"]) if r["round_index"] else 0)
     return {"rounds": session_rounds}
 
 

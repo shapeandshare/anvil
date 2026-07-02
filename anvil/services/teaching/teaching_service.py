@@ -16,9 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...db.models.teaching_session import TeachingSession
 from ...db.models.teaching_session_status import TeachingSessionStatus
-from ...db.repositories.teaching_session_repository import (
-    TeachingSessionRepository,
-)
+from ...db.repositories.teaching_session_repository import TeachingSessionRepository
 from ...storage.local import LocalFileStore
 from ..compute.result import ComputeResult
 from ..datasets.dataset_import import DatasetImportService
@@ -118,9 +116,7 @@ class TeachingService:
         )
         return await self._repo.add(teaching_session)
 
-    async def get_session(
-        self, session_id: int
-    ) -> TeachingSession | None:
+    async def get_session(self, session_id: int) -> TeachingSession | None:
         """Retrieve a teaching session by ID.
 
         Parameters
@@ -198,9 +194,7 @@ class TeachingService:
         """
         return await self._repo.delete(session_id)
 
-    async def _ensure_active_status(
-        self, session_id: int
-    ) -> TeachingSession | None:
+    async def _ensure_active_status(self, session_id: int) -> TeachingSession | None:
         """Set a session to ACTIVE if it is currently DRAFT.
 
         Parameters
@@ -277,14 +271,11 @@ class TeachingService:
 
         # ── Create dataset with origin="teaching" ──────────────────────
         dataset_name = (
-            f"teaching-session-{session_id}-round-"
-            f"{self._count_rounds(session_id)}"
+            f"teaching-session-{session_id}-round-" f"{self._count_rounds(session_id)}"
         )
         dataset = await self._datasets.create_dataset(
             name=dataset_name,
-            description=(
-                f"Teaching session {session_id} round dataset"
-            ),
+            description=(f"Teaching session {session_id} round dataset"),
             origin="teaching",
         )
 
@@ -350,9 +341,7 @@ class TeachingService:
             await self._tracking.set_tag(
                 response["mlflow_run_id"],
                 "teaching_parent_experiment_id",
-                str(
-                    teaching_session.current_base_experiment_id or ""
-                ),
+                str(teaching_session.current_base_experiment_id or ""),
             )
             await self._tracking.set_tag(
                 response["mlflow_run_id"],
@@ -443,12 +432,8 @@ class TeachingService:
             Per-prompt results with keys ``prompt``, ``left``, and
             ``right``.
         """
-        left_loaded = await self._inference.load_model(
-            model_id=left_experiment_id
-        )
-        right_loaded = await self._inference.load_model(
-            model_id=right_experiment_id
-        )
+        left_loaded = await self._inference.load_model(model_id=left_experiment_id)
+        right_loaded = await self._inference.load_model(model_id=right_experiment_id)
         results: list[dict[str, Any]] = []
         for prompt in prompts:
             left_text = self._inference.generate(

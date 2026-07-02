@@ -23,7 +23,6 @@ async def _ensure_db_tables():
             await sess.execute(text("SELECT 1 FROM teaching_sessions LIMIT 1"))
         except Exception:
             from anvil.db.base import Base
-
             from anvil.db.session import async_engine
 
             async with async_engine.begin() as conn:

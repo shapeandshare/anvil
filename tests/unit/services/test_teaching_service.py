@@ -15,9 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from anvil.db.models.teaching_session import TeachingSession
 from anvil.db.models.teaching_session_status import TeachingSessionStatus
-from anvil.db.repositories.teaching_session_repository import (
-    TeachingSessionRepository,
-)
+from anvil.db.repositories.teaching_session_repository import TeachingSessionRepository
 from anvil.services.datasets.datasets import DatasetService
 from anvil.services.inference.inference import InferenceService
 from anvil.services.teaching.teaching_service import TeachingService
@@ -77,7 +75,14 @@ def mock_datasets():
 
 
 @pytest.fixture
-def teaching_service(mock_session, mock_repo, mock_training_runs, mock_inference, mock_tracking, mock_datasets):
+def teaching_service(
+    mock_session,
+    mock_repo,
+    mock_training_runs,
+    mock_inference,
+    mock_tracking,
+    mock_datasets,
+):
     return TeachingService(
         session=mock_session,
         repo=mock_repo,
@@ -221,7 +226,9 @@ async def test_start_round_creates_dataset(teaching_service, mock_repo, mock_dat
 
 
 @pytest.mark.asyncio
-async def test_start_round_sets_base_model_ref(teaching_service, mock_repo, mock_datasets, mock_training_runs):
+async def test_start_round_sets_base_model_ref(
+    teaching_service, mock_repo, mock_datasets, mock_training_runs
+):
     mock_repo.get.return_value = TeachingSession(
         id=1,
         name="s",
@@ -252,7 +259,9 @@ async def test_start_round_sets_base_model_ref(teaching_service, mock_repo, mock
 
 
 @pytest.mark.asyncio
-async def test_start_round_updates_chain_head_on_complete(teaching_service, mock_repo, mock_datasets, mock_training_runs):
+async def test_start_round_updates_chain_head_on_complete(
+    teaching_service, mock_repo, mock_datasets, mock_training_runs
+):
     mock_repo.get.return_value = TeachingSession(
         id=1,
         name="s",
