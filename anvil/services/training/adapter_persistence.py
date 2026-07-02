@@ -1,16 +1,15 @@
 """Service for persisting ``LoRAAdapter`` rows after fine-tuning completion.
 
-Fixes the pre-existing gap (047 Phase 2) where ``LocalLoraBackend.run()``
-saves adapter files to disk but no ``LoRAAdapter`` DB row is ever created.
-Now invoked from the backend-agnostic ``on_complete`` path for both local
-and SaaS fine-tune results.
+Fixes the pre-existing gap where ``LocalLoraBackend.run()`` saves adapter
+files to disk but no ``LoRAAdapter`` DB row is ever created.  Invoked from
+the backend-agnostic ``on_complete`` path for both local and SaaS results.
 """
 
 from __future__ import annotations
 
 import json
 import logging
-from typing import Any, cast
+from typing import cast
 
 from ...db.models.lora_adapter import LoRAAdapter
 from ...db.repositories.lora_adapter_repository import LoRAAdapterRepository
@@ -31,7 +30,12 @@ class AdapterPersistenceService:
     def __init__(self, lora_adapter_repo: LoRAAdapterRepository) -> None:
         self._repo = lora_adapter_repo
 
-    async def persist(self, result: ComputeResult, config: dict[str, object]) -> None:
+async def persist(
+        self,
+        result: ComputeResult,
+        config: dict[str, object],
+        run_id: int = 0,
+    ) -> None:
         """Persist a ``LoRAAdapter`` row when the result contains an adapter.
 
         Skips silently when ``result.adapter_id`` is ``None`` (not a
@@ -49,6 +53,8 @@ class AdapterPersistenceService:
             Training config containing ``"base_model_ref"`` and LoRA
             hyperparameters (``lora_rank``, ``lora_alpha``, ``method``,
             etc.).
+        run_id : int
+            The training run ID to associate with this adapter.
         """
         if result.adapter_id is None:
             return
@@ -63,8 +69,6 @@ class AdapterPersistenceService:
             )
             return
 
-        # external_model_id is a required FK — skip if ref is not numeric
-        # (ad-hoc models without a registered ExternalModel).
         if not isinstance(base_model_ref, int):
             logger.warning(
                 "Cannot persist LoRAAdapter: base_model_ref=%r not an int FK "
@@ -78,29 +82,34 @@ class AdapterPersistenceService:
 
         lora_rank_val = cast(int, config.get("lora_rank", 8))
         lora_alpha_val = cast(float, config.get("lora_alpha", 16))
+
+        target_modules_raw = config.get("lora_target_modules")
+        if isinstance(target_modules_raw, list):
+            target_modules_str = json.dumps(target_modules_raw)
+        elif target_modules_raw is not None:
+            target_modules_str = str(target_modules_raw)
+        else:
+            target_modules_str = None
+
+        dropout_raw = config.get("lora_dropout")
+        dropout_val: float | None = (
+            cast(float, dropout_raw) if dropout_raw is not None else None
+        )
+
+        bias_raw = config.get("lora_bias")
+        bias_val: str | None = str(bias_raw) if bias_raw is not None else None
+
         adapter = LoRAAdapter(
             external_model_id=base_model_ref,
-            run_id=0,
+            run_id=run_id,
             adapter_id=result.adapter_id or "",
             method=str(config.get("method", "lora")),
             storage_path=str(adapter_path),
             lora_rank=lora_rank_val,
             lora_alpha=lora_alpha_val,
-            lora_target_modules=(
-                json.dumps(config["lora_target_modules"])
-                if isinstance(config.get("lora_target_modules"), list)
-                else (
-                    str(config["lora_target_modules"])
-                    if config.get("lora_target_modules")
-                    else None
-                )
-            ),
-            lora_dropout=(
-                cast(float | None, config.get("lora_dropout"))
-                if config.get("lora_dropout")
-                else None
-            ),
-            lora_bias=str(config["lora_bias"]) if config.get("lora_bias") else None,
+lora_target_modules=target_modules_str,
+            lora_dropout=dropout_val,
+            lora_bias=bias_val,
             final_loss=result.final_loss,
         )
         await self._repo.add(adapter)

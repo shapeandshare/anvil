@@ -957,7 +957,7 @@ async def start_training(config: TrainConfig) -> dict[str, Any]:
             async with AsyncSessionLocal() as sess:
                 repo = LoRAAdapterRepository(sess)
                 persistence = AdapterPersistenceService(repo)
-                await persistence.persist(result, config.model_dump())
+                await persistence.persist(result, config.model_dump(), run_id=run_id)
 
         # Register model with MLflow after DB commit so experiment
         # is visible even if model registration hangs

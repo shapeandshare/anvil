@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
 from typing import Any
 
 from .compute_backend_result import ComputeBackendResult
@@ -25,31 +24,17 @@ from .compute_status import ComputeStatus
 from .protocol import ProgressCallback, StopCheck
 from .registry import register
 from .registry_backend import RegistryBackend
+from .resolve import _saas_configured
 from .result import ComputeResult
 from .training_engine import TrainingEngine
 
 logger = logging.getLogger(__name__)
-
 
 #: Maximum number of retries for transient provider failures.
 MAX_RETRIES: int = 3
 
 #: Backoff delays (seconds) between retry attempts.
 RETRY_BACKOFFS: list[int] = [30, 90, 270]
-
-
-def _saas_configured() -> bool:
-    """Check whether the SaaS fine-tune backend is configured.
-
-    Returns ``True`` if the ``ANVIL_SAAS_ENDPOINT`` environment variable
-    is set to a non-empty value.
-
-    Returns
-    -------
-    bool
-        ``True`` if the SaaS endpoint is configured.
-    """
-    return bool(os.environ.get("ANVIL_SAAS_ENDPOINT"))
 
 
 class SaasFinetuneBackend:

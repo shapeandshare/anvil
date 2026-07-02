@@ -63,7 +63,9 @@ from .services.model_import.local_source import LocalSource
 from .services.model_import.model_import_service import ModelImportService
 from .services.tracking.tracking import TrackingService
 from .services.training.export import SafetensorsExportService
+from .services.training.adapter_persistence import AdapterPersistenceService
 from .services.training.training import TrainingService
+from .db.repositories.lora_adapter_repository import LoRAAdapterRepository
 from .supervisor.supervisor import kill_pid_file, write_pid
 
 logger = logging.getLogger(__name__)
@@ -403,16 +405,9 @@ def train() -> None:
                 # Persist LoRAAdapter DB row for fine-tune results (047).
                 if getattr(result, "adapter_id", None) is not None:
                     async with AsyncSessionLocal() as sess:
-                        from .db.repositories.lora_adapter_repository import (
-                            LoRAAdapterRepository,
-                        )
-                        from .services.training.adapter_persistence import (
-                            AdapterPersistenceService,
-                        )
-
                         repo = LoRAAdapterRepository(sess)
                         persistence = AdapterPersistenceService(repo)
-                        await persistence.persist(result, _cfg)
+                        await persistence.persist(result, _cfg, run_id=run_id)
 
         try:
             await svc.start_training(
