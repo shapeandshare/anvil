@@ -236,8 +236,8 @@ class TestSaasFinetuneE2E:
         fake_provider.poll_status.return_value = ComputeStatus.COMPLETED
         fake_provider.fetch_adapter.return_value = f"{tempfile.mkdtemp()}/e2e_adapter"
 
-        from anvil.services.compute.saas_finetune_backend import SaasFinetuneBackend
         from anvil.services.compute.registry import register
+        from anvil.services.compute.saas_finetune_backend import SaasFinetuneBackend
 
         register("saas-finetune", lambda: SaasFinetuneBackend(provider=fake_provider))
 

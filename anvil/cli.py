@@ -408,7 +408,10 @@ def train() -> None:
                         repo = LoRAAdapterRepository(sess)
                         persistence = AdapterPersistenceService(repo)
                         from .services.compute.result import ComputeResult
-                        await persistence.persist(cast(ComputeResult, result), _cfg, run_id=run_id)
+
+                        await persistence.persist(
+                            cast(ComputeResult, result), _cfg, run_id=run_id
+                        )
 
         try:
             await svc.start_training(
