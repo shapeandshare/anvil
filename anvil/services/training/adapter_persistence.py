@@ -31,14 +31,6 @@ class AdapterPersistenceService:
         self._repo = lora_adapter_repo
 
 
-async def persist(
-    self,
-    result: ComputeResult,
-    config: dict[str, object],
-    run_id: int = 0,
-) -> None:
-    """Persist a ``LoRAAdapter`` row when the result contains an adapter.
-
     Skips silently when ``result.adapter_id`` is ``None`` (not a
     fine-tune result).  When ``base_model_ref`` cannot be resolved to
     an ``external_model_id`` (ad-hoc/local base models), logs a warning
@@ -70,12 +62,6 @@ async def persist(
         )
         return
 
-    if not isinstance(base_model_ref, int):
-        logger.warning(
-            "Cannot persist LoRAAdapter: base_model_ref=%r not an int FK "
-            "(adapter_id=%s). Register the base model first.",
-            base_model_ref,
-            result.adapter_id,
         )
         return
 

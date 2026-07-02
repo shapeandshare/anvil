@@ -6,6 +6,7 @@ DB row and populate ``ComputeResult.adapter_id`` (currently never set).
 
 from __future__ import annotations
 
+import tempfile
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -80,16 +81,7 @@ class TestAdapterPersistence:
     async def test_adapter_row_created_on_complete(
         self,
     ) -> None:
-        """T002: After a LOCAL LoRA run completes, a LoRAAdapter DB row is created.
-
-        This test verifies the adapter-persistence service creates a row via
-        LoRAAdapterRepository.add(). The service is invoked from the on_complete
-        callback. We test that given a completed ComputeResult with adapter_id,
-        the persistence service produces a DB row.
-
-        Currently no caller invokes LoRAAdapterRepository.add() post-training
-        — this test will FAIL until T005/T006 are implemented.
-        """
+        adapter_path = f"{tempfile.mkdtemp()}/test_adapter"
         # Arrange: create a minimal ComputeResult with adapter_id
         result = ComputeResult(
             status=ComputeStatus.COMPLETED,
@@ -98,15 +90,15 @@ class TestAdapterPersistence:
             samples=["hello"],
             engine=TrainingEngine.TORCH,
             backend=ComputeBackendResult.LOCAL,
-            artifact_uris={"adapter_path": "/tmp/test_adapter"},
+            artifact_uris={"adapter_path": adapter_path},
             adapter_id="test-run_42",
         )
 
-        # We use a mock repo to verify add() is called
+        # Use a mock repo to verify add() is called
         mock_repo = MagicMock()
         mock_repo.add = AsyncMock()
 
-        # Act: call the soon-to-be-implemented persistence service
+        # Call the persistence service
         from anvil.services.training.adapter_persistence import (
             AdapterPersistenceService,
         )
@@ -114,8 +106,8 @@ class TestAdapterPersistence:
         service = AdapterPersistenceService(lora_adapter_repo=mock_repo)
         await service.persist(result, {"base_model_ref": 1})
 
-        # Assert: add() was called once
+        # Assert: add() was called once with correct fields
         mock_repo.add.assert_called_once()
         saved_adapter = mock_repo.add.call_args[0][0]
         assert saved_adapter.adapter_id == "test-run_42"
-        assert saved_adapter.storage_path == "/tmp/test_adapter"
+        assert saved_adapter.storage_path == adapter_path

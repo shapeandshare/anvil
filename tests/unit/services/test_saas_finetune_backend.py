@@ -6,6 +6,7 @@ is_available(), auto-registration, routing, and end-to-end HTTP flow.
 
 from __future__ import annotations
 
+import tempfile
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -34,10 +35,11 @@ def fake_config() -> dict:
 @pytest.fixture
 def fake_provider() -> AsyncMock:
     """A fake SaasFinetuneProvider that succeeds immediately."""
+    tmpdir = tempfile.mkdtemp()
     provider = AsyncMock()
     provider.submit.return_value = "job_ref_123"
     provider.poll_status.return_value = ComputeStatus.COMPLETED
-    provider.fetch_adapter.return_value = "/tmp/fake_adapter"
+    provider.fetch_adapter.return_value = f"{tmpdir}/fake_adapter"
     return provider
 
 
@@ -100,8 +102,9 @@ class TestSaasFinetuneBackendRun:
     """T007: SaasFinetuneBackend.run() with injected fake provider."""
 
     async def test_success_path_returns_completed(
-        self, saas_backend, fake_config, progress_callback, stop_check
+        self, saas_backend, fake_provider, fake_config, progress_callback, stop_check
     ):
+        expected_path = fake_provider.fetch_adapter.return_value
         result = await saas_backend.run(
             ["doc1"],
             fake_config,
@@ -110,7 +113,7 @@ class TestSaasFinetuneBackendRun:
         )
         assert result.status == ComputeStatus.COMPLETED
         assert result.adapter_id is not None
-        assert result.artifact_uris.get("adapter_path") == "/tmp/fake_adapter"
+        assert result.artifact_uris.get("adapter_path") == expected_path
         assert result.backend == ComputeBackendResult.SAAS
         assert result.engine == TrainingEngine.TORCH
 
@@ -234,9 +237,8 @@ class TestSaasFinetuneE2E:
         fake_provider = AsyncMock()
         fake_provider.submit.return_value = "job_ref_42"
         fake_provider.poll_status.return_value = ComputeStatus.COMPLETED
-        fake_provider.fetch_adapter.return_value = "/tmp/e2e_adapter"
+        fake_provider.fetch_adapter.return_value = f"{tempfile.mkdtemp()}/e2e_adapter"
 
-        from anvil.services.compute.registry import register
         from anvil.services.compute.saas_finetune_backend import SaasFinetuneBackend
 
         register("saas-finetune", lambda: SaasFinetuneBackend(provider=fake_provider))
