@@ -6,7 +6,7 @@
 (function() {
   'use strict';
 
-  function SSESession(runId) {
+  function SSESession(runId, opts) {
     this.runId = runId;
     this._state = 'idle';
     this._es = null;
@@ -14,6 +14,7 @@
     this._maxRetries = 5;
     this._backoff = [1000, 2000, 4000, 8000, 16000];
     this._destroyed = false;
+    this._urlPrefix = (opts && opts.urlPrefix) || '/v1/training/stream';
 
     this.onstatechange = null;
     this.onmetrics = null;
@@ -31,7 +32,7 @@
   };
 
   SSESession.prototype._getUrl = function() {
-    return '/v1/training/stream/' + this.runId;
+    return this._urlPrefix + '/' + this.runId;
   };
 
   SSESession.prototype._handleOpen = function() {

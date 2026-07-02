@@ -21,6 +21,7 @@ from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .config import get_config
+from .db.models.evaluation_run import EvalSample, EvaluationRun
 from .db.repositories.asset_download_job_repository import AssetDownloadJobRepository
 from .db.repositories.audit_events import AuditEventRepository
 from .db.repositories.backup_operations import BackupOperationRepository
@@ -33,6 +34,7 @@ from .db.repositories.content_sources import ContentSourceRepository
 from .db.repositories.content_versions import ContentVersionRepository
 from .db.repositories.corpora import CorpusRepository
 from .db.repositories.datasets import DatasetRepository
+from .db.repositories.evaluation_runs import EvaluationRunRepository
 from .db.repositories.external_models import ExternalModelRepository
 from .db.repositories.fine_tune_datasets import FineTuneDatasetRepository
 from .db.repositories.instance_registry import (
@@ -64,6 +66,7 @@ from .services.datasets.dataset_export import DatasetExportService
 from .services.datasets.dataset_import import DatasetImportService
 from .services.datasets.datasets import DatasetService
 from .services.demo.demo_bootstrap import DemoBootstrapService
+from .services.evaluation.evaluation_service import EvaluationService
 from .services.governance.audit_action import AuditAction
 from .services.governance.audit_outcome import AuditOutcome
 from .services.governance.audit_service import AuditService
@@ -124,6 +127,8 @@ class AnvilWorkbench:
         self._training: TrainingService | None = None
         self._tracking: TrackingService | None = None
         self._inference: InferenceService | None = None
+        self._evaluation: EvaluationService | None = None
+        self._evaluation_run_repo: EvaluationRunRepository | None = None
         self._dataset_repo: DatasetRepository | None = None
         self._corpus_repo: CorpusRepository | None = None
         self._datasets: DatasetService | None = None
@@ -196,10 +201,28 @@ class AnvilWorkbench:
 
     @property
     def inference(self) -> InferenceService:
-        """Return the stateless ``InferenceService``."""
+        """Lazy-initialized ``InferenceService``."""
         if self._inference is None:
             self._inference = InferenceService()
         return self._inference
+
+    @property
+    def evaluation(self) -> EvaluationService:
+        """Lazy-initialized ``EvaluationService``."""
+        if self._evaluation is None:
+            self._evaluation = EvaluationService(
+                session=self._session,
+                inference=self.inference,
+                tracking=self.tracking,
+            )
+        return self._evaluation
+
+    @property
+    def evaluation_run_repo(self) -> EvaluationRunRepository:
+        """Lazy-initialized ``EvaluationRunRepository``."""
+        if self._evaluation_run_repo is None:
+            self._evaluation_run_repo = EvaluationRunRepository(self._session)
+        return self._evaluation_run_repo
 
     # ── Repository helpers ──────────────────────────────────────────────
 
@@ -658,6 +681,118 @@ class AnvilWorkbench:
         return self._model_assets
 
     # ── Session lifecycle ───────────────────────────────────────────────
+
+    # ------------------------------------------------------------------
+    # Evaluation delegate methods (spec 054)
+    # ------------------------------------------------------------------
+
+    async def evaluate_fine_tuned(
+        self,
+        *,
+        model_id: int,
+        base_model_id: int,
+        adapter_id: str | None = None,
+        eval_dataset_name: str | None = None,
+        prompts: list[str] | None = None,
+        tokenizer_family: str = "char",
+        base_tokenizer_family: str | None = None,
+    ) -> EvaluationRun:
+        """Start an evaluation and return the created ``EvaluationRun``.
+
+        Parameters
+        ----------
+        model_id : int
+            ``ExternalModel.id`` of the fine-tuned model.
+        base_model_id : int
+            ``ExternalModel.id`` of the base model.
+        adapter_id : str | None, optional
+            Adapter ID for adapter model evaluations.
+        eval_dataset_name : str | None, optional
+            Name of an MLflow eval-dataset.
+        prompts : list[str] | None, optional
+            Inline prompts if no eval-dataset selected.
+        tokenizer_family : str, optional
+            Tokenizer family. Defaults to ``"char"``.
+        base_tokenizer_family : str | None, optional
+            Base tokenizer family. Defaults to ``None``.
+
+        Returns
+        -------
+        EvaluationRun
+            The created evaluation run (status ``PENDING``).
+        """
+        return await self.evaluation.start_evaluation(
+            model_id=model_id,
+            base_model_id=base_model_id,
+            adapter_id=adapter_id,
+            eval_dataset_name=eval_dataset_name,
+            prompts=prompts,
+            tokenizer_family=tokenizer_family,
+            base_tokenizer_family=base_tokenizer_family,
+        )
+
+    async def get_evaluation_run(self, run_id: int) -> EvaluationRun | None:
+        """Fetch a persisted evaluation run.
+
+        Parameters
+        ----------
+        run_id : int
+            The evaluation run ID.
+
+        Returns
+        -------
+        EvaluationRun | None
+            The matching run or ``None``.
+        """
+        return await self.evaluation.get_run(run_id)
+
+    async def get_evaluation_samples(self, run_id: int) -> list[EvalSample]:
+        """Fetch per-prompt samples for an evaluation run.
+
+        Parameters
+        ----------
+        run_id : int
+            The evaluation run ID.
+
+        Returns
+        -------
+        list[EvalSample]
+            Per-prompt sample rows.
+        """
+        return await self.evaluation.get_samples(run_id)
+
+    async def list_evaluation_runs(
+        self,
+        *,
+        model_id: int | None = None,
+        status: str | None = None,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> tuple[list[EvaluationRun], int]:
+        """List evaluation runs with optional filters.
+
+        Parameters
+        ----------
+        model_id : int, optional
+            Filter by fine-tuned model ID.
+        status : str, optional
+            Filter by run status.
+        limit : int, optional
+            Max results. Defaults to 20.
+        offset : int, optional
+            Result offset. Defaults to 0.
+
+        Returns
+        -------
+        tuple[list[EvaluationRun], int]
+            (Runs, total count).
+        """
+        return await self.evaluation.list_runs(
+            model_id=model_id,
+            status=status,
+            limit=limit,
+            offset=offset,
+        )
 
     @property
     def session(self) -> AsyncSession:

@@ -121,7 +121,8 @@
         '<td>' +
           (m.id != null
             ? '<a href="/v1/model-detail/' + m.id + '" class="btn btn-secondary btn-sm">View</a> ' +
-              '<a href="/v1/inference-page?model_id=' + m.id + '" class="btn btn-primary btn-sm">Play</a>'
+              '<a href="/v1/inference-page?model_id=' + m.id + '" class="btn btn-primary btn-sm">Play</a> ' +
+              '<a href="/v1/eval-compare?model_id=' + m.id + '" class="btn btn-secondary btn-sm">Evaluate</a>'
             : '<span class="text-dim">—</span>') +
         '</td>';
       return tr;
@@ -145,7 +146,8 @@
       dom.setCellHtml(tr, 5,
         m.id != null
           ? '<a href="/v1/model-detail/' + m.id + '" class="btn btn-secondary btn-sm">View</a> ' +
-            '<a href="/v1/inference-page?model_id=' + m.id + '" class="btn btn-primary btn-sm">Play</a>'
+            '<a href="/v1/inference-page?model_id=' + m.id + '" class="btn btn-primary btn-sm">Play</a> ' +
+            '<a href="/v1/eval-compare?model_id=' + m.id + '" class="btn btn-secondary btn-sm">Evaluate</a>'
           : '<span class="text-dim">—</span>');
     }
 

@@ -36,6 +36,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ...config import get_config
 from ...db.session import AsyncSessionLocal
 from .._shared.capability_unavailable import CapabilityUnavailable
+from .._shared.evaluation_status import EvaluationRunStatus
 from .degraded_reason import DegradedReason
 from .degraded_state import DegradedState
 from .mlflow_capabilities import TrackingCapabilities, detect_capabilities
@@ -1486,9 +1487,115 @@ class TrackingService:
 
         return result
 
+    # ------------------------------------------------------------------
+    # Evaluation-specific MLflow helpers (spec 054)
+    # ------------------------------------------------------------------
+
+    async def start_eval_run(
+        self,
+        *,
+        run_name: str | None = None,
+        model_id: int,
+        base_model_id: int,
+        adapter_id: str | None = None,
+        tokenizer_family: str,
+    ) -> str:
+        """Start an MLflow run for a fine-tuned model evaluation.
+
+        Reuses ``start_run`` with eval-specific tags for lineage tracing.
+
+        Parameters
+        ----------
+        run_name : str, optional
+            Optional human-readable run name.
+        model_id : int
+            ``ExternalModel.id`` of the fine-tuned model.
+        base_model_id : int
+            ``ExternalModel.id`` of the base model.
+        adapter_id : str | None, optional
+            Adapter ID if evaluating an adapter model. Defaults to ``None``.
+        tokenizer_family : str
+            Tokenizer family of the fine-tuned model.
+
+        Returns
+        -------
+        str
+            The MLflow run ID, or empty string if degraded.
+        """
+        run_id = await self.start_run(
+            run_name=run_name or f"eval-{model_id}-vs-{base_model_id}",
+            engine_backend="evaluation",
+            device="cpu",
+        )
+        if not run_id:
+            return ""
+
+        await self.set_tag(run_id, "anvil.origin", "evaluation")
+        await self.set_tag(run_id, "anvil.entity_type", "evaluation")
+        await self.set_tag(run_id, "anvil.base_model_ref", str(base_model_id))
+        await self.set_tag(run_id, "anvil.fine_tuned_model_id", str(model_id))
+        await self.set_tag(run_id, "anvil.tokenizer_family", tokenizer_family)
+        await self.set_tag(run_id, "anvil.eval_status", EvaluationRunStatus.RUNNING)
+        if adapter_id:
+            await self.set_tag(run_id, "anvil.adapter_id", adapter_id)
+        return run_id
+
+    async def log_eval_metric(
+        self,
+        run_id: str,
+        key: str,
+        value: float,
+        step: int | None = None,
+    ) -> None:
+        """Log a metric to an evaluation MLflow run.
+
+        Convenience wrapper around ``log_metric``.
+
+        Parameters
+        ----------
+        run_id : str
+            The MLflow run ID.
+        key : str
+            Metric name.
+        value : float
+            Metric value.
+        step : int, optional
+            Metric step. Defaults to ``None``.
+        """
+        await self.log_metric(run_id, key, value, step=step)
+
+    async def finish_eval_run(self, run_id: str) -> None:
+        """Mark an evaluation MLflow run as completed.
+
+        Parameters
+        ----------
+        run_id : str
+            The MLflow run ID.
+        """
+        if run_id:
+            await self.set_tag(
+                run_id, "anvil.eval_status", EvaluationRunStatus.COMPLETED
+            )
+            await self.finish_run(run_id)
+
+    async def fail_eval_run(self, run_id: str, *, reason: str | None = None) -> None:
+        """Mark an evaluation MLflow run as failed.
+
+        Parameters
+        ----------
+        run_id : str
+            The MLflow run ID.
+        reason : str, optional
+            Failure reason. Defaults to ``None``.
+        """
+        if run_id:
+            await self.set_tag(run_id, "anvil.eval_status", EvaluationRunStatus.FAILED)
+            if reason:
+                await self.set_tag(run_id, "anvil.eval_error", reason)
+            await self.fail_run(run_id, _reason=reason)
+
 
 def _create_dataset_sync(name: str, tags: dict[str, Any] | None) -> Any:
-    """Synchronously create an MLflow managed evaluation dataset."""
     if create_dataset is None:
         raise ImportError("mlflow.genai.datasets is not available")
     return create_dataset(name=name, tags=tags or {})

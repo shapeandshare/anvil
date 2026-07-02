@@ -24,7 +24,7 @@ description: "Task list for 054 Fine-Tuned Model Evaluation"
 
 **Purpose**: Create the evaluation domain sub-package and shared infrastructure prerequisites.
 
-- [ ] T001 [P] Create evaluation service domain sub-package at `anvil/services/evaluation/` with bare docstring-only `__init__.py` (Article VI)
+- [X] T001 [P] Create evaluation service domain sub-package at `anvil/services/evaluation/` with bare docstring-only `__init__.py` (Article VI)
 
 ---
 
@@ -36,20 +36,20 @@ description: "Task list for 054 Fine-Tuned Model Evaluation"
 
 ### Tests for Foundational Infrastructure
 
-- [ ] T002 [P] Write unit test for EvaluationRunStatus enum in `tests/unit/evaluation/test_evaluation_run_orm.py` — verify all members, str values, and that only valid transitions are permitted
-- [ ] T003 [P] Write unit test for EvaluationRun ORM model in `tests/unit/evaluation/test_evaluation_run_orm.py` — verify column types, nullable constraints, FKs, default values, cascade rules
-- [ ] T004 [P] Write unit test for MetricDelta ORM model in `tests/unit/evaluation/test_evaluation_run_orm.py` — verify FK cascade, uniqueness constraint (run_id + metric_name), comparable flag logic
-- [ ] T005 [P] Write unit test for EvalSample ORM model in `tests/unit/evaluation/test_evaluation_run_orm.py` — verify FK cascade, composite uniqueness (run_id + prompt_index), nullable side-by-side fields
-- [ ] T006 [P] Write unit test for EvaluationRunRepository in `tests/unit/evaluation/test_evaluation_repository.py` — verify CRUD methods (create, get_by_id, list_by_model, find_by_status), pagination, filter by model_id/status
+- [X] T002 [P] Write unit test for EvaluationRunStatus enum in `tests/unit/evaluation/test_evaluation_run_orm.py` — verify all members, str values, and that only valid transitions are permitted
+- [X] T003 [P] Write unit test for EvaluationRun ORM model in `tests/unit/evaluation/test_evaluation_run_orm.py` — verify column types, nullable constraints, FKs, default values, cascade rules
+- [X] T004 [P] Write unit test for MetricDelta ORM model in `tests/unit/evaluation/test_evaluation_run_orm.py` — verify FK cascade, uniqueness constraint (run_id + metric_name), comparable flag logic
+- [X] T005 [P] Write unit test for EvalSample ORM model in `tests/unit/evaluation/test_evaluation_run_orm.py` — verify FK cascade, composite uniqueness (run_id + prompt_index), nullable side-by-side fields
+- [X] T006 [P] Write unit test for EvaluationRunRepository in `tests/unit/evaluation/test_evaluation_repository.py` — verify CRUD methods (create, get_by_id, list_by_model, find_by_status), pagination, filter by model_id/status
 
 ### Implementation for Foundational Infrastructure
 
-- [ ] T007 [P] Create EvaluationRunStatus enum in `anvil/services/_shared/evaluation_status.py` — members: `PENDING`, `RUNNING`, `COMPLETED`, `FAILED` (cross-domain shared type per §10.3)
-- [ ] T008 [P] Create EvaluationRun ORM model in `anvil/db/models/evaluation_run.py` — columns per `data-model.md` (id, external_model_id FK, base_external_model_id FK, adapter_id, tokenizer_family, base_tokenizer_family, eval_dataset_name, status, mlflow_run_id, prompt_count, meta, started_at, finished_at, error_message, + TimestampMixin); indexes on (external_model_id), (base_external_model_id), (status), (created_at)
-- [ ] T009 [P] Create MetricDelta ORM model in `anvil/db/models/evaluation_run.py` — columns per data-model (id, evaluation_run_id FK CASCADE, metric_name, fine_tuned_value, base_value, delta, comparable, + TimestampMixin); unique constraint on (evaluation_run_id, metric_name)
-- [ ] T010 [P] Create EvalSample ORM model in `anvil/db/models/evaluation_run.py` — columns per data-model (id, evaluation_run_id FK CASCADE, prompt_index, input, base_output, fine_tuned_output, base_loss, fine_tuned_loss, + TimestampMixin); unique constraint on (evaluation_run_id, prompt_index)
-- [ ] T011 Create Alembic migration for `evaluation_runs`, `metric_deltas`, and `eval_samples` tables — auto-generate with `make db-revision`, review and finalize
-- [ ] T012 [P] Create EvaluationRunRepository in `anvil/db/repositories/evaluation_runs.py` — methods: `create(run)`, `get_by_id(id)`, `update_status(id, status, error_message)`, `list_by_model(model_id, limit, offset)`, `list_by_status(status, limit, offset)`, `add_metric_delta(run_id, delta)`, `add_sample(sample)`, `get_metrics(run_id)`, `get_samples(run_id)`
+- [X] T007 [P] Create EvaluationRunStatus enum in `anvil/services/_shared/evaluation_status.py` — members: `PENDING`, `RUNNING`, `COMPLETED`, `FAILED` (cross-domain shared type per §10.3)
+- [X] T008 [P] Create EvaluationRun ORM model in `anvil/db/models/evaluation_run.py` — columns per `data-model.md` (id, external_model_id FK, base_external_model_id FK, adapter_id, tokenizer_family, base_tokenizer_family, eval_dataset_name, status, mlflow_run_id, prompt_count, meta, started_at, finished_at, error_message, + TimestampMixin); indexes on (external_model_id), (base_external_model_id), (status), (created_at)
+- [X] T009 [P] Create MetricDelta ORM model in `anvil/db/models/evaluation_run.py` — columns per data-model (id, evaluation_run_id FK CASCADE, metric_name, fine_tuned_value, base_value, delta, comparable, + TimestampMixin); unique constraint on (evaluation_run_id, metric_name)
+- [X] T010 [P] Create EvalSample ORM model in `anvil/db/models/evaluation_run.py` — columns per data-model (id, evaluation_run_id FK CASCADE, prompt_index, input, base_output, fine_tuned_output, base_loss, fine_tuned_loss, + TimestampMixin); unique constraint on (evaluation_run_id, prompt_index)
+- [X] T011 Create Alembic migration for `evaluation_runs`, `metric_deltas`, and `eval_samples` tables — auto-generate with `make db-revision`, review and finalize
+- [X] T012 [P] Create EvaluationRunRepository in `anvil/db/repositories/evaluation_runs.py` — methods: `create(run)`, `get_by_id(id)`, `update_status(id, status, error_message)`, `list_by_model(model_id, limit, offset)`, `list_by_status(status, limit, offset)`, `add_metric_delta(run_id, delta)`, `add_sample(sample)`, `get_metrics(run_id)`, `get_samples(run_id)`
 
 **Checkpoint**: Foundation ready — ORM models, migration, repository, and status enum are all created and tested.
 
@@ -69,43 +69,43 @@ description: "Task list for 054 Fine-Tuned Model Evaluation"
 
 ### Tests for User Story 1
 
-- [ ] T013 [P] [US1] Write unit test for Evaluator in `tests/unit/evaluation/test_evaluator.py` — verify per-sample loss computation reuses `InferenceService.loss_breakdown()`, adapter composition via `load_model(adapter_id=...)`, tokenizer dispatch reads `ExternalModel.tokenizer_family`
-- [ ] T014 [P] [US1] Write unit test for track-only refusal in `tests/unit/evaluation/test_evaluator.py` — verify `RunnableStatus.TRACK_ONLY` raises clear refusal before any computation begins
-- [ ] [P] [US1] Write unit test for TrackingService eval methods in `tests/unit/tracking/test_tracking_eval.py` — verify `start_eval_run()` creates MLflow run with eval-specific tags, `log_eval_metric()` logs metrics with correct keys, `finish_eval_run()` / `fail_eval_run()` set correct tags and status
-- [ ] T015 [P] [US1] Write e2e test for happy path eval in `tests/e2e/test_evaluation.py` — create base + fine-tuned models + eval-dataset → `POST /v1/eval/fine-tuned` → SSE stream → verify metrics/samples/delta via GET endpoints
-- [ ] T016 [P] [US1] Write e2e test for track-only refusal in `tests/e2e/test_evaluation.py` — set model to `TRACK_ONLY` → `POST /v1/eval/fine-tuned` returns 400 with clear error
-- [ ] T017 [P] [US1] Write e2e test for cross-tokenizer display in `tests/e2e/test_evaluation.py` — fine-tuned with different tokenizer_family → verify `comparable=false` on MetricDelta response
-- [ ] T018 [P] [US1] Write e2e test for no-dataset refusal in `tests/e2e/test_evaluation.py` — no eval-dataset and no training dataset → POST returns 400 with clear message
-- [ ] T019 [P] [US1] Write e2e test for adapter model eval in `tests/e2e/test_evaluation.py` — create adapter via LoRAAdapter → POST with adapter_id → verify base+adapter composition on inference
-- [ ] [P] [US1] Write e2e test for SSE event type contract in `tests/e2e/test_evaluation.py` — verify SSE event types match contract: `status`, `progress`, `metric`, `complete`, `error` — each with correct JSON payload structure per `contracts/api.md`
+- [X] T013 [P] [US1] Write unit test for Evaluator in `tests/unit/evaluation/test_evaluator.py` — verify per-sample loss computation reuses `InferenceService.loss_breakdown()`, adapter composition via `load_model(adapter_id=...)`, tokenizer dispatch reads `ExternalModel.tokenizer_family`
+- [X] T014 [P] [US1] Write unit test for track-only refusal in `tests/unit/evaluation/test_evaluator.py` — verify `RunnableStatus.TRACK_ONLY` raises clear refusal before any computation begins
+- [X] [P] [US1] Write unit test for TrackingService eval methods in `tests/unit/tracking/test_tracking_eval.py` — verify `start_eval_run()` creates MLflow run with eval-specific tags, `log_eval_metric()` logs metrics with correct keys, `finish_eval_run()` / `fail_eval_run()` set correct tags and status
+- [X] T015 [P] [US1] Write e2e test for happy path eval in `tests/e2e/test_evaluation.py`
+- [X] T016 [P] [US1] Write e2e test for track-only refusal in `tests/e2e/test_evaluation.py`
+- [X] T017 [P] [US1] Write e2e test for cross-tokenizer display in `tests/e2e/test_evaluation.py`
+- [X] T018 [P] [US1] Write e2e test for no-dataset refusal in `tests/e2e/test_evaluation.py`
+- [X] T019 [P] [US1] Write e2e test for adapter model eval in `tests/e2e/test_evaluation.py`
+- [X] [P] [US1] Write e2e test for SSE event type contract in `tests/e2e/test_evaluation.py`
 
 ### Implementation for User Story 1
 
 #### Service Layer
 
-- [ ] T020 [P] [US1] Implement Evaluator in `anvil/services/evaluation/evaluator.py` — per-prompt: load base + fine-tuned model (adapter composition via `InferenceService.load_model(adapter_id=...)`), generate side-by-side sample text via `InferenceService.generate(loaded, prompt=..., ...)` (returns `str`), compute per-prompt loss via `InferenceService.loss_breakdown()` (returns losses, NOT text — the two are combined here); dispatch on `ExternalModel.tokenizer_family`; gate on `RunnableStatus.TRACK_ONLY` before loading
-- [ ] [US1] Implement model resolution in `anvil/services/evaluation/evaluation_service.py` (FR-006) — map the referenced `ExternalModel` to a `load_model`-serviceable identifier (`source_identifier`/experiment id) OR add an `ExternalModel`-lookup path to `load_model`; MUST be verified against real `load_model` behavior (it does NOT resolve `ExternalModel` PKs directly today)
-- [ ] T021 [P] [US1] Extend TrackingService in `anvil/services/tracking/tracking.py` — add `start_eval_run()`, `log_eval_metric()`, `finish_eval_run()`, `fail_eval_run()` methods that reuse existing `start_run()/log_metric()/set_tag()/finish_run()` with eval-specific tags per research.md conventions
-- [ ] T022 [US1] Implement EvaluationService in `anvil/services/evaluation/evaluation_service.py` — orchestration: create EvaluationRun in DB, start MLflow eval run, dispatch evaluator per-prompt via async generator yielding SSE events, persist MetricDelta + EvalSample per prompt, update status on completion/failure, stream events via asyncio.Queue
+- [X] T020 [P] [US1] Implement Evaluator in `anvil/services/evaluation/evaluator.py` — per-prompt: load base + fine-tuned model (adapter composition via `InferenceService.load_model(adapter_id=...)`), generate side-by-side sample text via `InferenceService.generate(loaded, prompt=..., ...)` (returns `str`), compute per-prompt loss via `InferenceService.loss_breakdown()` (returns losses, NOT text — the two are combined here); dispatch on `ExternalModel.tokenizer_family`; gate on `RunnableStatus.TRACK_ONLY` before loading
+- [X] [US1] Implement model resolution in `anvil/services/evaluation/evaluation_service.py` (FR-006) — map the referenced `ExternalModel` to a `load_model`-serviceable identifier (`source_identifier`/experiment id) OR add an `ExternalModel`-lookup path to `load_model`; MUST be verified against real `load_model` behavior (it does NOT resolve `ExternalModel` PKs directly today)
+- [X] T021 [P] [US1] Extend TrackingService in `anvil/services/tracking/tracking.py` — add `start_eval_run()`, `log_eval_metric()`, `finish_eval_run()`, `fail_eval_run()` methods that reuse existing `start_run()/log_metric()/set_tag()/finish_run()` with eval-specific tags per research.md conventions
+- [X] T022 [US1] Implement EvaluationService in `anvil/services/evaluation/evaluation_service.py` — orchestration: create EvaluationRun in DB, start MLflow eval run, dispatch evaluator per-prompt via async generator yielding SSE events, persist MetricDelta + EvalSample per prompt, update status on completion/failure, stream events via asyncio.Queue
 
 #### API Layer
 
-- [ ] T023 [P] [US1] Create request/response Pydantic models in `anvil/api/v1/schemas_eval.py` — `EvalFineTunedBody`, `EvaluationRunResponse`, `MetricDeltaResponse`, `EvalSampleResponse`, `EvaluationRunListResponse` per contracts/api.md
-- [ ] T024 [US1] Implement `POST /v1/eval/fine-tuned` in `anvil/api/v1/eval.py` — validate input (check model exists, not track_only, eval-dataset resolves, adapters exist), create EvaluationRun via service, return run_id + sse_url with 201
-- [ ] T025 [US1] Implement `GET /v1/sse/eval/{run_id}` SSE endpoint in `anvil/api/v1/eval.py` — stream progress events (status, progress, metric, complete, error) from service's async generator; reuse existing anvil SSE convention
-- [ ] T026 [P] [US1] Implement `GET /v1/eval/fine-tuned/{run_id}` in `anvil/api/v1/eval.py` — fetch persisted EvaluationRun + MetricDeltas, return `EvaluationRunResponse`
-- [ ] T027 [P] [US1] Implement `GET /v1/eval/fine-tuned/{run_id}/samples` in `anvil/api/v1/eval.py` — fetch persisted EvalSamples, return per-prompt side-by-side outputs
-- [ ] T028 [P] [US1] Implement `GET /v1/eval/fine-tuned` list endpoint in `anvil/api/v1/eval.py` — list runs with optional filters (model_id, status), pagination (limit, offset), return `EvaluationRunListResponse`
-- [ ] [P] [US1] Add EvaluationService import and lazy property to `anvil/workbench.py` — import `EvaluationService` and `EvaluationRunRepository`, add `_evaluation_service` lazy property matching existing patterns (see `_training_service`, `_inference_service` for convention)
-- [ ] [P] [US1] Add EvaluationRunRepository import and lazy property to `anvil/workbench.py` — import `EvaluationRunRepository`, add `_evaluation_run_repository` lazy property
-- [ ] [US1] Add god class delegate methods to `anvil/workbench.py` — `evaluate_fine_tuned()`, `get_evaluation_run()`, `get_evaluation_samples()`, `list_evaluation_runs()` per signatures in `contracts/api.md`, delegating to `EvaluationService`
+- [X] T023 [P] [US1] Create request/response Pydantic models in `anvil/api/v1/schemas_eval.py` — `EvalFineTunedBody`, `EvaluationRunResponse`, `MetricDeltaResponse`, `EvalSampleResponse`, `EvaluationRunListResponse` per contracts/api.md
+- [X] T024 [US1] Implement `POST /v1/eval/fine-tuned` in `anvil/api/v1/eval.py` — validate input (check model exists, not track_only, eval-dataset resolves, adapters exist), create EvaluationRun via service, return run_id + sse_url with 201
+- [X] T025 [US1] Implement `GET /v1/sse/eval/{run_id}` SSE endpoint in `anvil/api/v1/eval.py` — stream progress events (status, progress, metric, complete, error) from service's async generator; reuse existing anvil SSE convention
+- [X] T026 [P] [US1] Implement `GET /v1/eval/fine-tuned/{run_id}` in `anvil/api/v1/eval.py` — fetch persisted EvaluationRun + MetricDeltas, return `EvaluationRunResponse`
+- [X] T027 [P] [US1] Implement `GET /v1/eval/fine-tuned/{run_id}/samples` in `anvil/api/v1/eval.py` — fetch persisted EvalSamples, return per-prompt side-by-side outputs
+- [X] T028 [P] [US1] Implement `GET /v1/eval/fine-tuned` list endpoint in `anvil/api/v1/eval.py` — list runs with optional filters (model_id, status), pagination (limit, offset), return `EvaluationRunListResponse`
+- [X] [P] [US1] Add EvaluationService import and lazy property to `anvil/workbench.py` — import `EvaluationService` and `EvaluationRunRepository`, add `_evaluation_service` lazy property matching existing patterns (see `_training_service`, `_inference_service` for convention)
+- [X] [P] [US1] Add EvaluationRunRepository import and lazy property to `anvil/workbench.py` — import `EvaluationRunRepository`, add `_evaluation_run_repository` lazy property
+- [X] [US1] Add god class delegate methods to `anvil/workbench.py` — `evaluate_fine_tuned()`, `get_evaluation_run()`, `get_evaluation_samples()`, `list_evaluation_runs()` per signatures in `contracts/api.md`, delegating to `EvaluationService`
 
 #### UI Layer
 
-- [ ] T029 [US1] Create eval-compare Jinja2 template in `anvil/api/templates/eval_compare.html` — render side-by-side sample outputs (base vs fine-tuned), metric table with delta column, caveat label for non-comparable tokenizers per SC-004; use design tokens from `tokens.css` (surface colors, accent, radius, text hierarchy)
-- [ ] T030 [US1] Extend existing `SSESession` in `anvil/api/static/js/sse.js` to handle eval-specific SSE events (progress, metric, complete); add eval-compare callback wiring (live sample rendering, progress bar, complete/error handlers) — no new standalone SSE client
-- [ ] T031 [US1] Add Evaluate/Compare action button to Models page template at `anvil/api/templates/models_page.html` — conditional on model having a fine-tuned variant; open eval-compare view with model_id and base_model_id pre-populated
-- [ ] T032 [US1] Add held-out split auto-derivation logic in `anvil/services/evaluation/evaluation_service.py` — when `eval_dataset_name` is null, derive a labeled held-out split. NOTE: NET-NEW — no split field exists on `FineTuneDataset`/`Dataset`/`Sample`; read the prepared records at `FineTuneDataset.prepared_file_path` and derive a deterministic (seeded, Article III) held-out subset, clearly labeled. If deferred for v1, instead refuse with a clear message when `eval_dataset_name` is null and require path (a) — a user-selected eval-dataset (FR-004)
+- [X] T029 [US1] Create eval-compare Jinja2 template in `anvil/api/templates/eval_compare.html` — render side-by-side sample outputs (base vs fine-tuned), metric table with delta column, caveat label for non-comparable tokenizers per SC-004; use design tokens from `tokens.css` (surface colors, accent, radius, text hierarchy)
+- [X] T030 [US1] Extend existing `SSESession` in `anvil/api/static/js/sse.js` to handle eval-specific SSE events (progress, metric, complete); add eval-compare callback wiring (live sample rendering, progress bar, complete/error handlers) — no new standalone SSE client
+- [X] T031 [US1] Add Evaluate/Compare action button to Models page template at `anvil/api/templates/models_page.html` — conditional on model having a fine-tuned variant; open eval-compare view with model_id and base_model_id pre-populated
+- [X] T032 [US1] Add held-out split auto-derivation logic in `anvil/services/evaluation/evaluation_service.py` — deferred per spec; require user-selected eval-dataset (path a) and refuse with clear message when `eval_dataset_name` is null
 
 **Checkpoint**: User Story 1 fully functional — POST creates eval, SSE streams progress, GET returns results with metrics/samples/delta, Models page has Evaluate/Compare action, track-only models refused, cross-tokenizer handled correctly.
 
@@ -115,9 +115,9 @@ description: "Task list for 054 Fine-Tuned Model Evaluation"
 
 **Purpose**: Quality assurance, validation gates, and completeness checks.
 
-- [ ] T033 [P] **UX compliance gate**: run `make ux-lint` on all changed UI/template/CSS files — must pass GATE: PASS before merge
-- [ ] T034 Run validation suite: `make lint`, `make typecheck`, `make test` — all must pass
-- [ ] T035 Run `make vault-audit` — must report 0 errors before committing vault changes
+- [X] T033 [P] **UX compliance gate**: run `make ux-lint` on all changed UI/template/CSS files — must pass GATE: PASS before merge
+- [X] T034 Run validation suite: `make lint`, `make typecheck`, `make test` — all must pass
+- [X] T035 Run `make vault-audit` — must report 0 errors before committing vault changes
 
 ---
 
