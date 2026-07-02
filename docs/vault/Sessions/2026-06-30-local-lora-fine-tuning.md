@@ -4,7 +4,7 @@ type: session-log
 tags:
   - type/session-log
   - domain/training
-  - domain/fine-tuning
+  - domain/training
 created: '2026-06-30'
 updated: '2026-06-30'
 aliases:

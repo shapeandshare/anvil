@@ -1,6 +1,6 @@
 # Implementation Plan: At-Rest Secret Encryption — Key Ring + KMS Envelope
 
-**Branch**: `058-at-rest-secret-encryption` | **Date**: 2026-06-30 | **Spec**: [[docs/vault/Specs/058%20At-Rest%20Secret%20Encryption/058%20At-Rest%20Secret%20Encryption%20-%20spec.md]]
+**Branch**: `058-at-rest-secret-encryption` | **Date**: 2026-06-30 | **Spec**: [[docs/vault/Specs/058 At-Rest Secret Encryption/058 At-Rest Secret Encryption - spec.md|058 At-Rest Secret Encryption - spec]]
 **Input**: Feature specification from `docs/vault/Specs/058 At-Rest Secret Encryption/spec.md`
 
 ## Summary

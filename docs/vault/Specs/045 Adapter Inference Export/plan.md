@@ -1,3 +1,14 @@
+---
+title: "045 Adapter Inference Export - plan"
+type: spec
+tags:
+  - type/spec
+  - domain/training
+  - domain/mlops
+created: "2026-07-01"
+updated: "2026-07-01"
+---
+
 # Implementation Plan: Adapter Inference, Merge & Export
 
 **Branch**: `045-adapter-inference-export` | **Date**: 2026-07-01 | **Spec**: [045 Adapter Inference Export - spec.md](045%20Adapter%20Inference%20Export%20-%20spec.md)

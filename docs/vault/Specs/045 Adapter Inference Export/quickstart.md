@@ -1,3 +1,14 @@
+---
+title: "045 Adapter Inference Export - quickstart"
+type: spec
+tags:
+  - type/spec
+  - domain/training
+  - domain/mlops
+created: "2026-07-01"
+updated: "2026-07-01"
+---
+
 # Quickstart — Adapter Inference, Merge & Export
 
 ## Key Files

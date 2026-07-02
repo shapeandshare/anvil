@@ -1,5 +1,12 @@
 ---
-
+title: "045 Adapter Inference Export - tasks"
+type: spec
+tags:
+  - type/spec
+  - domain/training
+  - domain/mlops
+created: "2026-07-01"
+updated: "2026-07-01"
 description: "Task list for 045 - Adapter Inference, Merge & Export"
 ---
 

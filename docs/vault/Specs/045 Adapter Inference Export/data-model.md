@@ -1,3 +1,14 @@
+---
+title: "045 Adapter Inference Export - data model"
+type: spec
+tags:
+  - type/spec
+  - domain/training
+  - domain/mlops
+created: "2026-07-01"
+updated: "2026-07-01"
+---
+
 # Data Model — Adapter Inference, Merge & Export
 
 ## Entities
