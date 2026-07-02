@@ -17,7 +17,6 @@ from pathlib import Path
 from typing import Any
 
 from ...gpu import GpuInfo, detect_gpu
-from ..compute.compute_backend_unavailable import ComputeBackendUnavailable
 from ..compute.resolve import resolve_backend
 from ..compute.result import ComputeResult
 from ..compute.training_engine import TrainingEngine
@@ -847,7 +846,9 @@ class TrainingRunService:
         if model is not None:
             with tempfile.TemporaryDirectory() as tmpdir:
                 samples_path = os.path.join(tmpdir, "samples.txt")
-                with open(samples_path, "w", encoding="utf-8") as f:
+                with open(
+                    samples_path, "w", encoding="utf-8"
+                ) as f:  # noqa: ASYNC230 — inherited route pattern; model.save() is synchronous
                     f.write("\n".join(samples))
                 if mlflow_run_id:
                     try:
