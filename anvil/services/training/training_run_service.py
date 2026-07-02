@@ -596,21 +596,21 @@ class TrainingRunService:
         content_version_id : int | None
             Optional content version ID.
         """
-        from ...db.repositories.content_versions import (
+        from ...db.repositories.content_versions import (  # import-placement:allow — inherited route pattern
             ContentVersionRepository,
-        )  # import-placement:allow — inherited route pattern
-        from ...db.repositories.corpora import (
+        )
+        from ...db.repositories.corpora import (  # import-placement:allow — inherited route pattern
             CorpusRepository,
-        )  # import-placement:allow — inherited route pattern
-        from ...db.repositories.datasets import (
+        )
+        from ...db.repositories.datasets import (  # import-placement:allow — inherited route pattern
             DatasetRepository,
-        )  # import-placement:allow — inherited route pattern
-        from ...db.session import (
+        )
+        from ...db.session import (  # import-placement:allow — inherited route pattern
             AsyncSessionLocal,
-        )  # import-placement:allow — inherited route pattern
-        from ...services.content.lineage_service import (
+        )
+        from ...services.content.lineage_service import (  # import-placement:allow — inherited route pattern
             LineageService,
-        )  # import-placement:allow — inherited route pattern
+        )
 
         input_digest: str | None = None
         input_role: str | None = None
@@ -809,15 +809,15 @@ class TrainingRunService:
         run_id : int
             Local run ID (for queue access).
         """
-        from ...db.repositories.corpora import (
+        from ...db.repositories.corpora import (  # import-placement:allow — inherited route pattern
             CorpusRepository,
-        )  # import-placement:allow — inherited route pattern
-        from ...db.repositories.datasets import (
+        )
+        from ...db.repositories.datasets import (  # import-placement:allow — inherited route pattern
             DatasetRepository,
-        )  # import-placement:allow — inherited route pattern
-        from ...db.session import (
+        )
+        from ...db.session import (  # import-placement:allow — inherited route pattern
             AsyncSessionLocal,
-        )  # import-placement:allow — inherited route pattern
+        )
 
         final_loss = result.final_loss or 0.0
         samples = result.samples
