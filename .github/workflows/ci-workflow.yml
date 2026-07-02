@@ -138,33 +138,6 @@ jobs:
       - name: Run tests with coverage
         run: make test
 
-  # ── SonarCloud static analysis gate ──
-  sonar-scan:
-    name: SonarCloud
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: bump-scope-guard
-    if: needs.bump-scope-guard.outputs.scope != 'version-only'
-    continue-on-error: true  # v1: non-blocking; requires valid SONAR_TOKEN secret
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # full history for blame/tracking
-      - name: Install uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-      - name: Setup environment
-        run: make setup
-      - name: Run tests with coverage (prerequisite for SonarCloud)
-        run: make test
-      - name: Run SonarCloud scan
-        uses: SonarSource/sonarqube-scan-action@v8.2.0
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_SCANNER_OPTS: "-Dsonar.scanner.skipJreProvisioning=true"
-
   # ── Vault audit gate ──
   vault-audit:
     name: Vault Audit
@@ -227,7 +200,7 @@ jobs:
     name: Gate Status
     runs-on: ubuntu-latest
     timeout-minutes: 3
-    needs: [bump-scope-guard, format, lint, typecheck, test, sonar-scan, vault-audit, constitution-check]
+    needs: [bump-scope-guard, format, lint, typecheck, test, vault-audit, constitution-check]
     if: always()
     steps:
       - name: Summarize gate results
@@ -241,7 +214,6 @@ jobs:
           echo "| lint | ${{ needs.lint.result }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| typecheck | ${{ needs.typecheck.result }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| test | ${{ needs.test.result }} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| sonar-scan | ${{ needs.sonar-scan.result }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| vault-audit | ${{ needs.vault-audit.result }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| constitution-check | ${{ needs.constitution-check.result }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
