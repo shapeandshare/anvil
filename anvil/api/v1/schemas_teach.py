@@ -1,3 +1,4 @@
+# one-class:allow — 6 tightly-coupled Pydantic request bodies
 """Pydantic schemas for the interactive teaching loop API.
 
 Request/response body models for all ``/v1/teach`` endpoints.
