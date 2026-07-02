@@ -306,3 +306,15 @@ class TestLoadWeightsIntoModel:
 
         assert model.state_dict["layer0.rms_1"][0].data == 0.9
         assert model.state_dict["layer0.rms_1"][1].data == 1.1
+
+
+class TestLocalLoraBackend:
+    """Tests for ``LocalLoraBackend`` registration and identity."""
+
+    async def test_registered_in_registry(self) -> None:
+        """LocalLoraBackend is auto-registered in the compute registry."""
+        from anvil.services.compute.local_lora_backend import LocalLoraBackend
+        from anvil.services.compute.registry import get_backend
+
+        backend = get_backend("local-lora")
+        assert isinstance(backend, LocalLoraBackend)

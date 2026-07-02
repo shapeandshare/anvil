@@ -1,7 +1,7 @@
 ---
 title: LoRA Jobs Route to local-torch Not local-lora
 type: discovery
-status: draft
+status: reviewed
 source: agent
 related:
   - '[[Decisions/ADR-015-pluggable-compute-backends|ADR-015]]'
@@ -18,12 +18,12 @@ updated: '2026-07-01'
 summary: The training orchestrator maps ComputeBackendResult.LOCAL to
   "local-{engine}" (local-stdlib/local-torch), so LoRA/QLoRA jobs never reach the
   registered LocalLoraBackend ("local-lora"). Pre-dates spec 046; introduced with
-  the spec-044 lora branch. Documented here as a separate fix, out of 046 scope.
+  the spec-044 lora branch. Fixed via method-aware remap (Option 2).
 tags:
   - type/discovery
   - domain/training
   - domain/operations
-  - status/draft
+  - status/reviewed
 aliases:
   - LoRA Routes to local-torch Not local-lora
 ---
@@ -86,6 +86,43 @@ a routing spec into a training-dispatch fix).
 
 Recommended: option 2 (smallest, method-aware) plus a regression test asserting
 `get_backend` resolves to `LocalLoraBackend` for a lora/qlora config.
+
+## Resolution
+
+Applied **Option 2** (method-aware remap) on 2026-07-01:
+
+### Changes
+
+**`anvil/services/training/training.py`:**
+- Added `from ..compute import local_lora_backend` side-effect import (the module
+  was never imported before, so `LocalLoraBackend` was never registered)
+- Added `from ..compute.registry_backend import RegistryBackend` import
+- After the existing `f"local-{engine}"` remap, added a method check: when
+  `config["method"] in ("lora", "qlora")`, override `backend_name` to
+  `RegistryBackend.LOCAL_LORA` instead of the `f"local-{engine}"` result
+
+**`tests/unit/services/compute/test_local_backend.py`:**
+- Added `TestLocalLoraBackend.test_registered_in_registry()` — confirms
+  `get_backend("local-lora")` returns a `LocalLoraBackend` instance
+
+**`tests/unit/services/test_training_orchestration.py`:**
+- Added `TestStartTraining.test_lora_routes_to_local_lora_backend()` —
+  regression test asserting a lora config resolves to `get_backend("local-lora")`
+
+### Why not Option 1 (new enum member)?
+
+Option 2 was chosen because:
+- Smallest change surface (2 lines of logic in `training.py`)
+- Keeps `ComputeBackendResult` enum surface stable (no new member needed)
+- The method-aware check is co-located with the existing remap, making the
+  precedence obvious: engine-based remap first, then method-based override
+
+### References
+
+- PR: (link to PR)
+- `anvil/services/training/training.py:527-536` — method-aware remap
+- `tests/unit/services/compute/test_local_backend.py:310-319` — registry test
+- `tests/unit/services/test_training_orchestration.py:693-732` — routing reg. test
 
 ## References
 

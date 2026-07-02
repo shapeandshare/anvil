@@ -34,6 +34,7 @@ from ..chunking.line_chunker import LineAsDocChunker
 from ..chunking.window_chunker import FixedSizeWindowChunker
 
 # Side-effect imports: each module registers its backends at module level.
+from ..compute import local_lora_backend  # noqa: F401 — registers local-lora
 from ..compute import local_stdlib_backend  # noqa: F401 — registers local-stdlib
 from ..compute import local_torch_backend  # noqa: F401 — registers local-torch
 from ..compute import modal_backend  # noqa: F401 — registers modal
@@ -42,6 +43,7 @@ from ..compute import modal_backend  # noqa: F401 — registers modal
 from ..compute.compute_backend_result import ComputeBackendResult
 from ..compute.compute_status import ComputeStatus
 from ..compute.registry import get_backend
+from ..compute.registry_backend import RegistryBackend
 from ..compute.resolve import resolve_backend
 from ..compute.result import ComputeResult
 from ..compute.training_engine import TrainingEngine
@@ -526,6 +528,12 @@ class TrainingService:
         # (registry has "local-stdlib" and "local-torch", not bare "local")
         if backend_name == ComputeBackendResult.LOCAL:
             backend_name = f"local-{engine_name}"
+            # LoRA/QLoRA jobs must use the LoRA-specific backend
+            # (the engine is always TORCH for fine-tunes, so the
+            #  f"local-{engine}" remap would otherwise yield "local-torch")
+            method = config.get("method", "full")
+            if method in ("lora", "qlora"):
+                backend_name = RegistryBackend.LOCAL_LORA
 
         # Inject device into config so backends can read it
         config["device"] = device
