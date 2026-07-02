@@ -623,6 +623,51 @@ class TrackingService:
         except _TRANSIENT_EXCEPTIONS:
             pass
 
+    async def log_artifact_dir(
+        self,
+        run_id: str,
+        local_dir: str,
+        artifact_path: str | None = None,
+    ) -> None:
+        """Log an entire directory of artifacts to an MLflow run.
+
+        Uses ``MlflowClient.log_artifacts()`` to upload all files in
+        *local_dir* to the run's artifact URI.  This is the correct way
+        to log a multi-file export (safetensors + config + tokenizer)
+        as a single artifact group.
+
+        Parameters
+        ----------
+        run_id : str
+            The MLflow run ID.
+        local_dir : str
+            Path to the local directory containing artifact files.
+        artifact_path : str, optional
+            Optional sub-path within the run's artifact directory.
+            Defaults to ``None`` (root of the run's artifact store).
+
+        Raises
+        ------
+        ValueError
+            If *run_id* is empty.
+        """
+        if self._state.status == "degraded":
+            return
+        if not run_id:
+            raise ValueError("run_id must not be empty")
+        loop = asyncio.get_event_loop()
+        try:
+            client = self._client
+            if client is not None:
+                await loop.run_in_executor(
+                    None,
+                    lambda: client.log_artifacts(
+                        run_id, local_dir, artifact_path=artifact_path
+                    ),
+                )
+        except _TRANSIENT_EXCEPTIONS:
+            pass
+
     ########################################################################
     # Dataset / Corpus input logging
     ########################################################################

@@ -359,7 +359,13 @@ async def inference_model_params(
     return _svc.model_params(loaded)
 
 
-@router.post("/inference/generate")
+@router.post(
+    "/inference/generate",
+    responses={
+        404: {"description": "Model or adapter not found"},
+        500: {"description": "Generation failed"},
+    },
+)
 async def inference_generate(body: InferenceGenerateBody) -> dict[str, Any]:
     """Generate text from a prompt using a model with optional LoRA adapter.
 
@@ -387,6 +393,8 @@ async def inference_generate(body: InferenceGenerateBody) -> dict[str, Any]:
         )
     except (ValueError, FileNotFoundError) as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
     generated = _svc.generate(
         loaded,

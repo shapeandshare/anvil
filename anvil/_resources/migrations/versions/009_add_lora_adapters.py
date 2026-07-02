@@ -34,7 +34,7 @@ def upgrade() -> None:
         sa.Column("lora_bias", sa.String(length=20), nullable=True),
         sa.Column("final_loss", sa.Float(), nullable=True),
         sa.Column("final_step", sa.Integer(), nullable=True),
-        sa.Column("merged_at", sa.Integer(), nullable=True),
+        sa.Column("merged_at", sa.DateTime(), nullable=True),
         sa.Column(
             "created_at",
             sa.DateTime(),
@@ -48,6 +48,11 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint(
+            "external_model_id",
+            "adapter_id",
+            name="uq_lora_adapters_model_adapter",
+        ),
         sa.ForeignKeyConstraint(
             ["external_model_id"],
             ["external_models.id"],
@@ -58,11 +63,6 @@ def upgrade() -> None:
         "ix_lora_adapters_external_model_id",
         "lora_adapters",
         ["external_model_id"],
-    )
-    op.create_unique_constraint(
-        "uq_lora_adapters_model_adapter",
-        "lora_adapters",
-        ["external_model_id", "adapter_id"],
     )
 
 

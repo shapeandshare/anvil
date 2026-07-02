@@ -13,8 +13,11 @@ Follows layer discipline: services consume repositories, routes call services.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import math
+import random
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -24,9 +27,151 @@ from ...config import get_mlflow_uri
 from ...core._tokenizer_base import Tokenizer
 from ...core.autograd import Value
 from ...core.engine import LlamaModel, softmax
+from ...db.repositories.external_models import ExternalModelRepository
+from ...db.repositories.lora_adapter_repository import LoRAAdapterRepository
+from ...db.session import AsyncSessionLocal
 from ..tracking.tracking import TrackingService
 from .loaded_model import LoadedModel
 from .tokenizer_factory import create_tokenizer
+from .transformers_tokenizer_adapter import TransformersTokenizerAdapter
+
+try:
+    from peft import PeftModel
+
+    _PEFT_AVAILABLE = True
+except ImportError:
+    _PEFT_AVAILABLE = False
+
+try:
+    from transformers import AutoModelForCausalLM, AutoTokenizer  # [finetune]
+
+    _TRANSFORMERS_AVAILABLE = True
+except ImportError:
+    _TRANSFORMERS_AVAILABLE = False
+
+
+# ── HF name → anvil name mapping (inverse of export_state_dict) ──────────
+
+
+_STATIC_HF_MAP: dict[str, str] = {
+    "model.embed_tokens.weight": "wte",
+    "lm_head.weight": "lm_head",
+    "model.norm.weight": "rms_final",
+}
+
+_LAYER_SUB_MAP: dict[str, dict[str, str]] = {
+    "self_attn": {
+        "q_proj": "attn_wq",
+        "k_proj": "attn_wk",
+        "v_proj": "attn_wv",
+        "o_proj": "attn_wo",
+    },
+    "mlp": {
+        "gate_proj": "mlp_gate",
+        "up_proj": "mlp_up",
+        "down_proj": "mlp_down",
+    },
+    "input_layernorm": {},
+    "post_attention_layernorm": {},
+}
+
+
+def _hf_to_anvil_key(hf_key: str) -> str | None:
+    """Map a HuggingFace ``LlamaForCausalLM`` tensor key to anvil internal key.
+
+    This is the inverse of the mapping in
+    :func:`anvil.services.training.export.export_state_dict`.
+
+    Parameters
+    ----------
+    hf_key : str
+        HF-convention tensor key (e.g. ``model.layers.0.self_attn.q_proj.weight``).
+
+    Returns
+    -------
+    str or None
+        Anvil internal key (e.g. ``layer0.attn_wq``), or ``None`` if the
+        key is not recognised.
+    """
+    if hf_key in _STATIC_HF_MAP:
+        return _STATIC_HF_MAP[hf_key]
+
+    if not (hf_key.startswith("model.layers.") and hf_key.endswith(".weight")):
+        return None
+    parts = hf_key.split(".")
+    if len(parts) < 5:
+        return None
+    layer_idx, sub_module, proj_name = parts[2], parts[3], parts[4]
+
+    mapping = _LAYER_SUB_MAP.get(sub_module)
+    if mapping is None:
+        return None
+    if sub_module == "input_layernorm":
+        return f"layer{layer_idx}.rms_1"
+    if sub_module == "post_attention_layernorm":
+        return f"layer{layer_idx}.rms_2"
+    anvil_name = mapping.get(proj_name)
+    return f"layer{layer_idx}.{anvil_name}" if anvil_name else None
+
+
+def _hf_state_dict_to_anvil_format(
+    hf_state_dict: dict[str, Any],
+    config: dict[str, Any],
+    chars: list[str] | None,
+    tokenizer_family: str,
+    serialization_type: str,
+) -> dict[str, Any]:
+    """Convert a HuggingFace model state dict to anvil ``LlamaModel.save()`` format.
+
+    Parameters
+    ----------
+    hf_state_dict : dict[str, Any]
+        State dict from a HuggingFace ``LlamaForCausalLM``. Values are
+        ``torch.Tensor`` or anything convertible to a flat list.
+    config : dict[str, Any]
+        HF model config with keys ``vocab_size``, ``hidden_size``,
+        ``num_hidden_layers``, ``num_attention_heads``,
+        ``max_position_embeddings``, ``intermediate_size``.
+    chars : list[str] or None
+        Character vocabulary for the anvil tokenizer.
+    tokenizer_family : str
+        Tokenizer family to record in the saved data.
+    serialization_type : str
+        Serialization type to record.
+
+    Returns
+    -------
+    dict[str, Any]
+        Data dict matching the format expected by ``LlamaModel.load()``.
+    """
+    serialized: dict[str, list[list[float]] | list[float]] = {}
+    for hf_key, tensor in hf_state_dict.items():
+        anvil_key = _hf_to_anvil_key(hf_key)
+        if anvil_key is None:
+            continue
+
+        # Convert tensor to nested list of floats
+        raw = tensor.cpu().detach().tolist() if hasattr(tensor, "cpu") else tensor
+        if isinstance(raw, list) and raw and isinstance(raw[0], list):
+            serialized[anvil_key] = raw
+        elif isinstance(raw, list):
+            serialized[anvil_key] = raw
+        else:
+            serialized[anvil_key] = [raw]
+
+    return {
+        "vocab_size": config.get("vocab_size", 0),
+        "n_embd": config.get("hidden_size", 0),
+        "n_head": config.get("num_attention_heads", 0),
+        "n_layer": config.get("num_hidden_layers", 0),
+        "block_size": config.get("max_position_embeddings", 0),
+        "intermediate_size": config.get("intermediate_size", 0),
+        "tokenizer_family": tokenizer_family,
+        "serialization_type": serialization_type,
+        "chars": chars,
+        "state_dict": serialized,
+    }
+
 
 logger = logging.getLogger("anvil.services.inference.tokenizer")
 
@@ -141,12 +286,30 @@ class InferenceService:
     Supports tokenization, embedding extraction, attention visualisation,
     sampling distribution computation, forward/backward computation
     graph traversal, and model parameter introspection.
+
+    Parameters
+    ----------
+    adapter_repo : LoRAAdapterRepository or None, optional
+        Repository for adapter CRUD operations. Lazy-created from the
+        application database when ``None`` and an adapter ID is
+        requested at load time.
     """
 
-    def __init__(self) -> None:
-        """Initialise the inference service with an empty model cache."""
+    def __init__(
+        self,
+        adapter_repo: Any | None = None,
+    ) -> None:
+        """Initialise the inference service with an empty model cache.
+
+        Parameters
+        ----------
+        adapter_repo : LoRAAdapterRepository or None, optional
+            Repository for adapter CRUD operations. Lazy-created from
+            the application database when ``None``.
+        """
         self._cache: dict[tuple[int, int], tuple[LlamaModel, Tokenizer]] = {}
         self._default_id: int | None = None
+        self._adapter_repo: Any | None = adapter_repo
 
     async def load_model(
         self,
@@ -190,6 +353,20 @@ class InferenceService:
         cache_key = (model_id, version)
         if cache_key in self._cache:
             gpt_model, tokenizer = self._cache[cache_key]
+
+            # When adapter_id is provided, compose the adapter on top
+            # of the cached base model
+            if adapter_id is not None:
+                composed = await self._compose_adapter(model_id, adapter_id)
+                return LoadedModel(
+                    composed,
+                    tokenizer,
+                    model_id,
+                    version,
+                    "cached",
+                    adapter_path=self._resolve_adapter_path(model_id, adapter_id),
+                )
+
             return LoadedModel(
                 gpt_model,
                 tokenizer,
@@ -198,6 +375,15 @@ class InferenceService:
                 "cached",
                 adapter_path=self._resolve_adapter_path(model_id, adapter_id),
             )
+
+        # ── Early adapter composition path (external models) ──────────────
+        # Resolve adapter without requiring an experiment artifact or
+        # MLflow run.  Falls through to the normal path when the adapter
+        # or external model is not found.
+        if adapter_id is not None:
+            loaded = await self._load_adapter_model(model_id, version, adapter_id)
+            if loaded is not None:
+                return loaded
 
         # Primary path: load from saved experiment artifact
         model_path = Path(f"data/models/experiment_{model_id}.json")
@@ -212,6 +398,19 @@ class InferenceService:
                 chars=gpt_model.chars,
                 artifact_dir=str(model_path.parent),
             )
+
+            # Compose adapter on top of the base model if requested
+            if adapter_id is not None:
+                composed = await self._compose_adapter(model_id, adapter_id)
+                return LoadedModel(
+                    composed,
+                    tokenizer,
+                    model_id,
+                    version,
+                    f"{name}+adapter-{adapter_id}",
+                    adapter_path=self._resolve_adapter_path(model_id, adapter_id),
+                )
+
             self._cache[cache_key] = (gpt_model, tokenizer)
             return LoadedModel(
                 gpt_model,
@@ -265,6 +464,20 @@ class InferenceService:
                             chars=gpt_model.chars,
                             artifact_dir=str(local_dir_path),
                         )
+                        # Compose adapter on top of MLflow-fetched base
+                        if adapter_id is not None:
+                            composed = await self._compose_adapter(model_id, adapter_id)
+                            return LoadedModel(
+                                composed,
+                                tokenizer,
+                                model_id,
+                                version,
+                                f"{model_name}+adapter-{adapter_id}",
+                                adapter_path=self._resolve_adapter_path(
+                                    model_id, adapter_id
+                                ),
+                            )
+
                         self._cache[cache_key] = (gpt_model, tokenizer)
                         return LoadedModel(
                             gpt_model,
@@ -276,10 +489,182 @@ class InferenceService:
                                 model_id, adapter_id
                             ),
                         )
-            except Exception:  # pylint: disable=broad-exception-caught
-                pass
+            except (ConnectionError, OSError, LookupError) as mlf_err:
+                logger.warning("MLflow lookup failed: %s", mlf_err)
 
         raise ValueError(f"Model not found: model_id={model_id}, version={version}")
+
+    async def _compose_adapter(
+        self,
+        model_id: int,
+        adapter_id: str,
+    ) -> LlamaModel:
+        """Compose a LoRA adapter with its base model and return an anvil ``LlamaModel``.
+
+        Delegates to :meth:`_compose_adapter_with_repo` with a properly
+        scoped DB session. When the service was created with an injected
+        ``adapter_repo``, that repo is reused (caller owns lifecycle).
+        Otherwise a fresh session is created and closed within this call.
+
+        Loads the base HuggingFace model, applies the LoRA adapter via
+        ``peft``, merges, and converts the result to anvil internal format.
+
+        Parameters
+        ----------
+        model_id : int
+            The external model ID (FK) scoping the adapter.
+        adapter_id : str
+            The adapter's scoped identifier (e.g. ``"run_42"``).
+
+        Returns
+        -------
+        LlamaModel
+            The composed model with adapter weights merged in.
+
+        Raises
+        ------
+        ValueError
+            If the adapter is not found, peft/transformers are missing,
+            or the adapter cannot be composed with the base model.
+        RuntimeError
+            If ``peft`` or ``transformers`` packages are not installed.
+        """
+        repo = self._adapter_repo
+        if repo is not None:
+            # Repo was injected — caller owns its lifecycle.
+            return await self._compose_adapter_with_repo(model_id, adapter_id, repo)
+
+        # Self-managed session scoped to this single composition call.
+        async with AsyncSessionLocal() as session:
+            repo = LoRAAdapterRepository(session)
+            return await self._compose_adapter_with_repo(model_id, adapter_id, repo)
+
+    async def _compose_adapter_with_repo(
+        self,
+        model_id: int,
+        adapter_id: str,
+        repo: LoRAAdapterRepository,
+    ) -> LlamaModel:
+        """Compose a LoRA adapter using a caller-provided repository.
+
+        Parameters
+        ----------
+        model_id : int
+            External model ID scoping the adapter.
+        adapter_id : str
+            Adapter scoped identifier.
+        repo : LoRAAdapterRepository
+            Repository with an active session for DB lookups.
+
+        Returns
+        -------
+        LlamaModel
+            Composed model with adapter merged.
+
+        Raises
+        ------
+        ValueError
+            Adapter not found, missing deps, or composition failure.
+        RuntimeError
+            ``peft`` / ``transformers`` not installed.
+        """
+        # ── Resolve adapter record ────────────────────────────────────────
+        adapter = await repo.get_by_adapter_id(model_id, adapter_id)
+        if adapter is None:
+            all_adapters = await repo.get_by_model(model_id)
+            adapter_ids = [a.adapter_id for a in all_adapters]
+            raise ValueError(
+                f"Adapter {adapter_id!r} not found for model {model_id}. "
+                f"Available adapters: {adapter_ids}"
+            )
+
+        # ── Check optional dependencies ───────────────────────────────────
+        if not _PEFT_AVAILABLE or not _TRANSFORMERS_AVAILABLE:
+            raise RuntimeError(
+                "Adapter inference requires peft, torch, and transformers. "
+                "Install: pip install anvil[finetune]"
+            )
+
+        # ── Resolve base model from external model record ─────────────────
+        ext_repo = ExternalModelRepository(
+            getattr(repo, "_session", None)  # type: ignore[arg-type]
+        )
+        ext_model = await ext_repo.get(model_id)
+        if ext_model is None:
+            raise ValueError(f"External model {model_id} not found for adapter lookup")
+
+        source_id = ext_model.source_identifier
+        adapter_storage_path = (
+            adapter.storage_path or f"models/{model_id}/adapters/{adapter_id}/"
+        )
+
+        # ── Load base HF model and compose adapter ────────────────────────
+        try:
+            base_model = AutoModelForCausalLM.from_pretrained(
+                source_id,
+                trust_remote_code=False,
+            )
+            composed = PeftModel.from_pretrained(base_model, adapter_storage_path)
+            merged = composed.merge_and_unload()
+        except Exception as e:
+            raise ValueError(
+                f"Failed to compose adapter {adapter_id!r} with base model "
+                f"{source_id!r}: {e}"
+            ) from e
+
+        # ── Convert merged HF model → anvil LlamaModel ────────────────────
+        hf_config = merged.config.to_dict() if hasattr(merged, "config") else {}
+        tokenizer_family = str(getattr(ext_model, "tokenizer_family", "subword"))
+        serialization_type = self._infer_serialization_type(source_id, hf_config)
+        anvil_data = _hf_state_dict_to_anvil_format(
+            hf_state_dict=merged.state_dict(),
+            config=hf_config,
+            chars=None,
+            tokenizer_family=tokenizer_family,
+            serialization_type=serialization_type,
+        )
+
+        # Write temp JSON and load into LlamaModel
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
+            json.dump(anvil_data, tmp)
+            tmp_path = tmp.name
+
+        try:
+            composed_model = LlamaModel.load(tmp_path)
+        finally:
+            Path(tmp_path).unlink(missing_ok=True)
+
+        return composed_model
+
+    @staticmethod
+    def _infer_serialization_type(
+        source_id: str,
+        hf_config: dict[str, Any],
+    ) -> str:
+        """Infer the serialization type for a HuggingFace model.
+
+        Checks the model config for a ``model_type`` that indicates
+        SentencePiece (e.g. ``"llama"``, ``"gemma"``) and defaults to
+        ``"hf_fast"`` otherwise.
+
+        Parameters
+        ----------
+        source_id : str
+            HF repo ID (unused here, retained for future extension).
+        hf_config : dict[str, Any]
+            HF model configuration dict.
+
+        Returns
+        -------
+        str
+            One of ``"hf_fast"`` or ``"sentencepiece"`` or ``"char_json"``.
+        """
+        _ = source_id  # keep for signature stability
+        model_type = hf_config.get("model_type", "")
+        # Llama 1/2 and Gemma use SentencePiece; most others use HF fast.
+        if model_type in {"llama", "gemma"}:
+            return "sentencepiece"
+        return "hf_fast"
 
     @staticmethod
     def _resolve_adapter_path(
@@ -303,6 +688,82 @@ class InferenceService:
         if adapter_id is None or model_id is None:
             return None
         return str(Path(f"models/{model_id}/adapters/{adapter_id}/"))
+
+    async def _load_adapter_model(
+        self,
+        model_id: int,
+        version: int,
+        adapter_id: str,
+    ) -> LoadedModel | None:
+        """Try to load a model via adapter composition (external model path).
+
+        Creates a scoped DB session, looks up the adapter record and its
+        base external model, composes via ``_compose_adapter``, then builds
+        a matching tokenizer. Returns ``None`` when the adapter or external
+        model does not exist, so the caller (``load_model``) can fall back
+        to the normal experiment-artifact / MLflow path.
+
+        Parameters
+        ----------
+        model_id : int
+            The external model ID.
+        version : int
+            Model version (passed through to ``LoadedModel``).
+        adapter_id : str
+            Adapter scoped identifier.
+
+        Returns
+        -------
+        LoadedModel or None
+            The composed model with tokenizer, or ``None`` if the adapter
+            or external model is not found.
+        """
+        # ── Resolve adapter + external model in a scoped session ────────
+        async with AsyncSessionLocal() as session:
+            adapter_repo = LoRAAdapterRepository(session)
+            adapter = await adapter_repo.get_by_adapter_id(model_id, adapter_id)
+            if adapter is None:
+                return None
+            ext_repo = ExternalModelRepository(session)
+            ext_model = await ext_repo.get(model_id)
+            if ext_model is None:
+                return None
+            source_id = str(ext_model.source_identifier)
+
+        # ── Compose adapter weights into the base model ─────────────────
+        composed = await self._compose_adapter(model_id, adapter_id)
+
+        # ── Build tokenizer from the base model's tokenizer files ───────
+        tokenizer = self._create_adapter_tokenizer(source_id)
+
+        return LoadedModel(
+            composed,
+            tokenizer,
+            model_id,
+            version,
+            f"external-{model_id}+adapter-{adapter_id}",
+            adapter_path=self._resolve_adapter_path(model_id, adapter_id),
+        )
+
+    def _create_adapter_tokenizer(self, source_id: str) -> Tokenizer:
+        """Build a tokenizer for an adapter-composed model.
+
+        Uses ``transformers.AutoTokenizer`` when available (requires
+        ``[finetune]`` extra), wrapping it with the ``Tokenizer`` interface.
+        Falls back to a minimal tokenizer if transformers is not installed.
+
+        Parameters
+        ----------
+        source_id : str
+            HF repository ID (e.g. ``"facebook/opt-125m"``).
+
+        Returns
+        -------
+        Tokenizer
+            An adapter instance wrapping the HF tokenizer.
+        """
+        hf_tok = AutoTokenizer.from_pretrained(source_id)
+        return TransformersTokenizerAdapter(hf_tok)
 
     async def _resolve_default_id(self) -> int:
         """Resolve the default model (demo) to its numeric experiment ID.
@@ -1065,37 +1526,36 @@ class InferenceService:
         model = loaded.model
         tokenizer = loaded.tokenizer
 
-        # Encode prompt
         input_ids = tokenizer.encode(prompt)
         if not input_ids:
             return ""
 
+        eos_id = loaded.bos_id if loaded.bos_id is not None else 0
+        keys: list[list[list[Value]]] = [[] for _ in range(model.n_layer)]
+        values: list[list[list[Value]]] = [[] for _ in range(model.n_layer)]
+
         generated = list(input_ids)
+        logits: list[Value] = []
+        pos_id = 0
+        for token_id in input_ids:
+            logits = model.forward(token_id, pos_id, keys, values)
+            pos_id += 1
+
         for _ in range(max_tokens):
-            logits = model._forward(generated)  # type: ignore[attr-defined]
-            if logits is None or not logits:
+            if pos_id >= model.block_size or not logits:
                 break
-
-            # Apply temperature
-            last_logits = logits[-1]
-            if temperature > 0:
-                last_logits = [val / temperature for val in last_logits]
-
-            # Sample
-            import random
-
-            exp_logits = [math.exp(v) for v in last_logits]
-            total = sum(exp_logits)
-            if total <= 0:
-                break
-            probs = [v / total for v in exp_logits]
-            next_id = random.choices(range(len(probs)), weights=probs, k=1)[0]
+            scaled = (
+                [logit / temperature for logit in logits] if temperature > 0 else logits
+            )
+            probs = softmax(scaled)
+            next_id = random.choices(
+                range(len(probs)), weights=[p.data for p in probs], k=1
+            )[0]
             generated.append(next_id)
-
-            # Stop at EOS (token id 0)
-            if next_id == 0:
+            if next_id == eos_id:
                 break
+            logits = model.forward(next_id, pos_id, keys, values)
+            pos_id += 1
 
-        # Decode
         output = tokenizer.decode(generated)
         return output[len(prompt) :]

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import Float, ForeignKey, Integer, String, Text
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..base import Base
@@ -77,4 +77,4 @@ class LoRAAdapter(Base, TimestampMixin):
     lora_bias: Mapped[str | None] = mapped_column(String(20), nullable=True)
     final_loss: Mapped[float | None] = mapped_column(Float, nullable=True)
     final_step: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    merged_at: Mapped[datetime | None] = mapped_column(Integer, nullable=True)
+    merged_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

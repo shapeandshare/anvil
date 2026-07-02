@@ -79,6 +79,7 @@ from .services.runtime_config.runtime_config_service import RuntimeConfigService
 from .services.secrets.secret_rotation_service import SecretRotationService
 from .services.secrets.user_secret_service import UserSecretService
 from .services.tracking.tracking import TrackingService
+from .services.training.merge_service import AdapterMergeService
 from .services.training.training import TrainingService
 from .storage.local import LocalFileStore
 from .workspace.workspace_paths import WorkspacePaths
@@ -174,6 +175,8 @@ class AnvilWorkbench:
         self._model_store: LocalFileStore | None = None
         # LoRA fine-tuning (feature 044).
         self._lora_adapter_repo: LoRAAdapterRepository | None = None
+        # Adapter merge + export (feature 045).
+        self._merge_service: AdapterMergeService | None = None
 
     # ── Stateless service accessors ─────────────────────────────────────
 
@@ -566,6 +569,18 @@ class AnvilWorkbench:
         if self._lora_adapter_repo is None:
             self._lora_adapter_repo = LoRAAdapterRepository(self._session)
         return self._lora_adapter_repo
+
+    @property
+    def merge_service(self) -> AdapterMergeService:
+        """Lazily-initialised ``AdapterMergeService`` wired to *session*."""
+        if self._merge_service is None:
+            self._merge_service = AdapterMergeService(
+                lora_adapter_repo=self.lora_adapter_repo,
+                store=LocalFileStore(),
+                tracking=self.tracking,
+                external_model_repo=self.external_model_repo,
+            )
+        return self._merge_service
 
     @property
     def asset_download_job_repo(self) -> AssetDownloadJobRepository:

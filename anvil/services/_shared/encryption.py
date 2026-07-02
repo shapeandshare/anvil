@@ -1,3 +1,5 @@
+# one-class:allow — EncryptionService (Protocol) + LocalEncryptionService are
+# tightly coupled (protocol + default impl)
 # Copyright © 2026 Josh Burt
 #
 # This source code is licensed under the MIT license found in the

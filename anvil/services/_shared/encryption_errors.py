@@ -1,3 +1,5 @@
+# one-class:allow — tightly coupled exception classes per Constitution
+# § Additional Constraints, para 5
 # Copyright © 2026 Josh Burt
 #
 # This source code is licensed under the MIT license found in the
