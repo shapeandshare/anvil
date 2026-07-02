@@ -47,6 +47,8 @@ from ...services.training.memory_estimator import (
     estimate_training_memory,
 )
 from ...services.training.training import TrainingService
+from ...services.training.adapter_persistence import AdapterPersistenceService
+from ...db.repositories.lora_adapter_repository import LoRAAdapterRepository
 
 logger = logging.getLogger(__name__)
 
@@ -946,6 +948,16 @@ async def start_training(config: TrainConfig) -> dict[str, Any]:
 
         if mps_thread is not None:
             mps_thread.stop()
+
+        # Persist LoRAAdapter DB row for fine-tune results (047 Phase 2).
+        # Runs for BOTH local and SaaS results (backend-agnostic).
+        # Must be OUTSIDE the `if model is not None:` block because LoRA
+        # results have model=None.
+        if result.adapter_id is not None:
+            async with AsyncSessionLocal() as sess:
+                repo = LoRAAdapterRepository(sess)
+                persistence = AdapterPersistenceService(repo)
+                await persistence.persist(result, config.model_dump())
 
         # Register model with MLflow after DB commit so experiment
         # is visible even if model registration hangs

@@ -19,6 +19,7 @@ Device detection utilities (``_detect_device``, ``_torch_available``,
 function.
 """
 
+import os
 import re
 from typing import Any
 
@@ -193,15 +194,16 @@ def _torch_available() -> bool:
 def _saas_configured() -> bool:
     """Check whether the SaaS compute backend is available.
 
-    Returns ``False`` initially.  Spec 047 will implement the real
-    availability check (e.g., configured endpoint, credentials).
+    Returns ``True`` when the ``ANVIL_SAAS_ENDPOINT`` environment
+    variable is set (non-empty).  This is the spec 047 mechanism for
+    toggling SaaS routing in ``resolve_fine_tune()``.
 
     Returns
     -------
     bool
         ``True`` if a SaaS compute backend is configured and available.
     """
-    return False
+    return bool(os.environ.get("ANVIL_SAAS_ENDPOINT"))
 
 
 def _estimate_host_memory_gb() -> float:

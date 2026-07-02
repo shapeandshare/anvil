@@ -400,6 +400,20 @@ def train() -> None:
                                     "Failed to log safetensors artifacts to MLflow"
                                 )
 
+                # Persist LoRAAdapter DB row for fine-tune results (047).
+                if getattr(result, "adapter_id", None) is not None:
+                    async with AsyncSessionLocal() as sess:
+                        from .db.repositories.lora_adapter_repository import (
+                            LoRAAdapterRepository,
+                        )
+                        from .services.training.adapter_persistence import (
+                            AdapterPersistenceService,
+                        )
+
+                        repo = LoRAAdapterRepository(sess)
+                        persistence = AdapterPersistenceService(repo)
+                        await persistence.persist(result, _cfg)
+
         try:
             await svc.start_training(
                 config,
