@@ -84,7 +84,7 @@
             </div>
           </div>
           {% if j.status == "failed" and j.error_code %}
-          <div class="type-caption-2" style="color:var(--danger);padding:0 0 var(--space-1) 0;">{{ j.error_code }}: {{ j.error_message }}</div>
+          <div class="type-caption-2" style="color:var(--danger);padding:var(--space-1) 0 var(--space-1) 0;">{{ j.error_code }}: {{ j.error_message }}</div>
           {% endif %}
         </div>
         {% endfor %}
@@ -339,7 +339,7 @@
             : ''))
         + '</div></div>'
         + (j.status === 'failed' && j.error_code
-          ? '<div class="type-caption-2" style="color:var(--danger);padding:0 0 var(--space-1) 0;">' + escHtml(j.error_code) + ': ' + escHtml(j.error_message) + '</div>'
+          ? '<div class="type-caption-2" style="color:var(--danger);padding:var(--space-1) 0 var(--space-1) 0;">' + escHtml(j.error_code) + ': ' + escHtml(j.error_message) + '</div>'
           : '')
         + '</div>';
     }

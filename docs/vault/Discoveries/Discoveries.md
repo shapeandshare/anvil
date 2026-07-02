@@ -116,9 +116,17 @@ Non-obvious constraints, gaps, and conflicts discovered during agent sessions. E
 - [[Discoveries/theme-mapping-excited-fake-metrics-grad-norm|Excited Mode Fake Metrics Need grad_norm for Grad-Norm-Driven Mappings]] — Excited Mode Fake Metrics Need grad_norm — Excited theme mappings need fake grad_norm metric for grad-norm-driven visual effects to activate.
 - [[Discoveries/toctou-asyncio-lock-check-before-acquire|TOCTOU Race on asyncio.Lock Check-Before-Acquire]] — TOCTOU Race on asyncio.Lock Check-Before-Acquire — Time-of-check-time-of-use race condition when checking lock state before acquiring asyncio.Lock.
 
+## Discoveries from this session (2026-07-01 — Demo loss curve fix)
+
+- [[Discoveries/demo-warmup-progress-callback-noop|Demo Warmup Progress Callback Was a No-Op]] — The `warmup_demo_via_system_pipeline` used `lambda *args, **kwargs: None` as the progress callback, so zero per-step loss metrics were ever logged to MLflow. The experiment existed with `final_loss` but `get_metric_history("loss")` returned `[]`, leaving the attach UI stuck on "Waiting for data...".
+
 ## Discoveries from this session
 
 - [[Discoveries/training-sse-queue-released-on-disconnect|Training SSE Queue Released Prematurely on Client Disconnect]] — SSE `event_stream()` generator unconditionally released the training queue on client disconnect, making the run unreachable after page refresh.
+
+## Discoveries from this session (2026-07-01 — Spec 046 fine-tune compute routing)
+
+- [[Discoveries/lora-routes-to-local-torch-not-local-lora|LoRA Jobs Route to local-torch Not local-lora]] — `training.py:527-528` remaps `ComputeBackendResult.LOCAL` → `"local-{engine}"` (`local-stdlib`/`local-torch`), so LoRA/QLoRA jobs never reach the registered `LocalLoraBackend` (`"local-lora"`). Pre-dates spec 046 (spec-044 lora branch already returned `LOCAL`); documented as a separate deferred fix. See [[Sessions/2026-07-01-spec-046-implementation]].
 
 
 ## Related MOCs

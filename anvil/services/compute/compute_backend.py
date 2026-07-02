@@ -21,9 +21,12 @@ class ComputeBackend(StrEnum):
         Local GPU-accelerated execution (``"local-gpu"``).
     MODAL : str
         Modal cloud GPU execution (``"modal"``).
+    SAAS : str
+        SaaS batch compute execution (``"saas"``).
     """
 
     AUTO = "auto"
     LOCAL_CPU = "local-cpu"
     LOCAL_GPU = "local-gpu"
     MODAL = "modal"
+    SAAS = "saas"

@@ -17,6 +17,7 @@ for fallback corpus data and warm-up via the system pipeline.
 
 import asyncio
 import logging
+import os
 import tempfile
 import threading
 from concurrent.futures import ThreadPoolExecutor
@@ -82,6 +83,12 @@ def _train_demo_model(docs: list[str] | None = None) -> LlamaModel:
     return model
 
 
+def _write_samples(path: str, samples: list[str]) -> None:
+    """Write samples to a file (run in executor to avoid blocking the event loop)."""
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("\n".join(samples))
+
+
 def warmup_demo_via_system_pipeline() -> None:
     """Train the demo model through the real system pipeline.
 
@@ -133,7 +140,14 @@ def warmup_demo_via_system_pipeline() -> None:
 
             mlflow_run_id = await tracking_svc.start_run(
                 run_name="demo-warmup",
-                params=config,
+                params={
+                    **config,
+                    "beta1": 0.9,
+                    "beta2": 0.99,
+                    "compute_backend": ComputeBackend.LOCAL_CPU.value,
+                    "gpu_available": "False",
+                    "gpu_backend": "cpu",
+                },
                 engine_backend=resolved["engine"],
                 device=resolved["device"],
             )
@@ -145,11 +159,24 @@ def warmup_demo_via_system_pipeline() -> None:
                 await tracking_svc.set_tag(
                     mlflow_run_id, "anvil.experiment_id", str(experiment_id)
                 )
+                await tracking_svc.set_tag(mlflow_run_id, "anvil.status", "running")
+
+            # Capture the event loop so the training thread's
+            # progress callback can schedule async MLflow logging.
+            _loop = asyncio.get_running_loop()
+
+            def _demo_progress(step: int, loss: float, **kwargs: Any) -> None:
+                """Log per-step loss to MLflow during demo warmup training."""
+                if mlflow_run_id:
+                    asyncio.run_coroutine_threadsafe(
+                        tracking_svc.log_metric(mlflow_run_id, "loss", loss, step=step),
+                        _loop,
+                    )
 
             result = await backend.run(
                 docs,
                 config,
-                progress_callback=lambda *args, **kwargs: None,
+                progress_callback=_demo_progress,
                 stop_check=lambda: False,
             )
 
@@ -173,42 +200,43 @@ def warmup_demo_via_system_pipeline() -> None:
                 await tracking_svc.set_tag(
                     mlflow_run_id, "architectures", "LlamaForCausalLM"
                 )
-                await tracking_svc.set_tag(mlflow_run_id, "anvil.status", "finished")
                 await tracking_svc.register_source_model(
                     run_id=mlflow_run_id, name="demo"
                 )
 
-            # ── Replicate dataset/corpus metadata tags that user training sets ──
-            try:
-                async with AsyncSessionLocal() as sess:
-                    bootstrap = DemoBootstrapService(sess)
-                    corpus = await bootstrap.get_default_corpus()
-                    if corpus and mlflow_run_id:
-                        await tracking_svc.set_tag(
-                            mlflow_run_id, "anvil.dataset.name", corpus.name
-                        )
-                        await tracking_svc.set_tag(
-                            mlflow_run_id,
-                            "anvil.corpus.file_count",
-                            str(corpus.file_count or 0),
-                        )
-                        await tracking_svc.set_tag(
-                            mlflow_run_id,
-                            "anvil.corpus.document_count",
-                            str(corpus.document_count or 0),
-                        )
-            except Exception:
-                pass
-
-            # ── Save to experiment-specific path for GET /experiments/{id} ──
-            MODELS_DIR = Path("data/models")
-            await asyncio.to_thread(MODELS_DIR.mkdir, parents=True, exist_ok=True)
-            experiment_model_path = MODELS_DIR / f"experiment_{experiment_id}.json"
-            model.save(str(experiment_model_path), uchars)
-
-            # ── Run safetensors export & log artifacts to MLflow ──
-
+            # ── Log samples artifact and model artifact (parallels user training on_complete) ──
+            samples = result.samples
             with tempfile.TemporaryDirectory() as tmpdir:
+                samples_path = os.path.join(tmpdir, "samples.txt")
+                loop = asyncio.get_event_loop()
+                await loop.run_in_executor(None, _write_samples, samples_path, samples)
+                if mlflow_run_id:
+                    try:
+                        client = tracking_svc._client
+                        if client:
+                            loop = asyncio.get_event_loop()
+                            await loop.run_in_executor(
+                                None,
+                                lambda: client.log_artifact(mlflow_run_id, samples_path),  # type: ignore[union-attr]
+                            )
+                    except Exception:
+                        pass
+
+                model_path = os.path.join(tmpdir, "model.json")
+                model.save(model_path, uchars)
+                if mlflow_run_id:
+                    try:
+                        client = tracking_svc._client
+                        if client:
+                            loop = asyncio.get_event_loop()
+                            await loop.run_in_executor(
+                                None,
+                                lambda: client.log_artifact(mlflow_run_id, model_path),  # type: ignore[union-attr]
+                            )
+                    except Exception:
+                        pass
+
+                # ── Run safetensors export & log artifacts to MLflow ──
                 export_svc = SafetensorsExportService()
                 export_result = await asyncio.get_event_loop().run_in_executor(
                     None, lambda: export_svc.export(model, tmpdir, uchars)
@@ -251,6 +279,46 @@ def warmup_demo_via_system_pipeline() -> None:
                         logger.exception(
                             "Failed to log demo safetensors artifacts to MLflow"
                         )
+
+            # ── Input provenance — corpus metadata + MLflow dataset input ──
+            try:
+                async with AsyncSessionLocal() as sess:
+                    bootstrap = DemoBootstrapService(sess)
+                    corpus = await bootstrap.get_default_corpus()
+                    if corpus and mlflow_run_id:
+                        # MLflow dataset input + digest (same as _log_dataset_metadata corpus path)
+                        input_digest = await tracking_svc.log_corpus_input(
+                            mlflow_run_id, corpus_id=corpus.id, session=sess
+                        )
+                        if input_digest:
+                            await tracking_svc.set_tag(
+                                mlflow_run_id, "anvil.input_digest", input_digest
+                            )
+                            await tracking_svc.set_tag(
+                                mlflow_run_id, "anvil.input_role", "corpus"
+                            )
+
+                        await tracking_svc.set_tag(
+                            mlflow_run_id, "anvil.dataset.name", corpus.name
+                        )
+                        await tracking_svc.set_tag(
+                            mlflow_run_id,
+                            "anvil.corpus.file_count",
+                            str(corpus.file_count or 0),
+                        )
+                        await tracking_svc.set_tag(
+                            mlflow_run_id,
+                            "anvil.corpus.document_count",
+                            str(corpus.document_count or 0),
+                        )
+            except Exception:
+                pass
+
+            # ── Save to experiment-specific path for GET /experiments/{id} ──
+            MODELS_DIR = Path("data/models")
+            await asyncio.to_thread(MODELS_DIR.mkdir, parents=True, exist_ok=True)
+            experiment_model_path = MODELS_DIR / f"experiment_{experiment_id}.json"
+            model.save(str(experiment_model_path), uchars)
 
             # Save to demo path so it's immediately loadable by _demo_provider
             DEMO_MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)

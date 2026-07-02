@@ -23,8 +23,10 @@
       <div class="model-header">
         <h3 class="model-name" id="md-name"></h3>
         <p id="md-description" class="text-dim" style="display:none;"></p>
-        <a id="md-play-link" href="#" class="btn btn-primary btn-sm" style="margin-top:var(--space-2);">Play</a>
-        <a id="md-continue-training-link" href="#" class="btn btn-accent btn-sm" style="margin-top:var(--space-2);">Continue Training</a>
+        <div class="model-header__actions">
+          <a id="md-play-link" href="#" class="btn btn-primary btn-sm">Play</a>
+          <a id="md-continue-training-link" href="#" class="btn btn-accent btn-sm">Continue Training</a>
+        </div>
       </div>
       <div class="metrics-grid">
         <div class="metric"><span class="metric-label">Versions</span><span class="metric-value" id="md-versions"></span></div>
@@ -35,7 +37,7 @@
         <thead><tr><th>Version</th><th>Experiment</th><th>Loss</th><th>Dataset</th><th>Created</th><th>Actions</th></tr></thead>
         <tbody id="md-versions-tbody"></tbody>
       </table>
-      <div style="margin-top:var(--space-4);">
+      <div style="margin:var(--space-4) 0;">
         <button class="btn btn-secondary" onclick="deleteModel()" style="color:var(--danger);">Delete Entire Model</button>
       </div>
       <!-- Merge Adapter button (spec 044) -->
