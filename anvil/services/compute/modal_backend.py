@@ -34,7 +34,7 @@ try:
     import modal
 
     _MODAL_AVAILABLE = True
-except ImportError:
+except (ImportError, RuntimeError):
     pass
 
 
