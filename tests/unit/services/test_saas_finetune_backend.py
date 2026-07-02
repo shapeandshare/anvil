@@ -203,8 +203,7 @@ class TestSaasFinetuneRouting:
             )
 
     def test_backend_name_maps_to_saas_finetune(self):
-        """Verify that when backend_name == SAAS and method is lora,
-        the remap in training.py produces SAAS_FINETUNE."""
+        """Verify SAAS + lora maps to SAAS_FINETUNE in training.py."""
         from anvil.services.compute.compute_backend_result import ComputeBackendResult
         from anvil.services.compute.registry_backend import RegistryBackend
 
@@ -230,9 +229,7 @@ class TestSaasFinetuneE2E:
 
     @patch("anvil.services.compute.resolve._saas_configured", return_value=True)
     async def test_submit_saas_lora_via_api(self, mock_saas, client):
-        """Submit a LoRA fine-tune with compute_backend='saas' and a fake
-        provider. Verify a run is created, SSE complete event fires, and a
-        LoRAAdapter row exists afterward."""
+        """Submit a LoRA fine-tune with compute_backend='saas' using a fake provider."""
         # Inject a fake SaasFinetuneProvider via the registry
         fake_provider = AsyncMock()
         fake_provider.submit.return_value = "job_ref_42"
@@ -240,6 +237,7 @@ class TestSaasFinetuneE2E:
         fake_provider.fetch_adapter.return_value = f"{tempfile.mkdtemp()}/e2e_adapter"
 
         from anvil.services.compute.saas_finetune_backend import SaasFinetuneBackend
+        from anvil.services.compute.registry import register
 
         register("saas-finetune", lambda: SaasFinetuneBackend(provider=fake_provider))
 

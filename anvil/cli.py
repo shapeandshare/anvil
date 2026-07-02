@@ -37,7 +37,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from typing import Any
+from typing import Any, cast
 
 import uvicorn
 
@@ -407,7 +407,8 @@ def train() -> None:
                     async with AsyncSessionLocal() as sess:
                         repo = LoRAAdapterRepository(sess)
                         persistence = AdapterPersistenceService(repo)
-                        await persistence.persist(result, _cfg, run_id=run_id)
+                        from .services.compute.result import ComputeResult
+                        await persistence.persist(cast(ComputeResult, result), _cfg, run_id=run_id)
 
         try:
             await svc.start_training(
