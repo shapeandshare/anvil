@@ -2885,12 +2885,17 @@ async def eval_compare_page(request: Request) -> HTMLResponse:
     Returns
     -------
     HTMLResponse
-        Rendered ``eval_compare.html`` template.
+        Rendered ``eval_compare.html`` template with the run ID.
     """
+    run_id_str = request.query_params.get("run_id", "")
+    try:
+        run_id = int(run_id_str)
+    except (ValueError, TypeError):
+        run_id = 0
     return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "eval_compare.html",
-        {"run_id": request.query_params.get("run_id", "0")},
+        {"run_id": str(run_id)},
     )
 
 

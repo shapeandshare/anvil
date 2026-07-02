@@ -85,6 +85,10 @@
   'use strict';
 
   var runId = {{ run_id }};
+  if (!runId || runId === 0) {
+    document.getElementById('status-text').textContent = 'No evaluation run specified. Use the Models page to start an evaluation.';
+    return;
+  }
   var sse = new SSESession(runId, { urlPrefix: '/v1/sse/eval' });
   var statusEl = document.getElementById('status-text');
   var spinnerEl = document.getElementById('status-spinner');
@@ -211,7 +215,7 @@
     }
   }
 
-  sse.connect();
+  sse.start();
 })();
 </script>
 {% endblock %}
