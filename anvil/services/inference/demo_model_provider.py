@@ -165,7 +165,7 @@ def warmup_demo_via_system_pipeline() -> None:
             # progress callback can schedule async MLflow logging.
             _loop = asyncio.get_running_loop()
 
-            def _demo_progress(step: int, loss: float) -> None:
+            def _demo_progress(step: int, loss: float, **kwargs: Any) -> None:
                 """Log per-step loss to MLflow during demo warmup training."""
                 if mlflow_run_id:
                     asyncio.run_coroutine_threadsafe(
