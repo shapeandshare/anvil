@@ -21,9 +21,12 @@ class RegistryBackend(StrEnum):
         Local LoRA fine-tuning backend (``"local-lora"``).
     MODAL : str
         Modal cloud GPU backend (``"modal"``).
+    SAAS_FINETUNE : str
+        SaaS fine-tune compute backend (``"saas-finetune"``).
     """
 
     LOCAL_STDLIB = "local-stdlib"
     LOCAL_TORCH = "local-torch"
     LOCAL_LORA = "local-lora"
     MODAL = "modal"
+    SAAS_FINETUNE = "saas-finetune"

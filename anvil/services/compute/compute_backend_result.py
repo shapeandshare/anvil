@@ -17,7 +17,10 @@ class ComputeBackendResult(StrEnum):
         Local execution (``"local"``).
     MODAL : str
         Modal cloud GPU execution (``"modal"``).
+    SAAS : str
+        SaaS batch compute execution (``"saas"``).
     """
 
     LOCAL = "local"
     MODAL = "modal"
+    SAAS = "saas"

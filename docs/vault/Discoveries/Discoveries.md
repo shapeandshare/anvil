@@ -124,6 +124,10 @@ Non-obvious constraints, gaps, and conflicts discovered during agent sessions. E
 
 - [[Discoveries/training-sse-queue-released-on-disconnect|Training SSE Queue Released Prematurely on Client Disconnect]] — SSE `event_stream()` generator unconditionally released the training queue on client disconnect, making the run unreachable after page refresh.
 
+## Discoveries from this session (2026-07-01 — Spec 046 fine-tune compute routing)
+
+- [[Discoveries/lora-routes-to-local-torch-not-local-lora|LoRA Jobs Route to local-torch Not local-lora]] — `training.py:527-528` remaps `ComputeBackendResult.LOCAL` → `"local-{engine}"` (`local-stdlib`/`local-torch`), so LoRA/QLoRA jobs never reach the registered `LocalLoraBackend` (`"local-lora"`). Pre-dates spec 046 (spec-044 lora branch already returned `LOCAL`); documented as a separate deferred fix. See [[Sessions/2026-07-01-spec-046-implementation]].
+
 
 ## Related MOCs
 
