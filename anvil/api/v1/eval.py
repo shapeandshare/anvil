@@ -6,7 +6,7 @@ base with SSE streaming.
 """
 
 import math
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from starlette.responses import StreamingResponse
@@ -116,7 +116,7 @@ async def eval_perplexity(body: EvalPerplexityBody) -> dict[str, Any]:
 @router.post("/eval/fine-tuned", status_code=201)
 async def start_fine_tuned_eval(
     body: EvalFineTunedBody,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, object]:
     """Trigger an async fine-tuned model evaluation.
 

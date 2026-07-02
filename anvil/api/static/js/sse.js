@@ -14,7 +14,7 @@
     this._maxRetries = 5;
     this._backoff = [1000, 2000, 4000, 8000, 16000];
     this._destroyed = false;
-    this._urlPrefix = (opts && opts.urlPrefix) || '/v1/training/stream';
+    this._urlPrefix = opts?.urlPrefix ?? '/v1/training/stream';
 
     this.onstatechange = null;
     this.onmetrics = null;

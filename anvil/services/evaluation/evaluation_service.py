@@ -25,6 +25,7 @@ from ...db.repositories.evaluation_runs import EvaluationRunRepository
 from ...db.repositories.external_models import ExternalModelRepository
 from ...db.session import AsyncSessionLocal
 from ...services._shared.evaluation_status import EvaluationRunStatus
+from ...services.inference.loaded_model import LoadedModel
 from ...services._shared.runnable_status import RunnableStatus
 from ...services.inference.inference import InferenceService
 from ...services.tracking.tracking import TrackingService
@@ -265,6 +266,219 @@ def _perplexity(avg_loss: float) -> float:
     return math.exp(avg_loss) if avg_loss < 700 else float("inf")
 
 
+async def _evaluate_all_prompts(
+    *,
+    run_id: int,
+    queue: asyncio.Queue[dict[str, object] | None] | None,
+    prompts: list[str],
+    evaluator: Evaluator,
+    base_loaded: LoadedModel,
+    ft_loaded: LoadedModel,
+    repo: EvaluationRunRepository,
+    session: AsyncSession,
+) -> tuple[list[float], list[float]]:
+    """Evaluate every prompt against base and fine-tuned models.
+
+    Persists each ``EvalSample`` and streams progress events over the SSE
+    queue.  ``None``-safe on the queue — callers that have no queue simply
+    skip the SSE pushes.
+
+    Parameters
+    ----------
+    run_id : int
+        Evaluation run ID (for sample association).
+    queue : asyncio.Queue[dict[str, object] | None] | None
+        SSE event queue, or ``None`` to skip streaming.
+    prompts : list[str]
+        Prompts to evaluate.
+    evaluator : Evaluator
+        Per-prompt loss evaluator.
+    base_loaded : object
+        Loaded base model reference.
+    ft_loaded : object
+        Loaded fine-tuned model reference.
+    repo : EvaluationRunRepository
+        Repository for persisting samples.
+    session : AsyncSession
+        DB session for per-sample commits.
+
+    Returns
+    -------
+    tuple[list[float], list[float]]
+        ``(base_losses, ft_losses)`` — one entry per prompt.
+    """
+    base_losses: list[float] = []
+    ft_losses: list[float] = []
+
+    for idx, prompt in enumerate(prompts):
+        base_result = evaluator.evaluate_prompt(prompt, loaded_model=base_loaded)
+        ft_result = evaluator.evaluate_prompt(prompt, loaded_model=ft_loaded)
+        base_losses.append(base_result.avg_loss)
+        ft_losses.append(ft_result.avg_loss)
+
+        await repo.add_sample(
+            EvalSample(
+                evaluation_run_id=run_id,
+                prompt_index=idx,
+                input=prompt,
+                base_output=base_result.generated_text,
+                fine_tuned_output=ft_result.generated_text,
+                base_loss=base_result.avg_loss,
+                fine_tuned_loss=ft_result.avg_loss,
+            )
+        )
+        await session.commit()
+
+        if queue is not None:
+            await queue.put(
+                {
+                    "event": "progress",
+                    "data": json.dumps(
+                        {
+                            "prompt_index": idx,
+                            "total": len(prompts),
+                            "base_loss": base_result.avg_loss,
+                            "fine_tuned_loss": ft_result.avg_loss,
+                        }
+                    ),
+                }
+            )
+
+    return base_losses, ft_losses
+
+
+def _compute_metric_deltas(
+    *,
+    run_id: int,
+    base_losses: list[float],
+    ft_losses: list[float],
+    comparable: bool,
+) -> list[MetricDelta]:
+    """Compute ``eval_loss`` and ``perplexity`` deltas from per-prompt losses.
+
+    Parameters
+    ----------
+    run_id : int
+        Evaluation run ID for the metric rows.
+    base_losses : list[float]
+        Per-prompt base-model losses.
+    ft_losses : list[float]
+        Per-prompt fine-tuned model losses.
+    comparable : bool
+        Whether the losses are comparable (same tokenizer family).
+
+    Returns
+    -------
+    list[MetricDelta]
+        Two metric-delta rows (eval_loss, perplexity).
+    """
+    avg_base = sum(base_losses) / len(base_losses) if base_losses else 0.0
+    avg_ft = sum(ft_losses) / len(ft_losses) if ft_losses else 0.0
+
+    return [
+        MetricDelta(
+            evaluation_run_id=run_id,
+            metric_name="eval_loss",
+            fine_tuned_value=avg_ft,
+            base_value=avg_base,
+            delta=avg_ft - avg_base,
+            comparable=comparable,
+        ),
+        MetricDelta(
+            evaluation_run_id=run_id,
+            metric_name="perplexity",
+            fine_tuned_value=_perplexity(avg_ft),
+            base_value=_perplexity(avg_base),
+            delta=_perplexity(avg_ft) - _perplexity(avg_base),
+            comparable=comparable,
+        ),
+    ]
+
+
+async def _persist_eval_results(
+    *,
+    run_id: int,
+    deltas: list[MetricDelta],
+    total: int,
+    mlflow_run_id: str,
+    repo: EvaluationRunRepository,
+    tracking: TrackingService,
+    session: AsyncSession,
+) -> None:
+    """Persist metric deltas, update run metadata, and log to MLflow.
+
+    Parameters
+    ----------
+    run_id : int
+        Evaluation run ID.
+    deltas : list[MetricDelta]
+        Computed metric deltas.
+    total : int
+        Total prompt count.
+    mlflow_run_id : str
+        MLflow run ID for metric logging.
+    repo : EvaluationRunRepository
+        Repository for DB writes.
+    tracking : TrackingService
+        MLflow tracking service.
+    session : AsyncSession
+        DB session for commits.
+    """
+    for delta in deltas:
+        await repo.add_metric_delta(delta)
+        await tracking.log_eval_metric(mlflow_run_id, delta.metric_name, delta.delta)
+
+    run = await repo.get_by_id(run_id)
+    if run is not None:
+        run.prompt_count = total
+        run.mlflow_run_id = mlflow_run_id or None
+
+    await repo.update_status(run_id, EvaluationRunStatus.COMPLETED)
+    await session.commit()
+
+
+async def _report_eval_complete(
+    *,
+    queue: asyncio.Queue[dict[str, object] | None],
+    deltas: list[MetricDelta],
+    run_id: int,
+) -> None:
+    """Send metric-delta and completion events over the SSE queue.
+
+    Parameters
+    ----------
+    queue : asyncio.Queue[dict[str, object] | None]
+        SSE event queue.
+    deltas : list[MetricDelta]
+        Metric deltas to emit.
+    run_id : int
+        Evaluation run ID.
+    """
+    for delta in deltas:
+        await queue.put(
+            {
+                "event": "metric",
+                "data": json.dumps(
+                    {
+                        "metric_name": delta.metric_name,
+                        "fine_tuned_value": delta.fine_tuned_value,
+                        "base_value": delta.base_value,
+                        "delta": delta.delta,
+                        "comparable": delta.comparable,
+                    }
+                ),
+            }
+        )
+    await queue.put(
+        {
+            "event": "complete",
+            "data": json.dumps(
+                {"run_id": run_id, "status": EvaluationRunStatus.COMPLETED}
+            ),
+        }
+    )
+
+
 async def _run_eval_worker(
     *,
     run_id: int,
@@ -279,7 +493,8 @@ async def _run_eval_worker(
 
     Opens its OWN ``AsyncSessionLocal`` session (independent of any request
     session) and commits explicitly. Receives only primitives — never a
-    detached ORM object.
+    detached ORM object. Delegates to focused helpers for the per-prompt
+    evaluation loop, metric computation, persistence, and SSE reporting.
 
     Parameters
     ----------
@@ -326,103 +541,40 @@ async def _run_eval_worker(
                 model_id=model_id, adapter_id=adapter_id
             )
 
-            base_losses: list[float] = []
-            ft_losses: list[float] = []
+            base_losses, ft_losses = await _evaluate_all_prompts(
+                run_id=run_id,
+                queue=queue,
+                prompts=prompts,
+                evaluator=evaluator,
+                base_loaded=base_loaded,
+                ft_loaded=ft_loaded,
+                repo=repo,
+                session=session,
+            )
 
-            for idx, prompt in enumerate(prompts):
-                base_result = evaluator.evaluate_prompt(
-                    prompt, loaded_model=base_loaded
-                )
-                ft_result = evaluator.evaluate_prompt(prompt, loaded_model=ft_loaded)
-                base_losses.append(base_result.avg_loss)
-                ft_losses.append(ft_result.avg_loss)
+            deltas = _compute_metric_deltas(
+                run_id=run_id,
+                base_losses=base_losses,
+                ft_losses=ft_losses,
+                comparable=comparable,
+            )
 
-                await repo.add_sample(
-                    EvalSample(
-                        evaluation_run_id=run_id,
-                        prompt_index=idx,
-                        input=prompt,
-                        base_output=base_result.generated_text,
-                        fine_tuned_output=ft_result.generated_text,
-                        base_loss=base_result.avg_loss,
-                        fine_tuned_loss=ft_result.avg_loss,
-                    )
-                )
-                await session.commit()
-
-                if queue is not None:
-                    await queue.put(
-                        {
-                            "event": "progress",
-                            "data": json.dumps(
-                                {
-                                    "prompt_index": idx,
-                                    "total": total,
-                                    "base_loss": base_result.avg_loss,
-                                    "fine_tuned_loss": ft_result.avg_loss,
-                                }
-                            ),
-                        }
-                    )
-
-            avg_base = sum(base_losses) / len(base_losses) if base_losses else 0.0
-            avg_ft = sum(ft_losses) / len(ft_losses) if ft_losses else 0.0
-            deltas = [
-                MetricDelta(
-                    evaluation_run_id=run_id,
-                    metric_name="eval_loss",
-                    fine_tuned_value=avg_ft,
-                    base_value=avg_base,
-                    delta=avg_ft - avg_base,
-                    comparable=comparable,
-                ),
-                MetricDelta(
-                    evaluation_run_id=run_id,
-                    metric_name="perplexity",
-                    fine_tuned_value=_perplexity(avg_ft),
-                    base_value=_perplexity(avg_base),
-                    delta=_perplexity(avg_ft) - _perplexity(avg_base),
-                    comparable=comparable,
-                ),
-            ]
-            for delta in deltas:
-                await repo.add_metric_delta(delta)
-                await tracking.log_eval_metric(
-                    mlflow_run_id, delta.metric_name, delta.delta
-                )
-
-            run = await repo.get_by_id(run_id)
-            if run is not None:
-                run.prompt_count = total
-                run.mlflow_run_id = mlflow_run_id or None
-            await repo.update_status(run_id, EvaluationRunStatus.COMPLETED)
-            await session.commit()
+            await _persist_eval_results(
+                run_id=run_id,
+                deltas=deltas,
+                total=total,
+                mlflow_run_id=mlflow_run_id,
+                repo=repo,
+                tracking=tracking,
+                session=session,
+            )
             await tracking.finish_eval_run(mlflow_run_id)
 
             if queue is not None:
-                for delta in deltas:
-                    await queue.put(
-                        {
-                            "event": "metric",
-                            "data": json.dumps(
-                                {
-                                    "metric_name": delta.metric_name,
-                                    "fine_tuned_value": delta.fine_tuned_value,
-                                    "base_value": delta.base_value,
-                                    "delta": delta.delta,
-                                    "comparable": delta.comparable,
-                                }
-                            ),
-                        }
-                    )
-                await queue.put(
-                    {
-                        "event": "complete",
-                        "data": json.dumps(
-                            {"run_id": run_id, "status": EvaluationRunStatus.COMPLETED}
-                        ),
-                    }
+                await _report_eval_complete(
+                    queue=queue, deltas=deltas, run_id=run_id
                 )
+
         except Exception as exc:  # pylint: disable=broad-exception-caught
             await repo.update_status(run_id, EvaluationRunStatus.FAILED, str(exc))
             await session.commit()

@@ -54,6 +54,11 @@ logger = logging.getLogger(__name__)
 _system_metrics_enabled = False
 _MlflowClientLike = Any
 
+# MLflow tag key constants
+TAG_ENTITY_TYPE = "anvil.entity_type"
+TAG_ENTITY_ID = "anvil.entity_id"
+TAG_EVENT = "anvil.event"
+
 # Known transient/operational exceptions that should enter degraded mode.
 # These cover MLflow API errors, HTTP transport failures, and stdlib
 # connection/timeout errors.  Everything else (TypeError, AttributeError,
@@ -1184,9 +1189,9 @@ class TrackingService:
         if not run_id:
             return ""
 
-        await self.set_tag(run_id, "anvil.entity_type", "dataset")
-        await self.set_tag(run_id, "anvil.entity_id", str(dataset_id))
-        await self.set_tag(run_id, "anvil.event", f"dataset-{event_type}")
+        await self.set_tag(run_id, TAG_ENTITY_TYPE, "dataset")
+        await self.set_tag(run_id, TAG_ENTITY_ID, str(dataset_id))
+        await self.set_tag(run_id, TAG_EVENT, f"dataset-{event_type}")
 
         await self.finish_run(run_id)
         return run_id
@@ -1235,9 +1240,9 @@ class TrackingService:
         if not run_id:
             return ""
 
-        await self.set_tag(run_id, "anvil.entity_type", "corpus")
-        await self.set_tag(run_id, "anvil.entity_id", str(corpus_id))
-        await self.set_tag(run_id, "anvil.event", f"corpus-{event_type}")
+        await self.set_tag(run_id, TAG_ENTITY_TYPE, "corpus")
+        await self.set_tag(run_id, TAG_ENTITY_ID, str(corpus_id))
+        await self.set_tag(run_id, TAG_EVENT, f"corpus-{event_type}")
 
         if tags:
             for k, v in tags.items():
@@ -1531,7 +1536,7 @@ class TrackingService:
             return ""
 
         await self.set_tag(run_id, "anvil.origin", "evaluation")
-        await self.set_tag(run_id, "anvil.entity_type", "evaluation")
+        await self.set_tag(run_id, TAG_ENTITY_TYPE, "evaluation")
         await self.set_tag(run_id, "anvil.base_model_ref", str(base_model_id))
         await self.set_tag(run_id, "anvil.fine_tuned_model_id", str(model_id))
         await self.set_tag(run_id, "anvil.tokenizer_family", tokenizer_family)

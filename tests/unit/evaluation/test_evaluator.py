@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -42,8 +43,8 @@ class TestEvaluator:
         result = evaluator.evaluate_prompt("hello", loaded_model=mock_loaded_model)
         assert isinstance(result, EvaluatorResult)
         assert result.generated_text == "generated output"
-        assert result.avg_loss == 1.5
-        assert result.perplexity == 4.48
+        assert math.isclose(result.avg_loss, 1.5, rel_tol=1e-9)
+        assert math.isclose(result.perplexity, 4.48, rel_tol=1e-9)
 
     def test_calls_generate_with_correct_args(
         self, evaluator, mock_inference, mock_loaded_model
@@ -75,11 +76,10 @@ class TestEvaluator:
             "vocab_size": 64,
         }
         result = evaluator.evaluate_prompt("hello", loaded_model=mock_loaded_model)
-        assert result.avg_loss == 2.0
+        assert math.isclose(result.avg_loss, 2.0, rel_tol=1e-9)
         assert result.perplexity > 0
-        import math
 
-        assert abs(result.perplexity - math.exp(2.0)) < 0.01
+        assert math.isclose(result.perplexity, math.exp(2.0), rel_tol=1e-2)
 
 
 class TestTrackOnlyRefusal:

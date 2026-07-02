@@ -23,7 +23,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from ...api.deps import get_workbench
 from ...services.datasets.chunking_strategy import ChunkingStrategy
 from ...services.datasets.corpus_loader import CorpusLoader
-from ...services.tracking.tracking import TrackingService
+from ...services.tracking.tracking import TAG_ENTITY_ID, TAG_ENTITY_TYPE, TrackingService
 from ...workbench import AnvilWorkbench
 from .schemas_corpus import (
     AnalyzePathBody,
@@ -127,8 +127,8 @@ async def create_corpus(
 
         # Phase 1B: enrich corpus tracking with metadata tags
         if mlflow_run_id:
-            await tracking_svc.set_tag(mlflow_run_id, "anvil.entity_type", "corpus")
-            await tracking_svc.set_tag(mlflow_run_id, "anvil.entity_id", str(corpus.id))
+            await tracking_svc.set_tag(mlflow_run_id, TAG_ENTITY_TYPE, "corpus")
+            await tracking_svc.set_tag(mlflow_run_id, TAG_ENTITY_ID, str(corpus.id))
             if corpus.file_count:
                 await tracking_svc.set_tag(
                     mlflow_run_id, "anvil.corpus.file_count", str(corpus.file_count)
@@ -223,8 +223,8 @@ async def fork_corpus(
 
         # Phase 1B: enrich fork tracking with lineage tags
         if mlflow_run_id:
-            await tracking_svc.set_tag(mlflow_run_id, "anvil.entity_type", "corpus")
-            await tracking_svc.set_tag(mlflow_run_id, "anvil.entity_id", str(corpus.id))
+            await tracking_svc.set_tag(mlflow_run_id, TAG_ENTITY_TYPE, "corpus")
+            await tracking_svc.set_tag(mlflow_run_id, TAG_ENTITY_ID, str(corpus.id))
             await tracking_svc.set_tag(
                 mlflow_run_id, "anvil.corpus.parent_id", str(corpus.parent_id)
             )
@@ -399,8 +399,8 @@ async def ingest_corpus(
 
     # Phase 1B: enrich ingest tracking with metadata tags
     if mlflow_run_id:
-        await tracking_svc.set_tag(mlflow_run_id, "anvil.entity_type", "corpus")
-        await tracking_svc.set_tag(mlflow_run_id, "anvil.entity_id", str(corpus.id))
+        await tracking_svc.set_tag(mlflow_run_id, TAG_ENTITY_TYPE, "corpus")
+        await tracking_svc.set_tag(mlflow_run_id, TAG_ENTITY_ID, str(corpus.id))
         if corpus.file_count:
             await tracking_svc.set_tag(
                 mlflow_run_id, "anvil.corpus.file_count", str(corpus.file_count)
