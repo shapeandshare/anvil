@@ -23,7 +23,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from ...api.deps import get_workbench
 from ...services.datasets.chunking_strategy import ChunkingStrategy
 from ...services.datasets.corpus_loader import CorpusLoader
-from ...services.tracking.tracking import TAG_ENTITY_ID, TAG_ENTITY_TYPE, TrackingService
+from ...services.tracking.tracking import (
+    TAG_ENTITY_ID,
+    TAG_ENTITY_TYPE,
+    TrackingService,
+)
 from ...workbench import AnvilWorkbench
 from .schemas_corpus import (
     AnalyzePathBody,

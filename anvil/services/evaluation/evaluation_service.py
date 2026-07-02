@@ -25,9 +25,9 @@ from ...db.repositories.evaluation_runs import EvaluationRunRepository
 from ...db.repositories.external_models import ExternalModelRepository
 from ...db.session import AsyncSessionLocal
 from ...services._shared.evaluation_status import EvaluationRunStatus
-from ...services.inference.loaded_model import LoadedModel
 from ...services._shared.runnable_status import RunnableStatus
 from ...services.inference.inference import InferenceService
+from ...services.inference.loaded_model import LoadedModel
 from ...services.tracking.tracking import TrackingService
 from .evaluator import Evaluator
 
@@ -571,9 +571,7 @@ async def _run_eval_worker(
             await tracking.finish_eval_run(mlflow_run_id)
 
             if queue is not None:
-                await _report_eval_complete(
-                    queue=queue, deltas=deltas, run_id=run_id
-                )
+                await _report_eval_complete(queue=queue, deltas=deltas, run_id=run_id)
 
         except Exception as exc:  # pylint: disable=broad-exception-caught
             await repo.update_status(run_id, EvaluationRunStatus.FAILED, str(exc))
