@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 # so monkeypatching after import has no effect.
 os.environ.setdefault("ANVIL_MLFLOW_URI", "")
 
-from anvil.api.app import app  # noqa: E402 — import must follow env var
+from anvil.api.app import app  # import must follow env var for MLFLOW_URI
 from anvil.api.deps import get_api_key_store
 from anvil.db import models
 from anvil.db.base import Base

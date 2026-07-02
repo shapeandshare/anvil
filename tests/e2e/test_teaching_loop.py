@@ -172,7 +172,8 @@ async def test_list_rounds_for_session(client):
 @pytest.mark.asyncio
 async def test_inspect_round(client):
     """POST /teach/sessions/{id}/rounds/{index}/inspect returns 422 for
-    missing experiment."""
+    missing experiment.
+    """
     r = await client.post(
         "/v1/teach/sessions",
         json={"name": "inspect-test"},
