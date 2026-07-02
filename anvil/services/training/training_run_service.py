@@ -873,7 +873,7 @@ class TrainingRunService:
                             loop = asyncio.get_event_loop()
                             await loop.run_in_executor(
                                 None,
-                                lambda c=c: c.log_artifact(  # type: ignore[union-attr]
+                                lambda c=c: c.log_artifact(  # type: ignore[misc]
                                     mlflow_run_id, samples_path
                                 ),
                             )
@@ -889,7 +889,7 @@ class TrainingRunService:
                             loop = asyncio.get_event_loop()
                             await loop.run_in_executor(
                                 None,
-                                lambda c=c: c.log_artifact(  # type: ignore[union-attr]
+                                lambda c=c: c.log_artifact(  # type: ignore[misc]
                                     mlflow_run_id, model_path
                                 ),
                             )
@@ -899,7 +899,7 @@ class TrainingRunService:
                 export_svc = SafetensorsExportService()
                 export_result = await asyncio.get_event_loop().run_in_executor(
                     None,
-                    lambda: export_svc.export(model, tmpdir, uchars),
+                    lambda: export_svc.export(model, tmpdir, uchars),  # type: ignore[arg-type]
                 )
 
                 if export_result["error"]:

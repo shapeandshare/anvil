@@ -762,7 +762,7 @@ class InferenceService:
         Tokenizer
             An adapter instance wrapping the HF tokenizer.
         """
-        hf_tok = AutoTokenizer.from_pretrained(source_id)
+        hf_tok = AutoTokenizer.from_pretrained(source_id)  # type: ignore[no-untyped-call]
         return TransformersTokenizerAdapter(hf_tok)
 
     async def _resolve_default_id(self) -> int:

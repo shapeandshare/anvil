@@ -18,7 +18,7 @@ from typing import Any
 try:
     from huggingface_hub import HfApi  # finetune extra
 except ImportError:
-    HfApi = None
+    HfApi = None  # type: ignore[assignment,misc]
 
 
 class HubClient:

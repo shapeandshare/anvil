@@ -252,7 +252,7 @@ async def _do_resolve(
     )
 
     config = info.config or {}
-    arch = config.get("architectures", [None])[0] if isinstance(config, dict) else None
+    arch = config.get("architectures", [None])[0] if config else None
     arch_family = str(arch or info.pipeline_tag or "unknown")
 
     return ModelMetadata(
