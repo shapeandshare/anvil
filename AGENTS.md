@@ -1,6 +1,6 @@
 # anvil — Agent Guidelines
 
-**Last updated**: 2026-07-01 (constitution v1.8.0: Article XI Simplicity First / Boring Technology + ADR-041; sonarcloud-tooling + content-repository-016-mvp; scripts-python-over-bash + package-module-migration, testing-guide consolidation; OWASP remediation spec 017 + ADRs 035/036; whole-API e2e test suite 017)
+**Last updated**: 2026-07-02 (constitution v1.8.0: Article XI Simplicity First / Boring Technology + ADR-041; sonarcloud-tooling + content-repository-016-mvp; scripts-python-over-bash + package-module-migration, testing-guide consolidation; OWASP remediation spec 017 + ADRs 035/036; whole-API e2e test suite 017)
 
 ## Project Overview
 
@@ -473,6 +473,8 @@ SomeException
 - SQLite (anvil-state.db, WAL mode) via async SQLAlchemy; MLflow for eval dataset records; `LocalFileStore` for model artifacts (054-fine-tuned-model-evaluation)
 - Python 3.11+ (PEP 604, `StrEnum`, `from __future__ import annotations`) + No new runtime deps — extends existing FastAPI, async SQLAlchemy, aiosqlite; SaaS backend behind `[finetune]` extra (spec 047) (046-fine-tune-compute-routing)
 - `LocalFileStore` (local adapters at `data/adapters/`); SQLite (anvil-state.db) for job metadata (046-fine-tune-compute-routing)
+- Python 3.11+ (PEP 604, `StrEnum`, `from __future__ import annotations`) + FastAPI, async SQLAlchemy + aiosqlite, Alembic, Jinja2, MLflow, Pydantic — all existing (055-interactive-teaching-loop)
+- SQLite (anvil-state.db, WAL) — new `TeachingSession` table via async SQLAlchemy + Alembic migration; MLflow runs + artifacts for TeachingRound data (055-interactive-teaching-loop)
 
 ## Recent Changes
 - 025-ux-rules-integration: Added Python 3.11+ (existing repo convention) + Stdlib only — `ux_lint.py` (re/ sys/ os/), `ux_review.py` (stdlib + urllib for OpenAI-compatible API calls)
