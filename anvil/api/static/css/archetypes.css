@@ -2209,3 +2209,112 @@ margin-bottom: var(--space-2);
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent);
 }
+
+/* ════════════════════════════════════════════════
+   Teach Page — Interactive Teaching Loop
+   ════════════════════════════════════════════════ */
+
+.teach-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.teach-sidebar {
+  padding: var(--space-3);
+}
+
+.teach-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.teach-section-title {
+  font-size: var(--text-callout);
+  font-weight: 600;
+  margin: 0 0 var(--space-3);
+  color: var(--text);
+}
+
+.teach-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.teach-status-text {
+  font-size: var(--text-footnote);
+  color: var(--text-tertiary);
+  margin: var(--space-1) 0 0;
+}
+
+.teach-progress {
+  margin-top: var(--space-2);
+  height: 4px;
+  background: var(--separator);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.teach-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+.teach-output-text {
+  background: var(--surface-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-footnote);
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text);
+  margin: 0;
+}
+
+.teach-empty-text {
+  font-size: var(--text-footnote);
+  color: var(--text-tertiary);
+  margin: 0;
+}
+
+.teach-session-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+}
+
+.teach-compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.teach-field-group {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.teach-field-half {
+  flex: 1;
+}
+
+/* ── Responsive: stack sidebar on mobile ── */
+@media (max-width: 768px) {
+  .teach-layout {
+    grid-template-columns: 1fr;
+  }
+  .teach-compare-grid {
+    grid-template-columns: 1fr;
+  }
+  .teach-field-group {
+    flex-direction: column;
+  }
+}
