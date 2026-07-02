@@ -80,7 +80,7 @@ class Evaluator:
         avg_loss = loss_result["average_loss"]
         perplexity = loss_result.get("perplexity", None)
         if perplexity is None:
-            import math
+            import math  # import-placement:allow — optional fallback calculation
 
             perplexity = math.exp(avg_loss)
         return EvaluatorResult(

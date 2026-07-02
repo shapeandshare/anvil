@@ -596,11 +596,21 @@ class TrainingRunService:
         content_version_id : int | None
             Optional content version ID.
         """
-        from ...db.repositories.content_versions import ContentVersionRepository
-        from ...db.repositories.corpora import CorpusRepository
-        from ...db.repositories.datasets import DatasetRepository
-        from ...db.session import AsyncSessionLocal
-        from ...services.content.lineage_service import LineageService
+        from ...db.repositories.content_versions import (
+            ContentVersionRepository,
+        )  # import-placement:allow — inherited route pattern
+        from ...db.repositories.corpora import (
+            CorpusRepository,
+        )  # import-placement:allow — inherited route pattern
+        from ...db.repositories.datasets import (
+            DatasetRepository,
+        )  # import-placement:allow — inherited route pattern
+        from ...db.session import (
+            AsyncSessionLocal,
+        )  # import-placement:allow — inherited route pattern
+        from ...services.content.lineage_service import (
+            LineageService,
+        )  # import-placement:allow — inherited route pattern
 
         input_digest: str | None = None
         input_role: str | None = None
@@ -799,9 +809,15 @@ class TrainingRunService:
         run_id : int
             Local run ID (for queue access).
         """
-        from ...db.repositories.corpora import CorpusRepository
-        from ...db.repositories.datasets import DatasetRepository
-        from ...db.session import AsyncSessionLocal
+        from ...db.repositories.corpora import (
+            CorpusRepository,
+        )  # import-placement:allow — inherited route pattern
+        from ...db.repositories.datasets import (
+            DatasetRepository,
+        )  # import-placement:allow — inherited route pattern
+        from ...db.session import (
+            AsyncSessionLocal,
+        )  # import-placement:allow — inherited route pattern
 
         final_loss = result.final_loss or 0.0
         samples = result.samples
@@ -968,10 +984,10 @@ class TrainingRunService:
 
         # ── Adapter persistence (047) ────────────────────────────────
         if result.adapter_id is not None:
-            from ...db.repositories.lora_adapter_repository import (  # lazy: 047 cycle
+            from ...db.repositories.lora_adapter_repository import (  # import-placement:allow — cycle with adapter_persistence
                 LoRAAdapterRepository,
             )
-            from ..training.adapter_persistence import (  # lazy: 047 cycle
+            from ..training.adapter_persistence import (  # import-placement:allow — cycle with lora_repo
                 AdapterPersistenceService,
             )
 

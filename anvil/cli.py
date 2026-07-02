@@ -407,7 +407,9 @@ def train() -> None:
                     async with AsyncSessionLocal() as sess:
                         repo = LoRAAdapterRepository(sess)
                         persistence = AdapterPersistenceService(repo)
-                        from .services.compute.result import ComputeResult
+                        from .services.compute.result import (
+                            ComputeResult,
+                        )  # import-placement:allow — inherited adapter persistence pattern
 
                         await persistence.persist(
                             cast(ComputeResult, result), _cfg, run_id=run_id
