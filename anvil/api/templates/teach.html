@@ -6,135 +6,139 @@
 -->
 
 {% extends "base.html" %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
 {% block content %}
 <div class="section-card">
   <div class="section-card__header">
     <h1 class="section-card__title">Interactive Teaching Loop</h1>
-    <p class="section-card__subtitle">Teach a model iteratively by providing examples — watch it improve round by round.</p>
   </div>
+  <p style="font-size:var(--text-callout);color:var(--text-secondary);margin:var(--space-1) 0 0;">Teach a model iteratively by providing examples — watch it improve round by round.</p>
 </div>
 
-<div class="teach-layout" style="display:grid;grid-template-columns:280px 1fr;gap:var(--space-4);align-items:start;">
+<div class="teach-layout">
   {# ── Session sidebar ───────────────────────────────────────────── #}
-  <aside class="teach-sidebar section-card" style="padding:var(--space-3);">
-    <h2 style="font-size:var(--text-callout);font-weight:600;margin:0 0 var(--space-3);color:var(--text);">Sessions</h2>
-    <div id="session-list" style="display:flex;flex-direction:column;gap:var(--space-2);">
-      <p style="font-size:var(--text-footnote);color:var(--text-tertiary);margin:0;" role="status">Loading sessions…</p>
+  <aside class="teach-sidebar section-card">
+    <h2 class="teach-section-title">Sessions</h2>
+    <div id="session-list" class="teach-session-list">
+      <p class="teach-empty-text" role="status">Loading sessions…</p>
     </div>
-    <hr style="border:none;border-top:1px solid var(--separator);margin:var(--space-3) 0;">
+    <hr class="section-divider">
     <form id="create-session-form" onsubmit="return createSession(event)">
-      <label for="session-name" class="input-label">New Session</label>
-      <input id="session-name" class="input" type="text" placeholder="Session name…" required autocomplete="off">
-      <label for="session-desc" class="input-label" style="margin-top:var(--space-2);">Description (optional)</label>
-      <input id="session-desc" class="input" type="text" placeholder="Describe this session…" autocomplete="off">
-      <label for="session-seed" class="input-label" style="margin-top:var(--space-2);">Seed Experiment ID (optional)</label>
-      <input id="session-seed" class="input" type="number" placeholder="e.g. 1" min="0" autocomplete="off">
-      <button type="submit" class="button button--primary" style="margin-top:var(--space-3);width:100%;">Create Session</button>
+      <label for="session-name" class="ds-label">New Session</label>
+      <input id="session-name" class="form-input" type="text" placeholder="Session name…" required autocomplete="off">
+
+      <label for="session-desc" class="ds-label" style="margin-top:var(--space-2);">Description (optional)</label>
+      <input id="session-desc" class="form-input" type="text" placeholder="Describe this session…" autocomplete="off">
+
+      <label for="session-seed" class="ds-label" style="margin-top:var(--space-2);">Seed Experiment ID (optional)</label>
+      <input id="session-seed" class="form-input" type="number" placeholder="e.g. 1" min="0" autocomplete="off">
+
+      <button type="submit" class="btn btn-primary" style="margin-top:var(--space-3);width:100%;">Create Session</button>
     </form>
   </aside>
 
   {# ── Main panel ────────────────────────────────────────────────── #}
-  <div class="teach-main" style="display:flex;flex-direction:column;gap:var(--space-4);">
+  <div class="teach-main">
 
     {# ── Active session info ──────────────────────────────────────── #}
-    <div id="active-session-panel" class="section-card" style="padding:var(--space-3);display:none;">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
+    <div id="active-session-panel" class="section-card" style="display:none;">
+      <div class="teach-panel-header">
         <div>
-          <h2 id="active-session-name" style="font-size:var(--text-callout);font-weight:600;margin:0;color:var(--text);"></h2>
-          <p id="active-session-status" style="font-size:var(--text-footnote);color:var(--text-tertiary);margin:var(--space-1) 0 0;"></p>
+          <h2 id="active-session-name" class="teach-section-title" style="margin-bottom:0;"></h2>
+          <p id="active-session-status" class="teach-status-text"></p>
         </div>
-        <button id="refresh-session-btn" type="button" class="button button--ghost" onclick="loadSessionDetails()" aria-label="Refresh session details">&#x21bb;</button>
+        <button id="refresh-session-btn" type="button" class="btn btn-secondary" onclick="loadSessionDetails()" aria-label="Refresh session details">&#x21bb;</button>
       </div>
     </div>
 
     {# ── Round workflow panel ─────────────────────────────────────── #}
-    <div id="round-panel" class="section-card" style="padding:var(--space-3);display:none;">
-      <h2 style="font-size:var(--text-callout);font-weight:600;margin:0 0 var(--space-3);color:var(--text);">Start a New Round</h2>
+    <div id="round-panel" class="section-card" style="display:none;">
+      <h2 class="teach-section-title">Start a New Round</h2>
       <form id="start-round-form" onsubmit="return startRound(event)">
-        <label for="round-examples" class="input-label">Training Examples</label>
-        <textarea id="round-examples" class="input" rows="5" placeholder="One example per line…" required aria-describedby="examples-help"></textarea>
-        <p id="examples-help" style="font-size:var(--text-caption-2);color:var(--text-tertiary);margin:var(--space-1) 0 var(--space-3);">Each line is one training sample. Use method full only.</p>
+        <label for="round-examples" class="ds-label">Training Examples</label>
+        <textarea id="round-examples" class="form-input" rows="5" placeholder="One example per line…" required aria-describedby="examples-help"></textarea>
+        <p id="examples-help" class="help-text">Each line is one training sample. Use method full only.</p>
 
-        <label for="round-steps" class="input-label">Training Steps</label>
-        <input id="round-steps" class="input" type="number" value="100" min="1" max="1000000" autocomplete="off">
+        <label for="round-steps" class="ds-label">Training Steps</label>
+        <input id="round-steps" class="form-input" type="number" value="100" min="1" max="1000000" autocomplete="off">
 
-        <label for="round-lr" class="input-label" style="margin-top:var(--space-2);">Learning Rate</label>
-        <input id="round-lr" class="input" type="number" step="0.001" value="0.01" min="0.001" max="1.0" autocomplete="off">
+        <label for="round-lr" class="ds-label" style="margin-top:var(--space-2);">Learning Rate</label>
+        <input id="round-lr" class="form-input" type="number" step="0.001" value="0.01" min="0.001" max="1.0" autocomplete="off">
 
-        <button type="submit" class="button button--primary" style="margin-top:var(--space-3);" id="start-round-btn">Start Round</button>
+        <button type="submit" class="btn btn-primary" style="margin-top:var(--space-3);" id="start-round-btn">Start Round</button>
       </form>
 
       {# ── Training SSE stream ─────────────────────────────────────── #}
-      <div id="training-progress" style="margin-top:var(--space-3);display:none;" role="status" aria-live="polite">
-        <div style="display:flex;justify-content:space-between;font-size:var(--text-footnote);color:var(--text-tertiary);">
+      <div id="training-progress" class="teach-progress-section" role="status" aria-live="polite">
+        <div class="teach-progress-header">
           <span id="training-status-text">Training in progress…</span>
           <span id="training-loss-display">Loss: —</span>
         </div>
-        <div style="margin-top:var(--space-2);height:4px;background:var(--separator);border-radius:2px;overflow:hidden;">
-          <div id="training-progress-bar" style="height:100%;width:0%;background:var(--accent);border-radius:2px;transition:width 0.3s;"></div>
+        <div class="teach-progress">
+          <div id="training-progress-bar" class="teach-progress-bar"></div>
         </div>
-        <div id="training-error" style="margin-top:var(--space-2);display:none;font-size:var(--text-footnote);color:var(--accent-danger);"></div>
-        <div id="training-complete" style="margin-top:var(--space-2);display:none;font-size:var(--text-footnote);color:var(--accent-success);"></div>
+        <div id="training-error" class="teach-error-text"></div>
+        <div id="training-complete" class="teach-complete-text"></div>
       </div>
     </div>
 
     {# ── Inference / Inspect panel ────────────────────────────────── #}
-    <div id="inspect-panel" class="section-card" style="padding:var(--space-3);display:none;">
-      <h2 style="font-size:var(--text-callout);font-weight:600;margin:0 0 var(--space-3);color:var(--text);">Inspect Round</h2>
+    <div id="inspect-panel" class="section-card" style="display:none;">
+      <h2 class="teach-section-title">Inspect Round</h2>
       <form id="inspect-form" onsubmit="return inspectRound(event)">
-        <label for="inspect-experiment" class="input-label">Experiment ID</label>
-        <input id="inspect-experiment" class="input" type="number" min="0" placeholder="e.g. 42" required autocomplete="off">
+        <label for="inspect-experiment" class="ds-label">Experiment ID</label>
+        <input id="inspect-experiment" class="form-input" type="number" min="0" placeholder="e.g. 42" required autocomplete="off">
 
-        <label for="inspect-prompt" class="input-label" style="margin-top:var(--space-2);">Prompt</label>
-        <input id="inspect-prompt" class="input" type="text" placeholder="Enter a prompt…" required autocomplete="off">
+        <label for="inspect-prompt" class="ds-label" style="margin-top:var(--space-2);">Prompt</label>
+        <input id="inspect-prompt" class="form-input" type="text" placeholder="Enter a prompt…" required autocomplete="off">
 
-        <div style="display:flex;gap:var(--space-2);margin-top:var(--space-2);">
-          <label for="inspect-temp" class="input-label" style="flex:1;">
+        <div class="teach-field-group">
+          <label for="inspect-temp" class="ds-label teach-field-half">
             Temperature
-            <input id="inspect-temp" class="input" type="number" step="0.1" value="0.7" min="0" max="2.0" autocomplete="off">
+            <input id="inspect-temp" class="form-input" type="number" step="0.1" value="0.7" min="0" max="2.0" autocomplete="off">
           </label>
-          <label for="inspect-tokens" class="input-label" style="flex:1;">
+          <label for="inspect-tokens" class="ds-label teach-field-half">
             Max Tokens
-            <input id="inspect-tokens" class="input" type="number" value="100" min="1" max="2048" autocomplete="off">
+            <input id="inspect-tokens" class="form-input" type="number" value="100" min="1" max="2048" autocomplete="off">
           </label>
         </div>
 
-        <button type="submit" class="button button--primary" style="margin-top:var(--space-3);">Generate</button>
+        <button type="submit" class="btn btn-primary" style="margin-top:var(--space-3);">Generate</button>
       </form>
       <div id="inspect-output" style="margin-top:var(--space-3);display:none;">
-        <pre id="inspect-result-text" style="background:var(--surface-2);padding:var(--space-3);border-radius:var(--radius-md);font-size:var(--text-footnote);white-space:pre-wrap;word-break:break-word;color:var(--text);margin:0;"></pre>
+        <pre id="inspect-result-text" class="teach-output-text"></pre>
       </div>
     </div>
 
     {# ── Compare panel ────────────────────────────────────────────── #}
-    <div id="compare-panel" class="section-card" style="padding:var(--space-3);">
-      <h2 style="font-size:var(--text-callout);font-weight:600;margin:0 0 var(--space-3);color:var(--text);">Compare Rounds</h2>
+    <div id="compare-panel" class="section-card">
+      <h2 class="teach-section-title">Compare Rounds</h2>
       <form id="compare-form" onsubmit="return compareRounds(event)">
-        <div style="display:flex;gap:var(--space-3);">
-          <label class="input-label" style="flex:1;">
+        <div class="teach-field-group">
+          <label class="ds-label teach-field-half">
             Left Experiment ID
-            <input id="compare-left" class="input" type="number" min="0" placeholder="e.g. 1" required autocomplete="off">
+            <input id="compare-left" class="form-input" type="number" min="0" placeholder="e.g. 1" required autocomplete="off">
           </label>
-          <label class="input-label" style="flex:1;">
+          <label class="ds-label teach-field-half">
             Right Experiment ID
-            <input id="compare-right" class="input" type="number" min="0" placeholder="e.g. 2" required autocomplete="off">
+            <input id="compare-right" class="form-input" type="number" min="0" placeholder="e.g. 2" required autocomplete="off">
           </label>
         </div>
 
-        <label for="compare-prompt" class="input-label" style="margin-top:var(--space-2);">Prompt</label>
-        <input id="compare-prompt" class="input" type="text" placeholder="Enter a prompt to test both models…" required autocomplete="off">
+        <label for="compare-prompt" class="ds-label" style="margin-top:var(--space-2);">Prompt</label>
+        <input id="compare-prompt" class="form-input" type="text" placeholder="Enter a prompt to test both models…" required autocomplete="off">
 
-        <button type="submit" class="button button--primary" style="margin-top:var(--space-3);">Compare</button>
+        <button type="submit" class="btn btn-primary" style="margin-top:var(--space-3);">Compare</button>
       </form>
       <div id="compare-output" style="margin-top:var(--space-3);display:none;">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);">
+        <div class="teach-compare-grid">
           <div>
             <h3 style="font-size:var(--text-footnote);font-weight:600;color:var(--text);margin:0 0 var(--space-2);">Left</h3>
-            <pre id="compare-left-text" style="background:var(--surface-2);padding:var(--space-3);border-radius:var(--radius-md);font-size:var(--text-footnote);white-space:pre-wrap;word-break:break-word;color:var(--text);margin:0;"></pre>
+            <pre id="compare-left-text" class="teach-output-text"></pre>
           </div>
           <div>
             <h3 style="font-size:var(--text-footnote);font-weight:600;color:var(--text);margin:0 0 var(--space-2);">Right</h3>
-            <pre id="compare-right-text" style="background:var(--surface-2);padding:var(--space-3);border-radius:var(--radius-md);font-size:var(--text-footnote);white-space:pre-wrap;word-break:break-word;color:var(--text);margin:0;"></pre>
+            <pre id="compare-right-text" class="teach-output-text"></pre>
           </div>
         </div>
       </div>
@@ -146,6 +150,20 @@
 {% endblock %}
 
 {% block scripts %}
+<style nonce="{{ request.state.csp_nonce }}">
+/* ── teach.html — initial hidden and progress states ── */
+#training-progress { display:none; }
+#training-error { display:none; margin-top:var(--space-2); font-size:var(--text-footnote); color:var(--accent-red); }
+#training-complete { display:none; margin-top:var(--space-2); font-size:var(--text-footnote); color:var(--accent-green); }
+.teach-progress-header { display:flex; justify-content:space-between; font-size:var(--text-footnote); color:var(--text-tertiary); }
+.teach-session-list { display:flex; flex-direction:column; gap:var(--space-2); }
+.teach-session-item { display:flex; flex-direction:column; gap:2px; padding:var(--space-2) var(--space-3); background:none; border:none; cursor:pointer; border-radius:var(--radius-sm); text-align:left; width:100%; transition:background var(--dur-fast) var(--ease); font-family:var(--font-body); }
+.teach-session-item:hover { background:var(--surface-2); }
+.teach-session-item--active { background:color-mix(in srgb, var(--accent) 15%, transparent); }
+.teach-session-item-name { font-size:var(--text-footnote); font-weight:500; color:var(--text); }
+.teach-session-item-status { font-size:var(--text-caption-2); color:var(--text-tertiary); }
+.section-divider { border:none; border-top:1px solid var(--separator); margin:var(--space-3) 0; }
+</style>
 <script nonce="{{ request.state.csp_nonce }}">
 /* ── State ─────────────────────────────────────────────────────────── */
 var activeSessionId = null;
@@ -160,12 +178,12 @@ function loadSessions() {
     .then(function(data) {
       var list = document.getElementById('session-list');
       if (!data.sessions || data.sessions.length === 0) {
-        list.innerHTML = '<p style="font-size:var(--text-footnote);color:var(--text-tertiary);margin:0;" role="status">No sessions yet. Create one above.</p>';
+        list.innerHTML = '<p class="teach-empty-text" role="status">No sessions yet. Create one above.</p>';
         return;
       }
       list.innerHTML = data.sessions.map(function(s) {
-        var active = activeSessionId === s.id ? ' style="background:var(--accent-2);"' : '';
-        return '<button type="button" class="button button--ghost session-item" data-id="' + s.id + '"' + active + ' onclick="selectSession(' + s.id + ')"><span style="font-size:var(--text-footnote);font-weight:500;color:var(--text);">' + escHtml(s.name) + '</span><span style="font-size:var(--text-caption-2);color:var(--text-tertiary);">' + (s.status || '') + '</span></button>';
+        var active = activeSessionId === s.id ? ' teach-session-item--active' : '';
+        return '<button type="button" class="teach-session-item' + active + '" data-id="' + s.id + '" onclick="selectSession(' + s.id + ')"><span class="teach-session-item-name">' + escHtml(s.name) + '</span><span class="teach-session-item-status">' + (s.status || '') + '</span></button>';
       }).join('');
     });
 }
