@@ -26,7 +26,6 @@ from pathlib import Path
 from typing import Any
 
 from ..training.stop_requested import StopRequested
-
 from .compute_backend_result import ComputeBackendResult
 from .compute_status import ComputeStatus
 from .protocol import ProgressCallback, StopCheck

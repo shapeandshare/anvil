@@ -69,9 +69,9 @@ class TestAdapterPersistence:
             stop_check=stop_check,
         )
         assert result.status == ComputeStatus.COMPLETED
-        assert result.adapter_id is not None, (
-            "adapter_id must be non-null after a completed LoRA run"
-        )
+        assert (
+            result.adapter_id is not None
+        ), "adapter_id must be non-null after a completed LoRA run"
         assert isinstance(result.adapter_id, str)
         assert len(result.adapter_id) > 0
 

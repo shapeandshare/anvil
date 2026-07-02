@@ -31,9 +31,7 @@ class AdapterPersistenceService:
     def __init__(self, lora_adapter_repo: LoRAAdapterRepository) -> None:
         self._repo = lora_adapter_repo
 
-    async def persist(
-        self, result: ComputeResult, config: dict[str, object]
-    ) -> None:
+    async def persist(self, result: ComputeResult, config: dict[str, object]) -> None:
         """Persist a ``LoRAAdapter`` row when the result contains an adapter.
 
         Skips silently when ``result.adapter_id`` is ``None`` (not a
@@ -91,10 +89,16 @@ class AdapterPersistenceService:
             lora_target_modules=(
                 json.dumps(config["lora_target_modules"])
                 if isinstance(config.get("lora_target_modules"), list)
-                else (str(config["lora_target_modules"]) if config.get("lora_target_modules") else None)
+                else (
+                    str(config["lora_target_modules"])
+                    if config.get("lora_target_modules")
+                    else None
+                )
             ),
             lora_dropout=(
-                cast(float | None, config.get("lora_dropout")) if config.get("lora_dropout") else None
+                cast(float | None, config.get("lora_dropout"))
+                if config.get("lora_dropout")
+                else None
             ),
             lora_bias=str(config["lora_bias"]) if config.get("lora_bias") else None,
             final_loss=result.final_loss,
