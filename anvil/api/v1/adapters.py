@@ -155,10 +155,13 @@ async def merge_adapter(
     return {"merged_path": merged_path}
 
 
-@router.post("/models/{model_id}/adapters/{adapter_id}/merge-and-export", responses={
-    404: {"description": "Adapter not found or license check failed"},
-    500: {"description": "Merge or export operation failed"},
-})
+@router.post(
+    "/models/{model_id}/adapters/{adapter_id}/merge-and-export",
+    responses={
+        404: {"description": "Adapter not found or license check failed"},
+        500: {"description": "Merge or export operation failed"},
+    },
+)
 async def merge_and_export_adapter(
     model_id: int,
     adapter_id: str,

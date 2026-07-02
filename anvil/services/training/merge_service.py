@@ -339,13 +339,18 @@ class AdapterMergeService:
             return {"error": str(exc)}
 
         # ── Merge weights ────────────────────────────────────────────
-        merged_hf = self._merge_hf_weights(source_identifier, adapter, model_id, adapter_id)
+        merged_hf = self._merge_hf_weights(
+            source_identifier, adapter, model_id, adapter_id
+        )
         if isinstance(merged_hf, dict):
             return merged_hf  # error dict
 
         # ── Export directly to HF format ─────────────────────────
         result = self._publish_artifact(
-            merged_hf, source_identifier, model_id, adapter_id,
+            merged_hf,
+            source_identifier,
+            model_id,
+            adapter_id,
         )
         if isinstance(result, dict):
             return result
