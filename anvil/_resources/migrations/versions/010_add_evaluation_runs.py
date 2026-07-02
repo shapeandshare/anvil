@@ -18,7 +18,7 @@ down_revision: str | None = "009"
 branch_labels: str | None = None
 depends_on: str | None = None
 
-_CURRENT_TS = _CURRENT_TS
+_CURRENT_TS = sa.text("(CURRENT_TIMESTAMP)")
 """Reusable default for created_at / updated_at columns."""
 
 
