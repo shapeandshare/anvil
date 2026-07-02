@@ -28,6 +28,9 @@ import pytest
 from anvil.api.v1 import training as training_module
 from anvil.gpu import GpuInfo
 from anvil.services.compute.training_engine import TrainingEngine
+from anvil.services.training.training_run_service import (
+    TrainingRunService,
+)
 
 ####################################################################
 # Helpers
@@ -105,7 +108,7 @@ def _default_patches():
     stack.enter_context(patch.object(training_module, "tracking_svc", mock_tracking))
     stack.enter_context(
         patch(
-            "anvil.api.v1.training.resolve_backend",
+            "anvil.services.training.training_run_service.resolve_backend",
             return_value={
                 "engine": TrainingEngine.STDLIB,
                 "device": "cpu",
@@ -114,8 +117,23 @@ def _default_patches():
     )
     stack.enter_context(
         patch(
-            "anvil.api.v1.training.detect_gpu",
+            "anvil.services.training.training_run_service.detect_gpu",
             return_value=GpuInfo(available=False),
+        )
+    )
+    # Prevent MLflow setup and dataset metadata logging from actually running
+    stack.enter_context(
+        patch.object(
+            TrainingRunService,
+            "_setup_mlflow_run",
+            new=AsyncMock(return_value=("mlflow_1", 99)),
+        )
+    )
+    stack.enter_context(
+        patch.object(
+            TrainingRunService,
+            "_log_dataset_metadata",
+            new=AsyncMock(),
         )
     )
     return stack
@@ -139,24 +157,24 @@ def _clear_tasks():
 
 
 class TestValidateHparams:
-    """Tests for the ``_validate_hparams`` helper."""
+    """Tests for the ``_validate_hparams`` helper (now on TrainingRunService)."""
 
     def test_passes_valid_params(self):
-        training_module._validate_hparams(n_embd=16, n_head=4, _block_size=16)
+        TrainingRunService._validate_hparams(n_embd=16, n_head=4, block_size=16)
 
     def test_raises_when_n_head_exceeds_n_embd(self):
         with pytest.raises(Exception) as exc:
-            training_module._validate_hparams(n_embd=4, n_head=8, _block_size=16)
+            TrainingRunService._validate_hparams(n_embd=4, n_head=8, block_size=16)
         assert "exceeds" in str(exc.value)
 
     def test_raises_when_not_divisible(self):
         with pytest.raises(Exception) as exc:
-            training_module._validate_hparams(n_embd=15, n_head=4, _block_size=16)
+            TrainingRunService._validate_hparams(n_embd=15, n_head=4, block_size=16)
         assert "not divisible" in str(exc.value)
 
     def test_raises_when_head_dim_odd(self):
         with pytest.raises(Exception) as exc:
-            training_module._validate_hparams(n_embd=12, n_head=4, _block_size=16)
+            TrainingRunService._validate_hparams(n_embd=12, n_head=4, block_size=16)
         assert "odd" in str(exc.value) or "even" in str(exc.value)
 
 
@@ -166,25 +184,25 @@ class TestValidateHparams:
 
 
 class TestResolveTrainingBackend:
-    """Tests for the ``_resolve_training_backend`` helper."""
+    """Tests for the ``_resolve_training_backend`` helper (now on TrainingRunService)."""
 
     def test_resolves_auto_backend(self):
-        engine, device = training_module._resolve_training_backend("auto")
+        engine, device = TrainingRunService._resolve_training_backend("auto")
         assert isinstance(engine, TrainingEngine)
         assert isinstance(device, str)
 
     def test_resolves_local_cpu_backend(self):
-        engine, device = training_module._resolve_training_backend("local-cpu")
+        engine, device = TrainingRunService._resolve_training_backend("local-cpu")
         assert engine == TrainingEngine.STDLIB
         assert device == "cpu"
 
     def test_raises_for_unavailable_backend(self):
         with pytest.raises(Exception) as exc:
-            training_module._resolve_training_backend("modal")
+            TrainingRunService._resolve_training_backend("modal")
         msg = str(exc.value)
         assert any(
             keyword in msg.lower()
-            for keyword in ["modal", "422", "unavailable", "backend"]
+            for keyword in ["modal", "unavailable", "backend"]
         )
 
 
@@ -295,15 +313,25 @@ class TestStartTraining:
             patch.object(training_module, "svc", mock_svc),
             patch.object(training_module, "tracking_svc", mock_tracking),
             patch(
-                "anvil.api.v1.training.resolve_backend",
+                "anvil.services.training.training_run_service.resolve_backend",
                 return_value={
                     "engine": TrainingEngine.STDLIB,
                     "device": "cpu",
                 },
             ),
             patch(
-                "anvil.api.v1.training.detect_gpu",
+                "anvil.services.training.training_run_service.detect_gpu",
                 return_value=GpuInfo(available=False),
+            ),
+            patch.object(
+                TrainingRunService,
+                "_setup_mlflow_run",
+                new=AsyncMock(return_value=(None, 99)),
+            ),
+            patch.object(
+                TrainingRunService,
+                "_log_dataset_metadata",
+                new=AsyncMock(),
             ),
         ):
             resp = await client.post("/v1/training/start", json=_make_config())
@@ -577,27 +605,30 @@ class TestWarmStart:
     async def test_rejects_missing_base_model(self, client):
         """Returns 422 when base_model_ref model cannot be loaded."""
         with (
-            patch("anvil.api.v1.training.InferenceService") as mock_inf_cls,
             patch.object(training_module, "svc", _patch_svc()),
             patch.object(training_module, "tracking_svc", _patch_tracking()),
             patch(
-                "anvil.api.v1.training.resolve_backend",
+                "anvil.services.training.training_run_service.resolve_backend",
                 return_value={
                     "engine": TrainingEngine.STDLIB,
                     "device": "cpu",
                 },
             ),
             patch(
-                "anvil.api.v1.training.detect_gpu",
+                "anvil.services.training.training_run_service.detect_gpu",
                 return_value=GpuInfo(available=False),
             ),
+            patch.object(
+                TrainingRunService,
+                "_setup_mlflow_run",
+                new=AsyncMock(return_value=("mlflow_1", 99)),
+            ),
+            patch.object(
+                TrainingRunService,
+                "_log_dataset_metadata",
+                new=AsyncMock(),
+            ),
         ):
-            mock_inf = MagicMock()
-            mock_inf_cls.return_value = mock_inf
-            mock_inf.load_model = AsyncMock(
-                side_effect=ValueError("Model not found for experiment 1")
-            )
-
             resp = await client.post(
                 "/v1/training/start",
                 json=_make_config({"base_model_ref": 1}),
@@ -607,12 +638,40 @@ class TestWarmStart:
 
     async def test_rejects_arch_mismatch_n_embd(self, client):
         """Returns 422 when base_model_ref n_embd doesn't match."""
-        base = self._make_base_model(n_embd=32)
-        with (patch("anvil.api.v1.training.InferenceService") as mock_inf_cls,):
-            mock_inf = MagicMock()
-            mock_inf_cls.return_value = mock_inf
-            mock_inf.load_model = AsyncMock(return_value=base)
-
+        with (
+            patch.object(
+                TrainingRunService,
+                "_validate_warm_start",
+                new=AsyncMock(
+                    side_effect=ValueError(
+                        "n_embd=16 conflicts with base model's n_embd=32."
+                    )
+                ),
+            ),
+            patch.object(training_module, "svc", _patch_svc()),
+            patch.object(training_module, "tracking_svc", _patch_tracking()),
+            patch(
+                "anvil.services.training.training_run_service.resolve_backend",
+                return_value={
+                    "engine": TrainingEngine.STDLIB,
+                    "device": "cpu",
+                },
+            ),
+            patch(
+                "anvil.services.training.training_run_service.detect_gpu",
+                return_value=GpuInfo(available=False),
+            ),
+            patch.object(
+                TrainingRunService,
+                "_setup_mlflow_run",
+                new=AsyncMock(return_value=("mlflow_1", 99)),
+            ),
+            patch.object(
+                TrainingRunService,
+                "_log_dataset_metadata",
+                new=AsyncMock(),
+            ),
+        ):
             resp = await client.post(
                 "/v1/training/start",
                 json=_make_config({"base_model_ref": 1, "n_embd": 16}),
@@ -622,12 +681,40 @@ class TestWarmStart:
 
     async def test_rejects_arch_mismatch_n_head(self, client):
         """Returns 422 when base_model_ref n_head doesn't match."""
-        base = self._make_base_model(n_head=8)
-        with (patch("anvil.api.v1.training.InferenceService") as mock_inf_cls,):
-            mock_inf = MagicMock()
-            mock_inf_cls.return_value = mock_inf
-            mock_inf.load_model = AsyncMock(return_value=base)
-
+        with (
+            patch.object(
+                TrainingRunService,
+                "_validate_warm_start",
+                new=AsyncMock(
+                    side_effect=ValueError(
+                        "n_head=4 conflicts with base model's n_head=8."
+                    )
+                ),
+            ),
+            patch.object(training_module, "svc", _patch_svc()),
+            patch.object(training_module, "tracking_svc", _patch_tracking()),
+            patch(
+                "anvil.services.training.training_run_service.resolve_backend",
+                return_value={
+                    "engine": TrainingEngine.STDLIB,
+                    "device": "cpu",
+                },
+            ),
+            patch(
+                "anvil.services.training.training_run_service.detect_gpu",
+                return_value=GpuInfo(available=False),
+            ),
+            patch.object(
+                TrainingRunService,
+                "_setup_mlflow_run",
+                new=AsyncMock(return_value=("mlflow_1", 99)),
+            ),
+            patch.object(
+                TrainingRunService,
+                "_log_dataset_metadata",
+                new=AsyncMock(),
+            ),
+        ):
             resp = await client.post(
                 "/v1/training/start",
                 json=_make_config({"base_model_ref": 1, "n_head": 4}),
@@ -637,12 +724,40 @@ class TestWarmStart:
 
     async def test_rejects_arch_mismatch_n_layer(self, client):
         """Returns 422 when base_model_ref n_layer doesn't match."""
-        base = self._make_base_model(n_layer=4)
-        with (patch("anvil.api.v1.training.InferenceService") as mock_inf_cls,):
-            mock_inf = MagicMock()
-            mock_inf_cls.return_value = mock_inf
-            mock_inf.load_model = AsyncMock(return_value=base)
-
+        with (
+            patch.object(
+                TrainingRunService,
+                "_validate_warm_start",
+                new=AsyncMock(
+                    side_effect=ValueError(
+                        "n_layer=1 conflicts with base model's n_layer=4."
+                    )
+                ),
+            ),
+            patch.object(training_module, "svc", _patch_svc()),
+            patch.object(training_module, "tracking_svc", _patch_tracking()),
+            patch(
+                "anvil.services.training.training_run_service.resolve_backend",
+                return_value={
+                    "engine": TrainingEngine.STDLIB,
+                    "device": "cpu",
+                },
+            ),
+            patch(
+                "anvil.services.training.training_run_service.detect_gpu",
+                return_value=GpuInfo(available=False),
+            ),
+            patch.object(
+                TrainingRunService,
+                "_setup_mlflow_run",
+                new=AsyncMock(return_value=("mlflow_1", 99)),
+            ),
+            patch.object(
+                TrainingRunService,
+                "_log_dataset_metadata",
+                new=AsyncMock(),
+            ),
+        ):
             resp = await client.post(
                 "/v1/training/start",
                 json=_make_config({"base_model_ref": 1, "n_layer": 1}),
@@ -652,12 +767,40 @@ class TestWarmStart:
 
     async def test_rejects_arch_mismatch_block_size(self, client):
         """Returns 422 when base_model_ref block_size doesn't match."""
-        base = self._make_base_model(block_size=32)
-        with (patch("anvil.api.v1.training.InferenceService") as mock_inf_cls,):
-            mock_inf = MagicMock()
-            mock_inf_cls.return_value = mock_inf
-            mock_inf.load_model = AsyncMock(return_value=base)
-
+        with (
+            patch.object(
+                TrainingRunService,
+                "_validate_warm_start",
+                new=AsyncMock(
+                    side_effect=ValueError(
+                        "block_size=16 conflicts with base model's block_size=32."
+                    )
+                ),
+            ),
+            patch.object(training_module, "svc", _patch_svc()),
+            patch.object(training_module, "tracking_svc", _patch_tracking()),
+            patch(
+                "anvil.services.training.training_run_service.resolve_backend",
+                return_value={
+                    "engine": TrainingEngine.STDLIB,
+                    "device": "cpu",
+                },
+            ),
+            patch(
+                "anvil.services.training.training_run_service.detect_gpu",
+                return_value=GpuInfo(available=False),
+            ),
+            patch.object(
+                TrainingRunService,
+                "_setup_mlflow_run",
+                new=AsyncMock(return_value=("mlflow_1", 99)),
+            ),
+            patch.object(
+                TrainingRunService,
+                "_log_dataset_metadata",
+                new=AsyncMock(),
+            ),
+        ):
             resp = await client.post(
                 "/v1/training/start",
                 json=_make_config({"base_model_ref": 1, "block_size": 16}),
@@ -667,27 +810,36 @@ class TestWarmStart:
 
     async def test_warm_start_success(self, client):
         """Successful warm-start with matching architecture."""
-        base = self._make_base_model()
         with (
-            patch("anvil.api.v1.training.InferenceService") as mock_inf_cls,
             patch.object(training_module, "svc", _patch_svc()),
             patch.object(training_module, "tracking_svc", _patch_tracking()),
             patch(
-                "anvil.api.v1.training.resolve_backend",
+                "anvil.services.training.training_run_service.resolve_backend",
                 return_value={
                     "engine": TrainingEngine.STDLIB,
                     "device": "cpu",
                 },
             ),
             patch(
-                "anvil.api.v1.training.detect_gpu",
+                "anvil.services.training.training_run_service.detect_gpu",
                 return_value=GpuInfo(available=False),
             ),
+            patch.object(
+                TrainingRunService,
+                "_validate_warm_start",
+                new=AsyncMock(),
+            ),
+            patch.object(
+                TrainingRunService,
+                "_setup_mlflow_run",
+                new=AsyncMock(return_value=("mlflow_1", 99)),
+            ),
+            patch.object(
+                TrainingRunService,
+                "_log_dataset_metadata",
+                new=AsyncMock(),
+            ),
         ):
-            mock_inf = MagicMock()
-            mock_inf_cls.return_value = mock_inf
-            mock_inf.load_model = AsyncMock(return_value=base)
-
             resp = await client.post(
                 "/v1/training/start",
                 json=_make_config({"base_model_ref": 1}),
@@ -704,29 +856,39 @@ class TestWarmStart:
 
 
 class TestLogDatasetMetadata:
-    """Tests for ``_log_dataset_metadata``."""
+    """Tests for ``_log_dataset_metadata`` (now on TrainingRunService)."""
 
     async def test_skips_when_no_mlflow_run_id(self):
         """Does nothing when mlflow_run_id is None."""
         tracking_svc = MagicMock()
-        await training_module._log_dataset_metadata(
+        run_svc = TrainingRunService(
+            svc=MagicMock(),
+            tracking=tracking_svc,
+            models_dir=Path("/tmp"),
+            tasks={},
+        )
+        await run_svc._log_dataset_metadata(
             mlflow_run_id=None,
             dataset_id=None,
             corpus_id=None,
             content_version_id=None,
-            tracking_svc=tracking_svc,
         )
         tracking_svc.set_tag.assert_not_called()
 
     async def test_skips_when_no_ids(self):
         """Does nothing when mlflow_run_id is set but no data IDs."""
         tracking_svc = MagicMock()
-        await training_module._log_dataset_metadata(
+        run_svc = TrainingRunService(
+            svc=MagicMock(),
+            tracking=tracking_svc,
+            models_dir=Path("/tmp"),
+            tasks={},
+        )
+        await run_svc._log_dataset_metadata(
             mlflow_run_id="mlflow_1",
             dataset_id=None,
             corpus_id=None,
             content_version_id=None,
-            tracking_svc=tracking_svc,
         )
         tracking_svc.set_tag.assert_not_called()
 
@@ -737,17 +899,25 @@ class TestLogDatasetMetadata:
 
 
 class TestEstimateMemory:
-    """Tests for the ``_estimate_memory`` helper."""
+    """Tests for the ``_estimate_memory`` helper (now on TrainingRunService)."""
 
     def test_returns_none_for_non_torch_backend(self):
+        from anvil.services.training.training_run_config import (
+            TrainingRunConfig,
+        )
+
         gpu_info = GpuInfo(available=False)
-        config = MagicMock()
-        result = training_module._estimate_memory(
+        config = TrainingRunConfig()
+        result = TrainingRunService._estimate_memory(
             TrainingEngine.STDLIB, config, gpu_info
         )
         assert result is None
 
     def test_raises_oom_for_torch_with_tiny_gpu(self):
+        from anvil.services.training.training_run_config import (
+            TrainingRunConfig,
+        )
+
         gpu_info = GpuInfo(
             available=True,
             backend="cuda",
@@ -755,7 +925,9 @@ class TestEstimateMemory:
             memory_total_gb=0.5,
             memory_available_gb=0.3,
         )
-        config = MagicMock(n_embd=256, n_head=8, n_layer=12, block_size=512)
+        config = TrainingRunConfig(n_embd=256, n_head=8, n_layer=12, block_size=512)
         with pytest.raises(Exception) as exc:
-            training_module._estimate_memory(TrainingEngine.TORCH, config, gpu_info)
+            TrainingRunService._estimate_memory(
+                TrainingEngine.TORCH, config, gpu_info
+            )
         assert "OOM" in str(exc.value)

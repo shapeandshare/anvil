@@ -1,0 +1,424 @@
+<!--
+  ~ Copyright © 2026 Josh Burt
+  ~
+  ~ This source code is licensed under the MIT license found in the
+  ~ LICENSE file in the root directory of this source tree.
+-->
+
+{% extends "base.html" %}
+{% block content %}
+<div class="section-card">
+  <div class="section-card__header">
+    <h1 class="section-card__title">Interactive Teaching Loop</h1>
+    <p class="section-card__subtitle">Teach a model iteratively by providing examples — watch it improve round by round.</p>
+  </div>
+</div>
+
+<div class="teach-layout" style="display:grid;grid-template-columns:280px 1fr;gap:var(--space-4);align-items:start;">
+  {# ── Session sidebar ───────────────────────────────────────────── #}
+  <aside class="teach-sidebar section-card" style="padding:var(--space-3);">
+    <h2 style="font-size:var(--text-callout);font-weight:600;margin:0 0 var(--space-3);color:var(--text);">Sessions</h2>
+    <div id="session-list" style="display:flex;flex-direction:column;gap:var(--space-2);">
+      <p style="font-size:var(--text-footnote);color:var(--text-tertiary);margin:0;" role="status">Loading sessions…</p>
+    </div>
+    <hr style="border:none;border-top:1px solid var(--separator);margin:var(--space-3) 0;">
+    <form id="create-session-form" onsubmit="return createSession(event)">
+      <label for="session-name" class="input-label">New Session</label>
+      <input id="session-name" class="input" type="text" placeholder="Session name…" required autocomplete="off">
+      <label for="session-desc" class="input-label" style="margin-top:var(--space-2);">Description (optional)</label>
+      <input id="session-desc" class="input" type="text" placeholder="Describe this session…" autocomplete="off">
+      <label for="session-seed" class="input-label" style="margin-top:var(--space-2);">Seed Experiment ID (optional)</label>
+      <input id="session-seed" class="input" type="number" placeholder="e.g. 1" min="0" autocomplete="off">
+      <button type="submit" class="button button--primary" style="margin-top:var(--space-3);width:100%;">Create Session</button>
+    </form>
+  </aside>
+
+  {# ── Main panel ────────────────────────────────────────────────── #}
+  <div class="teach-main" style="display:flex;flex-direction:column;gap:var(--space-4);">
+
+    {# ── Active session info ──────────────────────────────────────── #}
+    <div id="active-session-panel" class="section-card" style="padding:var(--space-3);display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <h2 id="active-session-name" style="font-size:var(--text-callout);font-weight:600;margin:0;color:var(--text);"></h2>
+          <p id="active-session-status" style="font-size:var(--text-footnote);color:var(--text-tertiary);margin:var(--space-1) 0 0;"></p>
+        </div>
+        <button id="refresh-session-btn" type="button" class="button button--ghost" onclick="loadSessionDetails()" aria-label="Refresh session details">&#x21bb;</button>
+      </div>
+    </div>
+
+    {# ── Round workflow panel ─────────────────────────────────────── #}
+    <div id="round-panel" class="section-card" style="padding:var(--space-3);display:none;">
+      <h2 style="font-size:var(--text-callout);font-weight:600;margin:0 0 var(--space-3);color:var(--text);">Start a New Round</h2>
+      <form id="start-round-form" onsubmit="return startRound(event)">
+        <label for="round-examples" class="input-label">Training Examples</label>
+        <textarea id="round-examples" class="input" rows="5" placeholder="One example per line…" required aria-describedby="examples-help"></textarea>
+        <p id="examples-help" style="font-size:var(--text-caption-2);color:var(--text-tertiary);margin:var(--space-1) 0 var(--space-3);">Each line is one training sample. Use method full only.</p>
+
+        <label for="round-steps" class="input-label">Training Steps</label>
+        <input id="round-steps" class="input" type="number" value="100" min="1" max="1000000" autocomplete="off">
+
+        <label for="round-lr" class="input-label" style="margin-top:var(--space-2);">Learning Rate</label>
+        <input id="round-lr" class="input" type="number" step="0.001" value="0.01" min="0.001" max="1.0" autocomplete="off">
+
+        <button type="submit" class="button button--primary" style="margin-top:var(--space-3);" id="start-round-btn">Start Round</button>
+      </form>
+
+      {# ── Training SSE stream ─────────────────────────────────────── #}
+      <div id="training-progress" style="margin-top:var(--space-3);display:none;" role="status" aria-live="polite">
+        <div style="display:flex;justify-content:space-between;font-size:var(--text-footnote);color:var(--text-tertiary);">
+          <span id="training-status-text">Training in progress…</span>
+          <span id="training-loss-display">Loss: —</span>
+        </div>
+        <div style="margin-top:var(--space-2);height:4px;background:var(--separator);border-radius:2px;overflow:hidden;">
+          <div id="training-progress-bar" style="height:100%;width:0%;background:var(--accent);border-radius:2px;transition:width 0.3s;"></div>
+        </div>
+        <div id="training-error" style="margin-top:var(--space-2);display:none;font-size:var(--text-footnote);color:var(--accent-danger);"></div>
+        <div id="training-complete" style="margin-top:var(--space-2);display:none;font-size:var(--text-footnote);color:var(--accent-success);"></div>
+      </div>
+    </div>
+
+    {# ── Inference / Inspect panel ────────────────────────────────── #}
+    <div id="inspect-panel" class="section-card" style="padding:var(--space-3);display:none;">
+      <h2 style="font-size:var(--text-callout);font-weight:600;margin:0 0 var(--space-3);color:var(--text);">Inspect Round</h2>
+      <form id="inspect-form" onsubmit="return inspectRound(event)">
+        <label for="inspect-experiment" class="input-label">Experiment ID</label>
+        <input id="inspect-experiment" class="input" type="number" min="0" placeholder="e.g. 42" required autocomplete="off">
+
+        <label for="inspect-prompt" class="input-label" style="margin-top:var(--space-2);">Prompt</label>
+        <input id="inspect-prompt" class="input" type="text" placeholder="Enter a prompt…" required autocomplete="off">
+
+        <div style="display:flex;gap:var(--space-2);margin-top:var(--space-2);">
+          <label for="inspect-temp" class="input-label" style="flex:1;">
+            Temperature
+            <input id="inspect-temp" class="input" type="number" step="0.1" value="0.7" min="0" max="2.0" autocomplete="off">
+          </label>
+          <label for="inspect-tokens" class="input-label" style="flex:1;">
+            Max Tokens
+            <input id="inspect-tokens" class="input" type="number" value="100" min="1" max="2048" autocomplete="off">
+          </label>
+        </div>
+
+        <button type="submit" class="button button--primary" style="margin-top:var(--space-3);">Generate</button>
+      </form>
+      <div id="inspect-output" style="margin-top:var(--space-3);display:none;">
+        <pre id="inspect-result-text" style="background:var(--surface-2);padding:var(--space-3);border-radius:var(--radius-md);font-size:var(--text-footnote);white-space:pre-wrap;word-break:break-word;color:var(--text);margin:0;"></pre>
+      </div>
+    </div>
+
+    {# ── Compare panel ────────────────────────────────────────────── #}
+    <div id="compare-panel" class="section-card" style="padding:var(--space-3);">
+      <h2 style="font-size:var(--text-callout);font-weight:600;margin:0 0 var(--space-3);color:var(--text);">Compare Rounds</h2>
+      <form id="compare-form" onsubmit="return compareRounds(event)">
+        <div style="display:flex;gap:var(--space-3);">
+          <label class="input-label" style="flex:1;">
+            Left Experiment ID
+            <input id="compare-left" class="input" type="number" min="0" placeholder="e.g. 1" required autocomplete="off">
+          </label>
+          <label class="input-label" style="flex:1;">
+            Right Experiment ID
+            <input id="compare-right" class="input" type="number" min="0" placeholder="e.g. 2" required autocomplete="off">
+          </label>
+        </div>
+
+        <label for="compare-prompt" class="input-label" style="margin-top:var(--space-2);">Prompt</label>
+        <input id="compare-prompt" class="input" type="text" placeholder="Enter a prompt to test both models…" required autocomplete="off">
+
+        <button type="submit" class="button button--primary" style="margin-top:var(--space-3);">Compare</button>
+      </form>
+      <div id="compare-output" style="margin-top:var(--space-3);display:none;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);">
+          <div>
+            <h3 style="font-size:var(--text-footnote);font-weight:600;color:var(--text);margin:0 0 var(--space-2);">Left</h3>
+            <pre id="compare-left-text" style="background:var(--surface-2);padding:var(--space-3);border-radius:var(--radius-md);font-size:var(--text-footnote);white-space:pre-wrap;word-break:break-word;color:var(--text);margin:0;"></pre>
+          </div>
+          <div>
+            <h3 style="font-size:var(--text-footnote);font-weight:600;color:var(--text);margin:0 0 var(--space-2);">Right</h3>
+            <pre id="compare-right-text" style="background:var(--surface-2);padding:var(--space-3);border-radius:var(--radius-md);font-size:var(--text-footnote);white-space:pre-wrap;word-break:break-word;color:var(--text);margin:0;"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script nonce="{{ request.state.csp_nonce }}">
+/* ── State ─────────────────────────────────────────────────────────── */
+var activeSessionId = null;
+var activeRunId = null;
+var activeMlflowRunId = null;
+var activeEventSource = null;
+
+/* ── Session list ──────────────────────────────────────────────────── */
+function loadSessions() {
+  return apiFetch('/v1/teach/sessions?limit=50')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var list = document.getElementById('session-list');
+      if (!data.sessions || data.sessions.length === 0) {
+        list.innerHTML = '<p style="font-size:var(--text-footnote);color:var(--text-tertiary);margin:0;" role="status">No sessions yet. Create one above.</p>';
+        return;
+      }
+      list.innerHTML = data.sessions.map(function(s) {
+        var active = activeSessionId === s.id ? ' style="background:var(--accent-2);"' : '';
+        return '<button type="button" class="button button--ghost session-item" data-id="' + s.id + '"' + active + ' onclick="selectSession(' + s.id + ')"><span style="font-size:var(--text-footnote);font-weight:500;color:var(--text);">' + escHtml(s.name) + '</span><span style="font-size:var(--text-caption-2);color:var(--text-tertiary);">' + (s.status || '') + '</span></button>';
+      }).join('');
+    });
+}
+
+function selectSession(id) {
+  activeSessionId = id;
+  loadSessionDetails();
+  loadSessions();
+}
+
+function loadSessionDetails() {
+  if (!activeSessionId) return;
+  apiFetch('/v1/teach/sessions/' + activeSessionId)
+    .then(function(r) { return r.json(); })
+    .then(function(s) {
+      document.getElementById('active-session-panel').style.display = '';
+      document.getElementById('round-panel').style.display = '';
+      document.getElementById('active-session-name').textContent = escHtml(s.name);
+      document.getElementById('active-session-status').textContent = 'Status: ' + (s.status || 'draft') + ' | Chain head: ' + (s.current_base_experiment_id || 'none');
+    });
+}
+
+/* ── Create session ────────────────────────────────────────────────── */
+function createSession(ev) {
+  ev.preventDefault();
+  var name = document.getElementById('session-name').value;
+  var desc = document.getElementById('session-desc').value;
+  var seed = document.getElementById('session-seed').value;
+  var body = { name: name };
+  if (desc) body.description = desc;
+  if (seed) body.seed_experiment_id = parseInt(seed, 10);
+
+  apiFetch('/v1/teach/sessions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    .then(function(r) { return r.json(); })
+    .then(function(s) {
+      document.getElementById('session-name').value = '';
+      document.getElementById('session-desc').value = '';
+      document.getElementById('session-seed').value = '';
+      activeSessionId = s.id;
+      loadSessionDetails();
+      loadSessions();
+      showToast('Session created', 'success');
+    })
+    .catch(function(err) { showToast('Error: ' + err.message, 'error'); });
+  return false;
+}
+
+/* ── Session actions ───────────────────────────────────────────────── */
+function deleteSession(id) {
+  if (!confirm('Delete session ' + id + '? This does not delete MLflow runs.')) return;
+  apiFetch('/v1/teach/sessions/' + id, { method: 'DELETE' })
+    .then(function() {
+      if (activeSessionId === id) {
+        activeSessionId = null;
+        document.getElementById('active-session-panel').style.display = 'none';
+        document.getElementById('round-panel').style.display = 'none';
+      }
+      loadSessions();
+      showToast('Session deleted', 'success');
+    });
+}
+
+/* ── Start round ───────────────────────────────────────────────────── */
+function startRound(ev) {
+  ev.preventDefault();
+  if (!activeSessionId) { showToast('Select a session first', 'error'); return false; }
+
+  var examplesText = document.getElementById('round-examples').value;
+  var examples = examplesText.split('\n').filter(function(l) { return l.trim(); });
+  if (examples.length === 0) { showToast('Enter at least one example', 'error'); return false; }
+
+  var steps = parseInt(document.getElementById('round-steps').value, 10) || 100;
+  var lr = parseFloat(document.getElementById('round-lr').value) || 0.01;
+
+  var trainingConfig = {
+    method: 'full',
+    num_steps: steps,
+    learning_rate: lr,
+    n_embd: 16,
+    n_head: 4,
+    n_layer: 1,
+    block_size: 16,
+    temperature: 0.5,
+    beta1: 0.85,
+    beta2: 0.99
+  };
+
+  var btn = document.getElementById('start-round-btn');
+  btn.disabled = true;
+  btn.textContent = 'Starting…';
+
+  apiFetch('/v1/teach/sessions/' + activeSessionId + '/rounds', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ examples: examples, training_config: trainingConfig })
+  })
+  .then(function(r) {
+    if (!r.ok) return r.json().then(function(e) { throw new Error(e.detail || 'Round failed'); });
+    return r.json();
+  })
+  .then(function(data) {
+    activeRunId = data.run_id;
+    activeMlflowRunId = data.mlflow_run_id;
+    document.getElementById('round-examples').value = '';
+    loadSessionDetails();
+    showToast('Round started (run ' + activeRunId + ')', 'success');
+    if (activeRunId != null) connectSSE(activeRunId);
+  })
+  .catch(function(err) {
+    showToast('Error: ' + err.message, 'error');
+  })
+  .finally(function() {
+    btn.disabled = false;
+    btn.textContent = 'Start Round';
+  });
+
+  return false;
+}
+
+/* ── SSE stream ────────────────────────────────────────────────────── */
+function connectSSE(runId) {
+  closeSSE();
+  var panel = document.getElementById('training-progress');
+  panel.style.display = '';
+  document.getElementById('training-status-text').textContent = 'Connecting…';
+  document.getElementById('training-error').style.display = 'none';
+  document.getElementById('training-complete').style.display = 'none';
+
+  activeEventSource = new EventSource('/v1/training/stream/' + runId);
+
+  activeEventSource.addEventListener('metrics', function(ev) {
+    try {
+      var data = JSON.parse(ev.data);
+      document.getElementById('training-status-text').textContent = 'Step ' + (data.step || '?');
+      if (data.loss != null) {
+        document.getElementById('training-loss-display').textContent = 'Loss: ' + data.loss.toFixed(4);
+      }
+      if (data.step != null) {
+        var total = parseInt(document.getElementById('round-steps').value) || 100;
+        var pct = Math.min(100, (data.step / total) * 100);
+        document.getElementById('training-progress-bar').style.width = pct + '%';
+      }
+    } catch(e) {}
+  });
+
+  activeEventSource.addEventListener('complete', function() {
+    showToast('Training complete!', 'success');
+    document.getElementById('training-status-text').textContent = 'Complete';
+    document.getElementById('training-complete').style.display = '';
+    document.getElementById('training-complete').textContent = 'Training finished successfully. Use Inspect below to test the model.';
+    closeSSE();
+    loadSessionDetails();
+  });
+
+  activeEventSource.addEventListener('error', function(ev) {
+    document.getElementById('training-error').style.display = '';
+    document.getElementById('training-error').textContent = 'Training error. Check the run for details.';
+    document.getElementById('training-status-text').textContent = 'Error';
+    closeSSE();
+  });
+
+  activeEventSource.onerror = function() {
+    document.getElementById('training-status-text').textContent = 'Disconnected';
+    closeSSE();
+  };
+}
+
+function closeSSE() {
+  if (activeEventSource) {
+    activeEventSource.close();
+    activeEventSource = null;
+  }
+}
+
+/* ── Inspect ───────────────────────────────────────────────────────── */
+function inspectRound(ev) {
+  ev.preventDefault();
+  var expId = parseInt(document.getElementById('inspect-experiment').value, 10);
+  var prompt = document.getElementById('inspect-prompt').value;
+  var temp = parseFloat(document.getElementById('inspect-temp').value) || 0.7;
+  var tokens = parseInt(document.getElementById('inspect-tokens').value) || 100;
+  if (!activeSessionId) { showToast('Select a session first', 'error'); return false; }
+
+  apiFetch('/v1/teach/sessions/' + activeSessionId + '/rounds/0/inspect', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ experiment_id: expId, prompts: [prompt], temperature: temp, max_tokens: tokens })
+  })
+  .then(function(r) {
+    if (!r.ok) return r.json().then(function(e) { throw new Error(e.detail || 'Inspect failed'); });
+    return r.json();
+  })
+  .then(function(data) {
+    var out = document.getElementById('inspect-output');
+    out.style.display = '';
+    var text = '';
+    if (data.results && data.results.length > 0) {
+      text = data.results.map(function(r) { return r.generated || ''; }).join('\n');
+    }
+    document.getElementById('inspect-result-text').textContent = text || '(no output)';
+  })
+  .catch(function(err) { showToast('Error: ' + err.message, 'error'); });
+
+  return false;
+}
+
+/* ── Compare ───────────────────────────────────────────────────────── */
+function compareRounds(ev) {
+  ev.preventDefault();
+  var left = parseInt(document.getElementById('compare-left').value, 10);
+  var right = parseInt(document.getElementById('compare-right').value, 10);
+  var prompt = document.getElementById('compare-prompt').value;
+
+  apiFetch('/v1/teach/sessions/compare', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ left_experiment_id: left, right_experiment_id: right, prompts: [prompt], temperature: 0.7, max_tokens: 100 })
+  })
+  .then(function(r) {
+    if (!r.ok) return r.json().then(function(e) { throw new Error(e.detail || 'Compare failed'); });
+    return r.json();
+  })
+  .then(function(data) {
+    var out = document.getElementById('compare-output');
+    out.style.display = '';
+    if (data.results && data.results.length > 0) {
+      document.getElementById('compare-left-text').textContent = data.results[0].left || '(no output)';
+      document.getElementById('compare-right-text').textContent = data.results[0].right || '(no output)';
+    }
+  })
+  .catch(function(err) { showToast('Error: ' + err.message, 'error'); });
+
+  return false;
+}
+
+/* ── Helpers ───────────────────────────────────────────────────────── */
+function escHtml(str) {
+  var div = document.createElement('div');
+  div.appendChild(document.createTextNode(str));
+  return div.innerHTML;
+}
+
+function showToast(msg, type) {
+  var container = document.getElementById('toast-container');
+  if (!container) return;
+  var toast = document.createElement('div');
+  toast.className = 'toast toast--' + (type || 'info');
+  toast.textContent = msg;
+  container.appendChild(toast);
+  setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 4000);
+}
+
+/* ── Init ──────────────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', function() { loadSessions(); });
+</script>
+{% endblock %}

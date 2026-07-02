@@ -17,6 +17,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -46,6 +47,9 @@ from .db.repositories.lora_adapter_repository import LoRAAdapterRepository
 from .db.repositories.model_asset_repository import ModelAssetRepository
 from .db.repositories.model_import_jobs import ModelImportJobRepository
 from .db.repositories.runtime_config import RuntimeConfigRepository
+from .db.repositories.teaching_session_repository import (
+    TeachingSessionRepository,
+)
 from .db.repositories.user_secret_repository import UserSecretRepository
 from .services._shared.encryption import LocalEncryptionService
 from .services._shared.key_ring import KeyRing
@@ -81,9 +85,11 @@ from .services.model_import.model_import_service import ModelImportService
 from .services.runtime_config.runtime_config_service import RuntimeConfigService
 from .services.secrets.secret_rotation_service import SecretRotationService
 from .services.secrets.user_secret_service import UserSecretService
+from .services.teaching.teaching_service import TeachingService
 from .services.tracking.tracking import TrackingService
 from .services.training.merge_service import AdapterMergeService
 from .services.training.training import TrainingService
+from .services.training.training_run_service import TrainingRunService
 from .storage.local import LocalFileStore
 from .workspace.workspace_paths import WorkspacePaths
 
@@ -182,6 +188,9 @@ class AnvilWorkbench:
         self._lora_adapter_repo: LoRAAdapterRepository | None = None
         # Adapter merge + export (feature 045).
         self._merge_service: AdapterMergeService | None = None
+        self._training_runs: TrainingRunService | None = None
+        self._teaching: TeachingService | None = None
+        self._teaching_repo: TeachingSessionRepository | None = None
 
     # ── Stateless service accessors ─────────────────────────────────────
 
@@ -604,6 +613,46 @@ class AnvilWorkbench:
                 external_model_repo=self.external_model_repo,
             )
         return self._merge_service
+
+    @property
+    def training_runs(self) -> TrainingRunService:
+        """Lazy-initialised ``TrainingRunService`` wired to the stateless
+        training and tracking services.
+        """
+        if self._training_runs is None:
+            models_dir = (
+                self._paths.models_dir
+                if self._paths is not None
+                else Path("data/models")
+            )
+            self._training_runs = TrainingRunService(
+                svc=self.training,
+                tracking=self.tracking,
+                models_dir=models_dir,
+            )
+        return self._training_runs
+
+    @property
+    def teaching_repo(self) -> TeachingSessionRepository:
+        """Lazily-initialised ``TeachingSessionRepository`` bound to *session*."""
+        if self._teaching_repo is None:
+            self._teaching_repo = TeachingSessionRepository(self._session)
+        return self._teaching_repo
+
+    @property
+    def teaching(self) -> TeachingService:
+        """Lazy-initialised ``TeachingService`` wired to *session*."""
+        if self._teaching is None:
+            self._teaching = TeachingService(
+                session=self._session,
+                repo=self.teaching_repo,
+                training_runs=self.training_runs,
+                inference=self.inference,
+                tracking=self.tracking,
+                datasets=self.datasets,
+                store=self.store,
+            )
+        return self._teaching
 
     @property
     def asset_download_job_repo(self) -> AssetDownloadJobRepository:
