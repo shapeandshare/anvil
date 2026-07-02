@@ -96,6 +96,10 @@ Non-obvious constraints, gaps, and conflicts discovered during agent sessions. E
 
 - [[Discoveries/hyperspace-surface-rush-login-stacking|Hyperspace Surface Rush Overlaps Login Page]] — The hyperspace theme's `position: fixed; z-index: 0` pseudo-elements on `.app-main` (which has `z-index: auto`) paint after child content in the parent stacking context, causing the surface rush effect to render on top of the login card. Fixed by suppressing `.app-main::before`/`::after` when `.login-page` is present, following the grid theme pattern.
 
+## Discoveries from this session (2026-07-02 — Demo warmup redundant re-train)
+
+- [[Discoveries/demo-warmup-redundant-retrain|Demo Warmup Re-Trains Every Startup Despite Existing Checkpoint]] — `warmup_demo_via_system_pipeline` ran full training pipeline on every startup even when a checkpoint existed at `data/models/demo/model.json`. Added early-exit guard to skip re-training when checkpoint exists.
+
 ## Additional Discoveries
 
 - [[Discoveries/core-file-docstring-revert|Core Engine Files Persistently Revert Docstring Changes]] — Core Engine Files Persistently Revert Docstring Changes — Docstring changes in core engine files keep reverting due to pre-commit hook regeneration.
