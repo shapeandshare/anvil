@@ -53,6 +53,29 @@ except ImportError:
 # ── HF name → anvil name mapping (inverse of export_state_dict) ──────────
 
 
+_STATIC_HF_MAP: dict[str, str] = {
+    "model.embed_tokens.weight": "wte",
+    "lm_head.weight": "lm_head",
+    "model.norm.weight": "rms_final",
+}
+
+_LAYER_SUB_MAP: dict[str, dict[str, str]] = {
+    "self_attn": {
+        "q_proj": "attn_wq",
+        "k_proj": "attn_wk",
+        "v_proj": "attn_wv",
+        "o_proj": "attn_wo",
+    },
+    "mlp": {
+        "gate_proj": "mlp_gate",
+        "up_proj": "mlp_up",
+        "down_proj": "mlp_down",
+    },
+    "input_layernorm": {},
+    "post_attention_layernorm": {},
+}
+
+
 def _hf_to_anvil_key(hf_key: str) -> str | None:
     """Map a HuggingFace ``LlamaForCausalLM`` tensor key to anvil internal key.
 
@@ -70,48 +93,25 @@ def _hf_to_anvil_key(hf_key: str) -> str | None:
         Anvil internal key (e.g. ``layer0.attn_wq``), or ``None`` if the
         key is not recognised.
     """
-    # Static top-level keys
-    mapping: dict[str, str] = {
-        "model.embed_tokens.weight": "wte",
-        "lm_head.weight": "lm_head",
-        "model.norm.weight": "rms_final",
-    }
-    if hf_key in mapping:
-        return mapping[hf_key]
+    if hf_key in _STATIC_HF_MAP:
+        return _STATIC_HF_MAP[hf_key]
 
-    # Layer-specific keys: model.layers.{i}.<sub>.<proj>.weight
-    if hf_key.startswith("model.layers.") and hf_key.endswith(".weight"):
-        parts = hf_key.split(".")
-        # parts: ['model', 'layers', '{i}', '<sub>', '<proj>', 'weight']
-        if len(parts) < 5:
-            return None
-        layer_idx = parts[2]
-        sub_module = parts[3]
-        proj_name = parts[4]
+    if not (hf_key.startswith("model.layers.") and hf_key.endswith(".weight")):
+        return None
+    parts = hf_key.split(".")
+    if len(parts) < 5:
+        return None
+    layer_idx, sub_module, proj_name = parts[2], parts[3], parts[4]
 
-        if sub_module == "self_attn":
-            proj_map = {
-                "q_proj": "attn_wq",
-                "k_proj": "attn_wk",
-                "v_proj": "attn_wv",
-                "o_proj": "attn_wo",
-            }
-            if proj_name in proj_map:
-                return f"layer{layer_idx}.{proj_map[proj_name]}"
-        elif sub_module == "mlp":
-            proj_map = {
-                "gate_proj": "mlp_gate",
-                "up_proj": "mlp_up",
-                "down_proj": "mlp_down",
-            }
-            if proj_name in proj_map:
-                return f"layer{layer_idx}.{proj_map[proj_name]}"
-        elif sub_module == "input_layernorm":
-            return f"layer{layer_idx}.rms_1"
-        elif sub_module == "post_attention_layernorm":
-            return f"layer{layer_idx}.rms_2"
-
-    return None
+    mapping = _LAYER_SUB_MAP.get(sub_module)
+    if mapping is None:
+        return None
+    if sub_module == "input_layernorm":
+        return f"layer{layer_idx}.rms_1"
+    if sub_module == "post_attention_layernorm":
+        return f"layer{layer_idx}.rms_2"
+    anvil_name = mapping.get(proj_name)
+    return f"layer{layer_idx}.{anvil_name}" if anvil_name else None
 
 
 def _hf_state_dict_to_anvil_format(

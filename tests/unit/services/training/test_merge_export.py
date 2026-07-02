@@ -221,13 +221,12 @@ class TestMergeAndExport:
         mock_repo.mark_merged.return_value = sample_adapter
         mock_tracking.log_artifact_dir = AsyncMock()
 
-        merged_model = MagicMock()
         _patch_peft_deps_fixture = None
 
         with (
             patch.object(Path, "mkdir") as mock_mkdir,
             patch.object(Path, "exists", return_value=False),
-            patch(f"{_MODULE}.os.replace") as mock_replace,
+            patch(f"{_MODULE}.os.replace"),
             patch(f"{_MODULE}.shutil.rmtree"),
         ):
             mock_mkdir.return_value = None
@@ -288,8 +287,6 @@ class TestMergeAndExport:
         mock_repo.mark_merged.return_value = sample_adapter
         mock_tracking.log_artifact_dir = AsyncMock()
 
-        merged_model = MagicMock()
-
         with (
             patch.object(Path, "mkdir"),
             patch.object(Path, "exists", return_value=False),
@@ -328,7 +325,7 @@ class TestMergeAndExport:
 
         # Make merge_and_unload return a mock whose save_pretrained raises
         with (
-            patch(f"{_MODULE}.AutoModelForCausalLM") as mock_auto,
+            patch(f"{_MODULE}.AutoModelForCausalLM"),
             patch(f"{_MODULE}.PeftModel") as mock_peft,
         ):
             bad_model = MagicMock()
@@ -341,7 +338,7 @@ class TestMergeAndExport:
                 patch.object(Path, "mkdir"),
                 patch.object(Path, "exists", return_value=False),
                 patch(f"{_MODULE}.os.replace"),
-                patch(f"{_MODULE}.shutil.rmtree") as mock_rmtree,
+                patch(f"{_MODULE}.shutil.rmtree"),
             ):
                 result = await service.merge_and_export(
                     model_id=1,
@@ -526,7 +523,7 @@ class TestMergeAndExport:
             patch.object(Path, "mkdir"),
             patch.object(Path, "exists", return_value=False),
             patch(f"{_MODULE}.os.replace"),
-            patch(f"{_MODULE}.shutil.rmtree") as mock_rmtree,
+            patch(f"{_MODULE}.shutil.rmtree"),
         ):
             result = await service.merge_and_export(
                 model_id=1,

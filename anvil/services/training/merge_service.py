@@ -184,6 +184,99 @@ class AdapterMergeService:
 
         return merged_path
 
+    @staticmethod
+    def _merge_hf_weights(
+        source_identifier: str,
+        adapter: Any,
+        model_id: int,
+        adapter_id: str,
+    ) -> Any | dict[str, str]:
+        """Merge adapter weights into the base HF model.
+
+        Returns the merged model on success, or an ``{"error": ...}``
+        dict on failure.
+        """
+        try:
+            base_model = AutoModelForCausalLM.from_pretrained(
+                source_identifier,
+                trust_remote_code=False,
+            )
+            adapter_model = PeftModel.from_pretrained(base_model, adapter.storage_path)
+            return adapter_model.merge_and_unload()
+        except Exception as exc:
+            msg = (
+                f"Merge failed for adapter {adapter_id!r} on model {model_id}. "
+                f"If the base model uses quantized weights (QLoRA), note that "
+                f"``merge_and_unload()`` dequantizes to full precision, which "
+                f"requires sufficient memory. Original error: {exc}"
+            )
+            logger.exception(msg)
+            return {"error": msg}
+
+    @staticmethod
+    def _publish_artifact(
+        merged_hf: Any,
+        source_identifier: str,
+        model_id: int,
+        adapter_id: str,
+    ) -> Path | dict[str, str]:
+        """Export the merged HF model and publish atomically.
+
+        Returns the final path on success, or an ``{"error": ...}``
+        dict on failure.
+        """
+        safe_model_id = str(_safe_path_component(str(model_id)))
+        safe_adapter_id = _safe_path_component(adapter_id)
+        final_path = Path(
+            f"data/storage/models/{safe_model_id}/merged/{safe_adapter_id}/"
+        )
+        tmp_dir: str | None = None
+
+        try:
+            tmp_dir = str(final_path.parent / f".{safe_adapter_id}.tmp-{uuid4().hex}")
+            tmp_path = Path(tmp_dir)
+            tmp_path.mkdir(parents=True, exist_ok=True)
+
+            merged_hf.save_pretrained(tmp_path)
+
+            try:
+                tokenizer = AutoTokenizer.from_pretrained(source_identifier)
+                tokenizer.save_pretrained(tmp_path)
+            except Exception:
+                logger.warning(
+                    "Could not save tokenizer for %s; continuing without one",
+                    source_identifier,
+                )
+
+            if final_path.exists():
+                backup = final_path.parent / f".{safe_adapter_id}.bak-{uuid4().hex}"
+                os.replace(str(final_path), str(backup))
+                try:
+                    os.replace(str(tmp_path), str(final_path))
+                    shutil.rmtree(str(backup), ignore_errors=True)
+                except Exception:
+                    os.replace(str(backup), str(final_path))
+                    raise
+            else:
+                final_path.parent.mkdir(parents=True, exist_ok=True)
+                os.replace(str(tmp_path), str(final_path))
+
+            tmp_dir = None
+            logger.info(
+                "Merge+export complete for adapter %s/%s -> %s",
+                model_id,
+                adapter_id,
+                final_path,
+            )
+            return final_path
+        except Exception as exc:
+            msg = f"Export failed after merge: {exc}"
+            logger.exception(msg)
+            return {"error": msg}
+        finally:
+            if tmp_dir is not None:
+                shutil.rmtree(tmp_dir, ignore_errors=True)
+
     async def merge_and_export(
         self,
         model_id: int,
@@ -246,80 +339,17 @@ class AdapterMergeService:
             return {"error": str(exc)}
 
         # ── Merge weights ────────────────────────────────────────────
-        try:
-            base_model = AutoModelForCausalLM.from_pretrained(
-                source_identifier,
-                trust_remote_code=False,
-            )
-            adapter_model = PeftModel.from_pretrained(base_model, adapter.storage_path)
-            merged_hf = adapter_model.merge_and_unload()
-        except Exception as exc:
-            msg = (
-                f"Merge failed for adapter {adapter_id!r} on model {model_id}. "
-                f"If the base model uses quantized weights (QLoRA), note that "
-                f"``merge_and_unload()`` dequantizes to full precision, which "
-                f"requires sufficient memory. Original error: {exc}"
-            )
-            logger.exception(msg)
-            return {"error": msg}
+        merged_hf = self._merge_hf_weights(source_identifier, adapter, model_id, adapter_id)
+        if isinstance(merged_hf, dict):
+            return merged_hf  # error dict
 
         # ── Export directly to HF format ─────────────────────────
-        safe_model_id = str(_safe_path_component(str(model_id)))
-        safe_adapter_id = _safe_path_component(adapter_id)
-        final_path = Path(
-            f"data/storage/models/{safe_model_id}/merged/{safe_adapter_id}/"
+        result = self._publish_artifact(
+            merged_hf, source_identifier, model_id, adapter_id,
         )
-        tmp_dir: str | None = None
-
-        try:
-            # Stage on the same filesystem as destination for atomic
-            # os.replace
-            tmp_dir = str(final_path.parent / f".{safe_adapter_id}.tmp-{uuid4().hex}")
-            tmp_path = Path(tmp_dir)
-            tmp_path.mkdir(parents=True, exist_ok=True)  # noqa: ASYNC240
-
-            # Save merged model weights + config via HuggingFace
-            merged_hf.save_pretrained(tmp_path)
-
-            # Save real tokenizer from the base model
-            try:
-                tokenizer = AutoTokenizer.from_pretrained(source_identifier)
-                tokenizer.save_pretrained(tmp_path)
-            except Exception:
-                logger.warning(
-                    "Could not save tokenizer for %s; continuing without one",
-                    source_identifier,
-                )
-
-            # ── Atomic publish ───────────────────────────────────
-            if final_path.exists():  # noqa: ASYNC240  # unavoidable sync I/O
-                backup = final_path.parent / f".{safe_adapter_id}.bak-{uuid4().hex}"
-                os.replace(str(final_path), str(backup))
-                try:
-                    os.replace(str(tmp_path), str(final_path))
-                    shutil.rmtree(str(backup), ignore_errors=True)
-                except Exception:
-                    os.replace(str(backup), str(final_path))
-                    raise
-            else:
-                final_path.parent.mkdir(parents=True, exist_ok=True)
-                os.replace(str(tmp_path), str(final_path))
-
-            tmp_dir = None
-
-            logger.info(
-                "Merge+export complete for adapter %s/%s -> %s",
-                model_id,
-                adapter_id,
-                final_path,
-            )
-        except Exception as exc:
-            msg = f"Export failed after merge: {exc}"
-            logger.exception(msg)
-            return {"error": msg}
-        finally:
-            if tmp_dir is not None:
-                shutil.rmtree(tmp_dir, ignore_errors=True)
+        if isinstance(result, dict):
+            return result
+        final_path = result
 
         # ── MLflow lineage registration ───────────────────
         if self._tracking is not None:
