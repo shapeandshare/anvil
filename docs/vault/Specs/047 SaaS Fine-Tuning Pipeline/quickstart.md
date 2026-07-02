@@ -2,7 +2,7 @@
 title: 047 SaaS Fine-Tuning Pipeline — Quickstart
 type: guide
 tags:
-  - type/guide
+  - type/reference
   - domain/training
 status: draft
 created: '2026-07-02'

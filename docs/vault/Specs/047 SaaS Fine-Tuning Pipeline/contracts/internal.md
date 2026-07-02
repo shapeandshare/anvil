@@ -2,7 +2,7 @@
 title: 047 SaaS Fine-Tuning Pipeline — Internal Contracts
 type: contract
 tags:
-  - type/contract
+  - type/design
   - domain/training
 status: draft
 created: '2026-07-02'

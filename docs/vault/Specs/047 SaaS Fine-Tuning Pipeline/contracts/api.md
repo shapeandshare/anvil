@@ -2,7 +2,7 @@
 title: 047 SaaS Fine-Tuning Pipeline — API Contracts
 type: contract
 tags:
-  - type/contract
+  - type/design
   - domain/training
   - domain/infrastructure
 status: draft

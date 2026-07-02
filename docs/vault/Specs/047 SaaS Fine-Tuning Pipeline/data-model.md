@@ -5,6 +5,7 @@ tags:
   - type/design
   - domain/training
   - domain/infrastructure
+  - domain/infrastructure
 status: draft
 created: '2026-07-02'
 updated: '2026-07-02'

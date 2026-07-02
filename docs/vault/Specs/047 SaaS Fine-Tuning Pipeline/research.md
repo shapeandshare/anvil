@@ -2,7 +2,7 @@
 title: 047 SaaS Fine-Tuning Pipeline — Research
 type: research
 tags:
-  - type/research
+  - type/design
   - domain/training
   - domain/infrastructure
 status: draft

@@ -6,12 +6,16 @@ tags:
   - domain/training
   - domain/infrastructure
 status: draft
+source: agent
 created: '2026-07-02'
 updated: '2026-07-02'
+aliases:
+  - spec-032-lakefs-tenancy-not-implemented
 spec-refs:
   - docs/vault/Specs/047 SaaS Fine-Tuning Pipeline/
   - docs/vault/Specs/032 SaaS Training Pipeline/
   - docs/vault/Specs/019 LakeFS Content Repo/
+code-refs: []
 ---
 
 # Spec 032 / LakeFS / Multi-Tenancy NOT Implemented
