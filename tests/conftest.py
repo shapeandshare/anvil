@@ -7,13 +7,19 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import AsyncGenerator
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from anvil.api.app import app
+# Ensure MLflow is unreachable before any module imports anvil services.
+# The module-level TrackingService() singleton is created at import time,
+# so monkeypatching after import has no effect.
+os.environ.setdefault("ANVIL_MLFLOW_URI", "")
+
+from anvil.api.app import app  # import must follow env var for MLFLOW_URI
 from anvil.api.deps import get_api_key_store
 from anvil.db import models
 from anvil.db.base import Base

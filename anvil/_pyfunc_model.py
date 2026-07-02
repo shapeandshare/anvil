@@ -54,14 +54,14 @@ class AnvilPyfuncModel(mlflow.pyfunc.PythonModel):  # type: ignore[name-defined,
 
         # Load model architecture and weights
         self.config = LlamaConfig.from_pretrained(str(model_dir))
-        self.model = LlamaForCausalLM(self.config)
+        self.model = LlamaForCausalLM(self.config)  # type: ignore[no-untyped-call]
         safetensors_path = model_dir / "model.safetensors"
         if safetensors_path.exists():
             state_dict = load_file(str(safetensors_path))
             self.model.load_state_dict(state_dict, strict=False)
-        self.model.eval()
+        self.model.eval()  # type: ignore[no-untyped-call]
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model.to(self.device)
+        self.model.to(self.device)  # type: ignore[arg-type]
         self._torch = torch
 
         # Load character-level tokenizer metadata

@@ -1,8 +1,8 @@
 ---
 title: 054 Fine-Tuned Model Evaluation - research
-type: research
+type: reference
 tags:
-  - type/research
+  - type/reference
   - domain/training
   - domain/mlops
   - status/draft

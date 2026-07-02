@@ -203,6 +203,36 @@ def _arc_context(key: str) -> dict[str, Any]:
     return _ctx(key)
 
 
+@router.get("/teach", response_class=HTMLResponse)
+async def teach_page(
+    request: Request,
+    workbench: AnvilWorkbench = Depends(get_workbench),
+) -> HTMLResponse:
+    """Render the interactive teaching loop page.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming HTTP request.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench for session listing.
+
+    Returns
+    -------
+    HTMLResponse
+        Rendered ``teach.html`` template.
+    """
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
+        request,
+        "teach.html",
+        {
+            "related_lessons": related_lessons(
+                "parameters", "architecture", "autograd", "attention"
+            ),
+        },
+    )
+
+
 @router.get("/content-page", response_class=HTMLResponse)
 async def content_page(request: Request) -> HTMLResponse:
     """Render the content library management page.

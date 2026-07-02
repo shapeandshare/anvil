@@ -473,8 +473,9 @@ SomeException
 - SQLite (anvil-state.db, WAL mode) via async SQLAlchemy; MLflow for eval dataset records; `LocalFileStore` for model artifacts (054-fine-tuned-model-evaluation)
 - Python 3.11+ (PEP 604, `StrEnum`, `from __future__ import annotations`) + No new runtime deps — extends existing FastAPI, async SQLAlchemy, aiosqlite; SaaS backend behind `[finetune]` extra (spec 047) (046-fine-tune-compute-routing)
 - `LocalFileStore` (local adapters at `data/adapters/`); SQLite (anvil-state.db) for job metadata (046-fine-tune-compute-routing)
-- Python 3.11+ (existing repo convention, PEP 604, `StrEnum`, `from __future__ import annotations`) + FastAPI, async SQLAlchemy + aiosqlite, Jinja2 (existing); `peft`, `bitsandbytes` (behind `[finetune]` extra, from 044); `huggingface_hub` (behind `[finetune]` extra, from 040); `boto3` / `aioboto3` (behind `[saas]` extra, from 032); LakeFS client (from 019) (047-saas-fine-tuning-pipeline)
 - SQLite (anvil-state.db, WAL mode) via async SQLAlchemy; LakeFS for base model assets + adapter artifacts; LocalFileStore for local fallback (047-saas-fine-tuning-pipeline)
+- Python 3.11+ (PEP 604, `StrEnum`, `from __future__ import annotations`) + FastAPI, async SQLAlchemy + aiosqlite, Alembic, Jinja2, MLflow, Pydantic — all existing (055-interactive-teaching-loop)
+- SQLite (anvil-state.db, WAL) — new `TeachingSession` table via async SQLAlchemy + Alembic migration; MLflow runs + artifacts for TeachingRound data (055-interactive-teaching-loop)
 
 ## Recent Changes
 - 025-ux-rules-integration: Added Python 3.11+ (existing repo convention) + Stdlib only — `ux_lint.py` (re/ sys/ os/), `ux_review.py` (stdlib + urllib for OpenAI-compatible API calls)

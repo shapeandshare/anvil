@@ -23,6 +23,8 @@ updated: '2026-06-28'
 **Status**: Draft
 **Parent Spec**: [[Specs/038 Fine-Tuning Arc/038 Fine-Tuning Arc|038 Fine-Tuning Arc (umbrella)]]
 
+> **Scope note (2026-07-02)**: This document states the full arc-level vision (including adapter support and formal evaluation via 054). The **implementation-scoped, MVP spec** is `spec.md` in this same directory, which — after a critical architecture review (see `research.md` §9-§12) — scopes the MVP to **native full-model teaching**, extracts a reusable `TrainingRunService`, chains on the **native experiment id** (not `ExternalModel.id`), and **defers** adapter support + formal evaluation. Where the two differ, `spec.md` governs implementation; FR-003/SC-003/"compare (054)" here describe the eventual arc goal, not the MVP.
+
 ## Overview
 
 Makes "teaching a model" a first-class, **iterative** experience rather than a one-shot job: add or

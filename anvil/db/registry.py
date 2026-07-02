@@ -22,6 +22,7 @@ from .models import asset_download_job  # noqa: F401
 from .models import external_model  # noqa: F401
 from .models import model_asset  # noqa: F401
 from .models import model_import_job  # noqa: F401
+from .models import teaching_session  # noqa: F401
 from .models import user_secret  # noqa: F401
 
 

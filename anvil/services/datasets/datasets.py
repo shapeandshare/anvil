@@ -90,7 +90,10 @@ class DatasetService:
         return await self._repo.get(dataset_id)
 
     async def create_dataset(
-        self, name: str, description: str | None = None
+        self,
+        name: str,
+        description: str | None = None,
+        origin: str = "user",
     ) -> Dataset:
         """Create a new dataset.
 
@@ -100,13 +103,22 @@ class DatasetService:
             Human-readable name for the dataset.
         description : str, optional
             Optional description. Defaults to ``None``.
+        origin : str, optional
+            Provenance origin string (e.g. ``"user"``, ``"teaching"``).
+            Defaults to ``"user"``.
 
         Returns
         -------
         Dataset
             The newly created dataset record.
         """
-        dataset = Dataset(name=name, description=description, filename="", file_path="")
+        dataset = Dataset(
+            name=name,
+            description=description,
+            filename="",
+            file_path="",
+            origin=origin,
+        )
         return await self._repo.add(dataset)
 
     async def update_dataset(

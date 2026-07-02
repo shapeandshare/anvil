@@ -224,7 +224,7 @@ def _run_real_lora(
     if method == "qlora" and _bitsandbytes_available():
         from transformers import BitsAndBytesConfig  # import-placement:allow
 
-        quantization_config = BitsAndBytesConfig(
+        quantization_config = BitsAndBytesConfig(  # type: ignore[no-untyped-call]
             load_in_4bit=True,
             bnb_4bit_quant_type="nf4",
         )
@@ -256,7 +256,7 @@ def _run_real_lora(
     )
 
     # ── load tokenizer ─────────────────────────────────────────────────
-    tokenizer = transformers.AutoTokenizer.from_pretrained(model_path)
+    tokenizer = transformers.AutoTokenizer.from_pretrained(model_path)  # type: ignore[no-untyped-call]
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
@@ -278,7 +278,7 @@ def _run_real_lora(
         lora_alpha=lora_alpha,
         target_modules=target_modules,
         lora_dropout=lora_dropout,
-        bias=lora_bias,
+        bias=lora_bias,  # type: ignore[arg-type]
         task_type="CAUSAL_LM",
     )
 
@@ -328,7 +328,7 @@ def _run_real_lora(
     sample_text: str = ""
     with torch.no_grad():
         input_prefix = input_ids[:, :10]
-        generated_ids = peft_model.generate(
+        generated_ids = peft_model.generate(  # type: ignore[no-untyped-call]
             input_ids=input_prefix,
             max_new_tokens=50,
             do_sample=True,

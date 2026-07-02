@@ -240,7 +240,7 @@ class AdapterMergeService:
             merged_hf.save_pretrained(tmp_path)
 
             try:
-                tokenizer = AutoTokenizer.from_pretrained(source_identifier)
+                tokenizer = AutoTokenizer.from_pretrained(source_identifier)  # type: ignore[no-untyped-call]
                 tokenizer.save_pretrained(tmp_path)
             except Exception:
                 logger.warning(
