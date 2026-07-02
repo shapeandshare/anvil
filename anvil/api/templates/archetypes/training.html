@@ -1421,9 +1421,7 @@ var gpuToggle = document.getElementById('compute_backend');
       if (session) { session.destroy(); session = null; }
       _lastMilestone = null;
 
-      /* 5. Prepare chart and output */
-      initChart();
-      if (chart) chart.clear();
+      /* 5. Prepare output section (chart initialised lazily after metrics fetch) */
       lossDisplay.textContent = '';
       document.getElementById('metric-step').textContent = '\u2014';
       document.getElementById('metric-loss').textContent = '\u2014';
@@ -1434,26 +1432,31 @@ var gpuToggle = document.getElementById('compute_backend');
       _outputHasContent = false;
       dom.setHtml(outputActions, '');
 
-      /* 6. Load loss curve from MLflow metric history */
+      /* 6. Load loss curve from MLflow metric history.
+       * Defer initChart() until data arrives so we never paint the
+       * "Waiting for data…" placeholder text unnecessarily. */
       fetch('/v1/experiments/' + expId + '/metrics').then(function(r) {
         if (!r.ok) throw new Error(r.statusText);
         return r.json();
       }).then(function(metricsData) {
         var points = metricsData.metrics || [];
+        initChart();
         if (points.length > 0 && chart) {
           chart.loadPoints(points);
           var last = points[points.length - 1];
           document.getElementById('metric-step').textContent = last.step != null ? String(last.step) : '\u2014';
           document.getElementById('metric-loss').textContent = last.loss != null ? last.loss.toFixed(4) : '\u2014';
           document.getElementById('metric-elapsed').textContent = exp.duration_seconds != null ? formatDuration(exp.duration_seconds) : '\u2014';
-
-          log('');
-          log('\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550');
-          log(' Attached to experiment #' + expId);
-          log(' Final loss: ' + (exp.final_loss != null ? exp.final_loss.toFixed(4) : '?'));
-          log(' ' + points.length + ' steps \u00b7 ' + (exp.dataset_name || '\u2014') + ' \u00b7 ' + (exp.engine_backend || '\u2014'));
-          log('\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550');
+        } else if (points.length === 0) {
+          log('> No per-step metrics found for experiment #' + expId + '.');
         }
+
+        log('');
+        log('\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550');
+        log(' Attached to experiment #' + expId);
+        log(' Final loss: ' + (exp.final_loss != null ? exp.final_loss.toFixed(4) : '?'));
+        log(' ' + points.length + ' steps \u00b7 ' + (exp.dataset_name || '\u2014') + ' \u00b7 ' + (exp.engine_backend || '\u2014'));
+        log('\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550');
       }).catch(function() {
         log('> Could not load metrics for experiment #' + expId);
       });

@@ -1,0 +1,34 @@
+---
+title: Makefile All-Extras for Local Development
+type: session-log
+tags:
+  - type/session-log
+  - domain/infrastructure
+  - domain/tooling
+created: '2026-07-01'
+updated: '2026-07-01'
+status: draft
+source: agent
+aliases: Makefile All-Extras for Local Development
+---
+
+# Makefile All-Extras for Local Development
+
+**Session**: Changed `shared/python.mk` to use `uv sync --all-extras` instead of selective `--extra dev` (with conditional `--extra gpu`), so local development always gets every optional dependency — including `[finetune]` (HuggingFace Hub, transformers, etc.), `[compute]` (Modal), `[vault-health]` (networkx), and `[gpu]` (torch).
+
+## What changed
+
+- `shared/python.mk` — `$(VENV_DIR)/activate` and `install` targets switched from `uv sync --extra dev $(GPU_EXTRA_UV)` to `uv sync --all-extras`
+- `shared/python.mk` — `install-gpu` target similarly switched to `--all-extras` (was `--extra dev --extra gpu`)
+- `shared/python.mk` — removed unused `GPU_EXTRA` and `GPU_EXTRA_UV` variables (no longer needed since `--all-extras` covers GPU unconditionally)
+
+## Rationale
+
+The `[finetune]` extra (huggingface_hub, tokenizers, transformers, etc.) was not included in the default dev setup. Importing models from HuggingFace Hub through the web UI failed with `missing_extra: Install anvil[finetune] to import from HuggingFace Hub`. Rather than add yet another selective `--extra finetune` flag, we switched to `--all-extras` — this is a local dev workflow where installing all optional deps is the right default.
+
+## Related
+
+- `shared/python.mk` — the changed file
+- `pyproject.toml` — defines the five optional extras: `dev`, `gpu`, `compute`, `vault-health`, `finetune`
+- `docs/vault/Sessions/2026-06-30-model-import-jobs-management.md` — prior session that identified the `missing_extra` issue
+- `anvil/services/model_import/hf_source.py` — `HfHubSource` raises `missing_extra` when `huggingface_hub` is not installed
