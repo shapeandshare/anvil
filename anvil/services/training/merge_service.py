@@ -203,7 +203,7 @@ class AdapterMergeService:
             )
             adapter_model = PeftModel.from_pretrained(base_model, adapter.storage_path)
             return adapter_model.merge_and_unload()
-        except Exception as exc:
+        except (OSError, ValueError, RuntimeError) as exc:
             msg = (
                 f"Merge failed for adapter {adapter_id!r} on model {model_id}. "
                 f"If the base model uses quantized weights (QLoRA), note that "
@@ -269,7 +269,7 @@ class AdapterMergeService:
                 final_path,
             )
             return final_path
-        except Exception as exc:
+        except (OSError, ValueError, RuntimeError) as exc:
             msg = f"Export failed after merge: {exc}"
             logger.exception(msg)
             return {"error": msg}
@@ -365,7 +365,7 @@ class AdapterMergeService:
                     adapter_method=adapter.method,
                     export_dir=str(final_path),
                 )
-            except Exception as exc:
+            except (OSError, ValueError, RuntimeError) as exc:
                 logger.warning("Lineage registration failed: %s", exc)
                 lineage_result = {"registered": False, "error": str(exc)}
         else:
