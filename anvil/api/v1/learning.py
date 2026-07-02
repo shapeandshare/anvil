@@ -2873,6 +2873,27 @@ async def model_detail_page(request: Request, model_id: str) -> HTMLResponse:
     )
 
 
+@router.get("/eval-compare", response_class=HTMLResponse)
+async def eval_compare_page(request: Request) -> HTMLResponse:
+    """Render the fine-tuned model evaluation comparison page.
+
+    Parameters
+    ----------
+    request : Request
+        FastAPI request object.
+
+    Returns
+    -------
+    HTMLResponse
+        Rendered ``eval_compare.html`` template.
+    """
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
+        request,
+        "eval_compare.html",
+        {"run_id": request.query_params.get("run_id", "0")},
+    )
+
+
 @router.get("/inference/models")
 async def list_inference_models(
     workbench: AnvilWorkbench = Depends(get_workbench),

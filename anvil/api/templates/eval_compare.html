@@ -1,0 +1,217 @@
+<!--
+  Copyright © 2026 Josh Burt
+  License: MIT
+
+  eval_compare.html — Side-by-side fine-tuned model comparison view.
+
+  Shows per-prompt generated text from base and fine-tuned model,
+  with a metric delta table and SSE progress indicator.
+-->
+
+{% extends "base.html" %}
+
+{% block title %}Evaluate: Compare Fine-Tuned Model{% endblock %}
+
+{% block head_extra %}
+<script src="/static/js/sse.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="eval-container" style="max-width: 960px; margin: 0 auto; padding: 2rem 1rem;">
+
+  <h1>Fine-Tuned Model Evaluation</h1>
+  <p class="eval-subtitle" style="color: var(--text-tertiary); margin-bottom: 1.5rem;">
+    Comparing fine-tuned model <strong id="ft-model-name">—</strong> against base model
+    <strong id="base-model-name">—</strong>
+  </p>
+
+  <!-- Status bar -->
+  <div id="eval-status" class="eval-status" style="
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.75rem 1rem; border-radius: var(--radius-sm);
+    background: var(--surface-2); margin-bottom: 1.5rem;
+  ">
+    <span id="status-spinner" style="display: none;">⏳</span>
+    <span id="status-text">Initializing...</span>
+  </div>
+
+  <!-- Progress bar -->
+  <div id="eval-progress" style="display: none; margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.35rem;">
+      <span id="progress-label">Evaluating prompts...</span>
+      <span id="progress-count">0 / 0</span>
+    </div>
+    <div style="height: 6px; background: var(--separator); border-radius: 3px; overflow: hidden;">
+      <div id="progress-bar" style="
+        height: 100%; width: 0%; background: var(--accent);
+        transition: width 0.3s ease; border-radius: 3px;
+      "></div>
+    </div>
+  </div>
+
+  <!-- Metrics table -->
+  <div id="metrics-section" style="display: none; margin-bottom: 2rem;">
+    <h2 style="font-size: 1.1rem; margin-bottom: 0.75rem;">Metric Delta</h2>
+    <table style="width: 100%; border-collapse: collapse; border-radius: var(--radius-sm); overflow: hidden;">
+      <thead>
+        <tr style="background: var(--surface-2);">
+          <th style="padding: 0.5rem 1rem; text-align: left;">Metric</th>
+          <th style="padding: 0.5rem 1rem; text-align: right;">Base</th>
+          <th style="padding: 0.5rem 1rem; text-align: right;">Fine-Tuned</th>
+          <th style="padding: 0.5rem 1rem; text-align: right;">Delta</th>
+        </tr>
+      </thead>
+      <tbody id="metrics-body">
+      </tbody>
+    </table>
+    <div id="caveat-notice" style="display: none; margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-tertiary); font-style: italic;">
+      ⚠️ Metrics are not directly comparable — different tokenizer families.
+    </div>
+  </div>
+
+  <!-- Side-by-side samples -->
+  <div id="samples-section" style="display: none; margin-bottom: 2rem;">
+    <h2 style="font-size: 1.1rem; margin-bottom: 0.75rem;">Sample Outputs</h2>
+    <div id="samples-list"></div>
+  </div>
+
+  <!-- Error -->
+  <div id="eval-error" style="display: none; padding: 1rem; background: var(--danger-bg, #ffeeee); border-radius: var(--radius-sm); color: var(--danger, #cc3333);"></div>
+
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  var runId = {{ run_id }};
+  var sse = new SSESession(runId, { urlPrefix: '/v1/sse/eval' });
+  var statusEl = document.getElementById('status-text');
+  var spinnerEl = document.getElementById('status-spinner');
+  var progressEl = document.getElementById('eval-progress');
+  var progressBar = document.getElementById('progress-bar');
+  var progressCount = document.getElementById('progress-count');
+  var metricsSection = document.getElementById('metrics-section');
+  var metricsBody = document.getElementById('metrics-body');
+  var samplesSection = document.getElementById('samples-section');
+  var samplesList = document.getElementById('samples-list');
+  var errorEl = document.getElementById('eval-error');
+  var caveatEl = document.getElementById('caveat-notice');
+
+  function showSample(data) {
+    var div = document.createElement('div');
+    div.style.cssText = 'margin-bottom: 1rem; padding: 1rem; background: var(--surface-2); border-radius: var(--radius-sm);';
+
+    var promptHeader = document.createElement('strong');
+    promptHeader.textContent = 'Prompt #' + (data.prompt_index + 1);
+    div.appendChild(promptHeader);
+
+    var inputP = document.createElement('p');
+    inputP.style.cssText = 'margin: 0.25rem 0; font-size: 0.85rem; color: var(--text-tertiary);';
+    inputP.textContent = 'Input: ' + data.input;
+    div.appendChild(inputP);
+
+    var row = document.createElement('div');
+    row.style.cssText = 'display: flex; gap: 1rem; margin-top: 0.5rem;';
+
+    var baseCol = document.createElement('div');
+    baseCol.style.cssText = 'flex: 1;';
+    baseCol.innerHTML = '<div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">Base</div>' +
+      '<div style="padding: 0.5rem; background: var(--surface-1); border-radius: var(--radius-sm); font-size: 0.9rem;">' +
+      (data.base_output || '<em style="color: var(--text-tertiary);">—</em>') + '</div>' +
+      (data.base_loss != null ? '<div style="font-size: 0.8rem; color: var(--text-tertiary); margin-top: 0.2rem;">loss: ' + data.base_loss.toFixed(4) + '</div>' : '');
+    row.appendChild(baseCol);
+
+    var ftCol = document.createElement('div');
+    ftCol.style.cssText = 'flex: 1;';
+    ftCol.innerHTML = '<div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">Fine-Tuned</div>' +
+      '<div style="padding: 0.5rem; background: var(--surface-1); border-radius: var(--radius-sm); font-size: 0.9rem;">' +
+      (data.fine_tuned_output || '<em style="color: var(--text-tertiary);">—</em>') + '</div>' +
+      (data.fine_tuned_loss != null ? '<div style="font-size: 0.8rem; color: var(--text-tertiary); margin-top: 0.2rem;">loss: ' + data.fine_tuned_loss.toFixed(4) + '</div>' : '');
+    row.appendChild(ftCol);
+
+    div.appendChild(row);
+    samplesList.appendChild(div);
+  }
+
+  sse.onstatechange = function(state) {
+    statusEl.textContent = state;
+    spinnerEl.style.display = (state === 'streaming') ? '' : 'none';
+  };
+
+  sse.onstatus = function(data) {
+    statusEl.textContent = data.status || 'running';
+    if (data.status === 'running') {
+      spinnerEl.style.display = '';
+    }
+  };
+
+  sse.onmetrics = function() {
+    // handled by oncomplete — full metrics arrive with complete event
+  };
+
+  sse.oncomplete = function(data) {
+    spinnerEl.style.display = 'none';
+    statusEl.textContent = 'Completed';
+    progressBar.style.width = '100%';
+    fetchRunDetails(runId);
+  };
+
+  sse.onerror = function(data) {
+    spinnerEl.style.display = 'none';
+    statusEl.textContent = 'Error';
+    errorEl.style.display = '';
+    errorEl.textContent = data && data.message ? data.message : 'Evaluation failed';
+  };
+
+  function fetchRunDetails(id) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '/v1/eval/fine-tuned/' + id, true);
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        var run = JSON.parse(xhr.responseText);
+        renderMetrics(run);
+      }
+    };
+    xhr.send();
+
+    var samplesXhr = new XMLHttpRequest();
+    samplesXhr.open('GET', '/v1/eval/fine-tuned/' + id + '/samples', true);
+    samplesXhr.onload = function() {
+      if (samplesXhr.status === 200) {
+        var samples = JSON.parse(samplesXhr.responseText);
+        samplesSection.style.display = '';
+        samplesList.innerHTML = '';
+        samples.forEach(showSample);
+      }
+    };
+    samplesXhr.send();
+  }
+
+  function renderMetrics(run) {
+    if (!run.metrics || run.metrics.length === 0) return;
+    metricsSection.style.display = '';
+    metricsBody.innerHTML = '';
+    var anyNonComparable = false;
+    run.metrics.forEach(function(m) {
+      if (!m.comparable) anyNonComparable = true;
+      var tr = document.createElement('tr');
+      tr.style.borderBottom = '1px solid var(--separator)';
+      tr.innerHTML =
+        '<td style="padding: 0.5rem 1rem;">' + m.metric_name + '</td>' +
+        '<td style="padding: 0.5rem 1rem; text-align: right;">' + m.base_value.toFixed(4) + '</td>' +
+        '<td style="padding: 0.5rem 1rem; text-align: right;">' + m.fine_tuned_value.toFixed(4) + '</td>' +
+        '<td style="padding: 0.5rem 1rem; text-align: right;">' +
+          (m.comparable ? m.delta.toFixed(4) : '—') +
+        '</td>';
+      metricsBody.appendChild(tr);
+    });
+    if (anyNonComparable) {
+      caveatEl.style.display = '';
+    }
+  }
+
+  sse.connect();
+})();
+</script>
+{% endblock %}

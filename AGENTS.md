@@ -469,6 +469,8 @@ SomeException
 - `LocalFileStore` — adapters at `models/{base_model_id}/adapters/{run_id}/` using existing (062-local-lora-fine-tuning)
 - Python 3.11+ (`from __future__ import annotations`, PEP 604, `StrEnum`) + FastAPI, async SQLAlchemy, `safetensors`, `numpy` (existing); `peft`, `transformers`, `torch` (behind `[finetune]` extra — same as 044) (045-adapter-inference-export)
 - `LocalFileStore` at `data/models/{base_model_id}/adapters/{adapter_id}/` (existing 044 layout); merged artifacts at `data/models/{base_model_id}/merged/{adapter_id}/` (045-adapter-inference-export)
+- Python 3.11+ (PEP 604, `StrEnum`, `from __future__ import annotations`) + FastAPI, async SQLAlchemy + aiosqlite, Jinja2, MLflow (existing — no new deps) (054-fine-tuned-model-evaluation)
+- SQLite (anvil-state.db, WAL mode) via async SQLAlchemy; MLflow for eval dataset records; `LocalFileStore` for model artifacts (054-fine-tuned-model-evaluation)
 - Python 3.11+ (PEP 604, `StrEnum`, `from __future__ import annotations`) + No new runtime deps — extends existing FastAPI, async SQLAlchemy, aiosqlite; SaaS backend behind `[finetune]` extra (spec 047) (046-fine-tune-compute-routing)
 - `LocalFileStore` (local adapters at `data/adapters/`); SQLite (anvil-state.db) for job metadata (046-fine-tune-compute-routing)
 
