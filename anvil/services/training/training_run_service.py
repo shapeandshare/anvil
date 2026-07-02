@@ -852,12 +852,12 @@ class TrainingRunService:
                     f.write("\n".join(samples))
                 if mlflow_run_id:
                     try:
-                        client = self._tracking._client
-                        if client:
+                        c = self._tracking._client
+                        if c:
                             loop = asyncio.get_event_loop()
                             await loop.run_in_executor(
                                 None,
-                                lambda: client.log_artifact(
+                                lambda c=c: c.log_artifact(  # type: ignore[union-attr]
                                     mlflow_run_id, samples_path
                                 ),
                             )
@@ -868,12 +868,14 @@ class TrainingRunService:
                 model.save(model_path, uchars)  # type: ignore[attr-defined]
                 if mlflow_run_id:
                     try:
-                        client = self._tracking._client
-                        if client:
+                        c = self._tracking._client
+                        if c:
                             loop = asyncio.get_event_loop()
                             await loop.run_in_executor(
                                 None,
-                                lambda: client.log_artifact(mlflow_run_id, model_path),
+                                lambda c=c: c.log_artifact(  # type: ignore[union-attr]
+                                    mlflow_run_id, model_path
+                                ),
                             )
                     except Exception:  # pylint: disable=broad-exception-caught
                         pass
@@ -881,9 +883,7 @@ class TrainingRunService:
                 export_svc = SafetensorsExportService()
                 export_result = await asyncio.get_event_loop().run_in_executor(
                     None,
-                    lambda: export_svc.export(
-                        model, tmpdir, uchars
-                    ),  # type: ignore[arg-type]
+                    lambda: export_svc.export(model, tmpdir, uchars),
                 )
 
                 if export_result["error"]:
