@@ -1044,8 +1044,8 @@ var gpuToggle = document.getElementById('compute_backend');
   function _staleRun(runId, saved) {
     /* Auto-dismiss — remove from sessionStorage entirely */
     log('> Training run ' + (runId || saved.runId) + ' is no longer active on the server. Cleaning up.');
-    window.coreSession.removeRun(runId || saved.runId);
-    renderRunsList(window.coreSession.getActiveRuns());
+    globalThis.coreSession.removeRun(runId || saved.runId);
+    renderRunsList(globalThis.coreSession.getActiveRuns());
     /* Only set state to errored if this was the active session */
     if (session && String(session.runId) === String(runId || saved.runId)) {
       updateState('errored');
@@ -1180,7 +1180,7 @@ var gpuToggle = document.getElementById('compute_backend');
   var errorDismiss = document.getElementById('train-error-dismiss');
   var errorIcon = document.getElementById('train-error-icon');
 
-  window.dismissError = function dismissError() {
+  globalThis.dismissError = function dismissError() {
     if (errorBanner) errorBanner.style.display = 'none';
   };
 
@@ -1303,6 +1303,27 @@ var gpuToggle = document.getElementById('compute_backend');
     });
   }
 
+  /* ── Start error handler (extracted for cognitive complexity) ── */
+  async function _handleStartError(resp, method) {
+    var errData = {};
+    try { errData = await resp.json(); } catch (_) { /* Ignore JSON parse errors — errData stays {} */ }
+    var errMsg = errData.detail || errData.message || 'HTTP ' + resp.status;
+    log('> Failed to start: ' + errMsg);
+    updateState('errored');
+    if (errMsg.includes('base_model_ref') || (resp.status === 422 && method !== 'full')) {
+      showTrainingError({
+        title: 'Fine-tuning requires a base model',
+        detail: 'The server rejected the request: ' + errMsg + '. Import a HuggingFace model first, then navigate here from the Models page.',
+        actions: [{ label: 'Go to Models', href: '/v1/models-page', primary: true }],
+      });
+    } else {
+      showTrainingError({
+        title: 'Training failed to start',
+        detail: errMsg,
+      });
+    }
+  }
+
   window.startTraining = async function startTraining() {
     if (session) { session.destroy(); session = null; }
     dom.setHtml(outputActions, '');
@@ -1360,23 +1381,7 @@ var gpuToggle = document.getElementById('compute_backend');
 
       /* Surface HTTP errors (apiFetch does not throw on 4xx/5xx) */
       if (!resp.ok) {
-        var errData;
-        try { errData = await resp.json(); } catch (_) { errData = {}; }
-        var errMsg = errData.detail || errData.message || 'HTTP ' + resp.status;
-        log('> Failed to start: ' + errMsg);
-        updateState('errored');
-        if (errMsg.indexOf('base_model_ref') !== -1 || (resp.status === 422 && config.method !== 'full')) {
-          showTrainingError({
-            title: 'Fine-tuning requires a base model',
-            detail: 'The server rejected the request: ' + errMsg + '. Import a HuggingFace model first, then navigate here from the Models page.',
-            actions: [{ label: 'Go to Models', href: '/v1/models-page', primary: true }],
-          });
-        } else {
-          showTrainingError({
-            title: 'Training failed to start',
-            detail: errMsg,
-          });
-        }
+        await _handleStartError(resp, config.method);
         return;
       }
 
