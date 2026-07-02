@@ -1,0 +1,35 @@
+---
+title: Dev Workflow - All Extras
+type: discovery
+status: draft
+source: agent
+related:
+  - '[[Sessions/2026-07-01-makefile-all-extras]]'
+  - '[[Sessions/2026-06-30-model-import-jobs-management]]'
+code-refs:
+  - shared/python.mk
+session: '2026-07-01'
+created: '2026-07-01'
+updated: '2026-07-01'
+summary: Local development workflow uses `uv sync --all-extras` to ensure every optional dependency is available without manual extra steps.
+tags:
+  - type/discovery
+  - domain/infrastructure
+  - domain/tooling
+  - status/draft
+aliases:
+  - Dev Workflow - All Extras
+---
+
+The local development workflow in `shared/python.mk` now uses `uv sync --all-extras` to install **all** optional dependencies (`dev`, `gpu`, `compute`, `vault-health`, `finetune`) in a single command. This eliminates the `missing_extra` error when importing from HuggingFace Hub and ensures GPU, Modal compute, and vault health checks work out of the box.
+
+## Why this matters
+
+Previously, `make setup` only installed `--extra dev` (plus conditional `--extra gpu`). The `[finetune]` extra (huggingface_hub, transformers, tokenizers, peft, bitsandbytes, etc.) was absent by default, causing import jobs to fail with a `missing_extra` error. Developers had to manually run `uv sync --extra finetune` as a separate step.
+
+The switch to `--all-extras` is the simplest, most boring solution: for local development, installing everything is the right default. No one benefits from a lean venv during development, and the optional extras are small compared to the cost of debugging missing dependencies.
+
+## References
+
+- `shared/python.mk` — the changed file
+- `pyproject.toml` — defines the five optional extras
