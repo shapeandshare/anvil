@@ -1,6 +1,12 @@
 ---
-
-description: "Task list for Interactive Teaching Loop (055) feature implementation"
+title: "Tasks: 055 Interactive Teaching Loop"
+type: spec
+tags:
+  - type/spec
+  - domain/training
+status: draft
+created: '2026-07-02'
+updated: '2026-07-02'
 ---
 
 # Tasks: Interactive Teaching Loop (055)

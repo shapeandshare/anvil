@@ -846,9 +846,9 @@ class TrainingRunService:
         if model is not None:
             with tempfile.TemporaryDirectory() as tmpdir:
                 samples_path = os.path.join(tmpdir, "samples.txt")
-                with open(
+                with open(  # noqa: ASYNC230 — inherited route pattern; model.save() is synchronous
                     samples_path, "w", encoding="utf-8"
-                ) as f:  # noqa: ASYNC230 — inherited route pattern; model.save() is synchronous
+                ) as f:
                     f.write("\n".join(samples))
                 if mlflow_run_id:
                     try:

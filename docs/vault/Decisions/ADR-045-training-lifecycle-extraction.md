@@ -4,7 +4,7 @@ type: decision
 tags:
   - type/decision
   - domain/training
-  - domain/teaching
+  - domain/training
 status: draft
 code-refs:
   - anvil/services/training/training_run_service.py
