@@ -690,6 +690,52 @@ class TestStartTraining:
 
             assert config["device"] == "cpu"
 
+    @pytest.mark.asyncio
+    async def test_lora_routes_to_local_lora_backend(
+        self, svc: TrainingService
+    ) -> None:
+        """LoRA/QLoRA configs route to LocalLoraBackend, not LocalTorchBackend."""
+        config = {
+            "num_steps": 10,
+            "compute_backend": "auto",
+            "method": "lora",
+            "base_model_ref": "tinyllama-1.1b",
+        }
+
+        with (
+            patch.object(svc, "_load_docs", return_value=["doc"]),
+            patch(
+                "anvil.services.training.training.resolve_backend",
+                return_value={
+                    "backend": ComputeBackendResult.LOCAL,
+                    "engine": TrainingEngine.TORCH,
+                    "device": "cpu",
+                },
+            ),
+            patch(
+                "anvil.services.training.training.get_backend",
+            ) as mock_get_backend,
+        ):
+            mock_backend = MagicMock()
+            mock_backend.run = AsyncMock(
+                return_value=MagicMock(
+                    status=ComputeStatus.COMPLETED,
+                    final_loss=0.05,
+                    samples=["sample"],
+                    artifact_uris={},
+                    model=None,
+                    uchars=[],
+                )
+            )
+            mock_get_backend.return_value = mock_backend
+
+            await svc.start_training(config=config)
+
+            # Must resolve to "local-lora", NOT "local-torch"
+            call_args = mock_get_backend.call_args
+            assert call_args is not None
+            assert call_args[0][0] == "local-lora"
+
 
 ##########################################################################
 # get_queue / release_queue
