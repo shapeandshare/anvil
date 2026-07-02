@@ -100,6 +100,23 @@ def warmup_demo_via_system_pipeline() -> None:
     """
     logger = logging.getLogger(__name__)
 
+    # Skip re-training if a demo model already exists from a previous warmup.
+    # The DemoModelProvider will load it lazily on first inference request.
+    if DEMO_MODEL_PATH.exists():
+        logger.info("Demo model exists at %s, skipping warmup", DEMO_MODEL_PATH)
+        try:
+            model = LlamaModel.load(str(DEMO_MODEL_PATH))
+            if model.chars is not None:
+                _demo_provider._model = model
+                _demo_provider._chars = model.chars
+        except Exception:
+            logger.warning(
+                "Failed to load existing demo model, will re-train", exc_info=True
+            )
+            # Fall through to re-train below
+        else:
+            return
+
     try:
         # Try to load docs from the bootstrapped demo corpus first
         docs: list[str] | None = None
