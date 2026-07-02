@@ -18,6 +18,9 @@ down_revision: str | None = "009"
 branch_labels: str | None = None
 depends_on: str | None = None
 
+_CURRENT_TS = _CURRENT_TS
+"""Reusable default for created_at / updated_at columns."""
+
 
 def upgrade() -> None:
     """Create ``evaluation_runs``, ``metric_deltas``, and ``eval_samples`` tables."""
@@ -48,13 +51,13 @@ def upgrade() -> None:
         sa.Column(
             "created_at",
             sa.DateTime(),
-            server_default=sa.text("(CURRENT_TIMESTAMP)"),
+            server_default=_CURRENT_TS,
             nullable=False,
         ),
         sa.Column(
             "updated_at",
             sa.DateTime(),
-            server_default=sa.text("(CURRENT_TIMESTAMP)"),
+            server_default=_CURRENT_TS,
             nullable=False,
         ),
         sa.PrimaryKeyConstraint("id"),
@@ -93,13 +96,13 @@ def upgrade() -> None:
         sa.Column(
             "created_at",
             sa.DateTime(),
-            server_default=sa.text("(CURRENT_TIMESTAMP)"),
+            server_default=_CURRENT_TS,
             nullable=False,
         ),
         sa.Column(
             "updated_at",
             sa.DateTime(),
-            server_default=sa.text("(CURRENT_TIMESTAMP)"),
+            server_default=_CURRENT_TS,
             nullable=False,
         ),
         sa.PrimaryKeyConstraint("id"),
@@ -130,13 +133,13 @@ def upgrade() -> None:
         sa.Column(
             "created_at",
             sa.DateTime(),
-            server_default=sa.text("(CURRENT_TIMESTAMP)"),
+            server_default=_CURRENT_TS,
             nullable=False,
         ),
         sa.Column(
             "updated_at",
             sa.DateTime(),
-            server_default=sa.text("(CURRENT_TIMESTAMP)"),
+            server_default=_CURRENT_TS,
             nullable=False,
         ),
         sa.PrimaryKeyConstraint("id"),
