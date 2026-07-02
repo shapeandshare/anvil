@@ -186,6 +186,13 @@
         to regular LoRA.
       </div>
 
+      <div id="lora-basemodel-warning" class="ds-warn" style="display:none; margin-top: 8px;">
+        ⚠️ <strong>No base model selected.</strong> LoRA and QLoRA fine-tune an existing
+        model — they need a base model to start from.
+        <a href="/v1/models-page" class="action-link">Import a HuggingFace model first</a>,
+        then click "Fine-tune" from the Models page.
+      </div>
+
       <div id="lora-params" style="display:none;">
         <div class="param-block">
           <div class="param-label-row"><label class="param-label" for="lora_rank">LoRA Rank</label>
@@ -233,6 +240,20 @@
       </div>
     </div>
     <p class="ds-flow-desc">Ready to train? Review your configuration in the model stats card above, then click <strong>Start Training</strong> to begin. Watch the loss curve and metrics update in real time below.</p>
+
+    {# ── Error alert (hidden by default) ── #}
+    <div id="train-error" class="section-card section-card--banner" style="display:none;--stagger-i: 3.5;margin-bottom:var(--space-3);" role="alert">
+      <div class="section-card__content" style="display:flex;align-items:flex-start;gap:var(--space-3);">
+        <span id="train-error-icon" style="font-size:1.2rem;flex-shrink:0;color:var(--danger);">&#9888;</span>
+        <div style="flex:1;min-width:0;">
+          <div id="train-error-title" style="font-family:var(--font-body);font-weight:600;font-size:var(--text-footnote);color:var(--danger);"></div>
+          <div id="train-error-detail" style="font-size:var(--text-caption-2);color:var(--text-tertiary);margin-top:2px;"></div>
+          <div id="train-error-actions" style="margin-top:var(--space-2);display:flex;gap:var(--space-2);flex-wrap:wrap;"></div>
+        </div>
+        <button type="button" class="btn btn-sm" id="train-error-dismiss" aria-label="Dismiss error" style="flex-shrink:0;color:var(--text-tertiary);border:none;background:none;cursor:pointer;font-size:1.1rem;line-height:1;">&times;</button>
+      </div>
+    </div>
+
     <div class="config-actions">
       <button type="button" class="btn btn--forge btn-pulse" id="start-btn">Start Training</button>
       <button type="button" class="btn btn-secondary" id="stop-btn" disabled>Stop</button>
@@ -707,6 +728,11 @@ var gpuToggle = document.getElementById('compute_backend');
     if (qloraWarning) {
       qloraWarning.style.display = (method === 'qlora') ? 'block' : 'none';
     }
+    var baseModelRef = core.getUrlParams().get('base_model_ref');
+    var baseModelWarning = document.getElementById('lora-basemodel-warning');
+    if (baseModelWarning) {
+      baseModelWarning.style.display = (method !== 'full' && !baseModelRef) ? 'block' : 'none';
+    }
   }
 
   function loadCorpora() {
@@ -938,6 +964,13 @@ var gpuToggle = document.getElementById('compute_backend');
   }
 
   function reconnectToRun(runId, saved) {
+    /* Guard against invalid run IDs. A failed POST in older builds saved a run
+     * with an undefined ID, which becomes the literal string "undefined" as a
+     * sessionStorage key — treat both null and "undefined"/"null"/"NaN" as stale. */
+    if (runId == null || runId === 'undefined' || runId === 'null' || runId === 'NaN') {
+      _staleRun(runId, saved);
+      return;
+    }
     /* Pre-check: is the run still active on the server? */
     fetch('/v1/training/' + runId + '/status')
       .then(function(resp) {
@@ -1009,15 +1042,14 @@ var gpuToggle = document.getElementById('compute_backend');
     }
 
   function _staleRun(runId, saved) {
-    saved.status = 'errored';
-    updateState('errored');
-    log('> Training run ' + runId + ' is no longer active on the server.');
-    var runs = window.coreSession.getActiveRuns();
-    if (runs[runId]) {
-      runs[runId].status = 'errored';
-      window.coreSession.addRun(runId, runs[runId]);
+    /* Auto-dismiss — remove from sessionStorage entirely */
+    log('> Training run ' + (runId || saved.runId) + ' is no longer active on the server. Cleaning up.');
+    globalThis.coreSession.removeRun(runId || saved.runId);
+    renderRunsList(globalThis.coreSession.getActiveRuns());
+    /* Only set state to errored if this was the active session */
+    if (session && String(session.runId) === String(runId || saved.runId)) {
+      updateState('errored');
     }
-    renderRunsList(window.coreSession.getActiveRuns());
   }
 
     function restoreTrainingSession() {
@@ -1140,6 +1172,54 @@ var gpuToggle = document.getElementById('compute_backend');
 
   /* ── Training Lifecycle ── */
 
+  /* ── Error Display ── */
+  var errorBanner = document.getElementById('train-error');
+  var errorTitle = document.getElementById('train-error-title');
+  var errorDetail = document.getElementById('train-error-detail');
+  var errorActions = document.getElementById('train-error-actions');
+  var errorDismiss = document.getElementById('train-error-dismiss');
+  var errorIcon = document.getElementById('train-error-icon');
+
+  globalThis.dismissError = function dismissError() {
+    if (errorBanner) errorBanner.style.display = 'none';
+  };
+
+  function showTrainingError(opts) {
+    if (!errorBanner) return;
+    dom.setHtml(errorIcon, '&#9888;');
+    errorTitle.textContent = opts.title || 'Error';
+    errorDetail.textContent = opts.detail || '';
+    dom.setHtml(errorActions, '');
+    (opts.actions || []).forEach(function(a) {
+      var link = document.createElement('a');
+      link.href = a.href;
+      link.className = a.primary ? 'btn btn-accent btn-sm' : 'btn btn-secondary btn-sm';
+      link.textContent = a.label;
+      errorActions.appendChild(link);
+    });
+    errorBanner.style.display = '';
+    errorBanner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  if (errorDismiss) {
+    errorDismiss.addEventListener('click', dismissError);
+  }
+
+  /* ── Pre-flight Validation ── */
+  function validateConfig(config) {
+    var errors = [];
+    var method = config.method || 'full';
+    var baseModelRef = core.getUrlParams().get('base_model_ref');
+    if ((method === 'lora' || method === 'qlora') && !baseModelRef) {
+      errors.push({
+        title: 'No base model selected for fine-tuning',
+        detail: 'LoRA and QLoRA adapt an existing model — they need a base model to start from. Import a HuggingFace model first, then click "Fine-tune" from the Models page.',
+        actions: [{ label: 'Go to Models', href: '/v1/models-page', primary: true }],
+      });
+    }
+    return errors;
+  }
+
   /* ── Confirmation Modal ── */
   var confirmModal = document.getElementById('train-confirm-modal');
   var confirmBtn = document.getElementById('modal-confirm-btn');
@@ -1168,6 +1248,14 @@ var gpuToggle = document.getElementById('compute_backend');
       lora_target_modules: document.getElementById('lora_target_modules').value,
       lora_dropout: parseFloat(document.getElementById('lora_dropout').value),
     };
+
+    /* Pre-flight validation — surface errors before the confirm step */
+    var validationErrors = validateConfig(config);
+    if (validationErrors.length > 0) {
+      updateState('errored');
+      showTrainingError(validationErrors[0]);
+      return;
+    }
 
     var cid = corpusSelect.value;
     var did = datasetSelect.value;
@@ -1215,12 +1303,34 @@ var gpuToggle = document.getElementById('compute_backend');
     });
   }
 
+  /* ── Start error handler (extracted for cognitive complexity) ── */
+  async function _handleStartError(resp, method) {
+    var errData = {};
+    try { errData = await resp.json(); } catch (_) { /* Ignore JSON parse errors — errData stays {} */ }
+    var errMsg = errData.detail || errData.message || 'HTTP ' + resp.status;
+    log('> Failed to start: ' + errMsg);
+    updateState('errored');
+    if (errMsg.includes('base_model_ref') || (resp.status === 422 && method !== 'full')) {
+      showTrainingError({
+        title: 'Fine-tuning requires a base model',
+        detail: 'The server rejected the request: ' + errMsg + '. Import a HuggingFace model first, then navigate here from the Models page.',
+        actions: [{ label: 'Go to Models', href: '/v1/models-page', primary: true }],
+      });
+    } else {
+      showTrainingError({
+        title: 'Training failed to start',
+        detail: errMsg,
+      });
+    }
+  }
+
   window.startTraining = async function startTraining() {
     if (session) { session.destroy(); session = null; }
     dom.setHtml(outputActions, '');
     lossDisplay.textContent = '';
     _outputHasContent = false;
     updateOutputIndicator('idle');
+    dismissError();
 
     var config = {
       n_embd: Number.parseInt(document.getElementById('n_embd').value),
@@ -1247,6 +1357,15 @@ var gpuToggle = document.getElementById('compute_backend');
       config.base_model_ref = Number.parseInt(baseModelRef);
     }
 
+    /* Pre-flight validation */
+    var validationErrors = validateConfig(config);
+    if (validationErrors.length > 0) {
+      log('> Validation failed: ' + validationErrors[0].title);
+      updateState('errored');
+      showTrainingError(validationErrors[0]);
+      return;
+    }
+
     log('> Starting training with: ' + JSON.stringify(config));
 
     _logTrainingWarnings(config, cid, corpusCache);
@@ -1259,8 +1378,22 @@ var gpuToggle = document.getElementById('compute_backend');
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config)
       });
+
+      /* Surface HTTP errors (apiFetch does not throw on 4xx/5xx) */
+      if (!resp.ok) {
+        await _handleStartError(resp, config.method);
+        return;
+      }
+
       var data = await resp.json();
       var runId = data.run_id;
+      if (runId == null) {
+        log('> Failed to start: server did not return a run ID');
+        updateState('errored');
+        showTrainingError({ title: 'Training failed to start', detail: 'Server did not return a run ID. Check the server logs for details.' });
+        return;
+      }
+
       log('> Run ID: ' + runId);
 
       session = new SSESession(runId);
@@ -1301,6 +1434,10 @@ var gpuToggle = document.getElementById('compute_backend');
     } catch (err) {
       log('> Failed to start: ' + err.message);
       updateState('errored');
+      showTrainingError({
+        title: 'Training failed to start',
+        detail: err.message,
+      });
     }
   };
 
