@@ -1,3 +1,4 @@
+# one-class:allow — EvaluatorResult is tightly-coupled return type
 """Per-prompt evaluator: generate + loss for a single model."""
 
 from __future__ import annotations

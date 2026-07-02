@@ -1,6 +1,12 @@
 ---
-
-description: "Task list for 054 Fine-Tuned Model Evaluation"
+title: "Tasks: 054 Fine-Tuned Model Evaluation"
+type: spec
+tags:
+  - type/spec
+  - domain/training
+  - domain/mlops
+created: '2026-07-01'
+updated: '2026-07-01'
 ---
 
 # Tasks: Fine-Tuned Model Evaluation
