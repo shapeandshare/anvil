@@ -498,6 +498,7 @@ class LocalLoraBackend:
                 engine=TrainingEngine.TORCH,
                 backend=ComputeBackendResult.LOCAL,
                 artifact_uris={"adapter_path": ""},
+                adapter_id=f"synthetic_{int(time.time())}",
             )
 
         # ── real fine-tuning with peft + transformers ───────────────────
@@ -550,6 +551,7 @@ class LocalLoraBackend:
             engine=TrainingEngine.TORCH,
             backend=ComputeBackendResult.LOCAL,
             artifact_uris={"adapter_path": str(adapter_path)},
+            adapter_id=adapter_path.name,
         )
 
 
