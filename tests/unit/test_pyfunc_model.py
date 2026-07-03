@@ -137,11 +137,28 @@ def test_load_context_no_tokenizer(monkeypatch, tmp_path: Path) -> None:
     assert model._reverse_vocab == {}
 
 
-def test_load_context_raises_on_missing_deps() -> None:
+def test_load_context_raises_on_missing_deps(monkeypatch: Any) -> None:
+    import sys
+
     model = AnvilPyfuncModel()
 
     class _MinimalContext:
         artifact_uri = "/tmp/nonexistent"
+
+    # Block re-import of ML deps so the lazy ImportError path fires
+    intrinsic_import = __builtins__["__import__"] if isinstance(__builtins__, dict) else __builtins__.__import__  # type: ignore[union-attr]
+
+    def _mock_import(name: str, *args: Any, **kwargs: Any) -> Any:
+        if name in ("torch", "safetensors", "transformers") or name.startswith(
+            ("torch.", "safetensors.", "transformers.")
+        ):
+            raise ImportError(f"No module named {name}")
+        return intrinsic_import(name, *args, **kwargs)
+
+    if isinstance(__builtins__, dict):
+        monkeypatch.setitem(__builtins__, "__import__", _mock_import)
+    else:
+        monkeypatch.setattr(__builtins__, "__import__", _mock_import)  # type: ignore[arg-type]
 
     with pytest.raises(ImportError, match="torch, safetensors"):
         model.load_context(_MinimalContext())

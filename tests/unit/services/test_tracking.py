@@ -155,12 +155,22 @@ class FakeMlflowClient:
     def set_tag(self, run_id: str, key: str, value: str) -> None:
         self.set_tag_calls.append({"run_id": run_id, "key": key, "value": value})
 
-    def log_input(
-        self, run_id: str, dataset: object, context: str | None = None
+    def log_inputs(
+        self,
+        run_id: str,
+        datasets: list[Any] | None = None,
+        models: list[Any] | None = None,
     ) -> None:
-        self.logged_inputs.append(
-            {"run_id": run_id, "dataset": dataset, "context": context}
-        )
+        if datasets:
+            for ds_input in datasets:
+                context = ds_input.tags[0].value if ds_input.tags else None
+                self.logged_inputs.append(
+                    {
+                        "run_id": run_id,
+                        "dataset": ds_input.dataset,
+                        "context": context,
+                    }
+                )
 
     def log_artifact(self, run_id: str, local_path: str) -> None:
         self.log_artifact_calls.append({"run_id": run_id, "local_path": local_path})

@@ -29,6 +29,7 @@ from typing import Any
 
 import mlflow
 import mlflow.entities
+from mlflow.entities import DatasetInput, InputTag
 from mlflow.exceptions import MlflowException
 from mlflow.tracking import MlflowClient
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -725,10 +726,17 @@ class TrackingService:
                 )
                 client = self._client
                 assert client is not None
+
                 await asyncio.get_event_loop().run_in_executor(
                     None,
-                    lambda: client.log_input(  # type: ignore[union-attr]
-                        run_id=run_id, dataset=mlflow_ds, context=role
+                    lambda: client.log_inputs(  # type: ignore[union-attr]
+                        run_id=run_id,
+                        datasets=[
+                            DatasetInput(
+                                dataset=mlflow_ds,
+                                tags=[InputTag(key="context", value=role)],
+                            )
+                        ],
                     ),
                 )
                 return digest
@@ -743,10 +751,17 @@ class TrackingService:
                     )
                     client = self._client
                     assert client is not None
+
                     await asyncio.get_event_loop().run_in_executor(
                         None,
-                        lambda: client.log_input(
-                            run_id=run_id, dataset=mlflow_ds, context=role
+                        lambda: client.log_inputs(
+                            run_id=run_id,
+                            datasets=[
+                                DatasetInput(
+                                    dataset=mlflow_ds,
+                                    tags=[InputTag(key="context", value=role)],
+                                )
+                            ],
                         ),
                     )
                     return digest
@@ -793,10 +808,17 @@ class TrackingService:
                 )
                 client = self._client
                 assert client is not None
+
                 await asyncio.get_event_loop().run_in_executor(
                     None,
-                    lambda: client.log_input(  # type: ignore[union-attr]
-                        run_id=run_id, dataset=meta_ds, context="corpus"
+                    lambda: client.log_inputs(  # type: ignore[union-attr]
+                        run_id=run_id,
+                        datasets=[
+                            DatasetInput(
+                                dataset=meta_ds,
+                                tags=[InputTag(key="context", value="corpus")],
+                            )
+                        ],
                     ),
                 )
                 for artifact_path in artifact_paths:
@@ -816,10 +838,17 @@ class TrackingService:
                     )
                     client = self._client
                     assert client is not None
+
                     await asyncio.get_event_loop().run_in_executor(
                         None,
-                        lambda: client.log_input(
-                            run_id=run_id, dataset=meta_ds, context="corpus"
+                        lambda: client.log_inputs(
+                            run_id=run_id,
+                            datasets=[
+                                DatasetInput(
+                                    dataset=meta_ds,
+                                    tags=[InputTag(key="context", value="corpus")],
+                                )
+                            ],
                         ),
                     )
                     for artifact_path in artifact_paths:

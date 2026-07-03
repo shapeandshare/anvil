@@ -85,6 +85,8 @@ async def create_corpus(
     """
     try:
         name = body.name.strip()
+        if not name:
+            raise ValueError("name must not be empty")
         root_path = body.root_path.strip()
         inc = body.include_patterns
         exc = body.exclude_patterns
