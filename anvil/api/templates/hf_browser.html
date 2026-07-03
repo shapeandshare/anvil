@@ -76,7 +76,8 @@
             <span class="type-caption-2 job-when" style="color:var(--text-tertiary);font-variant-numeric:tabular-nums;white-space:nowrap;" data-ts="{{ j.created_at }}">—</span>
             <div style="display:flex;gap:var(--space-1);flex-shrink:0;">
               {% if j.status == "complete" and j.external_model_id %}
-              <a class="btn btn-sm btn-secondary" href="/v1/model-detail/{{ j.external_model_id }}">View →</a>
+              <a class="btn btn-sm btn-secondary" href="/v1/model-detail/{{ j.external_model_id }}?source=external">View →</a>
+              <button class="btn btn-sm btn-primary job-download-btn" data-model-id="{{ j.external_model_id }}">Download</button>
               {% elif j.status == "failed" %}
               <button class="btn btn-sm btn-primary job-retry-btn" data-job-id="{{ j.job_id }}">Retry</button>
               <button class="btn btn-sm btn-secondary job-dismiss-btn">Dismiss</button>
@@ -333,7 +334,8 @@
         + '<span class="type-caption-2 job-when" style="color:var(--text-tertiary);font-variant-numeric:tabular-nums;white-space:nowrap;" data-ts="' + (j.created_at || '') + '">' + relTime(j.created_at) + '</span>'
         + '<div style="display:flex;gap:var(--space-1);flex-shrink:0;">'
         + (j.status === 'complete' && j.external_model_id
-          ? '<a class="btn btn-sm btn-secondary" href="/v1/model-detail/' + j.external_model_id + '">View \u2192</a>'
+          ? '<a class="btn btn-sm btn-secondary" href="/v1/model-detail/' + j.external_model_id + '?source=external">View \u2192</a>'
+          + '<button class="btn btn-sm btn-primary job-download-btn" data-model-id="' + j.external_model_id + '">Download</button>'
           : (j.status === 'failed'
             ? '<button class="btn btn-sm btn-primary job-retry-btn" data-job-id="' + j.job_id + '">Retry</button><button class="btn btn-sm btn-secondary job-dismiss-btn">Dismiss</button>'
             : ''))
@@ -344,12 +346,15 @@
         + '</div>';
     }
     container.innerHTML = html;
-    /* Re-wire retry and dismiss */
+    /* Re-wire retry, dismiss, and download */
     container.querySelectorAll('.job-retry-btn').forEach(function(b) {
       b.addEventListener('click', retryJob);
     });
     container.querySelectorAll('.job-dismiss-btn').forEach(function(b) {
       b.addEventListener('click', dismissJob);
+    });
+    container.querySelectorAll('.job-download-btn').forEach(function(b) {
+      b.addEventListener('click', downloadJobAssets);
     });
   }
 
@@ -384,6 +389,42 @@
         container.innerHTML = '<div class="type-subhead" style="color:var(--text-tertiary);padding:var(--space-2) 0;">No import jobs yet.</div>';
       }
     }
+  }
+
+  function downloadJobAssets(e) {
+    var btn = e.currentTarget;
+    var modelId = btn.getAttribute('data-model-id');
+    btn.disabled = true;
+    btn.textContent = 'starting...';
+    window.apiFetch('/v1/models/' + modelId + '/download', { method: 'POST' }).then(function(r) {
+      if (r.status === 409) {
+        return r.json().then(function(d) {
+          btn.disabled = false;
+          if (d.detail && d.detail.indexOf('already available') !== -1) {
+            btn.textContent = 'done';
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-success');
+          } else if (d.detail && d.detail.indexOf('in progress') !== -1) {
+            btn.textContent = 'queued';
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-cyan');
+          } else {
+            btn.textContent = 'Download';
+          }
+        });
+      }
+      if (!r.ok) throw new Error(r.status + ' ' + r.statusText);
+      return r.json();
+    }).then(function(data) {
+      if (!data) return;
+      btn.textContent = 'queued';
+      btn.classList.remove('btn-primary');
+      btn.classList.add('btn-cyan');
+    }).catch(function(err) {
+      btn.disabled = false;
+      btn.textContent = 'Download';
+      console.error('Download error:', err);
+    });
   }
 
   function fetchJobs() {
@@ -421,12 +462,15 @@
     _pollTimer = setTimeout(fetchJobs, 2000);
   }
 
-  /* Wire retry + dismiss for server-rendered rows */
+  /* Wire retry, dismiss, and download for server-rendered rows */
   document.querySelectorAll('.job-retry-btn').forEach(function(b) {
     b.addEventListener('click', retryJob);
   });
   document.querySelectorAll('.job-dismiss-btn').forEach(function(b) {
     b.addEventListener('click', dismissJob);
+  });
+  document.querySelectorAll('.job-download-btn').forEach(function(b) {
+    b.addEventListener('click', downloadJobAssets);
   });
 })();
 </script>
