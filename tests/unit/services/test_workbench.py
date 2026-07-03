@@ -1487,9 +1487,7 @@ class TestTeaching:
         assert wb.teaching_repo is repo
 
     @pytest.mark.asyncio
-    async def test_teaching_repo_is_lazy(
-        self, in_memory_session: AsyncSession
-    ) -> None:
+    async def test_teaching_repo_is_lazy(self, in_memory_session: AsyncSession) -> None:
         wb = AnvilWorkbench(in_memory_session)
         assert wb._teaching_repo is None
         _ = wb.teaching_repo

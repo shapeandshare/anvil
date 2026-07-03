@@ -239,7 +239,9 @@ class TestAnvilWorkbenchProperties:
         assert wb.user_secrets is svc
 
     @pytest.mark.asyncio
-    async def test_secret_rotation_service(self, in_memory_session, monkeypatch) -> None:
+    async def test_secret_rotation_service(
+        self, in_memory_session, monkeypatch
+    ) -> None:
         """secret_rotation_service depends on user_secrets internal state."""
         monkeypatch.setenv("ANVIL_MASTER_SECRET", "ab" * 16)
         wb = AnvilWorkbench(session=in_memory_session)
