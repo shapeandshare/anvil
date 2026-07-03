@@ -400,7 +400,7 @@ class TestConvertTypes:
         assert parsed["health_score"]["breakdown"]["key"] == "some/path"
 
     def test_converts_date_to_str(self) -> None:
-        """date objects become strings in JSON."""
+        """Date objects become strings in JSON."""
         ghr = GraphHealthReport()
         ghr.health_score.breakdown["dt"] = date(2026, 6, 1)
         raw = ghr.to_json()
@@ -408,7 +408,7 @@ class TestConvertTypes:
         assert parsed["health_score"]["breakdown"]["dt"] == "2026-06-01"
 
     def test_converts_datetime_to_str(self) -> None:
-        """datetime objects become ISO strings in JSON."""
+        """Datetime objects become ISO strings in JSON."""
         ghr = GraphHealthReport()
         ghr.health_score.breakdown["dt"] = datetime(2026, 6, 1, 12, 30, 0)
         raw = ghr.to_json()
@@ -417,7 +417,7 @@ class TestConvertTypes:
         assert "2026-06-01" in parsed["health_score"]["breakdown"]["dt"]
 
     def test_converts_set_to_sorted_list(self) -> None:
-        """set objects become sorted lists in JSON."""
+        """Set objects become sorted lists in JSON."""
         ghr = GraphHealthReport()
         ghr.health_score.breakdown["s"] = {"z", "a", "m"}
         raw = ghr.to_json()
