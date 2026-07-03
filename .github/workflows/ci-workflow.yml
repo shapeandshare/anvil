@@ -1,6 +1,7 @@
 # CI workflow: gate enforcement for anvil
 #
-# Runs the project's declared quality gates on every PR and non-main push.
+# Runs the project's declared quality gates on every PR and push.
+# SonarCloud scan also runs on main pushes to keep coverage/metrics current.
 # Branch protection configuration must require this workflow to pass on main.
 #
 # FR-001/FR-002: validates every change against all declared gates
@@ -13,7 +14,6 @@ name: CI Gates
 "on":
   pull_request:
   push:
-    branches-ignore: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -57,7 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: bump-scope-guard
-    if: needs.bump-scope-guard.outputs.scope != 'version-only'
+    if: needs.bump-scope-guard.outputs.scope != 'version-only' && github.ref_name != 'main'
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
@@ -75,7 +75,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: bump-scope-guard
-    if: needs.bump-scope-guard.outputs.scope != 'version-only'
+    if: needs.bump-scope-guard.outputs.scope != 'version-only' && github.ref_name != 'main'
     permissions:
       contents: write
     steps:
@@ -108,7 +108,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: bump-scope-guard
-    if: needs.bump-scope-guard.outputs.scope != 'version-only'
+    if: needs.bump-scope-guard.outputs.scope != 'version-only' && github.ref_name != 'main'
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
@@ -126,7 +126,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: bump-scope-guard
-    if: needs.bump-scope-guard.outputs.scope != 'version-only'
+    if: needs.bump-scope-guard.outputs.scope != 'version-only' && github.ref_name != 'main'
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
@@ -138,12 +138,12 @@ jobs:
       - name: Run tests with coverage
         run: make test
 
-  # ── SonarCloud static analysis + coverage gate ──
+  # ── SonarCloud static analysis + coverage gate (runs on all branches including main) ──
   sonar-scan:
     name: SonarCloud
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: [bump-scope-guard, test]
+    needs: bump-scope-guard  # self-contained — runs its own tests to generate coverage.xml
     if: needs.bump-scope-guard.outputs.scope != 'version-only'
     continue-on-error: true  # non-blocking; requires SONAR_TOKEN secret and auto-analysis disabled upstream
     steps:
@@ -171,7 +171,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: bump-scope-guard
-    if: needs.bump-scope-guard.outputs.scope != 'version-only'
+    if: needs.bump-scope-guard.outputs.scope != 'version-only' && github.ref_name != 'main'
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
@@ -189,7 +189,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: bump-scope-guard
-    if: needs.bump-scope-guard.outputs.scope != 'version-only'
+    if: needs.bump-scope-guard.outputs.scope != 'version-only' && github.ref_name != 'main'
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
@@ -207,7 +207,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: bump-scope-guard
-    if: needs.bump-scope-guard.outputs.scope != 'version-only'
+    if: needs.bump-scope-guard.outputs.scope != 'version-only' && github.ref_name != 'main'
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
@@ -225,7 +225,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: bump-scope-guard
-    if: needs.bump-scope-guard.outputs.scope != 'version-only'
+    if: needs.bump-scope-guard.outputs.scope != 'version-only' && github.ref_name != 'main'
     continue-on-error: true  # v1: non-blocking; see ADR-034 for promotion criteria
     steps:
       - uses: actions/checkout@v4
