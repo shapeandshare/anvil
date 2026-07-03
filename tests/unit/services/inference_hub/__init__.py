@@ -1,0 +1,1 @@
+"""Tests for the inference_hub domain sub-package."""
