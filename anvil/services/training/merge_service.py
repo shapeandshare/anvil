@@ -393,6 +393,9 @@ class AdapterMergeService:
     async def _resolve_source_identifier(self, model_id: int) -> str:
         """Resolve the HuggingFace source identifier for a base model.
 
+        Returns the local asset path when assets are available (spec 063),
+        falling back to the Hub identifier otherwise.
+
         Parameters
         ----------
         model_id : int
@@ -401,7 +404,8 @@ class AdapterMergeService:
         Returns
         -------
         str
-            The ``source_identifier`` (e.g. ``"meta-llama/Llama-2-7b"``).
+            The ``source_identifier`` (e.g. ``"meta-llama/Llama-2-7b"``)
+            or a local filesystem path.
 
         Raises
         ------
@@ -415,6 +419,26 @@ class AdapterMergeService:
         model: ExternalModel | None = await self._external_model_repo.get(model_id)
         if model is None:
             raise RuntimeError(f"External model {model_id!r} not found")
+
+        # Prefer local assets when available (spec 063)
+        if (
+            getattr(model, "asset_availability", None) == "assets_available"
+            and getattr(model, "runnable_status", None) == "runnable"
+        ):
+            local_path = Path(f"data/storage/models/{model_id}/hf/")
+            if local_path.exists():
+                logger.info(
+                    "Resolved external model %d from local assets at %s",
+                    model_id,
+                    local_path,
+                )
+                return str(local_path)
+
+        logger.info(
+            "Resolved external model %d from Hub identifier %s",
+            model_id,
+            model.source_identifier,
+        )
         return model.source_identifier
 
     async def _check_license(self, model_id: int) -> tuple[bool, str]:

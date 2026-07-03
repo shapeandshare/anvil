@@ -492,7 +492,123 @@ class InferenceService:
             except (ConnectionError, OSError, LookupError) as mlf_err:
                 logger.warning("MLflow lookup failed: %s", mlf_err)
 
+        # ── External model resolution (spec 063) ──────────────────────────
+        # After all existing paths have been exhausted, check whether the
+        # model_id corresponds to an imported HuggingFace model with
+        # locally downloaded assets.  This is a speculative path — errors
+        # are caught silently so existing resolution paths are unaffected.
+        try:
+            ext_model = await self._try_load_external_model(model_id)
+        except Exception:  # noqa: BLE001
+            ext_model = None
+        if ext_model is not None:
+            composed, tokenizer = ext_model
+            self._cache[cache_key] = (composed, tokenizer)
+            return LoadedModel(
+                composed,
+                tokenizer,
+                model_id,
+                version,
+                f"external-{model_id}",
+                adapter_path=self._resolve_adapter_path(model_id, adapter_id),
+            )
+
         raise ValueError(f"Model not found: model_id={model_id}, version={version}")
+
+    async def _try_load_external_model(
+        self,
+        model_id: int,
+    ) -> tuple[LlamaModel, Tokenizer] | None:
+        """Try to load an external (HF-imported) model from local assets.
+
+        Creates a scoped DB session, looks up the external model record,
+        and if assets are available and the model is runnable, loads the
+        weights from ``models/{model_id}/hf/`` via ``from_pretrained()``,
+        converts to anvil ``LlamaModel``, and builds a matching tokenizer.
+
+        Returns ``None`` when no external model is found, assets are
+        unavailable, the architecture is not runnable, or
+        ``transformers`` / ``torch`` are not installed.
+        """
+        if not _TRANSFORMERS_AVAILABLE or not _PEFT_AVAILABLE:
+            return None
+
+        ext_model: Any = None
+        async with AsyncSessionLocal() as session:
+            ext_repo = ExternalModelRepository(session)
+            ext_model = await ext_repo.get(model_id)
+
+        if ext_model is None:
+            return None
+
+        runnable_ok = (
+            getattr(ext_model, "asset_availability", None) == "assets_available"
+            and getattr(ext_model, "runnable_status", None) == "runnable"
+        )
+        if not runnable_ok:
+            logger.info(
+                "External model %d not loadable: availability=%s, runnable=%s",
+                model_id,
+                getattr(ext_model, "asset_availability", None),
+                getattr(ext_model, "runnable_status", None),
+            )
+            return None
+
+        source_id = str(getattr(ext_model, "source_identifier", ""))
+        local_path = f"data/storage/models/{model_id}/hf/"
+        local_path_obj = Path(local_path)
+        if not local_path_obj.exists():
+            logger.info(
+                "Local assets for external model %d not found at %s; "
+                "falling back to Hub",
+                model_id,
+                local_path,
+            )
+            return None
+
+        logger.info(
+            "Loading external model %d from local assets at %s",
+            model_id,
+            local_path,
+        )
+
+        try:
+            base_model = AutoModelForCausalLM.from_pretrained(
+                str(local_path_obj),
+                trust_remote_code=False,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "from_pretrained failed for external model %d at %s: %s",
+                model_id,
+                local_path,
+                exc,
+            )
+            return None
+
+        hf_config = base_model.config.to_dict() if hasattr(base_model, "config") else {}
+        tokenizer_family = str(getattr(ext_model, "tokenizer_family", "subword"))
+        serialization_type = self._infer_serialization_type(source_id, hf_config)
+        anvil_data = _hf_state_dict_to_anvil_format(
+            hf_state_dict=base_model.state_dict(),
+            config=hf_config,
+            chars=None,
+            tokenizer_family=tokenizer_family,
+            serialization_type=serialization_type,
+        )
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
+            json.dump(anvil_data, tmp)
+            tmp_path = tmp.name
+
+        try:
+            composed = LlamaModel.load(tmp_path)
+        finally:
+            Path(tmp_path).unlink(missing_ok=True)
+
+        tokenizer = self._create_adapter_tokenizer(source_id, local_path=local_path)
+
+        return (composed, tokenizer)
 
     async def _compose_adapter(
         self,
@@ -598,10 +714,21 @@ class InferenceService:
             adapter.storage_path or f"models/{model_id}/adapters/{adapter_id}/"
         )
 
+        # ── Prefer local assets when available (spec 063) ────────────────
+        local_path = Path(f"data/storage/models/{model_id}/hf/")
+        base_path = str(local_path) if local_path.exists() else source_id
+        load_source = "local" if local_path.exists() else "hub"
+        logger.info(
+            "Composing adapter %s on external model %d from %s",
+            adapter_id,
+            model_id,
+            load_source,
+        )
+
         # ── Load base HF model and compose adapter ────────────────────────
         try:
             base_model = AutoModelForCausalLM.from_pretrained(
-                source_id,
+                base_path,
                 trust_remote_code=False,
             )
             composed = PeftModel.from_pretrained(base_model, adapter_storage_path)
@@ -734,7 +861,13 @@ class InferenceService:
         composed = await self._compose_adapter(model_id, adapter_id)
 
         # ── Build tokenizer from the base model's tokenizer files ───────
-        tokenizer = self._create_adapter_tokenizer(source_id)
+        local_tokenizer_path = f"data/storage/models/{model_id}/hf/"
+        tokenizer = self._create_adapter_tokenizer(
+            source_id,
+            local_path=(
+                local_tokenizer_path if Path(local_tokenizer_path).exists() else None
+            ),
+        )
 
         return LoadedModel(
             composed,
@@ -745,24 +878,35 @@ class InferenceService:
             adapter_path=self._resolve_adapter_path(model_id, adapter_id),
         )
 
-    def _create_adapter_tokenizer(self, source_id: str) -> Tokenizer:
-        """Build a tokenizer for an adapter-composed model.
+    def _create_adapter_tokenizer(
+        self,
+        source_id: str,
+        local_path: str | None = None,
+    ) -> Tokenizer:
+        """Build a tokenizer for an adapter-composed or bare external model.
 
         Uses ``transformers.AutoTokenizer`` when available (requires
         ``[finetune]`` extra), wrapping it with the ``Tokenizer`` interface.
         Falls back to a minimal tokenizer if transformers is not installed.
+        When ``local_path`` is provided, loads the tokenizer from the local
+        filesystem instead of the HuggingFace Hub (spec 063).
 
         Parameters
         ----------
         source_id : str
-            HF repository ID (e.g. ``"facebook/opt-125m"``).
+            HF repository ID (e.g. ``"facebook/opt-125m"``). Used as
+            fallback when ``local_path`` is not set.
+        local_path : str, optional
+            Local filesystem path to the model directory containing
+            ``tokenizer.json``.
 
         Returns
         -------
         Tokenizer
             An adapter instance wrapping the HF tokenizer.
         """
-        hf_tok = AutoTokenizer.from_pretrained(source_id)  # type: ignore[no-untyped-call]
+        tokenizer_path = local_path if local_path is not None else source_id
+        hf_tok = AutoTokenizer.from_pretrained(tokenizer_path)  # type: ignore[no-untyped-call]
         return TransformersTokenizerAdapter(hf_tok)
 
     async def _resolve_default_id(self) -> int:

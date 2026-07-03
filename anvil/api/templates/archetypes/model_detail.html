@@ -49,6 +49,29 @@
           Merge Selected Adapter
         </button>
       </div>
+      <!-- External (HF-imported) model info + asset download -->
+      <div id="md-external-section" style="display:none;">
+        <div style="margin:var(--space-3) 0;">
+          <div class="hp-grid">
+            <span class="hp-tag"><span class="hp-label">Source</span> <span class="hp-value" id="md-ext-source"></span></span>
+            <span class="hp-tag"><span class="hp-label">Architecture</span> <span class="hp-value" id="md-ext-arch"></span></span>
+            <span class="hp-tag"><span class="hp-label">Params</span> <span class="hp-value" id="md-ext-params"></span></span>
+            <span class="hp-tag"><span class="hp-label">License</span> <span class="hp-value" id="md-ext-license"></span></span>
+            <span class="hp-tag"><span class="hp-label">Tokenizer</span> <span class="hp-value" id="md-ext-tokenizer"></span></span>
+          </div>
+          <div id="md-ext-runnable" style="margin:var(--space-1) 0;"></div>
+        </div>
+        <div id="md-asset-section" style="margin:var(--space-2) 0;padding:var(--space-2);background:var(--surface-card,var(--surface));border:1px solid var(--border);border-radius:var(--radius-1);">
+          <div style="display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap;">
+            <span class="type-footnote" style="font-weight:600;">Model Assets</span>
+            <span class="badge" id="md-asset-badge">—</span>
+            <button id="md-download-btn" class="btn btn-primary btn-sm" style="display:none;">Download Weights</button>
+          </div>
+          <div id="md-download-progress" style="display:none;margin-top:var(--space-2);">
+            <div class="type-caption-2" id="md-download-status-text">Starting download...</div>
+          </div>
+        </div>
+      </div>
     </div>
     {% endif %}
   </div>
@@ -89,8 +112,161 @@
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
+  function friendlyParamCount(count) {
+    if (count == null) return '\u2014';
+    if (count >= 1_000_000_000) return (count / 1_000_000_000).toFixed(1) + 'B';
+    if (count >= 1_000_000) return (count / 1_000_000).toFixed(1) + 'M';
+    if (count >= 1_000) return (count / 1_000).toFixed(1) + 'K';
+    return String(count);
+  }
+
+  function updateAssetUI(availability) {
+    var badge = document.getElementById('md-asset-badge');
+    var btn = document.getElementById('md-download-btn');
+    var progress = document.getElementById('md-download-progress');
+    if (availability === 'assets_available') {
+      badge.textContent = 'available';
+      badge.className = 'badge badge-green';
+      btn.style.display = 'none';
+      progress.style.display = 'none';
+    } else if (availability === 'assets_pending') {
+      badge.textContent = 'downloading';
+      badge.className = 'badge badge-cyan';
+      btn.style.display = 'none';
+      progress.style.display = '';
+      document.getElementById('md-download-status-text').textContent = 'Download in progress...';
+    } else {
+      badge.textContent = 'metadata only';
+      badge.className = 'badge badge-yellow';
+      btn.style.display = '';
+      btn.disabled = false;
+      btn.textContent = 'Download Weights';
+      progress.style.display = 'none';
+    }
+  }
+
+  function pollDownloadStatus(jobId) {
+    fetch('/v1/models/' + modelId + '/download/' + jobId + '/status').then(function(r) {
+      if (!r.ok) throw new Error('Poll failed');
+      return r.json();
+    }).then(function(status) {
+      var statusText = document.getElementById('md-download-status-text');
+      var badge = document.getElementById('md-asset-badge');
+      if (status.status === 'complete') {
+        statusText.textContent = 'Download complete!';
+        badge.textContent = 'available';
+        badge.className = 'badge badge-green';
+      } else if (status.status === 'failed') {
+        statusText.textContent = 'Download failed: ' + (status.error_message || 'unknown error');
+        badge.textContent = 'error';
+        badge.className = 'badge badge-red';
+      } else {
+        statusText.textContent = status.status === 'queued' ? 'Waiting...' : 'Downloading...';
+        setTimeout(function() { pollDownloadStatus(jobId); }, 2000);
+      }
+    }).catch(function() {
+      setTimeout(function() { pollDownloadStatus(jobId); }, 2000);
+    });
+  }
+
+  function startDownload() {
+    var btn = document.getElementById('md-download-btn');
+    btn.disabled = true;
+    btn.textContent = 'starting...';
+    window.apiFetch('/v1/models/' + modelId + '/download', { method: 'POST' }).then(function(r) {
+      if (r.status === 409) {
+        return r.json().then(function(d) {
+          btn.disabled = false;
+          btn.textContent = 'Download Weights';
+          if (d.detail && d.detail.indexOf('already available') !== -1) {
+            document.getElementById('md-asset-badge').textContent = 'available';
+            document.getElementById('md-asset-badge').className = 'badge badge-green';
+            btn.style.display = 'none';
+          } else if (d.detail && d.detail.indexOf('in progress') !== -1) {
+            document.getElementById('md-asset-badge').textContent = 'downloading';
+            document.getElementById('md-asset-badge').className = 'badge badge-cyan';
+            btn.style.display = 'none';
+            document.getElementById('md-download-progress').style.display = '';
+            document.getElementById('md-download-status-text').textContent = 'Download already in progress...';
+          }
+        });
+      }
+      if (!r.ok) throw new Error(r.status + ' ' + r.statusText);
+      return r.json();
+    }).then(function(data) {
+      if (!data) return;
+      btn.style.display = 'none';
+      document.getElementById('md-download-progress').style.display = '';
+      document.getElementById('md-download-status-text').textContent = 'Download queued...';
+      document.getElementById('md-asset-badge').textContent = 'downloading';
+      document.getElementById('md-asset-badge').className = 'badge badge-cyan';
+      pollDownloadStatus(data.job_id);
+    }).catch(function(err) {
+      btn.disabled = false;
+      btn.textContent = 'Download Weights';
+    });
+  }
+
+  function loadExternalModelDetail() {
+    fetch('/v1/models/external/' + modelId).then(function(r) { return r.json(); }).then(function(data) {
+      var loadingEl = document.getElementById('md-loading');
+      var errorEl = document.getElementById('md-error');
+      var bodyEl = document.getElementById('md-body');
+      var extSection = document.getElementById('md-external-section');
+      if (data.detail) {
+        loadingEl.style.display = 'none';
+        errorEl.style.display = '';
+        errorEl.textContent = 'Error: ' + data.detail;
+        return;
+      }
+      loadingEl.style.display = 'none';
+      bodyEl.style.display = '';
+      dom.setText(document.getElementById('md-name'), data.display_name || data.source_identifier);
+      document.getElementById('md-play-link').style.display = 'none';
+      document.getElementById('md-continue-training-link').style.display = 'none';
+      document.getElementById('md-versions-table').style.display = 'none';
+      document.getElementById('md-avg-loss').style.display = 'none';
+      document.getElementById('merge-section').style.display = 'none';
+      extSection.style.display = '';
+      dom.setText(document.getElementById('md-ext-source'), data.source_type + ': ' + data.source_identifier);
+      dom.setText(document.getElementById('md-ext-arch'), data.architecture_family || '\u2014');
+      dom.setText(document.getElementById('md-ext-params'), data.parameter_count != null ? friendlyParamCount(data.parameter_count) : '\u2014');
+      dom.setText(document.getElementById('md-ext-license'), data.license || '\u2014');
+      dom.setText(document.getElementById('md-ext-tokenizer'), data.tokenizer_family || '\u2014');
+      var runnableEl = document.getElementById('md-ext-runnable');
+      if (data.runnable_status === 'runnable') {
+        runnableEl.innerHTML = '<span class="badge badge-green">Runnable</span>';
+      } else {
+        runnableEl.innerHTML = '<span class="badge badge-yellow">Track Only</span>'
+          + (data.runnable_reason ? ' <span class="type-caption-2" style="color:var(--text-tertiary);">' + data.runnable_reason + '</span>' : '');
+      }
+      // Enable Play button when assets available + runnable (spec 063)
+      if (data.asset_availability === 'assets_available' && data.runnable_status === 'runnable') {
+        document.getElementById('md-play-link').style.display = '';
+        document.getElementById('md-play-link').href = '/v1/inference-page?model_id=' + modelId;
+        document.getElementById('md-continue-training-link').style.display = '';
+        document.getElementById('md-continue-training-link').href = '/v1/training-page?base_model_ref=' + modelId;
+      }
+      document.getElementById('md-download-btn').addEventListener('click', startDownload);
+      updateAssetUI(data.asset_availability);
+    }).catch(function(err) {
+      document.getElementById('md-loading').style.display = 'none';
+      var errorEl = document.getElementById('md-error');
+      errorEl.style.display = '';
+      dom.setText(errorEl, 'Failed to load external model: ' + err.message);
+    });
+  }
+
   function loadModelDetail() {
-    fetch('/v1/registry/models/' + modelId).then(function(r) { return r.json(); }).then(function(data) {
+    fetch('/v1/registry/models/' + modelId).then(function(r) {
+      if (r.status === 404) {
+        loadExternalModelDetail();
+        return null;
+      }
+      if (!r.ok) throw new Error(r.status + ' ' + r.statusText);
+      return r.json();
+    }).then(function(data) {
+      if (!data) return;
       var loadingEl = document.getElementById('md-loading');
       var errorEl = document.getElementById('md-error');
       var bodyEl = document.getElementById('md-body');
@@ -105,10 +281,8 @@
       loadingEl.style.display = 'none';
       bodyEl.style.display = '';
 
-      // Model name
       dom.setText(document.getElementById('md-name'), data.name);
 
-      // Description
       var descEl = document.getElementById('md-description');
       if (data.description) {
         descEl.style.display = '';
@@ -117,17 +291,12 @@
         descEl.style.display = 'none';
       }
 
-      // Play link
       document.getElementById('md-play-link').href = '/v1/inference-page?model_id=' + modelId;
-
-      // Continue Training link
       document.getElementById('md-continue-training-link').href = '/v1/training-page?base_model_ref=' + modelId;
 
-      // Metrics
       dom.setText(document.getElementById('md-versions'), String(data.versions.length));
-      dom.setText(document.getElementById('md-created'), data.created_at || '—');
+      dom.setText(document.getElementById('md-created'), data.created_at || '\u2014');
 
-      // Avg loss
       var totalLosses = data.versions.filter(function(v) { return v.final_loss != null; });
       var avgLoss = totalLosses.length > 0
         ? totalLosses.reduce(function(s, v) { return s + v.final_loss; }, 0) / totalLosses.length
@@ -140,7 +309,6 @@
         avgLossEl.style.display = 'none';
       }
 
-      // Versions table
       var tableEl = document.getElementById('md-versions-table');
       var tbody = document.getElementById('md-versions-tbody');
       if (data.versions.length > 0) {
@@ -150,8 +318,8 @@
           versionHtml += '<tr>'
             + '<td>v' + v.version + '</td>'
             + '<td><a href="/v1/experiments-page" class="action-link">#' + v.experiment_id + '</a></td>'
-            + '<td class="loss-value">' + (v.final_loss != null ? v.final_loss.toFixed(4) : '—') + '</td>'
-            + '<td class="text-dim">' + (v.dataset_name || '—') + '</td>'
+            + '<td class="loss-value">' + (v.final_loss != null ? v.final_loss.toFixed(4) : '\u2014') + '</td>'
+            + '<td class="text-dim">' + (v.dataset_name || '\u2014') + '</td>'
             + '<td class="text-dim">' + (v.created_at || '') + '</td>'
             + '<td><button class="btn btn-secondary btn-sm" onclick="deleteVersion(' + v.version + ')">Delete</button></td>'
             + '</tr>';
@@ -168,7 +336,7 @@
             ];
             hpFields.forEach(function(f) {
               var val = v.hyperparameters[f.key] !== undefined ? v.hyperparameters[f.key] : null;
-              versionHtml += '<span class="hp-tag"><span class="hp-label">' + f.label + '</span> <span class="hp-value">' + (val !== null ? val : '—') + '</span></span>';
+              versionHtml += '<span class="hp-tag"><span class="hp-label">' + f.label + '</span> <span class="hp-value">' + (val !== null ? val : '\u2014') + '</span></span>';
             });
             versionHtml += '</div></td></tr>';
           }
