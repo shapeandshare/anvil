@@ -555,7 +555,7 @@ class InferenceService:
             return None
 
         source_id = str(getattr(ext_model, "source_identifier", ""))
-        local_path = f"models/{model_id}/hf/"
+        local_path = f"data/storage/models/{model_id}/hf/"
         local_path_obj = Path(local_path)
         if not local_path_obj.exists():
             logger.info(
@@ -606,7 +606,7 @@ class InferenceService:
         finally:
             Path(tmp_path).unlink(missing_ok=True)
 
-        tokenizer = self._create_adapter_tokenizer(source_id)
+        tokenizer = self._create_adapter_tokenizer(source_id, local_path=local_path)
 
         return (composed, tokenizer)
 
@@ -715,7 +715,7 @@ class InferenceService:
         )
 
         # ── Prefer local assets when available (spec 063) ────────────────
-        local_path = Path(f"models/{model_id}/hf/")
+        local_path = Path(f"data/storage/models/{model_id}/hf/")
         base_path = str(local_path) if local_path.exists() else source_id
         load_source = "local" if local_path.exists() else "hub"
         logger.info(
@@ -861,7 +861,13 @@ class InferenceService:
         composed = await self._compose_adapter(model_id, adapter_id)
 
         # ── Build tokenizer from the base model's tokenizer files ───────
-        tokenizer = self._create_adapter_tokenizer(source_id)
+        local_tokenizer_path = f"data/storage/models/{model_id}/hf/"
+        tokenizer = self._create_adapter_tokenizer(
+            source_id,
+            local_path=local_tokenizer_path
+            if Path(local_tokenizer_path).exists()
+            else None,
+        )
 
         return LoadedModel(
             composed,
@@ -872,24 +878,35 @@ class InferenceService:
             adapter_path=self._resolve_adapter_path(model_id, adapter_id),
         )
 
-    def _create_adapter_tokenizer(self, source_id: str) -> Tokenizer:
-        """Build a tokenizer for an adapter-composed model.
+    def _create_adapter_tokenizer(
+        self,
+        source_id: str,
+        local_path: str | None = None,
+    ) -> Tokenizer:
+        """Build a tokenizer for an adapter-composed or bare external model.
 
         Uses ``transformers.AutoTokenizer`` when available (requires
         ``[finetune]`` extra), wrapping it with the ``Tokenizer`` interface.
         Falls back to a minimal tokenizer if transformers is not installed.
+        When ``local_path`` is provided, loads the tokenizer from the local
+        filesystem instead of the HuggingFace Hub (spec 063).
 
         Parameters
         ----------
         source_id : str
-            HF repository ID (e.g. ``"facebook/opt-125m"``).
+            HF repository ID (e.g. ``"facebook/opt-125m"``). Used as
+            fallback when ``local_path`` is not set.
+        local_path : str, optional
+            Local filesystem path to the model directory containing
+            ``tokenizer.json``.
 
         Returns
         -------
         Tokenizer
             An adapter instance wrapping the HF tokenizer.
         """
-        hf_tok = AutoTokenizer.from_pretrained(source_id)  # type: ignore[no-untyped-call]
+        tokenizer_path = local_path if local_path is not None else source_id
+        hf_tok = AutoTokenizer.from_pretrained(tokenizer_path)  # type: ignore[no-untyped-call]
         return TransformersTokenizerAdapter(hf_tok)
 
     async def _resolve_default_id(self) -> int:
