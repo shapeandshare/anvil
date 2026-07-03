@@ -2,7 +2,7 @@
 
 Covers all Jinja2-rendered lesson pages (``/v1/learn/{page}``),
 the learning index, FAQ, glossary, and utility functions exported
-by the learning module. The learning router has 30 registered routes
+by the learning module. The learning router has 32 registered routes
 across 5 template archetypes.
 """
 
@@ -138,11 +138,11 @@ class TestLearningRouter:
     """Tests that the learning module's router is correctly configured."""
 
     def test_router_has_expected_route_count(self) -> None:
-        """The learning router registers 30 routes."""
+        """The learning router registers 32 routes."""
         routes = learning_mod.router.routes
         assert (
-            len(routes) == 30
-        ), f"Expected 30 routes on learning router, got {len(routes)}"
+            len(routes) == 32
+        ), f"Expected 32 routes on learning router, got {len(routes)}"
 
     def test_router_includes_all_learn_paths(self) -> None:
         """All known learn pages exist as registered routes."""
@@ -194,7 +194,7 @@ class TestArcContext:
         """Last item has a valid ``prev`` and no ``next``."""
         ctx = learning_mod._arc_context("service-management")
         assert ctx["current_key"] == "service-management"
-        assert ctx["current_index"] == 26
+        assert ctx["current_index"] == 27
         assert ctx["prev"] is not None
         assert ctx["prev"]["key"] == "configuration"
         assert ctx["next"] is None
