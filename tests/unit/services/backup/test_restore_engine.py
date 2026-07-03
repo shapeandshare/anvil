@@ -19,7 +19,7 @@ class TestRestoreEngineErrors:
         backup_dir = tmp_path / "backups"
         backup_dir.mkdir()
         journal_path = tmp_path / ".restore-journal.json"
-        journal = RestoreJournal(journal_path)
+        journal = RestoreJournal(journal_path, base_dir=tmp_path)
         engine = RestoreEngine(backup_dir, journal)
         result = await engine.execute(
             backup_id="nonexistent", safety_snapshot_id="safety-001"
@@ -32,7 +32,7 @@ class TestRestoreEngineErrors:
         backup_dir = tmp_path / "backups"
         backup_dir.mkdir()
         journal_path = tmp_path / ".restore-journal.json"
-        journal = RestoreJournal(journal_path)
+        journal = RestoreJournal(journal_path, base_dir=tmp_path)
         engine = RestoreEngine(backup_dir, journal)
 
         result = await engine.execute(
@@ -67,7 +67,7 @@ class TestRestoreEngineHappyPath:
 
         # Set up journal.
         journal_path = tmp_path / ".restore-journal.json"
-        journal = RestoreJournal(journal_path)
+        journal = RestoreJournal(journal_path, base_dir=tmp_path)
         engine = RestoreEngine(backup_dir, journal)
 
         # Run restore — the engine will extract to .restore-tmp/test-restore,
@@ -118,7 +118,7 @@ class TestRestoreEngineHappyPath:
             calls.append((percent, step))
 
         journal_path = tmp_path / ".restore-journal.json"
-        journal = RestoreJournal(journal_path)
+        journal = RestoreJournal(journal_path, base_dir=tmp_path)
         engine = RestoreEngine(backup_dir, journal)
 
         result = await engine.execute(
@@ -154,7 +154,7 @@ class TestRestoreEngineHappyPath:
         )
 
         journal_path = tmp_path / ".restore-journal.json"
-        journal = RestoreJournal(journal_path)
+        journal = RestoreJournal(journal_path, base_dir=tmp_path)
         engine = RestoreEngine(backup_dir, journal)
 
         await engine.execute(
@@ -170,7 +170,7 @@ class TestRestoreEngineHappyPath:
         backup_dir = tmp_path / "backups"
         backup_dir.mkdir()
         journal_path = tmp_path / ".restore-journal.json"
-        journal = RestoreJournal(journal_path)
+        journal = RestoreJournal(journal_path, base_dir=tmp_path)
         engine = RestoreEngine(backup_dir, journal)
 
         await engine.execute(
@@ -189,7 +189,7 @@ class TestRestoreEngineFailures:
         backup_dir = tmp_path / "backups"
         backup_dir.mkdir()
         journal_path = tmp_path / ".restore-journal.json"
-        journal = RestoreJournal(journal_path)
+        journal = RestoreJournal(journal_path, base_dir=tmp_path)
         engine = RestoreEngine(backup_dir, journal)
 
         result = await engine.execute(
@@ -218,7 +218,7 @@ class TestRestoreEngineFailures:
         # Corrupt the extracted data after extraction by intercepting
         # the verify call.
         journal_path = tmp_path / ".restore-journal.json"
-        journal = RestoreJournal(journal_path)
+        journal = RestoreJournal(journal_path, base_dir=tmp_path)
         engine = RestoreEngine(backup_dir, journal)
 
         # Patch ArchiveReader.verify to return failure.
@@ -256,7 +256,7 @@ class TestRestoreEngineFailures:
         )
 
         journal_path = tmp_path / ".restore-journal.json"
-        journal = RestoreJournal(journal_path)
+        journal = RestoreJournal(journal_path, base_dir=tmp_path)
         engine = RestoreEngine(backup_dir, journal)
 
         result = await engine.execute(
@@ -286,7 +286,7 @@ class TestRestoreEngineFailures:
         )
 
         journal_path = tmp_path / ".restore-journal.json"
-        journal = RestoreJournal(journal_path)
+        journal = RestoreJournal(journal_path, base_dir=tmp_path)
         engine = RestoreEngine(backup_dir, journal)
 
         # Patch ArchiveReader.extract_to to raise an exception.
@@ -319,7 +319,7 @@ class TestRestoreEngineFailures:
         )
 
         journal_path = tmp_path / ".restore-journal.json"
-        journal = RestoreJournal(journal_path)
+        journal = RestoreJournal(journal_path, base_dir=tmp_path)
         engine = RestoreEngine(backup_dir, journal)
 
         with patch(
@@ -383,7 +383,7 @@ class TestRestoreEngineMultipleRoots:
         )
 
         journal_path = tmp_path / ".restore-journal.json"
-        journal = RestoreJournal(journal_path)
+        journal = RestoreJournal(journal_path, base_dir=tmp_path)
         engine = RestoreEngine(backup_dir, journal)
 
         result = await engine.execute(
@@ -427,7 +427,7 @@ class TestRestoreEngineMultipleRoots:
         (live_data / "old.txt").write_text("original")
 
         journal_path = tmp_path / ".restore-journal.json"
-        journal = RestoreJournal(journal_path)
+        journal = RestoreJournal(journal_path, base_dir=tmp_path)
         engine = RestoreEngine(backup_dir, journal)
 
         result = await engine.execute(
