@@ -320,6 +320,49 @@ class ModelImportService:
         """
         return await self._external_model_repo.get(model_id)
 
+    async def delete_external_model(
+        self,
+        model_id: int,
+        *,
+        model_asset_repo=None,
+        store=None,
+    ) -> None:
+        """Delete an external model and clean up its asset files.
+
+        Parameters
+        ----------
+        model_id : int
+            ``ExternalModel`` primary key.
+        model_asset_repo : ModelAssetRepository, optional
+            Repository for listing model assets to clean up files.
+        store : FileStore, optional
+            File store for deleting asset files from disk.
+
+        Raises
+        ------
+        ValueError
+            If the model does not exist.
+        """
+        model = await self._external_model_repo.get(model_id)
+        if model is None:
+            raise ValueError(f"External model not found: {model_id}")
+
+        if model_asset_repo is not None and store is not None:
+            get_by_model = getattr(model_asset_repo, "get_by_model", None)
+            if get_by_model is not None:
+                assets = await get_by_model(model_id)
+                for asset in assets:
+                    storage_path = getattr(asset, "storage_path", None)
+                    if storage_path:
+                        try:
+                            await store.delete(storage_path)
+                        except Exception:
+                            logger.exception(
+                                "Failed to delete asset file: %s", storage_path
+                            )
+
+        await self._external_model_repo.delete(model_id)
+
     async def list_external_models(
         self,
     ) -> Sequence[ExternalModel]:
