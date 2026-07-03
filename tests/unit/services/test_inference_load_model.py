@@ -313,6 +313,7 @@ def test_load_model_external_model_no_assets(monkeypatch):
     This test asserts the eventual contract — it will need updating
     once T005 is implemented.
     """
+
     async def no_models(self, search=None):
         return []
 

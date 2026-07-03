@@ -278,7 +278,8 @@ class TestRunDownload:
         # SHA-256 recorded as metadata on the ModelAsset row, NOT as path component
         # The update_status call with AVAILABLE status carries sha256 as kwarg
         available_calls = [
-            c for c in svc._asset_repo.update_status.call_args_list
+            c
+            for c in svc._asset_repo.update_status.call_args_list
             if c.args[1] == str(ModelAssetStatus.AVAILABLE)
         ]
         assert len(available_calls) >= 1
