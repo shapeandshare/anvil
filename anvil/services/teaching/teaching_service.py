@@ -142,7 +142,7 @@ class TeachingService:
         Parameters
         ----------
         status : str, optional
-            Filter by status (``"draft"``, ``"active"``, ``"completed"``).
+            Filter by status (``TeachingSessionStatus.DRAFT``, ``TeachingSessionStatus.ACTIVE``, ``TeachingSessionStatus.COMPLETED``).
         limit : int
             Max results. Default 20.
         offset : int

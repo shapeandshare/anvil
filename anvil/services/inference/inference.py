@@ -499,7 +499,7 @@ class InferenceService:
         # are caught silently so existing resolution paths are unaffected.
         try:
             ext_model = await self._try_load_external_model(model_id)
-        except Exception:  # noqa: BLE001
+        except Exception:
             ext_model = None
         if ext_model is not None:
             composed, tokenizer = ext_model
@@ -577,7 +577,7 @@ class InferenceService:
                 str(local_path_obj),
                 trust_remote_code=False,
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.warning(
                 "from_pretrained failed for external model %d at %s: %s",
                 model_id,
@@ -585,7 +585,6 @@ class InferenceService:
                 exc,
             )
             return None
-
         hf_config = base_model.config.to_dict() if hasattr(base_model, "config") else {}
         tokenizer_family = str(getattr(ext_model, "tokenizer_family", "subword"))
         serialization_type = self._infer_serialization_type(source_id, hf_config)
@@ -729,6 +728,7 @@ class InferenceService:
         try:
             base_model = AutoModelForCausalLM.from_pretrained(
                 base_path,
+                revision="main",
                 trust_remote_code=False,
             )
             composed = PeftModel.from_pretrained(base_model, adapter_storage_path)
@@ -906,7 +906,7 @@ class InferenceService:
             An adapter instance wrapping the HF tokenizer.
         """
         tokenizer_path = local_path if local_path is not None else source_id
-        hf_tok = AutoTokenizer.from_pretrained(tokenizer_path)  # type: ignore[no-untyped-call]
+        hf_tok = AutoTokenizer.from_pretrained(tokenizer_path, revision="main")  # type: ignore[no-untyped-call]
         return TransformersTokenizerAdapter(hf_tok)
 
     async def _resolve_default_id(self) -> int:

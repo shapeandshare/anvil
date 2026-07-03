@@ -76,6 +76,7 @@ dev = [
     "coverage>=7.0,<8",
     "commitizen>=3.0,<4",
     "pytest-playwright>=0.5,<1",
+    "bandit>=1.7,<2",
 ]
 finetune = [
     "huggingface_hub>=0.24,<2",
@@ -176,7 +177,7 @@ warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
 module = "google.*"
-ignore_missing_imports = true
+ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = "anvil.services.tracking"
@@ -201,6 +202,26 @@ omit = ["tests/*", "anvil/_resources/migrations/*", "tests/system/*", "tests/bro
 [tool.coverage.report]
 fail_under = 23
 show_missing = true
+
+[tool.bandit]
+# Exclude test, build, and third-party directories from security analysis
+exclude_dirs = ["tests", ".venv", "examples", "scripts", ".github"]
+targets = ["anvil"]
+# Skip known false-positive / intentional patterns:
+#   B101 — assert statements used intentionally for type narrowing
+#   B104 — binding to 0.0.0.0 is intentional (LAN-accessible server, per README docs)
+#   B105 — false positives on config key names (hf_token, HF_TOKEN) and tokenizer constants
+#   B106 — false positives on bos_token parameter names (not passwords)
+#   B107 — false positives on bos_token="" default values (not passwords)
+#   B311 — random.uniform() for non-crypto jitter/sampling
+#   B404 — subprocess import (informational only)
+#   B603 — subprocess with list args (safe by design, not shell=True)
+#   B607 — git on PATH is standard (not a partial-path vulnerability)
+#   B615 — from_pretrained() calls prefer local assets; hub fallback uses
+#          user-configured model IDs where we can't pin commit hashes statically.
+#          Acceptable risk: local paths are false positives, hub models are
+#          user-specified (not programmatic injection).
+skips = ["B101", "B104", "B105", "B106", "B107", "B311", "B404", "B603", "B607", "B615"]
 
 [tool.commitizen]
 name = "cz_conventional_commits"

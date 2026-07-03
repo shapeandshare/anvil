@@ -8,6 +8,7 @@ from typing import Any
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ...services._shared.evaluation_status import EvaluationRunStatus
 from ..models.evaluation_run import EvalSample, EvaluationRun, MetricDelta
 
 
@@ -79,9 +80,9 @@ class EvaluationRunRepository:
         values: dict[str, Any] = {"status": status}
         if error_message is not None:
             values["error_message"] = error_message
-        if status == "running":
+        if status == EvaluationRunStatus.RUNNING:
             values["started_at"] = func.now()
-        elif status in ("completed", "failed"):
+        elif status in (EvaluationRunStatus.COMPLETED, EvaluationRunStatus.FAILED):
             values["finished_at"] = func.now()
 
         stmt = update(EvaluationRun).where(EvaluationRun.id == run_id).values(**values)
@@ -137,7 +138,7 @@ class EvaluationRunRepository:
         Parameters
         ----------
         status : str
-            Status to filter by (e.g. ``"pending"``, ``"completed"``).
+            Status to filter by (e.g. ``EvaluationRunStatus.PENDING``, ``EvaluationRunStatus.COMPLETED``).
         limit : int, optional
             Maximum results. Defaults to 20.
         offset : int, optional

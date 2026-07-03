@@ -88,7 +88,7 @@ async def test_inference_models_timeout_returns_503(client):
     """
     with patch(
         "anvil.api.v1.learning.asyncio.wait_for",
-        side_effect=asyncio.TimeoutError(),
+        side_effect=TimeoutError(),
     ):
         r = await client.get("/v1/inference/models")
     assert r.status_code == 503

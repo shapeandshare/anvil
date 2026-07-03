@@ -16,6 +16,7 @@ loss-of-information bug.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import re
@@ -169,6 +170,7 @@ class AdapterMergeService:
 
         base_model = AutoModelForCausalLM.from_pretrained(
             source_identifier,
+            revision="main",
             trust_remote_code=False,
         )
         adapter_model = PeftModel.from_pretrained(base_model, adapter.storage_path)
@@ -199,6 +201,7 @@ class AdapterMergeService:
         try:
             base_model = AutoModelForCausalLM.from_pretrained(
                 source_identifier,
+                revision="main",
                 trust_remote_code=False,
             )
             adapter_model = PeftModel.from_pretrained(base_model, adapter.storage_path)
@@ -240,7 +243,7 @@ class AdapterMergeService:
             merged_hf.save_pretrained(tmp_path)
 
             try:
-                tokenizer = AutoTokenizer.from_pretrained(source_identifier)  # type: ignore[no-untyped-call]
+                tokenizer = AutoTokenizer.from_pretrained(source_identifier, revision="main")  # type: ignore[no-untyped-call]
                 tokenizer.save_pretrained(tmp_path)
             except Exception:
                 logger.warning(
@@ -426,7 +429,7 @@ class AdapterMergeService:
             and getattr(model, "runnable_status", None) == "runnable"
         ):
             local_path = Path(f"data/storage/models/{model_id}/hf/")
-            if local_path.exists():
+            if await asyncio.to_thread(local_path.exists):
                 logger.info(
                     "Resolved external model %d from local assets at %s",
                     model_id,

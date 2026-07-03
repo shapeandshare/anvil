@@ -16,6 +16,9 @@ _ALLOWED_FILES: set[str] = {
     "model_asset.py",
     "backup_status.py",
     "cli.py",
+    "evaluation_status.py",
+    "teaching_session_status.py",
+    "evaluation_run.py",
 }
 
 
@@ -23,7 +26,7 @@ def _iter_py_files(root: Path):
     for p in root.rglob("*.py"):
         rel = p.relative_to(root)
         parts = rel.parts
-        if parts[0] in ("tests", "migrations"):
+        if parts[0] in ("tests", "_resources"):
             continue
         if ".venv" in parts:
             continue

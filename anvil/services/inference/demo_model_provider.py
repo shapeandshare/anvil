@@ -135,6 +135,7 @@ def warmup_demo_via_system_pipeline() -> None:
 
             docs = asyncio.run(_get_docs())
         except Exception:
+            logger.debug("Demo corpus bootstrap failed, using fallback", exc_info=True)
             pass
 
         docs = docs or _FALLBACK_CORPUS
@@ -237,6 +238,10 @@ def warmup_demo_via_system_pipeline() -> None:
                                 lambda: client.log_artifact(mlflow_run_id, samples_path),  # type: ignore[union-attr]
                             )
                     except Exception:
+                        logger.warning(
+                            "Failed to log demo samples artifact to MLflow",
+                            exc_info=True,
+                        )
                         pass
 
                 model_path = os.path.join(tmpdir, "model.json")
@@ -251,6 +256,10 @@ def warmup_demo_via_system_pipeline() -> None:
                                 lambda: client.log_artifact(mlflow_run_id, model_path),  # type: ignore[union-attr]
                             )
                     except Exception:
+                        logger.warning(
+                            "Failed to log demo model artifact to MLflow",
+                            exc_info=True,
+                        )
                         pass
 
                 # ── Run safetensors export & log artifacts to MLflow ──
@@ -329,6 +338,9 @@ def warmup_demo_via_system_pipeline() -> None:
                             str(corpus.document_count or 0),
                         )
             except Exception:
+                logger.warning(
+                    "Failed to set MLflow tags for demo warmup", exc_info=True
+                )
                 pass
 
             # ── Save to experiment-specific path for GET /experiments/{id} ──
@@ -361,6 +373,7 @@ def warmup_demo_via_system_pipeline() -> None:
             _demo_provider._model = model
             _demo_provider._chars = model.chars
         except Exception:
+            logger.warning("Demo model fallback training also failed", exc_info=True)
             pass
 
 
