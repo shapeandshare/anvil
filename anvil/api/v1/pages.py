@@ -358,6 +358,10 @@ async def hf_browser_page(
                 "runnable_status": runnable,
             }
         )
+    imported_ids: set[str] = {
+        m.source_identifier
+        for m in await workbench.model_imports.list_external_models()
+    }
     import_jobs_raw = await workbench.model_imports.list_jobs()
     import_jobs: list[dict[str, object]] = []
     for j in import_jobs_raw:
@@ -393,5 +397,6 @@ async def hf_browser_page(
             "import_jobs": import_jobs,
             "lesson_049_available": False,
             "hf_available": browser.hf_available(),
+            "imported_ids": imported_ids,
         },
     )
