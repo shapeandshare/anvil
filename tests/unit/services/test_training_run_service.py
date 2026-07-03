@@ -717,9 +717,7 @@ class TestValidateWarmStart:
         """Returns immediately when method is not 'full'."""
         with tempfile.TemporaryDirectory() as tmpdir:
             run_svc = _make_training_run_svc(tmpdir)
-            config = TrainingRunConfig(
-                method="lora", base_model_ref=1, lora_rank=4
-            )
+            config = TrainingRunConfig(method="lora", base_model_ref=1, lora_rank=4)
 
             with patch(
                 "anvil.services.training.training_run_service.InferenceService"
@@ -760,9 +758,7 @@ class TestResolveTrainingBackend:
                 "engine": TrainingEngine.STDLIB,
                 "device": "cpu",
             }
-            engine, device = TrainingRunService._resolve_training_backend(
-                "local-cpu"
-            )
+            engine, device = TrainingRunService._resolve_training_backend("local-cpu")
             assert engine == TrainingEngine.STDLIB
             assert device == "cpu"
 
@@ -776,9 +772,7 @@ class TestResolveTrainingBackend:
                 "engine": TrainingEngine.TORCH,
                 "device": "cuda:0",
             }
-            engine, device = TrainingRunService._resolve_training_backend(
-                "local-gpu"
-            )
+            engine, device = TrainingRunService._resolve_training_backend("local-gpu")
             assert engine == TrainingEngine.TORCH
             assert device == "cuda:0"
 

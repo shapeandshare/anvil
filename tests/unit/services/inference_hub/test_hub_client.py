@@ -84,9 +84,7 @@ class TestHubClientConstruction:
         mock_instance = MagicMock()
         mock_hf_api_cls.return_value = mock_instance
 
-        with patch(
-            "anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls
-        ):
+        with patch("anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls):
             client = HubClient(token="test_token")
 
         mock_hf_api_cls.assert_called_once_with(token="test_token")
@@ -99,9 +97,7 @@ class TestHubClientConstruction:
     def test_constructor_defaults_token_to_none(self) -> None:
         """Defaults token to None when not provided."""
         mock_hf_api_cls = MagicMock()
-        with patch(
-            "anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls
-        ):
+        with patch("anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls):
             HubClient()
 
         mock_hf_api_cls.assert_called_once_with(token=None)
@@ -118,27 +114,30 @@ class TestIsExpired:
     def test_is_expired_returns_true_when_ttl_exceeded(self) -> None:
         """Returns True when current time exceeds timestamp + TTL."""
         mock_hf_api_cls = MagicMock()
-        with patch(
-            "anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls
-        ), patch("time.time", return_value=200.0):
+        with (
+            patch("anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls),
+            patch("time.time", return_value=200.0),
+        ):
             client = HubClient()
             assert client._is_expired(timestamp=100.0, ttl=10) is True
 
     def test_is_expired_returns_false_when_within_ttl(self) -> None:
         """Returns False when current time is within timestamp + TTL."""
         mock_hf_api_cls = MagicMock()
-        with patch(
-            "anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls
-        ), patch("time.time", return_value=105.0):
+        with (
+            patch("anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls),
+            patch("time.time", return_value=105.0),
+        ):
             client = HubClient()
             assert client._is_expired(timestamp=100.0, ttl=10) is False
 
     def test_is_expired_returns_false_at_exact_boundary(self) -> None:
         """Returns False when current time exactly equals timestamp + TTL."""
         mock_hf_api_cls = MagicMock()
-        with patch(
-            "anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls
-        ), patch("time.time", return_value=110.0):
+        with (
+            patch("anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls),
+            patch("time.time", return_value=110.0),
+        ):
             client = HubClient()
             assert client._is_expired(timestamp=100.0, ttl=10) is False
 
@@ -158,9 +157,10 @@ class TestSearchModels:
         mock_hf_api_cls = MagicMock()
         cached_results = [{"hf_id": "cached/model"}]
 
-        with patch(
-            "anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls
-        ), patch("time.time", return_value=100.0):
+        with (
+            patch("anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls),
+            patch("time.time", return_value=100.0),
+        ):
             client = HubClient()
             client._search_cache["bert:20"] = (50.0, cached_results)
 
@@ -184,9 +184,10 @@ class TestSearchModels:
         )
         mock_api_instance.list_models.return_value = [mock_model]
 
-        with patch(
-            "anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls
-        ), patch("time.time", return_value=500.0):
+        with (
+            patch("anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls),
+            patch("time.time", return_value=500.0),
+        ):
             client = HubClient()
             result = client.search_models("test", limit=10)
 
@@ -206,9 +207,10 @@ class TestSearchModels:
         mock_hf_api_cls.return_value = mock_api_instance
         mock_api_instance.list_models.return_value = []
 
-        with patch(
-            "anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls
-        ), patch("time.time", return_value=100.0):
+        with (
+            patch("anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls),
+            patch("time.time", return_value=100.0),
+        ):
             client = HubClient()
             client.search_models("test", limit=5)
             client.search_models("test", limit=20)
@@ -222,9 +224,10 @@ class TestSearchModels:
         mock_hf_api_cls.return_value = mock_api_instance
         mock_api_instance.list_models.side_effect = ValueError("API failure")
 
-        with patch(
-            "anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls
-        ), patch("time.time", return_value=100.0):
+        with (
+            patch("anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls),
+            patch("time.time", return_value=100.0),
+        ):
             client = HubClient()
             result = client.search_models("test")
 
@@ -245,9 +248,10 @@ class TestSearchModels:
 
         cached_results = [{"hf_id": "stale/model"}]
 
-        with patch(
-            "anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls
-        ), patch("time.time", return_value=100.0):
+        with (
+            patch("anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls),
+            patch("time.time", return_value=100.0),
+        ):
             client = HubClient()
             client._search_ttl = 0
             client._search_cache["test:20"] = (1.0, cached_results)
@@ -262,13 +266,12 @@ class TestSearchModels:
         mock_hf_api_cls = MagicMock()
         mock_api_instance = MagicMock()
         mock_hf_api_cls.return_value = mock_api_instance
-        mock_api_instance.list_models.side_effect = ValueError(
-            "429 Too Many Requests"
-        )
+        mock_api_instance.list_models.side_effect = ValueError("429 Too Many Requests")
 
-        with patch(
-            "anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls
-        ), patch("time.time", return_value=100.0):
+        with (
+            patch("anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls),
+            patch("time.time", return_value=100.0),
+        ):
             client = HubClient()
             result = client.search_models("test")
 
@@ -289,9 +292,10 @@ class TestSearchModels:
 
         cached_results = [{"hf_id": "stale/model"}]
 
-        with patch(
-            "anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls
-        ), patch("time.time", return_value=100.0):
+        with (
+            patch("anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls),
+            patch("time.time", return_value=100.0),
+        ):
             client = HubClient()
             client._search_ttl = 0
             client._search_cache["test:20"] = (1.0, cached_results)
@@ -310,9 +314,10 @@ class TestSearchModels:
         mock_hf_api_cls.return_value = mock_api_instance
         mock_api_instance.list_models.return_value = []
 
-        with patch(
-            "anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls
-        ), patch("time.time", return_value=200.0):
+        with (
+            patch("anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls),
+            patch("time.time", return_value=200.0),
+        ):
             client = HubClient()
             client.search_models("newquery", limit=5)
 
@@ -338,9 +343,10 @@ class TestGetModelInfo:
         mock_hf_api_cls = MagicMock()
         cached_info = {"hf_id": "cached/model", "downloads": 42}
 
-        with patch(
-            "anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls
-        ), patch("time.time", return_value=100.0):
+        with (
+            patch("anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls),
+            patch("time.time", return_value=100.0),
+        ):
             client = HubClient()
             client._info_cache["test/model"] = (50.0, cached_info)
 
@@ -367,9 +373,10 @@ class TestGetModelInfo:
         )
         mock_api_instance.model_info.return_value = mock_info
 
-        with patch(
-            "anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls
-        ), patch("time.time", return_value=500.0):
+        with (
+            patch("anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls),
+            patch("time.time", return_value=500.0),
+        ):
             client = HubClient()
             result = client.get_model_info("test/model")
 
@@ -390,9 +397,10 @@ class TestGetModelInfo:
         mock_hf_api_cls.return_value = mock_api_instance
         mock_api_instance.model_info.side_effect = ValueError("not found")
 
-        with patch(
-            "anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls
-        ), patch("time.time", return_value=100.0):
+        with (
+            patch("anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls),
+            patch("time.time", return_value=100.0),
+        ):
             client = HubClient()
             result = client.get_model_info("unknown/model")
 
@@ -409,9 +417,10 @@ class TestGetModelInfo:
 
         stale_info = {"hf_id": "test/model", "downloads": 99}
 
-        with patch(
-            "anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls
-        ), patch("time.time", return_value=100.0):
+        with (
+            patch("anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls),
+            patch("time.time", return_value=100.0),
+        ):
             client = HubClient()
             client._info_ttl = 0
             client._info_cache["test/model"] = (1.0, stale_info)
@@ -428,9 +437,10 @@ class TestGetModelInfo:
             model_id="new/model"
         )
 
-        with patch(
-            "anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls
-        ), patch("time.time", return_value=300.0):
+        with (
+            patch("anvil.services.inference_hub.hub_client.HfApi", mock_hf_api_cls),
+            patch("time.time", return_value=300.0),
+        ):
             client = HubClient()
             client.get_model_info("new/model")
 
@@ -471,9 +481,7 @@ class TestSerializeModels:
 
     def test_serialize_models_honours_limit_parameter(self) -> None:
         """Limits output to the specified number of models."""
-        models = [
-            _make_mock_model(model_id=f"model/{i}") for i in range(5)
-        ]
+        models = [_make_mock_model(model_id=f"model/{i}") for i in range(5)]
         result = _serialize_models(models, limit=3)
 
         assert len(result) == 3
@@ -615,9 +623,7 @@ class TestSerializeModelInfo:
 
     def test_serialize_model_info_without_safetensors(self) -> None:
         """Sets params to 0 when safetensors is None."""
-        info = _make_mock_model_info(
-            model_id="org/nosafe", safetensors_params=None
-        )
+        info = _make_mock_model_info(model_id="org/nosafe", safetensors_params=None)
         result = _serialize_model_info(info)
 
         assert result["params"] == 0
