@@ -207,6 +207,22 @@ def test_predict_with_string_input() -> None:
     assert len(df_out) == 1
 
 
+def test_predict_multiple_rows() -> None:
+    model = AnvilPyfuncModel()
+    model.vocab = {"a": 0, "b": 1}
+    model.chars = ["a", "b"]
+    model.bos_token_id = 0
+    model._reverse_vocab = {0: "a", 1: "b"}
+    _setup_mock_generate(model, token_id=0)
+
+    df_in = pd.DataFrame({"text": ["ab", "ba"]})
+    df_out = model.predict(None, df_in)
+
+    assert isinstance(df_out, pd.DataFrame)
+    assert "generated" in df_out.columns
+    assert len(df_out) == 2
+
+
 # ── _generate ─────────────────────────────────────────────────────────────
 
 
@@ -230,3 +246,44 @@ def test_generate_without_bos_token() -> None:
 
     result = model._generate("a", max_new_tokens=1)
     assert isinstance(result, str)
+
+
+def test_generate_unknown_char_mapped_to_zero() -> None:
+    """Characters not in vocab are mapped to token ID 0."""
+    model = AnvilPyfuncModel()
+    model.vocab = {"a": 0}
+    model.bos_token_id = None
+    model._reverse_vocab = {0: "a"}
+    _setup_mock_generate(model, token_id=0)
+
+    result = model._generate("z", max_new_tokens=1)
+    assert isinstance(result, str)
+
+
+def test_generate_zero_tokens_returns_empty() -> None:
+    """max_new_tokens=0 produces an empty string (no generation loop)."""
+    model = AnvilPyfuncModel()
+    model.vocab = {"a": 0}
+    model.bos_token_id = None
+    model._reverse_vocab = {0: "a"}
+    tensor_obj = _MockModule(to=lambda d: _MockModule(), item=lambda: 0)
+    model._torch = _MockModule(
+        tensor=lambda data: _MockModule(to=lambda d: tensor_obj),
+    )
+    model.model = lambda x: _MockModule(logits=_MockModule())
+    model.device = "cpu"
+
+    result = model._generate("a", max_new_tokens=0)
+    assert result == ""
+
+
+def test_generate_unknown_token_id_returns_empty() -> None:
+    """Token IDs not in reverse_vocab produce empty string in output."""
+    model = AnvilPyfuncModel()
+    model.vocab = {"a": 0}
+    model.bos_token_id = None
+    model._reverse_vocab = {0: "a"}
+    _setup_mock_generate(model, token_id=99)
+
+    result = model._generate("a", max_new_tokens=1)
+    assert result == ""
