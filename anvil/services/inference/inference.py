@@ -587,12 +587,8 @@ class InferenceService:
             return None
 
         hf_config = base_model.config.to_dict() if hasattr(base_model, "config") else {}
-        tokenizer_family = str(
-            getattr(ext_model, "tokenizer_family", "subword")
-        )
-        serialization_type = self._infer_serialization_type(
-            source_id, hf_config
-        )
+        tokenizer_family = str(getattr(ext_model, "tokenizer_family", "subword"))
+        serialization_type = self._infer_serialization_type(source_id, hf_config)
         anvil_data = _hf_state_dict_to_anvil_format(
             hf_state_dict=base_model.state_dict(),
             config=hf_config,
