@@ -135,3 +135,54 @@ class TestGetExternalModel:
         mock_workbench.model_imports.get_external_model = AsyncMock(return_value=None)
         resp = await client.get("/v1/models/external/999")
         assert resp.status_code == 404
+
+
+class TestDeleteExternalModel:
+    async def test_delete_found(self, client, mock_workbench, override_dep):
+        mock_model = MagicMock()
+        mock_model.id = 1
+        mock_model.display_name = "test-model"
+        mock_workbench.external_model_repo = MagicMock()
+        mock_workbench.external_model_repo.get = AsyncMock(return_value=mock_model)
+        mock_workbench.session = AsyncMock()
+        mock_workbench.session.execute = AsyncMock()
+        mock_workbench.session.commit = AsyncMock()
+        mock_workbench.model_imports.delete_external_model = AsyncMock()
+        mock_workbench.model_asset_repo = MagicMock()
+        mock_workbench.model_store = MagicMock()
+
+        resp = await client.delete("/v1/models/external/1")
+        assert resp.status_code == 200
+        assert "deleted" in resp.json()["message"]
+        mock_workbench.external_model_repo.get.assert_awaited_once_with(1)
+        mock_workbench.model_imports.delete_external_model.assert_awaited_once()
+        mock_workbench.session.commit.assert_awaited_once()
+
+    async def test_delete_not_found(self, client, mock_workbench, override_dep):
+        mock_workbench.external_model_repo = MagicMock()
+        mock_workbench.external_model_repo.get = AsyncMock(return_value=None)
+
+        resp = await client.delete("/v1/models/external/999")
+        assert resp.status_code == 404
+
+    async def test_delete_with_assets(self, client, mock_workbench, override_dep):
+        mock_model = MagicMock()
+        mock_model.id = 1
+        mock_model.display_name = "test-model"
+        mock_workbench.external_model_repo = MagicMock()
+        mock_workbench.external_model_repo.get = AsyncMock(return_value=mock_model)
+        mock_workbench.session = AsyncMock()
+        mock_workbench.session.execute = AsyncMock()
+        mock_workbench.session.commit = AsyncMock()
+        mock_workbench.model_imports.delete_external_model = AsyncMock()
+        mock_workbench.model_asset_repo = MagicMock()
+        mock_workbench.model_store = MagicMock()
+
+        resp = await client.delete("/v1/models/external/1")
+        assert resp.status_code == 200
+        mock_workbench.session.execute.assert_awaited()
+        mock_workbench.model_imports.delete_external_model.assert_awaited_with(
+            1,
+            model_asset_repo=mock_workbench.model_asset_repo,
+            store=mock_workbench.model_store,
+        )

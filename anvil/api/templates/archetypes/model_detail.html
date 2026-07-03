@@ -371,7 +371,9 @@
 
   window.deleteModel = function() {
     if (!confirm('Delete this entire model and all versions? This cannot be undone.')) return;
-    window.apiFetch('/v1/registry/models/' + modelId, { method: 'DELETE' })
+    var isExternal = urlParams.get('source') === 'external';
+    var url = isExternal ? '/v1/models/external/' + modelId : '/v1/registry/models/' + modelId;
+    window.apiFetch(url, { method: 'DELETE' })
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data.detail) { alert('Error: ' + data.detail); }

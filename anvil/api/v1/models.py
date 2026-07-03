@@ -12,7 +12,9 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
+from sqlalchemy import update
 
+from ...db.models.evaluation_run import EvaluationRun
 from ...db.session import AsyncSessionLocal
 from ...services.model_import.model_asset_service import (
     DuplicateDownloadError,
@@ -238,6 +240,62 @@ async def get_external_model(
         "created_at": model.created_at.isoformat(),
         "updated_at": model.updated_at.isoformat(),
     }
+
+
+@router.delete("/models/external/{model_id}")
+async def delete_external_model(
+    model_id: int,
+    workbench: AnvilWorkbench = Depends(get_workbench),
+) -> dict[str, str]:
+    """Delete an external model and all associated assets.
+
+    Cleans up downloaded asset files from the store, clears FK
+    references on evaluation runs, and removes the model record
+    (CASCADE handles ``model_assets``, ``asset_download_jobs``,
+    ``lora_adapters``; ``SET NULL`` handles ``model_import_jobs``).
+
+    Parameters
+    ----------
+    model_id : int
+        ``ExternalModel`` primary key.
+    workbench : AnvilWorkbench
+        Session-bound workbench.
+
+    Returns
+    -------
+    dict
+        Confirmation message.
+
+    Raises
+    ------
+    HTTPException
+        404 if the model is not found.
+    """
+    model = await workbench.external_model_repo.get(model_id)
+    if model is None:
+        raise HTTPException(status_code=404, detail="External model not found")
+
+    stmt = (
+        update(EvaluationRun)
+        .where(EvaluationRun.external_model_id == model_id)
+        .values(external_model_id=-1)
+    )
+    await workbench.session.execute(stmt)
+    stmt2 = (
+        update(EvaluationRun)
+        .where(EvaluationRun.base_external_model_id == model_id)
+        .values(base_external_model_id=None)
+    )
+    await workbench.session.execute(stmt2)
+
+    await workbench.model_imports.delete_external_model(
+        model_id,
+        model_asset_repo=workbench.model_asset_repo,
+        store=workbench.model_store,
+    )
+    await workbench.session.commit()
+
+    return {"message": f"External model '{model.display_name}' deleted"}
 
 
 # ── Model asset download (feature 042) ──────────────────────────────
