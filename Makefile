@@ -65,7 +65,7 @@ setup-hooks: ## Enable git hooks: conventional-commit enforcement + pre-commit l
 
 clean: ## Wipe all runtime state and build artifacts for a fresh start
 	rm -f data/anvil-state.db mlruns/mlflow.db
-	rm -rf dist/ .coverage htmlcov .pytest_cache
+	rm -rf dist/ .coverage coverage.xml htmlcov .pytest_cache
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name '*.pyc' -delete 2>/dev/null || true
 	find . -type d -name '*.egg-info' -exec rm -rf {} + 2>/dev/null || true
