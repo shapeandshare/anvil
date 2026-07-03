@@ -1243,11 +1243,24 @@ var gpuToggle = document.getElementById('compute_backend');
       temperature: parseFloat(document.getElementById('temperature').value),
       compute_backend: document.getElementById('compute_backend').value,
       method: document.getElementById('method').value,
-      lora_rank: Number.parseInt(document.getElementById('lora_rank').value),
-      lora_alpha: parseFloat(document.getElementById('lora_alpha').value),
-      lora_target_modules: document.getElementById('lora_target_modules').value,
-      lora_dropout: parseFloat(document.getElementById('lora_dropout').value),
+      lora_rank: Number.parseInt(document.getElementById('lora_rank').value) || null,
+      lora_alpha: parseFloat(document.getElementById('lora_alpha').value) || null,
+      lora_target_modules: (function() {
+        var v = document.getElementById('lora_target_modules').value;
+        if (!v) return null;
+        return v.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s; });
+      })(),
+      lora_dropout: parseFloat(document.getElementById('lora_dropout').value) || null,
     };
+
+    /* Strip LoRA fields when method is 'full' to avoid sending
+       irrelevant values that trigger Pydantic validation errors */
+    if (config.method === 'full') {
+      delete config.lora_rank;
+      delete config.lora_alpha;
+      delete config.lora_target_modules;
+      delete config.lora_dropout;
+    }
 
     /* Pre-flight validation — surface errors before the confirm step */
     var validationErrors = validateConfig(config);
@@ -1347,10 +1360,14 @@ var gpuToggle = document.getElementById('compute_backend');
       temperature: parseFloat(document.getElementById('temperature').value),
       compute_backend: document.getElementById('compute_backend').value,
       method: document.getElementById('method').value,
-      lora_rank: Number.parseInt(document.getElementById('lora_rank').value),
-      lora_alpha: parseFloat(document.getElementById('lora_alpha').value),
-      lora_target_modules: document.getElementById('lora_target_modules').value,
-      lora_dropout: parseFloat(document.getElementById('lora_dropout').value),
+      lora_rank: Number.parseInt(document.getElementById('lora_rank').value) || null,
+      lora_alpha: parseFloat(document.getElementById('lora_alpha').value) || null,
+      lora_target_modules: (function() {
+        var v = document.getElementById('lora_target_modules').value;
+        if (!v) return null;
+        return v.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s; });
+      })(),
+      lora_dropout: parseFloat(document.getElementById('lora_dropout').value) || null,
     };
     var cid = corpusSelect.value;
     var did = datasetSelect.value;
@@ -1360,6 +1377,15 @@ var gpuToggle = document.getElementById('compute_backend');
     var baseModelRef = core.getUrlParams().get('base_model_ref');
     if (baseModelRef) {
       config.base_model_ref = Number.parseInt(baseModelRef);
+    }
+
+    /* Strip LoRA fields when method is 'full' to avoid sending
+       irrelevant values that trigger Pydantic validation errors */
+    if (config.method === 'full') {
+      delete config.lora_rank;
+      delete config.lora_alpha;
+      delete config.lora_target_modules;
+      delete config.lora_dropout;
     }
 
     /* Pre-flight validation */
