@@ -1,0 +1,114 @@
+/* Copyright © 2026 Josh Burt
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+[data-skin="cobalt"] {
+  --bg:             #0a0e1a;
+  --surface:        #12182b;
+  --surface-2:      #1a2140;
+  --grouped-bg:     #080c18;
+  --separator:      #2a3456;
+  --text:           #e8edf5;
+  --text-secondary: #b8c4db;
+  --text-tertiary:  #7a87a8;
+  --text-bright:    #ffffff;
+
+  --accent:         #3b82f6;
+  --accent-green:   #34d399;
+  --accent-red:     #f87171;
+  --accent-orange:  #fb923c;
+  --accent-yellow:  #fbbf24;
+  --accent-purple:  #a78bfa;
+  --accent-cyan:    #22d3ee;
+
+  --glass-bg:       rgba(18, 24, 43, 0.85);
+  --glass-border:   rgba(59, 130, 246, 0.18);
+
+  --elevation: 0;
+}
+
+[data-skin="cobalt"][data-theme="light"] {
+  --bg:             #f0f3f8;
+  --surface:        #ffffff;
+  --surface-2:      #e4e9f2;
+  --grouped-bg:     #f0f3f8;
+  --separator:      #cdd4e0;
+  --text:           #1e293b;
+  --text-secondary: #475569;
+  --text-tertiary:  #94a3b8;
+  --text-bright:    #0f172a;
+
+  --accent:         #2563eb;
+  --accent-green:   #16a34a;
+  --accent-red:     #dc2626;
+  --accent-orange:  #ea580c;
+  --accent-purple:  #7c3aed;
+
+  --glass-bg:       rgba(255, 255, 255, 0.78);
+  --glass-border:   rgba(37, 99, 235, 0.16);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="cobalt"] * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+[data-skin="cobalt"] .app-main::after {
+  content: "";
+  position: fixed;
+  inset: auto 0 0 0;
+  height: calc(4vh + var(--elevation, 0) * 38vh);
+  pointer-events: none;
+  z-index: 0;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(59, 130, 246, calc(0.04 + var(--elevation, 0) * 0.08)) 45%,
+    rgba(59, 130, 246, calc(0.08 + var(--elevation, 0) * 0.14)) 100%
+  );
+  transition: height var(--dur-slow) var(--ease);
+}
+
+[data-skin="cobalt"] .app-main::before {
+  content: "";
+  position: fixed;
+  inset: auto 0 0 0;
+  height: 2px;
+  pointer-events: none;
+  z-index: 1;
+  opacity: calc(0.3 + var(--elevation, 0) * 0.7);
+  background: var(--accent);
+  box-shadow:
+    0 0 8px var(--accent),
+    0 0 20px rgba(59, 130, 246, 0.3);
+  bottom: calc(4vh + var(--elevation, 0) * 38vh - 1px);
+  transition:
+    bottom var(--dur-slow) var(--ease),
+    opacity var(--dur-slow) var(--ease);
+}
+
+[data-skin="cobalt"][data-cobalt-state="diverged"] .app-main::after {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(251, 146, 60, 0.10) 45%,
+    rgba(251, 146, 60, 0.22) 100%
+  );
+}
+
+[data-skin="cobalt"][data-cobalt-state="diverged"] .app-main::before {
+  background: var(--accent-orange);
+  box-shadow:
+    0 0 8px var(--accent-orange),
+    0 0 20px rgba(251, 146, 60, 0.3);
+  opacity: 0.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="cobalt"] .app-main::after,
+  [data-skin="cobalt"] .app-main::before { display: none; }
+}
