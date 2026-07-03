@@ -256,7 +256,7 @@ def _run_real_lora(
     )
 
     # ── load tokenizer ─────────────────────────────────────────────────
-    tokenizer = transformers.AutoTokenizer.from_pretrained(model_path)  # type: ignore[no-untyped-call]
+    tokenizer = transformers.AutoTokenizer.from_pretrained(model_path)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
@@ -335,7 +335,7 @@ def _run_real_lora(
             temperature=0.7,
         )
         sample_text = tokenizer.decode(
-            generated_ids[0],
+            generated_ids[0],  # type: ignore[assignment]
             skip_special_tokens=True,
         )
 
