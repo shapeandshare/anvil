@@ -26,6 +26,7 @@ THEME_IDS = [
     "tide",
     "unicorn",
     "bloom",
+    "cobalt",
     "tectonic",
     "glacier",
     "reactor",
