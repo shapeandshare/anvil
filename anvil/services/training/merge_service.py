@@ -170,6 +170,7 @@ class AdapterMergeService:
 
         base_model = AutoModelForCausalLM.from_pretrained(
             source_identifier,
+            revision="main",
             trust_remote_code=False,
         )
         adapter_model = PeftModel.from_pretrained(base_model, adapter.storage_path)
@@ -200,6 +201,7 @@ class AdapterMergeService:
         try:
             base_model = AutoModelForCausalLM.from_pretrained(
                 source_identifier,
+                revision="main",
                 trust_remote_code=False,
             )
             adapter_model = PeftModel.from_pretrained(base_model, adapter.storage_path)
@@ -241,7 +243,7 @@ class AdapterMergeService:
             merged_hf.save_pretrained(tmp_path)
 
             try:
-                tokenizer = AutoTokenizer.from_pretrained(source_identifier)  # type: ignore[no-untyped-call]
+                tokenizer = AutoTokenizer.from_pretrained(source_identifier, revision="main")  # type: ignore[no-untyped-call]
                 tokenizer.save_pretrained(tmp_path)
             except Exception:
                 logger.warning(

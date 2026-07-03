@@ -12,6 +12,7 @@ and corpus records to MLflow's ``MetaDataset`` and
 
 import asyncio
 import hashlib
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +23,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...db.repositories.corpora import CorpusRepository
 from ...db.repositories.datasets import DatasetRepository
+
+logger = logging.getLogger(__name__)
 
 
 class MlflowInputResolver:
@@ -175,6 +178,11 @@ class MlflowInputResolver:
                             docs.append(text)
                             artifact_paths.append(str(p))
                         except Exception:
+                            logger.debug(
+                                "Skipping unreadable corpus file %s",
+                                p,
+                                exc_info=True,
+                            )
                             pass
             return docs, artifact_paths
 

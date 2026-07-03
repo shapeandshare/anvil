@@ -10,10 +10,13 @@ Silicon GPU metrics and logs them to MLflow during training runs.
 """
 
 import asyncio
+import logging
 import threading
 
 from .mps_metrics_collector import MPSMetricsCollector
 from .tracking import TrackingService
+
+logger = logging.getLogger(__name__)
 
 
 class MPSSamplerThread(threading.Thread):
@@ -75,6 +78,10 @@ class MPSSamplerThread(threading.Thread):
                     )
                 step += 1
         except Exception:
+            logger.warning(
+                "MPS sampler thread stopped unexpectedly",
+                exc_info=True,
+            )
             pass
         finally:
             if self._loop:

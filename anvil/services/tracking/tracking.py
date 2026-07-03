@@ -297,6 +297,10 @@ class TrackingService:
             mlflow.enable_system_metrics_logging()  # type: ignore[no-untyped-call]
             _system_metrics_enabled = True
         except Exception:
+            logger.debug(
+                "Could not enable MLflow system metrics logging",
+                exc_info=True,
+            )
             pass
 
     async def capabilities(self) -> TrackingCapabilities:

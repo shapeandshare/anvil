@@ -28,8 +28,8 @@ lint: $(VENV_DIR)/activate ## Run ruff, black --check, isort --check, pylint, ba
 	@echo "Checking for disallowed patterns..."
 	@! grep -rn '^@dataclass' anvil/ --include='*.py' | grep -v '# noqa: dataclass' || { echo "ERROR: @dataclass is disallowed — use Pydantic BaseModel instead. See constitution.md"; exit 1; }
 
-bandit: $(VENV_DIR)/activate ## Run bandit security linter on the anvil package (advisory — --exit-zero)
-	$(PYTHON) -m bandit -r anvil/ -c pyproject.toml --exit-zero
+bandit: $(VENV_DIR)/activate ## Run bandit security linter on the anvil package
+	$(PYTHON) -m bandit -r anvil/ -c pyproject.toml
 
 build: ## Build a PEP 517 wheel via uv (fall back to python -m build)
 	uv build --wheel --out-dir dist . 2>/dev/null || python3 -m build --wheel --outdir dist .

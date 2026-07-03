@@ -728,6 +728,7 @@ class InferenceService:
         try:
             base_model = AutoModelForCausalLM.from_pretrained(
                 base_path,
+                revision="main",
                 trust_remote_code=False,
             )
             composed = PeftModel.from_pretrained(base_model, adapter_storage_path)
@@ -905,7 +906,7 @@ class InferenceService:
             An adapter instance wrapping the HF tokenizer.
         """
         tokenizer_path = local_path if local_path is not None else source_id
-        hf_tok = AutoTokenizer.from_pretrained(tokenizer_path)  # type: ignore[no-untyped-call]
+        hf_tok = AutoTokenizer.from_pretrained(tokenizer_path, revision="main")  # type: ignore[no-untyped-call]
         return TransformersTokenizerAdapter(hf_tok)
 
     async def _resolve_default_id(self) -> int:

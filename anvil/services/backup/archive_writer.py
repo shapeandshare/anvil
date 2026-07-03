@@ -10,6 +10,7 @@ manifests.
 import asyncio
 import hashlib
 import io
+import logging
 import os
 import sqlite3
 import tarfile
@@ -22,6 +23,8 @@ from typing import Any
 from ... import __version__ as anvil_version
 from .backup_manifest import BackupManifest
 from .manifest_entry import ManifestEntry
+
+logger = logging.getLogger(__name__)
 
 
 class ArchiveWriter:
@@ -243,4 +246,8 @@ class ArchiveWriter:
             try:
                 cb(percent, step)
             except Exception:
+                logger.warning(
+                    "Progress callback failed during archive writing",
+                    exc_info=True,
+                )
                 pass

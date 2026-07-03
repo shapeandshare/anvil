@@ -308,6 +308,10 @@ def train() -> None:
                 _progress_tasks.add(t)
                 t.add_done_callback(_progress_tasks.discard)
             except Exception:  # pylint: disable=broad-exception-caught
+                logger.debug(
+                    "MLflow metric logging failed during progress callback",
+                    exc_info=True,
+                )
                 pass
 
         final_loss_holder: list[float] = []

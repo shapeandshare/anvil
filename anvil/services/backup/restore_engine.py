@@ -6,12 +6,15 @@
 
 """Atomic restore engine — extract, verify, journal, swap, rollback."""
 
+import logging
 import shutil
 from collections.abc import Callable
 from pathlib import Path
 
 from .archive_reader import ArchiveReader
 from .restore_journal import RestoreJournal
+
+logger = logging.getLogger(__name__)
 
 #: Name of the staging directory at the project root (outside managed
 #: roots such as ``data/`` so that swapping a root does not orphan the
@@ -226,4 +229,5 @@ class RestoreEngine:
             try:
                 cb(percent, step)
             except Exception:
+                logger.warning("Progress callback failed during restore", exc_info=True)
                 pass

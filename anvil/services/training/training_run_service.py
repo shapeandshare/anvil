@@ -625,6 +625,11 @@ class TrainingRunService:
                     )
                     input_role = "training"
                 except Exception:  # pylint: disable=broad-exception-caught
+                    logger.warning(
+                        "Failed to log dataset input to MLflow run %s",
+                        mlflow_run_id,
+                        exc_info=True,
+                    )
                     pass
         elif mlflow_run_id and corpus_id:
             async with AsyncSessionLocal() as sess:
@@ -636,6 +641,11 @@ class TrainingRunService:
                     )
                     input_role = "corpus"
                 except Exception:  # pylint: disable=broad-exception-caught
+                    logger.warning(
+                        "Failed to log corpus input to MLflow run %s",
+                        mlflow_run_id,
+                        exc_info=True,
+                    )
                     pass
 
         if mlflow_run_id and input_digest:
@@ -682,6 +692,11 @@ class TrainingRunService:
                             str(ds.curation_version or 0),
                         )
                 except Exception:  # pylint: disable=broad-exception-caught
+                    logger.warning(
+                        "Failed to set dataset tags on MLflow run %s",
+                        mlflow_run_id,
+                        exc_info=True,
+                    )
                     pass
         elif mlflow_run_id and corpus_id:
             async with AsyncSessionLocal() as sess:
@@ -711,6 +726,11 @@ class TrainingRunService:
                                 corpus.language_map,
                             )
                 except Exception:  # pylint: disable=broad-exception-caught
+                    logger.warning(
+                        "Failed to set corpus tags on MLflow run %s",
+                        mlflow_run_id,
+                        exc_info=True,
+                    )
                     pass
 
         if mlflow_run_id and content_version_id is not None:
@@ -769,6 +789,11 @@ class TrainingRunService:
                         )
                         await sess.commit()
                 except Exception:  # pylint: disable=broad-exception-caught
+                    logger.error(
+                        "Failed to record lineage for run %s",
+                        mlflow_run_id,
+                        exc_info=True,
+                    )
                     pass
 
     ########################################################################
@@ -878,6 +903,11 @@ class TrainingRunService:
                                 ),
                             )
                     except Exception:  # pylint: disable=broad-exception-caught
+                        logger.warning(
+                            "Failed to log samples artifact to MLflow run" " %s",
+                            mlflow_run_id,
+                            exc_info=True,
+                        )
                         pass
 
                 model_path = os.path.join(tmpdir, "model.json")
@@ -894,6 +924,11 @@ class TrainingRunService:
                                 ),
                             )
                     except Exception:  # pylint: disable=broad-exception-caught
+                        logger.warning(
+                            "Failed to log model artifact to MLflow run %s",
+                            mlflow_run_id,
+                            exc_info=True,
+                        )
                         pass
 
                 export_svc = SafetensorsExportService()
