@@ -24,11 +24,16 @@ class TestUserSecretService:
         return enc
 
     @pytest.fixture
-    def service(self, mock_repo: AsyncMock, mock_encryption: MagicMock) -> UserSecretService:
+    def service(
+        self, mock_repo: AsyncMock, mock_encryption: MagicMock
+    ) -> UserSecretService:
         return UserSecretService(mock_repo, mock_encryption)
 
     async def test_get_secret_returns_decrypted_value(
-        self, service: UserSecretService, mock_repo: AsyncMock, mock_encryption: MagicMock
+        self,
+        service: UserSecretService,
+        mock_repo: AsyncMock,
+        mock_encryption: MagicMock,
     ) -> None:
         mock_repo.get.return_value = MagicMock(encrypted_value=b"encrypted")
         result = await service.get_secret("user1", "hf_token")
@@ -44,7 +49,10 @@ class TestUserSecretService:
         assert result is None
 
     async def test_set_secret_encrypts_and_upserts(
-        self, service: UserSecretService, mock_repo: AsyncMock, mock_encryption: MagicMock
+        self,
+        service: UserSecretService,
+        mock_repo: AsyncMock,
+        mock_encryption: MagicMock,
     ) -> None:
         await service.set_secret("user1", "hf_token", "my_token_value")
         mock_encryption.encrypt.assert_called_once_with(
@@ -79,7 +87,10 @@ class TestUserSecretService:
         assert result == "decrypted_value"
 
     async def test_resolve_token_falls_back_to_env(
-        self, service: UserSecretService, mock_repo: AsyncMock, monkeypatch: pytest.MonkeyPatch
+        self,
+        service: UserSecretService,
+        mock_repo: AsyncMock,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         mock_repo.get.return_value = None
         monkeypatch.setenv("HF_TOKEN", "env_token")
@@ -87,7 +98,10 @@ class TestUserSecretService:
         assert result == "env_token"
 
     async def test_resolve_token_returns_none_when_no_source(
-        self, service: UserSecretService, mock_repo: AsyncMock, monkeypatch: pytest.MonkeyPatch
+        self,
+        service: UserSecretService,
+        mock_repo: AsyncMock,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         mock_repo.get.return_value = None
         monkeypatch.delenv("HF_TOKEN", raising=False)

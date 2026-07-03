@@ -9,7 +9,6 @@ from __future__ import annotations
 from anvil.services._shared.device_type import DeviceType
 from anvil.services._shared.evaluation_status import EvaluationRunStatus
 from anvil.services._shared.fine_tune_dataset_status import FineTuneDatasetStatus
-
 from anvil.services._shared.model_import_job_status import ModelImportJobStatus
 from anvil.services._shared.runnable_status import RunnableStatus
 from anvil.services._shared.serialization_type import SerializationType
@@ -95,5 +94,3 @@ class TestTokenizerFamily:
     def test_member_values(self) -> None:
         assert TokenizerFamily.CHAR.value == "char"
         assert TokenizerFamily.SUBWORD.value == "subword"
-
-
