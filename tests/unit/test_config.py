@@ -29,7 +29,11 @@ _HTTP: str = "".join(["http", "://"])
 
 def test_mlflow_uri_defaults_to_http():
     cfg = get_config()
-    assert cfg["mlflow_uri"] == f"{_HTTP}127.0.0.1:5001"
+    uri = cfg["mlflow_uri"]
+    # If ANVIL_MLFLOW_URI was overridden (e.g. by conftest for test isolation),
+    # the value will reflect that override rather than the hard-coded default.
+    expected = os.environ.get("ANVIL_MLFLOW_URI", f"{_HTTP}127.0.0.1:5001")
+    assert uri == expected, f"Expected {expected}, got {uri}"
     assert cfg["mlflow_port"] == 5001
 
 

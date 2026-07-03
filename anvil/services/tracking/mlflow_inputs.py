@@ -6,19 +6,16 @@
 """MLflow input resolvers — converts anvil datasets/corpora to MLflow dataset objects.
 
 Provides the ``MlflowInputResolver`` class that bridges anvil's dataset
-and corpus records to MLflow's ``MetaDataset`` and
-``LocalArtifactDatasetSource`` for experiment input tracking.
+and corpus records to MLflow's ``Dataset`` entity for experiment input
+tracking.
 """
 
 import asyncio
 import hashlib
 import logging
 from pathlib import Path
-from typing import Any
 
-import mlflow.data
-from mlflow.data.meta_dataset import MetaDataset
-from mlflow.data.sources import LocalArtifactDatasetSource  # type: ignore[attr-defined]
+from mlflow.entities import Dataset
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...db.repositories.corpora import CorpusRepository
@@ -30,9 +27,9 @@ logger = logging.getLogger(__name__)
 class MlflowInputResolver:
     """Resolves anvil dataset/corpus records to MLflow dataset inputs.
 
-    Creates ``MetaDataset`` objects with source, digest, and name for
-    MLflow experiment input tracking. Supports both datasets (flat
-    sample lists) and corpora (directory of files).
+    Creates ``mlflow.entities.Dataset`` objects with source, digest, and
+    name for MLflow experiment input tracking. Supports both datasets
+    (flat sample lists) and corpora (directory of files).
     """
 
     def __init__(self, session: AsyncSession):
@@ -66,11 +63,11 @@ class MlflowInputResolver:
 
     async def resolve_dataset(
         self, dataset_id: int, role: str = "training"
-    ) -> tuple[Any, str]:
+    ) -> tuple[Dataset, str]:
         """Resolve a dataset record to an MLflow dataset input.
 
         Loads sample texts, computes a content digest, and creates
-        an MLflow ``MetaDataset`` with a ``LocalArtifactDatasetSource``.
+        an MLflow ``Dataset`` entity with ``"local"`` source type.
 
         Parameters
         ----------
@@ -82,8 +79,8 @@ class MlflowInputResolver:
 
         Returns
         -------
-        tuple[Any, str]
-            Tuple of (``MetaDataset``, content digest string).
+        tuple[Dataset, str]
+            Tuple of (``Dataset`` entity, content digest string).
 
         Raises
         ------
@@ -108,41 +105,21 @@ class MlflowInputResolver:
         digest = MlflowInputResolver.content_digest(docs)
         name = f"{ds.name}@v{ds.id}"
 
-        if docs:
-            try:
-                import pandas as pd
-            except ImportError:
-                pd = None
-
-            if pd is None:
-                mlflow_ds = MetaDataset(  # type: ignore[abstract]
-                    source=LocalArtifactDatasetSource(ds.file_path),
-                    name=name,
-                    digest=digest,
-                )
-            else:
-                df = pd.DataFrame({"text": docs})
-                mlflow_ds = mlflow.data.from_pandas(  # type: ignore[attr-defined]
-                    df,
-                    source=LocalArtifactDatasetSource(ds.file_path),
-                    name=name,
-                    digest=digest,
-                )
-        else:
-            mlflow_ds = MetaDataset(  # type: ignore[abstract]
-                source=LocalArtifactDatasetSource(ds.file_path),
-                name=name,
-                digest=digest,
-            )
+        mlflow_ds = Dataset(
+            name=name,
+            digest=digest,
+            source_type="local",
+            source=ds.file_path,
+        )
 
         return mlflow_ds, digest
 
-    async def resolve_corpus(self, corpus_id: int) -> tuple[Any, list[str], str]:
+    async def resolve_corpus(self, corpus_id: int) -> tuple[Dataset, list[str], str]:
         """Resolve a corpus record to an MLflow dataset input.
 
         Loads all file contents from the corpus directory, computes
-        a content digest, and creates an MLflow ``MetaDataset`` with
-        a ``LocalArtifactDatasetSource``.
+        a content digest, and creates an MLflow ``Dataset`` entity
+        with ``"local"`` source type.
 
         Parameters
         ----------
@@ -151,8 +128,8 @@ class MlflowInputResolver:
 
         Returns
         -------
-        tuple[Any, list[str], str]
-            Tuple of (``MetaDataset``, list of artifact file paths,
+        tuple[Dataset, list[str], str]
+            Tuple of (``Dataset`` entity, list of artifact file paths,
             content digest string).
 
         Raises
@@ -191,10 +168,11 @@ class MlflowInputResolver:
         )
         digest = MlflowInputResolver.content_digest(docs)
 
-        meta_ds = MetaDataset(  # type: ignore[abstract]
-            source=LocalArtifactDatasetSource(corpus.root_path),
+        mlflow_ds = Dataset(
             name=f"corpus_{corpus_id}",
             digest=digest,
+            source_type="local",
+            source=corpus.root_path,
         )
 
-        return meta_ds, artifact_paths, digest
+        return mlflow_ds, artifact_paths, digest

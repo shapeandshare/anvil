@@ -86,7 +86,8 @@ def test_version_has_root_and_pyproject():
 
 def test_version_fallback_uses_importlib_metadata():
     """When ``pyproject.toml`` is absent, ``__version__`` falls back to
-    ``importlib.metadata.version("anvil")``."""
+    ``importlib.metadata.version("anvil")``.
+    """
     import importlib.metadata
 
     expected = importlib.metadata.version("anvil")
@@ -94,7 +95,7 @@ def test_version_fallback_uses_importlib_metadata():
     # Reload the module with all Path.exists() returning False to simulate
     # absence of pyproject.toml, triggering the importlib.metadata fallback.
     with patch("pathlib.Path.exists", return_value=False):
-        import anvil  # noqa: F811 — reimport under the patch
+        import anvil
 
         importlib.reload(anvil)
 

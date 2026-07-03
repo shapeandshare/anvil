@@ -272,7 +272,7 @@ class TestBreakdown:
     """Tests for the breakdown dict."""
 
     def test_breakdown_has_all_components(self) -> None:
-        """breakdown contains all 8 component keys."""
+        """Breakdown contains all 8 component keys."""
         report = _make_report()
         score = compute_health_score(report)
         assert set(score.breakdown.keys()) == {
@@ -287,13 +287,13 @@ class TestBreakdown:
         }
 
     def test_breakdown_values_are_scaled_by_100(self) -> None:
-        """breakdown values are component_score * 100."""
+        """Breakdown values are component_score * 100."""
         report = _make_report(orphan_rate=4.9)
         score = compute_health_score(report)
         assert score.breakdown["orphan_rate"] == pytest.approx(20.0)
 
     def test_breakdown_zero_for_worst_case(self) -> None:
-        """breakdown shows 0 for failing components."""
+        """Breakdown shows 0 for failing components."""
         report = _make_report(orphan_rate=100.0)
         score = compute_health_score(report)
         assert score.breakdown["orphan_rate"] == 0.0

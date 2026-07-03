@@ -14,10 +14,12 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-# Ensure MLflow is unreachable before any module imports anvil services.
-# The module-level TrackingService() singleton is created at import time,
-# so monkeypatching after import has no effect.
-os.environ.setdefault("ANVIL_MLFLOW_URI", "")
+# Use a local in-memory SQLite URI for MLflow tracking to avoid the 7-retry
+# HTTP timeout (up to 100s) that occurs when the default URI
+# http://127.0.0.1:5001 points to a non-running server.  The empty-string
+# fallback does not work because config.py defaults to the HTTP URI when
+# ANVIL_MLFLOW_URI is empty.
+os.environ.setdefault("ANVIL_MLFLOW_URI", "sqlite:///:memory:")
 
 from anvil.api.app import app  # import must follow env var for MLFLOW_URI
 from anvil.api.deps import get_api_key_store
