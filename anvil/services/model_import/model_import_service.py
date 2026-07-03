@@ -11,6 +11,7 @@ import logging
 import os
 from collections.abc import Sequence
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from ...db.models.external_model import ExternalModel
 from ...db.models.model_import_job import ModelImportJob
@@ -18,6 +19,10 @@ from ...db.repositories import external_models as external_models_repo
 from ...db.repositories import model_import_jobs as model_import_jobs_repo
 from .._shared.asset_state import AssetState
 from .._shared.import_types import ModelSourceError
+
+if TYPE_CHECKING:
+    from ...db.repositories.model_asset_repository import ModelAssetRepository
+    from ...storage.local import LocalFileStore
 from .._shared.model_import_job_status import ModelImportJobStatus
 from .._shared.runnable_status import RunnableStatus
 from .._shared.source_type import SourceType
@@ -324,8 +329,8 @@ class ModelImportService:
         self,
         model_id: int,
         *,
-        model_asset_repo=None,
-        store=None,
+        model_asset_repo: ModelAssetRepository | None = None,
+        store: LocalFileStore | None = None,
     ) -> None:
         """Delete an external model and clean up its asset files.
 
