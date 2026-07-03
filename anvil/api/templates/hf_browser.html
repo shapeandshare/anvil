@@ -325,11 +325,31 @@
     return '<span class="badge" style="background:var(--text-tertiary);">queued</span>';
   }
 
+  function formatBytes(bytes) {
+    if (bytes == null || bytes === 0) return '0 B';
+    var units = ['B', 'KB', 'MB', 'GB'];
+    var i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+    var v = bytes / Math.pow(1024, i);
+    return v.toFixed(i > 0 ? 1 : 0) + ' ' + units[i];
+  }
+
   function assetPill(availability) {
     if (availability === 'assets_available') return '<span class="badge badge-green">available</span>';
     if (availability === 'assets_pending') return '<span class="badge badge-cyan"><span class="badge__pulse"></span>downloading</span>';
     if (availability === 'metadata_only') return '<span class="badge badge-yellow">not downloaded</span>';
     return '';
+  }
+
+  function _progressRow(downloaded, total) {
+    var pct = total > 0 ? Math.min(100, (downloaded / total) * 100) : 0;
+    return '<div style="display:flex;align-items:center;gap:var(--space-2);padding:var(--space-1) 0 var(--space-1) var(--space-2);">'
+      + '<div style="flex:1;max-width:200px;height:6px;background:var(--border);border-radius:3px;overflow:hidden;">'
+      + '<span style="display:block;height:100%;width:' + pct.toFixed(1) + '%;background:var(--accent);border-radius:3px;transition:width 0.3s ease;"></span>'
+      + '</div>'
+      + '<span class="type-caption-2" style="color:var(--text-tertiary);font-variant-numeric:tabular-nums;white-space:nowrap;">'
+      + formatBytes(downloaded) + ' / ' + formatBytes(total)
+      + '</span>'
+      + '</div>';
   }
 
   function activeExists(jobs) {
@@ -370,6 +390,9 @@
             ? '<button class="btn btn-sm btn-primary job-retry-btn" data-job-id="' + j.job_id + '">Retry</button><button class="btn btn-sm btn-secondary job-dismiss-btn">Dismiss</button>'
             : ''))
         + '</div></div>'
+        + (j.asset_availability === 'assets_pending' && j.total_bytes > 0
+          ? _progressRow(j.downloaded_bytes, j.total_bytes)
+          : '')
         + (j.status === 'failed' && j.error_code
           ? '<div class="type-caption-2" style="color:var(--danger);padding:var(--space-1) 0 var(--space-1) 0;">' + escHtml(j.error_code) + ': ' + escHtml(j.error_message) + '</div>'
           : '')
