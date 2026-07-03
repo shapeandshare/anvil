@@ -23,7 +23,7 @@ import asyncio
 import logging
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from ..training.stop_requested import StopRequested
 from .compute_backend_result import ComputeBackendResult
@@ -256,7 +256,7 @@ def _run_real_lora(
     )
 
     # ── load tokenizer ─────────────────────────────────────────────────
-    tokenizer = transformers.AutoTokenizer.from_pretrained(model_path)  # type: ignore[no-untyped-call]
+    tokenizer = transformers.AutoTokenizer.from_pretrained(model_path)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
@@ -334,9 +334,12 @@ def _run_real_lora(
             do_sample=True,
             temperature=0.7,
         )
-        sample_text = tokenizer.decode(
-            generated_ids[0],
-            skip_special_tokens=True,
+        sample_text = cast(
+            str,
+            tokenizer.decode(
+                generated_ids[0],
+                skip_special_tokens=True,
+            ),
         )
 
     samples: list[str] = [sample_text]

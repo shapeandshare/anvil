@@ -918,7 +918,7 @@ class InferenceService:
             An adapter instance wrapping the HF tokenizer.
         """
         tokenizer_path = local_path if local_path is not None else source_id
-        hf_tok = AutoTokenizer.from_pretrained(tokenizer_path, revision="main")  # type: ignore[no-untyped-call]
+        hf_tok = AutoTokenizer.from_pretrained(tokenizer_path, revision="main")
         return TransformersTokenizerAdapter(hf_tok)
 
     async def _resolve_default_id(self) -> int:
