@@ -1,3 +1,10 @@
+## v0.10.4 (2026-07-03)
+
+### Features
+- Automated patch bump: release workflow
+
+---
+
 ## v0.10.3 (2026-07-03)
 
 ### Features
