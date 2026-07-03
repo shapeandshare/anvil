@@ -100,26 +100,32 @@ async def list_import_jobs(
     -------
     dict
         A JSON body with a ``"data"`` key containing a list of job dicts.
+        Each job with ``external_model_id`` also includes an
+        ``asset_availability`` field from the associated model.
     """
     jobs = await workbench.model_imports.list_jobs()
-    return {
-        "data": [
-            {
-                "job_id": j.id,
-                "status": j.status,
-                "source_type": j.source_type,
-                "source_identifier": j.source_identifier,
-                "revision": j.revision,
-                "started_at": j.started_at.isoformat() if j.started_at else None,
-                "finished_at": j.finished_at.isoformat() if j.finished_at else None,
-                "error_code": j.error_code,
-                "error_message": j.error_message,
-                "external_model_id": j.external_model_id,
-                "created_at": j.created_at.isoformat(),
-            }
-            for j in jobs
-        ]
-    }
+    data: list[dict[str, object]] = []
+    for j in jobs:
+        entry: dict[str, object] = {
+            "job_id": j.id,
+            "status": j.status,
+            "source_type": j.source_type,
+            "source_identifier": j.source_identifier,
+            "revision": j.revision,
+            "started_at": j.started_at.isoformat() if j.started_at else None,
+            "finished_at": j.finished_at.isoformat() if j.finished_at else None,
+            "error_code": j.error_code,
+            "error_message": j.error_message,
+            "external_model_id": j.external_model_id,
+            "created_at": j.created_at.isoformat(),
+            "asset_availability": None,
+        }
+        if j.external_model_id is not None:
+            model = await workbench.external_model_repo.get(j.external_model_id)
+            if model is not None:
+                entry["asset_availability"] = model.asset_availability
+        data.append(entry)
+    return {"data": data}
 
 
 @router.get("/models/import/{job_id}/status")
