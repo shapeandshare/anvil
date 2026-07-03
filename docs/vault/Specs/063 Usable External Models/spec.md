@@ -10,6 +10,8 @@
 ### Session 2026-07-02
 
 - Q: For models already downloaded under the current storage layout, how should we handle the transition to the new load-ready layout? → A: No legacy downloads exist; no migration or backward-compatibility path is required. The new load-ready layout is the only layout.
+- Q: What should the asset storage layout on disk look like so downloaded files can be loaded directly? → A: Canonical HF directory layout: download to `models/{model_id}/hf/` with standard filenames (`model.safetensors`, `config.json`, `tokenizer.json`). Sha256 recorded as metadata only, not keying the storage path.
+- Q: How should the system make local vs. network load events observable? → A: Structured log line on each model load recording the model ID and the source (`local` or `hub`). No Prometheus counters or additional infrastructure required.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -77,7 +79,7 @@ Across every operation that touches an external model — running, fine-tuning, 
 ### Functional Requirements
 
 - **FR-001**: The system MUST allow a runnable external model with downloaded assets to be loaded and used for text generation using only locally stored assets, with no network request to the model host.
-- **FR-002**: The system MUST store a downloaded model's assets in a form that can be loaded directly by the local runtime without contacting the network.
+- **FR-002**: The system MUST store a downloaded model's assets in a HuggingFace-standard directory layout at `models/{model_id}/hf/` with canonical filenames (`model.safetensors`, `config.json`, `tokenizer.json`) so the directory can be passed directly to `from_pretrained()`. Integrity fingerprints (SHA-256) are recorded as per-asset metadata, not as path components.
 - **FR-003**: The system MUST allow a downloaded runnable external model to be selected as the base for full fine-tuning (warm start), including validating architecture compatibility before the run begins.
 - **FR-004**: The system MUST allow a downloaded runnable external model to be selected as the base for LoRA/QLoRA fine-tuning.
 - **FR-005**: For all operations that require an external model's base weights (running, fine-tuning, adapter application, adapter merge, evaluation), the system MUST prefer locally downloaded assets when they are present.
@@ -94,7 +96,7 @@ Across every operation that touches an external model — running, fine-tuning, 
 ### Key Entities *(include if feature involves data)*
 
 - **External Model**: A record of a model imported from an external source, including its display name, source identifier, architecture family, runnable status (runnable vs track-only) with reason, and asset availability state (metadata-only, pending, available).
-- **Model Asset**: A single downloaded file belonging to an external model (weights, tokenizer, or configuration), including its integrity fingerprint, size, availability status, and storage location.
+- **Model Asset**: A single downloaded file belonging to an external model (weights, tokenizer, or configuration), including its integrity fingerprint, size, availability status, and storage location. Stored in a standard HuggingFace directory layout (`models/{model_id}/hf/`) with canonical filenames so the directory can be used directly with runtime model loaders.
 - **Asset Download Job**: The lifecycle record of a download attempt for a model's assets (queued, in progress, complete, failed) with error information.
 - **Training Base Reference**: The linkage that lets a training run start from an existing model, now able to reference an external model as its warm-start or adapter base.
 
@@ -116,6 +118,7 @@ Across every operation that touches an external model — running, fine-tuning, 
 - **Integrity model reused**: The existing per-asset integrity fingerprinting from the current download feature is retained and used at load time.
 - **Single-host storage**: Local asset storage uses the existing file storage abstraction; remote/SaaS storage routing is out of scope for this feature.
 - **UI surface**: Run/train affordances are surfaced on the existing model detail page and playground; no new top-level navigation is introduced.
+- **Load observability**: Every model load (local or network) emits a structured log line with model ID and source (`local` or `hub`), providing the audit trail to verify network-free operation (SC-002, SC-005).
 
 ## Out of Scope
 

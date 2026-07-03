@@ -476,6 +476,8 @@ SomeException
 - SQLite (anvil-state.db, WAL mode) via async SQLAlchemy; LakeFS for base model assets + adapter artifacts; LocalFileStore for local fallback (047-saas-fine-tuning-pipeline)
 - Python 3.11+ (PEP 604, `StrEnum`, `from __future__ import annotations`) + FastAPI, async SQLAlchemy + aiosqlite, Alembic, Jinja2, MLflow, Pydantic — all existing (055-interactive-teaching-loop)
 - SQLite (anvil-state.db, WAL) — new `TeachingSession` table via async SQLAlchemy + Alembic migration; MLflow runs + artifacts for TeachingRound data (055-interactive-teaching-loop)
+- Python 3.11+ + FastAPI, async SQLAlchemy (existing); `transformers`/`peft`/`torch` (existing `[finetune]` extra); `huggingface_hub` (existing `[finetune]` extra); stdlib `pathlib`, `tempfile` (063-usable-external-models)
+- SQLite (anvil-state.db, WAL) via async SQLAlchemy; LocalFileStore at `data/models/{model_id}/hf/` for assets (063-usable-external-models)
 
 ## Recent Changes
 - 025-ux-rules-integration: Added Python 3.11+ (existing repo convention) + Stdlib only — `ux_lint.py` (re/ sys/ os/), `ux_review.py` (stdlib + urllib for OpenAI-compatible API calls)
