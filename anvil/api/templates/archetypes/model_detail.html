@@ -68,6 +68,12 @@
             <button id="md-download-btn" class="btn btn-primary btn-sm" style="display:none;">Download Weights</button>
           </div>
           <div id="md-download-progress" style="display:none;margin-top:var(--space-2);">
+            <div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-1);">
+              <div style="flex:1;max-width:200px;height:6px;background:var(--border);border-radius:3px;overflow:hidden;">
+                <span id="md-progress-bar" style="display:block;height:100%;width:0%;background:var(--accent);border-radius:3px;transition:width 0.3s ease;"></span>
+              </div>
+              <span class="type-caption-2" id="md-progress-text" style="color:var(--text-tertiary);font-variant-numeric:tabular-nums;white-space:nowrap;">0 B / 0 B</span>
+            </div>
             <div class="type-caption-2" id="md-download-status-text">Starting download...</div>
           </div>
         </div>
@@ -146,6 +152,26 @@
     }
   }
 
+  function formatBytes(bytes) {
+    if (bytes == null || bytes === 0) return '0 B';
+    var units = ['B', 'KB', 'MB', 'GB'];
+    var i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+    var v = bytes / Math.pow(1024, i);
+    return v.toFixed(i > 0 ? 1 : 0) + ' ' + units[i];
+  }
+
+  function updateDownloadProgress(downloaded, total) {
+    var barEl = document.getElementById('md-progress-bar');
+    var textEl = document.getElementById('md-progress-text');
+    if (barEl) {
+      var pct = total > 0 ? Math.min(100, (downloaded / total) * 100) : 0;
+      barEl.style.width = pct.toFixed(1) + '%';
+    }
+    if (textEl) {
+      textEl.textContent = formatBytes(downloaded) + ' / ' + formatBytes(total);
+    }
+  }
+
   function pollDownloadStatus(jobId) {
     fetch('/v1/models/' + modelId + '/download/' + jobId + '/status').then(function(r) {
       if (!r.ok) throw new Error('Poll failed');
@@ -155,6 +181,7 @@
       var badge = document.getElementById('md-asset-badge');
       if (status.status === 'complete') {
         statusText.textContent = 'Download complete!';
+        updateDownloadProgress(status.total_bytes || 0, status.total_bytes || 0);
         badge.textContent = 'available';
         badge.className = 'badge badge-green';
       } else if (status.status === 'failed') {
@@ -162,6 +189,7 @@
         badge.textContent = 'error';
         badge.className = 'badge badge-red';
       } else {
+        updateDownloadProgress(status.downloaded_bytes || 0, status.total_bytes || 0);
         statusText.textContent = status.status === 'queued' ? 'Waiting...' : 'Downloading...';
         setTimeout(function() { pollDownloadStatus(jobId); }, 2000);
       }

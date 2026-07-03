@@ -104,6 +104,8 @@ async def list_import_jobs(
         A JSON body with a ``"data"`` key containing a list of job dicts.
         Each job with ``external_model_id`` also includes an
         ``asset_availability`` field from the associated model.
+        Jobs whose model has ``assets_pending`` also include
+        ``downloaded_bytes`` and ``total_bytes`` aggregate progress.
     """
     jobs = await workbench.model_imports.list_jobs()
     data: list[dict[str, object]] = []
@@ -121,11 +123,19 @@ async def list_import_jobs(
             "external_model_id": j.external_model_id,
             "created_at": j.created_at.isoformat(),
             "asset_availability": None,
+            "downloaded_bytes": 0,
+            "total_bytes": 0,
         }
         if j.external_model_id is not None:
             model = await workbench.external_model_repo.get(j.external_model_id)
             if model is not None:
                 entry["asset_availability"] = model.asset_availability
+                if model.asset_availability == "assets_pending":
+                    assets = await workbench.model_asset_repo.get_by_model(
+                        j.external_model_id
+                    )
+                    entry["downloaded_bytes"] = sum(a.downloaded_bytes for a in assets)
+                    entry["total_bytes"] = sum(a.size_bytes for a in assets)
         data.append(entry)
     return {"data": data}
 
