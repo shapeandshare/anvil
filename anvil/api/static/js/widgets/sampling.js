@@ -531,7 +531,7 @@
   SamplingWidget.prototype._sampleOnce = function () {
     if (!this._data || this._sampleBtn.disabled) return;
     var tokens = this._data.tokens;
-    var r = Math.random();
+    var r = Math.random(); // NOSONAR
     var cum = 0, rank = tokens.length - 1;
     for (var i = 0; i < tokens.length; i++) {
       cum += tokens[i].prob_final;

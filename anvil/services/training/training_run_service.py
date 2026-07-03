@@ -887,10 +887,13 @@ class TrainingRunService:
         if model is not None:
             with tempfile.TemporaryDirectory() as tmpdir:
                 samples_path = os.path.join(tmpdir, "samples.txt")
-                with open(  # noqa: ASYNC230 — inherited route pattern; model.save() is synchronous
-                    samples_path, "w", encoding="utf-8"
-                ) as f:
-                    f.write("\n".join(samples))
+                loop = asyncio.get_event_loop()
+
+                def _write_samples() -> None:
+                    with open(samples_path, "w", encoding="utf-8") as f:
+                        f.write("\n".join(samples))
+
+                await loop.run_in_executor(None, _write_samples)
                 if mlflow_run_id:
                     try:
                         c = self._tracking._client

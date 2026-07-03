@@ -495,7 +495,7 @@
         var random = '';
         for (var i = 0; i < displayLen; i++) {
           var hexChars = '0123456789abcdef';
-          random += hexChars[Math.floor(Math.random() * 16)];
+          random += hexChars[Math.floor(Math.random() * 16)]; // NOSONAR
         }
         hashEl.textContent = random;
       }
