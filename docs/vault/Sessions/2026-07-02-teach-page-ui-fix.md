@@ -1,6 +1,8 @@
 ---
 title: 2026-07-02-teach-page-ui-fix
 type: session-log
+aliases:
+  - teach-page-ui-fix
 tags:
   - type/session-log
   - domain/ui

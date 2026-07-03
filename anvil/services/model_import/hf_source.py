@@ -14,6 +14,7 @@ from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING
 
 import aiofiles  # type: ignore[import-untyped]
+import httpx
 
 from .._shared.import_types import ModelMetadata, ModelSourceError
 
@@ -348,8 +349,6 @@ async def _do_download(
             message=_MISSING_EXTRA_MSG,
             source="huggingface",
         ) from None
-
-    import httpx
 
     local_dir = tempfile.mkdtemp(prefix="anvil_hf_")
     local_path = str(os.path.join(local_dir, filename))

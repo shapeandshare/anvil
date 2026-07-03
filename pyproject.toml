@@ -76,6 +76,7 @@ dev = [
     "coverage>=7.0,<8",
     "commitizen>=3.0,<4",
     "pytest-playwright>=0.5,<1",
+    "bandit>=1.7,<2",
 ]
 finetune = [
     "huggingface_hub>=0.24,<2",
@@ -176,7 +177,7 @@ warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
 module = "google.*"
-ignore_missing_imports = true
+ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = "anvil.services.tracking"
@@ -201,6 +202,11 @@ omit = ["tests/*", "anvil/_resources/migrations/*", "tests/system/*", "tests/bro
 [tool.coverage.report]
 fail_under = 23
 show_missing = true
+
+[tool.bandit]
+# Exclude test, build, and third-party directories from security analysis
+exclude_dirs = ["tests", ".venv", "examples", "scripts", ".github"]
+targets = ["anvil"]
 
 [tool.commitizen]
 name = "cz_conventional_commits"
