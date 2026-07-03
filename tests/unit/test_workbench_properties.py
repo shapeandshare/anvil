@@ -154,6 +154,175 @@ class TestAnvilWorkbenchProperties:
         assert isinstance(svc, ModelImportService)
         assert wb.model_imports is svc
 
+    # ── Evaluation accessors (spec 054) ───────────────────────────────
+
+    @pytest.mark.asyncio
+    async def test_evaluation(self, in_memory_session) -> None:
+        wb = AnvilWorkbench(session=in_memory_session)
+        svc = wb.evaluation
+        from anvil.services.evaluation.evaluation_service import EvaluationService
+
+        assert isinstance(svc, EvaluationService)
+        assert wb.evaluation is svc
+
+    @pytest.mark.asyncio
+    async def test_evaluation_run_repo(self, in_memory_session) -> None:
+        wb = AnvilWorkbench(session=in_memory_session)
+        repo = wb.evaluation_run_repo
+        from anvil.db.repositories.evaluation_runs import EvaluationRunRepository
+
+        assert isinstance(repo, EvaluationRunRepository)
+        assert wb.evaluation_run_repo is repo
+
+    # ── Fine-tune dataset accessors (feature 053) ─────────────────────
+
+    @pytest.mark.asyncio
+    async def test_ftd_repo(self, in_memory_session) -> None:
+        wb = AnvilWorkbench(session=in_memory_session)
+        repo = wb.ftd_repo
+        from anvil.db.repositories.fine_tune_datasets import FineTuneDatasetRepository
+
+        assert isinstance(repo, FineTuneDatasetRepository)
+        assert wb.ftd_repo is repo
+
+    # ── Model browser accessors (feature 041) ─────────────────────────
+
+    @pytest.mark.asyncio
+    async def test_model_browser(self, in_memory_session) -> None:
+        wb = AnvilWorkbench(session=in_memory_session)
+        svc = wb.model_browser
+        from anvil.services.inference.model_browser import ModelBrowserService
+
+        assert isinstance(svc, ModelBrowserService)
+        assert wb.model_browser is svc
+
+    # ── Model asset storage accessors (feature 042) ────────────────────
+
+    @pytest.mark.asyncio
+    async def test_model_asset_repo(self, in_memory_session) -> None:
+        wb = AnvilWorkbench(session=in_memory_session)
+        repo = wb.model_asset_repo
+        from anvil.db.repositories.model_asset_repository import ModelAssetRepository
+
+        assert isinstance(repo, ModelAssetRepository)
+        assert wb.model_asset_repo is repo
+
+    @pytest.mark.asyncio
+    async def test_asset_download_job_repo(self, in_memory_session) -> None:
+        wb = AnvilWorkbench(session=in_memory_session)
+        repo = wb.asset_download_job_repo
+        from anvil.db.repositories.asset_download_job_repository import (
+            AssetDownloadJobRepository,
+        )
+
+        assert isinstance(repo, AssetDownloadJobRepository)
+        assert wb.asset_download_job_repo is repo
+
+    @pytest.mark.asyncio
+    async def test_user_secret_repo(self, in_memory_session) -> None:
+        wb = AnvilWorkbench(session=in_memory_session)
+        repo = wb.user_secret_repo
+        from anvil.db.repositories.user_secret_repository import UserSecretRepository
+
+        assert isinstance(repo, UserSecretRepository)
+        assert wb.user_secret_repo is repo
+
+    @pytest.mark.asyncio
+    async def test_user_secrets(self, in_memory_session, monkeypatch) -> None:
+        """Provide a seed key so KeyRing.load does not touch disk."""
+        monkeypatch.setenv("ANVIL_MASTER_SECRET", "ab" * 16)  # 32 hex chars = 16 bytes
+        wb = AnvilWorkbench(session=in_memory_session)
+        svc = wb.user_secrets
+        from anvil.services.secrets.user_secret_service import UserSecretService
+
+        assert isinstance(svc, UserSecretService)
+        assert wb.user_secrets is svc
+
+    @pytest.mark.asyncio
+    async def test_secret_rotation_service(
+        self, in_memory_session, monkeypatch
+    ) -> None:
+        """secret_rotation_service depends on user_secrets internal state."""
+        monkeypatch.setenv("ANVIL_MASTER_SECRET", "ab" * 16)
+        wb = AnvilWorkbench(session=in_memory_session)
+        svc = wb.secret_rotation_service
+        from anvil.services.secrets.secret_rotation_service import SecretRotationService
+
+        assert isinstance(svc, SecretRotationService)
+        assert wb.secret_rotation_service is svc
+
+    @pytest.mark.asyncio
+    async def test_model_store(self, in_memory_session) -> None:
+        """model_store is a LocalFileStore rooted at storage dir."""
+        wb = AnvilWorkbench(session=in_memory_session)
+        store = wb.model_store
+        assert isinstance(store, LocalFileStore)
+        assert wb.model_store is store
+
+    @pytest.mark.asyncio
+    async def test_model_assets(self, in_memory_session, monkeypatch) -> None:
+        """ModelAssetService chains through several dependencies."""
+        monkeypatch.setenv("ANVIL_MASTER_SECRET", "ab" * 16)
+        wb = AnvilWorkbench(session=in_memory_session)
+        svc = wb.model_assets
+        from anvil.services.model_import.model_asset_service import ModelAssetService
+
+        assert isinstance(svc, ModelAssetService)
+        assert wb.model_assets is svc
+
+    # ── LoRA adapter accessors (feature 044) ───────────────────────────
+
+    @pytest.mark.asyncio
+    async def test_lora_adapter_repo(self, in_memory_session) -> None:
+        wb = AnvilWorkbench(session=in_memory_session)
+        repo = wb.lora_adapter_repo
+        from anvil.db.repositories.lora_adapter_repository import LoRAAdapterRepository
+
+        assert isinstance(repo, LoRAAdapterRepository)
+        assert wb.lora_adapter_repo is repo
+
+    # ── Adapter merge + export (feature 045) ──────────────────────────
+
+    @pytest.mark.asyncio
+    async def test_merge_service(self, in_memory_session) -> None:
+        wb = AnvilWorkbench(session=in_memory_session)
+        svc = wb.merge_service
+        from anvil.services.training.merge_service import AdapterMergeService
+
+        assert isinstance(svc, AdapterMergeService)
+        assert wb.merge_service is svc
+
+    @pytest.mark.asyncio
+    async def test_training_runs(self, in_memory_session) -> None:
+        wb = AnvilWorkbench(session=in_memory_session)
+        svc = wb.training_runs
+        from anvil.services.training.training_run_service import TrainingRunService
+
+        assert isinstance(svc, TrainingRunService)
+        assert wb.training_runs is svc
+
+    # ── Teaching loop accessors (spec 055) ────────────────────────────
+
+    @pytest.mark.asyncio
+    async def test_teaching_repo(self, in_memory_session) -> None:
+        wb = AnvilWorkbench(session=in_memory_session)
+        repo = wb.teaching_repo
+        from anvil.db.repositories.teaching_session_repository import (
+            TeachingSessionRepository,
+        )
+
+        assert isinstance(repo, TeachingSessionRepository)
+        assert wb.teaching_repo is repo
+
+    @pytest.mark.asyncio
+    async def test_teaching(self, in_memory_session) -> None:
+        wb = AnvilWorkbench(session=in_memory_session)
+        svc = wb.teaching
+        from anvil.services.teaching.teaching_service import TeachingService
+
+        assert isinstance(svc, TeachingService)
+        assert wb.teaching is svc
+
     # ── Backup & Restore accessors (feature 026) ──────────────────────
 
     @pytest.mark.asyncio

@@ -34,9 +34,15 @@ from anvil.db.models import (  # isort: skip
     sample,
     training_config,
 )
-from anvil.db.models import model_asset  # isort: skip
-from anvil.db.models import user_secret  # isort: skip
 from anvil.db.models import asset_download_job  # isort: skip
+from anvil.db.models import evaluation_run  # isort: skip
+from anvil.db.models import external_model  # isort: skip
+from anvil.db.models import fine_tune_dataset  # isort: skip
+from anvil.db.models import lora_adapter  # isort: skip
+from anvil.db.models import model_asset  # isort: skip
+from anvil.db.models import runtime_config  # isort: skip
+from anvil.db.models import teaching_session  # isort: skip
+from anvil.db.models import user_secret  # isort: skip
 
 
 @pytest_asyncio.fixture(loop_scope="function")
