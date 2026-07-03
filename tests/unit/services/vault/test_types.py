@@ -28,7 +28,6 @@ from anvil.services.vault.types_structural_metrics import StructuralMetrics
 from anvil.services.vault.types_temporal_metrics import TemporalMetrics
 from anvil.services.vault.types_topological_metrics import TopologicalMetrics
 
-
 # ── Finding ──────────────────────────────────────────────────────────────────
 
 

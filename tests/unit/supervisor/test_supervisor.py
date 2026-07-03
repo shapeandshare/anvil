@@ -26,7 +26,6 @@ from anvil.supervisor.supervisor import (
     write_pid,
 )
 
-
 ########################################################################
 # PID file helpers
 ########################################################################
@@ -163,7 +162,9 @@ class TestProcessSupervisorLifecycle:
         mock_proc.pid = 42
         mock_proc.poll.return_value = None
 
-        with patch("anvil.supervisor.supervisor.subprocess.Popen", return_value=mock_proc) as mock_popen:
+        with patch(
+            "anvil.supervisor.supervisor.subprocess.Popen", return_value=mock_proc
+        ) as mock_popen:
             sv.start("worker", ["sleep", "60"])
 
         mock_popen.assert_called_once()
@@ -179,7 +180,9 @@ class TestProcessSupervisorLifecycle:
         mock_proc = MagicMock()
         mock_proc.poll.return_value = None
 
-        with patch("anvil.supervisor.supervisor.subprocess.Popen", return_value=mock_proc):
+        with patch(
+            "anvil.supervisor.supervisor.subprocess.Popen", return_value=mock_proc
+        ):
             sv.start("dup", ["sleep", "60"])
             sv.start("dup", ["sleep", "999"])
 
@@ -191,7 +194,9 @@ class TestProcessSupervisorLifecycle:
         mock_proc = MagicMock()
         mock_proc.poll.return_value = None
 
-        with patch("anvil.supervisor.supervisor.subprocess.Popen", return_value=mock_proc) as mock_popen:
+        with patch(
+            "anvil.supervisor.supervisor.subprocess.Popen", return_value=mock_proc
+        ) as mock_popen:
             sv.start("logger", ["echo", "hello"])
 
         log_path = tmp_path / "logger.log"
@@ -256,7 +261,10 @@ class TestProcessSupervisorLifecycle:
         def _tracking_killpg(pgid: int, sig: int) -> None:
             killpg_signals.append(sig)
 
-        with patch.object(os, "getpgid", return_value=999), patch.object(os, "killpg", _tracking_killpg):
+        with (
+            patch.object(os, "getpgid", return_value=999),
+            patch.object(os, "killpg", _tracking_killpg),
+        ):
             sv.stop("test")
 
         assert len(killpg_signals) == 2
@@ -280,7 +288,10 @@ class TestProcessSupervisorLifecycle:
             if sig == signal.SIGTERM:
                 raise ProcessLookupError(f"no process with PGID {pgid}")
 
-        with patch.object(os, "getpgid", return_value=999), patch.object(os, "killpg", _raising_killpg):
+        with (
+            patch.object(os, "getpgid", return_value=999),
+            patch.object(os, "killpg", _raising_killpg),
+        ):
             sv.stop("test")
 
         assert len(killpg_signals) == 2
@@ -376,7 +387,9 @@ class TestProcessSupervisorEdgeCases:
         new_proc.pid = 99
         new_proc.poll.return_value = None
 
-        with patch("anvil.supervisor.supervisor.subprocess.Popen", return_value=new_proc):
+        with patch(
+            "anvil.supervisor.supervisor.subprocess.Popen", return_value=new_proc
+        ):
             sv.start("worker", ["sleep", "30"])
 
         assert sv._processes["worker"] is new_proc

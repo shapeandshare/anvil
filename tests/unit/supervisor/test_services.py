@@ -26,7 +26,6 @@ import pytest
 from anvil.supervisor.services import MLflowService
 from anvil.workspace.workspace_paths import WorkspacePaths
 
-
 ###############################################################################
 # Fixtures
 ###############################################################################
@@ -317,7 +316,9 @@ class TestStart:
     def test_launches_mlflow_server(self, service, mock_process):
         """start() launches ``mlflow server`` with the expected arguments."""
         with (
-            patch("anvil.supervisor.services.subprocess.Popen", return_value=mock_process) as mock_popen,
+            patch(
+                "anvil.supervisor.services.subprocess.Popen", return_value=mock_process
+            ) as mock_popen,
             patch("anvil.supervisor.services.Path.write_text") as mock_write,
             patch.object(service, "_free_port") as mock_free,
         ):
@@ -349,7 +350,9 @@ class TestStart:
     def test_writes_pid_file(self, service, mock_process):
         """PID is written to ``{log_dir}/mlflow.pid`` on start."""
         with (
-            patch("anvil.supervisor.services.subprocess.Popen", return_value=mock_process),
+            patch(
+                "anvil.supervisor.services.subprocess.Popen", return_value=mock_process
+            ),
             patch.object(service, "_free_port"),
         ):
             service.start()
@@ -360,7 +363,9 @@ class TestStart:
     def test_sets_process_attribute(self, service, mock_process):
         """The ``process`` attribute is set to the Popen instance."""
         with (
-            patch("anvil.supervisor.services.subprocess.Popen", return_value=mock_process),
+            patch(
+                "anvil.supervisor.services.subprocess.Popen", return_value=mock_process
+            ),
             patch.object(service, "_free_port"),
         ):
             service.start()
@@ -488,7 +493,9 @@ class TestAsyncStop:
         with (
             patch("anvil.supervisor.services.os.killpg") as mock_killpg,
             patch("anvil.supervisor.services.os.getpgid", return_value=12345),
-            patch("anvil.supervisor.services.asyncio.to_thread", new_callable=AsyncMock),
+            patch(
+                "anvil.supervisor.services.asyncio.to_thread", new_callable=AsyncMock
+            ),
         ):
             await service.async_stop()
 
@@ -578,6 +585,7 @@ class TestAsyncStop:
             patch("anvil.supervisor.services.os.getpgid", return_value=12345),
             patch("anvil.supervisor.services.asyncio.to_thread") as mock_to_thread,
         ):
+
             async def _to_thread(fn, /, *args, **kwargs):
                 return fn(*args, **kwargs)
 
