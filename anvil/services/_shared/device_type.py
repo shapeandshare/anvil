@@ -30,11 +30,4 @@ class DeviceType(StrEnum):
     MPS = "mps"
 
     def to_torch_device(self) -> str:
-        """Return a torch-compatible device string for this type.
-
-        Returns
-        -------
-        str
-            ``"cuda:0"`` for CUDA, ``"mps"`` for MPS, ``"cpu"`` for CPU.
-        """
         return {"cuda": "cuda:0", "mps": "mps", "cpu": "cpu"}[self.value]
