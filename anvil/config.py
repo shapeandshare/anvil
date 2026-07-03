@@ -154,7 +154,7 @@ def get_config() -> dict[str, Any]:
     dict
         Flat dictionary of resolved configuration values.
     """
-    default_mlflow_uri = os.getenv("ANVIL_MLFLOW_URI", "http://127.0.0.1:5001")
+    default_mlflow_uri = os.environ.get("ANVIL_MLFLOW_URI") or "http://127.0.0.1:5001"
     mlflow_disable_local = os.getenv("ANVIL_MLFLOW_DISABLE_LOCAL", "").lower() in (
         "true",
         "1",
