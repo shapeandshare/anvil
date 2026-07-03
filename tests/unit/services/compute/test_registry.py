@@ -90,3 +90,77 @@ def test_get_passes_deps():
     register("dep-fake", lambda **kw: _DepFake(**kw))
     backend = get_backend("dep-fake", foo="bar")
     assert backend.name == "dep-fake"
+
+
+def test_register_overwrite():
+    from anvil.services.compute.registry import get_backend, register
+
+    register("test-overwrite", lambda: _FakeBackend("first"))
+    register("test-overwrite", lambda: _FakeBackend("second"))
+    backend = get_backend("test-overwrite")
+    assert backend.name == "second"
+
+
+def test_get_backend_passes_various_deps():
+    from anvil.services.compute.registry import get_backend, register
+
+    collected: dict[str, object] = {}
+
+    def _factory(**kwargs: object) -> _FakeBackend:
+        collected.update(kwargs)
+        return _FakeBackend("dep-various")
+
+    register("dep-various", _factory)
+    get_backend(
+        "dep-various",
+        a_str="hello",
+        an_int=42,
+        a_list=[1, 2],
+        a_dict={"k": "v"},
+        a_none=None,
+    )
+
+    assert collected["a_str"] == "hello"
+    assert collected["an_int"] == 42
+    assert collected["a_list"] == [1, 2]
+    assert collected["a_dict"] == {"k": "v"}
+    assert collected["a_none"] is None
+
+
+def test_label_for_known_backends():
+    from anvil.services.compute.compute_backend import ComputeBackend
+    from anvil.services.compute.registry import available_backends, register
+
+    register(ComputeBackend.AUTO.value, lambda: _FakeBackend("auto-label"))
+    register(ComputeBackend.LOCAL_CPU.value, lambda: _FakeBackend("cpu-label"))
+
+    backends = available_backends()
+    labels = {b["value"]: b["label"] for b in backends}
+
+    assert labels.get(ComputeBackend.AUTO.value) == "Auto"
+    assert labels.get(ComputeBackend.LOCAL_CPU.value) == "Local (CPU)"
+
+
+def test_label_for_unknown_name():
+    from anvil.services.compute.registry import available_backends, register
+
+    register("unknown-label-backend", lambda: _FakeBackend("unknown-label"))
+    backends = available_backends()
+    matching = [b for b in backends if b["value"] == "unknown-label-backend"]
+    assert len(matching) == 1
+    assert matching[0]["label"] == "unknown-label-backend"
+
+
+def test_available_backends_reason_on_failure():
+    from anvil.services.compute.registry import available_backends, register
+
+    def _failing() -> _FakeBackend:
+        msg = "factory explosion"
+        raise ValueError(msg)
+
+    register("crash-with-reason", _failing)
+    backends = available_backends()
+    crashed = [b for b in backends if b["value"] == "crash-with-reason"]
+    assert len(crashed) == 1
+    assert crashed[0]["available"] is False
+    assert crashed[0]["reason"] == "failed to initialise"

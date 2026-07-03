@@ -68,6 +68,61 @@ class TestFixedSizeWindowChunker:
         with pytest.raises(ValueError):
             FixedSizeWindowChunker(block_size=0)
 
+    def test_overlap_zero_disjoint(self):
+        c = FixedSizeWindowChunker(block_size=4, overlap=0.0)
+        result = c.chunk("abcdefghijkl")
+        assert result == ["abcd", "efgh", "ijkl"]
+
+    def test_exact_stride_boundary(self):
+        c = FixedSizeWindowChunker(block_size=4, overlap=0.5)
+        result = c.chunk("abcdefghij")
+        # stride=2, 10-char text => start positions 0,2,4,6,8 = 5 chunks
+        assert len(result) == 5
+        assert result[0] == "abcd"
+        assert result[-1] == "ij"
+
+    def test_partial_final_chunk(self):
+        c = FixedSizeWindowChunker(block_size=4, overlap=0.5)
+        result = c.chunk("abcdefghi")
+        # stride=2, 9-char text => start positions 0,2,4,6,8 = 5 chunks
+        assert len(result) == 5
+        assert result[0] == "abcd"
+        assert result[-1] == "i"
+        assert len(result[-2]) < 4
+        assert len(result[-1]) < 4
+
+    def test_large_overlap_many_chunks(self):
+        c = FixedSizeWindowChunker(block_size=4, overlap=0.9)
+        result = c.chunk("abcdefghij")
+        assert len(result) == 10
+        for chunk in result:
+            assert len(chunk) <= 4
+
+    def test_block_size_one(self):
+        c = FixedSizeWindowChunker(block_size=1, overlap=0.0)
+        result = c.chunk("abcde")
+        assert result == ["a", "b", "c", "d", "e"]
+
+    def test_long_text_correct_chunk_count(self):
+        c = FixedSizeWindowChunker(block_size=100, overlap=0.5)
+        result = c.chunk("x" * 500)
+        assert len(result) == 10
+
+    def test_chunks_within_block_size(self):
+        c = FixedSizeWindowChunker(block_size=7, overlap=0.3)
+        result = c.chunk("hello world this is a test of the chunker")
+        for chunk in result:
+            assert len(chunk) <= 7
+
+    def test_stride_bottoms_at_one(self):
+        c = FixedSizeWindowChunker(block_size=5, overlap=0.99)
+        text = "abcdefghij"
+        result = c.chunk(text)
+        # stride = max(1, int(5*0.01)) = max(1,0) = 1 => 10 chunks from 10-char text
+        assert len(result) == 10
+        assert len(result[0]) == 5
+        assert len(result[-1]) == 1
+
 
 class TestFileAsDocChunker:
     def test_empty(self):
