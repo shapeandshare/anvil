@@ -932,3 +932,585 @@ class TestGetWorkbench:
         assert len(results) == 1
         assert isinstance(results[0], AnvilWorkbench)
         assert results[0].session is mock_session
+
+
+# ============================================================================
+# Evaluation services (spec 054)
+# ============================================================================
+
+
+class TestEvaluationServices:
+    """Evaluation service and repository properties."""
+
+    @pytest.mark.asyncio
+    async def test_evaluation(self, in_memory_session: AsyncSession) -> None:
+        """evaluation is a lazy EvaluationService wired to session, inference, tracking."""
+        from anvil.services.evaluation.evaluation_service import EvaluationService
+
+        wb = AnvilWorkbench(in_memory_session)
+        svc = wb.evaluation
+        assert isinstance(svc, EvaluationService)
+        assert wb._evaluation is svc
+        assert wb.evaluation is svc
+
+    @pytest.mark.asyncio
+    async def test_evaluation_run_repo(self, in_memory_session: AsyncSession) -> None:
+        """evaluation_run_repo is a lazy EvaluationRunRepository."""
+        from anvil.db.repositories.evaluation_runs import EvaluationRunRepository
+
+        wb = AnvilWorkbench(in_memory_session)
+        repo = wb.evaluation_run_repo
+        assert isinstance(repo, EvaluationRunRepository)
+        assert wb._evaluation_run_repo is repo
+        assert wb.evaluation_run_repo is repo
+
+    @pytest.mark.asyncio
+    async def test_evaluation_run_repo_is_lazy(
+        self, in_memory_session: AsyncSession
+    ) -> None:
+        wb = AnvilWorkbench(in_memory_session)
+        assert wb._evaluation_run_repo is None
+        _ = wb.evaluation_run_repo
+        assert wb._evaluation_run_repo is not None
+        assert wb.evaluation_run_repo is wb._evaluation_run_repo
+
+
+# ============================================================================
+# Delegate methods — evaluation (spec 054)
+# ============================================================================
+
+
+class TestEvaluationDelegates:
+    """evaluate_fine_tuned / get_evaluation_run / get_evaluation_samples /
+    list_evaluation_runs delegate to the evaluation service.
+    """
+
+    @pytest.mark.asyncio
+    async def test_evaluate_fine_tuned_delegates(
+        self, in_memory_session: AsyncSession
+    ) -> None:
+        """evaluate_fine_tuned calls evaluation.start_evaluation."""
+        wb = AnvilWorkbench(in_memory_session)
+        mock_eval = AsyncMock()
+        wb._evaluation = mock_eval
+        mock_eval.start_evaluation.return_value = AsyncMock(id=1)
+
+        result = await wb.evaluate_fine_tuned(
+            model_id=1,
+            base_model_id=2,
+        )
+        mock_eval.start_evaluation.assert_called_once_with(
+            model_id=1,
+            base_model_id=2,
+            adapter_id=None,
+            eval_dataset_name=None,
+            prompts=None,
+            tokenizer_family="char",
+            base_tokenizer_family=None,
+        )
+        assert result.id == 1
+
+    @pytest.mark.asyncio
+    async def test_evaluate_fine_tuned_with_adapter(
+        self, in_memory_session: AsyncSession
+    ) -> None:
+        """evaluate_fine_tuned passes adapter_id and prompts through."""
+        wb = AnvilWorkbench(in_memory_session)
+        mock_eval = AsyncMock()
+        wb._evaluation = mock_eval
+        mock_eval.start_evaluation.return_value = AsyncMock(id=5)
+
+        result = await wb.evaluate_fine_tuned(
+            model_id=10,
+            base_model_id=20,
+            adapter_id="my-adapter",
+            prompts=["hello", "world"],
+            tokenizer_family="bpe",
+            base_tokenizer_family="char",
+        )
+        mock_eval.start_evaluation.assert_called_once_with(
+            model_id=10,
+            base_model_id=20,
+            adapter_id="my-adapter",
+            eval_dataset_name=None,
+            prompts=["hello", "world"],
+            tokenizer_family="bpe",
+            base_tokenizer_family="char",
+        )
+        assert result.id == 5
+
+    @pytest.mark.asyncio
+    async def test_get_evaluation_run_delegates(
+        self, in_memory_session: AsyncSession
+    ) -> None:
+        """get_evaluation_run calls evaluation.get_run."""
+        wb = AnvilWorkbench(in_memory_session)
+        mock_eval = AsyncMock()
+        wb._evaluation = mock_eval
+        mock_eval.get_run.return_value = AsyncMock(id=42)
+
+        result = await wb.get_evaluation_run(42)
+        mock_eval.get_run.assert_called_once_with(42)
+        assert result.id == 42
+
+    @pytest.mark.asyncio
+    async def test_get_evaluation_run_returns_none(
+        self, in_memory_session: AsyncSession
+    ) -> None:
+        """get_evaluation_run returns None when not found."""
+        wb = AnvilWorkbench(in_memory_session)
+        mock_eval = AsyncMock()
+        wb._evaluation = mock_eval
+        mock_eval.get_run.return_value = None
+
+        result = await wb.get_evaluation_run(999)
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_get_evaluation_samples_delegates(
+        self, in_memory_session: AsyncSession
+    ) -> None:
+        """get_evaluation_samples calls evaluation.get_samples."""
+        wb = AnvilWorkbench(in_memory_session)
+        mock_eval = AsyncMock()
+        wb._evaluation = mock_eval
+        mock_eval.get_samples.return_value = [AsyncMock(prompt="test")]
+
+        result = await wb.get_evaluation_samples(1)
+        mock_eval.get_samples.assert_called_once_with(1)
+        assert len(result) == 1
+
+    @pytest.mark.asyncio
+    async def test_list_evaluation_runs_delegates(
+        self, in_memory_session: AsyncSession
+    ) -> None:
+        """list_evaluation_runs calls evaluation.list_runs."""
+        wb = AnvilWorkbench(in_memory_session)
+        mock_eval = AsyncMock()
+        wb._evaluation = mock_eval
+        mock_run = AsyncMock(id=1)
+        mock_eval.list_runs.return_value = ([mock_run], 1)
+
+        runs, total = await wb.list_evaluation_runs(model_id=5, limit=10, offset=0)
+        mock_eval.list_runs.assert_called_once_with(
+            model_id=5,
+            status=None,
+            limit=10,
+            offset=0,
+        )
+        assert len(runs) == 1
+        assert total == 1
+
+    @pytest.mark.asyncio
+    async def test_list_evaluation_runs_with_status(
+        self, in_memory_session: AsyncSession
+    ) -> None:
+        """list_evaluation_runs passes status filter."""
+        wb = AnvilWorkbench(in_memory_session)
+        mock_eval = AsyncMock()
+        wb._evaluation = mock_eval
+        mock_eval.list_runs.return_value = ([], 0)
+
+        runs, total = await wb.list_evaluation_runs(status="PENDING")
+        mock_eval.list_runs.assert_called_once_with(
+            model_id=None,
+            status="PENDING",
+            limit=20,
+            offset=0,
+        )
+        assert runs == []
+        assert total == 0
+
+
+# ============================================================================
+# Fine-tune dataset repository (feature 053)
+# ============================================================================
+
+
+class TestFineTuneDataset:
+    """ftd_repo property."""
+
+    @pytest.mark.asyncio
+    async def test_ftd_repo(self, in_memory_session: AsyncSession) -> None:
+        from anvil.db.repositories.fine_tune_datasets import FineTuneDatasetRepository
+
+        wb = AnvilWorkbench(in_memory_session)
+        repo = wb.ftd_repo
+        assert isinstance(repo, FineTuneDatasetRepository)
+        assert wb._ftd_repo is repo
+        assert wb.ftd_repo is repo
+
+    @pytest.mark.asyncio
+    async def test_ftd_repo_is_lazy(self, in_memory_session: AsyncSession) -> None:
+        wb = AnvilWorkbench(in_memory_session)
+        assert wb._ftd_repo is None
+        _ = wb.ftd_repo
+        assert wb._ftd_repo is not None
+        assert wb.ftd_repo is wb._ftd_repo
+
+
+# ============================================================================
+# Model browser (feature 041)
+# ============================================================================
+
+
+class TestModelBrowser:
+    """ModelBrowserService property — stateless service."""
+
+    @pytest.mark.asyncio
+    async def test_model_browser(self, in_memory_session: AsyncSession) -> None:
+        from anvil.services.inference.model_browser import ModelBrowserService
+
+        wb = AnvilWorkbench(in_memory_session)
+        svc = wb.model_browser
+        assert isinstance(svc, ModelBrowserService)
+        assert wb._model_browser is svc
+        assert wb.model_browser is svc
+
+    @pytest.mark.asyncio
+    async def test_model_browser_is_lazy(self, in_memory_session: AsyncSession) -> None:
+        wb = AnvilWorkbench(in_memory_session)
+        assert wb._model_browser is None
+        _ = wb.model_browser
+        assert wb._model_browser is not None
+        assert wb.model_browser is wb._model_browser
+
+
+# ============================================================================
+# Model asset storage (feature 042)
+# ============================================================================
+
+
+class TestModelAssetStorage:
+    """Model asset repository, download job repo, user_secret, model_store,
+    and model_assets properties.
+    """
+
+    @pytest.mark.asyncio
+    async def test_model_asset_repo(self, in_memory_session: AsyncSession) -> None:
+        from anvil.db.repositories.model_asset_repository import ModelAssetRepository
+
+        wb = AnvilWorkbench(in_memory_session)
+        repo = wb.model_asset_repo
+        assert isinstance(repo, ModelAssetRepository)
+        assert wb._model_asset_repo is repo
+        assert wb.model_asset_repo is repo
+
+    @pytest.mark.asyncio
+    async def test_model_asset_repo_is_lazy(
+        self, in_memory_session: AsyncSession
+    ) -> None:
+        wb = AnvilWorkbench(in_memory_session)
+        assert wb._model_asset_repo is None
+        _ = wb.model_asset_repo
+        assert wb._model_asset_repo is not None
+        assert wb.model_asset_repo is wb._model_asset_repo
+
+    @pytest.mark.asyncio
+    async def test_asset_download_job_repo(
+        self, in_memory_session: AsyncSession
+    ) -> None:
+        from anvil.db.repositories.asset_download_job_repository import (
+            AssetDownloadJobRepository,
+        )
+
+        wb = AnvilWorkbench(in_memory_session)
+        repo = wb.asset_download_job_repo
+        assert isinstance(repo, AssetDownloadJobRepository)
+        assert wb._asset_download_job_repo is repo
+        assert wb.asset_download_job_repo is repo
+
+    @pytest.mark.asyncio
+    async def test_asset_download_job_repo_is_lazy(
+        self, in_memory_session: AsyncSession
+    ) -> None:
+        wb = AnvilWorkbench(in_memory_session)
+        assert wb._asset_download_job_repo is None
+        _ = wb.asset_download_job_repo
+        assert wb._asset_download_job_repo is not None
+        assert wb.asset_download_job_repo is wb._asset_download_job_repo
+
+    @pytest.mark.asyncio
+    async def test_model_store_default_path(
+        self, in_memory_session: AsyncSession
+    ) -> None:
+        """Without paths, model_store uses the fallback storage dir."""
+        from anvil.storage.local import LocalFileStore
+
+        wb = AnvilWorkbench(in_memory_session)
+        store = wb.model_store
+        assert isinstance(store, LocalFileStore)
+        assert "data/storage" in str(store.base_path)
+        assert wb._model_store is store
+        assert wb.model_store is store
+
+    @pytest.mark.asyncio
+    async def test_model_store_with_paths(
+        self, in_memory_session: AsyncSession, tmp_path: Path
+    ) -> None:
+        """With paths, model_store uses paths.storage_dir."""
+        from anvil.storage.local import LocalFileStore
+        from anvil.workspace.workspace_paths import WorkspacePaths
+
+        paths = WorkspacePaths(tmp_path)
+        wb = AnvilWorkbench(in_memory_session, paths=paths)
+        store = wb.model_store
+        assert isinstance(store, LocalFileStore)
+        assert str(paths.storage_dir) in str(store.base_path)
+
+    @pytest.mark.asyncio
+    async def test_model_store_is_lazy(self, in_memory_session: AsyncSession) -> None:
+        wb = AnvilWorkbench(in_memory_session)
+        assert wb._model_store is None
+        _ = wb.model_store
+        assert wb._model_store is not None
+        assert wb.model_store is wb._model_store
+
+    @pytest.mark.asyncio
+    async def test_model_assets(
+        self, in_memory_session: AsyncSession, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """ModelAssetService chains many deps — verify it constructs."""
+        from anvil.services.model_import.model_asset_service import ModelAssetService
+
+        monkeypatch.setenv("ANVIL_MASTER_SECRET", "ab" * 16)
+        wb = AnvilWorkbench(in_memory_session)
+        svc = wb.model_assets
+        assert isinstance(svc, ModelAssetService)
+        assert wb._model_assets is svc
+        assert wb.model_assets is svc
+
+    @pytest.mark.asyncio
+    async def test_model_assets_is_lazy(
+        self, in_memory_session: AsyncSession, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("ANVIL_MASTER_SECRET", "ab" * 16)
+        wb = AnvilWorkbench(in_memory_session)
+        assert wb._model_assets is None
+        _ = wb.model_assets
+        assert wb._model_assets is not None
+        assert wb.model_assets is wb._model_assets
+
+
+# ============================================================================
+# User secrets (feature 042)
+# ============================================================================
+
+
+class TestUserSecrets:
+    """User secret repository, service, and rotation service."""
+
+    @pytest.mark.asyncio
+    async def test_user_secret_repo(self, in_memory_session: AsyncSession) -> None:
+        from anvil.db.repositories.user_secret_repository import UserSecretRepository
+
+        wb = AnvilWorkbench(in_memory_session)
+        repo = wb.user_secret_repo
+        assert isinstance(repo, UserSecretRepository)
+        assert wb._user_secret_repo is repo
+        assert wb.user_secret_repo is repo
+
+    @pytest.mark.asyncio
+    async def test_user_secret_repo_is_lazy(
+        self, in_memory_session: AsyncSession
+    ) -> None:
+        wb = AnvilWorkbench(in_memory_session)
+        assert wb._user_secret_repo is None
+        _ = wb.user_secret_repo
+        assert wb._user_secret_repo is not None
+        assert wb.user_secret_repo is wb._user_secret_repo
+
+    @pytest.mark.asyncio
+    async def test_user_secrets(
+        self, in_memory_session: AsyncSession, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """user_secrets requires a master secret env var."""
+        from anvil.services.secrets.user_secret_service import UserSecretService
+
+        monkeypatch.setenv("ANVIL_MASTER_SECRET", "ab" * 16)
+        wb = AnvilWorkbench(in_memory_session)
+        svc = wb.user_secrets
+        assert isinstance(svc, UserSecretService)
+        assert wb._user_secrets is svc
+        assert wb.user_secrets is svc
+
+    @pytest.mark.asyncio
+    async def test_user_secrets_is_lazy(
+        self, in_memory_session: AsyncSession, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("ANVIL_MASTER_SECRET", "ab" * 16)
+        wb = AnvilWorkbench(in_memory_session)
+        assert wb._user_secrets is None
+        _ = wb.user_secrets
+        assert wb._user_secrets is not None
+        assert wb.user_secrets is wb._user_secrets
+
+    @pytest.mark.asyncio
+    async def test_secret_rotation_service(
+        self, in_memory_session: AsyncSession, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """secret_rotation_service derives encryption from user_secrets."""
+        from anvil.services.secrets.secret_rotation_service import SecretRotationService
+
+        monkeypatch.setenv("ANVIL_MASTER_SECRET", "ab" * 16)
+        wb = AnvilWorkbench(in_memory_session)
+        svc = wb.secret_rotation_service
+        assert isinstance(svc, SecretRotationService)
+        assert wb._secret_rotation is svc
+        assert wb.secret_rotation_service is svc
+
+    @pytest.mark.asyncio
+    async def test_secret_rotation_service_is_lazy(
+        self, in_memory_session: AsyncSession, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("ANVIL_MASTER_SECRET", "ab" * 16)
+        wb = AnvilWorkbench(in_memory_session)
+        assert wb._secret_rotation is None
+        _ = wb.secret_rotation_service
+        assert wb._secret_rotation is not None
+        assert wb.secret_rotation_service is wb._secret_rotation
+
+
+# ============================================================================
+# LoRA adapter (feature 044)
+# ============================================================================
+
+
+class TestLoRAAdapter:
+    """lora_adapter_repo property."""
+
+    @pytest.mark.asyncio
+    async def test_lora_adapter_repo(self, in_memory_session: AsyncSession) -> None:
+        from anvil.db.repositories.lora_adapter_repository import LoRAAdapterRepository
+
+        wb = AnvilWorkbench(in_memory_session)
+        repo = wb.lora_adapter_repo
+        assert isinstance(repo, LoRAAdapterRepository)
+        assert wb._lora_adapter_repo is repo
+        assert wb.lora_adapter_repo is repo
+
+    @pytest.mark.asyncio
+    async def test_lora_adapter_repo_is_lazy(
+        self, in_memory_session: AsyncSession
+    ) -> None:
+        wb = AnvilWorkbench(in_memory_session)
+        assert wb._lora_adapter_repo is None
+        _ = wb.lora_adapter_repo
+        assert wb._lora_adapter_repo is not None
+        assert wb.lora_adapter_repo is wb._lora_adapter_repo
+
+
+# ============================================================================
+# Adapter merge + export (feature 045)
+# ============================================================================
+
+
+class TestAdapterMerge:
+    """merge_service and training_runs properties."""
+
+    @pytest.mark.asyncio
+    async def test_merge_service(self, in_memory_session: AsyncSession) -> None:
+        from anvil.services.training.merge_service import AdapterMergeService
+
+        wb = AnvilWorkbench(in_memory_session)
+        svc = wb.merge_service
+        assert isinstance(svc, AdapterMergeService)
+        assert wb._merge_service is svc
+        assert wb.merge_service is svc
+
+    @pytest.mark.asyncio
+    async def test_merge_service_is_lazy(self, in_memory_session: AsyncSession) -> None:
+        wb = AnvilWorkbench(in_memory_session)
+        assert wb._merge_service is None
+        _ = wb.merge_service
+        assert wb._merge_service is not None
+        assert wb.merge_service is wb._merge_service
+
+    @pytest.mark.asyncio
+    async def test_training_runs(self, in_memory_session: AsyncSession) -> None:
+        from anvil.services.training.training_run_service import TrainingRunService
+
+        wb = AnvilWorkbench(in_memory_session)
+        svc = wb.training_runs
+        assert isinstance(svc, TrainingRunService)
+        assert wb._training_runs is svc
+        assert wb.training_runs is svc
+
+    @pytest.mark.asyncio
+    async def test_training_runs_is_lazy(self, in_memory_session: AsyncSession) -> None:
+        wb = AnvilWorkbench(in_memory_session)
+        assert wb._training_runs is None
+        _ = wb.training_runs
+        assert wb._training_runs is not None
+        assert wb.training_runs is wb._training_runs
+
+    @pytest.mark.asyncio
+    async def test_training_runs_with_paths(
+        self, in_memory_session: AsyncSession, tmp_path: Path
+    ) -> None:
+        """With paths, training_runs uses paths.models_dir."""
+        from anvil.workspace.workspace_paths import WorkspacePaths
+
+        paths = WorkspacePaths(tmp_path)
+        wb = AnvilWorkbench(in_memory_session, paths=paths)
+        svc = wb.training_runs
+        assert svc is not None
+
+    @pytest.mark.asyncio
+    async def test_training_runs_default_path(
+        self, in_memory_session: AsyncSession
+    ) -> None:
+        """Without paths, training_runs uses default models dir."""
+        wb = AnvilWorkbench(in_memory_session)
+        svc = wb.training_runs
+        assert svc is not None
+
+
+# ============================================================================
+# Teaching loop (spec 055)
+# ============================================================================
+
+
+class TestTeaching:
+    """teaching_repo and teaching properties."""
+
+    @pytest.mark.asyncio
+    async def test_teaching_repo(self, in_memory_session: AsyncSession) -> None:
+        from anvil.db.repositories.teaching_session_repository import (
+            TeachingSessionRepository,
+        )
+
+        wb = AnvilWorkbench(in_memory_session)
+        repo = wb.teaching_repo
+        assert isinstance(repo, TeachingSessionRepository)
+        assert wb._teaching_repo is repo
+        assert wb.teaching_repo is repo
+
+    @pytest.mark.asyncio
+    async def test_teaching_repo_is_lazy(
+        self, in_memory_session: AsyncSession
+    ) -> None:
+        wb = AnvilWorkbench(in_memory_session)
+        assert wb._teaching_repo is None
+        _ = wb.teaching_repo
+        assert wb._teaching_repo is not None
+        assert wb.teaching_repo is wb._teaching_repo
+
+    @pytest.mark.asyncio
+    async def test_teaching(self, in_memory_session: AsyncSession) -> None:
+        """TeachingService chains many deps — verify it constructs."""
+        from anvil.services.teaching.teaching_service import TeachingService
+
+        wb = AnvilWorkbench(in_memory_session)
+        svc = wb.teaching
+        assert isinstance(svc, TeachingService)
+        assert wb._teaching is svc
+        assert wb.teaching is svc
+
+    @pytest.mark.asyncio
+    async def test_teaching_is_lazy(self, in_memory_session: AsyncSession) -> None:
+        wb = AnvilWorkbench(in_memory_session)
+        assert wb._teaching is None
+        _ = wb.teaching
+        assert wb._teaching is not None
+        assert wb.teaching is wb._teaching
