@@ -33,7 +33,7 @@ class RestoreJournal:
     """
 
     def __init__(self, journal_path: Path) -> None:
-        self._path = journal_path
+        self._path = journal_path.resolve()
 
     def write(
         self,

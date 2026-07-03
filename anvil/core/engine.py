@@ -20,6 +20,16 @@ from typing import Any, TypeGuard
 
 from .autograd import Value
 
+# Safety caps for model architecture parameters (S6680)
+MAX_VOCAB_SIZE = 200_000
+"""int: Maximum vocabulary size to prevent unbounded allocation."""
+MAX_N_EMBD = 16_384
+"""int: Maximum embedding dimension to prevent unbounded allocation."""
+MAX_N_LAYER = 256
+"""int: Maximum transformer depth to prevent unbounded allocation."""
+MAX_BLOCK_SIZE = 131_072
+"""int: Maximum context length to prevent unbounded allocation."""
+
 
 def _is_matrix_state_val(
     val: list[list[Value]] | list[Value],
@@ -113,6 +123,19 @@ class LlamaModel:
         n_layer: int = 1,
         block_size: int = 16,
     ) -> None:
+        if vocab_size > MAX_VOCAB_SIZE:
+            raise ValueError(
+                f"vocab_size={vocab_size} exceeds maximum {MAX_VOCAB_SIZE}"
+            )
+        if n_embd > MAX_N_EMBD:
+            raise ValueError(f"n_embd={n_embd} exceeds maximum {MAX_N_EMBD}")
+        if n_layer > MAX_N_LAYER:
+            raise ValueError(f"n_layer={n_layer} exceeds maximum {MAX_N_LAYER}")
+        if block_size > MAX_BLOCK_SIZE:
+            raise ValueError(
+                f"block_size={block_size} exceeds maximum {MAX_BLOCK_SIZE}"
+            )
+
         self.vocab_size = vocab_size
         self.n_embd = n_embd
         self.n_head = n_head

@@ -401,7 +401,7 @@
               return;
             }
             var hexChars = '0123456789abcdef';
-            digitEl.textContent = hexChars[Math.floor(Math.random() * 16)];
+            digitEl.textContent = hexChars[Math.floor(Math.random() * 16)]; // NOSONAR
             scrambleCounts[key] = count + 1;
           }, digitInterval);
           self._addTimer(t);

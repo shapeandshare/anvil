@@ -24,7 +24,7 @@
   }
 
   function rand(min, max) {
-    return min + Math.random() * (max - min);
+    return min + Math.random() * (max - min); // NOSONAR
   }
 
   function randInt(min, max) {
@@ -616,7 +616,7 @@
         // Spawn rate scales with magic: at magic=1, interval effectively ~1.4s via double spawn
         var count = 1;
         if (magic > 0.7) count = 2;
-        else if (magic > 0.4 && Math.random() < 0.3) count = 2;
+        else if (magic > 0.4 && Math.random() < 0.3) count = 2; // NOSONAR
         ensureOverlay();
         var si;
         for (si = 0; si < count; si++) {
@@ -626,7 +626,7 @@
 
       rainbowTimer = setInterval(function () {
         if (diverged || legible || paused || reducedMotion) return;
-        if (magic > 0.25 && Math.random() < magic) {
+        if (magic > 0.25 && Math.random() < magic) { // NOSONAR
           ensureOverlay();
           spawnRainbow(false);
         }

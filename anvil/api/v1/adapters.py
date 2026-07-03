@@ -149,7 +149,7 @@ async def merge_adapter(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except RuntimeError as e:
-        logger.exception("Adapter merge failed for %s/%s", model_id, adapter_id)
+        logger.exception("Adapter merge failed")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
     return {"merged_path": merged_path}

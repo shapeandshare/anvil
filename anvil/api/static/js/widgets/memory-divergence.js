@@ -72,10 +72,10 @@
 
   MemoryDivergenceWidget.prototype._genLossData = function () {
     var data = [];
-    var val = 4.0 + (Math.random() * 0.5 - 0.25);
+    var val = 4.0 + (Math.random() * 0.5 - 0.25); // NOSONAR
     for (var i = 0; i < 30; i++) {
-      val = val * 0.87 + (Math.random() * 0.12) + 0.05;
-      if (val < 0.3) val = 0.3 + Math.random() * 0.15;
+      val = val * 0.87 + (Math.random() * 0.12) + 0.05; // NOSONAR
+      if (val < 0.3) val = 0.3 + Math.random() * 0.15; // NOSONAR
       data.push({ x: i, y: val });
     }
     return data;
@@ -611,7 +611,7 @@
     var len = data.length;
     var spikeStart = Math.floor(len * 0.7);
     for (var i = spikeStart; i < len; i++) {
-      data[i].y = 4.0 + Math.random() * 1.0;
+      data[i].y = 4.0 + Math.random() * 1.0; // NOSONAR
     }
     data[len - 1].y = 12.0;
     this._lossData = data;

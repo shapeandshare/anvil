@@ -603,7 +603,13 @@ class InferenceService:
         try:
             composed = LlamaModel.load(tmp_path)
         finally:
-            Path(tmp_path).unlink(missing_ok=True)
+            _cleanup_path = Path(tmp_path)
+
+            def _cleanup() -> None:
+                _cleanup_path.unlink(missing_ok=True)
+
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(None, _cleanup)
 
         tokenizer = self._create_adapter_tokenizer(source_id, local_path=local_path)
 
@@ -759,7 +765,13 @@ class InferenceService:
         try:
             composed_model = LlamaModel.load(tmp_path)
         finally:
-            Path(tmp_path).unlink(missing_ok=True)
+            _cleanup_path = Path(tmp_path)
+
+            def _cleanup() -> None:
+                _cleanup_path.unlink(missing_ok=True)
+
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(None, _cleanup)
 
         return composed_model
 
