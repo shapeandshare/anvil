@@ -11,6 +11,7 @@ no-GPU scenarios.  Also tests resolve_device helper.
 
 from __future__ import annotations
 
+import subprocess
 import sys
 from typing import Any
 
@@ -217,6 +218,43 @@ def test_get_mps_device_name_non_arm64(monkeypatch) -> None:
     from anvil.gpu import _get_mps_device_name
 
     assert _get_mps_device_name() == "MPS (x86_64)"
+
+
+def test_get_mps_device_name_arm64_timeout(monkeypatch) -> None:
+    """subprocess.TimeoutExpired is caught and returns "Apple Silicon"."""
+    monkeypatch.setattr("platform.machine", lambda: "arm64")
+
+    def _raise_timeout(*a: object, **kw: object) -> None:
+        raise subprocess.TimeoutExpired(cmd="sysctl", timeout=2)
+
+    monkeypatch.setattr("subprocess.run", _raise_timeout)
+    from anvil.gpu import _get_mps_device_name
+
+    assert _get_mps_device_name() == "Apple Silicon"
+
+
+def test_get_mps_device_name_arm64_oserror(monkeypatch) -> None:
+    """OSError from subprocess.run is caught and returns "Apple Silicon"."""
+    monkeypatch.setattr("platform.machine", lambda: "arm64")
+    monkeypatch.setattr(
+        "subprocess.run",
+        lambda *a, **kw: (_ for _ in ()).throw(OSError("permission denied")),
+    )
+    from anvil.gpu import _get_mps_device_name
+
+    assert _get_mps_device_name() == "Apple Silicon"
+
+
+def test_get_mps_device_name_arm64_empty_stdout(monkeypatch) -> None:
+    """Empty sysctl stdout falls back to "Apple Silicon"."""
+    monkeypatch.setattr("platform.machine", lambda: "arm64")
+    monkeypatch.setattr(
+        "subprocess.run",
+        lambda *a, **kw: _MockModule(stdout="  \n", stderr="", returncode=0),
+    )
+    from anvil.gpu import _get_mps_device_name
+
+    assert _get_mps_device_name() == "Apple Silicon"
 
 
 # ── _get_mps_memory ───────────────────────────────────────────────────────
