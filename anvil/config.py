@@ -130,6 +130,9 @@ def get_config() -> dict[str, Any]:
     -------------
     port : int
         Web server port (default: ``8080``).
+    host : str
+        Web server bind address (default: ``127.0.0.1``). Set to
+        ``0.0.0.0`` for LAN accessibility.
     state_db_path : str
         Resolved path to ``anvil-state.db``.
     log_dir : str
@@ -182,6 +185,7 @@ def get_config() -> dict[str, Any]:
 
     return {
         "port": int(os.getenv("ANVIL_PORT", "8080")),
+        "host": os.getenv("ANVIL_HOST", "127.0.0.1"),
         "state_db_path": os.getenv("ANVIL_STATE_DB_PATH") or _ws_state_db,
         "log_dir": os.getenv("ANVIL_LOG_DIR", _ws_log_dir),
         "mlflow_uri": default_mlflow_uri,

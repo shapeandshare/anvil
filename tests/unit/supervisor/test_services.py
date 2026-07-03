@@ -332,7 +332,7 @@ class TestStart:
         port_idx = args[0].index("--port")
         assert args[0][port_idx + 1] == "5001"
         assert "--host" in args[0]
-        assert "0.0.0.0" in args[0]
+        assert "127.0.0.1" in args[0]
         assert kwargs.get("preexec_fn") is not None
 
     def test_noop_if_already_running(self, service, mock_process):
