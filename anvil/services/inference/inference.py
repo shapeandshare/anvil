@@ -864,9 +864,9 @@ class InferenceService:
         local_tokenizer_path = f"data/storage/models/{model_id}/hf/"
         tokenizer = self._create_adapter_tokenizer(
             source_id,
-            local_path=local_tokenizer_path
-            if Path(local_tokenizer_path).exists()
-            else None,
+            local_path=(
+                local_tokenizer_path if Path(local_tokenizer_path).exists() else None
+            ),
         )
 
         return LoadedModel(
