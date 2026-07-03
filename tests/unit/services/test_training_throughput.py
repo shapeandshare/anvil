@@ -79,3 +79,49 @@ class TestThroughputTracker:
         t.record(100, 1.0)
         t.record(200, 1.0)
         assert t.steps_per_sec is None
+
+    def test_minimum_window(self):
+        t = ThroughputTracker(window=1)
+        t.record(100, 0.0)
+        t.record(200, 1.0)
+        assert len(t._times) == 1
+        assert t.steps_per_sec is None
+        assert t.tokens_per_sec is None
+
+    def test_zero_tokens(self):
+        t = ThroughputTracker(window=20)
+        t.record(0, 0.0)
+        t.record(0, 1.0)
+        assert t.steps_per_sec == 1.0
+        assert t.tokens_per_sec == 0.0
+
+    def test_identical_timestamps(self):
+        t = ThroughputTracker(window=20)
+        t.record(100, 0.0)
+        t.record(200, 0.0)
+        t.record(300, 0.0)
+        assert t.steps_per_sec is None
+        assert t.tokens_per_sec is None
+
+    def test_eta_sec_beyond_total(self):
+        t = ThroughputTracker(window=20)
+        t.record(100, 0.0)
+        t.record(100, 1.0)
+        assert t.eta_sec(150, 100) == 0.0
+
+    def test_fresh_tracker_state(self):
+        t = ThroughputTracker(window=20)
+        t.record(100, 0.0)
+        t.record(100, 1.0)
+        assert t.steps_per_sec is not None
+        t2 = ThroughputTracker(window=20)
+        assert t2.steps_per_sec is None
+        assert t2.tokens_per_sec is None
+        assert t2.eta_sec(0, 100) is None
+
+    def test_large_token_counts(self):
+        t = ThroughputTracker(window=20)
+        t.record(10**9, 0.0)
+        t.record(10**9, 1.0)
+        assert t.steps_per_sec == 1.0
+        assert t.tokens_per_sec == 2 * 10**9
