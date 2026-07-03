@@ -144,6 +144,8 @@ class ModelAssetService:
         completed = sum(
             1 for a in assets if a.status == str(ModelAssetStatus.AVAILABLE)
         )
+        aggregate_downloaded = sum(a.downloaded_bytes for a in assets)
+        aggregate_total = sum(a.size_bytes for a in assets)
 
         return {
             "job_id": job.id,
@@ -154,6 +156,8 @@ class ModelAssetService:
             "error_message": job.error_message,
             "total_assets": total,
             "completed_assets": completed,
+            "downloaded_bytes": aggregate_downloaded,
+            "total_bytes": aggregate_total,
             "assets": [
                 {
                     "id": a.id,
@@ -311,10 +315,33 @@ class ModelAssetService:
         await self._asset_repo.update_status(
             asset.id, str(ModelAssetStatus.DOWNLOADING)
         )
+
+        # Build a throttled progress callback that updates DB every ~1 MB.
+        _PROGRESS_THROTTLE = 1024 * 1024
+        _last_reported: list[int] = [0]
+        _size_set: list[bool] = [False]
+
+        async def _on_progress(downloaded: int, total: int) -> None:
+            if not _size_set[0] and total > 0:
+                _size_set[0] = True
+                await self._asset_repo.update_status(
+                    asset.id,
+                    str(ModelAssetStatus.DOWNLOADING),
+                    size_bytes=total,
+                )
+            delta = downloaded - _last_reported[0]
+            if delta >= _PROGRESS_THROTTLE or (total > 0 and downloaded >= total):
+                await self._asset_repo.update_progress(asset.id, downloaded)
+                _last_reported[0] = downloaded
+
         tmp_path: str | None = None
         try:
             tmp_path = await self._hf_source.download_asset_to_path(
-                identifier, asset.filename, revision=revision, token=token
+                identifier,
+                asset.filename,
+                revision=revision,
+                token=token,
+                progress_callback=_on_progress,
             )
 
             if asset.asset_type == str(ModelAssetType.WEIGHTS):

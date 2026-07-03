@@ -10,7 +10,10 @@ from __future__ import annotations
 import asyncio
 import os
 import tempfile
+from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING
+
+import aiofiles  # type: ignore[import-untyped]
 
 from .._shared.import_types import ModelMetadata, ModelSourceError
 
@@ -138,6 +141,7 @@ class HfHubSource:
         *,
         revision: str = "main",
         token: str | None = None,
+        progress_callback: Callable[[int, int], Awaitable[None] | None] | None = None,
     ) -> str:
         """Download a single asset file from the HF Hub to a local path.
 
@@ -145,6 +149,11 @@ class HfHubSource:
         responsible for streaming it to managed storage and cleaning up
         the temporary path. Returning a path (rather than bytes) lets the
         caller stream the file without buffering it fully in memory (FR-010a).
+
+        A ``progress_callback`` can be provided to receive byte-level
+        download progress. The callback is invoked with ``(downloaded_bytes,
+        total_bytes)``. It may be sync or async. ``total_bytes`` may be 0
+        if the server does not advertise ``Content-Length``.
 
         Parameters
         ----------
@@ -156,6 +165,8 @@ class HfHubSource:
             Branch, tag, or commit SHA.
         token : str | None
             HF Hub API token.
+        progress_callback : Callable[[int, int], None] | None
+            Optional callback receiving ``(downloaded, total)``.
 
         Returns
         -------
@@ -174,7 +185,9 @@ class HfHubSource:
                 source=self.name,
             )
         effective_token = token or os.environ.get("HF_TOKEN")
-        return await _do_download(identifier, filename, revision, effective_token)
+        return await _do_download(
+            identifier, filename, revision, effective_token, progress_callback
+        )
 
 
 def _huggingface_hub_available() -> bool:
@@ -318,10 +331,17 @@ async def _do_download(
     filename: str,
     revision: str,
     token: str | None,
+    progress_callback: Callable[[int, int], Awaitable[None] | None] | None = None,
 ) -> str:
-    """Download a single file from the HF Hub, returning its local path."""
+    """Download a single file from the HF Hub, returning its local path.
+
+    Uses a streaming ``GET`` via ``httpx`` (rather than
+    ``hf_hub_download``) so that ``progress_callback`` receives
+    incremental byte-level progress.  A ``HEAD`` request is issued
+    first to resolve ``Content-Length``.
+    """
     try:
-        from huggingface_hub import hf_hub_download
+        from huggingface_hub import hf_hub_url
     except ImportError:
         raise ModelSourceError(
             code="missing_extra",
@@ -329,25 +349,49 @@ async def _do_download(
             source="huggingface",
         ) from None
 
-    def _download() -> str:
-        local_dir = tempfile.mkdtemp(prefix="anvil_hf_")
-        return str(
-            hf_hub_download(
-                repo_id=identifier,
-                filename=filename,
-                revision=revision,
-                token=token,
-                local_dir=local_dir,
-                local_files_only=False,
-            )
-        )
+    import httpx
+
+    local_dir = tempfile.mkdtemp(prefix="anvil_hf_")
+    local_path = str(os.path.join(local_dir, filename))
+    parent = os.path.dirname(local_path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+
+    url = hf_hub_url(repo_id=identifier, filename=filename, revision=revision)
+    headers: dict[str, str] = {}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
 
     try:
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, _download)
+        async with httpx.AsyncClient() as client:
+            # HEAD request to determine total file size.
+            head_resp = await client.head(url, headers=headers, follow_redirects=True)
+            head_resp.raise_for_status()
+            total = int(head_resp.headers.get("content-length", 0))
+
+            if progress_callback:
+                result = progress_callback(0, total)
+                if isinstance(result, Awaitable):
+                    await result
+
+            bytes_downloaded = 0
+            async with client.stream(
+                "GET", url, headers=headers, follow_redirects=True
+            ) as resp:
+                resp.raise_for_status()
+                async with aiofiles.open(local_path, "wb") as f:
+                    async for chunk in resp.aiter_bytes():
+                        await f.write(chunk)
+                        bytes_downloaded += len(chunk)
+                        if progress_callback:
+                            result = progress_callback(bytes_downloaded, total)
+                            if isinstance(result, Awaitable):
+                                await result
     except Exception as exc:
         _raise_hf_error(exc, identifier, revision)
-        raise  # unreachable: _raise_hf_error always raises
+        raise  # unreachable
+
+    return local_path
 
 
 def _raise_hf_error(exc: Exception, identifier: str, revision: str) -> None:
