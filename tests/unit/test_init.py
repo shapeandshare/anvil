@@ -58,9 +58,9 @@ def test_version_format():
     """``__version__`` should match PEP 440 / semver format."""
     import anvil
 
-    assert _VERSION_PATTERN.match(anvil.__version__), (
-        f"__version__={anvil.__version__!r} does not match {_VERSION_PATTERN.pattern}"
-    )
+    assert _VERSION_PATTERN.match(
+        anvil.__version__
+    ), f"__version__={anvil.__version__!r} does not match {_VERSION_PATTERN.pattern}"
 
 
 def test_version_has_root_and_pyproject():
@@ -95,6 +95,7 @@ def test_version_fallback_uses_importlib_metadata():
     # absence of pyproject.toml, triggering the importlib.metadata fallback.
     with patch("pathlib.Path.exists", return_value=False):
         import anvil  # noqa: F811 — reimport under the patch
+
         importlib.reload(anvil)
 
     try:
