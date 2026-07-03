@@ -1078,7 +1078,7 @@
     var i, k, q, tc, speed, dir, turnChance, bad, k2, seg, a, riderRGB;
     function derez() { return document.documentElement.getAttribute('data-grid-state') === 'derez'; }
     function spawn() {
-      var d = DIRS[(vrand() * 4) | 0];
+      var d = DIRS[Math.trunc(vrand() * 4)];
       return {
         x: vrand() * w,
         y: vrand() * h,
@@ -1286,7 +1286,7 @@ var i, q, tc, cx, cy, dx, dy;
         o: 0.2 + vrand() * 0.6,
         gw: shape.gw,
         gh: shape.gh,
-        trail: 3 + ((vrand() * 7) | 0),
+        trail: 3 + Math.trunc(vrand() * 7),
       };
     }
     function init(width, height) { w = width; h = height; p = []; for (i = 0; i < BASE; i++) p.push(create(null, null)); }
@@ -1307,7 +1307,7 @@ var i, q, tc, cx, cy, dx, dy;
           reshape = pickShape();
           q.x = snapCol(); q.y = -CELL - vrand() * 30;
           q.s = 0.3 + vrand() * 0.8; q.gw = reshape.gw; q.gh = reshape.gh;
-          q.trail = 3 + ((vrand() * 7) | 0);
+          q.trail = 3 + Math.trunc(vrand() * 7);
         }
         interp = 1 - (q.y / h);
         glyphW = q.gw;

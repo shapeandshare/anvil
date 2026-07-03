@@ -26,7 +26,6 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from mlflow.exceptions import MlflowException
 
 from anvil.services.tracking.degraded_reason import DegradedReason
