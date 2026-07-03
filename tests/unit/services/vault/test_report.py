@@ -462,7 +462,9 @@ class TestRenderMarkdown:
         """Orphans appear in the rendered markdown."""
         report = GraphHealthReport(
             connectivity=ConnectivityMetrics(
-                orphan_rate=50.0, orphan_count=1, orphans=["lonely"],
+                orphan_rate=50.0,
+                orphan_count=1,
+                orphans=["lonely"],
             ),
         )
         notes = {"lonely": _note("lonely", "Lonely Note")}

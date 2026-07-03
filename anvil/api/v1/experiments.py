@@ -321,8 +321,10 @@ async def get_experiment(
     model_path = Path(f"data/models/experiment_{experiment_id}.json")
     if model_path.exists():
         try:
-            with open(model_path) as f:
-                model_data = json.load(f)
+            loop = asyncio.get_running_loop()
+            model_data = await loop.run_in_executor(
+                None, lambda: json.loads(model_path.read_text())
+            )
             vocab_size = model_data["vocab_size"]
             n_embd = model_data["n_embd"]
             n_head = model_data["n_head"]
