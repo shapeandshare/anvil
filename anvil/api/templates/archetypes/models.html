@@ -146,14 +146,14 @@
         ? '<a href="/v1/inference-page?model_id=' + m.id + '" class="btn btn-primary btn-sm">Play</a> '
         : '';
       tr.innerHTML =
-        '<td><a href="/v1/model-detail/' + m.id + '" class="action-link">' + escHtml(m.display_name) + '</a></td>' +
+        '<td><a href="/v1/model-detail/' + m.id + '?source=external" class="action-link">' + escHtml(m.display_name) + '</a></td>' +
         '<td class="text-dim" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;" title="' + escHtml(m.source_identifier) + '">' + escHtml(m.source_identifier) + '</td>' +
         '<td class="text-dim">' + escHtml(m.architecture_family) + '</td>' +
         '<td>' + fmtParams(m.parameter_count) + '</td>' +
         '<td class="text-dim">' + escHtml(m.tokenizer_family) + '</td>' +
         '<td>' + statusBadge(m.runnable_status) + '</td>' +
         '<td>' +
-          '<a href="/v1/model-detail/' + m.id + '" class="btn btn-secondary btn-sm">View</a> ' +
+          '<a href="/v1/model-detail/' + m.id + '?source=external" class="btn btn-secondary btn-sm">View</a> ' +
           playLink +
           '<a href="#" class="btn btn-secondary btn-sm" onclick="window.startEval(' + m.id + ', event)">Evaluate</a>' +
         '</td>';
@@ -161,7 +161,7 @@
     }
 
     function updateRow(tr, m) {
-      dom.setCellHtml(tr, 0, '<a href="/v1/model-detail/' + m.id + '" class="action-link">' + escHtml(m.display_name) + '</a>');
+      dom.setCellHtml(tr, 0, '<a href="/v1/model-detail/' + m.id + '?source=external" class="action-link">' + escHtml(m.display_name) + '</a>');
       dom.setAttr(dom.cell(tr, 1), 'title', m.source_identifier);
       dom.setCellHtml(tr, 1, '<span class="text-dim" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">' + escHtml(m.source_identifier) + '</span>');
       dom.setCellHtml(tr, 2, '<span class="text-dim">' + escHtml(m.architecture_family) + '</span>');
@@ -172,7 +172,7 @@
         ? '<a href="/v1/inference-page?model_id=' + m.id + '" class="btn btn-primary btn-sm">Play</a> '
         : '';
       dom.setCellHtml(tr, 6,
-        '<a href="/v1/model-detail/' + m.id + '" class="btn btn-secondary btn-sm">View</a> ' +
+        '<a href="/v1/model-detail/' + m.id + '?source=external" class="btn btn-secondary btn-sm">View</a> ' +
         playLink +
         '<a href="#" class="btn btn-secondary btn-sm" onclick="window.startEval(' + m.id + ', event)">Evaluate</a>');
     }

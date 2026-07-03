@@ -106,6 +106,7 @@
   'use strict';
 
   var modelId = {{ model_id }};
+  var urlParams = new URLSearchParams(window.location.search);
 
   function escHtml(s) {
     if (s == null) return '';
@@ -258,6 +259,10 @@
   }
 
   function loadModelDetail() {
+    if (urlParams.get('source') === 'external') {
+      loadExternalModelDetail();
+      return;
+    }
     fetch('/v1/registry/models/' + modelId).then(function(r) {
       if (r.status === 404) {
         loadExternalModelDetail();
