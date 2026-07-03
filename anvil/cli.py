@@ -200,7 +200,7 @@ def serve() -> None:
     try:
         uvicorn.run(
             "anvil.api.app:app",
-            host="0.0.0.0",
+            host=cfg["host"],
             port=cfg["port"],
             reload=False,
         )

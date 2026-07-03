@@ -356,6 +356,8 @@ class InstanceLifecycleService:
         env["ANVIL_STATE_DB_PATH"] = str(workspace_root / "data" / "anvil-state.db")
         env["ANVIL_MLFLOW_URI"] = f"http://127.0.0.1:{record.mlflow_port}"
 
+        web_host = os.getenv("ANVIL_HOST", "127.0.0.1")
+
         # Spawn uvicorn subprocess.
         cmd = [
             sys.executable,
@@ -363,7 +365,7 @@ class InstanceLifecycleService:
             "uvicorn",
             "anvil.api.app:app",
             "--host",
-            "0.0.0.0",
+            web_host,
             "--port",
             str(record.web_port),
         ]

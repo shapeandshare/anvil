@@ -62,6 +62,7 @@ class MLflowService:
         self.port = cfg["mlflow_port"]
         self._tracking_uri: str = cfg["mlflow_uri"]
         self._backend_store_uri = cfg["mlflow_backend_store_uri"]
+        self.host = cfg.get("host", "127.0.0.1")
 
     def _free_port(self) -> None:
         """Kill any zombie process occupying the configured MLflow port.
@@ -148,7 +149,7 @@ class MLflowService:
                 "--backend-store-uri",
                 self._backend_store_uri,
                 "--host",
-                "0.0.0.0",
+                self.host,
                 "--port",
                 str(self.port),
                 "--workers",
