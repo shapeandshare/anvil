@@ -71,7 +71,11 @@ clean: ## Wipe all runtime state and build artifacts for a fresh start
 	find . -type d -name '*.egg-info' -exec rm -rf {} + 2>/dev/null || true
 	@echo "Cleaned. Run 'make run' to rebuild from scratch."
 
-pr-ready: ## Format, lint, and typecheck — run before opening a PR
+pr-ready: ## Format, lint, typecheck, ux-lint, vault-audit, constitution checks, and tests — run before opening a PR
 	$(MAKE) format
 	$(MAKE) lint
 	$(MAKE) typecheck
+	$(MAKE) ux-lint
+	$(MAKE) vault-audit
+	$(MAKE) constitution-check
+	$(MAKE) test
