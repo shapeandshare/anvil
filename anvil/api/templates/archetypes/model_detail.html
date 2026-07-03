@@ -366,7 +366,7 @@
       if (data.detail) { alert('Error: ' + data.detail); }
       else { alert(data.message); loadModelDetail(); }
     })
-    .catch(function(err) { alert('Delete failed: ' + err); });
+    .catch(function(err) { alert('Delete failed: ' + (err.message || err)); });
   };
 
   window.deleteModel = function() {
@@ -379,7 +379,7 @@
       if (data.detail) { alert('Error: ' + data.detail); }
       else { alert(data.message); window.location.href = '/v1/models-page'; }
     })
-    .catch(function(err) { alert('Delete failed: ' + err); });
+      .catch(function(err) { alert('Delete failed: ' + (err.message || err)); });
   };
 
   loadModelDetail();

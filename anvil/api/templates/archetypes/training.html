@@ -1307,7 +1307,12 @@ var gpuToggle = document.getElementById('compute_backend');
   async function _handleStartError(resp, method) {
     var errData = {};
     try { errData = await resp.json(); } catch (_) { /* Ignore JSON parse errors — errData stays {} */ }
-    var errMsg = errData.detail || errData.message || 'HTTP ' + resp.status;
+    // detail may be a string, a dict (structured error), or a list (Pydantic validation errors)
+    var detail = errData.detail;
+    if (detail && typeof detail !== 'string') {
+      detail = detail.message || (Array.isArray(detail) ? detail.map(function(e) { return e.msg; }).join('; ') : JSON.stringify(detail));
+    }
+    var errMsg = detail || errData.message || 'HTTP ' + resp.status;
     log('> Failed to start: ' + errMsg);
     updateState('errored');
     if (errMsg.includes('base_model_ref') || (resp.status === 422 && method !== 'full')) {
