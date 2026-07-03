@@ -5,7 +5,6 @@
 
 """Tests for local compute backends (LocalStdlibBackend, LocalTorchBackend)."""
 
-
 from dataclasses import dataclass, field
 from unittest.mock import ANY, MagicMock, patch
 

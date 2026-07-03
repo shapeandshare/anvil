@@ -9,7 +9,6 @@ Tests use a real SQLite file in a temporary directory and actual Alembic
 migrations to verify auto-migration behavior on startup.
 """
 
-
 from pathlib import Path
 
 import pytest

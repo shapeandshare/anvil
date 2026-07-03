@@ -5,7 +5,6 @@
 
 """Tests for ComputeResult and ComputeStatus."""
 
-
 from anvil.services.compute.compute_status import ComputeStatus
 from anvil.services.compute.result import ComputeResult
 

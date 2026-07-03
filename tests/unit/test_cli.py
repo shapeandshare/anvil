@@ -5,7 +5,6 @@
 
 """Unit tests for CLI functions, including db_main subcommands."""
 
-
 from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import pytest

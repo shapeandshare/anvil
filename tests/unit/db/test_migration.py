@@ -5,7 +5,6 @@
 
 """Tests for MigrationService."""
 
-
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 

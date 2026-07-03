@@ -27,6 +27,7 @@ Usage:
     | grep -E '\\.(html|htm|jinja|jinja2|j2|css|scss|sass|less|js|jsx|ts|tsx|vue|svelte|py)$' \\
     | xargs -r ux_lint.py
 """
+
 import os
 import re
 import sys

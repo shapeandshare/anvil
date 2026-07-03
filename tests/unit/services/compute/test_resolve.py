@@ -5,7 +5,6 @@
 
 """Tests for backend resolution (D4 fallback logic)."""
 
-
 import pytest
 
 from anvil.services.compute.compute_backend_unavailable import ComputeBackendUnavailable

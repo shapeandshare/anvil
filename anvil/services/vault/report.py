@@ -394,7 +394,8 @@ def _render_action_items(
         count += 1
     if report.hygiene.non_conformant_tags:
         lines.append(
-            f"- 🏷️ Fix {len(report.hygiene.non_conformant_tags)} " f"non-conformant tags"
+            f"- 🏷️ Fix {len(report.hygiene.non_conformant_tags)} "
+            f"non-conformant tags"
         )
         count += 1
     if report.hygiene.phantom_links:

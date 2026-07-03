@@ -8,6 +8,7 @@
 This module is the ``loader_module`` target in the ``MLmodel`` file.
 It must be importable at inference time (the ``anvil`` package must be installed).
 """
+
 # pylint: disable=attribute-defined-outside-init
 
 import json

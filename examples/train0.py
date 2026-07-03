@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 """train0: Bigram count table — no neural net, no gradients."""
+
 import random
 
 random.seed(42)

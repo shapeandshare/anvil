@@ -5,7 +5,6 @@
 
 """Tests for compute backend registry."""
 
-
 import pytest
 
 from anvil.services.compute.compute_backend_unavailable import ComputeBackendUnavailable

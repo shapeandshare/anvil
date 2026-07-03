@@ -22,6 +22,7 @@ Usage:
     | grep -E '\\.(html|jinja|jinja2|j2|css|js|ts|tsx|vue|svelte)$' \\
     | xargs -r ux_review.py
 """
+
 import json
 import os
 import re
