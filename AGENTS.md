@@ -1,6 +1,6 @@
 # anvil — Agent Guidelines
 
-**Last updated**: 2026-07-02 (constitution v1.8.0: Article XI Simplicity First / Boring Technology + ADR-041; sonarcloud-tooling + content-repository-016-mvp; scripts-python-over-bash + package-module-migration, testing-guide consolidation; OWASP remediation spec 017 + ADRs 035/036; whole-API e2e test suite 017)
+**Last updated**: 2026-07-02 (constitution v1.8.0: Article XI Simplicity First / Boring Technology + ADR-041; sonarcloud-tooling + content-repository-016-mvp; scripts-python-over-bash + package-module-migration, testing-guide consolidation; OWASP remediation spec 017 + ADRs 035/036; whole-API e2e test suite 017; TDD workflow enforcement in testing section, Principle 2, and Architecture Rules)
 
 ## Project Overview
 
@@ -102,12 +102,53 @@ async def test_<endpoint>(client):
     assert "<key>" in r.json()
 ```
 
+**TDD Workflow (Red-Green-Refactor):**
+
+Every feature or bugfix MUST follow the TDD cycle:
+
+1. **Red phase** — Write a failing test that expresses the desired behavior. Run it to confirm it fails:
+   ```bash
+   python -m pytest tests/ -k test_<name> -x  # confirms the test fails as expected
+   ```
+2. **Green phase** — Write the *minimal* implementation code to make the test pass. Implement only what the test demands — no speculative generality, no extra behavior.
+3. **Refactor phase** — Clean up the implementation: remove duplication, improve naming, extract helpers — while keeping all tests green. Verify:
+   ```bash
+   make test
+   ```
+
+**TDD rules:**
+- The test MUST be written (and visibly failing) BEFORE the implementation code. If a PR or commit contains implementation without a corresponding test, it is reject-worthy.
+- Test-driven discovery of edge cases is expected — when a test reveals a missing edge case, write the new test first, then fix the code.
+- Legacy code (no existing tests): Write a **characterization test** capturing current behavior before modifying. Then change the test to express the desired behavior, and fix the implementation.
+- Test naming: `test_<behavior>_<expected_outcome>` (e.g., `test_empty_input_raises_value_error`, `test_get_model_returns_404_for_missing_id`).
+- One assertion per test is preferred; multiple assertions are acceptable when they test a single logical behavior.
+
 Coverage is reported via `pytest --cov=anvil --cov-report=term-missing`. Current coverage: ~41% (TDD mandate targets 100%).
 
 ## Agent Behavioral Principles
 
 1. **Constitution First** — Read `.specify/memory/constitution.md` before writing any code. All work must comply.
-2. **TDD Always** — Write tests before implementation (Red-Green-Refactor). 100% coverage required.
+2. **TDD Always (Red-Green-Refactor)** — Every feature and bugfix MUST follow strict Test-Driven Development. No exceptions.
+
+    **Mandate**: The test MUST be written (and confirmed failing) BEFORE any implementation code. PRs or commits with implementation but no corresponding test are reject-worthy.
+
+    **Red phase** — Write a failing test that expresses the desired behavior before writing any implementation. Run it to confirm it fails. This validates that the test actually tests something.
+    ```bash
+    python -m pytest tests/ -k test_<feature> -x   # must FAIL
+    ```
+
+    **Green phase** — Write the *minimal* implementation code to make the test pass. Implement only what the test demands — no speculative generality, no extra behavior, no premature abstraction. If the test uncovers edge cases, write the additional test first (return to Red), then fix the code.
+
+    **Refactor phase** — Clean up the implementation: remove duplication, improve naming, extract helpers — while keeping all tests green. Verify:
+    ```bash
+    make test   # must PASS
+    ```
+
+    **Legacy code exemption** — For existing code with no tests, write a **characterization test** that captures current behavior *before* modifying the implementation. Then change the test to express the desired behavior and fix the code. This prevents regressions while introducing TDD for the change.
+
+    **Enforcement**: The Sisyphus behavioral instructions' Phase 2C (Verification) requires running `make test` at task completion. If `make test` fails because tests were not written first, the work is considered incomplete and MUST be reverted to Red phase.
+
+    **Coverage**: 100% coverage is the aspirational target. The ratcheting baseline (`fail_under` in `pyproject.toml`) may only increase — lowering it requires explicit, recorded approval (per Constitution Article IV). Current coverage is reported via `pytest --cov=anvil --cov-report=term-missing`.
 3. **Vault Enrichment** — Record discoveries in `docs/vault/` during sessions. Enrich vault at session end.
 4. **ADR for Decisions** — Every significant architecture decision gets an ADR in `docs/vault/Decisions/`.
 5. **Layer Discipline** — Repositories access DB only. Services consume repositories. God class exposes services. Routes call god class. No shortcuts.
@@ -358,6 +399,7 @@ Coverage is reported via `pytest --cov=anvil --cov-report=term-missing`. Current
 - **Domain-Driven Package Decomposition**: Package boundaries follow domain boundaries. Result/error/value types tightly coupled to one service co-locate in that service's domain sub-package. Cross-domain types go in `_shared/`. Domain sub-packages use plural nouns; internal sub-packages use underscore prefix. Max 2 levels of nesting. See Constitution Article X.
 - **Enums over magic strings**: See Principle 11 in Agent Behavioral Principles above.
 - **Simplicity First (boring over complex/untested)**: Choose the simplest, most boring solution that meets the requirement; reuse before introducing; no speculative abstraction (YAGNI); record any justified complexity in the plan's Complexity Tracking table. Untested/untestable approaches are not "done". See Principle 13 above and Constitution Article XI.
+- **TDD Gate**: Every feature and bugfix MUST begin with a failing test (Red phase) before any implementation code is written. The test suite MUST pass before any task is considered complete. PRs containing implementation without a corresponding test are reject-worthy. Legacy code requires a characterization test before modification. Enforcement: run ``make test`` at task completion — a single failure outside pre-existing conditions reverts the work to Red phase. See Principle 2 above and Constitution Article IV.
 
 ## Packaging Conventions
 

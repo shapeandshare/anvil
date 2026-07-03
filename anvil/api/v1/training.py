@@ -292,30 +292,22 @@ async def stream_training(run_id: int) -> StreamingResponse:
     async def event_stream() -> AsyncGenerator[str, None]:
         """Generator that yields SSE-formatted events from the training queue.
 
-        Cleans up the queue object once the stream ends (terminal event
-        consumed, heartbeat timeout, or client disconnect), but only if
-        the training task has already completed.  If the training is still
-        actively running, the queue is preserved so that a reconnecting
-        client can find it and resume streaming.
+        Queue cleanup is handled by the ``_orphan_queue_release`` timeout
+        (120s) in ``TrainingRunService._cleanup``.  We must NOT release the
+        queue here — doing so races with ``_tasks.pop(run_id)`` in the
+        ``_cleanup`` callback: when a page refresh happens moments after
+        training completes, ``_tasks[run_id]`` is already gone, so a
+        ``release_queue`` here fires *immediately* instead of waiting the
+        full 120-second reconnect window.
         """
-        try:
-            while True:
-                try:
-                    msg = await asyncio.wait_for(queue.get(), timeout=30)
-                    yield f"event: {msg['event']}\ndata: {msg['data']}\n\n"
-                    if msg["event"] in ("complete", "error", "divergence"):
-                        break
-                except TimeoutError:
-                    yield "event: heartbeat\ndata: {}\n\n"
-        finally:
-            # Only release the queue if training has completed.  When the
-            # client disconnects (page refresh, navigation) while training
-            # is still running, the queue must remain in _queues so that
-            # the new page can reconnect and resume the SSE stream.  The
-            # orphan-queue cleanup task (120s after the training task
-            # finishes) will eventually release it.
-            if run_id not in _tasks:
-                svc.release_queue(run_id)
+        while True:
+            try:
+                msg = await asyncio.wait_for(queue.get(), timeout=30)
+                yield f"event: {msg['event']}\ndata: {msg['data']}\n\n"
+                if msg["event"] in ("complete", "error", "divergence"):
+                    break
+            except TimeoutError:
+                yield "event: heartbeat\ndata: {}\n\n"
 
     return StreamingResponse(
         event_stream(),

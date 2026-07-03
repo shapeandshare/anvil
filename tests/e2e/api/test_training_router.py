@@ -26,6 +26,18 @@ TINY_CONFIG = {
 }
 """Smallest viable training configuration for e2e tests."""
 
+RECONNECT_CONFIG = {
+    "n_layer": 1,
+    "n_embd": 16,
+    "n_head": 4,
+    "block_size": 16,
+    "num_steps": 100,
+    "learning_rate": 0.01,
+    "compute_backend": "local-stdlib",
+}
+"""Longer-running config for SSE reconnect tests (100 steps gives
+training time for disconnect/reconnect sequence)."""
+
 
 async def _make_corpus_and_dataset(client):
     """Create a temporary corpus and dataset for training tests.
@@ -94,8 +106,13 @@ async def test_training_start(client):
 
 
 @pytest.mark.asyncio
-async def test_training_status(client):
-    """Poll training status until the run reaches a terminal state."""
+async def test_training_completes(client):
+    """Training run emits a 'complete' SSE event when finished.
+
+    After the ``complete`` event is consumed, the SSE queue is preserved
+    (not released) so that the status endpoint returns 200 for the
+    120-second orphan-queue reconnect window.
+    """
     ds_id = await _make_corpus_and_dataset(client)
 
     r = await client.post(
@@ -104,26 +121,116 @@ async def test_training_status(client):
     )
     run_id = r.json()["run_id"]
 
-    status = "active"
-    for _ in range(60):
-        r = await client.get(f"/v1/training/{run_id}/status")
-        if r.status_code == 404:
-            # Queue is cleaned up after training completes
-            status = "completed"
-            break
-        assert r.status_code == 200
-        status = r.json().get("status", "")
-        if status in ("completed", "failed"):
-            break
-        await asyncio.sleep(1)
+    # Read SSE stream until complete event
+    saw_complete = False
+    async with client.stream("GET", f"/v1/training/stream/{run_id}") as response:
+        current_event: str | None = None
+        async for line in response.aiter_lines():
+            if line.startswith("event: "):
+                current_event = line[7:]
+            elif line.startswith("data: ") and current_event is not None:
+                if current_event == "complete":
+                    saw_complete = True
+                    break
 
+    assert saw_complete, "Training should emit a 'complete' event"
+
+    # Queue should still exist (orphan cleanup fires after 120s) —
+    # status returns 200, not 404
+    r = await client.get(f"/v1/training/{run_id}/status")
     assert (
-        status == "completed"
-    ), f"Training run {run_id} did not complete within 60s (final status: {status})"
+        r.status_code == 200
+    ), f"Expected 200 (queue preserved), got {r.status_code}: {r.text}"
 
 
 @pytest.mark.asyncio
-async def test_training_sse_stream(client):
+async def test_training_sse_reconnect(client):
+    """SSE stream survives client disconnect/reconnect during training.
+
+    After disconnecting the first SSE stream mid-training, the server
+    must keep the queue alive so a new connection can resume reading
+    events.  Also verifies that the status endpoint returns 200 after
+    disconnect, proving the queue was not released.
+    """
+    ds_id = await _make_corpus_and_dataset(client)
+
+    r = await client.post(
+        "/v1/training/start",
+        json={**RECONNECT_CONFIG, "dataset_id": ds_id},
+    )
+    run_id = r.json()["run_id"]
+
+    # First connection: read a single metrics event then disconnect
+    first_event: tuple[str, dict] | None = None
+    async with client.stream("GET", f"/v1/training/stream/{run_id}") as response:
+        current_event: str | None = None
+        async for line in response.aiter_lines():
+            if line.startswith("event: "):
+                current_event = line[7:]
+            elif line.startswith("data: ") and current_event is not None:
+                first_event = (current_event, json.loads(line[6:]))
+                break  # disconnect after first event
+
+    assert first_event is not None, "Should have received at least one event"
+    assert first_event[0] == "metrics"
+
+    # Status should still be 200 (queue not released on disconnect)
+    r = await client.get(f"/v1/training/{run_id}/status")
+    assert (
+        r.status_code == 200
+    ), f"Expected 200 after disconnect, got {r.status_code}: {r.text}"
+
+    # Second connection: read remaining events until complete
+    reconnected_events: list[tuple[str, dict]] = []
+    async with client.stream("GET", f"/v1/training/stream/{run_id}") as response:
+        current_event = None
+        async for line in response.aiter_lines():
+            if line.startswith("event: "):
+                current_event = line[7:]
+            elif line.startswith("data: ") and current_event is not None:
+                reconnected_events.append((current_event, json.loads(line[6:])))
+                if current_event in ("complete", "error"):
+                    break
+
+    assert len(reconnected_events) >= 1, "Should receive events on reconnection"
+    assert any(
+        ev[0] == "complete" for ev in reconnected_events
+    ), f"Expected 'complete' event on reconnect, got: {[e[0] for e in reconnected_events]}"
+
+
+@pytest.mark.asyncio
+async def test_training_sse_reconnect_after_completion(client):
+    """SSE queue persists after training completes.
+
+    After training finishes, the queue must remain alive so that a
+    client can reconnect within the 120-second orphan-cleanup window
+    and still get a 200 response from the status endpoint.
+    """
+    ds_id = await _make_corpus_and_dataset(client)
+
+    r = await client.post(
+        "/v1/training/start",
+        json={**TINY_CONFIG, "dataset_id": ds_id},
+    )
+    run_id = r.json()["run_id"]
+
+    # Read SSE stream until complete
+    async with client.stream("GET", f"/v1/training/stream/{run_id}") as response:
+        current_event: str | None = None
+        async for line in response.aiter_lines():
+            if line.startswith("event: "):
+                current_event = line[7:]
+            elif line.startswith("data: ") and current_event is not None:
+                if current_event == "complete":
+                    break
+
+    # Status must still return 200 — queue is preserved for the
+    # 120-second orphan-queue reconnect window
+    r = await client.get(f"/v1/training/{run_id}/status")
+    assert r.status_code == 200, (
+        f"Expected 200 (queue preserved after completion), "
+        f"got {r.status_code}: {r.text}"
+    )
     """SSE stream emits at least one metrics event with finite loss."""
     ds_id = await _make_corpus_and_dataset(client)
 

@@ -5,6 +5,9 @@
 
 """API tests for registry endpoints."""
 
+import asyncio
+from unittest.mock import patch
+
 import pytest
 
 
@@ -64,10 +67,34 @@ async def test_register_missing_fields(client):
 
 @pytest.mark.asyncio
 async def test_inference_models_endpoint(client):
+    """GET /v1/inference/models returns 200 with ``models`` list.
+
+    The list may be empty when MLflow is degraded (no sidecar in
+    test environment). Verifies the endpoint responds successfully
+    through the ``asyncio.wait_for`` wrapper.
+    """
     r = await client.get("/v1/inference/models")
     assert r.status_code == 200
     data = r.json()
     assert "models" in data
+
+
+@pytest.mark.asyncio
+async def test_inference_models_timeout_returns_503(client):
+    """GET /v1/inference/models returns 503 when tracking service times out.
+
+    Patches ``asyncio.wait_for`` in the learning module to raise
+    ``TimeoutError``, simulating an unresponsive MLflow sidecar.
+    """
+    with patch(
+        "anvil.api.v1.learning.asyncio.wait_for",
+        side_effect=asyncio.TimeoutError(),
+    ):
+        r = await client.get("/v1/inference/models")
+    assert r.status_code == 503
+    detail = r.json()["detail"]
+    assert "unavailable" in detail.lower()
+    assert "MLflow" in detail or "tracking" in detail.lower()
 
 
 @pytest.mark.asyncio
