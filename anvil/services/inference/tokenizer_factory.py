@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 """TokenizerFactory — resolves a ``Tokenizer`` from model metadata."""
+
 # pylint: disable=import-outside-toplevel
 
 from __future__ import annotations

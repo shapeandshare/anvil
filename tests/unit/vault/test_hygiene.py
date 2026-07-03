@@ -230,9 +230,7 @@ class TestLoadControlledTags:
         """Verify tags from file are included."""
         meta_dir = tmp_path / "_meta"
         meta_dir.mkdir(parents=True)
-        (meta_dir / "tags.md").write_text(
-            textwrap.dedent(
-                """\
+        (meta_dir / "tags.md").write_text(textwrap.dedent("""\
                 ---
                 title: Tags
                 ---
@@ -240,9 +238,7 @@ class TestLoadControlledTags:
                 - `type/custom`
                 - `domain/custom`
                 - `standalone-tag` — Some description
-            """
-            )
-        )
+            """))
         tags = _load_controlled_tags(tmp_path)
         assert "type/custom" in tags
         assert "domain/custom" in tags
@@ -253,18 +249,14 @@ class TestLoadControlledTags:
         """Verify frontmatter lines are not parsed as tags."""
         meta_dir = tmp_path / "_meta"
         meta_dir.mkdir(parents=True)
-        (meta_dir / "tags.md").write_text(
-            textwrap.dedent(
-                """\
+        (meta_dir / "tags.md").write_text(textwrap.dedent("""\
                 ---
                 title: Tags
                 other: value
                 ---
 
                 - `type/real`
-            """
-            )
-        )
+            """))
         tags = _load_controlled_tags(tmp_path)
         assert "type/real" in tags
         assert "title" not in tags
@@ -490,16 +482,12 @@ class TestComputeHygiene:
     def test_complete_metadata_passes(self, tmp_path: Path) -> None:
         """Verify a note with complete metadata passes all checks."""
         (tmp_path / "_meta").mkdir(parents=True)
-        (tmp_path / "_meta" / "tags.md").write_text(
-            textwrap.dedent(
-                """\
+        (tmp_path / "_meta" / "tags.md").write_text(textwrap.dedent("""\
                 ---
                 ---
 
                 - `type/decision`
-            """
-            )
-        )
+            """))
         notes: dict[str, NoteMetadata] = {
             "perfect": NoteMetadata(
                 path=tmp_path / "perfect.md",
@@ -534,34 +522,26 @@ class TestCheckImportPlacement:
     def test_no_violations(self, tmp_path: Path) -> None:
         """Verify a file with top-level imports passes."""
         f = tmp_path / "good.py"
-        f.write_text(
-            textwrap.dedent(
-                """\
+        f.write_text(textwrap.dedent("""\
                 from __future__ import annotations
                 import os
                 from pathlib import Path
 
                 def foo() -> None:
                     pass
-            """
-            )
-        )
+            """))
         result = ip_scan_file(f)
         assert result.violations == []
 
     def test_detects_lazy_import(self, tmp_path: Path) -> None:
         """Verify import after first definition is flagged."""
         f = tmp_path / "bad.py"
-        f.write_text(
-            textwrap.dedent(
-                """\
+        f.write_text(textwrap.dedent("""\
                 def foo() -> None:
                     pass
 
                 import os
-            """
-            )
-        )
+            """))
         result = ip_scan_file(f)
         assert len(result.violations) == 1
         assert "import os" in result.violations[0].statement
@@ -569,9 +549,7 @@ class TestCheckImportPlacement:
     def test_type_checking_import_allowed(self, tmp_path: Path) -> None:
         """Verify TYPE_CHECKING-guarded imports are allowed."""
         f = tmp_path / "good.py"
-        f.write_text(
-            textwrap.dedent(
-                """\
+        f.write_text(textwrap.dedent("""\
                 from __future__ import annotations
                 from typing import TYPE_CHECKING
 
@@ -580,18 +558,14 @@ class TestCheckImportPlacement:
 
                 if TYPE_CHECKING:
                     from .something import Something
-            """
-            )
-        )
+            """))
         result = ip_scan_file(f)
         assert result.violations == []
 
     def test_try_except_import_allowed(self, tmp_path: Path) -> None:
         """Verify try/except ImportError blocks are allowed."""
         f = tmp_path / "good.py"
-        f.write_text(
-            textwrap.dedent(
-                """\
+        f.write_text(textwrap.dedent("""\
                 def foo() -> None:
                     pass
 
@@ -599,64 +573,46 @@ class TestCheckImportPlacement:
                     import yaml
                 except ImportError:
                     yaml = None
-            """
-            )
-        )
+            """))
         result = ip_scan_file(f)
         assert result.violations == []
 
     def test_detects_import_in_function_body(self, tmp_path: Path) -> None:
         """Verify a lazy import inside a function is flagged."""
         f = tmp_path / "bad.py"
-        f.write_text(
-            textwrap.dedent(
-                """\
+        f.write_text(textwrap.dedent("""\
                 def foo() -> None:
                     import os  # should be at top
                     pass
-            """
-            )
-        )
+            """))
         result = ip_scan_file(f)
         assert len(result.violations) == 1
 
     def test_no_definitions_no_violations(self, tmp_path: Path) -> None:
         """Verify a file with only imports has no violations."""
         f = tmp_path / "only_imports.py"
-        f.write_text(
-            textwrap.dedent(
-                """\
+        f.write_text(textwrap.dedent("""\
                 import os
                 import sys
                 from pathlib import Path
-            """
-            )
-        )
+            """))
         result = ip_scan_file(f)
         assert result.violations == []
 
     def test_scan_directory_collects_all(self, tmp_path: Path) -> None:
         """Verify scan_directory finds violations across multiple files."""
-        (tmp_path / "good.py").write_text(
-            textwrap.dedent(
-                """\
+        (tmp_path / "good.py").write_text(textwrap.dedent("""\
                 import os
 
                 def foo() -> None:
                     pass
-            """
-            )
-        )
-        (tmp_path / "bad.py").write_text(
-            textwrap.dedent(
-                """\
+            """))
+        (tmp_path / "bad.py").write_text(textwrap.dedent("""\
                 def foo() -> None:
                     pass
 
                 import sys
-            """
-            )
-        )
+            """))
         results = ip_scan_directory(tmp_path)
         total = sum(len(r.violations) for r in results)
         assert total == 1  # only bad.py has a violation
@@ -664,17 +620,13 @@ class TestCheckImportPlacement:
     def test_comment_suppression_allowed(self, tmp_path: Path) -> None:
         """Verify # import-placement:allow suppresses the next import."""
         f = tmp_path / "suppressed.py"
-        f.write_text(
-            textwrap.dedent(
-                """\
+        f.write_text(textwrap.dedent("""\
                 def foo() -> None:
                     pass
 
                 # import-placement:allow
                 import os
-            """
-            )
-        )
+            """))
         result = ip_scan_file(f)
         assert result.violations == []
 
@@ -701,28 +653,20 @@ class TestCheckRelativeImports:
     def test_no_absolute_imports(self, tmp_path: Path) -> None:
         """Verify file with only relative imports passes."""
         f = tmp_path / "good.py"
-        f.write_text(
-            textwrap.dedent(
-                """\
+        f.write_text(textwrap.dedent("""\
                 from __future__ import annotations
                 from .module import X
                 from ..parent import Y
-            """
-            )
-        )
+            """))
         result = ri_scan_file(f)
         assert result.violations == []
 
     def test_detects_absolute_import(self, tmp_path: Path) -> None:
         """Verify file with absolute anvil. import is flagged."""
         f = tmp_path / "bad.py"
-        f.write_text(
-            textwrap.dedent(
-                """\
+        f.write_text(textwrap.dedent("""\
                 from anvil.core import engine
-            """
-            )
-        )
+            """))
         result = ri_scan_file(f)
         assert len(result.violations) == 1
         assert "anvil" in result.violations[0].line_text
@@ -737,15 +681,11 @@ class TestCheckRelativeImports:
     def test_std_lib_imports_not_flagged(self, tmp_path: Path) -> None:
         """Verify stdlib imports are not flagged."""
         f = tmp_path / "good.py"
-        f.write_text(
-            textwrap.dedent(
-                """\
+        f.write_text(textwrap.dedent("""\
                 import os
                 import sys
                 from pathlib import Path
-            """
-            )
-        )
+            """))
         result = ri_scan_file(f)
         assert result.violations == []
 
@@ -761,13 +701,9 @@ class TestCheckRelativeImports:
     def test_suppression_comment(self, tmp_path: Path) -> None:
         """Verify # relative-imports:allow suppresses flag."""
         f = tmp_path / "allowed.py"
-        f.write_text(
-            textwrap.dedent(
-                """\
+        f.write_text(textwrap.dedent("""\
                 from anvil.core import engine  # relative-imports:allow
-            """
-            )
-        )
+            """))
         result = ri_scan_file(f)
         assert result.violations == []
 
@@ -790,15 +726,11 @@ class TestCheckRelativeImports:
     def test_import_in_docstring(self, tmp_path: Path) -> None:
         """Verify import inside a docstring is not flagged."""
         f = tmp_path / "docstringed.py"
-        f.write_text(
-            textwrap.dedent(
-                """\
+        f.write_text(textwrap.dedent("""\
                 \"\"\"
                 This mentions from anvil.core import engine but it's just docs.
                 \"\"\"
-            """
-            )
-        )
+            """))
         result = ri_scan_file(f)
         assert result.violations == []
 
@@ -832,40 +764,30 @@ class TestCheckOneClass:
     def test_single_class_passes(self, tmp_path: Path) -> None:
         """Verify file with one class passes."""
         f = tmp_path / "good.py"
-        f.write_text(
-            textwrap.dedent(
-                """\
+        f.write_text(textwrap.dedent("""\
                 class MyClass:
                     pass
-            """
-            )
-        )
+            """))
         result = oc_scan_file(f)
         assert result.issues == []
 
     def test_two_primary_classes_fails(self, tmp_path: Path) -> None:
         """Verify file with two non-companion classes fails."""
         f = tmp_path / "bad.py"
-        f.write_text(
-            textwrap.dedent(
-                """\
+        f.write_text(textwrap.dedent("""\
                 class Foo:
                     pass
 
                 class Bar:
                     pass
-            """
-            )
-        )
+            """))
         result = oc_scan_file(f)
         assert len(result.issues) == 1
 
     def test_enum_and_exception_allowed(self, tmp_path: Path) -> None:
         """Verify enum and exception companions are allowed."""
         f = tmp_path / "good.py"
-        f.write_text(
-            textwrap.dedent(
-                """\
+        f.write_text(textwrap.dedent("""\
                 from enum import Enum
 
                 class MyError(Exception):
@@ -876,18 +798,14 @@ class TestCheckOneClass:
 
                 class MainClass:
                     pass
-            """
-            )
-        )
+            """))
         result = oc_scan_file(f)
         assert result.issues == []
 
     def test_three_primary_classes_fails(self, tmp_path: Path) -> None:
         """Verify file with three classes fails."""
         f = tmp_path / "bad.py"
-        f.write_text(
-            textwrap.dedent(
-                """\
+        f.write_text(textwrap.dedent("""\
                 class A:
                     pass
 
@@ -896,9 +814,7 @@ class TestCheckOneClass:
 
                 class C:
                     pass
-            """
-            )
-        )
+            """))
         result = oc_scan_file(f)
         assert len(result.issues) == 1
         assert len(result.issues[0].classes) == 3
@@ -906,32 +822,24 @@ class TestCheckOneClass:
     def test_suppression_comment(self, tmp_path: Path) -> None:
         """Verify # one-class:allow suppresses check."""
         f = tmp_path / "allowed.py"
-        f.write_text(
-            textwrap.dedent(
-                """\
+        f.write_text(textwrap.dedent("""\
                 # one-class:allow
                 class Foo:
                     pass
 
                 class Bar:
                     pass
-            """
-            )
-        )
+            """))
         result = oc_scan_file(f)
         assert result.issues == []
 
     def test_no_classes_passes(self, tmp_path: Path) -> None:
         """Verify file with no classes passes."""
         f = tmp_path / "nocls.py"
-        f.write_text(
-            textwrap.dedent(
-                """\
+        f.write_text(textwrap.dedent("""\
                 def helper() -> None:
                     pass
-            """
-            )
-        )
+            """))
         result = oc_scan_file(f)
         assert result.issues == []
 
@@ -957,17 +865,13 @@ class TestCheckOneClass:
     def test_enum_without_enum_import_not_allowed(self, tmp_path: Path) -> None:
         """Verify class named Enum but not actually inheriting is not auto-allowed."""
         f = tmp_path / "not_enum.py"
-        f.write_text(
-            textwrap.dedent(
-                """\
+        f.write_text(textwrap.dedent("""\
                 class MyThing:
                     pass
 
                 class NotReallyEnum:
                     pass
-            """
-            )
-        )
+            """))
         result = oc_scan_file(f)
         assert len(result.issues) == 1
 
@@ -1003,15 +907,13 @@ class TestCheckInitPyOwnership:
         self._make_package(
             tmp_path,
             "mypkg",
-            init_content=textwrap.dedent(
-                """\
+            init_content=textwrap.dedent("""\
                 # Copyright 2024
                 #
                 # License info
 
                 \"\"\"My package.\"\"\"
-            """
-            ),
+            """),
         )
         results = init_py_scan_directory(tmp_path)
         assert results == []

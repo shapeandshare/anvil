@@ -944,7 +944,7 @@ class TestEvaluationServices:
 
     @pytest.mark.asyncio
     async def test_evaluation(self, in_memory_session: AsyncSession) -> None:
-        """evaluation is a lazy EvaluationService wired to session, inference, tracking."""
+        """Evaluation is a lazy EvaluationService wired to session, inference, tracking."""
         from anvil.services.evaluation.evaluation_service import EvaluationService
 
         wb = AnvilWorkbench(in_memory_session)

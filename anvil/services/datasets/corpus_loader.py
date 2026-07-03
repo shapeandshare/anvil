@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from pathspec import PathSpec
-from pathspec.patterns.gitwildmatch import GitWildMatchPattern
+from pathspec.patterns.gitignore.spec import GitIgnoreSpecPattern
 
 from ..chunking.base import Chunker
 from ..chunking.file_chunker import FileAsDocChunker
@@ -148,7 +148,7 @@ def _build_spec(
     if exclude_patterns:
         exclude.extend(exclude_patterns)
     negated = [f"!{p}" for p in exclude]
-    return PathSpec.from_lines(GitWildMatchPattern, patterns + negated)
+    return PathSpec.from_lines(GitIgnoreSpecPattern, patterns + negated)
 
 
 class CorpusLoader:

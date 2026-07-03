@@ -13,7 +13,6 @@ Tests the phase transitions:
 5. Call on_complete(result, config)
 """
 
-
 import asyncio
 import json
 from dataclasses import dataclass, field
@@ -131,7 +130,7 @@ class TestStartTrainingPhases:
         # Verify on_complete was called with ComputeResult
         on_complete.assert_awaited_once()
         args, _kwargs = on_complete.call_args
-        (result, config) = args
+        result, config = args
         assert result.final_loss == 0.42
         assert result.samples == ["gen_sample"]
         assert result.uchars == list("xyz")

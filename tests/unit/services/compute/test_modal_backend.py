@@ -5,7 +5,6 @@
 
 """Tests for ModalBackend with injected FakeModalRunner factory."""
 
-
 from dataclasses import dataclass, field
 from unittest.mock import ANY, patch
 
