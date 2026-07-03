@@ -211,6 +211,9 @@ function loadSessions() {
         var active = activeSessionId === s.id ? ' teach-session-item--active' : '';
         return '<button type="button" class="teach-session-item' + active + '" data-id="' + s.id + '" onclick="selectSession(' + s.id + ')"><span class="teach-session-item-name">' + escHtml(s.name) + '</span><span class="teach-session-item-status">' + (s.status || '') + '</span></button>';
       }).join('');
+    }).catch(function() {
+      var list = document.getElementById('session-list');
+      list.innerHTML = '<p class="teach-empty-text" role="status">Failed to load sessions.</p>';
     });
 }
 
@@ -463,6 +466,6 @@ function showToast(msg, type) {
 }
 
 /* ── Init ──────────────────────────────────────────────────────────── */
-document.addEventListener('DOMContentLoaded', function() { loadSessions(); });
+loadSessions();
 </script>
 {% endblock %}
