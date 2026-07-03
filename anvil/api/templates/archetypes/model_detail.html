@@ -240,6 +240,13 @@
         runnableEl.innerHTML = '<span class="badge badge-yellow">Track Only</span>'
           + (data.runnable_reason ? ' <span class="type-caption-2" style="color:var(--text-tertiary);">' + data.runnable_reason + '</span>' : '');
       }
+      // Enable Play button when assets available + runnable (spec 063)
+      if (data.asset_availability === 'assets_available' && data.runnable_status === 'runnable') {
+        document.getElementById('md-play-link').style.display = '';
+        document.getElementById('md-play-link').href = '/v1/inference-page?model_id=' + modelId;
+        document.getElementById('md-continue-training-link').style.display = '';
+        document.getElementById('md-continue-training-link').href = '/v1/training-page?base_model_ref=' + modelId;
+      }
       document.getElementById('md-download-btn').addEventListener('click', startDownload);
       updateAssetUI(data.asset_availability);
     }).catch(function(err) {

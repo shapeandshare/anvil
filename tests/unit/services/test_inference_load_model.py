@@ -297,3 +297,27 @@ def test_resolve_default_id_nothing_found(monkeypatch):
     service = InferenceService()
     with pytest.raises(ValueError, match="No models available"):
         asyncio.run(service._resolve_default_id())
+
+
+######################################################################
+# load_model - external model resolution path (spec 063)
+# Tests validate contract.  The implementation in T005 adds a new
+# resolution branch after the existing cache/artifact/MLflow chain.
+######################################################################
+
+
+def test_load_model_external_model_no_assets(monkeypatch):
+    """When no experiment file or MLflow model exists and the model_id
+    maps to an external model with metadata_only assets, load_model()
+    must raise ValueError with a clear message (not "Model not found").
+    This test asserts the eventual contract — it will need updating
+    once T005 is implemented.
+    """
+    async def no_models(self, search=None):
+        return []
+
+    monkeypatch.setattr(TrackingService, "list_registered_models", no_models)
+
+    service = InferenceService()
+    with pytest.raises(ValueError):
+        asyncio.run(service.load_model(model_id=999))

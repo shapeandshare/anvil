@@ -322,7 +322,7 @@ class ModelAssetService:
                 check_weight_format(asset.filename, header)
 
             sha256, size = await self._hash_and_size(tmp_path)
-            storage_path = f"models/{model_id}/assets/{sha256}/{asset.filename}"
+            storage_path = f"models/{model_id}/hf/{asset.filename}"
             await self._store.put(storage_path, self._file_stream(tmp_path))
 
             await self._asset_repo.update_progress(asset.id, size)
