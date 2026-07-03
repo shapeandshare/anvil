@@ -13,6 +13,7 @@ endpoints. Extracted from ``router.py`` as part of structural decomposition.
 
 from __future__ import annotations
 
+import asyncio
 import random
 from typing import Any
 
@@ -2915,8 +2916,25 @@ async def list_inference_models(
     dict
         Dict with ``models`` (list of model dicts) and optionally a
         ``message`` if no models are registered.
+
+    Raises
+    ------
+    HTTPException
+        If the tracking service does not respond within 15 seconds
+        (status 503).
     """
-    models = await workbench.tracking.list_registered_models()
+    try:
+        models = await asyncio.wait_for(
+            workbench.tracking.list_registered_models(), timeout=15.0
+        )
+    except asyncio.TimeoutError:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Model registry is unavailable. The tracking service"
+                " (MLflow) did not respond in time."
+            ),
+        )
     if not models:
         return {
             "models": [],
