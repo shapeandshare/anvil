@@ -138,9 +138,9 @@ async def test_training_completes(client):
     # Queue should still exist (orphan cleanup fires after 120s) —
     # status returns 200, not 404
     r = await client.get(f"/v1/training/{run_id}/status")
-    assert r.status_code == 200, (
-        f"Expected 200 (queue preserved), got {r.status_code}: {r.text}"
-    )
+    assert (
+        r.status_code == 200
+    ), f"Expected 200 (queue preserved), got {r.status_code}: {r.text}"
 
 
 @pytest.mark.asyncio
@@ -176,9 +176,9 @@ async def test_training_sse_reconnect(client):
 
     # Status should still be 200 (queue not released on disconnect)
     r = await client.get(f"/v1/training/{run_id}/status")
-    assert r.status_code == 200, (
-        f"Expected 200 after disconnect, got {r.status_code}: {r.text}"
-    )
+    assert (
+        r.status_code == 200
+    ), f"Expected 200 after disconnect, got {r.status_code}: {r.text}"
 
     # Second connection: read remaining events until complete
     reconnected_events: list[tuple[str, dict]] = []
@@ -188,15 +188,11 @@ async def test_training_sse_reconnect(client):
             if line.startswith("event: "):
                 current_event = line[7:]
             elif line.startswith("data: ") and current_event is not None:
-                reconnected_events.append(
-                    (current_event, json.loads(line[6:]))
-                )
+                reconnected_events.append((current_event, json.loads(line[6:])))
                 if current_event in ("complete", "error"):
                     break
 
-    assert len(reconnected_events) >= 1, (
-        "Should receive events on reconnection"
-    )
+    assert len(reconnected_events) >= 1, "Should receive events on reconnection"
     assert any(
         ev[0] == "complete" for ev in reconnected_events
     ), f"Expected 'complete' event on reconnect, got: {[e[0] for e in reconnected_events]}"
