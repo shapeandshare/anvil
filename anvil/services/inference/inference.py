@@ -16,11 +16,13 @@ import asyncio
 import json
 import logging
 import math
+import os
 import random
 import tempfile
 from pathlib import Path
 from typing import Any
 
+import aiofiles  # type: ignore[import-untyped]
 from mlflow.tracking import MlflowClient
 
 from ...config import get_mlflow_uri
@@ -596,9 +598,10 @@ class InferenceService:
             serialization_type=serialization_type,
         )
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
-            json.dump(anvil_data, tmp)
-            tmp_path = tmp.name
+        fd, tmp_path = tempfile.mkstemp(suffix=".json")
+        os.close(fd)
+        async with aiofiles.open(tmp_path, "w") as f:
+            await f.write(json.dumps(anvil_data))
 
         try:
             composed = LlamaModel.load(tmp_path)
@@ -758,9 +761,10 @@ class InferenceService:
         )
 
         # Write temp JSON and load into LlamaModel
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
-            json.dump(anvil_data, tmp)
-            tmp_path = tmp.name
+        fd, tmp_path = tempfile.mkstemp(suffix=".json")
+        os.close(fd)
+        async with aiofiles.open(tmp_path, "w") as f:
+            await f.write(json.dumps(anvil_data))
 
         try:
             composed_model = LlamaModel.load(tmp_path)
