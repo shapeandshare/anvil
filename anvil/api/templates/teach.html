@@ -24,14 +24,22 @@
     </div>
     <hr class="section-divider">
     <form id="create-session-form" onsubmit="return createSession(event)">
-      <label for="session-name" class="ds-label">New Session</label>
-      <input id="session-name" class="form-input" type="text" placeholder="Session name…" required autocomplete="off">
+      <div class="ds-selectors">
+        <div class="ds-field">
+          <label for="session-name" class="ds-label">Session Name</label>
+          <input id="session-name" class="form-input" type="text" placeholder="Session name…" required autocomplete="off">
+        </div>
 
-      <label for="session-desc" class="ds-label" style="margin-top:var(--space-2);">Description (optional)</label>
-      <input id="session-desc" class="form-input" type="text" placeholder="Describe this session…" autocomplete="off">
+        <div class="ds-field">
+          <label for="session-desc" class="ds-label">Description (optional)</label>
+          <input id="session-desc" class="form-input" type="text" placeholder="Describe this session…" autocomplete="off">
+        </div>
 
-      <label for="session-seed" class="ds-label" style="margin-top:var(--space-2);">Seed Experiment ID (optional)</label>
-      <input id="session-seed" class="form-input" type="number" placeholder="e.g. 1" min="0" autocomplete="off">
+        <div class="ds-field">
+          <label for="session-seed" class="ds-label">Seed Experiment ID (optional)</label>
+          <input id="session-seed" class="form-input" type="number" placeholder="e.g. 1" min="0" autocomplete="off">
+        </div>
+      </div>
 
       <button type="submit" class="btn btn-primary" style="margin-top:var(--space-3);width:100%;">Create Session</button>
     </form>
@@ -55,15 +63,23 @@
     <div id="round-panel" class="section-card" style="display:none;">
       <h2 class="teach-section-title">Start a New Round</h2>
       <form id="start-round-form" onsubmit="return startRound(event)">
-        <label for="round-examples" class="ds-label">Training Examples</label>
-        <textarea id="round-examples" class="form-input" rows="5" placeholder="One example per line…" required aria-describedby="examples-help"></textarea>
-        <p id="examples-help" class="help-text">Each line is one training sample. Use method full only.</p>
+        <div class="ds-selectors">
+          <div class="ds-field">
+            <label for="round-examples" class="ds-label">Training Examples</label>
+            <textarea id="round-examples" class="form-input" rows="5" placeholder="One example per line…" required aria-describedby="examples-help"></textarea>
+            <p id="examples-help" class="help-text">Each line is one training sample. Use method full only.</p>
+          </div>
 
-        <label for="round-steps" class="ds-label">Training Steps</label>
-        <input id="round-steps" class="form-input" type="number" value="100" min="1" max="1000000" autocomplete="off">
+          <div class="ds-field">
+            <label for="round-steps" class="ds-label">Training Steps</label>
+            <input id="round-steps" class="form-input" type="number" value="100" min="1" max="1000000" autocomplete="off">
+          </div>
 
-        <label for="round-lr" class="ds-label" style="margin-top:var(--space-2);">Learning Rate</label>
-        <input id="round-lr" class="form-input" type="number" step="0.001" value="0.01" min="0.001" max="1.0" autocomplete="off">
+          <div class="ds-field">
+            <label for="round-lr" class="ds-label">Learning Rate</label>
+            <input id="round-lr" class="form-input" type="number" step="0.001" value="0.01" min="0.001" max="1.0" autocomplete="off">
+          </div>
+        </div>
 
         <button type="submit" class="btn btn-primary" style="margin-top:var(--space-3);" id="start-round-btn">Start Round</button>
       </form>
@@ -86,21 +102,27 @@
     <div id="inspect-panel" class="section-card" style="display:none;">
       <h2 class="teach-section-title">Inspect Round</h2>
       <form id="inspect-form" onsubmit="return inspectRound(event)">
-        <label for="inspect-experiment" class="ds-label">Experiment ID</label>
-        <input id="inspect-experiment" class="form-input" type="number" min="0" placeholder="e.g. 42" required autocomplete="off">
+        <div class="ds-selectors">
+          <div class="ds-field">
+            <label for="inspect-experiment" class="ds-label">Experiment ID</label>
+            <input id="inspect-experiment" class="form-input" type="number" min="0" placeholder="e.g. 42" required autocomplete="off">
+          </div>
 
-        <label for="inspect-prompt" class="ds-label" style="margin-top:var(--space-2);">Prompt</label>
-        <input id="inspect-prompt" class="form-input" type="text" placeholder="Enter a prompt…" required autocomplete="off">
+          <div class="ds-field">
+            <label for="inspect-prompt" class="ds-label">Prompt</label>
+            <input id="inspect-prompt" class="form-input" type="text" placeholder="Enter a prompt…" required autocomplete="off">
+          </div>
 
-        <div class="teach-field-group">
-          <label for="inspect-temp" class="ds-label teach-field-half">
-            Temperature
-            <input id="inspect-temp" class="form-input" type="number" step="0.1" value="0.7" min="0" max="2.0" autocomplete="off">
-          </label>
-          <label for="inspect-tokens" class="ds-label teach-field-half">
-            Max Tokens
-            <input id="inspect-tokens" class="form-input" type="number" value="100" min="1" max="2048" autocomplete="off">
-          </label>
+          <div class="teach-field-group" style="margin-top:0;">
+            <label for="inspect-temp" class="ds-label teach-field-half">
+              Temperature
+              <input id="inspect-temp" class="form-input" type="number" step="0.1" value="0.7" min="0" max="2.0" autocomplete="off">
+            </label>
+            <label for="inspect-tokens" class="ds-label teach-field-half">
+              Max Tokens
+              <input id="inspect-tokens" class="form-input" type="number" value="100" min="1" max="2048" autocomplete="off">
+            </label>
+          </div>
         </div>
 
         <button type="submit" class="btn btn-primary" style="margin-top:var(--space-3);">Generate</button>
@@ -114,19 +136,23 @@
     <div id="compare-panel" class="section-card">
       <h2 class="teach-section-title">Compare Rounds</h2>
       <form id="compare-form" onsubmit="return compareRounds(event)">
-        <div class="teach-field-group">
-          <label class="ds-label teach-field-half">
-            Left Experiment ID
-            <input id="compare-left" class="form-input" type="number" min="0" placeholder="e.g. 1" required autocomplete="off">
-          </label>
-          <label class="ds-label teach-field-half">
-            Right Experiment ID
-            <input id="compare-right" class="form-input" type="number" min="0" placeholder="e.g. 2" required autocomplete="off">
-          </label>
-        </div>
+        <div class="ds-selectors">
+          <div class="teach-field-group" style="margin-top:0;">
+            <label class="ds-label teach-field-half">
+              Left Experiment ID
+              <input id="compare-left" class="form-input" type="number" min="0" placeholder="e.g. 1" required autocomplete="off">
+            </label>
+            <label class="ds-label teach-field-half">
+              Right Experiment ID
+              <input id="compare-right" class="form-input" type="number" min="0" placeholder="e.g. 2" required autocomplete="off">
+            </label>
+          </div>
 
-        <label for="compare-prompt" class="ds-label" style="margin-top:var(--space-2);">Prompt</label>
-        <input id="compare-prompt" class="form-input" type="text" placeholder="Enter a prompt to test both models…" required autocomplete="off">
+          <div class="ds-field">
+            <label for="compare-prompt" class="ds-label">Prompt</label>
+            <input id="compare-prompt" class="form-input" type="text" placeholder="Enter a prompt to test both models…" required autocomplete="off">
+          </div>
+        </div>
 
         <button type="submit" class="btn btn-primary" style="margin-top:var(--space-3);">Compare</button>
       </form>
