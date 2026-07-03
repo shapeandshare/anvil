@@ -1,10 +1,18 @@
 ---
 title: "063 Usable External Models — Implementation"
-type: session
-tags: [session, spec-063, external-models, hf-import]
-created: 2026-07-02
-updated: 2026-07-02
-status: reviewed
+type: session-log
+tags:
+  - type/session-log
+  - domain/architecture
+  - domain/inference
+  - domain/export
+  - status/draft
+created: '2026-07-02'
+updated: '2026-07-02'
+aliases:
+  - 063-usable-external-models
+status: draft
+source: agent
 ---
 
 # Session: 063 Usable External Models — Implementation
