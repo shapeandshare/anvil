@@ -318,6 +318,61 @@ class TestNonContiguousTensor:
             assert arr.flags["C_CONTIGUOUS"], f"{name} is not C_CONTIGUOUS"
 
 
+class TestGenerateMlmodelYaml:
+    """Tests for ``_generate_mlmodel_yaml`` — the MLflow pyfunc MLmodel."""
+
+    def test_contains_loader_module(self) -> None:
+        from anvil.services.training.export import _generate_mlmodel_yaml
+
+        result = _generate_mlmodel_yaml()
+        assert "anvil._pyfunc_model" in result
+        assert "AnvilPyfuncModel" in result
+
+    def test_contains_python_function_flavor(self) -> None:
+        from anvil.services.training.export import _generate_mlmodel_yaml
+
+        result = _generate_mlmodel_yaml()
+        assert "python_function" in result
+        assert "loader_module" in result
+
+
+class TestGenerateCondaYaml:
+    """Tests for ``_generate_conda_yaml`` — the conda environment spec."""
+
+    def test_contains_python_version(self) -> None:
+        from anvil.services.training.export import _generate_conda_yaml
+
+        result = _generate_conda_yaml()
+        assert "python=3.11" in result
+
+    def test_contains_anvil_dependency(self) -> None:
+        from anvil.services.training.export import _generate_conda_yaml
+
+        result = _generate_conda_yaml()
+        assert "anvil" in result
+        assert "anvil>=0.1.0" in result
+
+    def test_contains_required_packages(self) -> None:
+        from anvil.services.training.export import _generate_conda_yaml
+
+        result = _generate_conda_yaml()
+        assert "transformers" in result
+        assert "safetensors" in result
+        assert "torch" in result
+        assert "numpy" in result
+
+    def test_is_valid_yaml_structure(self) -> None:
+        import yaml
+
+        from anvil.services.training.export import _generate_conda_yaml
+
+        result = _generate_conda_yaml()
+        parsed = yaml.safe_load(result)
+        assert isinstance(parsed, dict)
+        assert "channels" in parsed
+        assert "dependencies" in parsed
+
+
 class TestExportErrorHandling:
     """Tests for error handling paths in SafetensorsExportService."""
 
