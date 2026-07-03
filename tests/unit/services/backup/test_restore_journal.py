@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+import pytest
+
 from anvil.services.backup.restore_journal import RestoreJournal
 
 
@@ -9,7 +11,7 @@ class TestRestoreJournal:
     """Write, read, clear, and recover behavior."""
 
     def test_write_and_read(self, tmp_path: Path):
-        journal = RestoreJournal(tmp_path / ".restore-journal.json")
+        journal = RestoreJournal(tmp_path / ".restore-journal.json", base_dir=tmp_path)
         journal.write(
             restore_operation_id="rest-001",
             source_backup_id="backup-123",
@@ -25,7 +27,7 @@ class TestRestoreJournal:
         assert journal.exists()
 
     def test_clear_removes_journal(self, tmp_path: Path):
-        journal = RestoreJournal(tmp_path / ".restore-journal.json")
+        journal = RestoreJournal(tmp_path / ".restore-journal.json", base_dir=tmp_path)
         journal.write(
             restore_operation_id="rest-001",
             source_backup_id="backup-123",
@@ -38,12 +40,12 @@ class TestRestoreJournal:
         assert journal.read() is None
 
     def test_read_when_no_journal(self, tmp_path: Path):
-        journal = RestoreJournal(tmp_path / ".restore-journal.json")
+        journal = RestoreJournal(tmp_path / ".restore-journal.json", base_dir=tmp_path)
         assert journal.read() is None
         assert not journal.exists()
 
     def test_recover_no_journal(self, tmp_path: Path):
-        journal = RestoreJournal(tmp_path / ".restore-journal.json")
+        journal = RestoreJournal(tmp_path / ".restore-journal.json", base_dir=tmp_path)
         result = journal.recover()
         assert result["recovered"] is False
 
@@ -55,7 +57,7 @@ class TestRestoreJournal:
         bak_dir.mkdir()
         (bak_dir / "test.txt").write_text("backup")
 
-        journal = RestoreJournal(tmp_path / ".restore-journal.json")
+        journal = RestoreJournal(tmp_path / ".restore-journal.json", base_dir=tmp_path)
         journal.write(
             restore_operation_id="rest-001",
             source_backup_id="backup-123",
@@ -73,7 +75,7 @@ class TestRestoreJournal:
         assert (live_dir / "test.txt").read_text() == "backup"
 
     def test_recover_without_bak_falls_back_to_safety(self, tmp_path: Path):
-        journal = RestoreJournal(tmp_path / ".restore-journal.json")
+        journal = RestoreJournal(tmp_path / ".restore-journal.json", base_dir=tmp_path)
         journal.write(
             restore_operation_id="rest-001",
             source_backup_id="backup-123",
@@ -82,3 +84,16 @@ class TestRestoreJournal:
         )
         result = journal.recover()
         assert result["safety_snapshot_id"] == "safety-456"
+
+    def test_init_rejects_path_traversal(self, tmp_path: Path):
+        """Path traversal outside base_dir raises ValueError."""
+        safe_dir = tmp_path / "safe"
+        safe_dir.mkdir()
+
+        # Path inside base_dir is accepted.
+        journal = RestoreJournal(safe_dir / "journal.json", base_dir=safe_dir)
+        assert journal is not None
+
+        # Path outside base_dir is rejected.
+        with pytest.raises(ValueError, match="outside"):
+            RestoreJournal(tmp_path / "journal.json", base_dir=safe_dir)

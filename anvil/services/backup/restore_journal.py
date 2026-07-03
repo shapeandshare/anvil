@@ -30,10 +30,22 @@ class RestoreJournal:
     journal_path : Path
         Filesystem path for the journal file (recommended:
         ``data/backups/.restore-journal.json``).
+    base_dir : Path
+        The expected parent directory that constrains where the
+        journal may be written.  The resolved ``journal_path`` must
+        be inside the resolved ``base_dir``, preventing path-traversal
+        attacks (``pythonsecurity:S8707``).
     """
 
-    def __init__(self, journal_path: Path) -> None:
-        self._path = journal_path.resolve()
+    def __init__(self, journal_path: Path, base_dir: Path) -> None:
+        resolved_path = journal_path.resolve()
+        resolved_base = base_dir.resolve()
+        if not str(resolved_path).startswith(str(resolved_base)):
+            raise ValueError(
+                f"Journal path {resolved_path} is outside base "
+                f"directory {resolved_base}"
+            )
+        self._path = resolved_path
 
     def write(
         self,

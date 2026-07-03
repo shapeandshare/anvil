@@ -463,7 +463,7 @@ class BackupService:
             await repo.add(restore_op)
 
             journal_path = self._backup_dir / ".restore-journal.json"
-            journal = RestoreJournal(journal_path)
+            journal = RestoreJournal(journal_path, base_dir=self._backup_dir)
             engine = RestoreEngine(self._backup_dir, journal)
 
             queue: asyncio.Queue[ProgressEvent] = asyncio.Queue()
@@ -544,7 +544,7 @@ class BackupService:
     async def recover_interrupted_restore(self) -> None:
         """Detect and recover from a crashed restore on startup."""
         journal_path = self._backup_dir / ".restore-journal.json"
-        journal = RestoreJournal(journal_path)
+        journal = RestoreJournal(journal_path, base_dir=self._backup_dir)
         if journal.exists():
             result = journal.recover()
             logger = logging.getLogger(__name__)
