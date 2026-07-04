@@ -182,6 +182,11 @@
       }
       modelsData = data.models;
 
+      /* Clear the initial "Loading models..." placeholder — reconcile()
+         preserves non-data-key children, so the original <option> would
+         remain as the first (selected) entry. */
+      modelSelect.innerHTML = '';
+
       var items = [{ _placeholder: true, value: '', label: '— select a model —' }].concat(modelsData);
       dom.syncList(modelSelect, items, function(it) {
         return it._placeholder ? '_placeholder' : modelOptKey(it);
