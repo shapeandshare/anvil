@@ -789,10 +789,9 @@ class TrainingRunService:
                         )
                         await sess.commit()
                 except Exception:  # pylint: disable=broad-exception-caught
-                    logger.error(
+                    logger.exception(
                         "Failed to record lineage for run %s",
                         mlflow_run_id,
-                        exc_info=True,
                     )
                     pass
 
@@ -907,7 +906,7 @@ class TrainingRunService:
                             )
                     except Exception:  # pylint: disable=broad-exception-caught
                         logger.warning(
-                            "Failed to log samples artifact to MLflow run" " %s",
+                            "Failed to log samples artifact to MLflow run %s",
                             mlflow_run_id,
                             exc_info=True,
                         )
