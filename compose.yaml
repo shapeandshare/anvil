@@ -18,6 +18,7 @@ services:
     working_dir: /workspace
     environment:
       - ANVIL_API_KEY=${ANVIL_API_KEY:-}
+      - ANVIL_HOST=0.0.0.0
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/v1/health').status==200 else 1)"]
       interval: 10s
