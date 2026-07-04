@@ -97,7 +97,7 @@
     e.preventDefault();
     var baseModelId = prompt('Enter the Base Model ID to compare against:');
     if (!baseModelId) return;
-    var baseId = parseInt(baseModelId, 10);
+    var baseId = Number.parseInt(baseModelId, 10);
     if (Number.isNaN(baseId)) { alert('Invalid base model ID.'); return; }
     var evalDatasetName = prompt('Enter the Eval Dataset name:');
     if (!evalDatasetName) return;
@@ -114,7 +114,7 @@
       if (!r.ok) { return r.json().then(function(err) { throw new Error(err.detail || 'Evaluation failed'); }); }
       return r.json();
     }).then(function(d) {
-      window.location.href = '/v1/eval-compare?run_id=' + d.run_id;
+      globalThis.location.href = '/v1/eval-compare?run_id=' + d.run_id;
     }).catch(function(err) {
       alert('Failed to start evaluation: ' + err.message);
     });
@@ -123,6 +123,8 @@
   var emptyEl = document.getElementById('models-empty');
   var tableEl = document.getElementById('models-table');
   var tbody = document.getElementById('models-tbody');
+
+  function keyFn(m) { return String(m.id); }
 
   fetch('/v1/models/external').then(function(r) {
     if (!r.ok) { throw new Error(r.status + ': ' + r.statusText); }
@@ -137,8 +139,6 @@
 
     emptyEl.style.display = 'none';
     tableEl.style.display = '';
-
-    function keyFn(m) { return String(m.id); }
 
     function createRow(m) {
       var tr = document.createElement('tr');
@@ -182,7 +182,7 @@
     emptyEl.textContent = 'Failed to load models: ' + err.message;
   });
 
-  window.startEval = startEval;
+  globalThis.startEval = startEval;
 })();
 </script>
 {% endblock %}

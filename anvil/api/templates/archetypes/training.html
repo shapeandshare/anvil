@@ -1244,13 +1244,13 @@ var gpuToggle = document.getElementById('compute_backend');
       compute_backend: document.getElementById('compute_backend').value,
       method: document.getElementById('method').value,
       lora_rank: Number.parseInt(document.getElementById('lora_rank').value) || null,
-      lora_alpha: parseFloat(document.getElementById('lora_alpha').value) || null,
+      lora_alpha: Number.parseFloat(document.getElementById('lora_alpha').value) || null,
       lora_target_modules: (function() {
         var v = document.getElementById('lora_target_modules').value;
         if (!v) return null;
-        return v.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s; });
+        return v.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
       })(),
-      lora_dropout: parseFloat(document.getElementById('lora_dropout').value) || null,
+      lora_dropout: Number.parseFloat(document.getElementById('lora_dropout').value) || null,
     };
 
     /* Strip LoRA fields when method is 'full' to avoid sending
@@ -1361,13 +1361,13 @@ var gpuToggle = document.getElementById('compute_backend');
       compute_backend: document.getElementById('compute_backend').value,
       method: document.getElementById('method').value,
       lora_rank: Number.parseInt(document.getElementById('lora_rank').value) || null,
-      lora_alpha: parseFloat(document.getElementById('lora_alpha').value) || null,
+      lora_alpha: Number.parseFloat(document.getElementById('lora_alpha').value) || null,
       lora_target_modules: (function() {
         var v = document.getElementById('lora_target_modules').value;
         if (!v) return null;
-        return v.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s; });
+        return v.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
       })(),
-      lora_dropout: parseFloat(document.getElementById('lora_dropout').value) || null,
+      lora_dropout: Number.parseFloat(document.getElementById('lora_dropout').value) || null,
     };
     var cid = corpusSelect.value;
     var did = datasetSelect.value;

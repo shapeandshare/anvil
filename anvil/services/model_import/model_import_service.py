@@ -325,6 +325,35 @@ class ModelImportService:
         """
         return await self._external_model_repo.get(model_id)
 
+    async def _cleanup_model_assets(
+        self,
+        model_id: int,
+        model_asset_repo: ModelAssetRepository,
+        store: LocalFileStore,
+    ) -> None:
+        """Delete asset files associated with a model.
+
+        Parameters
+        ----------
+        model_id : int
+            ``ExternalModel`` primary key.
+        model_asset_repo : ModelAssetRepository
+            Repository for listing model assets to clean up files.
+        store : LocalFileStore
+            File store for deleting asset files from disk.
+        """
+        get_by_model = getattr(model_asset_repo, "get_by_model", None)
+        if get_by_model is None:
+            return
+        assets = await get_by_model(model_id)
+        for asset in assets:
+            storage_path = getattr(asset, "storage_path", None)
+            if storage_path:
+                try:
+                    await store.delete(storage_path)
+                except Exception:
+                    logger.exception("Failed to delete asset file: %s", storage_path)
+
     async def delete_external_model(
         self,
         model_id: int,
@@ -353,18 +382,7 @@ class ModelImportService:
             raise ValueError(f"External model not found: {model_id}")
 
         if model_asset_repo is not None and store is not None:
-            get_by_model = getattr(model_asset_repo, "get_by_model", None)
-            if get_by_model is not None:
-                assets = await get_by_model(model_id)
-                for asset in assets:
-                    storage_path = getattr(asset, "storage_path", None)
-                    if storage_path:
-                        try:
-                            await store.delete(storage_path)
-                        except Exception:
-                            logger.exception(
-                                "Failed to delete asset file: %s", storage_path
-                            )
+            await self._cleanup_model_assets(model_id, model_asset_repo, store)
 
         await self._external_model_repo.delete(model_id)
 

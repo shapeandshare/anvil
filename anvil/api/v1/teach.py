@@ -6,7 +6,7 @@ inspecting results, and comparing models side-by-side.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -32,7 +32,7 @@ router = APIRouter()
 @router.post("/teach/sessions")
 async def create_session(
     body: CreateSessionBody,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, Any]:
     """Create a new teaching session."""
     session = await workbench.teaching.create_session(
@@ -54,7 +54,7 @@ async def create_session(
 
 @router.get("/teach/sessions")
 async def list_sessions(
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
     status: str | None = None,
     limit: int = 20,
     offset: int = 0,
@@ -84,7 +84,7 @@ async def list_sessions(
 @router.get("/teach/sessions/{session_id}")
 async def get_session(
     session_id: int,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, Any]:
     """Get a single teaching session by ID."""
     session = await workbench.teaching.get_session(session_id)

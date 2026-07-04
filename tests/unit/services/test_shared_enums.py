@@ -6,6 +6,7 @@ no complex logic.  Each test validates member values and type identity.
 
 from __future__ import annotations
 
+from anvil.services._shared.chat_template_status import ChatTemplateStatus
 from anvil.services._shared.device_type import DeviceType
 from anvil.services._shared.evaluation_status import EvaluationRunStatus
 from anvil.services._shared.fine_tune_dataset_status import FineTuneDatasetStatus
@@ -94,3 +95,19 @@ class TestTokenizerFamily:
     def test_member_values(self) -> None:
         assert TokenizerFamily.CHAR.value == "char"
         assert TokenizerFamily.SUBWORD.value == "subword"
+
+
+class TestChatTemplateStatus:
+    """ChatTemplateStatus enum values."""
+
+    def test_member_values(self) -> None:
+        assert ChatTemplateStatus.ACTIVE.value == "active"
+        assert ChatTemplateStatus.DEPRECATED.value == "deprecated"
+
+    def test_from_string(self) -> None:
+        assert ChatTemplateStatus("active") is ChatTemplateStatus.ACTIVE
+        assert ChatTemplateStatus("deprecated") is ChatTemplateStatus.DEPRECATED
+
+    def test_string_roundtrip(self) -> None:
+        assert str(ChatTemplateStatus.ACTIVE) == "active"
+        assert str(ChatTemplateStatus.DEPRECATED) == "deprecated"

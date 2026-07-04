@@ -244,10 +244,9 @@ class BackupService:
             try:
                 await repo.update_fields(backup_id, status=BackupStatus.FAILED.value)
             except Exception:  # pylint: disable=broad-exception-caught
-                logger.error(
+                logger.exception(
                     "Failed to mark backup %s as FAILED during error handling",
                     backup_id,
-                    exc_info=True,
                 )
                 pass
             self._queues.pop(backup_id, None)
@@ -563,10 +562,9 @@ class BackupService:
             try:
                 await repo.update_fields(backup_id, status=BackupStatus.CORRUPTED.value)
             except Exception:  # pylint: disable=broad-exception-caught
-                logger.error(
+                logger.exception(
                     "Failed to mark backup %s as CORRUPTED",
                     backup_id,
-                    exc_info=True,
                 )
                 pass
         return result
