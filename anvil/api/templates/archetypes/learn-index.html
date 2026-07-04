@@ -8,137 +8,241 @@
 {% extends "base.html" %}
 {% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
 {% block content %}
-<div class="section-card" style="--stagger-i: 0; max-width:640px;margin:var(--space-6) auto;">
-  <div class="section-card__header">
-    <span class="section-card__icon">&#128218;</span>
-    <div class="section-card__title">Learning Path</div>
+<div class="learn-hub">
+  <div class="learn-hub__header">
+    <h1 class="learn-hub__title">&#128218; Learning Hub</h1>
+    <p class="learn-hub__intro">
+      {{ groups | sum(attribute='total_items') }} interactive lessons grouped by topic.
+      Each lesson pairs a scrollable tutorial with a live widget that shows the model's
+      real internals in action — see attention heads, watch loss fall, explore embeddings,
+      and understand the export pipeline.
+    </p>
+    <div class="learn-hub__filter">
+      <svg class="learn-hub__filter-icon" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="learn-filter" class="learn-hub__filter-input" placeholder="Filter lessons by title or keyword&hellip;" aria-label="Filter lessons">
+    </div>
   </div>
-  <div class="section-card__content">
-    <p class="page-intro">{{ lessons|length }} interactive lessons that walk you through how this character-level Llama-model LLM works, from raw text to trained generation. Each lesson pairs a scrollable tutorial with a live widget that shows the model's real internals in action — see attention heads, watch loss fall, explore embeddings, and understand the safetensors export pipeline.</p>
 
-    <h3 class="learn-section-heading">Lessons</h3>
-    <ol class="learn-arc-list">
-      {% for item in lessons %}
-      <li class="learn-arc-item">
-        <a href="{{ item.path }}" class="learn-arc-item-link">
-          <span class="learn-arc-item-title">{{ item.title }}</span>
-          <span class="learn-arc-item-desc">{{ item.desc }}</span>
-        </a>
-      </li>
+  {% for group in groups %}
+  <section class="learn-track" data-track="{{ group.track_key }}" data-track-count="{{ group.total_items }}">
+    <div class="learn-track__header">
+      <h2 class="learn-track__title">{{ group.track_label }}</h2>
+      <span class="learn-track__count">{{ group.total_items }} lesson{% if group.total_items != 1 %}s{% endif %}</span>
+    </div>
+    <p class="learn-track__desc">{{ group.track_desc }}</p>
+    <div class="learn-track__grid">
+      {% for item in group.items %}
+      <a href="{{ item.path }}" class="learn-card" data-key="{{ item.key }}" data-title="{{ item.title | lower }}" data-desc="{{ item.desc | lower | striptags }}">
+        <div class="learn-card__body">
+          <span class="learn-card__title">{{ item.title }}</span>
+          <span class="learn-card__desc">{{ item.desc | safe }}</span>
+        </div>
+        <div class="learn-card__meta">
+          {% if item.has_widget %}
+          <span class="learn-card__badge learn-card__badge--widget" title="Interactive widget">&#9889; Interactive</span>
+          {% endif %}
+          {% if item.step_count > 0 %}
+          <span class="learn-card__badge learn-card__badge--steps">{{ item.step_count }} step{% if item.step_count != 1 %}s{% endif %}</span>
+          {% endif %}
+        </div>
+      </a>
       {% endfor %}
-    </ol>
-
-    {% if additional %}
-    <h3 class="learn-section-heading learn-section-heading--additional">Additional</h3>
-    <ul class="learn-arc-list learn-arc-list--plain">
-      {% for item in additional %}
-      <li class="learn-arc-item">
-        <a href="{{ item.path }}" class="learn-arc-item-link">
-          <span class="learn-arc-item-title">{{ item.title }}</span>
-          <span class="learn-arc-item-desc">{{ item.desc }}</span>
-        </a>
-      </li>
-      {% endfor %}
-    </ul>
-    {% endif %}
-
-    {% if ops %}
-    <h3 class="learn-section-heading learn-section-heading--ops">Operations</h3>
-    <ul class="learn-arc-list learn-arc-list--plain">
-      {% for item in ops %}
-      <li class="learn-arc-item">
-        <a href="{{ item.path }}" class="learn-arc-item-link">
-          <span class="learn-arc-item-title">{{ item.title }}</span>
-          <span class="learn-arc-item-desc">{{ item.desc }}</span>
-        </a>
-      </li>
-      {% endfor %}
-    </ul>
-    {% endif %}
-  </div>
+    </div>
+  </section>
+  {% endfor %}
 </div>
 
 <style>
-.learn-arc-list {
-  list-style: none;
-  padding: 0;
-  margin: var(--space-4) 0 0;
-  counter-reset: lesson-counter;
+/* ── Hub layout ── */
+.learn-hub {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-4);
 }
-.learn-arc-item {
-  counter-increment: lesson-counter;
-  margin-bottom: var(--space-2);
+.learn-hub__header {
+  margin-bottom: var(--space-6);
 }
-.learn-arc-item-link {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--space-3) var(--space-4);
+.learn-hub__title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 var(--space-2);
+}
+.learn-hub__intro {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0 0 var(--space-4);
+  max-width: 640px;
+}
+
+/* ── Filter ── */
+.learn-hub__filter {
+  position: relative;
+  max-width: 400px;
+}
+.learn-hub__filter-icon {
+  position: absolute;
+  left: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-tertiary);
+  font-size: 1rem;
+  pointer-events: none;
+}
+.learn-hub__filter-input {
+  width: 100%;
+  padding: var(--space-2) var(--space-3) var(--space-2) calc(var(--space-3) + 1.5em);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text);
   background: var(--bg);
   border: var(--border-width) solid var(--border);
   border-radius: var(--radius);
-  text-decoration: none;
-  position: relative;
-  padding-left: var(--space-8);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
-.learn-arc-item-link::before {
-  content: counter(lesson-counter);
-  position: absolute;
-  left: var(--space-3);
-  top: var(--space-3);
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--accent);
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid var(--accent);
-  border-radius: 50%;
-}
-.learn-arc-item-link:hover {
-  background: var(--surface);
+.learn-hub__filter-input:focus {
   border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent);
 }
-.learn-arc-item-title {
+.learn-hub__filter-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* ── Track sections ── */
+.learn-track {
+  margin-bottom: var(--space-6);
+}
+.learn-track__header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  margin-bottom: var(--space-1);
+}
+.learn-track__title {
   font-family: var(--font-display);
-  font-size: 1rem;
-  color: var(--text);
+  font-size: 1.1rem;
   font-weight: 600;
+  color: var(--text);
+  margin: 0;
 }
-.learn-arc-item-desc {
+.learn-track__count {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+}
+.learn-track__desc {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0 0 var(--space-3);
+  max-width: 600px;
+}
+
+/* ── Card grid ── */
+.learn-track__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-3);
+}
+.learn-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-3) var(--space-4);
+  text-decoration: none;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+  gap: var(--space-2);
+}
+.learn-card:hover {
+  border-color: var(--accent);
+  background: var(--surface);
+  transform: translateY(-1px);
+}
+.learn-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.learn-card__title {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.learn-card__desc {
   font-family: var(--font-mono);
   font-size: 0.7rem;
   color: var(--text-muted);
   line-height: 1.5;
 }
-.learn-section-heading {
-  font-family: var(--font-display);
-  font-size: 1.1rem;
+.learn-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: auto;
+}
+.learn-card__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
   font-weight: 600;
-  color: var(--text);
-  margin: var(--space-5) 0 var(--space-3);
-  padding-bottom: var(--space-2);
-  border-bottom: var(--border-width) solid var(--border);
+  padding: 2px 8px;
+  border-radius: 999px;
+  line-height: 1.4;
 }
-.learn-section-heading--additional {
-  color: var(--text-muted);
+.learn-card__badge--widget {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
 }
-.learn-arc-list--plain {
-  counter-reset: none;
+.learn-card__badge--steps {
+  background: var(--surface);
+  color: var(--text-tertiary);
+  border: var(--border-width) solid var(--border);
 }
-.learn-arc-list--plain .learn-arc-item {
-  counter-increment: none;
+
+/* ── Filter hide/show ── */
+.learn-card.learn-card--hidden {
+  display: none;
 }
-.learn-arc-list--plain .learn-arc-item-link {
-  padding-left: var(--space-4);
-}
-.learn-arc-list--plain .learn-arc-item-link::before {
+.learn-track.learn-track--empty {
   display: none;
 }
 </style>
+
+<script nonce="{{ request.state.csp_nonce }}">
+(function() {
+  var input = document.getElementById('learn-filter');
+  if (!input) return;
+
+  input.addEventListener('input', function() {
+    var q = input.value.toLowerCase().trim();
+    var cards = document.querySelectorAll('.learn-card');
+    var tracks = document.querySelectorAll('.learn-track');
+
+    cards.forEach(function(card) {
+      var title = card.getAttribute('data-title') || '';
+      var desc = card.getAttribute('data-desc') || '';
+      var key = card.getAttribute('data-key') || '';
+      var match = !q || title.indexOf(q) !== -1 || desc.indexOf(q) !== -1 || key.indexOf(q) !== -1;
+      card.classList.toggle('learn-card--hidden', !match);
+    });
+
+    tracks.forEach(function(track) {
+      var visible = track.querySelectorAll('.learn-card:not(.learn-card--hidden)').length > 0;
+      track.classList.toggle('learn-track--empty', !visible);
+    });
+  });
+})();
+</script>
 {% endblock %}
 {% block didyouknow_banner %}
 <div id="didyouknow-banner" class="didyouknow">
