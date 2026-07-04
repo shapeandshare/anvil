@@ -9,7 +9,7 @@
 Enforces AGENTS.md Principle 7 — every internal import must use relative
 paths (``from .module import X``, ``from ..parent.module import Y``).
 Absolute ``anvil.``-prefixed imports are only valid from outside the
-package (``tests/``, ``examples/``).
+package (``tests/``).
 
 Scans all ``.py`` files under ``anvil/``. Exits 0 if no violations,
 1 if any absolute ``anvil.`` import is found.

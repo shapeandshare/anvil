@@ -14,7 +14,7 @@ updated: '2026-06-14'
 
 ## Summary
 
-During the GPT→Llama architecture migration (ADR-007), the interactive learning courses at `/v1/learn/*` were **not updated**. The progressive code examples (`examples/train*.py`) were correctly migrated, but the lesson text and parameter descriptions remained GPT-2 era artifacts.
+During the GPT→Llama architecture migration (ADR-007), the interactive learning courses at `/v1/learn/*` were **not updated** — the lesson text and parameter descriptions remained GPT-2 era artifacts.
 
 ## Stale Content Found
 
