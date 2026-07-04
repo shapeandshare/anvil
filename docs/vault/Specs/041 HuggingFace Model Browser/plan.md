@@ -1,3 +1,12 @@
+---
+title: 041 HuggingFace Model Browser - Plan
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Implementation Plan: HuggingFace Model Browser & Curated Catalog
 
 **Branch**: `041-huggingface-model-browser` | **Date**: 2026-06-28 | **Spec**: `docs/vault/Specs/041 HuggingFace Model Browser/spec.md`

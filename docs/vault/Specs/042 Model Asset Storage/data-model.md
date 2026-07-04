@@ -1,3 +1,12 @@
+---
+title: 042 Model Asset Storage - Data Model
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Data Model: Model Asset Storage (042)
 
 **Date**: 2026-06-28 | **Branch**: `042-model-asset-storage`

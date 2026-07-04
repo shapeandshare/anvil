@@ -1,3 +1,12 @@
+---
+title: 058 At-Rest Secret Encryption - Quickstart
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Quickstart: At-Rest Secret Encryption
 
 **Date**: 2026-06-30 | **Branch**: `058-at-rest-secret-encryption`

@@ -1,3 +1,12 @@
+---
+title: 061-resilient-startup-recovery - Data Model
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Data Model: Resilient Startup Recovery
 
 > Entities, states, and relationships for the startup classification, snapshot, and recovery infrastructure.

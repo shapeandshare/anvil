@@ -45,9 +45,17 @@ test-browser: ## Browser smoke loop: reset → up → playwright tests → teard
 	export ANVIL_API_KEY=browser-test-anvil-key-00000000; \
 	docker compose down -v; \
 	docker compose up -d --build --wait; \
-	uv run pytest tests/browser -v --no-cov; status=$$?; \
+	python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/v1/health')" > /dev/null 2>&1; \
+	rc=$$?; \
+	if [ $$rc -ne 0 ]; then \
+		echo "=== Container health check FAILED — capturing container logs ==="; \
+		docker compose logs --tail=50 anvil; \
+	fi; \
+	if [ $$rc -eq 0 ]; then \
+		uv run pytest tests/browser -v --no-cov; rc=$$?; \
+	fi; \
 	docker compose down -v; \
-	exit $$status
+	exit $$rc
 
 setup-browser: ## Install Playwright Chromium for local browser smoke tests (one-time)
 	uv run playwright install chromium

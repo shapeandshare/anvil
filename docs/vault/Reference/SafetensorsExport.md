@@ -161,4 +161,3 @@ The model loads as a `LlamaForCausalLM` instance with the corresponding architec
 
 - [[Decisions/ADR-007-llama-engine-evolution|ADR-007]] — Architecture decisions that drove the Llama migration
 - [[TrainingDataFlow]] — Full training pipeline from browser to export
-- [[ProgressiveWalkthroughs]] — train5 demonstrates safetensors export

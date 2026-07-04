@@ -1,3 +1,12 @@
+---
+title: 044 Local LoRA Fine-Tuning - Quickstart
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Quickstart — Local LoRA Fine-Tuning
 
 ## Prerequisites

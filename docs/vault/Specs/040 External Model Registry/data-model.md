@@ -1,3 +1,12 @@
+---
+title: 040 External Model Registry - Data Model
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Data Model: 040 External Model Registry
 
 ## Storage Note

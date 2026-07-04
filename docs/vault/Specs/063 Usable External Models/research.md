@@ -1,3 +1,12 @@
+---
+title: 063 Usable External Models - Research
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Research: Usable External Models
 
 ## Local Asset Loading Path

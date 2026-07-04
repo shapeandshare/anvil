@@ -1,3 +1,12 @@
+---
+title: 044 Local LoRA Fine-Tuning - Tasks
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Tasks: Local LoRA Fine-Tuning
 
 **Input**: Design documents from `docs/vault/Specs/044 Local LoRA Fine-Tuning/`

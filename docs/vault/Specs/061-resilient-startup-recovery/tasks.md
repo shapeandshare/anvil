@@ -1,3 +1,12 @@
+---
+title: 061-resilient-startup-recovery - Tasks
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Tasks: 061 Resilient Startup & Data-Safe Database Recovery
 
 **Input**: Design documents from `docs/vault/Specs/061-resilient-startup-recovery/`

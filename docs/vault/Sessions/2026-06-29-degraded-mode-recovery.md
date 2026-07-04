@@ -1,3 +1,16 @@
+---
+title: 'Session: Degraded Mode Recovery (Spec 057)'
+type: session
+tags:
+  - type/session-log
+  - domain/infrastructure
+source: agent
+created: 2026-06-29
+updated: 2026-06-30
+aliases:
+  - Degraded Mode Recovery Session
+---
+
 ## Session Log: Degraded Mode Recovery (Spec 057)
 
 **Date**: 2026-06-29

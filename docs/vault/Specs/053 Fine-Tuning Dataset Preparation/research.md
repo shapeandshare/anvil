@@ -1,3 +1,12 @@
+---
+title: 053 Fine-Tuning Dataset Preparation - Research
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Research: Fine-Tuning Dataset Preparation
 
 ## Async Job Pattern

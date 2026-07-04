@@ -1,3 +1,12 @@
+---
+title: 040 External Model Registry - Quickstart
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Quickstart: 040 External Model Registry
 
 ## Prerequisites

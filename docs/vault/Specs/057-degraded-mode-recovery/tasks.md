@@ -1,3 +1,12 @@
+---
+title: 057-degraded-mode-recovery - Tasks
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Tasks: Degraded Mode Recovery
 
 **Input**: Design documents from `docs/vault/Specs/057-degraded-mode-recovery/`

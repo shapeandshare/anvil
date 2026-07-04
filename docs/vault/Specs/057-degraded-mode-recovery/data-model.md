@@ -1,3 +1,12 @@
+---
+title: 057-degraded-mode-recovery - Data Model
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Data Model: Degraded Mode Recovery
 
 ## Entity: `DegradedState`

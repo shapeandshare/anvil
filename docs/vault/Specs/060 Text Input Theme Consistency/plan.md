@@ -1,3 +1,12 @@
+---
+title: 060 Text Input Theme Consistency - Plan
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Implementation Plan: Text Input Theme Consistency
 
 **Branch**: `060-text-input-theme-consistency` | **Date**: 2026-06-29 | **Spec**: [spec.md](spec.md)

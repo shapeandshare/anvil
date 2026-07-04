@@ -12,7 +12,6 @@ aliases:
   - llama-engine-evolution
 source: agent
 related:
-  - '[[Reference/ProgressiveWalkthroughs]]'
   - '[[Reference/DualBackend]]'
 code-refs:
   - anvil/core/engine.py

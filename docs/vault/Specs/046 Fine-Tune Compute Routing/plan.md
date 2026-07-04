@@ -1,3 +1,12 @@
+---
+title: 046 Fine-Tune Compute Routing - Plan
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Implementation Plan: Fine-Tune Compute Routing & Adapter Results
 
 **Branch**: `046-fine-tune-compute-routing` | **Date**: 2026-07-01 | **Spec**: [[046 Fine-Tune Compute Routing - spec.md]]

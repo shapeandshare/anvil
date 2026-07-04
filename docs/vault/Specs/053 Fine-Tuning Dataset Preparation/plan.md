@@ -1,3 +1,12 @@
+---
+title: 053 Fine-Tuning Dataset Preparation - Plan
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Implementation Plan: Fine-Tuning Dataset Preparation
 
 **Branch**: `053-fine-tuning-dataset-preparation` | **Date**: 2026-06-28 | **Spec**: [053 spec](053%20Fine-Tuning%20Dataset%20Preparation%20-%20spec.md)

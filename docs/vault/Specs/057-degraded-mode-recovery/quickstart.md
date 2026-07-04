@@ -1,3 +1,12 @@
+---
+title: 057-degraded-mode-recovery - Quickstart
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Quickstart: Degraded Mode Recovery
 
 ## Priority Order

@@ -1,3 +1,12 @@
+---
+title: 060 Text Input Theme Consistency - Research
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Research: Text Input Theme Consistency
 
 **Date**: 2026-06-29  

@@ -39,6 +39,5 @@ Implements 7 new learning features for anvil: autograd backprop visualization, p
 ## Related
 
 - [[Specs/007 Learning Content Enrichment/007 Learning Content Enrichment|007 Learning Content Enrichment]] — feature specification
-- [[Reference/ProgressiveWalkthroughs|Progressive Walkthroughs]] — learning arc progression reference
 - [[Reference/ArchitectureOverview|Architecture]] — core engine and learning content context
 - [[Sessions/2026-06-10-spec-crafting|Spec Crafting Session]] — foundational session

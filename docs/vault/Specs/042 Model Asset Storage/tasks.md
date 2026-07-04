@@ -1,3 +1,12 @@
+---
+title: 042 Model Asset Storage - Tasks
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Tasks: Model Asset Acquisition & Storage (LakeFS-ready)
 
 **Input**: Design documents from `docs/vault/Specs/042 Model Asset Storage/`

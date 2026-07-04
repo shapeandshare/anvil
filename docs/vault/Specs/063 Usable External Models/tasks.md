@@ -1,3 +1,12 @@
+---
+title: 063 Usable External Models - Tasks
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Tasks: Usable External Models
 
 **Input**: Design documents from `docs/vault/Specs/063 Usable External Models/`

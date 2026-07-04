@@ -1,3 +1,12 @@
+---
+title: 058 At-Rest Secret Encryption - Research
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Research: At-Rest Secret Encryption — Key Ring + KMS Envelope
 
 **Date**: 2026-06-30 | **Spec**: [[058 At-Rest Secret Encryption - spec]]

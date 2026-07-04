@@ -1,3 +1,12 @@
+---
+title: 044 Local LoRA Fine-Tuning - Plan
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Implementation Plan: Local LoRA Fine-Tuning
 
 **Branch**: `062-local-lora-fine-tuning` | **Date**: 2026-06-30 | **Spec**: `docs/vault/Specs/044 Local LoRA Fine-Tuning/spec.md`

@@ -1,3 +1,16 @@
+---
+title: 'Session: Resilient Startup Recovery (Spec 061)'
+type: session
+tags:
+  - type/session-log
+  - domain/infrastructure
+source: agent
+created: 2026-06-30
+updated: 2026-06-30
+aliases:
+  - Resilient Startup Recovery Session
+---
+
 ## Session Log: Resilient Startup Recovery (Spec 061)
 
 **Date**: 2026-06-30

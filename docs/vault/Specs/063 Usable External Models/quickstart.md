@@ -1,3 +1,12 @@
+---
+title: 063 Usable External Models - Quickstart
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Quickstart: Using an Imported External Model
 
 ## Flow

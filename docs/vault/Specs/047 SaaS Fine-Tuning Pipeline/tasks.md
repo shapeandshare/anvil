@@ -1,3 +1,12 @@
+---
+title: 047 SaaS Fine-Tuning Pipeline - Tasks
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Tasks: 047 SaaS Fine-Tuning Pipeline (MVP)
 
 **Input**: Design documents from `docs/vault/Specs/047 SaaS Fine-Tuning Pipeline/`
