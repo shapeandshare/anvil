@@ -100,6 +100,10 @@ Non-obvious constraints, gaps, and conflicts discovered during agent sessions. E
 
 - [[Discoveries/demo-warmup-redundant-retrain|Demo Warmup Re-Trains Every Startup Despite Existing Checkpoint]] — `warmup_demo_via_system_pipeline` ran full training pipeline on every startup even when a checkpoint existed at `data/models/demo/model.json`. Added early-exit guard to skip re-training when checkpoint exists.
 
+## Discoveries from this session (2026-07-04 — Data page hub restructure)
+
+- [[Discoveries/data-page-fake-tabs-pattern|Data Page — "Fake Tabs" Pattern Was Multiple Always-Visible Sections]] — `datasets.html` used `wizard-tabs` + `wizard-panel` but JS only scrolled to each panel instead of hiding them, making all 8+ forms and 3 tables visible simultaneously. Replaced with data-first hub + drill-in flow pages.
+
 ## Additional Discoveries
 
 - [[Discoveries/core-file-docstring-revert|Core Engine Files Persistently Revert Docstring Changes]] — Core Engine Files Persistently Revert Docstring Changes — Docstring changes in core engine files keep reverting due to pre-commit hook regeneration.

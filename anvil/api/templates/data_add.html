@@ -1,0 +1,203 @@
+<!--
+  ~ Copyright © 2026 Josh Burt
+  ~
+  ~ This source code is licensed under the MIT license found in the
+  ~ LICENSE file in the root directory of this source tree.
+-->
+
+{% extends "base.html" %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
+{% block content %}
+
+{# ── Back link to Data Hub ── #}
+<div style="margin-bottom:var(--space-3);">
+  <a href="/v1/datasets-page" class="action-link">&larr; Data Hub</a>
+</div>
+
+{# ── BANNER CTA: Data Fundamentals learning lesson ── #}
+<div class="section-card section-card--banner" style="--stagger-i: 0">
+  <div class="section-card__content" style="display:flex;align-items:center;gap:var(--space-3);">
+    <span style="font-size:1.2rem;flex-shrink:0;">&#128218;</span>
+    <div style="flex:1;">
+      <div style="font-family:var(--font-body);font-weight:600;font-size:var(--text-footnote);color:var(--text-secondary);">
+        Understanding Datasets &amp; Corpora
+      </div>
+      <div style="font-size:var(--text-caption-2);color:var(--text-tertiary);margin-top:2px;">
+        How data flows into training &mdash; now in the interactive learning arc.
+      </div>
+    </div>
+    <a href="/v1/learn/data-fundamentals" class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap;">
+      Learn More &rarr;
+    </a>
+  </div>
+</div>
+{% include "partials/related-lessons.html" %}
+
+{# ── SECTION: Add Data ── #}
+<div class="section-card" style="--stagger-i: 1">
+
+  <div class="ds-flow-section" data-step="1">
+    <div class="ds-flow-header">
+      <div class="ds-flow-bubble"><span>1</span></div>
+      <div>
+        <div class="ds-flow-label">Step One</div>
+        <div class="ds-flow-title">Add Data</div>
+      </div>
+    </div>
+    <p class="ds-flow-desc">Upload <code>.txt</code> files as training datasets, or create empty datasets to fill later. Each line becomes a training sample &mdash; curated, quality-controlled data you can edit and refine.</p>
+  </div>
+
+  {# ── Upload section ── #}
+  <div class="ds-section">
+    <div class="ds-section-label">Upload File <span class="tooltip-trigger"><span class="tooltip-icon">i</span><span class="tooltip-content">Accepts .txt files. Each line becomes a training sample. Files with more diverse characters give the model more tokens to work with.</span></span></div>
+    <form id="upload-form" class="upload-zone">
+      <label for="file-input" class="sr-only">Choose file</label>
+      <input type="file" class="form-input" id="file-input" accept=".txt">
+      <button type="submit" class="btn btn-primary">upload</button>
+    </form>
+    <div class="ds-status-line" id="upload-status" aria-live="polite" role="status">Ready.</div>
+
+    {# ── Provenance & Governance (gate fields) ── #}
+    <div class="ds-section" style="margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--border);">
+      <div class="ds-section-label">Provenance &amp; Governance</div>
+      <div style="display:flex;flex-direction:column;gap:var(--space-2);">
+        <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;">
+          <label for="declared-source" class="sr-only">Declared source</label>
+          <input type="text" class="form-input" id="declared-source" placeholder="Declared source / origin (e.g. Project Gutenberg)" style="flex:1;min-width:200px;">
+          <label for="license-select" class="sr-only">License</label>
+          <select class="form-select" id="license-select" style="flex:1;min-width:200px;">
+            <option value="">Select a license...</option>
+            {% for license in licenses %}
+            <option value="{{ license.identifier }}">{{ license.display_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <label style="display:flex;align-items:center;gap:var(--space-2);font-size:var(--text-subhead);color:var(--text-secondary);cursor:pointer;">
+          <input type="checkbox" id="no-harm-affirmation" style="accent-color:var(--accent);">
+          I affirm this content is licensed for training use and will not cause harm.
+          <a href="/v1/acceptable-use" target="_blank" style="white-space:nowrap;">Acceptable Use Policy</a>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="ds-section-divider"></div>
+
+  {# ── Create dataset section ── #}
+  <div class="ds-section">
+    <div class="ds-section-label">Create Dataset <span class="tooltip-trigger"><span class="tooltip-icon">i</span><span class="tooltip-content">Create an empty dataset first, then add samples by uploading files or curating existing data.</span></span></div>
+    <div id="create-dataset-form" style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;">
+      <label for="new-dataset-name" class="sr-only">Dataset name</label>
+      <input type="text" class="form-input" id="new-dataset-name" placeholder="name">
+      <label for="new-dataset-description" class="sr-only">Description</label>
+      <input type="text" class="form-input" id="new-dataset-description" placeholder="description (optional)">
+      <button class="btn btn-primary" id="create-dataset-btn">create</button>
+    </div>
+    <div class="ds-status-line" id="create-status" aria-live="polite" role="status">Ready.</div>
+  </div>
+
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script nonce="{{ request.state.csp_nonce }}">
+(function() {
+
+  /* ── helpers ────────────────────────────────────────── */
+
+  function formatBytes(b) {
+    if (b == null) return '?';
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+    return (b / 1048576).toFixed(1) + ' MB';
+  }
+
+  function escHtml(s) {
+    if (s == null) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function showToast(msg, type) {
+    var container = document.getElementById('toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'toast-container';
+      container.className = 'toast-container';
+      document.body.appendChild(container);
+    }
+    var toast = document.createElement('div');
+    toast.className = 'toast toast-' + (type || 'info');
+    toast.textContent = msg;
+    container.appendChild(toast);
+    setTimeout(function() {
+      toast.style.opacity = '0';
+      toast.style.transition = 'opacity 0.3s ease';
+      setTimeout(function() { toast.remove(); }, 300);
+    }, 3000);
+  }
+
+  /* ── upload form ────────────────────────────────────── */
+
+  document.getElementById('upload-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    var fileInput = document.getElementById('file-input');
+    var status = document.getElementById('upload-status');
+    if (!fileInput.files.length) {
+      status.textContent = '! Please select a .txt file.';
+      return;
+    }
+    var formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    var btn = this.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    var origText = btn.textContent;
+    btn.innerHTML = '<span class="spinner"></span> uploading';
+    status.textContent = '> uploading\u2026';
+    try {
+      var resp = await window.apiFetch('/v1/datasets/upload', { method: 'POST', body: formData });
+      var data = await resp.json();
+      status.textContent = '> uploaded "' + data.name + '" -- ' + (data.document_count != null ? data.document_count.toLocaleString() : '?') + ' lines, ' + (data.vocabulary_size != null ? data.vocabulary_size.toLocaleString() : '?') + ' unique chars';
+      showToast('Dataset uploaded', 'success');
+    } catch (err) {
+      status.textContent = '! Upload failed: ' + err.message;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = origText;
+    }
+  });
+
+  /* ── create dataset (POST) ──────────────────────────── */
+
+  document.getElementById('create-dataset-btn').addEventListener('click', async function() {
+    var btn = this;
+    var name = document.getElementById('new-dataset-name').value.trim();
+    var desc = document.getElementById('new-dataset-description').value.trim();
+    var status = document.getElementById('create-status');
+    if (!name) { status.textContent = '! Name is required.'; document.getElementById('new-dataset-name').focus(); return; }
+    btn.disabled = true;
+    var origText = btn.textContent;
+    btn.innerHTML = '<span class="spinner"></span> creating';
+    status.textContent = '> creating\u2026';
+    try {
+      var resp = await window.apiFetch('/v1/datasets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name, description: desc || null })
+      });
+      var data = await resp.json();
+      if (!resp.ok) throw new Error(data.detail || 'Create failed');
+      status.textContent = '> created dataset "' + name + '"';
+      document.getElementById('new-dataset-name').value = '';
+      document.getElementById('new-dataset-description').value = '';
+      showToast('Dataset created', 'success');
+    } catch (err) {
+      status.textContent = '! ' + err.message;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = origText;
+    }
+  });
+
+})();
+</script>
+{% endblock %}

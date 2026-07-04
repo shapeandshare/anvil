@@ -101,9 +101,45 @@ async def graph_concept_page(request: Request) -> HTMLResponse:
 @router.get("/datasets-page", response_class=HTMLResponse)
 async def datasets_page(
     request: Request,
+) -> HTMLResponse:
+    """Render the data management hub page.
+
+    Unified data table with filters and primary action links to the
+    ``/v1/data-add-page`` and ``/v1/data-sources-page`` flow pages.
+    The hub shows all datasets and corpora in a single combined table
+    with inline edit, fork/clone, curate, delete, and ingest actions.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming HTTP request.
+
+    Returns
+    -------
+    HTMLResponse
+        Rendered ``datasets.html`` template with related lessons context.
+    """
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
+        request,
+        "datasets.html",
+        {
+            "related_lessons": related_lessons(
+                "data-fundamentals", "tokenization", "chunking", "governance"
+            ),
+        },
+    )
+
+
+@router.get("/data-add-page", response_class=HTMLResponse)
+async def data_add_page(
+    request: Request,
     workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> HTMLResponse:
-    """Render the dataset management page.
+    """Render the add data flow page.
+
+    Focused page for uploading ``.txt`` files and creating empty
+    datasets. Extracted from the unified datasets hub as part of
+    the data-first hub with drill-in flow pages restructuring.
 
     Parameters
     ----------
@@ -115,18 +151,57 @@ async def datasets_page(
     Returns
     -------
     HTMLResponse
-        Rendered ``datasets.html`` template with license catalog context.
+        Rendered ``data_add.html`` template with license catalog context.
     """
     licenses = await workbench.governance.list_licenses(
         include_own_content=False,
     )
     return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
-        "datasets.html",
+        "data_add.html",
         {
             "licenses": licenses,
             "related_lessons": related_lessons(
                 "data-fundamentals", "tokenization", "chunking", "governance"
+            ),
+        },
+    )
+
+
+@router.get("/data-sources-page", response_class=HTMLResponse)
+async def data_sources_page(
+    request: Request,
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
+) -> HTMLResponse:
+    """Render the data sources flow page.
+
+    Focused page for scanning directories with glob patterns,
+    creating & ingesting corpora, and combining corpora into
+    datasets. Extracted from the unified datasets hub as part
+    of the data-first hub with drill-in flow pages restructuring.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming HTTP request.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench for fetching license catalog.
+
+    Returns
+    -------
+    HTMLResponse
+        Rendered ``data_sources.html`` template with license catalog context.
+    """
+    licenses = await workbench.governance.list_licenses(
+        include_own_content=False,
+    )
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
+        request,
+        "data_sources.html",
+        {
+            "licenses": licenses,
+            "related_lessons": related_lessons(
+                "data-fundamentals", "chunking", "content-versioning", "governance"
             ),
         },
     )
