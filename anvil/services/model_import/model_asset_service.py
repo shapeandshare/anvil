@@ -73,7 +73,7 @@ class ModelAssetService:
         self,
         model_asset_repo: ModelAssetRepository,
         asset_download_job_repo: AssetDownloadJobRepository,
-        external_model_repo: ExternalModelRepository | None,
+        external_model_repo: ExternalModelRepository,
         store: FileStore,
         hf_source: HfHubSource | None = None,
         user_secret_service: UserSecretService | None = None,

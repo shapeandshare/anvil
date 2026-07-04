@@ -563,7 +563,7 @@ class AnvilWorkbench:
         """Lazily-initialised ``ModelImportService`` wired to *session*."""
         if self._model_imports is None:
             self._model_imports = ModelImportService(
-                None,  # external_model_repo — legacy, unused with catalog
+                None,  # type: ignore[arg-type]  # external_model_repo — legacy, unused with catalog
                 self.model_import_job_repo,
                 {
                     SourceType.HUGGINGFACE: HfHubSource(),
@@ -735,7 +735,7 @@ class AnvilWorkbench:
             self._model_assets = ModelAssetService(
                 self.model_asset_repo,
                 self.asset_download_job_repo,
-                None,  # external_model_repo — legacy
+                None,  # type: ignore[arg-type]  # external_model_repo — legacy
                 self.model_store,
                 hf_source=HfHubSource(),
                 user_secret_service=self.user_secrets,

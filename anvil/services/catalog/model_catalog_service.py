@@ -267,7 +267,7 @@ class ModelCatalogService:
             try:
                 await loop.run_in_executor(
                     None,
-                    lambda k=key, v=value: client.set_model_version_tag(
+                    lambda k=key, v=value: client.set_model_version_tag(  # type: ignore[misc]
                         catalog_name, str(version), k, v
                     ),
                 )
@@ -409,9 +409,7 @@ class ModelCatalogService:
 
             versions = await loop.run_in_executor(
                 None,
-                lambda: client.search_model_versions(  # type: ignore[misc]
-                    f"name='{ref.name}'"
-                ),
+                lambda: client.search_model_versions(f"name='{ref.name}'"),
             )
         except _TRANSIENT_EXCEPTIONS as exc:
             raise CatalogUnavailableError(
@@ -449,8 +447,8 @@ class ModelCatalogService:
         try:
             await loop.run_in_executor(
                 None,
-                lambda: client.set_model_version_tag(  # type: ignore[misc]
-                    ref.name, ref.version, key, value
+                lambda: client.set_model_version_tag(
+                    ref.name, str(ref.version), key, value
                 ),
             )
         except _TRANSIENT_EXCEPTIONS as exc:
@@ -485,7 +483,7 @@ class ModelCatalogService:
                 if int(mv.version) == ref.version and mv.run_id:
                     local_dir = await loop.run_in_executor(
                         None,
-                        lambda _mv=mv: client.download_artifacts(
+                        lambda _mv=mv: client.download_artifacts(  # type: ignore[misc]
                             run_id=_mv.run_id, path="", dst_path=None
                         ),
                     )

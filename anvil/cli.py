@@ -897,7 +897,7 @@ def import_main() -> None:
                 {
                     SourceType.HUGGINGFACE: HfHubSource(),
                     SourceType.LOCAL: LocalSource(),
-                },
+                },  # type: ignore[call-arg]
             )
             job_id = await svc.submit_import(
                 source=args.source,
@@ -922,7 +922,7 @@ def import_status_main() -> None:
         async with AsyncSessionLocal() as session:
             repo = ExternalModelRepository(session)
             job_repo = ModelImportJobRepository(session)
-            svc = ModelImportService(repo, job_repo, {})
+            svc = ModelImportService(repo, job_repo, {})  # type: ignore[call-arg]
             job = await svc.get_job_status(args.job_id)
             if job is None:
                 print(f"Import job {args.job_id} not found", file=sys.stderr)

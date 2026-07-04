@@ -79,11 +79,11 @@ class ModelImportService:
 
     def __init__(
         self,
-        external_model_repo: external_models_repo.ExternalModelRepository | None,
+        external_model_repo: external_models_repo.ExternalModelRepository,
         model_import_job_repo: model_import_jobs_repo.ModelImportJobRepository,
         sources: dict[SourceType, ModelSource],
-        catalog_service: ModelCatalogService | None = None,
-        catalog_identity_repo: CatalogIdentityRepository | None = None,
+        catalog_service: ModelCatalogService,
+        catalog_identity_repo: CatalogIdentityRepository,
         user_secret_service: UserSecretService | None = None,
     ) -> None:
         self._external_model_repo = external_model_repo
