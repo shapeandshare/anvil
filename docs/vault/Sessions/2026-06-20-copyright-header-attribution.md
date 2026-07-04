@@ -21,7 +21,7 @@ aliases:
 
 ### 1. `pyproject.toml` author fix
 
-The `[project].authors` field listed `{name = "anvil contributors"}` — too generic. Changed to `{name = "Josh Burt", email = "josh@shapeandshare.com"}`.
+The `[project].authors` field listed `{name = "anvil contributors"}` — too generic. Changed to `{name = "Josh Burt", email = "joshburt@shapeandshare.com"}`.
 
 The `LICENSE` file already had `Copyright © 2026 Josh Burt` — no change needed.
 
