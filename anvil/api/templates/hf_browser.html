@@ -65,7 +65,7 @@
           <div style="display:flex;align-items:center;gap:var(--space-2);padding:var(--space-2) 0;border-bottom:1px solid var(--border);">
             <span class="type-caption-1" translate="no" style="flex:1;word-break:break-all;">{{ j.source_identifier }}</span>
             {% if j.status == "complete" %}
-            <span class="badge badge-green">complete</span>
+            <span class="badge badge-green">metadata ready</span>
             {% elif j.status == "failed" %}
             <span class="badge badge-red">failed</span>
             {% elif j.status == "resolving" %}
@@ -319,7 +319,7 @@
   }
 
   function statusPill(status) {
-    if (status === 'complete') return '<span class="badge badge-green">complete</span>';
+    if (status === 'complete') return '<span class="badge badge-green">metadata ready</span>';
     if (status === 'failed') return '<span class="badge badge-red">failed</span>';
     if (status === 'resolving') return '<span class="badge badge-cyan"><span class="badge__pulse"></span>resolving</span>';
     return '<span class="badge" style="background:var(--text-tertiary);">queued</span>';
