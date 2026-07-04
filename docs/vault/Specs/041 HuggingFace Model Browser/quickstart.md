@@ -1,3 +1,12 @@
+---
+title: 041 HuggingFace Model Browser - Quickstart
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Quickstart: HuggingFace Model Browser
 
 **Feature**: 041 | **Role**: Developer implementing the HF Browser

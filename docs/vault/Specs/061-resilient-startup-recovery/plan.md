@@ -1,3 +1,12 @@
+---
+title: 061-resilient-startup-recovery - Plan
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Implementation Plan: 061 Resilient Startup & Data-Safe Database Recovery
 
 **Branch**: `061-resilient-startup-recovery` | **Date**: 2026-06-30 | **Spec**: `docs/vault/Specs/061-resilient-startup-recovery/spec.md`

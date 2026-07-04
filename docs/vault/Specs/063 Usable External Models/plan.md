@@ -1,3 +1,12 @@
+---
+title: 063 Usable External Models - Plan
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Implementation Plan: Usable External Models
 
 **Branch**: `063-usable-external-models` | **Date**: 2026-07-02 | **Spec**: [spec.md](./spec.md)

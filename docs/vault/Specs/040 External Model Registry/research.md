@@ -1,3 +1,12 @@
+---
+title: 040 External Model Registry - Research
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Research: 040 External Model Registry & Import Paradigm
 
 ## 1. Model Registry Architecture

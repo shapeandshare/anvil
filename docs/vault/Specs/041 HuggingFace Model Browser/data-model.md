@@ -1,3 +1,12 @@
+---
+title: 041 HuggingFace Model Browser - Data Model
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Data Model: HuggingFace Model Browser
 
 **Feature**: 041 HuggingFace Model Browser | **Date**: 2026-06-28

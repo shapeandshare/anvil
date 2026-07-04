@@ -1,3 +1,12 @@
+---
+title: 058 At-Rest Secret Encryption - Tasks
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Tasks: 058 At-Rest Secret Encryption — Key Ring + KMS Envelope
 
 **Input**: Design documents from `docs/vault/Specs/058 At-Rest Secret Encryption/`

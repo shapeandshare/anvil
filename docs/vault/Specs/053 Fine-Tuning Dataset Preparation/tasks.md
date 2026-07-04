@@ -1,3 +1,12 @@
+---
+title: 053 Fine-Tuning Dataset Preparation - Tasks
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Tasks: Fine-Tuning Dataset Preparation
 
 **Input**: Design documents from `docs/vault/Specs/053 Fine-Tuning Dataset Preparation/`

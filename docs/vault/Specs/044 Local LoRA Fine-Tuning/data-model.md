@@ -1,3 +1,12 @@
+---
+title: 044 Local LoRA Fine-Tuning - Data Model
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Data Model — Local LoRA Fine-Tuning
 
 ## Entities

@@ -1,3 +1,12 @@
+---
+title: 047 SaaS Fine-Tuning Pipeline - Plan
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Implementation Plan: 047 SaaS Fine-Tuning Pipeline
 
 **Branch**: `047-saas-fine-tuning-pipeline` | **Date**: 2026-07-02 | **Spec**: [[047 SaaS Fine-Tuning Pipeline - spec]]

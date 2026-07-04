@@ -1,3 +1,12 @@
+---
+title: 042 Model Asset Storage - Research
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Research: Model Asset Acquisition & Storage (042)
 
 **Date**: 2026-06-28 | **Branch**: `042-model-asset-storage`

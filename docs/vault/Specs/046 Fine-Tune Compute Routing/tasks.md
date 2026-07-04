@@ -1,3 +1,12 @@
+---
+title: 046 Fine-Tune Compute Routing - Tasks
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Tasks: 046 Fine-Tune Compute Routing
 
 **Input**: Design documents from `docs/vault/Specs/046 Fine-Tune Compute Routing/`

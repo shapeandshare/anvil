@@ -1,3 +1,12 @@
+---
+title: 060 Text Input Theme Consistency - Spec
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Feature Specification: Text Input Theme Consistency
 
 **Feature Branch**: `060-text-input-theme-consistency`  

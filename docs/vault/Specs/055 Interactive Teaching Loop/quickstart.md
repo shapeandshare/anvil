@@ -1,3 +1,12 @@
+---
+title: 055 Interactive Teaching Loop - Quickstart
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Quickstart: Interactive Teaching Loop (055)
 
 > Read research.md §9-§12 and plan.md Complexity Tracking before implementing. The training lifecycle must be extracted into `TrainingRunService` FIRST.

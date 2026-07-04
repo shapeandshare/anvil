@@ -1,3 +1,12 @@
+---
+title: 046 Fine-Tune Compute Routing - Data Model
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Data Model: Fine-Tune Compute Routing
 
 **Feature**: 046 Fine-Tune Compute Routing

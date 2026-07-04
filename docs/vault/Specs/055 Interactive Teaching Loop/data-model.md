@@ -1,3 +1,12 @@
+---
+title: 055 Interactive Teaching Loop - Data Model
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Data Model: Interactive Teaching Loop (055)
 
 > **Architecture correction (2026-07-02)**: Deep codebase verification (see research.md §9-§12) revealed that the model-reference identifier used by warm-start and inference is the **native integer experiment id** that persists the loadable artifact at `data/models/experiment_{id}.json` — NOT `ExternalModel.id`. `ExternalModel.id` is only created via the HuggingFace/local import workflow and is used by `EvaluationService`. These are different ID spaces. This data model uses the native experiment id (the identifier the training/inference layers already agree on) and does NOT introduce an `ExternalModel` FK.

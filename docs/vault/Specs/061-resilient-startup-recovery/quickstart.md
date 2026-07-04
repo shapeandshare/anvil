@@ -1,3 +1,12 @@
+---
+title: 061-resilient-startup-recovery - Quickstart
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Quickstart: Resilient Startup Recovery
 
 > Operator guide for what happens when the database is bad and how to recover.

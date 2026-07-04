@@ -1,3 +1,12 @@
+---
+title: 057-degraded-mode-recovery - Spec
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Feature Specification: Degraded Mode Recovery
 
 **Feature Directory**: `docs/vault/Specs/057-degraded-mode-recovery`

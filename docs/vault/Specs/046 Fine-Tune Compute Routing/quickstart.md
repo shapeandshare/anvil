@@ -1,3 +1,12 @@
+---
+title: 046 Fine-Tune Compute Routing - Quickstart
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Quickstart: Fine-Tune Compute Routing
 
 ## What you need to know

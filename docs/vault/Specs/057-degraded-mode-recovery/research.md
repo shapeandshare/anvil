@@ -1,3 +1,12 @@
+---
+title: 057-degraded-mode-recovery - Research
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Research: Degraded Mode Recovery
 
 ## Phase 0 — Research Findings

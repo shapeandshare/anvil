@@ -1,3 +1,12 @@
+---
+title: 063 Usable External Models - Spec
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Feature Specification: Usable External Models
 
 **Feature Branch**: `063-usable-external-models`

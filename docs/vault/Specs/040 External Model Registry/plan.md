@@ -1,3 +1,12 @@
+---
+title: 040 External Model Registry - Plan
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Implementation Plan: 040 External Model Registry & Import Paradigm
 
 **Branch**: `040-external-model-registry` | **Date**: 2026-06-28 | **Spec**: [[040 External Model Registry - spec]]

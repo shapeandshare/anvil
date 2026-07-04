@@ -1,3 +1,12 @@
+---
+title: 046 Fine-Tune Compute Routing - Research
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Research: Fine-Tune Compute Routing
 
 **Feature**: 046 Fine-Tune Compute Routing

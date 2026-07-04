@@ -1,3 +1,12 @@
+---
+title: 040 External Model Registry - Tasks
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Tasks: 040 External Model Registry & Import Paradigm
 
 **Input**: Design documents from `docs/vault/Specs/040 External Model Registry/`

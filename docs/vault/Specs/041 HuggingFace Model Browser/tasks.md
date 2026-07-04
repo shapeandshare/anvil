@@ -1,3 +1,12 @@
+---
+title: 041 HuggingFace Model Browser - Tasks
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Tasks: HuggingFace Model Browser & Curated Catalog
 
 **Input**: Design documents from `docs/vault/Specs/041 HuggingFace Model Browser/`

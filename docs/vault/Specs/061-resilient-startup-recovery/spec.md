@@ -1,3 +1,12 @@
+---
+title: 061-resilient-startup-recovery - Spec
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Feature Specification: Resilient Startup & Data-Safe Database Recovery
 
 **Feature Directory**: `docs/vault/Specs/061-resilient-startup-recovery`

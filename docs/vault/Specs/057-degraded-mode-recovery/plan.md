@@ -1,3 +1,12 @@
+---
+title: 057-degraded-mode-recovery - Plan
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Implementation Plan: Degraded Mode Recovery
 
 **Branch**: `057-degraded-mode-recovery` | **Date**: 2026-06-29 | **Spec**: [spec.md](./spec.md)

@@ -1,3 +1,12 @@
+---
+title: 060 Text Input Theme Consistency - Tasks
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Tasks: Text Input Theme Consistency
 
 **Input**: Design documents from `docs/vault/Specs/060 Text Input Theme Consistency/`

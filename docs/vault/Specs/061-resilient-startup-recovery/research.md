@@ -1,3 +1,12 @@
+---
+title: 061-resilient-startup-recovery - Research
+type: spec
+tags:
+  - type/spec
+created: 
+updated: 2026-07-03
+---
+
 # Research: Recovery Strategy Options — Data-Safe Startup Recovery
 
 **Spec**: [[Specs/061-resilient-startup-recovery/spec|061 Resilient Startup & Data-Safe Database Recovery]]
