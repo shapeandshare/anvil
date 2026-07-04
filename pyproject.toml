@@ -9,7 +9,7 @@ description = "Train and experiment with small LLMs from scratch"
 requires-python = ">=3.11"
 license = "MIT"
 authors = [
-    {name = "Josh Burt", email = "josh@shapeandshare.com"},
+    {name = "Josh Burt", email = "joshburt@shapeandshare.com"},
 ]
 
 dependencies = [
