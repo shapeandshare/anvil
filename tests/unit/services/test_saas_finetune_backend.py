@@ -161,6 +161,183 @@ class TestSaasFinetuneBackendRun:
         fake_provider.poll_status.assert_called_once_with("job_ref_123")
         fake_provider.fetch_adapter.assert_called_once_with("job_ref_123")
 
+    # ------------------------------------------------------------------
+    # Characterization tests — capture current behavior before refactor
+    # ------------------------------------------------------------------
+
+    async def test_no_provider_returns_failed(
+        self, fake_config, progress_callback, stop_check
+    ):
+        """Characterization: provider=None returns FAILED with error message."""
+        from anvil.services.compute.saas_finetune_backend import SaasFinetuneBackend
+
+        backend = SaasFinetuneBackend(provider=None)
+        result = await backend.run(
+            ["doc1"],
+            fake_config,
+            progress_callback=progress_callback,
+            stop_check=stop_check,
+        )
+        assert result.status == ComputeStatus.FAILED
+        assert "No SaaS provider configured" in (result.error_message or "")
+        assert result.backend == ComputeBackendResult.SAAS
+        assert result.engine == TrainingEngine.TORCH
+
+    async def test_submit_exception_returns_failed(
+        self, fake_provider, fake_config, progress_callback, stop_check
+    ):
+        """Characterization: submit() exception returns FAILED."""
+        fake_provider.submit.side_effect = RuntimeError("API unreachable")
+        from anvil.services.compute.saas_finetune_backend import SaasFinetuneBackend
+
+        backend = SaasFinetuneBackend(provider=fake_provider)
+        result = await backend.run(
+            ["doc1"],
+            fake_config,
+            progress_callback=progress_callback,
+            stop_check=stop_check,
+        )
+        assert result.status == ComputeStatus.FAILED
+        assert "Failed to submit job" in (result.error_message or "")
+        assert "API unreachable" in (result.error_message or "")
+
+    async def test_progress_callback_invoked_on_submit(
+        self, fake_provider, fake_config, progress_callback, stop_check
+    ):
+        """Characterization: progress_callback is called with (-1, 0.0) after submit."""
+        from anvil.services.compute.saas_finetune_backend import SaasFinetuneBackend
+
+        backend = SaasFinetuneBackend(provider=fake_provider)
+        await backend.run(
+            ["doc1"],
+            fake_config,
+            progress_callback=progress_callback,
+            stop_check=stop_check,
+        )
+        progress_callback.assert_called_once_with(-1, 0.0)
+
+    async def test_progress_callback_none_on_submit(
+        self, fake_provider, fake_config, stop_check
+    ):
+        """Characterization: progress_callback=None does not raise."""
+        from anvil.services.compute.saas_finetune_backend import SaasFinetuneBackend
+
+        backend = SaasFinetuneBackend(provider=fake_provider)
+        result = await backend.run(
+            ["doc1"],
+            fake_config,
+            progress_callback=None,  # type: ignore[arg-type]
+            stop_check=stop_check,
+        )
+        assert result.status == ComputeStatus.COMPLETED
+
+    async def test_poll_retries_on_transient_error_then_succeeds(
+        self, fake_provider, fake_config, progress_callback, stop_check
+    ):
+        """Characterization: poll transient error is retried with backoff, then succeeds."""
+        fake_provider.poll_status.side_effect = [
+            RuntimeError("transient-1"),
+            ComputeStatus.COMPLETED,
+        ]
+        from anvil.services.compute.saas_finetune_backend import (
+            RETRY_BACKOFFS,
+            SaasFinetuneBackend,
+        )
+
+        backend = SaasFinetuneBackend(provider=fake_provider)
+        with patch(
+            "anvil.services.compute.saas_finetune_backend.RETRY_BACKOFFS",
+            [0.01, 0.01, 0.01],
+        ):
+            result = await backend.run(
+                ["doc1"],
+                fake_config,
+                progress_callback=progress_callback,
+                stop_check=stop_check,
+            )
+        assert result.status == ComputeStatus.COMPLETED
+        assert fake_provider.poll_status.call_count == 2
+
+    async def test_poll_retries_exhausted_returns_failed(
+        self, fake_provider, fake_config, progress_callback, stop_check
+    ):
+        """Characterization: poll retries exhausted returns FAILED."""
+        fake_provider.poll_status.side_effect = RuntimeError("always fails")
+        from anvil.services.compute.saas_finetune_backend import SaasFinetuneBackend
+
+        backend = SaasFinetuneBackend(provider=fake_provider)
+        with patch(
+            "anvil.services.compute.saas_finetune_backend.RETRY_BACKOFFS",
+            [0.01, 0.01, 0.01],
+        ):
+            result = await backend.run(
+                ["doc1"],
+                fake_config,
+                progress_callback=progress_callback,
+                stop_check=stop_check,
+            )
+        assert result.status == ComputeStatus.FAILED
+        assert "Poll failed after" in (result.error_message or "")
+
+    async def test_fetch_adapter_exception_returns_failed(
+        self, fake_provider, fake_config, progress_callback, stop_check
+    ):
+        """Characterization: fetch_adapter exception returns FAILED."""
+        fake_provider.fetch_adapter.side_effect = RuntimeError("adapter not found")
+        from anvil.services.compute.saas_finetune_backend import SaasFinetuneBackend
+
+        backend = SaasFinetuneBackend(provider=fake_provider)
+        result = await backend.run(
+            ["doc1"],
+            fake_config,
+            progress_callback=progress_callback,
+            stop_check=stop_check,
+        )
+        assert result.status == ComputeStatus.FAILED
+        assert "Failed to fetch adapter" in (result.error_message or "")
+
+    async def test_poll_sees_running_before_completed(
+        self, fake_provider, fake_config, progress_callback, stop_check
+    ):
+        """Characterization: poll loop handles RUNNING then COMPLETED."""
+        fake_provider.poll_status.side_effect = [
+            ComputeStatus.RUNNING,
+            ComputeStatus.COMPLETED,
+        ]
+        from anvil.services.compute.saas_finetune_backend import SaasFinetuneBackend
+
+        backend = SaasFinetuneBackend(provider=fake_provider)
+        result = await backend.run(
+            ["doc1"],
+            fake_config,
+            progress_callback=progress_callback,
+            stop_check=stop_check,
+        )
+        assert result.status == ComputeStatus.COMPLETED
+        assert fake_provider.poll_status.call_count == 2
+
+    async def test_cancellation_during_polling(
+        self, fake_provider, fake_config, progress_callback, stop_check
+    ):
+        """Characterization: stop_check=True during poll loop returns FAILED."""
+        fake_provider.poll_status.side_effect = [
+            ComputeStatus.RUNNING,
+            ComputeStatus.RUNNING,
+        ]
+        # Fail stop check on second call
+        stop_check.side_effect = [False, True]
+        from anvil.services.compute.saas_finetune_backend import SaasFinetuneBackend
+
+        backend = SaasFinetuneBackend(provider=fake_provider)
+        result = await backend.run(
+            ["doc1"],
+            fake_config,
+            progress_callback=progress_callback,
+            stop_check=stop_check,
+        )
+        assert result.status == ComputeStatus.FAILED
+        assert "cancelled" in (result.error_message or "").lower()
+
 
 class TestSaasFinetuneRouting:
     """T009: Routing: resolve_fine_tune SAAS mapping + training.py remap."""

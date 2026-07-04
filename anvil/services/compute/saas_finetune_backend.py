@@ -105,94 +105,163 @@ class SaasFinetuneBackend:
         """
         provider = self._provider
         if provider is None:
-            return ComputeResult(
-                status=ComputeStatus.FAILED,
-                error_message="No SaaS provider configured",
-                backend=ComputeBackendResult.SAAS,
-                engine=TrainingEngine.TORCH,
-            )
+            return self._failed_result("No SaaS provider configured")
 
         job_ref: str
         try:
             job_ref = await provider.submit(config)
         except Exception as exc:
             logger.warning("SaaS provider submit failed: %s", exc)
-            return ComputeResult(
-                status=ComputeStatus.FAILED,
-                error_message=f"Failed to submit job: {exc}",
-                backend=ComputeBackendResult.SAAS,
-                engine=TrainingEngine.TORCH,
-            )
+            return self._failed_result(f"Failed to submit job: {exc}")
 
         if progress_callback is not None:
             progress_callback(-1, 0.0)
 
         for attempt in range(MAX_RETRIES + 1):
-            while True:
-                if stop_check():
-                    return ComputeResult(
-                        status=ComputeStatus.FAILED,
-                        error_message="Training cancelled by user",
-                        backend=ComputeBackendResult.SAAS,
-                        engine=TrainingEngine.TORCH,
-                    )
-
-                try:
-                    status: ComputeStatus = await provider.poll_status(job_ref)
-                except Exception as exc:
-                    if attempt < MAX_RETRIES:
-                        backoff = RETRY_BACKOFFS[attempt]
-                        logger.warning(
-                            "Poll failed (attempt %d/%d), retrying in %ds: %s",
-                            attempt + 1,
-                            MAX_RETRIES,
-                            backoff,
-                            exc,
-                        )
-                        await asyncio.sleep(backoff)
-                        break  # outer loop retries
-                    return ComputeResult(
-                        status=ComputeStatus.FAILED,
-                        error_message=f"Poll failed after {MAX_RETRIES} retries: {exc}",
-                        backend=ComputeBackendResult.SAAS,
-                        engine=TrainingEngine.TORCH,
-                    )
-
-                if status == ComputeStatus.COMPLETED:
-                    try:
-                        adapter_path: str = await provider.fetch_adapter(job_ref)
-                    except Exception as exc:
-                        return ComputeResult(
-                            status=ComputeStatus.FAILED,
-                            error_message=f"Failed to fetch adapter: {exc}",
-                            backend=ComputeBackendResult.SAAS,
-                            engine=TrainingEngine.TORCH,
-                        )
-                    return ComputeResult(
-                        status=ComputeStatus.COMPLETED,
-                        adapter_id=job_ref,
-                        artifact_uris={"adapter_path": adapter_path},
-                        backend=ComputeBackendResult.SAAS,
-                        engine=TrainingEngine.TORCH,
-                        exported_remotely=True,
-                    )
-
-                if status == ComputeStatus.FAILED:
-                    return ComputeResult(
-                        status=ComputeStatus.FAILED,
-                        backend=ComputeBackendResult.SAAS,
-                        engine=TrainingEngine.TORCH,
-                    )
-
-                await asyncio.sleep(2)
+            result = await self._poll_loop(provider, job_ref, attempt, stop_check)
+            if result is not None:
+                return result
 
         # -- unreachable: all paths return inside the loop --
-        return ComputeResult(  # pragma: no cover
+        return self._failed_result(  # pragma: no cover
+            "Unexpected: poll loop exhausted without result"
+        )
+
+    ####################################################################
+    # Private helpers
+    ####################################################################
+
+    @staticmethod
+    def _failed_result(error_message: str) -> ComputeResult:
+        """Build a failed ``ComputeResult`` with SaaS backend metadata.
+
+        Parameters
+        ----------
+        error_message : str
+            Human-readable error description.
+
+        Returns
+        -------
+        ComputeResult
+            A ``FAILED`` result with SaaS backend and torch engine.
+        """
+        return ComputeResult(
             status=ComputeStatus.FAILED,
-            error_message="Unexpected: poll loop exhausted without result",
+            error_message=error_message,
             backend=ComputeBackendResult.SAAS,
             engine=TrainingEngine.TORCH,
         )
+
+    @staticmethod
+    def _completed_result(job_ref: str, adapter_path: str) -> ComputeResult:
+        """Build a completed ``ComputeResult`` with SaaS backend metadata.
+
+        Parameters
+        ----------
+        job_ref : str
+            Opaque job reference used as the adapter identifier.
+        adapter_path : str
+            Local filesystem path to the downloaded adapter artifact.
+
+        Returns
+        -------
+        ComputeResult
+            A ``COMPLETED`` result with adapter metadata.
+        """
+        return ComputeResult(
+            status=ComputeStatus.COMPLETED,
+            adapter_id=job_ref,
+            artifact_uris={"adapter_path": adapter_path},
+            backend=ComputeBackendResult.SAAS,
+            engine=TrainingEngine.TORCH,
+            exported_remotely=True,
+        )
+
+    async def _poll_loop(
+        self,
+        provider: Any,
+        job_ref: str,
+        attempt: int,
+        stop_check: StopCheck,
+    ) -> ComputeResult | None:
+        """Poll the provider for job status, handling retries and terminal states.
+
+        Returns ``None`` when the outer loop should retry (transient
+        poll failure with remaining attempts).  Returns a ``ComputeResult``
+        for terminal states: completion, failure, cancellation, or
+        exhausted retries.
+
+        Parameters
+        ----------
+        provider : SaasFinetuneProvider
+            The transport provider to poll.
+        job_ref : str
+            Opaque job reference returned by ``provider.submit()``.
+        attempt : int
+            Current retry attempt index (0-based).
+        stop_check : StopCheck
+            Callable returning ``True`` if the user has requested
+            cancellation.
+
+        Returns
+        -------
+        ComputeResult | None
+            ``None`` if the outer loop should retry, or a terminal
+            ``ComputeResult``.
+        """
+        while True:
+            if stop_check():
+                return self._failed_result("Training cancelled by user")
+
+            try:
+                status: ComputeStatus = await provider.poll_status(job_ref)
+            except Exception as exc:
+                if attempt < MAX_RETRIES:
+                    backoff = RETRY_BACKOFFS[attempt]
+                    logger.warning(
+                        "Poll failed (attempt %d/%d), retrying in %ds: %s",
+                        attempt + 1,
+                        MAX_RETRIES,
+                        backoff,
+                        exc,
+                    )
+                    await asyncio.sleep(backoff)
+                    return None  # signal outer loop to retry
+
+                return self._failed_result(
+                    f"Poll failed after {MAX_RETRIES} retries: {exc}"
+                )
+
+            if status == ComputeStatus.COMPLETED:
+                return await self._handle_completed(provider, job_ref)
+
+            if status == ComputeStatus.FAILED:
+                return self._failed_result("")
+
+            await asyncio.sleep(2)
+
+    async def _handle_completed(self, provider: Any, job_ref: str) -> ComputeResult:
+        """Fetch the adapter artifact for a completed job.
+
+        Parameters
+        ----------
+        provider : SaasFinetuneProvider
+            The transport provider with ``fetch_adapter``.
+        job_ref : str
+            Opaque job reference returned by ``provider.submit()``.
+
+        Returns
+        -------
+        ComputeResult
+            Completed result with adapter path, or failed result if
+            fetching the adapter raises.
+        """
+        try:
+            adapter_path: str = await provider.fetch_adapter(job_ref)
+        except Exception as exc:
+            return self._failed_result(f"Failed to fetch adapter: {exc}")
+
+        return self._completed_result(job_ref, adapter_path)
 
 
 def _saas_finetune_factory() -> SaasFinetuneBackend:
