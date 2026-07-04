@@ -438,18 +438,12 @@
 
   // ── Secrets management ──
 
-  function escHtml(str) {
-    var div = document.createElement('div');
-    div.appendChild(document.createTextNode(str));
-    return div.innerHTML;
-  }
-
-  window.loadSecrets = async function loadSecrets() {
+  globalThis.loadSecrets = async function loadSecrets() {
     var container = document.getElementById('secrets-list');
     var setBtn = document.getElementById('secret-set-btn');
     if (!container) return;
     try {
-      var resp = await window.apiFetch('/v1/user/secrets');
+      var resp = await globalThis.apiFetch('/v1/user/secrets');
       if (!resp.ok) {
         container.innerHTML = '<span class="text-muted type-subhead">Could not load secrets.</span>';
         return;
@@ -458,8 +452,8 @@
       var keys = data.data || [];
       var hasHfToken = false;
       var html = '';
-      for (var si = 0; si < keys.length; si++) {
-        if (keys[si] === 'hf_token') {
+      for (var key of keys) {
+        if (key === 'hf_token') {
           hasHfToken = true;
           html += '<div class="config-row row-entrance" style="--row-i:0">'
             + '<div class="config-row__top">'
@@ -491,6 +485,7 @@
       container.innerHTML = html;
       setBtn.style.display = 'none';
     } catch(e) {
+      // swallow
       container.innerHTML = '<span class="text-muted type-subhead">Could not load secrets.</span>';
     }
   };
@@ -530,19 +525,20 @@
       }
       close();
       try {
-        var resp = await window.apiFetch('/v1/user/secrets', {
+        var resp = await globalThis.apiFetch('/v1/user/secrets', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ key: 'hf_token', value: value.trim() })
         });
         if (resp.ok) {
           toast('HF token saved', 'success');
-          window.loadSecrets();
+          globalThis.loadSecrets();
         } else {
           var data = await resp.json();
           toast(data.detail || 'Failed to save token', 'error');
         }
       } catch(e) {
+        // swallow
         toast('Network error', 'error');
       }
     });
@@ -566,8 +562,8 @@
     overlay.innerHTML = '<div class="modal-dialog">'
       + '<div class="modal-dialog__header">'
       + '<div class="modal-dialog__icon" style="background:color-mix(in srgb,var(--accent-red) 15%,transparent);color:var(--accent-red);">&#9888;</div>'
-      + '<h3 class="modal-dialog__title">Clear ' + escHtml(key) + '</h3></div>'
-      + '<div class="modal-dialog__body"><p class="modal-dialog__message">Remove the <strong class="cmd">' + escHtml(key) + '</strong> token? The system will fall back to the <code class="cmd">HF_TOKEN</code> environment variable if set.</p></div>'
+      + '<h3 class="modal-dialog__title">Clear ' + esc(key) + '</h3></div>'
+      + '<div class="modal-dialog__body"><p class="modal-dialog__message">Remove the <strong class="cmd">' + esc(key) + '</strong> token? The system will fall back to the <code class="cmd">HF_TOKEN</code> environment variable if set.</p></div>'
       + '<div class="modal-dialog__actions">'
       + '<button type="button" class="modal-dialog__btn modal-dialog__btn--cancel" id="secret-clear-cancel">Cancel</button>'
       + '<button type="button" class="modal-dialog__btn modal-dialog__btn--confirm" style="color:var(--accent-red);" id="secret-clear-confirm">Clear</button>'
@@ -585,15 +581,16 @@
     document.getElementById('secret-clear-confirm').addEventListener('click', async function() {
       close();
       try {
-        var resp = await window.apiFetch('/v1/user/secrets?key=' + encodeURIComponent(key), { method: 'DELETE' });
+        var resp = await globalThis.apiFetch('/v1/user/secrets?key=' + encodeURIComponent(key), { method: 'DELETE' });
         if (resp.ok) {
           toast(key + ' cleared', 'success');
-          window.loadSecrets();
+          globalThis.loadSecrets();
         } else {
           var data = await resp.json();
           toast(data.detail || 'Failed to clear ' + key, 'error');
         }
       } catch(e) {
+        // swallow
         toast('Network error', 'error');
       }
     });
@@ -604,7 +601,7 @@
     });
   }
 
-  window.loadSecrets();
+  globalThis.loadSecrets();
 
   document.getElementById('secrets-list').addEventListener('click', function(e) {
     var setBtn = e.target.closest('.secret-set-btn');
@@ -615,7 +612,6 @@
     var delBtn = e.target.closest('[data-secret-action="delete"]');
     if (delBtn) {
       promptClearSecret(delBtn.dataset.secretKey);
-      return;
     }
   });
 

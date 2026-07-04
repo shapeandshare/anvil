@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 @router.get("/models/{model_id}/adapters")
 async def list_adapters(
     model_id: int,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> list[dict[str, Any]]:
     """List all LoRA adapters for a given base model.
 
@@ -54,11 +54,14 @@ async def list_adapters(
     ]
 
 
-@router.get("/models/{model_id}/adapters/{adapter_id}")
+@router.get(
+    "/models/{model_id}/adapters/{adapter_id}",
+    responses={404: {"description": "Adapter not found"}},
+)
 async def get_adapter(
     model_id: int,
     adapter_id: str,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, Any]:
     """Get details for a single LoRA adapter.
 
@@ -112,11 +115,17 @@ async def get_adapter(
     }
 
 
-@router.post("/models/{model_id}/adapters/{adapter_id}/merge")
+@router.post(
+    "/models/{model_id}/adapters/{adapter_id}/merge",
+    responses={
+        404: {"description": "Adapter not found"},
+        500: {"description": "Merge operation failed"},
+    },
+)
 async def merge_adapter(
     model_id: int,
     adapter_id: str,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, Any]:
     """Merge a LoRA adapter into its base model.
 

@@ -36,6 +36,9 @@ from .training_engine import TrainingEngine
 
 logger = logging.getLogger(__name__)
 
+#: Message used when training is cancelled by the user (S1192).
+_CANCELLED_MSG = "Training cancelled by user"
+
 
 # ── optional dependency guards ──────────────────────────────────────────
 
@@ -130,7 +133,7 @@ def _run_synthetic_lora(
 
     for step in range(1, num_steps + 1):
         if stop_check():
-            raise StopRequested("Training cancelled by user")
+            raise StopRequested(_CANCELLED_MSG)
 
         # Synthetic loss decreasing from ~5.0 toward ~0.5
         fraction = step / num_steps
@@ -138,6 +141,167 @@ def _run_synthetic_lora(
         progress_callback(step, final_loss)
 
     return final_loss, samples
+
+
+def _resolve_device_config(
+    device: str,
+    torch: Any,
+) -> tuple[Any, str]:
+    """Determine torch dtype and compute device from the target device string.
+
+    Parameters
+    ----------
+    device : str
+        Target device (``"cpu"``, ``"cuda"``, ``"mps"``).
+    torch : Any
+        The ``torch`` module (passed as a parameter to avoid a module-level
+        import of the optional dependency).
+
+    Returns
+    -------
+    tuple[Any, str]
+        ``(torch_dtype, compute_device)`` — the resolved dtype and device
+        name.
+    """
+    if device == "cuda" and torch.cuda.is_available():
+        return torch.bfloat16, "cuda"
+    elif device == "mps" and torch.backends.mps.is_available():
+        return torch.float32, "mps"
+    else:
+        return torch.float32, "cpu"
+
+
+def _resolve_quantization_config(method: str) -> Any:
+    """Build a ``BitsAndBytesConfig`` for QLoRA, or return ``None``.
+
+    Parameters
+    ----------
+    method : str
+        Fine-tuning method — ``"lora"`` or ``"qlora"``.
+
+    Returns
+    -------
+    Any
+        A ``BitsAndBytesConfig`` instance for QLoRA, or ``None`` when the
+        method is LoRA or when ``bitsandbytes`` is not available.
+    """
+    if method != "qlora":
+        return None
+    if not _bitsandbytes_available():
+        logger.warning(
+            "QLoRA requested but bitsandbytes not available — "
+            "falling back to full-precision LoRA"
+        )
+        return None
+    from transformers import BitsAndBytesConfig  # import-placement:allow
+
+    config = BitsAndBytesConfig(  # type: ignore[no-untyped-call]
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
+    )
+    logger.info("QLoRA enabled — loading model in 4-bit NF4")
+    return config
+
+
+def _run_training_loop(
+    peft_model: Any,
+    input_ids: Any,
+    attention_mask: Any,
+    optimizer: Any,
+    num_steps: int,
+    progress_callback: ProgressCallback,
+    stop_check: StopCheck,
+) -> float:
+    """Execute the LoRA training loop with stop-check support.
+
+    Parameters
+    ----------
+    peft_model : Any
+        The PEFT-wrapped model.
+    input_ids : Any
+        Tokenised input tensor.
+    attention_mask : Any
+        Attention mask tensor (may be ``None``).
+    optimizer : Any
+        PyTorch optimizer instance.
+    num_steps : int
+        Number of training steps.
+    progress_callback : ProgressCallback
+        Callable invoked with ``(step, loss)`` at each step.
+    stop_check : StopCheck
+        Callable returning ``True`` if cancellation was requested.
+
+    Returns
+    -------
+    float
+        The final loss value.
+
+    Raises
+    ------
+    StopRequested
+        If ``stop_check()`` returns ``True`` during training.
+    """
+    final_loss: float = 0.0
+    for step in range(1, num_steps + 1):
+        if stop_check():
+            raise StopRequested(_CANCELLED_MSG)
+        optimizer.zero_grad()
+        outputs = peft_model(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            labels=input_ids,
+        )
+        loss = outputs.loss
+        loss.backward()
+        optimizer.step()
+        final_loss = loss.item()
+        progress_callback(step, final_loss)
+    logger.info("Training complete — final_loss=%.4f", final_loss)
+    return final_loss
+
+
+def _generate_sample(
+    peft_model: Any,
+    tokenizer: Any,
+    input_ids: Any,
+    torch: Any,
+) -> list[str]:
+    """Generate a sample text from the trained model for inspection.
+
+    Parameters
+    ----------
+    peft_model : Any
+        The trained PEFT model (switched to eval mode inside).
+    tokenizer : Any
+        The HuggingFace tokenizer for decoding.
+    input_ids : Any
+        Tokenised input tensor (first 10 tokens used as prefix).
+    torch : Any
+        The ``torch`` module.
+
+    Returns
+    -------
+    list[str]
+        A single-element list containing the decoded generated text.
+    """
+    peft_model.eval()
+    sample_text: str = ""
+    with torch.no_grad():
+        input_prefix = input_ids[:, :10]
+        generated_ids = peft_model.generate(  # type: ignore[no-untyped-call]
+            input_ids=input_prefix,
+            max_new_tokens=50,
+            do_sample=True,
+            temperature=0.7,
+        )
+        sample_text = cast(
+            str,
+            tokenizer.decode(
+                generated_ids[0],
+                skip_special_tokens=True,
+            ),
+        )
+    return [sample_text]
 
 
 # ── real LoRA/QLoRA training ────────────────────────────────────────────
@@ -220,31 +384,10 @@ def _run_real_lora(
     logger.info("Loading base model from %s", model_path)
 
     # ── configure quantization for QLoRA ───────────────────────────────
-    quantization_config: Any = None
-    if method == "qlora" and _bitsandbytes_available():
-        from transformers import BitsAndBytesConfig  # import-placement:allow
-
-        quantization_config = BitsAndBytesConfig(  # type: ignore[no-untyped-call]
-            load_in_4bit=True,
-            bnb_4bit_quant_type="nf4",
-        )
-        logger.info("QLoRA enabled — loading model in 4-bit NF4")
-    elif method == "qlora":
-        logger.warning(
-            "QLoRA requested but bitsandbytes not available — "
-            "falling back to full-precision LoRA"
-        )
+    quantization_config = _resolve_quantization_config(method)
 
     # ── determine torch dtype ──────────────────────────────────────────
-    if device == "cuda" and torch.cuda.is_available():
-        torch_dtype = torch.bfloat16
-        compute_device = "cuda"
-    elif device == "mps" and torch.backends.mps.is_available():
-        torch_dtype = torch.float32
-        compute_device = "mps"
-    else:
-        torch_dtype = torch.float32
-        compute_device = "cpu"
+    torch_dtype, compute_device = _resolve_device_config(device, torch)
 
     # ── load base model ────────────────────────────────────────────────
     model = transformers.AutoModelForCausalLM.from_pretrained(
@@ -302,47 +445,23 @@ def _run_real_lora(
     optimizer = torch.optim.AdamW(peft_model.parameters(), lr=learning_rate)
 
     # ── training loop ──────────────────────────────────────────────────
-    final_loss: float = 0.0
-
-    for step in range(1, num_steps + 1):
-        if stop_check():
-            raise StopRequested("Training cancelled by user")
-
-        optimizer.zero_grad()
-        outputs = peft_model(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            labels=input_ids,
-        )
-        loss = outputs.loss
-        loss.backward()
-        optimizer.step()
-
-        final_loss = loss.item()
-        progress_callback(step, final_loss)
-
-    logger.info("Training complete — final_loss=%.4f", final_loss)
+    final_loss = _run_training_loop(
+        peft_model=peft_model,
+        input_ids=input_ids,
+        attention_mask=attention_mask,
+        optimizer=optimizer,
+        num_steps=num_steps,
+        progress_callback=progress_callback,
+        stop_check=stop_check,
+    )
 
     # ── generate a sample for qualitative inspection ───────────────────
-    peft_model.eval()
-    sample_text: str = ""
-    with torch.no_grad():
-        input_prefix = input_ids[:, :10]
-        generated_ids = peft_model.generate(  # type: ignore[no-untyped-call]
-            input_ids=input_prefix,
-            max_new_tokens=50,
-            do_sample=True,
-            temperature=0.7,
-        )
-        sample_text = cast(
-            str,
-            tokenizer.decode(
-                generated_ids[0],
-                skip_special_tokens=True,
-            ),
-        )
-
-    samples: list[str] = [sample_text]
+    samples = _generate_sample(
+        peft_model=peft_model,
+        tokenizer=tokenizer,
+        input_ids=input_ids,
+        torch=torch,
+    )
 
     # ── save adapter ───────────────────────────────────────────────────
     timestamp = int(time.time())
@@ -482,7 +601,7 @@ class LocalLoraBackend:
                 if isinstance(exc, StopRequested):
                     return ComputeResult(
                         status=ComputeStatus.FAILED,
-                        error_message="Training cancelled by user",
+                        error_message=_CANCELLED_MSG,
                         engine=TrainingEngine.TORCH,
                         backend=ComputeBackendResult.LOCAL,
                     )
@@ -528,7 +647,7 @@ class LocalLoraBackend:
             if isinstance(exc, StopRequested):
                 return ComputeResult(
                     status=ComputeStatus.FAILED,
-                    error_message="Training cancelled by user",
+                    error_message=_CANCELLED_MSG,
                     engine=TrainingEngine.TORCH,
                     backend=ComputeBackendResult.LOCAL,
                 )

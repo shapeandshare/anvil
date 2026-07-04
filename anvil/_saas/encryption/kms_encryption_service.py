@@ -166,5 +166,5 @@ class KmsEncryptionService:
             return aesgcm.decrypt(nonce, ct, aad).decode("utf-8")
         except InvalidTag as exc:
             raise InvalidCiphertextError(
-                "Decryption failed: invalid key, tampered data, " "or AAD mismatch"
+                "Decryption failed: invalid key, tampered data, or AAD mismatch"
             ) from exc

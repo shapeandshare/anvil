@@ -52,7 +52,7 @@ class SecretRotationService:
         self._encryption = encryption_service
         self._key_ring = key_ring
 
-    async def rotate(self) -> str:
+    def rotate(self) -> str:
         """Mint a new key, promoting the current key to previous.
 
         Returns

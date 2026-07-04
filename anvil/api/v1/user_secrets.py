@@ -13,6 +13,8 @@ from __future__ import annotations
 
 import logging
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, ConfigDict
 
@@ -35,7 +37,7 @@ class SetSecretBody(BaseModel):
 
 @router.get("/user/secrets")
 async def list_secrets(
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, object]:
     """Return all secret key names for the current user.
 
@@ -50,7 +52,7 @@ async def list_secrets(
 @router.post("/user/secrets", status_code=201)
 async def set_secret(
     body: SetSecretBody,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, object]:
     """Encrypt and store a secret for the current user."""
     user_id = _current_user_id()
@@ -62,7 +64,7 @@ async def set_secret(
 @router.delete("/user/secrets")
 async def delete_secret(
     key: str,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, object]:
     """Remove a secret for the current user."""
     user_id = _current_user_id()
@@ -86,7 +88,7 @@ def _current_user_id() -> str:
 
 @router.post("/admin/secrets/rotate")
 async def admin_rotate(
-    wb: AnvilWorkbench = Depends(get_workbench),
+    wb: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, str]:
     """Trigger key rotation.
 
@@ -100,13 +102,13 @@ async def admin_rotate(
         ``{"status": "accepted", "kid": "<new-key-id>"}``.
     """
     svc = wb.secret_rotation_service
-    new_kid = await svc.rotate()
+    new_kid = svc.rotate()
     return {"status": "accepted", "kid": new_kid}
 
 
 @router.get("/admin/secrets/rotation-status")
 async def admin_rotation_status(
-    wb: AnvilWorkbench = Depends(get_workbench),
+    wb: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, object]:
     """Return the current ring state and per-kid row counts.
 
@@ -121,7 +123,7 @@ async def admin_rotation_status(
 
 @router.post("/admin/secrets/sweep")
 async def admin_sweep(
-    wb: AnvilWorkbench = Depends(get_workbench),
+    wb: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, int]:
     """Trigger the re-encryption sweep.
 
@@ -141,7 +143,7 @@ async def admin_sweep(
 
 @router.post("/admin/secrets/expire-previous")
 async def admin_expire_previous(
-    wb: AnvilWorkbench = Depends(get_workbench),
+    wb: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, str | None]:
     """Expire the previous key.
 
