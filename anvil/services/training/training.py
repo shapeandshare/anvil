@@ -450,6 +450,50 @@ class TrainingService:
                 return row[0]  # type: ignore[no-any-return]
             return int(__import__("time").time() * 1000)  # fallback
 
+    @staticmethod
+    def _resolve_backend_name(
+        config: dict[str, Any],
+        engine_name: TrainingEngine,
+        backend_name: str,
+    ) -> str:
+        """Resolve a registry-qualified backend name from config and engine.
+
+        Maps generic ``"local"`` to an engine-qualified registry name
+        (``"local-stdlib"`` or ``"local-torch"``), and handles LoRA/QLoRA
+        method routing to ``RegistryBackend.LOCAL_LORA`` or
+        ``RegistryBackend.SAAS_FINETUNE``.
+
+        Parameters
+        ----------
+        config : dict[str, Any]
+            Training configuration dict, read for the ``"method"`` key.
+        engine_name : TrainingEngine
+            Resolved training engine (STDLIB or TORCH).
+        backend_name : str
+            Generic backend name from resolution (LOCAL, MODAL, SAAS).
+
+        Returns
+        -------
+        str
+            Registry-qualified backend name.
+        """
+        # Map generic "local" to engine-qualified registry name
+        # (registry has "local-stdlib" and "local-torch", not bare "local")
+        if backend_name == ComputeBackendResult.LOCAL:
+            backend_name = f"local-{engine_name}"
+            # LoRA/QLoRA jobs must use the LoRA-specific backend
+            # (the engine is always TORCH for fine-tunes, so the
+            #  f"local-{engine}" remap would otherwise yield "local-torch")
+            method = config.get("method", "full")
+            if method in ("lora", "qlora"):
+                backend_name = RegistryBackend.LOCAL_LORA
+        elif backend_name == ComputeBackendResult.SAAS:
+            method = config.get("method", "full")
+            if method in ("lora", "qlora"):
+                backend_name = RegistryBackend.SAAS_FINETUNE
+
+        return backend_name
+
     def stop_run(self, run_id: int) -> None:
         """Signal a running training to stop. Thread-safe.
 
@@ -524,20 +568,7 @@ class TrainingService:
         ]  # TrainingEngine.STDLIB | .TORCH
         device: str = resolved["device"]  # DeviceType.CPU | .CUDA | .MPS
 
-        # Map generic "local" to engine-qualified registry name
-        # (registry has "local-stdlib" and "local-torch", not bare "local")
-        if backend_name == ComputeBackendResult.LOCAL:
-            backend_name = f"local-{engine_name}"
-            # LoRA/QLoRA jobs must use the LoRA-specific backend
-            # (the engine is always TORCH for fine-tunes, so the
-            #  f"local-{engine}" remap would otherwise yield "local-torch")
-            method = config.get("method", "full")
-            if method in ("lora", "qlora"):
-                backend_name = RegistryBackend.LOCAL_LORA
-        elif backend_name == ComputeBackendResult.SAAS:
-            method = config.get("method", "full")
-            if method in ("lora", "qlora"):
-                backend_name = RegistryBackend.SAAS_FINETUNE
+        backend_name = self._resolve_backend_name(config, engine_name, backend_name)
 
         # Inject device into config so backends can read it
         config["device"] = device

@@ -32,7 +32,13 @@ router = APIRouter()
 # ------------------------------------------------------------------
 
 
-@router.post("/eval/perplexity")
+@router.post(
+    "/eval/perplexity",
+    responses={
+        400: {"description": "Invalid character in vocabulary"},
+        404: {"description": "Model not found"},
+    },
+)
 async def eval_perplexity(body: EvalPerplexityBody) -> dict[str, Any]:
     """Compute perplexity of a model on a given text string.
 
@@ -113,7 +119,13 @@ async def eval_perplexity(body: EvalPerplexityBody) -> dict[str, Any]:
 # ------------------------------------------------------------------
 
 
-@router.post("/eval/fine-tuned", status_code=201)
+@router.post(
+    "/eval/fine-tuned",
+    status_code=201,
+    responses={
+        400: {"description": "Missing eval-dataset name or invalid model"},
+    },
+)
 async def start_fine_tuned_eval(
     body: EvalFineTunedBody,
     workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
@@ -168,7 +180,7 @@ async def start_fine_tuned_eval(
 @router.get("/sse/eval/{run_id}")
 async def stream_eval(
     run_id: int,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> StreamingResponse:
     """SSE stream for evaluation progress.
 
@@ -191,10 +203,15 @@ async def stream_eval(
     )
 
 
-@router.get("/eval/fine-tuned/{run_id}")
+@router.get(
+    "/eval/fine-tuned/{run_id}",
+    responses={
+        404: {"description": "Evaluation run not found"},
+    },
+)
 async def get_evaluation_run(
     run_id: int,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> EvaluationRunResponse:
     """Fetch persisted evaluation run details.
 
@@ -255,10 +272,15 @@ async def get_evaluation_run(
     )
 
 
-@router.get("/eval/fine-tuned/{run_id}/samples")
+@router.get(
+    "/eval/fine-tuned/{run_id}/samples",
+    responses={
+        404: {"description": "Evaluation run not found"},
+    },
+)
 async def get_evaluation_samples(
     run_id: int,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> list[EvalSampleResponse]:
     """Fetch per-prompt sample outputs for an evaluation run.
 
@@ -299,11 +321,11 @@ async def get_evaluation_samples(
 
 @router.get("/eval/fine-tuned")
 async def list_evaluation_runs(
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
     model_id: int | None = None,
     status: str | None = None,
     limit: int = 20,
     offset: int = 0,
-    workbench: AnvilWorkbench = Depends(get_workbench),
 ) -> EvaluationRunListResponse:
     """List evaluation runs with optional filters.
 

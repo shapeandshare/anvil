@@ -308,6 +308,18 @@ async def test_start_round_rejects_qlora(teaching_service, mock_repo):
 
 
 ########################################################################
+# _count_rounds
+########################################################################
+
+
+def test_count_rounds_always_returns_one(teaching_service):
+    """Characterization test: _count_rounds currently returns 1 for any input."""
+    assert teaching_service._count_rounds(1) == 1
+    assert teaching_service._count_rounds(999) == 1
+    assert teaching_service._count_rounds(0) == 1
+
+
+########################################################################
 # Round inspection, comparison, rollback
 ########################################################################
 

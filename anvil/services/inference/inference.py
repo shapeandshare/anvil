@@ -491,7 +491,7 @@ class InferenceService:
                                 model_id, adapter_id
                             ),
                         )
-            except (ConnectionError, OSError, LookupError) as mlf_err:
+            except (ConnectionError, OSError) as mlf_err:
                 logger.warning("MLflow lookup failed: %s", mlf_err)
 
         # ── External model resolution (spec 063) ──────────────────────────

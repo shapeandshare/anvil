@@ -1319,7 +1319,7 @@ var gpuToggle = document.getElementById('compute_backend');
   /* ── Start error handler (extracted for cognitive complexity) ── */
   async function _handleStartError(resp, method) {
     var errData = {};
-    try { errData = await resp.json(); } catch (_) { /* Ignore JSON parse errors — errData stays {} */ }
+    try { errData = await resp.json(); } catch (_) { errData = {}; }
     // detail may be a string, a dict (structured error), or a list (Pydantic validation errors)
     var detail = errData.detail;
     if (detail && typeof detail !== 'string') {

@@ -1111,3 +1111,157 @@ class TestTasks:
         assert 3 not in svc.tasks
         if not task.done():
             task.cancel()
+
+
+########################################################################
+# LogDatasetMetadata — characterization tests
+########################################################################
+
+
+class TestLogDatasetMetadata:
+    """Characterization tests for TrainingRunService._log_dataset_metadata().
+
+    Captures current behavior before refactoring. These tests validate
+    the dispatch logic across dataset_id, corpus_id, and
+    content_version_id branches.
+    """
+
+    @pytest.mark.asyncio
+    async def test_skips_when_mlflow_run_id_is_none(self) -> None:
+        """Does nothing when mlflow_run_id is None."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            run_svc = _make_training_run_svc(tmpdir)
+            # Should not raise
+            await run_svc._log_dataset_metadata(
+                mlflow_run_id=None,
+                dataset_id=1,
+                corpus_id=None,
+                content_version_id=None,
+            )
+
+    @pytest.mark.asyncio
+    async def test_skips_when_all_ids_are_none(self) -> None:
+        """Does nothing when all source IDs are None."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            run_svc = _make_training_run_svc(tmpdir)
+            await run_svc._log_dataset_metadata(
+                mlflow_run_id="mlflow_1",
+                dataset_id=None,
+                corpus_id=None,
+                content_version_id=None,
+            )
+
+    @pytest.mark.asyncio
+    async def test_logs_dataset_input_when_dataset_id_provided(self) -> None:
+        """Logs dataset input when dataset_id is given."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            run_svc = _make_training_run_svc(tmpdir)
+            run_svc._tracking.log_dataset_input = AsyncMock(return_value="digest_abc")
+            run_svc._tracking.log_corpus_input = AsyncMock()
+
+            await run_svc._log_dataset_metadata(
+                mlflow_run_id="mlflow_1",
+                dataset_id=1,
+                corpus_id=None,
+                content_version_id=None,
+            )
+
+            run_svc._tracking.log_dataset_input.assert_called_once()
+            run_svc._tracking.log_corpus_input.assert_not_called()
+            run_svc._tracking.set_tag.assert_any_call(
+                "mlflow_1", "anvil.input_digest", "digest_abc"
+            )
+
+    @pytest.mark.asyncio
+    async def test_logs_corpus_input_when_corpus_id_provided(self) -> None:
+        """Logs corpus input when corpus_id is given (no dataset_id)."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            run_svc = _make_training_run_svc(tmpdir)
+            run_svc._tracking.log_corpus_input = AsyncMock(return_value="digest_corp")
+            run_svc._tracking.log_dataset_input = AsyncMock()
+
+            await run_svc._log_dataset_metadata(
+                mlflow_run_id="mlflow_1",
+                dataset_id=None,
+                corpus_id=5,
+                content_version_id=None,
+            )
+
+            run_svc._tracking.log_corpus_input.assert_called_once()
+            run_svc._tracking.log_dataset_input.assert_not_called()
+            run_svc._tracking.set_tag.assert_any_call(
+                "mlflow_1", "anvil.input_digest", "digest_corp"
+            )
+
+    @pytest.mark.asyncio
+    async def test_handles_dataset_input_exception_gracefully(self) -> None:
+        """Does not propagate exceptions from log_dataset_input."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            run_svc = _make_training_run_svc(tmpdir)
+            run_svc._tracking.log_dataset_input = AsyncMock(
+                side_effect=ValueError("MLflow error")
+            )
+
+            await run_svc._log_dataset_metadata(
+                mlflow_run_id="mlflow_1",
+                dataset_id=1,
+                corpus_id=None,
+                content_version_id=None,
+            )
+
+            # Should not raise
+
+    @pytest.mark.asyncio
+    async def test_handles_corpus_input_exception_gracefully(self) -> None:
+        """Does not propagate exceptions from log_corpus_input."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            run_svc = _make_training_run_svc(tmpdir)
+            run_svc._tracking.log_corpus_input = AsyncMock(
+                side_effect=ValueError("MLflow error")
+            )
+
+            await run_svc._log_dataset_metadata(
+                mlflow_run_id="mlflow_1",
+                dataset_id=None,
+                corpus_id=5,
+                content_version_id=None,
+            )
+
+            # Should not raise
+
+
+########################################################################
+# OnComplete — dispatch characterization
+########################################################################
+
+
+class TestOnCompleteDispatch:
+    """Characterization tests capturing dispatch behavior of
+    _on_complete before refactoring.
+    """
+
+    @pytest.mark.asyncio
+    async def test_on_complete_skips_model_artifacts_when_model_none(self) -> None:
+        """Does not save model artifacts when model is None."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            run_svc = _make_training_run_svc(tmpdir)
+
+            result = MagicMock()
+            result.final_loss = 0.05
+            result.samples = []
+            result.uchars = []
+            result.model = None
+            result.adapter_id = None
+
+            await run_svc._on_complete(
+                result=result,
+                config_dict={},
+                mlflow_run_id="mlflow_1",
+                experiment_id=99,
+                dataset_id=None,
+                corpus_id=None,
+                mps_thread=None,
+                run_id=42,
+            )
+
+            run_svc._tracking.finish_run.assert_called_once_with("mlflow_1")

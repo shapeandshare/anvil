@@ -31,6 +31,8 @@ from .training_run_config import TrainingRunConfig
 
 logger = logging.getLogger(__name__)
 
+TAG_ANVIL_STATUS = "anvil.status"
+
 
 class TrainingRunService:
     """Owns the full training lifecycle — validation through model persistence.
@@ -227,7 +229,7 @@ class TrainingRunService:
                 if mlflow_run_id:
                     await self._tracking.fail_run(mlflow_run_id, _reason=str(exc))
                     await self._tracking.set_tag(
-                        mlflow_run_id, "anvil.status", "failed"
+                        mlflow_run_id, TAG_ANVIL_STATUS, "failed"
                     )
                     await self._tracking.set_tag(mlflow_run_id, "anvil.error", str(exc))
                 if mps_thread is not None:
@@ -568,7 +570,7 @@ class TrainingRunService:
                 "anvil.experiment_id",
                 str(experiment_id),
             )
-            await self._tracking.set_tag(mlflow_run_id, "anvil.status", "running")
+            await self._tracking.set_tag(mlflow_run_id, TAG_ANVIL_STATUS, "running")
 
         return mlflow_run_id, experiment_id
 
@@ -596,20 +598,8 @@ class TrainingRunService:
         content_version_id : int | None
             Optional content version ID.
         """
-        from ...db.repositories.content_versions import (  # import-placement:allow — inherited route pattern
-            ContentVersionRepository,
-        )
-        from ...db.repositories.corpora import (  # import-placement:allow — inherited route pattern
-            CorpusRepository,
-        )
-        from ...db.repositories.datasets import (  # import-placement:allow — inherited route pattern
-            DatasetRepository,
-        )
         from ...db.session import (  # import-placement:allow — inherited route pattern
             AsyncSessionLocal,
-        )
-        from ...services.content.lineage_service import (  # import-placement:allow — inherited route pattern
-            LineageService,
         )
 
         input_digest: str | None = None
@@ -630,7 +620,6 @@ class TrainingRunService:
                         mlflow_run_id,
                         exc_info=True,
                     )
-                    pass
         elif mlflow_run_id and corpus_id:
             async with AsyncSessionLocal() as sess:
                 try:
@@ -646,7 +635,6 @@ class TrainingRunService:
                         mlflow_run_id,
                         exc_info=True,
                     )
-                    pass
 
         if mlflow_run_id and input_digest:
             await self._tracking.set_tag(
@@ -662,138 +650,207 @@ class TrainingRunService:
 
         if mlflow_run_id and dataset_id:
             async with AsyncSessionLocal() as sess:
-                try:
-                    ds_repo = DatasetRepository(sess)
-                    ds = await ds_repo.get(dataset_id)
-                    if ds:
-                        await self._tracking.set_tag(
-                            mlflow_run_id,
-                            "anvil.dataset.name",
-                            ds.name,
-                        )
-                        await self._tracking.set_tag(
-                            mlflow_run_id,
-                            "anvil.dataset.vocab_size",
-                            str(ds.vocabulary_size or ""),
-                        )
-                        await self._tracking.set_tag(
-                            mlflow_run_id,
-                            "anvil.dataset.sample_count",
-                            str(ds.sample_count or 0),
-                        )
-                        await self._tracking.set_tag(
-                            mlflow_run_id,
-                            "anvil.dataset.document_count",
-                            str(ds.document_count or 0),
-                        )
-                        await self._tracking.set_tag(
-                            mlflow_run_id,
-                            "anvil.dataset.curation_version",
-                            str(ds.curation_version or 0),
-                        )
-                except Exception:  # pylint: disable=broad-exception-caught
-                    logger.warning(
-                        "Failed to set dataset tags on MLflow run %s",
-                        mlflow_run_id,
-                        exc_info=True,
-                    )
-                    pass
+                await self._log_dataset_tags(mlflow_run_id, dataset_id, sess)
         elif mlflow_run_id and corpus_id:
             async with AsyncSessionLocal() as sess:
-                try:
-                    corp_repo = CorpusRepository(sess)
-                    corpus = await corp_repo.get(corpus_id)
-                    if corpus:
-                        await self._tracking.set_tag(
-                            mlflow_run_id,
-                            "anvil.dataset.name",
-                            corpus.name,
-                        )
-                        await self._tracking.set_tag(
-                            mlflow_run_id,
-                            "anvil.corpus.file_count",
-                            str(corpus.file_count or 0),
-                        )
-                        await self._tracking.set_tag(
-                            mlflow_run_id,
-                            "anvil.corpus.document_count",
-                            str(corpus.document_count or 0),
-                        )
-                        if corpus.language_map:
-                            await self._tracking.set_tag(
-                                mlflow_run_id,
-                                "anvil.corpus.language_map",
-                                corpus.language_map,
-                            )
-                except Exception:  # pylint: disable=broad-exception-caught
-                    logger.warning(
-                        "Failed to set corpus tags on MLflow run %s",
-                        mlflow_run_id,
-                        exc_info=True,
-                    )
-                    pass
+                await self._log_corpus_tags(mlflow_run_id, corpus_id, sess)
 
         if mlflow_run_id and content_version_id is not None:
             async with AsyncSessionLocal() as sess:
-                try:
-                    ver_repo = ContentVersionRepository(sess)
-                    version = await ver_repo.get(int(content_version_id))
-                    if version:
-                        await self._tracking.set_tag(
-                            mlflow_run_id,
-                            "anvil.content_version_id",
-                            str(content_version_id),
-                        )
-                        await self._tracking.set_tag(
-                            mlflow_run_id,
-                            "anvil.content_manifest_digest",
-                            version.manifest_digest,
-                        )
+                await self._log_content_version_tags(
+                    mlflow_run_id, content_version_id, sess
+                )
 
-                        client = self._tracking._client
-                        if client:
+    async def _log_dataset_tags(
+        self,
+        mlflow_run_id: str,
+        dataset_id: int,
+        session: Any,
+    ) -> None:
+        """Log dataset-specific MLflow tags.
 
-                            def _log_manifest() -> None:
-                                with tempfile.NamedTemporaryFile(
-                                    mode="w",
-                                    suffix=".json",
-                                    delete=False,
-                                ) as f:
-                                    json.dump(
-                                        {
-                                            "version_id": version.id,
-                                            "version_number": (version.version_number),
-                                            "manifest_digest": (
-                                                version.manifest_digest
-                                            ),
-                                            "label": version.label,
-                                            "entry_count": (version.entry_count),
-                                            "total_bytes": (version.total_bytes),
-                                        },
-                                        f,
-                                    )
-                                    fpath = f.name
-                                client.log_artifact(mlflow_run_id, fpath)
-                                os.unlink(fpath)
+        Parameters
+        ----------
+        mlflow_run_id : str
+            MLflow run ID.
+        dataset_id : int
+            Dataset ID.
+        session : Any
+            Database session.
+        """
+        from ...db.repositories.datasets import (  # import-placement:allow — inherited route pattern
+            DatasetRepository,
+        )
 
-                            await asyncio.get_event_loop().run_in_executor(
-                                None,
-                                _log_manifest,
-                            )
+        try:
+            ds_repo = DatasetRepository(session)
+            ds = await ds_repo.get(dataset_id)
+            if ds:
+                await self._tracking.set_tag(
+                    mlflow_run_id,
+                    "anvil.dataset.name",
+                    ds.name,
+                )
+                await self._tracking.set_tag(
+                    mlflow_run_id,
+                    "anvil.dataset.vocab_size",
+                    str(ds.vocabulary_size or ""),
+                )
+                await self._tracking.set_tag(
+                    mlflow_run_id,
+                    "anvil.dataset.sample_count",
+                    str(ds.sample_count or 0),
+                )
+                await self._tracking.set_tag(
+                    mlflow_run_id,
+                    "anvil.dataset.document_count",
+                    str(ds.document_count or 0),
+                )
+                await self._tracking.set_tag(
+                    mlflow_run_id,
+                    "anvil.dataset.curation_version",
+                    str(ds.curation_version or 0),
+                )
+        except Exception:  # pylint: disable=broad-exception-caught
+            logger.warning(
+                "Failed to set dataset tags on MLflow run %s",
+                mlflow_run_id,
+                exc_info=True,
+            )
 
-                        lineage = LineageService(ver_repo)
-                        await lineage.record_run_ref(
-                            version_id=version.id,
-                            mlflow_run_id=mlflow_run_id,
-                            corpus_ref=f"corpus:{version.corpus_id}",
-                        )
-                        await sess.commit()
-                except Exception:  # pylint: disable=broad-exception-caught
-                    logger.exception(
-                        "Failed to record lineage for run %s",
+    async def _log_corpus_tags(
+        self,
+        mlflow_run_id: str,
+        corpus_id: int,
+        session: Any,
+    ) -> None:
+        """Log corpus-specific MLflow tags.
+
+        Parameters
+        ----------
+        mlflow_run_id : str
+            MLflow run ID.
+        corpus_id : int
+            Corpus ID.
+        session : Any
+            Database session.
+        """
+        from ...db.repositories.corpora import (  # import-placement:allow — inherited route pattern
+            CorpusRepository,
+        )
+
+        try:
+            corp_repo = CorpusRepository(session)
+            corpus = await corp_repo.get(corpus_id)
+            if corpus:
+                await self._tracking.set_tag(
+                    mlflow_run_id,
+                    "anvil.dataset.name",
+                    corpus.name,
+                )
+                await self._tracking.set_tag(
+                    mlflow_run_id,
+                    "anvil.corpus.file_count",
+                    str(corpus.file_count or 0),
+                )
+                await self._tracking.set_tag(
+                    mlflow_run_id,
+                    "anvil.corpus.document_count",
+                    str(corpus.document_count or 0),
+                )
+                if corpus.language_map:
+                    await self._tracking.set_tag(
                         mlflow_run_id,
+                        "anvil.corpus.language_map",
+                        corpus.language_map,
                     )
-                    pass
+        except Exception:  # pylint: disable=broad-exception-caught
+            logger.warning(
+                "Failed to set corpus tags on MLflow run %s",
+                mlflow_run_id,
+                exc_info=True,
+            )
+
+    async def _log_content_version_tags(
+        self,
+        mlflow_run_id: str,
+        content_version_id: int,
+        session: Any,
+    ) -> None:
+        """Log content-version MLflow tags and lineage.
+
+        Parameters
+        ----------
+        mlflow_run_id : str
+            MLflow run ID.
+        content_version_id : int
+            Content version ID.
+        session : Any
+            Database session.
+        """
+        from ...db.repositories.content_versions import (  # import-placement:allow — inherited route pattern
+            ContentVersionRepository,
+        )
+        from ...services.content.lineage_service import (  # import-placement:allow — inherited route pattern
+            LineageService,
+        )
+
+        try:
+            ver_repo = ContentVersionRepository(session)
+            version = await ver_repo.get(int(content_version_id))
+            if version:
+                await self._tracking.set_tag(
+                    mlflow_run_id,
+                    "anvil.content_version_id",
+                    str(content_version_id),
+                )
+                await self._tracking.set_tag(
+                    mlflow_run_id,
+                    "anvil.content_manifest_digest",
+                    version.manifest_digest,
+                )
+
+                client = self._tracking._client
+                if client:
+
+                    def _log_manifest() -> None:
+                        with tempfile.NamedTemporaryFile(
+                            mode="w",
+                            suffix=".json",
+                            delete=False,
+                        ) as f:
+                            json.dump(
+                                {
+                                    "version_id": version.id,
+                                    "version_number": (version.version_number),
+                                    "manifest_digest": (version.manifest_digest),
+                                    "label": version.label,
+                                    "entry_count": (version.entry_count),
+                                    "total_bytes": (version.total_bytes),
+                                },
+                                f,
+                            )
+                            fpath = f.name
+                        client.log_artifact(mlflow_run_id, fpath)
+                        os.unlink(fpath)
+
+                    await asyncio.get_event_loop().run_in_executor(
+                        None,
+                        _log_manifest,
+                    )
+
+                lineage = LineageService(ver_repo)
+                await lineage.record_run_ref(
+                    version_id=version.id,
+                    mlflow_run_id=mlflow_run_id,
+                    corpus_ref=f"corpus:{version.corpus_id}",
+                )
+                await session.commit()
+        except Exception:  # pylint: disable=broad-exception-caught
+            logger.exception(
+                "Failed to record lineage for run %s",
+                mlflow_run_id,
+            )
 
     ########################################################################
     # Training completion handler
@@ -833,16 +890,6 @@ class TrainingRunService:
         run_id : int
             Local run ID (for queue access).
         """
-        from ...db.repositories.corpora import (  # import-placement:allow — inherited route pattern
-            CorpusRepository,
-        )
-        from ...db.repositories.datasets import (  # import-placement:allow — inherited route pattern
-            DatasetRepository,
-        )
-        from ...db.session import (  # import-placement:allow — inherited route pattern
-            AsyncSessionLocal,
-        )
-
         final_loss = result.final_loss or 0.0
         samples = result.samples
         uchars = result.uchars
@@ -856,154 +903,20 @@ class TrainingRunService:
             await self._tracking.set_tag(
                 mlflow_run_id, "architectures", "LlamaForCausalLM"
             )
-
-            if config_dict.get("base_model_ref") is not None:
-                await self._tracking.set_tag(mlflow_run_id, "anvil.warm_start", "true")
-                await self._tracking.set_tag(
-                    mlflow_run_id,
-                    "anvil.base_model_ref",
-                    str(config_dict["base_model_ref"]),
-                )
-                specialization_corpus = "unknown"
-                if dataset_id is not None:
-                    async with AsyncSessionLocal() as sess:
-                        ds_repo = DatasetRepository(sess)
-                        ds = await ds_repo.get(dataset_id)
-                        if ds:
-                            specialization_corpus = ds.name
-                elif corpus_id is not None:
-                    async with AsyncSessionLocal() as sess:
-                        corp_repo = CorpusRepository(sess)
-                        corpus = await corp_repo.get(corpus_id)
-                        if corpus:
-                            specialization_corpus = corpus.name
-                await self._tracking.set_tag(
-                    mlflow_run_id,
-                    "anvil.specialization_corpus",
-                    specialization_corpus,
-                )
+            await self._set_warm_start_tags(
+                mlflow_run_id, config_dict, dataset_id, corpus_id
+            )
 
         if model is not None:
             with tempfile.TemporaryDirectory() as tmpdir:
-                samples_path = os.path.join(tmpdir, "samples.txt")
-                loop = asyncio.get_event_loop()
-
-                def _write_samples() -> None:
-                    with open(samples_path, "w", encoding="utf-8") as f:
-                        f.write("\n".join(samples))
-
-                await loop.run_in_executor(None, _write_samples)
-                if mlflow_run_id:
-                    try:
-                        c = self._tracking._client
-                        if c:
-                            loop = asyncio.get_event_loop()
-                            await loop.run_in_executor(
-                                None,
-                                lambda c=c: c.log_artifact(  # type: ignore[misc]
-                                    mlflow_run_id, samples_path
-                                ),
-                            )
-                    except Exception:  # pylint: disable=broad-exception-caught
-                        logger.warning(
-                            "Failed to log samples artifact to MLflow run %s",
-                            mlflow_run_id,
-                            exc_info=True,
-                        )
-                        pass
-
-                model_path = os.path.join(tmpdir, "model.json")
-                model.save(model_path, uchars)  # type: ignore[attr-defined]
-                if mlflow_run_id:
-                    try:
-                        c = self._tracking._client
-                        if c:
-                            loop = asyncio.get_event_loop()
-                            await loop.run_in_executor(
-                                None,
-                                lambda c=c: c.log_artifact(  # type: ignore[misc]
-                                    mlflow_run_id, model_path
-                                ),
-                            )
-                    except Exception:  # pylint: disable=broad-exception-caught
-                        logger.warning(
-                            "Failed to log model artifact to MLflow run %s",
-                            mlflow_run_id,
-                            exc_info=True,
-                        )
-                        pass
-
-                export_svc = SafetensorsExportService()
-                export_result = await asyncio.get_event_loop().run_in_executor(
-                    None,
-                    lambda: export_svc.export(model, tmpdir, uchars),  # type: ignore[arg-type]
+                await self._log_samples_artifact(mlflow_run_id, samples, tmpdir)
+                await self._log_model_artifact(mlflow_run_id, model, tmpdir, uchars)
+                await self._log_safetensors(
+                    mlflow_run_id, model, tmpdir, uchars, run_id
                 )
 
-                if export_result["error"]:
-                    logger.warning(
-                        "Safetensors export failed: %s",
-                        export_result["error"],
-                    )
-                    queue = self._svc.get_queue(run_id)
-                    if queue:
-                        await queue.put(
-                            {
-                                "event": "export_error",
-                                "data": json.dumps({"error": export_result["error"]}),
-                            }
-                        )
-                else:
-                    if mlflow_run_id and export_result["safetensors_path"]:
-                        try:
-                            client = self._tracking._client
-                            if client:
-                                loop = asyncio.get_event_loop()
-                                await loop.run_in_executor(
-                                    None,
-                                    lambda: client.log_artifact(
-                                        mlflow_run_id,
-                                        export_result["safetensors_path"],
-                                    ),
-                                )
-                                if export_result["config_path"]:
-                                    await loop.run_in_executor(
-                                        None,
-                                        lambda: client.log_artifact(
-                                            mlflow_run_id,
-                                            export_result["config_path"],
-                                        ),
-                                    )
-                                if export_result["tokenizer_path"]:
-                                    await loop.run_in_executor(
-                                        None,
-                                        lambda: client.log_artifact(
-                                            mlflow_run_id,
-                                            export_result["tokenizer_path"],
-                                        ),
-                                    )
-                                if export_result.get("mlmodel_path"):
-                                    await loop.run_in_executor(
-                                        None,
-                                        lambda: client.log_artifact(
-                                            mlflow_run_id,
-                                            export_result["mlmodel_path"],
-                                        ),
-                                    )
-                                if export_result.get("conda_path"):
-                                    await loop.run_in_executor(
-                                        None,
-                                        lambda: client.log_artifact(
-                                            mlflow_run_id,
-                                            export_result["conda_path"],
-                                        ),
-                                    )
-                        except Exception:  # pylint: disable=broad-exception-caught
-                            logger.exception(
-                                "Failed to log safetensors artifacts to" " MLflow"
-                            )
-
         if mlflow_run_id:
-            await self._tracking.set_tag(mlflow_run_id, "anvil.status", "finished")
+            await self._tracking.set_tag(mlflow_run_id, TAG_ANVIL_STATUS, "finished")
             await self._tracking.set_tag(
                 mlflow_run_id,
                 "anvil.final_loss",
@@ -1019,11 +932,260 @@ class TrainingRunService:
         if mps_thread is not None:
             mps_thread.stop()
 
-        # ── Adapter persistence (047) ────────────────────────────────
+        await self._persist_adapter(result, config_dict, run_id)
+        await self._register_model(mlflow_run_id, dataset_id, corpus_id, experiment_id)
+
+    async def _set_warm_start_tags(
+        self,
+        mlflow_run_id: str,
+        config_dict: dict[str, Any],
+        dataset_id: int | None,
+        corpus_id: int | None,
+    ) -> None:
+        """Set MLflow tags for warm-start lineage.
+
+        Parameters
+        ----------
+        mlflow_run_id : str
+            MLflow run ID.
+        config_dict : dict
+            Training configuration dict.
+        dataset_id : int or None
+            Dataset ID used for training.
+        corpus_id : int or None
+            Corpus ID used for training.
+        """
+        from ...db.repositories.corpora import (  # import-placement:allow — inherited route pattern
+            CorpusRepository,
+        )
+        from ...db.repositories.datasets import (  # import-placement:allow — inherited route pattern
+            DatasetRepository,
+        )
+        from ...db.session import (  # import-placement:allow — inherited route pattern
+            AsyncSessionLocal,
+        )
+
+        if config_dict.get("base_model_ref") is not None:
+            await self._tracking.set_tag(mlflow_run_id, "anvil.warm_start", "true")
+            await self._tracking.set_tag(
+                mlflow_run_id,
+                "anvil.base_model_ref",
+                str(config_dict["base_model_ref"]),
+            )
+            specialization_corpus = "unknown"
+            if dataset_id is not None:
+                async with AsyncSessionLocal() as sess:
+                    ds_repo = DatasetRepository(sess)
+                    ds = await ds_repo.get(dataset_id)
+                    if ds:
+                        specialization_corpus = ds.name
+            elif corpus_id is not None:
+                async with AsyncSessionLocal() as sess:
+                    corp_repo = CorpusRepository(sess)
+                    corpus = await corp_repo.get(corpus_id)
+                    if corpus:
+                        specialization_corpus = corpus.name
+            await self._tracking.set_tag(
+                mlflow_run_id,
+                "anvil.specialization_corpus",
+                specialization_corpus,
+            )
+
+    async def _log_samples_artifact(
+        self,
+        mlflow_run_id: str | None,
+        samples: list[str],
+        tmpdir: str,
+    ) -> None:
+        """Write samples to a temp file and log as an MLflow artifact.
+
+        Parameters
+        ----------
+        mlflow_run_id : str or None
+            MLflow run ID.
+        samples : list of str
+            Generated sample strings.
+        tmpdir : str
+            Temporary directory path.
+        """
+        samples_path = os.path.join(tmpdir, "samples.txt")
+        loop = asyncio.get_event_loop()
+
+        def _write_samples() -> None:
+            with open(samples_path, "w", encoding="utf-8") as f:
+                f.write("\n".join(samples))
+
+        await loop.run_in_executor(None, _write_samples)
+        if mlflow_run_id:
+            try:
+                c = self._tracking._client
+                if c:
+                    loop = asyncio.get_event_loop()
+                    await loop.run_in_executor(
+                        None,
+                        lambda c=c: c.log_artifact(  # type: ignore[misc]
+                            mlflow_run_id, samples_path
+                        ),
+                    )
+            except Exception:  # pylint: disable=broad-exception-caught
+                logger.warning(
+                    "Failed to log samples artifact to MLflow run %s",
+                    mlflow_run_id,
+                    exc_info=True,
+                )
+
+    async def _log_model_artifact(
+        self,
+        mlflow_run_id: str | None,
+        model: Any,
+        tmpdir: str,
+        uchars: list[str],
+    ) -> None:
+        """Save model to a temp file and log as an MLflow artifact.
+
+        Parameters
+        ----------
+        mlflow_run_id : str or None
+            MLflow run ID.
+        model : Any
+            The trained model with a ``save()`` method.
+        tmpdir : str
+            Temporary directory path.
+        uchars : list of str
+            Unique characters used for tokenization.
+        """
+        model_path = os.path.join(tmpdir, "model.json")
+        model.save(model_path, uchars)
+        if mlflow_run_id:
+            try:
+                c = self._tracking._client
+                if c:
+                    loop = asyncio.get_event_loop()
+                    await loop.run_in_executor(
+                        None,
+                        lambda c=c: c.log_artifact(  # type: ignore[misc]
+                            mlflow_run_id, model_path
+                        ),
+                    )
+            except Exception:  # pylint: disable=broad-exception-caught
+                logger.warning(
+                    "Failed to log model artifact to MLflow run %s",
+                    mlflow_run_id,
+                    exc_info=True,
+                )
+
+    async def _log_safetensors(
+        self,
+        mlflow_run_id: str | None,
+        model: Any,
+        tmpdir: str,
+        uchars: list[str],
+        run_id: int,
+    ) -> None:
+        """Export model to safetensors format and log artifacts to MLflow.
+
+        Parameters
+        ----------
+        mlflow_run_id : str or None
+            MLflow run ID.
+        model : Any
+            The trained model.
+        tmpdir : str
+            Temporary directory path.
+        uchars : list of str
+            Unique characters used for tokenization.
+        run_id : int
+            Local run ID (for queue access).
+        """
+        export_svc = SafetensorsExportService()
+        export_result = await asyncio.get_event_loop().run_in_executor(
+            None,
+            lambda: export_svc.export(model, tmpdir, uchars),
+        )
+
+        if export_result["error"]:
+            logger.warning(
+                "Safetensors export failed: %s",
+                export_result["error"],
+            )
+            queue = self._svc.get_queue(run_id)
+            if queue:
+                await queue.put(
+                    {
+                        "event": "export_error",
+                        "data": json.dumps({"error": export_result["error"]}),
+                    }
+                )
+        else:
+            if mlflow_run_id and export_result["safetensors_path"]:
+                try:
+                    client = self._tracking._client
+                    if client:
+                        loop = asyncio.get_event_loop()
+                        await loop.run_in_executor(
+                            None,
+                            lambda: client.log_artifact(
+                                mlflow_run_id,
+                                export_result["safetensors_path"],
+                            ),
+                        )
+                        if export_result["config_path"]:
+                            await loop.run_in_executor(
+                                None,
+                                lambda: client.log_artifact(
+                                    mlflow_run_id,
+                                    export_result["config_path"],
+                                ),
+                            )
+                        if export_result["tokenizer_path"]:
+                            await loop.run_in_executor(
+                                None,
+                                lambda: client.log_artifact(
+                                    mlflow_run_id,
+                                    export_result["tokenizer_path"],
+                                ),
+                            )
+                        if export_result.get("mlmodel_path"):
+                            await loop.run_in_executor(
+                                None,
+                                lambda: client.log_artifact(
+                                    mlflow_run_id,
+                                    export_result["mlmodel_path"],
+                                ),
+                            )
+                        if export_result.get("conda_path"):
+                            await loop.run_in_executor(
+                                None,
+                                lambda: client.log_artifact(
+                                    mlflow_run_id,
+                                    export_result["conda_path"],
+                                ),
+                            )
+                except Exception:  # pylint: disable=broad-exception-caught
+                    logger.exception("Failed to log safetensors artifacts to MLflow")
+
+    async def _persist_adapter(
+        self,
+        result: ComputeResult,
+        config_dict: dict[str, Any],
+        run_id: int,
+    ) -> None:
+        """Persist LoRA/QLoRA adapter if present.
+
+        Parameters
+        ----------
+        result : ComputeResult
+            Training result with optional ``adapter_id``.
+        config_dict : dict
+            Training configuration dict.
+        run_id : int
+            Local run ID.
+        """
         if result.adapter_id is not None:
             from ...db.repositories.lora_adapter_repository import (  # import-placement:allow — cycle with adapter_persistence
                 LoRAAdapterRepository,
             )
+            from ...db.session import AsyncSessionLocal  # import-placement:allow
             from ..training.adapter_persistence import (  # import-placement:allow — cycle with lora_repo
                 AdapterPersistenceService,
             )
@@ -1033,8 +1195,37 @@ class TrainingRunService:
                 persistence = AdapterPersistenceService(repo)
                 await persistence.persist(result, config_dict, run_id=run_id)
 
-        # ── MLflow model registration ────────────────────────────────
+    async def _register_model(
+        self,
+        mlflow_run_id: str | None,
+        dataset_id: int | None,
+        corpus_id: int | None,
+        experiment_id: int,
+    ) -> None:
+        """Register the trained model with MLflow Model Registry.
+
+        Parameters
+        ----------
+        mlflow_run_id : str or None
+            MLflow run ID.
+        dataset_id : int or None
+            Dataset ID used for training.
+        corpus_id : int or None
+            Corpus ID used for training.
+        experiment_id : int
+            Numeric experiment ID.
+        """
         if mlflow_run_id:
+            from ...db.repositories.corpora import (  # import-placement:allow — inherited route pattern
+                CorpusRepository,
+            )
+            from ...db.repositories.datasets import (  # import-placement:allow — inherited route pattern
+                DatasetRepository,
+            )
+            from ...db.session import (  # import-placement:allow — inherited route pattern
+                AsyncSessionLocal,
+            )
+
             registry_name: str | None = None
             if dataset_id is not None:
                 async with AsyncSessionLocal() as sess:

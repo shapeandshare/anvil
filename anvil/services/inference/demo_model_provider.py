@@ -260,7 +260,6 @@ def warmup_demo_via_system_pipeline() -> None:
                             "Failed to log demo model artifact to MLflow",
                             exc_info=True,
                         )
-                        pass
 
                 # ── Run safetensors export & log artifacts to MLflow ──
                 export_svc = SafetensorsExportService()
@@ -341,7 +340,6 @@ def warmup_demo_via_system_pipeline() -> None:
                 logger.warning(
                     "Failed to set MLflow tags for demo warmup", exc_info=True
                 )
-                pass
 
             # ── Save to experiment-specific path for GET /experiments/{id} ──
             MODELS_DIR = Path("data/models")
