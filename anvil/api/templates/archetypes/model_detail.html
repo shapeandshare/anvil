@@ -111,7 +111,7 @@
 (function() {
   'use strict';
 
-  var modelId = {{ model_id }};
+  var modelId = {{ model_id | tojson }};
   var urlParams = new URLSearchParams(window.location.search);
 
   function escHtml(s) {
@@ -173,7 +173,7 @@
   }
 
   function pollDownloadStatus(jobId) {
-    fetch('/v1/models/' + modelId + '/download/' + jobId + '/status').then(function(r) {
+    fetch('/v1/models/' + encodeURIComponent(modelId) + '/download/' + jobId + '/status').then(function(r) {
       if (!r.ok) throw new Error('Poll failed');
       return r.json();
     }).then(function(status) {
@@ -202,7 +202,7 @@
     var btn = document.getElementById('md-download-btn');
     btn.disabled = true;
     btn.textContent = 'starting...';
-    window.apiFetch('/v1/models/' + modelId + '/download', { method: 'POST' }).then(function(r) {
+    window.apiFetch('/v1/models/' + encodeURIComponent(modelId) + '/download', { method: 'POST' }).then(function(r) {
       if (r.status === 409) {
         return r.json().then(function(d) {
           btn.disabled = false;
@@ -237,7 +237,7 @@
   }
 
   function loadExternalModelDetail() {
-    fetch('/v1/models/external/' + modelId).then(function(r) { return r.json(); }).then(function(data) {
+    fetch('/v1/models/' + encodeURIComponent(modelId)).then(function(r) { return r.json(); }).then(function(data) {
       var loadingEl = document.getElementById('md-loading');
       var errorEl = document.getElementById('md-error');
       var bodyEl = document.getElementById('md-body');
@@ -248,36 +248,46 @@
         errorEl.textContent = 'Error: ' + data.detail;
         return;
       }
+      // Metadata lives on the latest version in the unified catalog
+      var latest = data.versions && data.versions.length > 0 ? data.versions[0] : {};
+      var displayName = data.display_name || latest.display_name || data.name;
+      var archFamily = latest.architecture_family || '\u2014';
+      var paramCount = latest.parameter_count != null ? latest.parameter_count : null;
+      var licenseVal = latest.license || '\u2014';
+      var tokenizerFamily = latest.tokenizer_family || '\u2014';
+      var runnableStatus = latest.runnable_status || data.lifecycle_state || 'unavailable';
+      var runnableReason = latest.runnable_reason || null;
+      var assetAvail = latest.asset_availability || 'metadata_only';
       loadingEl.style.display = 'none';
       bodyEl.style.display = '';
-      dom.setText(document.getElementById('md-name'), data.display_name || data.source_identifier);
+      dom.setText(document.getElementById('md-name'), displayName);
       document.getElementById('md-play-link').style.display = 'none';
       document.getElementById('md-continue-training-link').style.display = 'none';
       document.getElementById('md-versions-table').style.display = 'none';
       document.getElementById('md-avg-loss').style.display = 'none';
       document.getElementById('merge-section').style.display = 'none';
       extSection.style.display = '';
-      dom.setText(document.getElementById('md-ext-source'), data.source_type + ': ' + data.source_identifier);
-      dom.setText(document.getElementById('md-ext-arch'), data.architecture_family || '\u2014');
-      dom.setText(document.getElementById('md-ext-params'), data.parameter_count != null ? friendlyParamCount(data.parameter_count) : '\u2014');
-      dom.setText(document.getElementById('md-ext-license'), data.license || '\u2014');
-      dom.setText(document.getElementById('md-ext-tokenizer'), data.tokenizer_family || '\u2014');
+      dom.setText(document.getElementById('md-ext-source'), (data.source_type || 'external') + ': ' + (data.source_identifier || data.name));
+      dom.setText(document.getElementById('md-ext-arch'), archFamily);
+      dom.setText(document.getElementById('md-ext-params'), paramCount != null ? friendlyParamCount(paramCount) : '\u2014');
+      dom.setText(document.getElementById('md-ext-license'), licenseVal);
+      dom.setText(document.getElementById('md-ext-tokenizer'), tokenizerFamily);
       var runnableEl = document.getElementById('md-ext-runnable');
-      if (data.runnable_status === 'runnable') {
+      if (runnableStatus === 'runnable') {
         runnableEl.innerHTML = '<span class="badge badge-green">Runnable</span>';
       } else {
         runnableEl.innerHTML = '<span class="badge badge-yellow">Track Only</span>'
-          + (data.runnable_reason ? ' <span class="type-caption-2" style="color:var(--text-tertiary);">' + data.runnable_reason + '</span>' : '');
+          + (runnableReason ? ' <span class="type-caption-2" style="color:var(--text-tertiary);">' + runnableReason + '</span>' : '');
       }
       // Enable Play button when assets available + runnable (spec 063)
-      if (data.asset_availability === 'assets_available' && data.runnable_status === 'runnable') {
+      if (assetAvail === 'assets_available' && runnableStatus === 'runnable') {
         document.getElementById('md-play-link').style.display = '';
-        document.getElementById('md-play-link').href = '/v1/inference-page?model_id=' + modelId;
+        document.getElementById('md-play-link').href = '/v1/inference-page?model_id=' + encodeURIComponent(modelId);
         document.getElementById('md-continue-training-link').style.display = '';
-        document.getElementById('md-continue-training-link').href = '/v1/training-page?base_model_ref=' + modelId;
+        document.getElementById('md-continue-training-link').href = '/v1/training-page?base_model_ref=' + encodeURIComponent(modelId);
       }
       document.getElementById('md-download-btn').addEventListener('click', startDownload);
-      updateAssetUI(data.asset_availability);
+      updateAssetUI(assetAvail);
     }).catch(function(err) {
       document.getElementById('md-loading').style.display = 'none';
       var errorEl = document.getElementById('md-error');
@@ -291,7 +301,7 @@
       loadExternalModelDetail();
       return;
     }
-    fetch('/v1/registry/models/' + modelId).then(function(r) {
+    fetch('/v1/registry/models/' + encodeURIComponent(modelId)).then(function(r) {
       if (r.status === 404) {
         loadExternalModelDetail();
         return null;
@@ -324,8 +334,8 @@
         descEl.style.display = 'none';
       }
 
-      document.getElementById('md-play-link').href = '/v1/inference-page?model_id=' + modelId;
-      document.getElementById('md-continue-training-link').href = '/v1/training-page?base_model_ref=' + modelId;
+      document.getElementById('md-play-link').href = '/v1/inference-page?model_id=' + encodeURIComponent(modelId);
+      document.getElementById('md-continue-training-link').href = '/v1/training-page?base_model_ref=' + encodeURIComponent(modelId);
 
       dom.setText(document.getElementById('md-versions'), String(data.versions.length));
       dom.setText(document.getElementById('md-created'), data.created_at || '\u2014');
@@ -388,7 +398,7 @@
 
   window.deleteVersion = function(version) {
     if (!confirm('Delete version ' + version + ' of this model?')) return;
-    window.apiFetch('/v1/registry/models/' + modelId + '/versions/' + version, { method: 'DELETE' })
+    window.apiFetch('/v1/registry/models/' + encodeURIComponent(modelId) + '/versions/' + version, { method: 'DELETE' })
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data.detail) { alert('Error: ' + data.detail); }
@@ -400,7 +410,8 @@
   window.deleteModel = function() {
     if (!confirm('Delete this entire model and all versions? This cannot be undone.')) return;
     var isExternal = urlParams.get('source') === 'external';
-    var url = isExternal ? '/v1/models/external/' + modelId : '/v1/registry/models/' + modelId;
+    var nameForUrl = encodeURIComponent(modelId);
+    var url = isExternal ? '/v1/models/' + nameForUrl + '/versions/0' : '/v1/registry/models/' + nameForUrl;
     window.apiFetch(url, { method: 'DELETE' })
     .then(function(r) { return r.json(); })
     .then(function(data) {
@@ -414,7 +425,7 @@
 
   // spec 044: Load adapters for this model and show merge UI
   if (modelId) {
-    fetch('/v1/models/' + modelId + '/adapters')
+    fetch('/v1/models/' + encodeURIComponent(modelId) + '/adapters')
       .then(function(r) { return r.json(); })
       .then(function(adapters) {
         var section = document.getElementById('merge-section');
@@ -443,7 +454,7 @@
     var sel = document.getElementById('adapter-select');
     if (!sel || !sel.value) return;
     if (!confirm('Merge adapter ' + sel.value + ' into the base model? This cannot be undone.')) return;
-    fetch('/v1/models/' + modelId + '/adapters/' + sel.value + '/merge', { method: 'POST' })
+    fetch('/v1/models/' + encodeURIComponent(modelId) + '/adapters/' + sel.value + '/merge', { method: 'POST' })
       .then(function(r) { return r.json(); })
       .then(function(data) {
         alert('Adapter merged successfully: ' + data.merged_path);

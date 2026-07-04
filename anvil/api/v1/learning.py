@@ -13,7 +13,6 @@ index page), and inference/sampling endpoints. Extracted from
 
 from __future__ import annotations
 
-import asyncio
 import random
 from enum import StrEnum
 from typing import Any
@@ -2993,35 +2992,25 @@ async def models_page(request: Request) -> HTMLResponse:
 
 @router.get("/model-detail/{model_id}", response_class=HTMLResponse)
 async def model_detail_page(request: Request, model_id: str) -> HTMLResponse:
-    """Render the model detail page for a given model ID.
+    """Render the model detail page for a given model name or ID.
 
     Parameters
     ----------
     request : Request
         FastAPI request object.
     model_id : str
-        The model ID to display (parsed as integer).
+        The model identifier — a catalog model name (string) or a
+        registry integer ID.
 
     Returns
     -------
-    TemplateResponse
-        Model detail page or a 404 response for invalid IDs.
+    HTMLResponse
+        Model detail page.
     """
-    try:
-        parsed = int(model_id)
-        if parsed <= 0:
-            raise ValueError
-    except (ValueError, TypeError):
-        return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
-            request,
-            "archetypes/model_detail.html",
-            {"model_id": 0, "error": f"Invalid model ID: {model_id}"},
-            status_code=404,
-        )
     return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "archetypes/model_detail.html",
-        {"model_id": parsed},
+        {"model_id": model_id},
     )
 
 

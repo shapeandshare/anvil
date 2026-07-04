@@ -114,7 +114,7 @@ async def _collect_environment_snapshot(
     # Asset counts
     datasets = len(await workbench.dataset_repo.get_all())
     corpora = len(await workbench.corpus_repo.get_all())
-    external_models = len(await workbench.external_model_repo.get_all())
+    external_models = len(await workbench.catalog.list_entries())
     training_runs = workbench.training_runs.run_count
 
     return {

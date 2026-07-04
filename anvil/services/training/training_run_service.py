@@ -19,7 +19,6 @@ from typing import Any
 from ...gpu import GpuInfo, detect_gpu
 from .._shared.runnable_status import RunnableStatus
 from ..catalog.model_catalog_service import ModelCatalogService
-from ..catalog.model_ref import ModelRef
 from ..compute.resolve import resolve_backend
 from ..compute.result import ComputeResult
 from ..compute.training_engine import TrainingEngine

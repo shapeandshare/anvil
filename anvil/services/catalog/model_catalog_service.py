@@ -25,7 +25,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-import mlflow
 from mlflow.exceptions import MlflowException
 from mlflow.tracking import MlflowClient
 

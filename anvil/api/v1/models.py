@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Annotated, Any
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
 
 from ...db.session import AsyncSessionLocal
@@ -40,6 +40,7 @@ router = APIRouter()
 @router.get(
     "/models",
     responses={
+        400: {"description": "Invalid kind filter value"},
         503: {"description": "Model catalog unavailable"},
     },
 )
