@@ -14,9 +14,11 @@ Model IDs are resolved via convention-based naming (``dataset-<id>`` or
 
 import asyncio
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from mlflow.exceptions import MlflowException
 from mlflow.tracking import MlflowClient
 
@@ -25,6 +27,8 @@ from ...db.repositories.corpora import CorpusRepository
 from ...db.repositories.datasets import DatasetRepository
 from ...db.session import AsyncSessionLocal
 from ...services.tracking.tracking import TrackingService
+from ...workbench import AnvilWorkbench
+from ..deps import get_workbench
 from .schemas_misc import RegisterModelBody
 
 router = APIRouter()
@@ -108,24 +112,64 @@ async def register_model(
 @router.get("/registry/models")
 async def list_registered_models(
     search: str | None = Query(None),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)] = None,  # type: ignore[assignment]
 ) -> dict[str, Any]:
-    """List all registered models in the MLflow Model Registry.
+    """List registered models for the experiments UI.
+
+    Reads from the unified model catalog, filtered to trained and
+    merged models (the ``kind`` values that correspond to anvil
+    training experiments).
 
     Parameters
     ----------
     search : str | None, optional
-        Optional search query to filter registered models by name. If
-        ``None``, all registered models are returned.
+        Optional search query to filter models by name.
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
 
     Returns
     -------
     dict
-        Dictionary with a ``models`` key containing a list of registered
-        model summaries.
+        Dictionary with a ``models`` key containing model summaries.
     """
-    tracking_svc = TrackingService()
-    models = await tracking_svc.list_registered_models(search=search)
-    return {"models": models}
+    if workbench is None:
+        async with AsyncSessionLocal() as session:
+            wb = AnvilWorkbench(session)
+            return await _do_list_registry_models(wb, search)
+
+    return await _do_list_registry_models(workbench, search)
+
+
+async def _do_list_registry_models(
+    workbench: AnvilWorkbench, search: str | None
+) -> dict[str, Any]:
+    """Execute the registry model listing query."""
+    from ...services.catalog.catalog_kind import CatalogKind  # import-placement:allow
+
+    entries = await workbench.catalog.list_entries(search=search)
+    # Filter to trained + merged for the experiments UI
+    trained_merged = [
+        e for e in entries
+        if e.kind in (CatalogKind.TRAINED, CatalogKind.MERGED)
+    ]
+    return {"models": [_registry_entry_to_dict(e) for e in trained_merged]}
+
+
+def _registry_entry_to_dict(entry: Any) -> dict[str, Any]:
+    """Convert a catalog entry to a dict for the registry API response."""
+    return {
+        "name": entry.ref.name,
+        "version": entry.ref.version,
+        "kind": str(entry.kind),
+        "display_name": entry.display_name,
+        "architecture_family": entry.architecture_family,
+        "parameter_count": entry.parameter_count,
+        "final_loss": entry.final_loss,
+        "runnable_status": str(entry.runnable_status),
+        "lifecycle_state": str(entry.lifecycle_state),
+        "created_at": entry.created_at.isoformat() if entry.created_at else None,
+        "is_playable": entry.is_playable(),
+    }
 
 
 def _fmt_ts(ts: int | None) -> str | None:

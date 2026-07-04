@@ -6,7 +6,7 @@ tags:
   - domain/architecture
   - domain/governance
 created: '2026-06-10'
-updated: '2026-06-24'
+updated: '2026-07-03'
 ---
 # Architecture Decision Records — Index
 
@@ -59,6 +59,7 @@ This index lists all ADRs in this repository. ADRs document significant architec
 | ADR-043 | Warm-Start Vocabulary Inheritance and MLflow Tag Lineage | Draft | 2026-06-28 |
 | ADR-044 | At-Rest Secret Encryption — Key Ring & KMS Envelope | Draft | 2026-06-29 |
 | ADR-045 | Training Lifecycle Extraction — TrainingRunService | Draft | 2026-07-02 |
+| ADR-046 | MLflow Model Registry as Model Catalog Source of Truth | Accepted | 2026-07-03 |
 
 **Status**: Draft → Reviewed → Canonical (human-only). See `_meta/tags.md` for lifecycle.
 
@@ -109,4 +110,5 @@ This index lists all ADRs in this repository. ADRs document significant architec
 - [[Decisions/ADR-043-warm-start-vocabulary-inheritance|ADR-043-warm-start-vocabulary-inheritance]] — ADR-043: Warm-Start Vocabulary Inheritance and MLflow Tag Lineage
 - [[Decisions/ADR-044-at-rest-secret-encryption|ADR-044-at-rest-secret-encryption]] — ADR-044: At-Rest Secret Encryption — Key Ring & KMS Envelope
 - [[Decisions/ADR-045-training-lifecycle-extraction|ADR-045-training-lifecycle-extraction]] — ADR-045: Training Lifecycle Extraction — TrainingRunService for Reusable Orchestration
+- [[Decisions/ADR-046-mlflow-model-catalog-source-of-truth|ADR-046-mlflow-model-catalog-source-of-truth]] — ADR-046: MLflow Model Registry as Model Catalog Source of Truth
 - [[Decisions/ADR-template|ADR-template]]

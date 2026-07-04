@@ -82,6 +82,8 @@ class ModelImportJobRepository:
         error_code: str | None = None,
         error_message: str | None = None,
         external_model_id: int | None = None,
+        registry_model_name: str | None = None,
+        registry_model_version: int | None = None,
         started_at: datetime | None = None,
         finished_at: datetime | None = None,
     ) -> ModelImportJob | None:
@@ -99,6 +101,10 @@ class ModelImportJobRepository:
             Human-readable error detail.
         external_model_id : int | None
             FK to ``ExternalModel`` on successful completion.
+        registry_model_name : str | None
+            Catalog model name assigned by the MLflow Model Registry.
+        registry_model_version : int | None
+            Catalog model version assigned by the MLflow Model Registry.
         started_at : datetime | None
             When resolution began.
         finished_at : datetime | None
@@ -119,6 +125,10 @@ class ModelImportJobRepository:
             job.error_message = error_message
         if external_model_id is not None:
             job.external_model_id = external_model_id
+        if registry_model_name is not None:
+            job.registry_model_name = registry_model_name
+        if registry_model_version is not None:
+            job.registry_model_version = registry_model_version
         if started_at is not None:
             job.started_at = started_at
         if finished_at is not None:

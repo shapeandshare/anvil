@@ -36,6 +36,7 @@ from ..demo.demo_bootstrap import DemoBootstrapService
 from ..tracking.tracking import TrackingService
 from ..training.export import SafetensorsExportService
 from ..training.training import TrainingService
+from ..catalog.model_catalog_service import ModelCatalogService
 
 DEMO_MODEL_PATH = Path("data/models/demo/model.json")
 """:py:class:`~pathlib.Path`: Filesystem path to the demo model checkpoint."""
@@ -218,9 +219,22 @@ def warmup_demo_via_system_pipeline() -> None:
                 await tracking_svc.set_tag(
                     mlflow_run_id, "architectures", "LlamaForCausalLM"
                 )
-                await tracking_svc.register_source_model(
+                reg_result = await tracking_svc.register_source_model(
                     run_id=mlflow_run_id, name="demo"
                 )
+                # Enrich the demo model version with catalog tags so it
+                # appears in the unified listing (US1).
+                try:
+                    catalog = ModelCatalogService()
+                    await catalog.register_tags_for_trained(
+                        catalog_name=reg_result.get("name", "demo"),
+                        version=int(reg_result.get("version", 1)),
+                        final_loss=result.final_loss,
+                        architecture_family="LlamaForCausalLM",
+                        tokenizer_family="char",
+                    )
+                except Exception:
+                    logger.warning("Failed to set demo catalog tags", exc_info=True)
 
             # ── Log samples artifact and model artifact (parallels user training on_complete) ──
             samples = result.samples

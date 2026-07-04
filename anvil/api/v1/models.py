@@ -9,14 +9,16 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Annotated
+from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import update
 
-from ...db.models.evaluation_run import EvaluationRun
 from ...db.session import AsyncSessionLocal
+from ...services.catalog.catalog_entry import CatalogEntry
+from ...services.catalog.catalog_kind import CatalogKind
+from ...services.catalog.catalog_unavailable_error import CatalogUnavailableError
+from ...services.catalog.model_ref import ModelRef
 from ...services.model_import.model_asset_service import (
     DuplicateDownloadError,
     ModelAssetAlreadyAvailableError,
@@ -28,6 +30,174 @@ from ..deps import get_workbench
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+####################################################################
+# Unified catalog listing (US1)
+####################################################################
+
+
+@router.get(
+    "/models",
+    responses={
+        503: {"description": "Model catalog unavailable"},
+    },
+)
+async def list_models(
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
+    kind: str | None = None,
+    runnable_only: bool = False,
+    include_archived: bool = False,
+    search: str | None = None,
+) -> dict[str, object]:
+    """Unified model catalog listing.
+
+    Returns one entry per latest active version of each logical model.
+    """
+    try:
+        return await _do_list_models(workbench, kind, runnable_only, include_archived, search)
+    except CatalogUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+async def _do_list_models(
+    workbench: AnvilWorkbench,
+    kind: str | None,
+    runnable_only: bool,
+    include_archived: bool,
+    search: str | None,
+) -> dict[str, object]:
+    """Execute unified listing query against the catalog."""
+    kind_filter: CatalogKind | None = None
+    if kind is not None:
+        try:
+            kind_filter = CatalogKind(kind)
+        except ValueError:
+            raise HTTPException(
+                status_code=400, detail=f"Invalid kind: {kind!r}"
+            ) from None
+
+    entries = await workbench.catalog.list_entries(
+        kind=kind_filter,
+        runnable_only=runnable_only,
+        include_archived=include_archived,
+        search=search,
+    )
+    return {"data": [_entry_to_dict(e) for e in entries]}
+
+
+@router.get(
+    "/models/{name}",
+    responses={
+        404: {"description": "Model not found"},
+        503: {"description": "Model catalog unavailable"},
+    },
+)
+async def get_logical_model(
+    name: str,
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
+) -> dict[str, object]:
+    """Return logical model details with all versions."""
+    try:
+        return await _do_get_logical_model(workbench, name)
+    except CatalogUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+async def _do_get_logical_model(
+    workbench: AnvilWorkbench, name: str
+) -> dict[str, object]:
+    """Execute logical model detail query."""
+    entries = await workbench.catalog.list_entries(include_archived=True)
+    versions = [e for e in entries if e.ref.name == name]
+    if not versions:
+        raise HTTPException(status_code=404, detail=f"Model not found: {name}")
+
+    first = versions[0]
+    return {
+        "name": first.ref.name,
+        "display_name": first.display_name,
+        "kind": str(first.kind),
+        "source_type": first.source_type,
+        "source_identifier": first.source_identifier,
+        "lifecycle_state": str(first.lifecycle_state),
+        "versions": [_entry_to_dict(v) for v in sorted(
+            versions, key=lambda x: x.ref.version, reverse=True
+        )],
+    }
+
+
+@router.get(
+    "/models/{name}/versions/{version}",
+    responses={
+        404: {"description": "Model version not found"},
+        503: {"description": "Model catalog unavailable"},
+    },
+)
+async def get_model_version(
+    name: str,
+    version: int,
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
+) -> dict[str, object]:
+    """Return a specific model version with config manifest."""
+    try:
+        return await _do_get_model_version(workbench, name, version)
+    except CatalogUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+async def _do_get_model_version(
+    workbench: AnvilWorkbench, name: str, version: int
+) -> dict[str, object]:
+    """Execute model version detail query."""
+    ref = ModelRef(name=name, version=version)
+    entry = await workbench.catalog.get_entry(ref)
+    if entry is None:
+        raise HTTPException(
+            status_code=404, detail=f"Model version not found: {name} v{version}"
+        )
+    result = _entry_to_dict(entry)
+
+    # Fetch config manifest if available (external models)
+    if entry.kind == CatalogKind.EXTERNAL:
+        try:
+            config = await workbench.catalog.get_config_manifest(ref)
+            result["config"] = config
+        except (CatalogUnavailableError, ValueError):
+            result["config"] = None
+    else:
+        result["config"] = None
+
+    return result
+
+
+def _entry_to_dict(entry: CatalogEntry) -> dict[str, object]:
+    """Convert a ``CatalogEntry`` to a plain dict for JSON serialisation."""
+    return {
+        "name": entry.ref.name,
+        "version": entry.ref.version,
+        "kind": str(entry.kind),
+        "display_name": entry.display_name,
+        "source_type": entry.source_type,
+        "source_identifier": entry.source_identifier,
+        "revision_sha": entry.revision_sha,
+        "architecture_family": entry.architecture_family,
+        "tokenizer_family": entry.tokenizer_family,
+        "license": entry.license,
+        "parameter_count": entry.parameter_count,
+        "runnable_status": str(entry.runnable_status),
+        "runnable_reason": entry.runnable_reason,
+        "asset_availability": str(entry.asset_availability),
+        "final_loss": entry.final_loss,
+        "lifecycle_state": str(entry.lifecycle_state),
+        "created_at": entry.created_at.isoformat() if entry.created_at else None,
+        "is_playable": entry.is_playable(),
+    }
+
+
+####################################################################
+# Existing import routes
+####################################################################
 
 
 class ImportModelBody(BaseModel):
@@ -107,15 +277,13 @@ async def list_import_jobs(
     -------
     dict
         A JSON body with a ``"data"`` key containing a list of job dicts.
-        Each job with ``external_model_id`` also includes an
-        ``asset_availability`` field from the associated model.
-        Jobs whose model has ``assets_pending`` also include
-        ``downloaded_bytes`` and ``total_bytes`` aggregate progress.
+        Each job includes ``registry_model_name`` and
+        ``registry_model_version`` when the import has completed
+        registration in the MLflow Model Catalog.
     """
     jobs = await workbench.model_imports.list_jobs()
-    data: list[dict[str, object]] = []
-    for j in jobs:
-        entry: dict[str, object] = {
+    data = [
+        {
             "job_id": j.id,
             "status": j.status,
             "source_type": j.source_type,
@@ -125,23 +293,12 @@ async def list_import_jobs(
             "finished_at": j.finished_at.isoformat() if j.finished_at else None,
             "error_code": j.error_code,
             "error_message": j.error_message,
-            "external_model_id": j.external_model_id,
+            "registry_model_name": j.registry_model_name,
+            "registry_model_version": j.registry_model_version,
             "created_at": j.created_at.isoformat(),
-            "asset_availability": None,
-            "downloaded_bytes": 0,
-            "total_bytes": 0,
         }
-        if j.external_model_id is not None:
-            model = await workbench.external_model_repo.get(j.external_model_id)
-            if model is not None:
-                entry["asset_availability"] = model.asset_availability
-                if model.asset_availability == "assets_pending":
-                    assets = await workbench.model_asset_repo.get_by_model(
-                        j.external_model_id
-                    )
-                    entry["downloaded_bytes"] = sum(a.downloaded_bytes for a in assets)
-                    entry["total_bytes"] = sum(a.size_bytes for a in assets)
-        data.append(entry)
+        for j in jobs
+    ]
     return {"data": data}
 
 
@@ -165,7 +322,8 @@ async def import_job_status(
         "finished_at": job.finished_at.isoformat() if job.finished_at else None,
         "error_code": job.error_code,
         "error_message": job.error_message,
-        "external_model_id": job.external_model_id,
+        "registry_model_name": job.registry_model_name,
+        "registry_model_version": job.registry_model_version,
     }
 
 
@@ -208,124 +366,62 @@ async def retry_import_job(
     return {"job_id": new_job_id, "status": "queued"}
 
 
-@router.get("/models/external")
-async def list_external_models(
-    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
-) -> dict[str, object]:
-    """Return all external model entries."""
-    models = await workbench.model_imports.list_external_models()
-    return {
-        "data": [
-            {
-                "id": m.id,
-                "display_name": m.display_name,
-                "source_type": m.source_type,
-                "source_identifier": m.source_identifier,
-                "architecture_family": m.architecture_family,
-                "parameter_count": m.parameter_count,
-                "license": m.license,
-                "tokenizer_family": m.tokenizer_family,
-                "revision_sha": m.revision_sha,
-                "runnable_status": m.runnable_status,
-                "asset_availability": m.asset_availability,
-                "created_at": m.created_at.isoformat(),
-            }
-            for m in models
-        ]
-    }
-
-
-@router.get(
-    "/models/external/{model_id}",
-    responses={404: {"description": "External model not found"}},
-)
-async def get_external_model(
-    model_id: int,
-    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
-) -> dict[str, object]:
-    """Return a single external model by ID."""
-    model = await workbench.model_imports.get_external_model(model_id)
-    if model is None:
-        raise HTTPException(status_code=404, detail="External model not found")
-
-    return {
-        "id": model.id,
-        "display_name": model.display_name,
-        "source_type": model.source_type,
-        "source_identifier": model.source_identifier,
-        "architecture_family": model.architecture_family,
-        "parameter_count": model.parameter_count,
-        "license": model.license,
-        "tokenizer_family": model.tokenizer_family,
-        "revision_sha": model.revision_sha,
-        "runnable_status": model.runnable_status,
-        "runnable_reason": model.runnable_reason,
-        "asset_availability": model.asset_availability,
-        "config_json": model.config_json,
-        "created_at": model.created_at.isoformat(),
-        "updated_at": model.updated_at.isoformat(),
-    }
+# ── Archive (spec 064, US4) ────────────────────────────────────────
 
 
 @router.delete(
-    "/models/external/{model_id}",
+    "/models/{name}/versions/{version}",
     responses={
-        404: {"description": "External model not found"},
+        404: {"description": "Model not found"},
     },
 )
-async def delete_external_model(
-    model_id: int,
+async def archive_model(
+    name: str,
+    version: int,
     workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
-) -> dict[str, str]:
-    """Delete an external model and all associated assets.
+) -> dict[str, object]:
+    """Archive a model version (tag-only, FR-008, spec 064 US4).
 
-    Cleans up downloaded asset files from the store, clears FK
-    references on evaluation runs, and removes the model record
-    (CASCADE handles ``model_assets``, ``asset_download_jobs``,
-    ``lora_adapters``; ``SET NULL`` handles ``model_import_jobs``).
+    Marks the catalog entry as ``ARCHIVED``, removing it from active
+    listings. The entry remains queryable for lineage (``include_archived``).
+    Local asset files are cleaned up from FileStore.
 
     Parameters
     ----------
-    model_id : int
-        ``ExternalModel`` primary key.
+    name : str
+        Catalog model name.
+    version : int
+        Catalog model version.
     workbench : AnvilWorkbench
         Session-bound workbench.
 
     Returns
     -------
     dict
-        Confirmation message.
+        Confirmation with ``"status": "archived"``.
 
     Raises
     ------
     HTTPException
         404 if the model is not found.
     """
-    model = await workbench.external_model_repo.get(model_id)
-    if model is None:
-        raise HTTPException(status_code=404, detail="External model not found")
+    from ...services.catalog.model_ref import ModelRef
 
-    stmt = (
-        update(EvaluationRun)
-        .where(EvaluationRun.external_model_id == model_id)
-        .values(external_model_id=-1)
-    )
-    await workbench.session.execute(stmt)
-    stmt2 = (
-        update(EvaluationRun)
-        .where(EvaluationRun.base_external_model_id == model_id)
-        .values(base_external_model_id=None)
-    )
-    await workbench.session.execute(stmt2)
+    ref = ModelRef(name=name, version=version)
+    entry = await workbench.catalog.get_entry(ref)
+    if entry is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Model {name} v{version} not found in catalog",
+        )
 
-    await workbench.model_imports.delete_external_model(
-        model_id,
-        model_asset_repo=workbench.model_asset_repo,
-        store=workbench.model_store,
-    )
-    await workbench.session.commit()
+    await workbench.catalog.archive(ref)
 
-    return {"message": f"External model '{model.display_name}' deleted"}
+    return {
+        "status": "archived",
+        "model_name": name,
+        "model_version": version,
+    }
 
 
 # ── Model asset download (feature 042) ──────────────────────────────

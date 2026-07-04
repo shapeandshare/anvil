@@ -22,7 +22,7 @@ class ModelImportJob(Base, TimestampMixin):
     """Tracks the lifecycle of an asynchronous model-import job.
 
     Each job represents a single attempt to resolve metadata for an
-    external model and create an ``ExternalModel`` entry.
+    external model and register it in the MLflow Model Catalog.
 
     Attributes
     ----------
@@ -42,6 +42,10 @@ class ModelImportJob(Base, TimestampMixin):
         Human-readable error detail if the job failed.
     external_model_id : int | None
         FK to ``external_models.id``, set on successful completion.
+    registry_model_name : str | None
+        Catalog model name assigned by the MLflow Model Registry.
+    registry_model_version : int | None
+        Catalog model version assigned by the MLflow Model Registry.
     started_at : datetime | None
         When metadata resolution began.
     finished_at : datetime | None
@@ -69,6 +73,12 @@ class ModelImportJob(Base, TimestampMixin):
         Integer,
         ForeignKey("external_models.id", ondelete="SET NULL"),
         nullable=True,
+    )
+    registry_model_name: Mapped[str | None] = mapped_column(
+        String(255), nullable=True
+    )
+    registry_model_version: Mapped[int | None] = mapped_column(
+        Integer, nullable=True
     )
     started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

@@ -358,10 +358,7 @@ async def hf_browser_page(
                 "runnable_status": runnable,
             }
         )
-    imported_ids: set[str] = {
-        m.source_identifier
-        for m in await workbench.model_imports.list_external_models()
-    }
+    imported_ids: set[str] = set()
     import_jobs_raw = await workbench.model_imports.list_jobs()
     import_jobs: list[dict[str, object]] = []
     for j in import_jobs_raw:
@@ -379,10 +376,6 @@ async def hf_browser_page(
             "created_at": j.created_at.isoformat(),
             "asset_availability": None,
         }
-        if j.external_model_id is not None:
-            model = await workbench.external_model_repo.get(j.external_model_id)
-            if model is not None:
-                job_dict["asset_availability"] = model.asset_availability
         import_jobs.append(job_dict)
     host_backend = str(gpu.backend) if gpu.backend else "cpu"
     return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]

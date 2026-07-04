@@ -84,6 +84,14 @@ class EvalFineTunedBody(BaseModel):
         ``ExternalModel.id`` of the fine-tuned model.
     base_model_id : int
         ``ExternalModel.id`` of the base model.
+    model_name : str | None, optional
+        Catalog model name for the fine-tuned model.
+    model_version : int | None, optional
+        Catalog model version for the fine-tuned model.
+    base_model_name : str | None, optional
+        Catalog model name for the base model.
+    base_model_version : int | None, optional
+        Catalog model version for the base model.
     adapter_id : str | None, optional
         ``LoRAAdapter.adapter_id`` for adapter-model evaluation.
     eval_dataset_name : str | None, optional
@@ -95,6 +103,10 @@ class EvalFineTunedBody(BaseModel):
 
     model_id: int
     base_model_id: int
+    model_name: str | None = None
+    model_version: int | None = None
+    base_model_name: str | None = None
+    base_model_version: int | None = None
     adapter_id: str | None = None
     eval_dataset_name: str | None = None
 
@@ -161,10 +173,14 @@ class EvaluationRunResponse(BaseModel):
         FK to ``ExternalModel.id`` of the fine-tuned model.
     model_name : str
         Display name of the fine-tuned model.
+    model_version_ref : int | None, optional
+        Catalog model version for the fine-tuned model. Defaults to ``None``.
     base_model_id : int
         FK to ``ExternalModel.id`` of the base model.
     base_model_name : str
         Display name of the base model.
+    base_model_version_ref : int | None, optional
+        Catalog model version for the base model. Defaults to ``None``.
     adapter_id : str | None, optional
         Adapter ID, if applicable. Defaults to ``None``.
     tokenizer_family : str
@@ -190,8 +206,10 @@ class EvaluationRunResponse(BaseModel):
     run_id: int
     model_id: int
     model_name: str
+    model_version_ref: int | None = None
     base_model_id: int
     base_model_name: str
+    base_model_version_ref: int | None = None
     adapter_id: str | None = None
     tokenizer_family: str
     base_tokenizer_family: str | None = None
