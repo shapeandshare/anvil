@@ -217,7 +217,7 @@ wheels = [
 
 [[package]]
 name = "anvil"
-version = "0.12.6"
+version = "0.12.8"
 source = { editable = "." }
 dependencies = [
     { name = "aiofiles" },
