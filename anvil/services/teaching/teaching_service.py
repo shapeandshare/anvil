@@ -271,7 +271,7 @@ class TeachingService:
 
         # ── Create dataset with origin="teaching" ──────────────────────
         dataset_name = (
-            f"teaching-session-{session_id}-round-" f"{self._count_rounds(session_id)}"
+            f"teaching-session-{session_id}-round-{self._count_rounds(session_id)}"
         )
         dataset = await self._datasets.create_dataset(
             name=dataset_name,
@@ -352,7 +352,7 @@ class TeachingService:
         response["round_experiment_id"] = response.get("experiment_id")
         return response
 
-    def _count_rounds(self, session_id: int) -> int:
+    def _count_rounds(self, _session_id: int) -> int:
         """Count existing rounds for a teaching session by scanning
         current_base_experiment_id changes.  Simple heuristic: returns
         0 for new sessions, incremented for each additional round.
