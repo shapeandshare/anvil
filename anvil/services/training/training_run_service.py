@@ -78,6 +78,21 @@ class TrainingRunService:
     # Public API
     ########################################################################
 
+    @property
+    def run_count(self) -> int:
+        """Return the total number of training runs ever reserved.
+
+        Delegates to the underlying ``TrainingService`` which maintains
+        a monotonically increasing counter.  This count resets on
+        service restart.
+
+        Returns
+        -------
+        int
+            Total reserved run count.
+        """
+        return self._svc.run_count
+
     def is_run_active(self, run_id: int) -> bool:
         """Return whether a training task is still active for *run_id*.
 

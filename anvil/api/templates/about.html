@@ -42,6 +42,157 @@
 
 <div class="section-card" style="--stagger-i: 1">
   <div class="section-card__header">
+    <span class="section-card__icon">&#9889;</span>
+    <h2 class="section-card__title">Environment &amp; Stats</h2>
+  </div>
+  <div class="section-card__content">
+
+    {% set uptime_days = uptime_seconds // 86400 %}
+    {% set uptime_hours = (uptime_seconds % 86400) // 3600 %}
+    {% set uptime_minutes = (uptime_seconds % 3600) // 60 %}
+
+    <h3 style="font-family:var(--font-body);font-size:var(--text-headline);font-weight:600;color:var(--text);margin-bottom:var(--space-3);margin-top:0;">Software</h3>
+
+    <div class="help-box" style="margin-bottom:var(--space-4);">
+      <div class="help-title">Running anvil v{{ version }}</div>
+      <div class="info-grid" style="margin-top:var(--space-2);">
+        <span class="info-key">Commit</span>
+        <span class="info-val" style="font-family:var(--font-mono);font-size:var(--text-mono);overflow-wrap:break-word;word-break:break-word;">{{ commit_hash }}</span>
+        <span class="info-key">Python</span>
+        <span class="info-val">{{ python_version }}</span>
+        <span class="info-key">Uptime</span>
+        <span class="info-val" style="font-variant-numeric:tabular-nums;">{% if uptime_days > 0 %}{{ uptime_days }}d {% endif %}{{ uptime_hours }}h {{ uptime_minutes }}m</span>
+      </div>
+    </div>
+
+    <h3 style="font-family:var(--font-body);font-size:var(--text-headline);font-weight:600;color:var(--text);margin-bottom:var(--space-2);margin-top:var(--space-4);">System Resources</h3>
+
+    <div class="hp-grid" style="margin-bottom:var(--space-4);">
+      <div class="hp-item">
+        <span class="hp-label">CPU</span>
+        <span class="hp-value" style="font-variant-numeric:tabular-nums;">{{ system.cpu_percent|round(1) }}%</span>
+      </div>
+      <div class="hp-item">
+        <span class="hp-label">Memory</span>
+        <span class="hp-value" style="font-variant-numeric:tabular-nums;">{{ '%.1f'|format(system.memory_used_gb) }} / {{ '%.1f'|format(system.memory_total_gb) }} GB</span>
+        <span class="hp-label" style="font-variant-numeric:tabular-nums;">{{ system.memory_percent|round(1) }}%</span>
+      </div>
+      <div class="hp-item">
+        <span class="hp-label">Disk</span>
+        <span class="hp-value" style="font-variant-numeric:tabular-nums;">{{ '%.1f'|format(system.disk_used_gb) }} / {{ '%.1f'|format(system.disk_total_gb) }} GB</span>
+        <span class="hp-label" style="font-variant-numeric:tabular-nums;">{{ system.disk_percent|round(1) }}%</span>
+      </div>
+      <div class="hp-item">
+        <span class="hp-label">Uptime</span>
+        <span class="hp-value" style="font-variant-numeric:tabular-nums;font-size:var(--text-callout);">{% if uptime_days > 0 %}{{ uptime_days }}d {% endif %}{{ uptime_hours }}h {{ uptime_minutes }}m</span>
+      </div>
+    </div>
+
+    <h3 style="font-family:var(--font-body);font-size:var(--text-headline);font-weight:600;color:var(--text);margin-bottom:var(--space-2);margin-top:var(--space-4);">GPU</h3>
+
+    {% if gpu.available %}
+    <div class="info-grid" style="margin-bottom:var(--space-4);overflow-wrap:break-word;word-break:break-word;">
+      <span class="info-key">Status</span>
+      <span class="info-val"><span class="badge badge-green">Available</span></span>
+      <span class="info-key">Backend</span>
+      <span class="info-val">{{ gpu.backend }}</span>
+      <span class="info-key">Device</span>
+      <span class="info-val" style="overflow-wrap:break-word;word-break:break-word;">{{ gpu.device_name }}</span>
+      <span class="info-key">VRAM</span>
+      <span class="info-val" style="font-variant-numeric:tabular-nums;">{{ '%.1f'|format(gpu.memory_total_gb - gpu.memory_available_gb) }} / {{ '%.1f'|format(gpu.memory_total_gb) }} GB</span>
+      {% if gpu.compute_capability %}
+      <span class="info-key">Compute</span>
+      <span class="info-val" style="font-variant-numeric:tabular-nums;">{{ gpu.compute_capability }}</span>
+      {% endif %}
+      <span class="info-key">Torch</span>
+      <span class="info-val">{{ gpu.torch_version }}</span>
+      <span class="info-key">CUDA</span>
+      <span class="info-val">{{ gpu.cuda_version }}</span>
+    </div>
+    {% else %}
+    <p style="color:var(--text-tertiary);font-size:var(--text-subhead);margin-bottom:var(--space-4);">
+      <span class="badge badge-cyan" style="margin-right:var(--space-2);">Unavailable</span>
+      No GPU detected.
+    </p>
+    {% endif %}
+
+    <h3 style="font-family:var(--font-body);font-size:var(--text-headline);font-weight:600;color:var(--text);margin-bottom:var(--space-2);margin-top:var(--space-4);">Database</h3>
+
+    <div class="info-grid" style="margin-bottom:var(--space-4);">
+      <span class="info-key">Status</span>
+      <span class="info-val">
+        {% if database.status == "connected" %}
+        <span class="badge badge-green">Connected</span>
+        {% elif database.status == "disconnected" %}
+        <span class="badge badge-red">Disconnected</span>
+        {% else %}
+        <span class="badge badge-yellow">{{ database.status }}</span>
+        {% endif %}
+      </span>
+      <span class="info-key">Schema</span>
+      <span class="info-val" style="font-variant-numeric:tabular-nums;">
+        v{{ database.schema_version }}
+        {% if database.schema_version != database.expected_schema_version %}
+        <span class="badge badge-yellow" style="margin-left:var(--space-2);">expected v{{ database.expected_schema_version }}</span>
+        {% endif %}
+      </span>
+      <span class="info-key">Migration</span>
+      <span class="info-val" style="font-family:var(--font-mono);font-size:var(--text-mono);overflow-wrap:break-word;word-break:break-word;">{{ database.migration_revision }}</span>
+    </div>
+
+    <h3 style="font-family:var(--font-body);font-size:var(--text-headline);font-weight:600;color:var(--text);margin-bottom:var(--space-2);margin-top:var(--space-4);">MLflow &amp; Tracking</h3>
+
+    <div class="info-grid" style="margin-bottom:var(--space-4);">
+      <span class="info-key">MLflow</span>
+      <span class="info-val">
+        {% if mlflow.status == "reachable" %}
+        <span class="badge badge-green">Reachable</span>
+        {% else %}
+        <span class="badge badge-red">Unreachable</span>
+        {% endif %}
+      </span>
+      <span class="info-key">Tracking</span>
+      <span class="info-val">
+        {% if tracking.status == "active" %}
+        <span class="badge badge-green">Active</span>
+        {% elif tracking.status == "degraded" %}
+        <span class="badge badge-yellow">Degraded</span>
+        {% else %}
+        <span class="badge badge-red">{{ tracking.status }}</span>
+        {% endif %}
+      </span>
+      {% if tracking.status == "degraded" %}
+      <span class="info-key">Reason</span>
+      <span class="info-val" style="overflow-wrap:break-word;word-break:break-word;">{{ tracking.reason if tracking.reason is not none else tracking.message }}</span>
+      {% endif %}
+    </div>
+
+    <h3 style="font-family:var(--font-body);font-size:var(--text-headline);font-weight:600;color:var(--text);margin-bottom:var(--space-2);margin-top:var(--space-4);">Asset Counts</h3>
+
+    <div class="hp-grid" style="margin-bottom:0;">
+      <div class="hp-item">
+        <span class="hp-label">Datasets</span>
+        <span class="hp-value" style="font-variant-numeric:tabular-nums;">{{ asset_counts.datasets }}</span>
+      </div>
+      <div class="hp-item">
+        <span class="hp-label">Corpora</span>
+        <span class="hp-value" style="font-variant-numeric:tabular-nums;">{{ asset_counts.corpora }}</span>
+      </div>
+      <div class="hp-item">
+        <span class="hp-label">External Models</span>
+        <span class="hp-value" style="font-variant-numeric:tabular-nums;">{{ asset_counts.external_models }}</span>
+      </div>
+      <div class="hp-item">
+        <span class="hp-label">Training Runs</span>
+        <span class="hp-value" style="font-variant-numeric:tabular-nums;">{{ asset_counts.training_runs }}</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="section-card" style="--stagger-i: 2">
+  <div class="section-card__header">
     <span class="section-card__icon">&#9881;</span>
     <h2 class="section-card__title">Technology Stack</h2>
   </div>
@@ -92,7 +243,7 @@
   </div>
 </div>
 
-<div class="section-card" style="--stagger-i: 2">
+<div class="section-card" style="--stagger-i: 3">
   <div class="section-card__header">
     <span class="section-card__icon">&#9733;</span>
     <h2 class="section-card__title">Architecture Overview</h2>
@@ -122,7 +273,7 @@
   </div>
 </div>
 
-<div class="section-card" style="--stagger-i: 3">
+<div class="section-card" style="--stagger-i: 4">
   <div class="section-card__header">
     <span class="section-card__icon">&#9878;</span>
     <h2 class="section-card__title">Governance &amp; Licensing</h2>
@@ -194,7 +345,7 @@
   </div>
 </div>
 
-<div class="section-card" style="--stagger-i: 4">
+<div class="section-card" style="--stagger-i: 5">
   <div class="section-card__header">
     <span class="section-card__icon">&#9776;</span>
     <h2 class="section-card__title">Resources</h2>

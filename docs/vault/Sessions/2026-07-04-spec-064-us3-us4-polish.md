@@ -63,5 +63,5 @@ tests/e2e/test_legacy_removed.py .................... PASSED [4/4]
 ## Related
 
 - [[Specs/064 MLflow Model Catalog/spec|Spec 064]]
-- [[Decisions/ADR-047-mlflow-model-catalog-source-of-truth|ADR-047]]
+- [[Decisions/ADR-048-mlflow-model-catalog-source-of-truth|ADR-048]]
 - [[Specs/064 MLflow Model Catalog/tasks|Tasks]]

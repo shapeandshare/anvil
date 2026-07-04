@@ -14,7 +14,7 @@ updated: 2026-07-03
 `mlflow/utils/uri.py`, `mlflow/store/artifact/local_artifact_repo.py`),
 official MLflow Model Registry docs, codebase exploration (tracking,
 model_import, inference, evaluation, workbench), Oracle architecture
-consultation, ADR-047.
+consultation, ADR-048.
 
 All NEEDS CLARIFICATION items from the Technical Context are resolved
 below. No open unknowns remain.
@@ -50,7 +50,7 @@ reuse per Article XI §11.4.
 - *`mlflow.transformers.log_model` with the weights directory* — rejected:
   `LocalArtifactRepository.log_artifacts` **copies** the full tree into
   `mlruns/` (`shutil_copytree_without_file_permissions`), duplicating
-  multi-GB weights that already live in `LocalFileStore`; ADR-047 keeps
+  multi-GB weights that already live in `LocalFileStore`; ADR-048 keeps
   weights out of the registry.
 
 ## D2 — Weights placement: FileStore, keyed by ModelRef; registry holds metadata only
@@ -62,7 +62,7 @@ The import run's artifact is only the resolved `config.json` manifest
 version's `source` points at the tiny run artifact dir, not at weights.
 
 **Rationale**: The registry is a *catalog*, not an artifact server
-(ADR-047 boundary split). Logging weights as run artifacts would copy
+(ADR-048 boundary split). Logging weights as run artifacts would copy
 2 GB+ per model into `mlruns/` (verified: local artifact repo copies, it
 does not reference). Inference loads weights from FileStore via ModelRef;
 in SaaS the same metadata points at LakeFS-backed assets (specs 042/047).
@@ -153,7 +153,7 @@ in-flight download jobs. Active listings filter `lifecycle_state !=
 archived`. No `delete_registered_model`/`delete_model_version` calls, no
 renames, ever (FR-008).
 
-**Rationale**: Append-only catalog per ADR-047; referencing records
+**Rationale**: Append-only catalog per ADR-048; referencing records
 (evals, adapters) keep resolving because the registry entity still
 exists. Matches spec US4 acceptance scenarios directly.
 

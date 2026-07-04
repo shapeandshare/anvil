@@ -12,14 +12,14 @@ updated: 2026-07-03
 **Feature Branch**: `062-mlflow-model-catalog`
 **Created**: 2026-07-03
 **Status**: Draft
-**Input**: User description: "Unified model catalog: MLflow Model Registry as the source of truth for all models (trained, external/imported, merged), per ADR-047. Greenfield — no legacy support, no data migration, no transitional states."
+**Input**: User description: "Unified model catalog: MLflow Model Registry as the source of truth for all models (trained, external/imported, merged), per ADR-048. Greenfield — no legacy support, no data migration, no transitional states."
 
 ## Clarifications
 
 ### Session 2026-07-03
 
 - Q: Does a different revision of the same source become a new version under the same catalog name, or a separate catalog entry? → A: Same catalog name, new version — one logical model per (source type + identifier); each imported revision is a version; `ModelRef` pins the exact version.
-- Q: Should LoRA adapters become first-class catalog entries in this feature, or remain attached records under their base model? → A: Attached records for this feature; promoting adapters to first-class catalog entries is deferred to the follow-up spec ([[Specs/065 Adapter Catalog Entries/spec|Spec 065]]). The `adapter` kind remains reserved (per ADR-047) so the follow-up requires no schema change.
+- Q: Should LoRA adapters become first-class catalog entries in this feature, or remain attached records under their base model? → A: Attached records for this feature; promoting adapters to first-class catalog entries is deferred to the follow-up spec ([[Specs/065 Adapter Catalog Entries/spec|Spec 065]]). The `adapter` kind remains reserved (per ADR-048) so the follow-up requires no schema change.
 - Q: How is a catalog entry's unique name derived? → A: Provider-prefixed deterministic name derived from (source type + sanitized source identifier) — e.g. `hf--TinyLlama--TinyLlama-1.1B-Chat-v1.0`; trained models keep their existing dataset/corpus-derived names; display name is a separate mutable label, never identity.
 - Q: What is the expected catalog scale and acceptable listing latency? → A: Catalog listings of up to 100 logical models render within 2 seconds on a local instance.
 
@@ -142,7 +142,7 @@ A user removes a model they no longer need. The model disappears from active lis
 ## Assumptions
 
 - All instances are new after this change: no existing deployment's data needs migrating, no dual-write or transitional compatibility layer is built, and the legacy external-model storage is removed outright (per ADR-032 and explicit stakeholder direction).
-- The catalog backend ships with the product as a supervised sidecar locally and is expected to be a managed, highly-available service in the SaaS deployment; therefore "catalog unavailable" is an acceptable hard-failure mode for catalog-dependent features (per ADR-047).
+- The catalog backend ships with the product as a supervised sidecar locally and is expected to be a managed, highly-available service in the SaaS deployment; therefore "catalog unavailable" is an acceptable hard-failure mode for catalog-dependent features (per ADR-048).
 - The existing provider abstraction (HuggingFace, local path) is retained as-is; provider expansion is out of scope for this feature beyond preserving the abstraction's neutrality.
 - Adapters do not appear in the catalog or model pickers in this feature: they remain attached records under their base model (base model detail page, adapter-aware inference/eval options). Only *merged* adapter results enter the catalog, as `merged` models. First-class adapter catalog entries are specified separately in Spec 065.
 - Weight/asset files remain on the existing local file storage (LakeFS in SaaS per specs 042/047); the catalog stores metadata and references, not weights.
@@ -153,7 +153,7 @@ A user removes a model they no longer need. The model disappears from active lis
 
 ## See Also
 
-- [[Decisions/ADR-047-mlflow-model-catalog-source-of-truth|ADR-047]] — the architecture decision this spec implements
+- [[Decisions/ADR-048-mlflow-model-catalog-source-of-truth|ADR-048]] — the architecture decision this spec implements
 - [[Decisions/ADR-016-mlflow-primary-lineage|ADR-016]] — precedent: MLflow as source of truth for experiments/trained models
 - [[Decisions/ADR-032-greenfield-legacy-removal|ADR-032]] — greenfield mandate (no migration)
 - [[Specs/063 Usable External Models/spec|Spec 063]] — external model local loading (layout this spec builds on)
