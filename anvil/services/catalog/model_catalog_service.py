@@ -20,6 +20,8 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
+import tempfile
 from collections.abc import Sequence
 from datetime import datetime
 from pathlib import Path
@@ -167,15 +169,46 @@ class ModelCatalogService:
         except MlflowException:
             pass  # Already exists — fine.
 
-        # Create version with a local source path
-        config_path = f"data/models/{catalog_name}/1/hf/config.json"
+        # Create a lightweight import run to host the config artifact
+        # (D1 — MLflow rejects local-path sources without run_id).
+        try:
+            mlflow_run = await loop.run_in_executor(
+                None,
+                lambda: client.create_run(
+                    experiment_id="0",
+                    run_name=f"import-{catalog_name}",
+                ),
+            )
+        except _TRANSIENT_EXCEPTIONS as exc:
+            raise CatalogUnavailableError(
+                f"Failed to create import run for {catalog_name}: {exc}"
+            ) from exc
+
+        run_id = str(mlflow_run.info.run_id)
+
+        # Log config.json as the sole run artifact (KB-scale manifest,
+        # per D2 — weights stay in FileStore, never in MLflow).
+        if config_json is not None:
+            fd, tmp_path = tempfile.mkstemp(suffix=".json", prefix="import-")
+            try:
+                with os.fdopen(fd, "w") as f:
+                    f.write(config_json)
+                await loop.run_in_executor(
+                    None,
+                    lambda p=tmp_path: client.log_artifact(run_id, p, artifact_path=""),
+                )
+            finally:
+                os.unlink(tmp_path)
+
+        # Create model version using runs:/ URI (required by MLflow
+        # server-side validation — CVE-2023-6014/6015/6018/6831).
         try:
             version = await loop.run_in_executor(
                 None,
                 lambda: client.create_model_version(
                     name=catalog_name,
-                    source=config_path,
-                    run_id=None,
+                    source=f"runs:/{run_id}/config.json",
+                    run_id=run_id,
                     tags={
                         _TAG_KIND: str(CatalogKind.EXTERNAL),
                         _TAG_SOURCE_TYPE: source_type,
@@ -259,18 +292,32 @@ class ModelCatalogService:
             _TAG_TOKENIZER_FAMILY: tokenizer_family,
             _TAG_RUNNABLE_STATUS: str(status),
             _TAG_LIFECYCLE_STATE: str(LifecycleState.ACTIVE),
+            _TAG_ASSET_AVAILABILITY: str(AssetState.ASSETS_AVAILABLE),
         }
         if final_loss is not None:
             tags[_TAG_FINAL_LOSS] = str(final_loss)
 
+        # Tags that the catalog entry builder reads from
+        # registered-model tags (rm_tags) must be set on the
+        # registered model, not the model version.
+        rm_keys: set[str] = {_TAG_KIND, _TAG_DISPLAY_NAME}
+
         for key, value in tags.items():
             try:
-                await loop.run_in_executor(
-                    None,
-                    lambda k=key, v=value: client.set_model_version_tag(  # type: ignore[misc]
-                        catalog_name, str(version), k, v
-                    ),
-                )
+                if key in rm_keys:
+                    await loop.run_in_executor(
+                        None,
+                        lambda k=key, v=value: client.set_registered_model_tag(  # type: ignore[misc]
+                            catalog_name, k, v
+                        ),
+                    )
+                else:
+                    await loop.run_in_executor(
+                        None,
+                        lambda k=key, v=value: client.set_model_version_tag(  # type: ignore[misc]
+                            catalog_name, str(version), k, v
+                        ),
+                    )
             except _TRANSIENT_EXCEPTIONS as exc:
                 raise CatalogUnavailableError(
                     f"Failed to set tag {key} for {catalog_name} v{version}: {exc}"

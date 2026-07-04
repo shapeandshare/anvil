@@ -930,7 +930,5 @@ def import_status_main() -> None:
             print(f"Status: {job.status}")
             if job.error_code:
                 print(f"Error: [{job.error_code}] {job.error_message}")
-            if job.external_model_id:
-                print(f"External model ID: {job.external_model_id}")
 
     asyncio.run(_run())

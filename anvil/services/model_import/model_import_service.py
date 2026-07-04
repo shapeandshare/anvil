@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from collections.abc import Sequence
@@ -31,6 +32,7 @@ if TYPE_CHECKING:
     from ...db.repositories.model_asset_repository import ModelAssetRepository
     from ...storage.local import LocalFileStore
     from ..catalog.model_catalog_service import ModelCatalogService
+    from ..catalog.model_ref import ModelRef
 
 from .._shared.model_import_job_status import ModelImportJobStatus
 from .._shared.source_type import SourceType
@@ -52,6 +54,13 @@ _ACCEPTED_FORMATS: frozenset[str] = frozenset({"safetensors"})
 
 _MODELS_DIR = Path("data/models")
 """Root directory for model artifacts on disk."""
+
+_CATALOG_RETRIES: int = 3
+"""Number of times to retry catalog registration on CatalogUnavailableError."""
+_CATALOG_RETRY_BASE_DELAY: float = 1.0
+"""Base delay in seconds for exponential backoff between retries."""
+_CATALOG_RETRY_BACKOFF: float = 2.0
+"""Multiplier applied to the delay after each retry attempt."""
 
 
 class ModelImportService:
@@ -242,7 +251,7 @@ class ModelImportService:
                 ),
             )
 
-        # ── Register in the MLflow Model Catalog ─────────────────────
+        # ── Register in the MLflow Model Catalog (with retry) ────────
         is_runnable = metadata.architecture_family in _ALLOWED_ARCHITECTURES
         runnable_reason = None
         if not is_runnable:
@@ -254,27 +263,55 @@ class ModelImportService:
         runnable_status = (
             RunnableStatus.RUNNABLE if is_runnable else RunnableStatus.TRACK_ONLY
         )
-        try:
-            ref = await self._catalog_service.register_external_model(
-                catalog_name=catalog_name,
-                display_name=metadata.display_name,
-                source_type=str(source_type),
-                source_identifier=job.source_identifier,
-                revision_sha=metadata.revision_sha,
-                architecture_family=metadata.architecture_family,
-                tokenizer_family=metadata.tokenizer_family,
-                license=metadata.license,
-                parameter_count=metadata.parameter_count,
-                runnable_status=runnable_status,
-                runnable_reason=runnable_reason,
-                config_json=metadata.config_json,
-            )
-        except CatalogUnavailableError:
+
+        ref: ModelRef | None = None
+        last_error: CatalogUnavailableError | None = None
+        delay = _CATALOG_RETRY_BASE_DELAY
+        for attempt in range(1, _CATALOG_RETRIES + 1):
+            try:
+                ref = await self._catalog_service.register_external_model(
+                    catalog_name=catalog_name,
+                    display_name=metadata.display_name,
+                    source_type=str(source_type),
+                    source_identifier=job.source_identifier,
+                    revision_sha=metadata.revision_sha,
+                    architecture_family=metadata.architecture_family,
+                    tokenizer_family=metadata.tokenizer_family,
+                    license=metadata.license,
+                    parameter_count=metadata.parameter_count,
+                    runnable_status=runnable_status,
+                    runnable_reason=runnable_reason,
+                    config_json=metadata.config_json,
+                )
+                last_error = None  # Success
+                break
+            except CatalogUnavailableError as exc:
+                last_error = exc
+                if attempt < _CATALOG_RETRIES:
+                    logger.warning(
+                        "Catalog registration attempt %d/%d failed for "
+                        "job %d: %s. Retrying in %.1f s …",
+                        attempt,
+                        _CATALOG_RETRIES,
+                        job_id,
+                        exc,
+                        delay,
+                    )
+                    await asyncio.sleep(delay)
+                    delay *= _CATALOG_RETRY_BACKOFF
+
+        if last_error is not None:
             return await self._fail_job(
                 job_id,
                 error_code="catalog_unavailable",
-                error_message="MLflow Model Registry is unavailable",
+                error_message=(
+                    f"MLflow Model Registry is unavailable after "
+                    f"{_CATALOG_RETRIES} attempts: {last_error}"
+                ),
             )
+
+        # Guard above ensures ref is bound when we reach this line.
+        assert ref is not None
 
         # ── Set version on the identity guard row ────────────────────
         await self._catalog_identity_repo.set_version(identity.id, ref.version)

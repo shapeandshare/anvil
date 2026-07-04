@@ -31,7 +31,7 @@
     </div>
     <p class="learn-track__desc">{{ group.track_desc }}</p>
     <div class="learn-track__grid">
-      {% for item in group.items %}
+      {% for item in group["items"] %}
       <a href="{{ item.path }}" class="learn-card" data-key="{{ item.key }}" data-title="{{ item.title | lower }}" data-desc="{{ item.desc | lower | striptags }}">
         <div class="learn-card__body">
           <span class="learn-card__title">{{ item.title }}</span>

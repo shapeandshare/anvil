@@ -14,15 +14,20 @@ restart.
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 import signal
 import subprocess
 import sys
 import time
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 from ..config import get_config
 from ..workspace.workspace_paths import WorkspacePaths
+
+logger = logging.getLogger(__name__)
 
 
 class MLflowService:
@@ -44,6 +49,11 @@ class MLflowService:
         derived from this value object instead of defaulting to
         ``./mlruns`` relative to CWD.
     """
+
+    _STARTUP_TIMEOUT: float = 30.0
+    """Maximum seconds to wait for MLflow to become ready after launch."""
+    _POLL_INTERVAL: float = 0.5
+    """Seconds between readiness-poll attempts."""
 
     def __init__(
         self,
@@ -127,6 +137,48 @@ class MLflowService:
         except (subprocess.TimeoutExpired, FileNotFoundError):
             pass
 
+    def _wait_ready(self) -> None:
+        """Poll the MLflow health endpoint until the server responds 200.
+
+        Blocks for up to :attr:`_STARTUP_TIMEOUT` seconds, polling every
+        :attr:`_POLL_INTERVAL` seconds.  Logs a warning on timeout but
+        does **not** abort — the server may become available shortly
+        after the poll window expires (the race window is reduced rather
+        than eliminated).
+        """
+        url = f"http://{self.host}:{self.port}/"
+        deadline = time.monotonic() + self._STARTUP_TIMEOUT
+        last_log: float = 0.0
+
+        while time.monotonic() < deadline:
+            try:
+                with urllib.request.urlopen(url, timeout=2) as resp:  # nosec B310
+                    if resp.status == 200:
+                        logger.info("MLflow ready at %s", url)
+                        return
+            except (urllib.error.URLError, OSError, ValueError):
+                pass
+
+            # Log a periodic reminder every 5 s so the user knows we are
+            # still waiting.
+            elapsed = time.monotonic() - (deadline - self._STARTUP_TIMEOUT)
+            if elapsed - last_log >= 5.0:
+                logger.info(
+                    "Waiting for MLflow at %s … (%.0f s elapsed)",
+                    url,
+                    elapsed,
+                )
+                last_log = elapsed
+
+            time.sleep(self._POLL_INTERVAL)
+
+        logger.warning(
+            "MLflow did not become ready within %.0f s at %s — "
+            "continuing anyway (may be transient)",
+            self._STARTUP_TIMEOUT,
+            url,
+        )
+
     def start(self) -> None:
         """Start the MLflow tracking server as a subprocess.
 
@@ -137,6 +189,11 @@ class MLflowService:
         during shutdown.
 
         The process PID is recorded to ``{log_dir}/mlflow.pid``.
+
+        After launching the subprocess, :meth:`_wait_ready` polls the
+        MLflow health endpoint until the server responds 200 (or the
+        :attr:`_STARTUP_TIMEOUT` expires).  This eliminates the import-job
+        race where a user submits an import before MLflow is listening.
         """
         if self.process is not None and self.process.poll() is None:
             return
@@ -162,6 +219,7 @@ class MLflowService:
             preexec_fn=os.setsid,
         )
         (self.log_dir / "mlflow.pid").write_text(str(self.process.pid))
+        self._wait_ready()
 
     def stop(self) -> None:
         """Stop the MLflow tracking server subprocess.
