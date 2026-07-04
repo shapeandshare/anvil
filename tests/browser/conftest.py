@@ -34,7 +34,7 @@ HEALTH_ENDPOINT = f"{BASE_URL}/v1/health"
 MLFLOW_API_URL = "http://127.0.0.1:5001/api/2.0/mlflow"
 READINESS_RETRIES = 24
 READINESS_INTERVAL = 5  # seconds
-PAGE_TIMEOUT = 15_000  # milliseconds
+PAGE_TIMEOUT = 30_000  # milliseconds (Docker CI slowness)
 TEST_API_KEY = get_api_key_store().key or ""
 
 
