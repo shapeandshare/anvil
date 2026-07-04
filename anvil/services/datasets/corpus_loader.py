@@ -120,7 +120,7 @@ def detect_language(file_path: str) -> str | None:
 def _build_spec(
     include_patterns: list[str] | None,
     exclude_patterns: list[str] | None,
-) -> PathSpec:
+) -> PathSpec[GitIgnoreSpecPattern]:
     """Build a ``PathSpec`` from include/exclude glob patterns.
 
     Merges caller-provided patterns with sensible defaults. Exclude
