@@ -21,6 +21,7 @@ from ...db.models.license_entry import LicenseEntry
 from ...services.inference.model_browser import ModelBrowserService
 from ...services.model_import.model_import_service import _ALLOWED_ARCHITECTURES
 from ...workbench import AnvilWorkbench
+from ._environment import _collect_environment_snapshot
 from .learning import _arc_context as _ctx
 from .learning import related_lessons
 
@@ -380,10 +381,22 @@ async def about_page(
     licenses: Sequence[LicenseEntry] = await workbench.governance.list_licenses(
         include_own_content=False,
     )
+    env = await _collect_environment_snapshot(workbench)
     return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
         request,
         "about.html",
-        {"licenses": licenses},
+        {
+            "licenses": licenses,
+            "commit_hash": env["commit_hash"],
+            "python_version": env["python_version"],
+            "uptime_seconds": env["uptime_seconds"],
+            "system": env["system"],
+            "gpu": env["gpu"],
+            "database": env["database"],
+            "mlflow": env["mlflow"],
+            "tracking": env["tracking"],
+            "asset_counts": env["asset_counts"],
+        },
     )
 
 

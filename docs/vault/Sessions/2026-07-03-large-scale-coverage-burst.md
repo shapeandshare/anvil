@@ -8,7 +8,6 @@ status: draft
 tags:
   - type/session-log
   - domain/tooling
-  - domain/test-coverage
   - status/draft
 title: 'Session: Large-Scale Coverage Burst — 80+ New Test Files, +8.76 pts'
 type: session-log

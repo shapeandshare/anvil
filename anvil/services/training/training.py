@@ -104,6 +104,21 @@ class TrainingService:
         self._run_metadata: dict[int, dict[str, Any]] = {}
         self._diverged_runs: set[int] = set()
 
+    @property
+    def run_count(self) -> int:
+        """Return the total number of training runs ever reserved.
+
+        This counter is monotonically increasing — it represents the
+        total number of ``reserve_run()`` calls since the service was
+        instantiated.  It is not persisted across restarts.
+
+        Returns
+        -------
+        int
+            Total reserved run count.
+        """
+        return self._running
+
     def is_diverged(self, run_id: int) -> bool:
         """Return whether a run terminated due to divergence.
 
