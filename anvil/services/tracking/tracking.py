@@ -59,6 +59,7 @@ _MlflowClientLike = Any
 TAG_ENTITY_TYPE = "anvil.entity_type"
 TAG_ENTITY_ID = "anvil.entity_id"
 TAG_EVENT = "anvil.event"
+TAG_EVAL_STATUS = "anvil.eval_status"
 
 # Known transient/operational exceptions that should enter degraded mode.
 # These cover MLflow API errors, HTTP transport failures, and stdlib
@@ -1573,7 +1574,7 @@ class TrackingService:
         await self.set_tag(run_id, "anvil.base_model_ref", str(base_model_id))
         await self.set_tag(run_id, "anvil.fine_tuned_model_id", str(model_id))
         await self.set_tag(run_id, "anvil.tokenizer_family", tokenizer_family)
-        await self.set_tag(run_id, "anvil.eval_status", EvaluationRunStatus.RUNNING)
+        await self.set_tag(run_id, TAG_EVAL_STATUS, EvaluationRunStatus.RUNNING)
         if adapter_id:
             await self.set_tag(run_id, "anvil.adapter_id", adapter_id)
         return run_id
@@ -1611,9 +1612,7 @@ class TrackingService:
             The MLflow run ID.
         """
         if run_id:
-            await self.set_tag(
-                run_id, "anvil.eval_status", EvaluationRunStatus.COMPLETED
-            )
+            await self.set_tag(run_id, TAG_EVAL_STATUS, EvaluationRunStatus.COMPLETED)
             await self.finish_run(run_id)
 
     async def fail_eval_run(self, run_id: str, *, reason: str | None = None) -> None:
@@ -1627,7 +1626,7 @@ class TrackingService:
             Failure reason. Defaults to ``None``.
         """
         if run_id:
-            await self.set_tag(run_id, "anvil.eval_status", EvaluationRunStatus.FAILED)
+            await self.set_tag(run_id, TAG_EVAL_STATUS, EvaluationRunStatus.FAILED)
             if reason:
                 await self.set_tag(run_id, "anvil.eval_error", reason)
             await self.fail_run(run_id, _reason=reason)

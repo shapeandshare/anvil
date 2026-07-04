@@ -32,6 +32,7 @@ import pytest
 
 from anvil.services.compute.compute_backend_result import ComputeBackendResult
 from anvil.services.compute.compute_status import ComputeStatus
+from anvil.services.compute.registry_backend import RegistryBackend
 from anvil.services.compute.training_engine import TrainingEngine
 from anvil.services.training.divergence_error import DivergenceError
 from anvil.services.training.divergence_reason import DivergenceReason
@@ -735,6 +736,110 @@ class TestStartTraining:
             call_args = mock_get_backend.call_args
             assert call_args is not None
             assert call_args[0][0] == "local-lora"
+
+
+##########################################################################
+# _resolve_backend_name
+##########################################################################
+
+
+class TestResolveBackendName:
+    """Characterization tests for ``TrainingService._resolve_backend_name``.
+
+    Captures the current backend resolution logic before refactoring:
+    maps generic backend names (LOCAL, SAAS) to registry-qualified names
+    and handles LoRA/QLoRA method routing.
+    """
+
+    def test_local_stdlib_full(self) -> None:
+        """LOCAL + STDLIB + method=full → local-stdlib."""
+        result = TrainingService._resolve_backend_name(
+            config={"method": "full"},
+            engine_name=TrainingEngine.STDLIB,
+            backend_name=ComputeBackendResult.LOCAL,
+        )
+        assert result == RegistryBackend.LOCAL_STDLIB
+
+    def test_local_torch_full(self) -> None:
+        """LOCAL + TORCH + method=full → local-torch."""
+        result = TrainingService._resolve_backend_name(
+            config={"method": "full"},
+            engine_name=TrainingEngine.TORCH,
+            backend_name=ComputeBackendResult.LOCAL,
+        )
+        assert result == RegistryBackend.LOCAL_TORCH
+
+    def test_local_torch_lora(self) -> None:
+        """LOCAL + TORCH + method=lora → local-lora."""
+        result = TrainingService._resolve_backend_name(
+            config={"method": "lora"},
+            engine_name=TrainingEngine.TORCH,
+            backend_name=ComputeBackendResult.LOCAL,
+        )
+        assert result == RegistryBackend.LOCAL_LORA
+
+    def test_local_torch_qlora(self) -> None:
+        """LOCAL + TORCH + method=qlora → local-lora."""
+        result = TrainingService._resolve_backend_name(
+            config={"method": "qlora"},
+            engine_name=TrainingEngine.TORCH,
+            backend_name=ComputeBackendResult.LOCAL,
+        )
+        assert result == RegistryBackend.LOCAL_LORA
+
+    def test_saas_full_passes_through(self) -> None:
+        """SAAS + method=full → saas (no remap)."""
+        result = TrainingService._resolve_backend_name(
+            config={"method": "full"},
+            engine_name=TrainingEngine.TORCH,
+            backend_name=ComputeBackendResult.SAAS,
+        )
+        assert result == ComputeBackendResult.SAAS
+
+    def test_saas_lora(self) -> None:
+        """SAAS + method=lora → saas-finetune."""
+        result = TrainingService._resolve_backend_name(
+            config={"method": "lora"},
+            engine_name=TrainingEngine.TORCH,
+            backend_name=ComputeBackendResult.SAAS,
+        )
+        assert result == RegistryBackend.SAAS_FINETUNE
+
+    def test_saas_qlora(self) -> None:
+        """SAAS + method=qlora → saas-finetune."""
+        result = TrainingService._resolve_backend_name(
+            config={"method": "qlora"},
+            engine_name=TrainingEngine.TORCH,
+            backend_name=ComputeBackendResult.SAAS,
+        )
+        assert result == RegistryBackend.SAAS_FINETUNE
+
+    def test_modal_passes_through(self) -> None:
+        """MODAL + any method → modal (no remap)."""
+        result = TrainingService._resolve_backend_name(
+            config={"method": "full"},
+            engine_name=TrainingEngine.TORCH,
+            backend_name=ComputeBackendResult.MODAL,
+        )
+        assert result == ComputeBackendResult.MODAL
+
+    def test_default_method_is_full(self) -> None:
+        """LOCAL + STDLIB + no method key → local-stdlib (default 'full')."""
+        result = TrainingService._resolve_backend_name(
+            config={},
+            engine_name=TrainingEngine.STDLIB,
+            backend_name=ComputeBackendResult.LOCAL,
+        )
+        assert result == RegistryBackend.LOCAL_STDLIB
+
+    def test_local_stdlib_lora_unusual(self) -> None:
+        """LOCAL + STDLIB + method=lora → local-lora (method overrides engine)."""
+        result = TrainingService._resolve_backend_name(
+            config={"method": "lora"},
+            engine_name=TrainingEngine.STDLIB,
+            backend_name=ComputeBackendResult.LOCAL,
+        )
+        assert result == RegistryBackend.LOCAL_LORA
 
 
 ##########################################################################
