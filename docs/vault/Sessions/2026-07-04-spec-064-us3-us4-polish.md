@@ -1,8 +1,10 @@
 ---
 title: "Session: 2026-07-04 — Spec 064 US3/US4/Polish implementation"
 type: session
+source: agent
+aliases: ["Spec 064 implementation"]
 tags:
-  - type/session
+  - type/session-log
   - status/draft
 created: 2026-07-04
 updated: 2026-07-04
@@ -61,5 +63,5 @@ tests/e2e/test_legacy_removed.py .................... PASSED [4/4]
 ## Related
 
 - [[Specs/064 MLflow Model Catalog/spec|Spec 064]]
-- [[Decisions/ADR-046-mlflow-model-catalog-source-of-truth|ADR-046]]
+- [[Decisions/ADR-047-mlflow-model-catalog-source-of-truth|ADR-047]]
 - [[Specs/064 MLflow Model Catalog/tasks|Tasks]]

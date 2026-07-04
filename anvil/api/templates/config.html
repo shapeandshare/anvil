@@ -52,30 +52,52 @@
     <h2 class="section-card__title">Configuration Settings</h2>
   </div>
 
-  {# ── Config sections rendered by JS ── #}
-  <div id="config-sections">
-    <span class="text-muted type-subhead">Loading configuration&hellip;</span>
-  </div>
-</div>
-
-{# ── Secrets section: API tokens (encrypted at rest) ── #}
-<div class="section-card" style="--stagger-i: 2">
-  <div class="section-card__header">
-    <span class="section-card__icon">&#128273;</span>
-    <h2 class="section-card__title">Secrets</h2>
+  {# ── Tab bar ── #}
+  <div class="config-tabs" role="tablist" aria-label="Configuration categories">
+    <button type="button" class="config-tab config-tab--active" role="tab" aria-selected="true" aria-controls="config-panel-live" id="config-tab-live" data-tab="live">Live Settings</button>
+    <button type="button" class="config-tab" role="tab" aria-selected="false" aria-controls="config-panel-sidecar" id="config-tab-sidecar" data-tab="sidecar">Sidecar Settings</button>
+    <button type="button" class="config-tab" role="tab" aria-selected="false" aria-controls="config-panel-boot" id="config-tab-boot" data-tab="boot">Boot-Critical Settings</button>
+    <button type="button" class="config-tab" role="tab" aria-selected="false" aria-controls="config-panel-secrets" id="config-tab-secrets" data-tab="secrets">Secrets</button>
   </div>
 
-  <div class="help-box" style="margin-bottom:var(--space-3);">
-    <div class="help-title">API Tokens</div>
-    API tokens are encrypted at rest (AES-256-GCM) and used for HuggingFace Hub operations — importing models and downloading assets. Set <code class="cmd">hf_token</code> to authenticate with the HuggingFace Hub.
-  </div>
+  {# ── Tab panels ── #}
+  <div id="config-container">
+    {# Panel 1: Live Settings ── #}
+    <div class="config-panel config-panel--active" role="tabpanel" aria-labelledby="config-tab-live" id="config-panel-live" tabindex="0">
+      <div id="config-content-live">
+        <span class="text-muted type-subhead">Loading configuration&hellip;</span>
+      </div>
+    </div>
 
-  <div id="secrets-list">
-    <span class="text-muted type-subhead">Loading secrets&hellip;</span>
-  </div>
+    {# Panel 2: Sidecar Settings ── #}
+    <div class="config-panel" role="tabpanel" aria-labelledby="config-tab-sidecar" id="config-panel-sidecar" tabindex="0">
+      <div id="config-content-sidecar">
+        <span class="text-muted type-subhead">Loading configuration&hellip;</span>
+      </div>
+    </div>
 
-  <div style="margin-top:var(--space-3);">
-    <button type="button" class="btn btn-primary" id="secret-set-btn" style="display:none;">Set Token</button>
+    {# Panel 3: Boot-Critical Settings ── #}
+    <div class="config-panel" role="tabpanel" aria-labelledby="config-tab-boot" id="config-panel-boot" tabindex="0">
+      <div id="config-content-boot">
+        <span class="text-muted type-subhead">Loading configuration&hellip;</span>
+      </div>
+    </div>
+
+    {# Panel 4: Secrets ── #}
+    <div class="config-panel" role="tabpanel" aria-labelledby="config-tab-secrets" id="config-panel-secrets" tabindex="0">
+      <div class="help-box" style="margin-bottom:var(--space-3);">
+        <div class="help-title">API Tokens</div>
+        API tokens are encrypted at rest (AES-256-GCM) and used for HuggingFace Hub operations — importing models and downloading assets. Set <code class="cmd">hf_token</code> to authenticate with the HuggingFace Hub.
+      </div>
+
+      <div id="secrets-list">
+        <span class="text-muted type-subhead">Loading secrets&hellip;</span>
+      </div>
+
+      <div style="margin-top:var(--space-3);">
+        <button type="button" class="btn btn-primary" id="secret-set-btn" style="display:none;">Set Token</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -205,19 +227,30 @@
     return '<span class="badge badge-red">' + label + '</span>';
   }
 
+  /* Map SECTION_DEFS key → panel content container id */
+  var SECTION_PANEL_MAP = {
+    applies_live: 'config-content-live',
+    mlflow_restart: 'config-content-sidecar',
+    boot_critical: 'config-content-boot'
+  };
+
   window.loadConfig = async function loadConfig() {
-    var container = document.getElementById('config-sections');
-    if (!container) return;
     try {
       var resp = await fetch('/v1/config');
       if (!resp.ok) {
-        container.innerHTML = '<span class="text-muted type-subhead">Could not load configuration.</span>';
+        for (var ck in SECTION_PANEL_MAP) {
+          var c = document.getElementById(SECTION_PANEL_MAP[ck]);
+          if (c) c.innerHTML = '<span class="text-muted type-subhead">Could not load configuration.</span>';
+        }
         return;
       }
       var settings = await resp.json();
 
       if (!settings || settings.length === 0) {
-        container.innerHTML = '<div class="empty-state">No configuration settings available.</div>';
+        for (var ek in SECTION_PANEL_MAP) {
+          var e = document.getElementById(SECTION_PANEL_MAP[ek]);
+          if (e) e.innerHTML = '<div class="empty-state">No configuration settings available.</div>';
+        }
         return;
       }
 
@@ -229,7 +262,7 @@
       for (var pi = 0; pi < settings.length; pi++) {
         if (settings[pi].pending_restart) {
           pendingCount++;
-          pendingKeys.push(settings[pi].display_name || settings[pi].key);
+          pendingKeys.push(esc(settings[pi].display_name || settings[pi].key));
         }
       }
       if (pendingCount > 0) {
@@ -239,78 +272,87 @@
         pendingBanner.style.display = 'none';
       }
 
-      // ── Build grouped sections ──
-      var html = '';
-
+      // ── Build grouped sections into per-panel containers ──
       for (var si = 0; si < SECTION_DEFS.length; si++) {
         var sec = SECTION_DEFS[si];
+        var panelId = SECTION_PANEL_MAP[sec.key];
+        var container = document.getElementById(panelId);
+        if (!container) continue;
+
         var secSettings = [];
         for (var i = 0; i < settings.length; i++) {
           if (sec.filter(settings[i])) {
             secSettings.push(settings[i]);
           }
         }
-        if (secSettings.length === 0) continue;
 
-        html += '<section class="config-section">';
-        html += '<div class="config-section__header">';
-        html += '<span class="config-section__icon" style="color:' + sec.color + ';">' + sec.icon + '</span>';
-        html += '<h3 class="config-section__title">' + sec.title + '</h3>';
-        html += '<span class="config-section__count">' + secSettings.length + '</span>';
-        html += '</div>';
-
-        // Section help-box
-        html += '<div class="help-box" style="margin-bottom:var(--space-3);">';
-        html += '<div class="help-title">' + sec.title + '</div>';
-        html += sec.desc;
-        html += '</div>';
-
-        for (var j = 0; j < secSettings.length; j++) {
-          var s = secSettings[j];
-          var displayName = s.display_name || s.key;
-          var pendingHtml = s.pending_restart ? ' <span class="badge badge-yellow" title="Restart required">&#9888; pending</span>' : '';
-
-          html += '<div class="config-row row-entrance" style="--row-i:' + (si * 10 + j) + '">';
-          html += '<div class="config-row__top">';
-          html += '<div class="config-row__info">';
-          html += '<div class="config-row__name">' + esc(displayName) + ' <code>' + esc(s.key) + '</code>' + pendingHtml + '</div>';
-          if (s.description) {
-            html += '<div class="config-row__desc">' + esc(s.description) + '</div>';
-          }
+        var html = '';
+        if (secSettings.length === 0) {
+          html = '<div class="empty-state">No ' + sec.title.toLowerCase() + ' available.</div>';
+        } else {
+          html += '<section class="config-section">';
+          html += '<div class="config-section__header">';
+          html += '<span class="config-section__icon" style="color:' + sec.color + ';">' + sec.icon + '</span>';
+          html += '<h3 class="config-section__title">' + sec.title + '</h3>';
+          html += '<span class="config-section__count">' + secSettings.length + '</span>';
           html += '</div>';
-          html += '<div class="config-row__actions">';
-          html += '<span style="white-space:nowrap;">' + sourceBadge(s) + ' ' + applyClassBadge(s) + '</span>';
-          html += '<span id="config-value-' + s.key + '" style="display:none;">' + esc(s.value) + '</span>';
-          if (s.editable) {
-            html += '<button type="button" class="btn btn-secondary btn-sm" data-config-action="edit" data-config-key="' + s.key + '" data-label="Edit">Edit</button>';
-            if (s.source === 'override') {
-              html += '<button type="button" class="btn btn-secondary btn-sm" style="color:var(--accent-red);border-color:var(--accent-red);" data-config-action="reset" data-config-key="' + s.key + '" data-label="Reset">Reset</button>';
+
+          // Section help-box
+          html += '<div class="help-box" style="margin-bottom:var(--space-3);">';
+          html += '<div class="help-title">' + sec.title + '</div>';
+          html += sec.desc;
+          html += '</div>';
+
+          for (var j = 0; j < secSettings.length; j++) {
+            var s = secSettings[j];
+            var displayName = s.display_name || s.key;
+            var pendingHtml = s.pending_restart ? ' <span class="badge badge-yellow" title="Restart required">&#9888; pending</span>' : '';
+
+            html += '<div class="config-row row-entrance" style="--row-i:' + (si * 10 + j) + '">';
+            html += '<div class="config-row__top">';
+            html += '<div class="config-row__info">';
+            html += '<div class="config-row__name">' + esc(displayName) + ' <code>' + esc(s.key) + '</code>' + pendingHtml + '</div>';
+            if (s.description) {
+              html += '<div class="config-row__desc">' + esc(s.description) + '</div>';
             }
-          }
-          html += '</div>'; // actions
-          html += '</div>'; // top
+            html += '</div>';
+            html += '<div class="config-row__actions">';
+            html += '<span style="white-space:nowrap;">' + sourceBadge(s) + ' ' + applyClassBadge(s) + '</span>';
+            html += '<span id="config-value-' + s.key + '" style="display:none;">' + esc(s.value) + '</span>';
+            if (s.editable) {
+              html += '<button type="button" class="btn btn-secondary btn-sm" data-config-action="edit" data-config-key="' + s.key + '" data-label="Edit">Edit</button>';
+              if (s.source === 'override') {
+                html += '<button type="button" class="btn btn-secondary btn-sm" style="color:var(--accent-red);border-color:var(--accent-red);" data-config-action="reset" data-config-key="' + s.key + '" data-label="Reset">Reset</button>';
+              }
+            }
+            html += '</div>'; // actions
+            html += '</div>'; // top
 
-          // Metadata grid
-          html += '<div class="config-row__meta">';
-          html += '<span class="config-row__meta-label">Value</span>';
-          html += '<span class="config-row__meta-value" style="font-weight:600;">' + esc(s.value) + '</span>';
-          html += '<span class="config-row__meta-label">Default</span>';
-          html += '<span class="config-row__meta-value">' + esc(s.default_value || '—') + '</span>';
-          if (s.env_var) {
-            html += '<span class="config-row__meta-label">Env Var</span>';
-            html += '<span class="config-row__meta-value" style="font-family:var(--font-mono);">' + esc(s.env_var) + '</span>';
-          }
-          html += '</div>';
+            // Metadata grid
+            html += '<div class="config-row__meta">';
+            html += '<span class="config-row__meta-label">Value</span>';
+            html += '<span class="config-row__meta-value" style="font-weight:600;">' + esc(s.value) + '</span>';
+            html += '<span class="config-row__meta-label">Default</span>';
+            html += '<span class="config-row__meta-value">' + esc(s.default_value || '—') + '</span>';
+            if (s.env_var) {
+              html += '<span class="config-row__meta-label">Env Var</span>';
+              html += '<span class="config-row__meta-value" style="font-family:var(--font-mono);">' + esc(s.env_var) + '</span>';
+            }
+            html += '</div>';
 
-          html += '</div>'; // row
+            html += '</div>'; // row
+          }
+
+          html += '</section>';
         }
 
-        html += '</section>';
+        container.innerHTML = html;
       }
-
-      container.innerHTML = html;
     } catch(e) {
-      container.innerHTML = '<span class="text-muted type-subhead">Could not load configuration.</span>';
+      for (var ck2 in SECTION_PANEL_MAP) {
+        var c2 = document.getElementById(SECTION_PANEL_MAP[ck2]);
+        if (c2) c2.innerHTML = '<span class="text-muted type-subhead">Could not load configuration.</span>';
+      }
     }
   };
 
@@ -419,9 +461,49 @@
     });
   }
 
+  // ── Tab switching ──
+
+  var VALID_TABS = ['live', 'sidecar', 'boot', 'secrets'];
+
+  function switchTab(tabId) {
+    if (VALID_TABS.indexOf(tabId) === -1) return;
+
+    // Update tab button states
+    document.querySelectorAll('.config-tabs .config-tab').forEach(function(tab) {
+      var isActive = tab.getAttribute('data-tab') === tabId;
+      tab.classList.toggle('config-tab--active', isActive);
+      tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+
+    // Update panel states
+    document.querySelectorAll('.config-panel').forEach(function(panel) {
+      var isActive = panel.getAttribute('id') === 'config-panel-' + tabId;
+      panel.classList.toggle('config-panel--active', isActive);
+    });
+
+    // Update URL for shareability
+    if (window.core) {
+      window.core.setUrlParams(new URLSearchParams({ tab: tabId }));
+    }
+  }
+
+  // Wire tab click handlers (buttons already handle Enter/Space natively)
+  document.querySelectorAll('.config-tabs .config-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      switchTab(this.getAttribute('data-tab'));
+    });
+  });
+
+  // ── Initial tab from URL ──
+  var initialTab = window.core && window.core.getUrlParams().get('tab');
+  if (initialTab && VALID_TABS.indexOf(initialTab) !== -1 && initialTab !== 'live') {
+    switchTab(initialTab);
+  }
+
   window.loadConfig();
 
-  document.getElementById('config-sections').addEventListener('click', function(e) {
+  // ── Config action delegation (edit/reset) ──
+  document.getElementById('config-container').addEventListener('click', function(e) {
     var btn = e.target.closest('[data-config-action]');
     if (!btn) return;
     var action = btn.dataset.configAction;

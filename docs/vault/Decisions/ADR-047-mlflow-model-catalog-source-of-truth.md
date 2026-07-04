@@ -9,7 +9,7 @@ tags:
 created: '2026-07-03'
 updated: '2026-07-03'
 aliases:
-  - ADR-046
+  - ADR-047
   - MLflow Model Catalog
 source: agent
 code-refs:
@@ -20,7 +20,7 @@ code-refs:
   - anvil/db/models/lora_adapter.py
   - anvil/workbench.py
 ---
-# ADR-046: MLflow Model Registry as Model Catalog Source of Truth
+# ADR-047: MLflow Model Registry as Model Catalog Source of Truth
 
 ## Status
 

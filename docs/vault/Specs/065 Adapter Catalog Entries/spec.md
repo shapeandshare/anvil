@@ -22,7 +22,7 @@ on their base model's detail page. This follow-up promotes adapters to
 first-class catalog entries so users can discover, select, and act on a
 fine-tuned adapter the same way they act on any model — without first
 navigating to its base model. The `adapter` kind is already reserved in
-the catalog's kind vocabulary (ADR-046), so no catalog schema change is
+the catalog's kind vocabulary (ADR-047), so no catalog schema change is
 required.
 
 ## User Scenarios & Testing *(mandatory)*
@@ -175,4 +175,4 @@ adapter + base lineage.
 ## See Also
 
 - [[Specs/064 MLflow Model Catalog/spec|Spec 064]] — prerequisite: unified model catalog (this spec was deferred from its Clarification Q2)
-- [[Decisions/ADR-046-mlflow-model-catalog-source-of-truth|ADR-046]] — catalog architecture decision (reserves the `adapter` kind)
+- [[Decisions/ADR-047-mlflow-model-catalog-source-of-truth|ADR-047]] — catalog architecture decision (reserves the `adapter` kind)

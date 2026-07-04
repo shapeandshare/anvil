@@ -154,7 +154,7 @@ updated: 2026-07-03
 - [ ] T045 **UX compliance gate**: run `make ux-lint` on all changed templates (`models.html`, `playground.html`, `model_detail.html`, `training.html`, `eval_compare.html`) — must pass GATE: PASS
 - [ ] T046 Run full quickstart.md validation end-to-end (import → list → download → play → fine-tune → eval → fail-closed → archive → removal grep)
 - [ ] T047 Merge gates: `make lint && make typecheck && make test && make vault-audit` — all green; coverage ratchet (`fail_under`) not lowered
-- [x] T048 [P] Vault enrichment: session log in `docs/vault/Sessions/`, update ADR-046 status/compliance notes if needed, ensure Spec 064 wikilinks resolve (`make vault-audit` 0 errors)
+- [x] T048 [P] Vault enrichment: session log in `docs/vault/Sessions/`, update ADR-047 status/compliance notes if needed, ensure Spec 064 wikilinks resolve (`make vault-audit` 0 errors)
 
 ---
 

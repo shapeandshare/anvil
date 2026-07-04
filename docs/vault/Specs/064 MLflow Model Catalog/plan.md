@@ -16,7 +16,7 @@ updated: 2026-07-03
 
 Make the MLflow Model Registry the single source of truth for the model
 catalog (identity, versions, metadata, lineage) for ALL model kinds —
-trained, external (HF/local imports), and merged — per ADR-046. A new
+trained, external (HF/local imports), and merged — per ADR-047. A new
 `ModelCatalogService` (MLflow-backed, following `TrackingService`'s
 lazy-init/executor conventions but **fail-closed** instead of silently
 degrading) owns registry CRUD and search. A `ModelRef` value object
@@ -70,7 +70,7 @@ outright — no migration, no dual-write (ADR-032).
       pattern, and `TrackingService`'s executor/lazy-init conventions. No
       new dependency, framework, or experimental pattern.
 - [x] **YAGNI** (§11.3) — no read-through cache (added only if offline
-      catalog reads become a requirement — recorded in ADR-046); no
+      catalog reads become a requirement — recorded in ADR-047); no
       adapter catalog entries (deferred to Spec 065); no multi-tenant
       naming machinery.
 - [x] **Reuse first** (§11.4) — `ModelSource` protocol, `LocalFileStore`,

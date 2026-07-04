@@ -1,0 +1,933 @@
+<!--
+  ~ Copyright © 2026 Josh Burt
+  ~
+  ~ This source code is licensed under the MIT license found in the
+  ~ LICENSE file in the root directory of this source tree.
+-->
+
+{% extends "base.html" %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css">{% endblock %}
+{% block content %}
+
+{# ── Back link to Data Hub ── #}
+<div style="margin-bottom:var(--space-3);">
+  <a href="/v1/datasets-page" class="action-link">&larr; Data Hub</a>
+</div>
+
+{# ── BANNER CTA: Data Fundamentals learning lesson ── #}
+<div class="section-card section-card--banner" style="--stagger-i: 0">
+  <div class="section-card__content" style="display:flex;align-items:center;gap:var(--space-3);">
+    <span style="font-size:1.2rem;flex-shrink:0;">&#128218;</span>
+    <div style="flex:1;">
+      <div style="font-family:var(--font-body);font-weight:600;font-size:var(--text-footnote);color:var(--text-secondary);">
+        Understanding Datasets &amp; Corpora
+      </div>
+      <div style="font-size:var(--text-caption-2);color:var(--text-tertiary);margin-top:2px;">
+        How data flows into training &mdash; now in the interactive learning arc.
+      </div>
+    </div>
+    <a href="/v1/learn/data-fundamentals" class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap;">
+      Learn More &rarr;
+    </a>
+  </div>
+</div>
+{% include "partials/related-lessons.html" %}
+
+{# ── SECTION: Organize Sources ── #}
+<div class="section-card" style="--stagger-i: 1">
+
+  <div class="ds-flow-section" data-step="2">
+    <div class="ds-flow-header">
+      <div class="ds-flow-bubble"><span>2</span></div>
+      <div>
+        <div class="ds-flow-label">Step Two</div>
+        <div class="ds-flow-title">Organize Sources</div>
+      </div>
+    </div>
+    <p class="ds-flow-desc">Scan directories with glob patterns for automatic file discovery. The wizard recommends optimal chunking parameters based on file size and type distribution &mdash; pick a recommendation and go.</p>
+  </div>
+
+  <div class="section-card__content" style="margin-bottom:var(--space-4);">
+    Enter a directory path and optional glob patterns. The wizard scans the directory (no data read), shows file statistics, and recommends optimal chunking parameters based on file size and type. Pick a recommendation or customize, then create &amp; ingest.
+  </div>
+
+  {# ── Zone 1: Analyze Path ── #}
+  <div class="ds-zone ds-zone--analyze">
+    <div class="ds-zone-label">Analyze Path</div>
+    <div id="wiz-drop-zone" style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:flex-start;">
+      <label for="wiz-root" class="sr-only">Root path</label>
+      <input type="text" class="form-input" id="wiz-root" placeholder="root_path">
+      <button class="btn btn-secondary" id="wiz-browse-btn" title="Select folder via native dialog">browse</button>
+      <label for="wiz-folder-picker" class="sr-only">Folder picker</label>
+      <input type="file" id="wiz-folder-picker" webkitdirectory style="display:none;">
+      <div class="filter-bag filter-bag--include">
+        <div class="filter-bag__header">
+          <span class="filter-bag__label"><span class="filter-bag__label-icon">+</span> include</span>
+        </div>
+        <label for="wiz-include" class="sr-only">Include pattern</label>
+        <input type="text" class="form-input" id="wiz-include" placeholder="e.g. **/*, *.py" spellcheck="false">
+      </div>
+      <div class="filter-bag filter-bag--exclude">
+        <div class="filter-bag__header">
+          <span class="filter-bag__label"><span class="filter-bag__label-icon">&minus;</span> exclude</span>
+        </div>
+        <label for="wiz-exclude" class="sr-only">Exclude pattern</label>
+        <input type="text" class="form-input" id="wiz-exclude" placeholder="e.g. tests/, node_modules" spellcheck="false">
+      </div>
+      <button class="btn btn-success" id="wiz-analyze-btn" title="Scan directory and auto-select best chunking params">auto-tune</button>
+    </div>
+    <div class="ds-status-line" id="wiz-status" aria-live="polite" role="status">Enter a path, drag a folder from Finder here, or use <b>browse</b>.</div>
+  </div>
+
+  {# ── Zone 2: Glob Patterns ── #}
+  <div class="ds-zone ds-zone--patterns">
+    <div class="ds-zone-label">Glob Patterns</div>
+    <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:flex-start;">
+      <div class="filter-bag__chips">
+        <button type="button" class="tag" data-target="include" data-value="**/*" aria-pressed="false">All files</button>
+        <button type="button" class="tag" data-target="include" data-value="*.py" aria-pressed="false">Python</button>
+        <button type="button" class="tag" data-target="include" data-value="*.js" aria-pressed="false">JS</button>
+        <button type="button" class="tag" data-target="include" data-value="*.ts" aria-pressed="false">TS</button>
+        <button type="button" class="tag" data-target="include" data-value="*.go" aria-pressed="false">Go</button>
+        <button type="button" class="tag" data-target="include" data-value="*.rs" aria-pressed="false">Rust</button>
+        <button type="button" class="tag" data-target="include" data-value="*.md" aria-pressed="false">Markdown</button>
+        <button type="button" class="tag" data-target="include" data-value="*.{py,js,ts,go,rs,md}" aria-pressed="false">Code+Docs</button>
+        <button type="button" class="tag" data-target="include" data-value="*.json" aria-pressed="false">JSON</button>
+        <button type="button" class="tag" data-target="include" data-value="*.yaml" aria-pressed="false">YAML</button>
+        <button type="button" class="tag" data-target="include" data-value="*.sh" aria-pressed="false">Shell</button>
+        <button type="button" class="tag" data-target="include" data-value="*.css" aria-pressed="false">CSS</button>
+        <button type="button" class="tag" data-target="include" data-value="*.html" aria-pressed="false">HTML</button>
+      </div>
+      <div class="filter-bag__chips">
+        <button type="button" class="tag" data-target="exclude" data-value="tests/" aria-pressed="false">! tests/</button>
+        <button type="button" class="tag" data-target="exclude" data-value="node_modules" aria-pressed="false">! node_modules</button>
+        <button type="button" class="tag" data-target="exclude" data-value="__pycache__" aria-pressed="false">! __pycache__</button>
+        <button type="button" class="tag" data-target="exclude" data-value=".git" aria-pressed="false">! .git</button>
+      </div>
+    </div>
+  </div>
+
+  {# ── Zone 3: Analysis Results + Zone 4: Create Corpus (hidden until analyze) ── #}
+  <div id="wiz-results" style="display:none;">
+
+    <div class="ds-zone ds-zone--results">
+      <div class="ds-zone-label">Analysis Results</div>
+      <div id="wiz-stats" class="section-card__content" style="margin-bottom:var(--space-3);"></div>
+      <div class="ds-section-label" style="margin-bottom:var(--space-2);">Recommendations</div>
+      <div id="wiz-recs" style="display:flex;flex-direction:column;gap:var(--space-2);"></div>
+    </div>
+
+    <div class="ds-zone ds-zone--create">
+      <div class="ds-zone-label">Create &amp; Ingest Corpus</div>
+      <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;">
+        <label for="wiz-name" class="sr-only">Corpus name</label>
+        <input type="text" class="form-input" id="wiz-name" placeholder="corpus name">
+        <label for="wiz-strategy" class="help-text">strategy:</label>
+        <select class="form-select" id="wiz-strategy">
+          <option value="windowed">windowed</option>
+          <option value="file">file</option>
+          <option value="line">line</option>
+        </select>
+        <label for="wiz-max-files" class="help-text">max files:</label>
+        <input type="number" class="form-input" id="wiz-max-files" value="10000" min="100" max="1000000" step="1000">
+        <label class="help-text" for="wiz-block-size">block_size:</label>
+        <input type="range" id="wiz-block-size" min="8" max="1024" value="64" step="8" style="accent-color:var(--primary);vertical-align:middle;">
+        <span id="wiz-bs-value" class="type-caption-1" style="color:var(--accent-cyan);min-width:35px;">64</span>
+        <label class="help-text" for="wiz-overlap">overlap:</label>
+        <input type="range" id="wiz-overlap" min="0" max="50" value="25" style="accent-color:var(--primary);vertical-align:middle;">
+        <span id="wiz-ov-value" class="type-caption-1" style="color:var(--accent-cyan);min-width:30px;">25%</span>
+        <button class="btn btn-primary" id="wiz-create-btn">create &amp; ingest</button>
+      </div>
+      <div id="wiz-estimate" class="type-caption-1" style="padding-left:var(--space-4);margin-top:var(--space-2);min-height:20px;"></div>
+      <div id="wiz-estimate-warnings" class="type-caption-1" style="padding-left:var(--space-4);margin-top:var(--space-2);"></div>
+      <div class="ds-status-line" id="wiz-create-status" aria-live="polite" role="status"></div>
+    </div>
+
+  </div>
+
+  {# ── Import corpus as dataset (custom chunking) ── #}
+  <div class="ds-section" style="margin-top:var(--space-4);padding-top:var(--space-3);border-top:1px solid var(--border);">
+    <div class="ds-section-label">Import as Dataset <span class="tooltip-trigger"><span class="tooltip-icon">i</span><span class="tooltip-content">Create a new dataset from a corpus with custom chunking parameters — different from the corpus's original settings.</span></span></div>
+    <div id="corpus-to-dataset" style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:flex-end;">
+      <div style="display:flex;flex-direction:column;gap:var(--space-1);">
+        <label class="label-text" for="cd-corpus-select">Source Corpus</label>
+        <select class="form-select" id="cd-corpus-select">
+          <option value="">Select a corpus...</option>
+        </select>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:var(--space-1);">
+        <label class="label-text" for="cd-name">Name</label>
+        <input type="text" class="form-input type-caption-1" id="cd-name" placeholder="dataset name">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:var(--space-1);">
+        <label class="label-text" for="cd-strategy">Strategy</label>
+        <select class="form-select" id="cd-strategy">
+          <option value="windowed">windowed</option>
+          <option value="file">file</option>
+          <option value="line">line</option>
+        </select>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:var(--space-1);">
+        <label class="label-text" for="cd-block-size">Block Size</label>
+        <input type="range" id="cd-block-size" min="8" max="1024" value="64" step="8" style="accent-color:var(--primary);vertical-align:middle;">
+        <span id="cd-bs-value" class="type-caption-1" style="color:var(--accent-cyan);min-width:35px;text-align:center;">64</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:var(--space-1);">
+        <label class="label-text" for="cd-overlap">Overlap</label>
+        <input type="range" id="cd-overlap" min="0" max="50" value="25" style="accent-color:var(--primary);vertical-align:middle;">
+        <span id="cd-ov-value" class="type-caption-1" style="color:var(--accent-cyan);min-width:30px;text-align:center;">25%</span>
+      </div>
+      <button class="btn btn-primary" id="cd-create-btn">create dataset</button>
+    </div>
+    <div class="ds-status-line" id="cd-status" aria-live="polite" role="status"></div>
+  </div>
+
+</div>
+
+{# ── SECTION: Combine & Curate ── #}
+<div class="section-card" style="--stagger-i: 2">
+
+  <div class="ds-flow-section" data-step="3">
+    <div class="ds-flow-header">
+      <div class="ds-flow-bubble"><span>3</span></div>
+      <div>
+        <div class="ds-flow-label">Step Three</div>
+        <div class="ds-flow-title">Combine &amp; Curate</div>
+      </div>
+    </div>
+    <p class="ds-flow-desc">Import processed corpus documents into a dataset for final curation, then review everything at a glance in the combined view below.</p>
+  </div>
+
+  <div class="section-card__content" style="margin-bottom:var(--space-3);">
+    Import documents from a corpus into a dataset. This copies the processed documents from the corpus into the selected dataset, making them available for training and curation.
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:flex-end;">
+
+    <div style="display:flex;flex-direction:column;gap:var(--space-1);">
+      <label class="label-text" for="import-corpus-select">Source Corpus</label>
+      <select class="form-select" id="import-corpus-select">
+        <option value="">Select a corpus...</option>
+      </select>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:var(--space-1);">
+      <label class="label-text" for="import-dataset-select">Target Dataset</label>
+      <select class="form-select" id="import-dataset-select">
+        <option value="">Select a dataset...</option>
+      </select>
+    </div>
+
+    <button class="btn btn-primary" id="import-btn">import</button>
+  </div>
+
+  <div class="section-card__content type-subhead" id="import-status" aria-live="polite" role="status" style="margin-top:var(--space-2);">Select a corpus and a dataset, then click import.</div>
+
+  {# ── Import history (quick summary) ── #}
+  <div style="margin-top:var(--space-3);padding-top:var(--space-2);border-top:1px solid var(--border);">
+    <div class="type-footnote" style="font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-1);">Usage Note</div>
+    <div class="section-card__content type-subhead">
+      After importing, the target dataset's documents will include the corpus documents. You can then curate, deduplicate, or filter in the dataset view. Corpora remain read-only and unaffected by the import.
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script nonce="{{ request.state.csp_nonce }}">
+(function() {
+
+  /* ── helpers ────────────────────────────────────────── */
+
+  function formatBytes(b) {
+    if (b == null) return '?';
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+    return (b / 1048576).toFixed(1) + ' MB';
+  }
+
+  function escHtml(s) {
+    if (s == null) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function parsePatterns(s) {
+    if (!s || !s.trim()) return null;
+    return s.split(',').map(function(p) { return p.trim(); }).filter(function(p) { return p; });
+  }
+
+  function safeJson(resp) {
+    return resp.text().then(function(text) {
+      try { return { ok: resp.ok, body: JSON.parse(text), raw: null }; }
+      catch(e) { return { ok: false, body: null, raw: text.slice(0, 200) }; }
+    });
+  }
+
+  function showToast(msg, type) {
+    var container = document.getElementById('toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'toast-container';
+      container.className = 'toast-container';
+      document.body.appendChild(container);
+    }
+    var toast = document.createElement('div');
+    toast.className = 'toast toast-' + (type || 'info');
+    toast.textContent = msg;
+    container.appendChild(toast);
+    setTimeout(function() {
+      toast.style.opacity = '0';
+      toast.style.transition = 'opacity 0.3s ease';
+      setTimeout(function() { toast.remove(); }, 300);
+    }, 3000);
+  }
+
+  /* ── wizard state ──────────────────────────────────── */
+
+  var wizState = {};
+
+  /* ── wizard: analyze ─────────────────────────────────── */
+
+  document.getElementById('wiz-analyze-btn').addEventListener('click', async function() {
+    var btn = this;
+    var root = document.getElementById('wiz-root').value.trim();
+    var inc = document.getElementById('wiz-include').value.trim();
+    var exc = document.getElementById('wiz-exclude').value.trim();
+    var status = document.getElementById('wiz-status');
+    if (!root) { status.textContent = '! root_path required'; document.getElementById('wiz-root').focus(); return; }
+    btn.disabled = true;
+    dom.setHtml(btn, '<span class="spinner"></span> scanning');
+    status.textContent = '> scanning…';
+    var body = { path: root };
+    var incList = parsePatterns(inc);
+    var excList = parsePatterns(exc);
+    if (incList) body.include_patterns = incList;
+    if (excList) body.exclude_patterns = excList;
+    try {
+      var resp = await window.apiFetch('/v1/corpora/analyze-path', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      var parsed = await safeJson(resp);
+      if (!parsed.ok) { btn.disabled = false; dom.setText(btn, 'auto-tune'); status.textContent = '! ' + (parsed.body ? (parsed.body.detail || 'Analyze failed') : parsed.raw); return; }
+      wizState.analysis = parsed.body.data;
+      renderWizResults(parsed.body.data, true);
+      document.getElementById('wiz-results').style.display = 'block';
+      status.textContent = '> scan complete: ' + (parsed.body.data.file_count != null ? parsed.body.data.file_count.toLocaleString() : '?') + ' files, ' + formatBytes(parsed.body.data.total_bytes);
+      btn.disabled = false;
+      dom.setText(btn, 'auto-tune');
+    } catch (err) { btn.disabled = false; dom.setText(btn, 'auto-tune'); status.textContent = '! ' + err.message; }
+  });
+
+  function renderWizResults(data, autoSelect) {
+    /* stats box */
+    var langs = Object.keys(data.language_breakdown || {}).slice(0, 8);
+    var langStats = data.language_stats || {};
+    var langHtml = langs.length
+      ? langs.map(function(l) {
+          var extra = '';
+          var st = langStats[l];
+          if (st && st.avg_bytes) {
+            extra = ' <span class="text-muted type-caption-2">avg ' + formatBytes(st.avg_bytes) + '</span>';
+          }
+          return '<span style="color:var(--accent-cyan);">' + l + '</span> ' + data.language_breakdown[l] + ' files' + extra;
+        }).join(' &middot; ')
+      : 'No language data';
+    dom.setHtml(document.getElementById('wiz-stats'),
+      '<div class="type-caption-1" style="display:flex;gap:20px;flex-wrap:wrap;">'
+      + '<span><b>Files</b>: ' + (data.file_count != null ? data.file_count.toLocaleString() : '?') + '</span>'
+      + '<span><b>Total</b>: ' + formatBytes(data.total_bytes) + '</span>'
+      + '<span><b>Avg</b>: ' + formatBytes(data.avg_bytes) + '</span>'
+      + '<span><b>Median</b>: ' + formatBytes(data.median_bytes) + '</span>'
+      + '</div><div class="text-muted type-caption-1" style="margin-top:4px;">' + langHtml + '</div>');
+
+    /* recommendations */
+    var recs = data.recommendations || [];
+    var recsContainer = document.getElementById('wiz-recs');
+
+    function _setRecCardInner(el, r, i) {
+      var docs = r.estimated_docs != null ? formatBytes(r.estimated_docs).replace('B','').replace('KB','K').replace('MB','M') + ' docs' : '? docs';
+      el.innerHTML = '<input type="radio" name="wiz-rec" value="' + i + '"' + (i === 0 ? ' checked' : '') + ' style="margin-top:2px;accent-color:var(--primary);">'
+        + '<div style="flex:1;">'
+        + '<div style="color:var(--accent-green);font-weight:bold;">' + r.label + '</div>'
+        + '<div style="color:var(--text-dim);">' + r.detail + '</div>'
+        + '</div>'
+        + '<div class="type-caption-1" style="text-align:right;white-space:nowrap;color:var(--info);">' + docs + '</div>';
+    }
+
+    function _applyRecCardVisual(el, r, i) {
+      if (r.strategy) {
+        el.setAttribute('data-strategy', r.strategy);
+        el.style.border = '1px solid var(--border)';
+        el.style.cursor = 'pointer';
+        el.classList.remove('text-muted');
+      } else {
+        el.removeAttribute('data-strategy');
+        el.style.border = '1px dashed var(--border)';
+        el.style.cursor = '';
+        el.classList.add('text-muted');
+      }
+      dom.toggleClass(el, 'selected-rec', i === 0 && !!r.strategy);
+      if (i === 0 && r.strategy) {
+        el.style.borderColor = 'var(--accent-cyan)';
+      } else if (r.strategy) {
+        el.style.borderColor = 'var(--border)';
+      }
+    }
+
+    dom.syncList(recsContainer, recs,
+      function(r, i) { return String(i); },
+      function(r, i) {
+        var el = document.createElement('div');
+        el.className = 'type-caption-1 rec-card';
+        el.style.cssText = 'display:flex;gap:8px;align-items:flex-start;padding:6px 10px;';
+        _applyRecCardVisual(el, r, i);
+        _setRecCardInner(el, r, i);
+        return el;
+      },
+      function(el, r, i) {
+        _applyRecCardVisual(el, r, i);
+        _setRecCardInner(el, r, i);
+      }
+    );
+
+    /* auto-select first recommendation on first analysis */
+    if (recs.length > 0) {
+      var first = recsContainer.querySelector('.rec-card[data-strategy]');
+      if (!first) first = recsContainer.querySelector('.rec-card');
+      if (first) first.click();
+    }
+
+    updateWizParams();
+  }
+
+  function updateWizParams() {
+    var strat = document.getElementById('wiz-strategy').value;
+    var bsSlider = document.getElementById('wiz-block-size');
+    var bsLabel = document.getElementById('wiz-bs-label');
+    var bsVal = document.getElementById('wiz-bs-value');
+    var ovSlider = document.getElementById('wiz-overlap');
+    var ovLabel = document.getElementById('wiz-ov-label');
+    var ovVal = document.getElementById('wiz-ov-value');
+    var hidden = strat !== 'windowed';
+    bsSlider.style.display = hidden ? 'none' : '';
+    bsLabel.style.display = hidden ? 'none' : '';
+    bsVal.style.display = hidden ? 'none' : '';
+    ovSlider.style.display = hidden ? 'none' : '';
+    ovLabel.style.display = hidden ? 'none' : '';
+    ovVal.style.display = hidden ? 'none' : '';
+    bsVal.textContent = bsSlider.value;
+    ovVal.textContent = ovSlider.value + '%';
+    updateEstimate();
+  }
+
+  function updateEstimate() {
+    var analysis = wizState.analysis;
+    var el = document.getElementById('wiz-estimate');
+    if (!analysis) { dom.setHtml(el, ''); return; }
+    var strat = document.getElementById('wiz-strategy').value;
+    var totalBytes = analysis.total_bytes;
+    var fileCount = analysis.file_count;
+    var avgBytes = analysis.avg_bytes;
+    var docs, label;
+    if (strat === 'file') {
+      docs = fileCount;
+      label = '1 doc per file';
+    } else if (strat === 'line') {
+      var estLines = Math.round(totalBytes / 60);
+      docs = estLines;
+      label = '1 doc per line';
+    } else {
+      var bs = parseInt(document.getElementById('wiz-block-size').value, 10);
+      var overlap = parseInt(document.getElementById('wiz-overlap').value, 10) / 100;
+      var stride = Math.max(1, Math.round(bs * (1 - overlap)));
+      var docsPerFile = avgBytes > bs ? Math.floor((avgBytes - bs) / stride) + 1 : 1;
+      docs = fileCount * docsPerFile;
+      label = bs + '-char window, ' + Math.round(overlap * 100) + '% overlap';
+    }
+    var displayDocs = docs.toLocaleString();
+    var color = docs > 5000000 ? 'var(--warning)' : docs > 500000 ? 'var(--text-dim)' : 'var(--accent-green)';
+    var html = '<span style="color:' + color + ';">~' + displayDocs + ' training docs</span>  <span style="color:var(--text-dim);">(' + label + ')</span>';
+    dom.setHtml(el, html);
+    updateEstimateWarnings();
+  }
+
+  function updateEstimateWarnings() {
+    var analysis = wizState.analysis;
+    var warnEl = document.getElementById('wiz-estimate-warnings');
+    if (!analysis) { dom.setHtml(warnEl, ''); return; }
+    var warnings = [];
+
+    var maxFiles = parseInt(document.getElementById('wiz-max-files').value, 10);
+    var fileCount = analysis.file_count;
+    if (fileCount > maxFiles) {
+      if (maxFiles < 1000000 && fileCount <= 1000000) {
+        warnings.push(
+          '<span class="ds-warn">&#9888; ' + fileCount + ' files found &mdash; max_files is ' + maxFiles + ', files beyond the limit will be skipped</span>'
+          + ' <button class="btn btn-sm btn-accent" onclick="window.boostMaxFiles(' + fileCount + ')">raise to ' + fileCount + '</button>'
+        );
+      } else {
+        warnings.push(
+          '<span class="ds-warn">&#9888; ' + fileCount + ' files found &mdash; max_files at UI limit (1,000,000), some files will be skipped</span>'
+        );
+      }
+    }
+
+    var strat = document.getElementById('wiz-strategy').value;
+    if (strat === 'windowed') {
+      var bs = parseInt(document.getElementById('wiz-block-size').value, 10);
+      if (bs >= 1024) {
+        var recCard = document.querySelector('.rec-card.selected-rec');
+        var recIdx = recCard ? parseInt(recCard.querySelector('input').value, 10) : -1;
+        var recs = analysis.recommendations || [];
+        var rec = recIdx >= 0 ? recs[recIdx] : null;
+        var recBs = rec && rec.block_size ? rec.block_size : null;
+        var fixBut = '';
+        if (recBs && recBs < 1024) {
+          fixBut = ' <button class="btn btn-sm btn-accent" onclick="window.resetBlockSize(' + recBs + ')">reset to recommended (' + recBs + ')</button>';
+        } else if (recBs === 1024) {
+          fixBut = ' <span class="text-muted type-caption-2">(at recommended value)</span>';
+        } else {
+          fixBut = ' <button class="btn btn-sm btn-accent" onclick="window.resetBlockSize(64)">reset to default (64)</button>';
+        }
+        warnings.push(
+          '<span class="ds-warn">&#9888; block_size at maximum (1024)</span>' + fixBut
+        );
+      }
+    }
+
+    dom.setHtml(warnEl, warnings.join('<br>'));
+  }
+
+  window.boostMaxFiles = function(target) {
+    var input = document.getElementById('wiz-max-files');
+    input.value = String(Math.min(1000000, target));
+    updateEstimateWarnings();
+  };
+
+  window.resetBlockSize = function(bs) {
+    var slider = document.getElementById('wiz-block-size');
+    slider.value = String(bs);
+    document.getElementById('wiz-bs-value').textContent = bs;
+    updateEstimate();
+  };
+
+  /* ── wizard: strategy/param listeners ────────────────── */
+
+  document.getElementById('wiz-strategy').addEventListener('change', updateWizParams);
+  document.getElementById('wiz-block-size').addEventListener('input', function() {
+    document.getElementById('wiz-bs-value').textContent = this.value;
+    updateEstimate();
+  });
+  document.getElementById('wiz-overlap').addEventListener('input', function() {
+    document.getElementById('wiz-ov-value').textContent = this.value + '%';
+    updateEstimate();
+  });
+  document.getElementById('wiz-max-files').addEventListener('input', function() {
+    updateEstimateWarnings();
+  });
+
+  /* ── delegated click: recommendation cards ─────────── */
+  document.getElementById('wiz-recs').addEventListener('click', function(e) {
+    var card = e.target.closest('.rec-card');
+    if (!card) return;
+    var recsContainer = document.getElementById('wiz-recs');
+    recsContainer.querySelectorAll('.rec-card').forEach(function(c) { c.classList.remove('selected-rec'); c.style.borderColor = 'var(--border)'; });
+    card.classList.add('selected-rec');
+    card.style.borderColor = 'var(--accent-cyan)';
+    card.querySelector('input').checked = true;
+    var idx = parseInt(card.querySelector('input').value, 10);
+    var analysis = wizState.analysis;
+    if (!analysis || !analysis.recommendations) return;
+    var rec = analysis.recommendations[idx];
+    if (rec.strategy) document.getElementById('wiz-strategy').value = rec.strategy;
+    if (rec.block_size) {
+      var bs = document.getElementById('wiz-block-size');
+      bs.value = String(rec.block_size);
+      document.getElementById('wiz-bs-value').textContent = bs.value;
+    }
+    if (rec.overlap != null) {
+      var ov = document.getElementById('wiz-overlap');
+      ov.value = String(Math.round(rec.overlap * 100));
+      document.getElementById('wiz-ov-value').textContent = ov.value + '%';
+    }
+    updateWizParams();
+  });
+
+  /* ── wizard: browse folder ──────────────────────────── */
+
+  document.getElementById('wiz-browse-btn').addEventListener('click', function() {
+    document.getElementById('wiz-folder-picker').click();
+  });
+
+  document.getElementById('wiz-folder-picker').addEventListener('change', function(e) {
+    var files = e.target.files;
+    if (!files || files.length === 0) return;
+    var relPath = files[0].webkitRelativePath || '';
+    var parts = relPath.split('/');
+    var dirName = parts.length > 1 ? parts[0] : '(unknown)';
+    var status = document.getElementById('wiz-status');
+    status.textContent = '> resolving path for "' + dirName + '"…';
+    window.apiFetch('/v1/corpora/resolve-path', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folder_name: dirName }),
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(resp) {
+      if (resp.data && resp.data.path) {
+        document.getElementById('wiz-root').value = resp.data.path;
+        dom.setHtml(status, '> Resolved "' + dirName + '" to ' + resp.data.path + '. Click <b>analyze</b> or drop another folder.');
+      } else {
+        dom.setHtml(status, '> Folder "' + dirName + '" selected (' + files.length + ' files). Could not auto-resolve. Drag from Finder or paste the full path.');
+      }
+    })
+    .catch(function() {
+      dom.setHtml(status, '> Folder "' + dirName + '" selected (' + files.length + ' files). Drag from Finder or paste the full path.');
+    });
+  });
+
+  /* ── wizard: drag & drop from Finder ─────────────────── */
+
+  var dropZone = document.getElementById('wiz-drop-zone');
+  var dropHighlight = function(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    dropZone.style.outline = '2px dashed var(--accent-cyan)';
+    dropZone.style.outlineOffset = '2px';
+  };
+  dropZone.addEventListener('dragover', dropHighlight);
+  dropZone.addEventListener('dragenter', dropHighlight);
+  dropZone.addEventListener('dragleave', function(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    dropZone.style.outline = '';
+    dropZone.style.outlineOffset = '';
+  });
+  dropZone.addEventListener('drop', function(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    dropZone.style.outline = '';
+    dropZone.style.outlineOffset = '';
+
+    var status = document.getElementById('wiz-status');
+    var path = '';
+
+    path = e.dataTransfer.getData('text/plain');
+    if (path) {
+      path = path.trim();
+      if (path.endsWith('/')) path = path.slice(0, -1);
+      document.getElementById('wiz-root').value = path;
+      document.getElementById('wiz-analyze-btn').click();
+      return;
+    }
+
+    var uriList = e.dataTransfer.getData('text/uri-list');
+    if (uriList) {
+      var match = uriList.trim().match(/^file:\/\/(.+)$/m);
+      if (match) {
+        path = decodeURIComponent(match[1]).trim();
+        if (path.endsWith('/')) path = path.slice(0, -1);
+        document.getElementById('wiz-root').value = path;
+        document.getElementById('wiz-analyze-btn').click();
+        return;
+      }
+    }
+
+    var files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      var dirName = '(unknown)';
+      if (files[0].webkitRelativePath) {
+        dirName = files[0].webkitRelativePath.split('/')[0];
+      } else if (files[0].name) {
+        dirName = files[0].name;
+      }
+      dom.setHtml(status, '> Folder "' + dirName + '" dropped (' + files.length + ' files). Could not resolve path. Paste the full path above or use <b>browse</b>.');
+    }
+  });
+
+  /* ── wizard: glob chips ─────────────────────────────── */
+
+  document.addEventListener('click', function(e) {
+    var chip = e.target;
+    if (!chip.classList.contains('tag')) return;
+    var target = chip.getAttribute('data-target');
+    var value = chip.getAttribute('data-value');
+    var input = document.getElementById('wiz-' + target);
+    var isActive = chip.classList.contains('active');
+    if (isActive) {
+      chip.classList.remove('active');
+      chip.setAttribute('aria-pressed', 'false');
+    } else {
+      chip.classList.add('active');
+      chip.setAttribute('aria-pressed', 'true');
+    }
+    var values = [];
+    document.querySelectorAll('.tag[data-target="' + target + '"].active').forEach(function(c) {
+      values.push(c.getAttribute('data-value'));
+    });
+    input.value = values.join(', ');
+  });
+
+  /* ── wizard: create & ingest ─────────────────────────── */
+
+  document.getElementById('wiz-create-btn').addEventListener('click', async function() {
+    var btn = this;
+    var name = document.getElementById('wiz-name').value.trim();
+    var root = document.getElementById('wiz-root').value.trim();
+    var inc = document.getElementById('wiz-include').value.trim();
+    var exc = document.getElementById('wiz-exclude').value.trim();
+    var strategy = document.getElementById('wiz-strategy').value;
+    var blockSize = parseInt(document.getElementById('wiz-block-size').value, 10);
+    var overlap = parseInt(document.getElementById('wiz-overlap').value, 10) / 100;
+    var status = document.getElementById('wiz-create-status');
+    if (!name) { status.textContent = '! name required'; document.getElementById('wiz-name').focus(); return; }
+    btn.disabled = true;
+    var origText = btn.innerHTML;
+    dom.setHtml(btn, '<span class="spinner"></span> creating');
+
+    var body = {
+      name: name,
+      root_path: root,
+      chunking_strategy: strategy,
+      block_size: blockSize,
+      chunk_overlap: overlap,
+    };
+    var incList = parsePatterns(inc);
+    var excList = parsePatterns(exc);
+    if (incList) body.include_patterns = incList;
+    if (excList) body.exclude_patterns = excList;
+
+    try {
+      var resp = await window.apiFetch('/v1/corpora', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      var parsed = await safeJson(resp);
+      if (!parsed.ok) {
+        btn.disabled = false; dom.setHtml(btn, origText);
+        status.textContent = '! ' + (parsed.body ? (parsed.body.detail || 'Create failed') : parsed.raw);
+        return;
+      }
+      var corpusId = parsed.body.data.id;
+      status.textContent = '> created, ingesting…';
+
+      var maxFiles = document.getElementById('wiz-max-files').value;
+      var ingestResp = await window.apiFetch('/v1/corpora/' + corpusId + '/ingest?max_files=' + maxFiles, { method: 'POST' });
+      var ingestParsed = await safeJson(ingestResp);
+      if (!ingestParsed.ok) {
+        btn.disabled = false;
+        dom.setHtml(btn, origText);
+        dom.setText(status, '! Ingest failed: ' + (ingestParsed.body ? (ingestParsed.body.detail || 'Unknown') : ingestParsed.raw));
+        return;
+      }
+      var d = ingestParsed.body.data;
+      var msg = '> ingested ' + (d.file_count != null ? d.file_count.toLocaleString() : '?') + ' files, ' + (d.document_count != null ? d.document_count.toLocaleString() : '?') + ' documents';
+      if (d.errors && d.errors.length > 0) {
+        msg += '  <span style="color:var(--warning);">' + d.errors.length + ' warning(s)</span>';
+        d.errors.slice(0, 5).forEach(function(e) {
+          msg += '<br><span class="text-muted type-caption-2">! ' + e + '</span>';
+        });
+        if (d.errors.length > 5) {
+          msg += '<br><span class="text-muted type-caption-2">\u2026 click the &#9888; badge in the corpus list for all ' + d.errors.length + ' warnings</span>';
+        }
+      }
+      dom.setHtml(status, msg);
+      btn.disabled = false;
+      dom.setHtml(btn, origText);
+      showToast('Corpus created and ingested', 'success');
+    } catch (err) { btn.disabled = false; dom.setHtml(btn, origText); status.textContent = '! ' + err.message; }
+  });
+
+  /* ════════════════════════════════════════════════════════════
+     Import form — populate selects
+     ════════════════════════════════════════════════════════════ */
+
+  function populateImportSelects() {
+    var corpusSelect = document.getElementById('import-corpus-select');
+    var datasetSelect = document.getElementById('import-dataset-select');
+
+    var prevCorpus = corpusSelect.value;
+    var prevDataset = datasetSelect.value;
+
+    var dsFetch = fetch('/v1/datasets').then(function(r) {
+      if (!r.ok) return [];
+      return r.json().then(function(d) {
+        if (d && d.data && Array.isArray(d.data.datasets)) return d.data.datasets;
+        if (d && Array.isArray(d.datasets)) return d.datasets;
+        return [];
+      });
+    }).catch(function() { return []; });
+
+    var corpFetch = fetch('/v1/corpora').then(function(r) {
+      if (!r.ok) return [];
+      return r.json().then(function(d) { return (d && d.data) || []; });
+    }).catch(function() { return []; });
+
+    Promise.all([dsFetch, corpFetch]).then(function(results) {
+      var datasets = results[0];
+      var corpora = results[1];
+
+      var corpusHtml = '<option value="">Select a corpus...</option>';
+      corpora.forEach(function(c) {
+        var sel = c.id === prevCorpus ? ' selected' : '';
+        corpusHtml += '<option value="' + c.id + '"' + sel + '>' + escHtml(c.name) + '</option>';
+      });
+      dom.setHtml(corpusSelect, corpusHtml);
+
+      var datasetHtml = '<option value="">Select a dataset...</option>';
+      datasets.forEach(function(d) {
+        var sel = d.id === prevDataset ? ' selected' : '';
+        datasetHtml += '<option value="' + d.id + '"' + sel + '>' + escHtml(d.name) + '</option>';
+      });
+      dom.setHtml(datasetSelect, datasetHtml);
+    });
+  }
+
+  /* ── import button handler ── */
+
+  document.getElementById('import-btn').addEventListener('click', async function() {
+    var corpusId = document.getElementById('import-corpus-select').value;
+    var datasetId = document.getElementById('import-dataset-select').value;
+    var status = document.getElementById('import-status');
+
+    if (!corpusId || !datasetId) {
+      status.textContent = '! Please select both a corpus and a dataset.';
+      if (!corpusId) document.getElementById('import-corpus-select').focus();
+      return;
+    }
+
+    var btn = this;
+    btn.disabled = true;
+    var origText = btn.innerHTML;
+    dom.setHtml(btn, '<span class="spinner"></span> importing');
+    status.textContent = '> importing…';
+
+    try {
+      var resp = await window.apiFetch('/v1/datasets/' + datasetId + '/import-corpus', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ corpus_id: corpusId }),
+      });
+      var data = await resp.json();
+
+      if (!resp.ok) {
+        status.textContent = '! Import failed: ' + (data.detail || data.message || 'Unknown error');
+        btn.disabled = false;
+        dom.setHtml(btn, origText);
+        return;
+      }
+
+      status.textContent = '> Import complete. Dataset updated.';
+      showToast('Corpus imported into dataset', 'success');
+      btn.disabled = false;
+      dom.setHtml(btn, origText);
+
+    } catch (err) {
+      status.textContent = '! Import error: ' + err.message;
+      btn.disabled = false;
+      dom.setHtml(btn, origText);
+    }
+  });
+
+  /* ── corpus-to-dataset: populate select ── */
+
+  function populateCorpusToDatasetSelect() {
+    var select = document.getElementById('cd-corpus-select');
+    var html = '<option value="">Select a corpus...</option>';
+    fetch('/v1/corpora').then(function(r) { return r.json(); }).then(function(data) {
+      var corpora = (data && data.data) || [];
+      corpora.forEach(function(c) {
+        html += '<option value="' + c.id + '">' + escHtml(c.name) + '</option>';
+      });
+      dom.setHtml(select, html);
+    }).catch(function() {});
+  }
+
+  /* ── corpus-to-dataset: strategy toggle ── */
+
+  function updateCdParams() {
+    var strat = document.getElementById('cd-strategy').value;
+    var show = strat === 'windowed';
+    ['cd-block-size', 'cd-bs-label', 'cd-bs-value', 'cd-overlap', 'cd-ov-label', 'cd-ov-value'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = show ? '' : 'none';
+    });
+    document.getElementById('cd-bs-value').textContent = document.getElementById('cd-block-size').value;
+    document.getElementById('cd-ov-value').textContent = document.getElementById('cd-overlap').value + '%';
+  }
+
+  document.getElementById('cd-strategy').addEventListener('change', updateCdParams);
+  document.getElementById('cd-block-size').addEventListener('input', function() {
+    document.getElementById('cd-bs-value').textContent = this.value;
+  });
+  document.getElementById('cd-overlap').addEventListener('input', function() {
+    document.getElementById('cd-ov-value').textContent = this.value + '%';
+  });
+
+  /* ── corpus-to-dataset: create button ── */
+
+  document.getElementById('cd-create-btn').addEventListener('click', async function() {
+    var select = document.getElementById('cd-corpus-select');
+    var name = document.getElementById('cd-name').value.trim();
+    var strategy = document.getElementById('cd-strategy').value;
+    var blockSize = parseInt(document.getElementById('cd-block-size').value, 10);
+    var overlap = parseInt(document.getElementById('cd-overlap').value, 10) / 100;
+    var status = document.getElementById('cd-status');
+    var corpusId = select.value;
+
+    if (!corpusId) { status.textContent = '! Select a source corpus.'; document.getElementById('cd-corpus-select').focus(); return; }
+    if (!name) { status.textContent = '! Dataset name is required.'; document.getElementById('cd-name').focus(); return; }
+
+    var btn = this;
+    btn.disabled = true;
+    var origText = btn.innerHTML;
+    dom.setHtml(btn, '<span class="spinner"></span> creating');
+
+    var body = {
+      corpus_id: parseInt(corpusId),
+      name: name,
+      chunking_strategy: strategy,
+      block_size: blockSize,
+      chunk_overlap: overlap,
+    };
+
+    try {
+      var resp = await window.apiFetch('/v1/datasets/from-corpus', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      var data = await resp.json();
+      if (!resp.ok) {
+        status.textContent = '! ' + (data.detail || 'Create failed');
+        btn.disabled = false;
+        dom.setHtml(btn, origText);
+        return;
+      }
+      dom.setHtml(status, '> Created dataset "' + escHtml(name) + '"');
+      document.getElementById('cd-name').value = '';
+      btn.disabled = false;
+      dom.setHtml(btn, origText);
+      showToast('Dataset created from corpus', 'success');
+    } catch (err) {
+      status.textContent = '! ' + err.message;
+      btn.disabled = false;
+      dom.setHtml(btn, origText);
+    }
+  });
+
+  /* ════════════════════════════════════════════════════════════
+     Initialization
+     ════════════════════════════════════════════════════════════ */
+
+  populateCorpusToDatasetSelect();
+  updateCdParams();
+  populateImportSelects();
+
+})();
+</script>
+{% endblock %}

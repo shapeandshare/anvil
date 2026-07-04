@@ -1269,10 +1269,50 @@ margin-bottom: var(--space-2);
   color: var(--text);
 }
 
-@keyframes panel-slide-in {
-  from { opacity: 0; transform: translateX(12px); }
-  to { opacity: 1; transform: translateX(0); }
+/* ── Config Page Tabs (parallel to .wizard-tabs — do not modify wizard-* classes) ── */
+.config-tabs {
+  display: flex;
+  gap: var(--space-1);
+  padding: 0;
+  margin-bottom: var(--space-4);
+  border-bottom: 1px solid var(--separator);
+  padding-bottom: var(--space-2);
 }
+
+.config-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-body);
+  font-size: var(--text-subhead);
+  font-weight: 500;
+  min-height: 36px;
+  padding: 0 var(--space-4);
+  border: none;
+  border-radius: var(--radius-xl);
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+  user-select: none;
+}
+.config-tab:hover { background: var(--surface-2); color: var(--text-secondary); }
+.config-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.config-tab--active {
+  background: var(--accent);
+  color: #fff;
+}
+.config-tab--active:hover { background: var(--accent); color: #fff; filter: brightness(1.1); }
+
+/* ── Config Tab Panels (uses existing panel-slide-in keyframes) ── */
+.config-panel {
+  display: none;
+  animation: panel-slide-in 0.35s var(--spring-quick) both;
+}
+.config-panel--active { display: block; }
 
 /* ── Responsive ── */
 @media (max-width: 480px) {

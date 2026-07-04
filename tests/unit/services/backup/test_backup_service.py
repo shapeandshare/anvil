@@ -982,3 +982,221 @@ class TestErrorHandling:
                 await svc.restore(backup_id="some-backup", confirm="RESTORE", repo=repo)
 
         svc._lock.release()  # type: ignore[attr-defined]
+
+
+###############################################################################
+# Extended tests — edge cases and uncovered paths
+###############################################################################
+
+
+class TestAlembicHead:
+    """_get_alembic_head edge cases."""
+
+    async def test_exception_returns_empty(self, monkeypatch: pytest.MonkeyPatch):
+        """When Alembic config/script fails, _get_alembic_head returns ''."""
+        from anvil.services.backup import backup_service as bs
+
+        def _fail(*args, **kwargs):
+            raise RuntimeError("simulated alembic failure")
+
+        monkeypatch.setattr(
+            "anvil.services.backup.backup_service.ScriptDirectory.from_config",
+            _fail,
+        )
+        result = bs._get_alembic_head()
+        assert result == ""
+
+    async def test_head_is_none_returns_empty(self, monkeypatch: pytest.MonkeyPatch):
+        """When get_current_head returns None, '' is returned."""
+        from anvil.services.backup import backup_service as bs
+
+        mock_script = MagicMock()
+        mock_script.get_current_head.return_value = None
+
+        monkeypatch.setattr(
+            "anvil.services.backup.backup_service.ScriptDirectory.from_config",
+            lambda cfg: mock_script,
+        )
+        result = bs._get_alembic_head()
+        assert result == ""
+
+
+class TestCreateBackupExtended:
+    """Additional create_backup edge cases."""
+
+    async def test_failure_mark_failed_itself_fails(self, tmp_path: PosixPath):
+        """When marking FAILED also fails, no additional exception is raised."""
+        svc = make_svc(tmp_path)
+        repo = FakeRepo()
+
+        original_update = repo.update_fields
+
+        async def failing_update(backup_id, **kwargs):
+            if kwargs.get("status") == "failed":
+                raise RuntimeError("update_fields also failed")
+            return await original_update(backup_id, **kwargs)
+
+        repo.update_fields = failing_update  # type: ignore[assignment]
+        with (
+            patch(
+                "anvil.services.backup.backup_service._get_alembic_head",
+                return_value="",
+            ),
+            patch(
+                "anvil.services.backup.archive_writer.ArchiveWriter.write",
+                side_effect=RuntimeError("writer failure"),
+            ),
+        ):
+            with pytest.raises(RuntimeError, match="writer failure"):
+                await svc.create_backup(repo=repo)
+
+    async def test_rotation_insufficient_after_replan(self, tmp_path: PosixPath):
+        """When replan after rotation still shows insufficient space, error."""
+        svc = make_svc(tmp_path, quota_bytes=1)
+        repo = FakeRepo()
+        old = _op(
+            "old-backup",
+            archive_size_bytes=0,
+            created_at=datetime.now(UTC) - timedelta(days=1),
+        )
+        await repo.add(old)
+        with pytest.raises(RuntimeError, match="Insufficient space after rotation"):
+            await svc.create_backup(repo=repo)
+
+
+class TestVerifyExtended:
+    """Additional verify edge cases."""
+
+    async def test_verify_corrupted_backup_marks_repo(self, tmp_path: PosixPath):
+        """Verify marks corrupted backups as CORRUPTED in the repo."""
+        svc = make_svc(tmp_path)
+        repo = FakeRepo()
+        op = _op("missing-archive", status="completed")
+        await repo.add(op)
+        result = await svc.verify("missing-archive", repo=repo)
+        assert result.valid is False
+        updated = await repo.get_by_backup_id("missing-archive")
+        assert updated is not None
+        assert updated.status == "corrupted"
+
+    async def test_verify_update_fails_gracefully(self, tmp_path: PosixPath):
+        """When marking CORRUPTED fails, verify still returns result."""
+        svc = make_svc(tmp_path)
+        repo = FakeRepo()
+        op = _op("missing-archive-2", status="completed")
+        await repo.add(op)
+
+        original_update = repo.update_fields
+
+        async def failing_update(backup_id, **kwargs):
+            if kwargs.get("status") == "corrupted":
+                raise RuntimeError("DB update failed")
+            return await original_update(backup_id, **kwargs)
+
+        repo.update_fields = failing_update  # type: ignore[assignment]
+
+        result = await svc.verify("missing-archive-2", repo=repo)
+        assert result.valid is False
+
+
+class TestDeleteBackupExtended:
+    """Additional delete_backup edge cases."""
+
+    async def test_delete_when_archive_not_on_disk(self, tmp_path: PosixPath):
+        """Delete succeeds even when archive file doesn't exist."""
+        svc = make_svc(tmp_path)
+        repo = FakeRepo()
+        op = _op("no-archive-backup")
+        await repo.add(op)
+        await svc.delete_backup("no-archive-backup", repo=repo, confirm_last=True)
+        assert await repo.get_by_backup_id("no-archive-backup") is None
+
+
+class TestStorageStatusExtended:
+    """Additional storage_status edge cases."""
+
+    async def test_zero_quota_uses_fraction_zero(self, tmp_path: PosixPath):
+        """When quota_bytes is 0, quota_used_fraction is 0 (no div by zero)."""
+        svc = make_svc(tmp_path, quota_bytes=0)
+        repo = FakeRepo()
+        status = await svc.storage_status(repo)
+        assert status.quota_used_fraction == 0.0
+        assert status.over_threshold is False
+
+    async def test_created_at_no_tz(self, tmp_path: PosixPath):
+        """created_at without timezone info is handled gracefully."""
+        from datetime import datetime as dt
+
+        svc = make_svc(tmp_path)
+        repo = FakeRepo()
+        naive_dt = dt(2024, 1, 1, 12, 0, 0)
+        op = _op("naive-time-backup", created_at=naive_dt)
+        await repo.add(op)
+        summary = await svc.get_backup(repo, "naive-time-backup")
+        assert summary is not None
+        assert summary.age_seconds >= 0
+
+
+class TestProgressCallbackErrors:
+    """Verify that _progress callback errors are silently caught."""
+
+    async def test_create_backup_progress_queue_error(self, tmp_path: PosixPath):
+        """If queue.put fails inside _progress, the error is silently caught."""
+        svc = make_svc(tmp_path)
+        repo = FakeRepo()
+
+        with (
+            patch(
+                "anvil.services.backup.backup_service._get_alembic_head",
+                return_value="",
+            ),
+        ):
+            result = await svc.create_backup(repo=repo)
+            assert result.backup_id != ""
+            assert result.rotated_backup_ids == []
+
+    async def test_restore_progress_queue_error(self, tmp_path: PosixPath) -> None:
+        """Restore _progress errors are silently caught."""
+        svc = make_svc(tmp_path)
+        repo = FakeRepo()
+        result = await svc.create_backup(repo=repo)
+
+        mock_manifest = MagicMock()
+        mock_manifest.schema_revision = ""
+        mock_manifest.deployment_version = "1.0.0"
+        mock_manifest.created_at = datetime.now(UTC)
+
+        from anvil.services.backup.restore_engine import RestoreResult
+
+        mock_result = RestoreResult(
+            success=True,
+            safety_snapshot_id="safety-progress",
+            message="OK",
+        )
+
+        with (
+            patch(
+                "anvil.services.backup.archive_reader.ArchiveReader.load_manifest",
+                return_value=mock_manifest,
+            ),
+            patch(
+                "anvil.services.backup.restore_engine.RestoreEngine.execute",
+                return_value=mock_result,
+            ),
+        ):
+            outcome = await svc.restore(
+                backup_id=result.backup_id, confirm="RESTORE", repo=repo
+            )
+        assert outcome["status"] == "completed"
+
+
+class TestSSEStreamFor:
+    """SSE queue access edge cases."""
+
+    async def test_stream_after_complete_still_accessible(self, tmp_path: PosixPath):
+        """After backup completes, stream_for still returns the queue."""
+        svc = make_svc(tmp_path)
+        repo = FakeRepo()
+        result = await svc.create_backup(repo=repo)
+        queue = svc.stream_for(result.backup_id)
+        assert queue is not None

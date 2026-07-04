@@ -6,15 +6,16 @@
 """Learning content routes and progressive walkthrough data structures.
 
 Provides interactive concept pages (tokenization → full transformer),
-the ``LEARNING_ARC`` navigation tree (split into ``LEARNING_ARC_LESSONS``
-and ``LEARNING_ARC_ADDITIONAL`` for the index page), and inference/sampling
-endpoints. Extracted from ``router.py`` as part of structural decomposition.
+the ``LEARNING_ARC`` navigation tree (grouped by track for the hub
+index page), and inference/sampling endpoints. Extracted from
+``router.py`` as part of structural decomposition.
 """
 
 from __future__ import annotations
 
 import asyncio
 import random
+from enum import StrEnum
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -27,6 +28,18 @@ from ..deps import get_workbench
 from .schemas_misc import InferenceSampleBody
 
 router = APIRouter()
+
+
+class LearningTrack(StrEnum):
+    """Learning arc topic groupings for the hub index page."""
+
+    FOUNDATIONS = "foundations"
+    TRAINING_MECHANICS = "training_mechanics"
+    FINE_TUNING = "fine_tuning"
+    DATA_EXPERIMENTS = "data_experiments"
+    OPERATIONS = "operations"
+    REFERENCE = "reference"
+
 
 DATA_FUNDAMENTALS_STEPS = [
     {
@@ -99,168 +112,196 @@ LEARNING_ARC = [
         "title": "Data Fundamentals",
         "path": "/v1/learn/data-fundamentals",
         "desc": "How datasets and corpora feed training data into the engine &mdash; and when to use each.",
+        "track": LearningTrack.FOUNDATIONS,
     },
     {
         "key": "tokenization",
         "title": "Tokenization",
         "path": "/v1/learn/tokenization",
         "desc": "How the model chops text into character tokens and maps them to IDs.",
+        "track": LearningTrack.FOUNDATIONS,
     },
     {
         "key": "embeddings",
         "title": "Embeddings",
         "path": "/v1/learn/embeddings",
         "desc": "How each token ID becomes a dense vector the model can compute with.",
+        "track": LearningTrack.FOUNDATIONS,
     },
     {
         "key": "parameters",
         "title": "Parameters",
         "path": "/v1/learn/parameters",
         "desc": "Where the model's ~4K parameters live and what each matrix does.",
+        "track": LearningTrack.FOUNDATIONS,
     },
     {
         "key": "autograd",
         "title": "Autograd",
         "path": "/v1/learn/autograd",
         "desc": "How gradients flow backward through the computation graph to train the model.",
+        "track": LearningTrack.TRAINING_MECHANICS,
     },
     {
         "key": "attention",
         "title": "Attention",
         "path": "/v1/learn/attention",
         "desc": "How each token looks at its predecessors to build context-aware representations.",
+        "track": LearningTrack.TRAINING_MECHANICS,
     },
     {
         "key": "loss",
         "title": "Cross-Entropy Loss",
         "path": "/v1/learn/loss",
         "desc": "How prediction error is measured and what the loss number means.",
+        "track": LearningTrack.TRAINING_MECHANICS,
     },
     {
         "key": "sampling",
         "title": "Sampling",
         "path": "/v1/learn/sampling",
         "desc": "How the model picks the next character from its probability distribution.",
+        "track": LearningTrack.TRAINING_MECHANICS,
     },
     {
         "key": "adam",
         "title": "Adam Optimizer",
         "path": "/v1/learn/adam",
         "desc": "How momentum and adaptive learning rates make training converge faster.",
+        "track": LearningTrack.TRAINING_MECHANICS,
     },
     {
         "key": "training-loop",
         "title": "Training Loop",
         "path": "/v1/learn/training-loop",
         "desc": "How the model learns by minimizing prediction error step by step.",
+        "track": LearningTrack.TRAINING_MECHANICS,
     },
     {
         "key": "architecture",
         "title": "Architecture",
         "path": "/v1/learn/architecture",
         "desc": "The full Llama decoder stack — RoPE, RMSNorm, SwiGLU — visualized end to end.",
+        "track": LearningTrack.TRAINING_MECHANICS,
     },
     {
         "key": "graph",
         "title": "Forward Pass",
         "path": "/v1/learn/graph",
         "desc": "Scrub through the Llama forward pass step by step on an interactive computation graph.",
+        "track": LearningTrack.TRAINING_MECHANICS,
     },
     {
         "key": "export",
         "title": "Model Export",
         "path": "/v1/learn/export",
         "desc": "How trained models are exported to safetensors for HuggingFace compatibility.",
+        "track": LearningTrack.TRAINING_MECHANICS,
     },
     {
         "key": "fine-tuning-intro",
         "title": "What Fine-Tuning Is",
         "path": "/v1/learn/fine-tuning-intro",
         "desc": "What fine-tuning means in the context of LLMs — continued training of a pre-trained model on new data.",
+        "track": LearningTrack.FINE_TUNING,
     },
     {
         "key": "warmstart-vs-lora",
         "title": "Warm-Start vs PEFT/LoRA",
         "path": "/v1/learn/warmstart-vs-lora",
         "desc": "How full fine-tuning (warm-start) differs from parameter-efficient approaches like LoRA, and the low-rank intuition behind adapters.",
+        "track": LearningTrack.FINE_TUNING,
     },
     {
         "key": "finetune-vs-prompt-vs-rag",
         "title": "Fine-Tune vs Prompt vs RAG",
         "path": "/v1/learn/finetune-vs-prompt-vs-rag",
         "desc": "When to fine-tune, when to prompt-engineer, and when to use retrieval-augmented generation — a decision comparison.",
+        "track": LearningTrack.FINE_TUNING,
     },
     {
         "key": "architecture-differences",
         "title": "Architecture Differences",
         "path": "/v1/learn/architecture-differences",
         "desc": "How model architectures differ — tokenization, attention variants, parameter scaling, context length — and what those differences mean for fine-tuning.",
+        "track": LearningTrack.FINE_TUNING,
     },
     {
         "key": "chunking",
         "title": "Chunking Strategies",
         "path": "/v1/learn/chunking",
         "desc": "How long documents are split into context-window-sized training samples — windowed, line, and file strategies.",
+        "track": LearningTrack.DATA_EXPERIMENTS,
     },
     {
         "key": "content-versioning",
         "title": "Content Versioning",
         "path": "/v1/learn/content-versioning",
         "desc": "How training data is content-addressed, versioned, and traced from model back to the exact bytes it learned from.",
+        "track": LearningTrack.DATA_EXPERIMENTS,
     },
     {
         "key": "experiment-tracking",
         "title": "Experiment Tracking",
         "path": "/v1/learn/experiment-tracking",
         "desc": "How MLflow records hyperparameters, loss curves, artifacts, and the model registry for every run.",
+        "track": LearningTrack.DATA_EXPERIMENTS,
     },
     {
         "key": "governance",
         "title": "Data Governance",
         "path": "/v1/learn/governance",
         "desc": "How provenance, an acceptable-use gate, and a hash-chained audit trail keep data inclusion lawful and auditable.",
+        "track": LearningTrack.DATA_EXPERIMENTS,
     },
     {
         "key": "memory-divergence",
         "title": "Memory & Divergence",
         "path": "/v1/learn/memory-divergence",
         "desc": "How anvil estimates memory before training and detects NaN/Inf loss divergence during it.",
+        "track": LearningTrack.DATA_EXPERIMENTS,
     },
     {
         "key": "faq",
         "title": "FAQ",
         "path": "/v1/learn/faq",
         "desc": "Frequently asked questions about how anvil works and what it can do.",
+        "track": LearningTrack.REFERENCE,
     },
     {
         "key": "glossary",
         "title": "Glossary",
         "path": "/v1/learn/glossary",
         "desc": "Definitions for every technical term used across the learning arc and codebase.",
+        "track": LearningTrack.REFERENCE,
     },
     {
         "key": "runtime-config",
         "title": "Runtime Configuration",
         "path": "/v1/learn/runtime-config",
         "desc": "How the three-layer resolution chain works and what each setting does.",
+        "track": LearningTrack.OPERATIONS,
     },
     {
         "key": "backup",
         "title": "Backup & Restore",
         "path": "/v1/learn/backup",
         "desc": "What gets backed up, how to restore, storage quotas, and the safety-snapshot lifecycle.",
+        "track": LearningTrack.OPERATIONS,
     },
     {
         "key": "configuration",
         "title": "Configuration Reference",
         "path": "/v1/learn/configuration",
         "desc": "All environment variables, config defaults, and where settings are resolved from.",
+        "track": LearningTrack.OPERATIONS,
     },
     {
         "key": "service-management",
         "title": "Service Management",
         "path": "/v1/learn/service-management",
         "desc": "Starting, stopping, and monitoring the web server, MLflow sidecar, and background processes.",
+        "track": LearningTrack.OPERATIONS,
     },
 ]
 
@@ -270,24 +311,28 @@ LEARNING_ARC_ADDITIONAL = [
         "title": "Training in the Cloud",
         "path": "/v1/learn/cloud-compute",
         "desc": "Run training on external compute with Modal, Modal GPUs, MLflow artifact sync, and the submitted/poll/complete lifecycle.",
+        "track": LearningTrack.OPERATIONS,
     },
     {
         "key": "faq",
         "title": "FAQ",
         "path": "/v1/learn/faq",
         "desc": "Frequently asked questions about how anvil works and what it can do.",
+        "track": LearningTrack.REFERENCE,
     },
     {
         "key": "glossary",
         "title": "Glossary",
         "path": "/v1/learn/glossary",
         "desc": "Definitions for every technical term used across the learning arc and codebase.",
+        "track": LearningTrack.REFERENCE,
     },
     {
         "key": "runtime-config",
         "title": "Runtime Configuration",
         "path": "/v1/learn/runtime-config",
         "desc": "How the three-layer resolution chain works and what each setting does.",
+        "track": LearningTrack.OPERATIONS,
     },
 ]
 
@@ -300,18 +345,21 @@ OPS_ARC = [
         "title": "Backup & Restore",
         "path": "/v1/learn/backup",
         "desc": "What gets backed up, how to restore, storage quotas, and the safety-snapshot lifecycle.",
+        "track": LearningTrack.OPERATIONS,
     },
     {
         "key": "configuration",
         "title": "Configuration Reference",
         "path": "/v1/learn/configuration",
         "desc": "All environment variables, config defaults, and where settings are resolved from.",
+        "track": LearningTrack.OPERATIONS,
     },
     {
         "key": "service-management",
         "title": "Service Management",
         "path": "/v1/learn/service-management",
         "desc": "Starting, stopping, and monitoring the web server, MLflow sidecar, and background processes.",
+        "track": LearningTrack.OPERATIONS,
     },
 ]
 
@@ -2296,17 +2344,120 @@ BACKUP_STEPS = [
 ]
 
 
+# ── Topic metadata ──────────────────────────────────────────────────────────
+
+_TOPIC_STEPS: dict[str, list[dict[str, Any]]] = {
+    "data-fundamentals": DATA_FUNDAMENTALS_STEPS,
+    "tokenization": TOKENIZATION_STEPS,
+    "embeddings": EMBEDDING_STEPS,
+    "attention": ATTENTION_STEPS,
+    "sampling": SAMPLING_STEPS,
+    "training-loop": TRAINING_LOOP_STEPS,
+    "loss": LOSS_STEPS,
+    "parameters": PARAMS_STEPS,
+    "adam": ADAM_STEPS,
+    "autograd": AUTOGRAD_STEPS,
+    "architecture": ARCHITECTURE_STEPS,
+    "export": EXPORT_STEPS,
+    "fine-tuning-intro": FINE_TUNING_INTRO_STEPS,
+    "warmstart-vs-lora": WARMSTART_VS_LORA_STEPS,
+    "finetune-vs-prompt-vs-rag": FINETUNE_VS_PROMPT_VS_RAG_STEPS,
+    "architecture-differences": ARCHITECTURE_DIFFERENCES_STEPS,
+    "chunking": CHUNKING_STEPS,
+    "content-versioning": CONTENT_VERSIONING_STEPS,
+    "experiment-tracking": EXPERIMENT_TRACKING_STEPS,
+    "governance": GOVERNANCE_STEPS,
+    "memory-divergence": MEMORY_DIVERGENCE_STEPS,
+    "runtime-config": RUNTIME_CONFIG_STEPS,
+    "cloud-compute": CLOUD_COMPUTE_STEPS,
+    "backup": BACKUP_STEPS,
+}
+
+
+_TRACK_LABELS: dict[str, tuple[str, str]] = {
+    "foundations": (
+        "Foundations",
+        "Core building blocks — how data becomes numbers the model can compute with.",
+    ),
+    "training_mechanics": (
+        "How Training Works",
+        "From autograd and attention to the full training loop and model export — the engine internals.",
+    ),
+    "fine_tuning": (
+        "Fine-Tuning",
+        "Adapting pre-trained models with new data — full warm-start vs. parameter-efficient methods like LoRA.",
+    ),
+    "data_experiments": (
+        "Data & Experiments",
+        "Chunking, versioning, tracking, and governance — the data and experiment management layer.",
+    ),
+    "operations": (
+        "Operations",
+        "Runtime config, service management, backups, and cloud compute.",
+    ),
+    "reference": ("Reference", "FAQ and glossary for quick lookup."),
+}
+
+
+def _topic_meta(key: str) -> dict[str, Any]:
+    """Derive metadata for a learning-arc entry (step count, widget names)."""
+    steps = _TOPIC_STEPS.get(key, [])
+    widgets = sorted({s["widget"] for s in steps if "widget" in s})
+    return {
+        "step_count": len(steps),
+        "has_widget": len(widgets) > 0,
+        "widgets": widgets,
+    }
+
+
+def _grouped_arc() -> list[dict[str, Any]]:
+    """Build the learning hub index data grouped by track.
+
+    Returns
+    -------
+    list of dict
+        Each entry: ``track_key``, ``track_label``, ``track_desc``,
+        ``total_items``, and ``items`` (enriched arc entries with step
+        count and widget metadata).
+    """
+    by_track: dict[str, dict[str, Any]] = {}
+    for item in LEARNING_ARC:
+        track = str(item.get("track", LearningTrack.REFERENCE))
+        label, desc = _TRACK_LABELS.get(track, (track, ""))
+        enriched = {**item, **_topic_meta(item["key"])}
+        if track not in by_track:
+            by_track[track] = {
+                "track_key": track,
+                "track_label": label,
+                "track_desc": desc,
+                "items": [],
+            }
+        by_track[track]["items"].append(enriched)
+
+    # Inject cloud-compute (lives in ADDITIONAL, not in LEARNING_ARC) into Operations
+    cloud = next(
+        (item for item in LEARNING_ARC_ADDITIONAL if item["key"] == "cloud-compute"),
+        None,
+    )
+    if cloud and "operations" in by_track:
+        by_track["operations"]["items"].append(
+            {**cloud, **_topic_meta("cloud-compute")}
+        )
+
+    result = []
+    for entry in by_track.values():
+        entry["total_items"] = len(entry["items"])
+        result.append(entry)
+    return result
+
+
 @router.get("/learn", response_class=HTMLResponse)
 async def learn_index(request: Request) -> HTMLResponse:
-    """Render the learning hub index page with ordered lessons and additional sections."""
+    """Render the learning hub index page grouped by track."""
     return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]  # type: ignore[no-any-return]
         request,
         "archetypes/learn-index.html",
-        {
-            "lessons": LEARNING_ARC_LESSONS,
-            "additional": LEARNING_ARC_ADDITIONAL,
-            "ops": OPS_ARC,
-        },
+        {"groups": _grouped_arc()},
     )
 
 

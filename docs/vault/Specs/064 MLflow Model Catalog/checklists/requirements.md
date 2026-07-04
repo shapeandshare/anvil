@@ -32,6 +32,6 @@
 ## Notes
 
 - Items marked incomplete require spec updates before `/speckit.clarify` or `/speckit.plan`
-- The feature name references "MLflow" (the catalog backend) in the title for continuity with ADR-046; within the spec body the backend is referred to generically as "the catalog" / "catalog backend" to keep requirements technology-agnostic. FR/SC sections contain no other technology bindings.
+- The feature name references "MLflow" (the catalog backend) in the title for continuity with ADR-047; within the spec body the backend is referred to generically as "the catalog" / "catalog backend" to keep requirements technology-agnostic. FR/SC sections contain no other technology bindings.
 - Greenfield constraint (no migration/legacy/transitional states) is captured in Assumptions and reflected in FR-007/SC-006 (legacy store removal is itself a requirement).
 - Validation run 2026-07-03: all items pass. Ready for `/speckit.clarify` (optional) or `/speckit.plan`.

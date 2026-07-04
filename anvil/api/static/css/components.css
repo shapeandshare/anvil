@@ -94,7 +94,7 @@ input[type="file"].form-input::file-selector-button:hover { filter: brightness(1
 .cell-meta { color: var(--text-tertiary); font-size: var(--text-footnote); }
 .cell-mono { font-family: var(--font-mono); font-size: var(--text-footnote); }
 .cell-nowrap { white-space: nowrap; }
-.cell-numeric { text-align: right; white-space: nowrap; }
+.cell-numeric { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .cell-wrap { overflow-wrap: anywhere; word-break: break-word; }
 
 /* ── Links ── */
@@ -301,12 +301,12 @@ textarea.form-input.terminal-textarea { min-height: 60px; resize: vertical; line
 [data-theme="light"] .filter-bag--exclude { border-color: var(--accent-orange); }
 
 /* ── Tag chips ── */
-.tag { display: inline-flex; align-items: center; gap: var(--space-1); font-family: var(--font-body); font-size: var(--text-caption-1); padding: var(--space-1) var(--space-2); background: var(--surface-2); color: var(--text-secondary); border-radius: var(--radius-lg); user-select: none; cursor: pointer; transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease); }
+.tag { display: inline-flex; align-items: center; gap: var(--space-1); font-family: var(--font-body); font-size: var(--text-caption-1); padding: var(--space-1) var(--space-2); background: var(--surface-2); color: var(--text-secondary); border-radius: var(--radius-lg); user-select: none; cursor: pointer; border: none; transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease); }
 .tag:hover { background: var(--border); color: var(--text); }
-.tag.active { background: var(--accent-green); color: #fff; }
+.tag.active, .tag[aria-pressed="true"] { background: var(--accent-green); color: #fff; }
 .tag[data-target="exclude"] { color: var(--accent-red); border: 1px solid var(--accent-red); background: transparent; }
 .tag[data-target="exclude"]:hover { background: rgba(255, 59, 48, 0.12); }
-.tag[data-target="exclude"].active { background: var(--accent-red); color: #fff; border-color: var(--accent-red); }
+.tag[data-target="exclude"].active, .tag[data-target="exclude"][aria-pressed="true"] { background: var(--accent-red); color: #fff; border-color: var(--accent-red); }
 .tag-sep { color: var(--text-tertiary); font-size: var(--text-caption-1); padding: 0 var(--space-1); user-select: none; }
 
 /* ── Meter ── */
