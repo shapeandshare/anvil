@@ -1,10 +1,11 @@
 """Rev 013: Drop external_models table (SC-006 / FR-007).
 
-Removes the legacy ``external_models`` table and the now-unused
-``external_model_id`` column from ``model_import_jobs``.  The
-``external_model_id`` FK on ``lora_adapters`` and ``evaluation_runs``
-is also dropped (columns remain in the ORM with nullable=True for
-backward compatibility with existing records).
+Removes the legacy ``external_models`` table.  FK columns on
+``lora_adapters`` and ``evaluation_runs`` are left as nullable
+integer columns (SQLite ignores dead FK declarations; they cause
+no runtime issues).  The ``external_model_id`` column is removed
+from ``model_import_jobs`` since that path is fully migrated to
+ModelRef columns.
 
 Revision ID: 013_drop_external_models
 Revises: 012_add_catalog_identities_and_modelref
@@ -21,27 +22,15 @@ import sqlalchemy as sa
 
 
 def upgrade() -> None:
-    # Drop FK-dependent columns first (SQLite requires this order)
-    # lora_adapters.external_model_id - drop FK, keep nullable column
-    op.drop_constraint(
-        "lora_adapters_ibfk_1", "lora_adapters", type_="foreignkey"
-    )
+    # Remove the FK column from model_import_jobs first, while
+    # external_models still exists (batch_alter_table recreates
+    # FK references and needs the target table present).
+    with op.batch_alter_table("model_import_jobs") as batch_op:
+        batch_op.drop_column("external_model_id")
 
-    # evaluation_runs.external_model_id and base_external_model_id FKs
-    op.drop_constraint(
-        "evaluation_runs_ibfk_1", "evaluation_runs", type_="foreignkey"
-    )
-    op.drop_constraint(
-        "evaluation_runs_ibfk_2", "evaluation_runs", type_="foreignkey"
-    )
-
-    # model_import_jobs.external_model_id FK
-    op.drop_constraint(
-        "model_import_jobs_ibfk_1", "model_import_jobs", type_="foreignkey"
-    )
-    op.drop_column("model_import_jobs", "external_model_id")
-
-    # Drop the external_models table
+    # Then drop the external_models table.  FK declarations on
+    # lora_adapters and evaluation_runs become dead schema in
+    # SQLite — harmless because FK enforcement is off by default.
     op.drop_table("external_models")
 
 
@@ -68,37 +57,9 @@ def downgrade() -> None:
     )
 
     # Restore model_import_jobs.external_model_id
-    op.add_column(
-        "model_import_jobs",
-        sa.Column(
-            "external_model_id",
-            sa.Integer(),
-            sa.ForeignKey("external_models.id", ondelete="SET NULL"),
-            nullable=True,
-        ),
-    )
-
-    # Restore FKs (SQLite doesn't enforce FK constraints by default,
-    # but we recreate the schema declarations)
-    op.create_foreign_key(
-        "lora_adapters_ibfk_1",
-        "lora_adapters", "external_models",
-        ["external_model_id"], ["id"],
-        ondelete="CASCADE",
-    )
-    op.create_foreign_key(
-        "evaluation_runs_ibfk_1",
-        "evaluation_runs", "external_models",
-        ["external_model_id"], ["id"],
-    )
-    op.create_foreign_key(
-        "evaluation_runs_ibfk_2",
-        "evaluation_runs", "external_models",
-        ["base_external_model_id"], ["id"],
-    )
-    op.create_foreign_key(
-        "model_import_jobs_ibfk_1",
-        "model_import_jobs", "external_models",
-        ["external_model_id"], ["id"],
-        ondelete="SET NULL",
-    )
+    # Must use batch_alter_table because SQLite requires it when
+    # adding columns with FK references.
+    with op.batch_alter_table("model_import_jobs") as batch_op:
+        batch_op.add_column(
+            sa.Column("external_model_id", sa.Integer(), nullable=True),
+        )

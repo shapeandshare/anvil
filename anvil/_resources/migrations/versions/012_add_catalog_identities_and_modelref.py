@@ -70,24 +70,25 @@ def upgrade() -> None:
         sa.Column("registry_model_version", sa.Integer(), nullable=True),
     )
 
-    # model_assets
+    # model_assets — nullable=True because SQLite ALTER TABLE ADD COLUMN
+    # does not support NOT NULL, even with server_default.
     op.add_column(
         "model_assets",
-        sa.Column("registry_model_name", sa.String(255), nullable=False, server_default=""),
+        sa.Column("registry_model_name", sa.String(255), nullable=True),
     )
     op.add_column(
         "model_assets",
-        sa.Column("registry_model_version", sa.Integer(), nullable=False, server_default="0"),
+        sa.Column("registry_model_version", sa.Integer(), nullable=True),
     )
 
     # lora_adapters
     op.add_column(
         "lora_adapters",
-        sa.Column("registry_model_name", sa.String(255), nullable=False, server_default=""),
+        sa.Column("registry_model_name", sa.String(255), nullable=True),
     )
     op.add_column(
         "lora_adapters",
-        sa.Column("registry_model_version", sa.Integer(), nullable=False, server_default="0"),
+        sa.Column("registry_model_version", sa.Integer(), nullable=True),
     )
 
     # evaluation_runs
