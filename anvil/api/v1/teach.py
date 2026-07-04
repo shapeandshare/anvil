@@ -23,6 +23,8 @@ from .schemas_teach import (
 
 router = APIRouter()
 
+_SESSION_NOT_FOUND = "Session not found"
+
 
 ########################################################################
 # Session CRUD
@@ -81,7 +83,10 @@ async def list_sessions(
     }
 
 
-@router.get("/teach/sessions/{session_id}")
+@router.get(
+    "/teach/sessions/{session_id}",
+    responses={404: {"description": _SESSION_NOT_FOUND}},
+)
 async def get_session(
     session_id: int,
     workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
@@ -89,7 +94,7 @@ async def get_session(
     """Get a single teaching session by ID."""
     session = await workbench.teaching.get_session(session_id)
     if session is None:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail=_SESSION_NOT_FOUND)
     return {
         "id": session.id,
         "name": session.name,
@@ -102,45 +107,55 @@ async def get_session(
     }
 
 
-@router.delete("/teach/sessions/{session_id}", status_code=204)
+@router.delete(
+    "/teach/sessions/{session_id}",
+    status_code=204,
+    responses={404: {"description": _SESSION_NOT_FOUND}},
+)
 async def delete_session(
     session_id: int,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> None:
     """Delete a teaching session. Does NOT cascade to MLflow runs."""
     deleted = await workbench.teaching.delete_session(session_id)
     if not deleted:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail=_SESSION_NOT_FOUND)
 
 
-@router.patch("/teach/sessions/{session_id}/status")
+@router.patch(
+    "/teach/sessions/{session_id}/status",
+    responses={404: {"description": _SESSION_NOT_FOUND}},
+)
 async def update_session_status(
     session_id: int,
     body: UpdateStatusBody,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, Any]:
     """Update the status of a teaching session."""
     session = await workbench.teaching.update_status(session_id, body.status)
     if session is None:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail=_SESSION_NOT_FOUND)
     return {
         "id": session.id,
         "status": session.status,
     }
 
 
-@router.post("/teach/sessions/{session_id}/rollback")
+@router.post(
+    "/teach/sessions/{session_id}/rollback",
+    responses={404: {"description": _SESSION_NOT_FOUND}},
+)
 async def rollback_session(
     session_id: int,
     body: RollbackBody,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, Any]:
     """Roll back a session's chain head to a previous round."""
     session = await workbench.teaching.rollback_to_round(
         session_id, body.target_experiment_id
     )
     if session is None:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail=_SESSION_NOT_FOUND)
     return {
         "id": session.id,
         "current_base_experiment_id": session.current_base_experiment_id,
@@ -152,11 +167,17 @@ async def rollback_session(
 ########################################################################
 
 
-@router.post("/teach/sessions/{session_id}/rounds")
+@router.post(
+    "/teach/sessions/{session_id}/rounds",
+    responses={
+        404: {"description": _SESSION_NOT_FOUND},
+        422: {"description": "Validation error"},
+    },
+)
 async def start_round(
     session_id: int,
     body: StartRoundBody,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, Any]:
     """Start a new teaching round.
 
@@ -165,7 +186,7 @@ async def start_round(
     """
     session = await workbench.teaching.get_session(session_id)
     if session is None:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail=_SESSION_NOT_FOUND)
     try:
         result = await workbench.teaching.start_round(
             session_id=session_id,
@@ -177,10 +198,13 @@ async def start_round(
     return result
 
 
-@router.get("/teach/sessions/{session_id}/rounds")
+@router.get(
+    "/teach/sessions/{session_id}/rounds",
+    responses={404: {"description": _SESSION_NOT_FOUND}},
+)
 async def list_rounds(
     session_id: int,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, Any]:
     """List teaching rounds for a session.
 
@@ -189,7 +213,7 @@ async def list_rounds(
     """
     session = await workbench.teaching.get_session(session_id)
     if session is None:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail=_SESSION_NOT_FOUND)
 
     experiments = await workbench.tracking.list_experiments()
     session_rounds = []
@@ -217,12 +241,18 @@ async def list_rounds(
 ########################################################################
 
 
-@router.post("/teach/sessions/{session_id}/rounds/{round_index}/inspect")
+@router.post(
+    "/teach/sessions/{session_id}/rounds/{round_index}/inspect",
+    responses={
+        404: {"description": _SESSION_NOT_FOUND},
+        422: {"description": "Validation error"},
+    },
+)
 async def inspect_round(
     session_id: int,
     round_index: int,
     body: InspectRoundBody,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, Any]:
     """Inspect a round by generating text from its trained model.
 
@@ -244,7 +274,7 @@ async def inspect_round(
     """
     session = await workbench.teaching.get_session(session_id)
     if session is None:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail=_SESSION_NOT_FOUND)
 
     try:
         results = await workbench.teaching.inspect_round(
@@ -258,10 +288,13 @@ async def inspect_round(
     return {"results": results}
 
 
-@router.post("/teach/sessions/compare")
+@router.post(
+    "/teach/sessions/compare",
+    responses={422: {"description": "Validation error"}},
+)
 async def compare_rounds(
     body: CompareRoundsBody,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, Any]:
     """Side-by-side comparison of two rounds."""
     try:
