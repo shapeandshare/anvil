@@ -2900,7 +2900,10 @@ async def eval_compare_page(request: Request) -> HTMLResponse:
     )
 
 
-@router.get("/inference/models")
+@router.get(
+    "/inference/models",
+    responses={503: {"description": "Model registry (MLflow) did not respond in time"}},
+)
 async def list_inference_models(
     workbench: AnvilWorkbench = Depends(get_workbench),
 ) -> dict[str, Any]:

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
@@ -252,10 +253,15 @@ async def get_external_model(
     }
 
 
-@router.delete("/models/external/{model_id}")
+@router.delete(
+    "/models/external/{model_id}",
+    responses={
+        404: {"description": "External model not found"},
+    },
+)
 async def delete_external_model(
     model_id: int,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, str]:
     """Delete an external model and all associated assets.
 
