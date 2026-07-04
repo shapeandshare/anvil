@@ -18,6 +18,7 @@ venv/
 data/*
 !data/demo/
 !data/demo/**
+anvil-state.db
 logs/
 mlruns/
 mlartifacts/

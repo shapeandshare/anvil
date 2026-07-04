@@ -554,7 +554,8 @@ class TestFixupDemoCatalogTags:
             # Verify MLflow registration performed
             mock_tracking.start_run.assert_awaited_once()
             mock_tracking.register_source_model.assert_awaited_once_with(
-                run_id="ghost_run_1", name="demo",
+                run_id="ghost_run_1",
+                name="demo",
             )
             # Verify catalog tags were set
             mock_catalog.register_tags_for_trained.assert_awaited_once()
@@ -562,6 +563,8 @@ class TestFixupDemoCatalogTags:
             mock_client.log_artifact.assert_called_once()
             # Verify model was saved to temp
             fake_model.save.assert_called_once()
+
+
 ##########################################################################
 
 
