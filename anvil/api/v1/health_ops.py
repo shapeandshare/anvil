@@ -18,17 +18,16 @@ import time
 from pathlib import Path
 from typing import Annotated, Any
 
-import psutil
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from ... import __version__ as anvil_version
 from ...config import get_config, get_mlflow_browser_uri
 from ...db.migration import MigrationService
-from ...db.schema_version import SCHEMA_VERSION
 from ...gpu import detect_gpu
 from ...workbench import AnvilWorkbench
 from ..auth import SESSION_COOKIE_NAME, generate_csrf_token
 from ..deps import get_workbench
+from ._environment import _collect_environment_snapshot
 
 router = APIRouter()
 
@@ -110,27 +109,15 @@ async def health_detailed(
     workbench : AnvilWorkbench
         Session-bound workbench injected via FastAPI dependency.
     """
-    cpu_percent = psutil.cpu_percent(interval=0)
-    mem = psutil.virtual_memory()
-    disk = psutil.disk_usage("/")
-    gpu = detect_gpu()
-
-    # Database health
-    db_status = "unknown"
-    db_schema_version = 0
-    db_migration = "unknown"
+    env = await _collect_environment_snapshot(workbench)
+    # Rebuild db/mlflow error fields from local probing
     db_error: str | None = None
     try:
         svc = MigrationService()
-        db_schema_version = await svc.get_schema_version()
-        db_migration = (await svc.current()) or "unknown"
-        db_status = "connected"
+        await svc.get_schema_version()
     except (RuntimeError, ValueError, OSError) as exc:
-        db_status = "error"
         db_error = str(exc)
 
-    # MLflow health
-    mlflow_status = "unknown"
     mlflow_error: str | None = None
     try:
         import socket
@@ -139,47 +126,27 @@ async def health_detailed(
             ("127.0.0.1", get_config()["mlflow_port"]), timeout=3
         )
         sock.close()
-        mlflow_status = "reachable"
     except OSError as exc:
-        mlflow_status = "unreachable"
         mlflow_error = str(exc)
 
     return {
         "status": "healthy",
         "version": anvil_version,
-        "uptime_seconds": int(time.time() - _start_time),
-        "system": {
-            "cpu_percent": cpu_percent,
-            "memory_percent": mem.percent,
-            "memory_used_gb": round(mem.used / (1024**3), 1),
-            "memory_total_gb": round(mem.total / (1024**3), 1),
-            "disk_percent": disk.percent,
-            "disk_used_gb": round(disk.used / (1024**3), 1),
-            "disk_total_gb": round(disk.total / (1024**3), 1),
-        },
+        "uptime_seconds": env["uptime_seconds"],
+        "system": env["system"],
         "gpu": {
-            "available": gpu.available,
-            "backend": gpu.backend,
-            "device_name": gpu.device_name,
-            "memory_total_gb": gpu.memory_total_gb,
-            "memory_available_gb": gpu.memory_available_gb,
-            "compute_capability": gpu.compute_capability,
-            "torch_version": gpu.torch_version,
-            "cuda_version": gpu.cuda_version,
-            "errors": gpu.errors,
+            **env["gpu"],
+            "errors": detect_gpu().errors,
         },
         "database": {
-            "status": db_status,
-            "schema_version": db_schema_version,
-            "expected_schema_version": SCHEMA_VERSION,
-            "migration_revision": db_migration,
+            **env["database"],
             "error": db_error,
         },
         "mlflow": {
-            "status": mlflow_status,
+            **env["mlflow"],
             "error": mlflow_error,
         },
-        "tracking": workbench.tracking.tracking_status.model_dump(),
+        "tracking": env["tracking"],
         "docs": {
             "swagger": "/docs",
             "redoc": "/redoc",
