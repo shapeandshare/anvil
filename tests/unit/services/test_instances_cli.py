@@ -451,6 +451,141 @@ class TestRun:
         with pytest.raises(SystemExit):
             await run_fn(args)
 
+    @patch("anvil.services.instances.cli.AnvilWorkbench")
+    @patch("anvil.services.instances.cli.AsyncSessionLocal")
+    @patch("anvil.services.instances.cli.create_registry_session")
+    async def test_run_start(
+        self,
+        mock_reg: MagicMock,
+        mock_session: MagicMock,
+        mock_wb_cls: MagicMock,
+    ) -> None:
+        """``_run`` dispatches ``start`` through the workbench."""
+        wb = MagicMock()
+        wb.instances = AsyncMock()
+        mock_wb_cls.return_value = wb
+        mock_session.return_value.__aenter__.return_value = AsyncMock()
+
+        args = argparse.Namespace(command="start", name="my-instance")
+        from anvil.services.instances.cli import _run as run_fn
+
+        await run_fn(args)
+        wb.instances.start.assert_awaited_once_with("my-instance")
+        mock_session.return_value.__aenter__.return_value.commit.assert_awaited_once()
+
+    @patch("anvil.services.instances.cli.AnvilWorkbench")
+    @patch("anvil.services.instances.cli.AsyncSessionLocal")
+    @patch("anvil.services.instances.cli.create_registry_session")
+    async def test_run_stop(
+        self,
+        mock_reg: MagicMock,
+        mock_session: MagicMock,
+        mock_wb_cls: MagicMock,
+    ) -> None:
+        """``_run`` dispatches ``stop`` through the workbench."""
+        wb = MagicMock()
+        wb.instances = AsyncMock()
+        mock_wb_cls.return_value = wb
+        mock_session.return_value.__aenter__.return_value = AsyncMock()
+
+        args = argparse.Namespace(command="stop", name="my-instance")
+        from anvil.services.instances.cli import _run as run_fn
+
+        await run_fn(args)
+        wb.instances.stop.assert_awaited_once_with("my-instance")
+
+    @patch("anvil.services.instances.cli.AnvilWorkbench")
+    @patch("anvil.services.instances.cli.AsyncSessionLocal")
+    @patch("anvil.services.instances.cli.create_registry_session")
+    async def test_run_restart(
+        self,
+        mock_reg: MagicMock,
+        mock_session: MagicMock,
+        mock_wb_cls: MagicMock,
+    ) -> None:
+        """``_run`` dispatches ``restart`` through the workbench."""
+        wb = MagicMock()
+        wb.instances = AsyncMock()
+        mock_wb_cls.return_value = wb
+        mock_session.return_value.__aenter__.return_value = AsyncMock()
+
+        args = argparse.Namespace(command="restart", name="my-instance")
+        from anvil.services.instances.cli import _run as run_fn
+
+        await run_fn(args)
+        wb.instances.restart.assert_awaited_once_with("my-instance")
+
+    @patch("anvil.services.instances.cli.AnvilWorkbench")
+    @patch("anvil.services.instances.cli.AsyncSessionLocal")
+    @patch("anvil.services.instances.cli.create_registry_session")
+    async def test_run_status(
+        self,
+        mock_reg: MagicMock,
+        mock_session: MagicMock,
+        mock_wb_cls: MagicMock,
+    ) -> None:
+        """``_run`` dispatches ``status`` through the workbench."""
+        wb = MagicMock()
+        wb.instances = AsyncMock()
+        wb.instances.status = AsyncMock(return_value=InstanceStatus.RUNNING)
+        mock_wb_cls.return_value = wb
+        mock_session.return_value.__aenter__.return_value = AsyncMock()
+
+        args = argparse.Namespace(command="status", name="my-instance")
+        from anvil.services.instances.cli import _run as run_fn
+
+        await run_fn(args)
+        wb.instances.status.assert_awaited_once_with("my-instance")
+
+    @patch("anvil.services.instances.cli.AnvilWorkbench")
+    @patch("anvil.services.instances.cli.AsyncSessionLocal")
+    @patch("anvil.services.instances.cli.create_registry_session")
+    async def test_run_list(
+        self,
+        mock_reg: MagicMock,
+        mock_session: MagicMock,
+        mock_wb_cls: MagicMock,
+    ) -> None:
+        """``_run`` dispatches ``list`` through the workbench."""
+        wb = MagicMock()
+        wb.instances = AsyncMock()
+        wb.instances.list = AsyncMock(return_value=[])
+        mock_wb_cls.return_value = wb
+        mock_session.return_value.__aenter__.return_value = AsyncMock()
+
+        args = argparse.Namespace(command="list", json=False)
+        from anvil.services.instances.cli import _run as run_fn
+
+        await run_fn(args)
+        wb.instances.list.assert_awaited_once()
+
+    @patch("anvil.services.instances.cli.AnvilWorkbench")
+    @patch("anvil.services.instances.cli.AsyncSessionLocal")
+    @patch("anvil.services.instances.cli.create_registry_session")
+    async def test_run_destroy(
+        self,
+        mock_reg: MagicMock,
+        mock_session: MagicMock,
+        mock_wb_cls: MagicMock,
+    ) -> None:
+        """``_run`` dispatches ``destroy`` through the workbench."""
+        wb = MagicMock()
+        wb.instances = AsyncMock()
+        mock_wb_cls.return_value = wb
+        mock_session.return_value.__aenter__.return_value = AsyncMock()
+
+        args = argparse.Namespace(
+            command="destroy",
+            name="my-instance",
+            yes=True,
+            keep_data=False,
+            force=False,
+        )
+        from anvil.services.instances.cli import _run as run_fn
+
+        await run_fn(args)
+        wb.instances.destroy.assert_awaited_once()
+
 
 ########################################################################
 # main() integration tests (mocked asyncio.run)
