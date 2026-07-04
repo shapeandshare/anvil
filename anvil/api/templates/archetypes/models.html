@@ -124,9 +124,9 @@
   var tableEl = document.getElementById('models-table');
   var tbody = document.getElementById('models-tbody');
 
-  function keyFn(m) { return String(m.id); }
+  function keyFn(m) { return String(m.name); }
 
-  fetch('/v1/models/external').then(function(r) {
+  fetch('/v1/models?kind=external').then(function(r) {
     if (!r.ok) { throw new Error(r.status + ': ' + r.statusText); }
     return r.json();
   }).then(function(data) {
@@ -140,28 +140,27 @@
     emptyEl.style.display = 'none';
     tableEl.style.display = '';
 
-    function createRow(m) {
-      var tr = document.createElement('tr');
+function createRow(m) {
       var playLink = m.runnable_status === 'runnable'
-        ? '<a href="/v1/inference-page?model_id=' + m.id + '" class="btn btn-primary btn-sm">Play</a> '
+        ? '<a href="/v1/inference-page?model_id=' + encodeURIComponent(m.name) + '" class="btn btn-primary btn-sm">Play</a> '
         : '';
       tr.innerHTML =
-        '<td><a href="/v1/model-detail/' + m.id + '?source=external" class="action-link">' + escHtml(m.display_name) + '</a></td>' +
+        '<td><a href="/v1/model-detail/' + encodeURIComponent(m.name) + '?source=external" class="action-link">' + escHtml(m.display_name) + '</a></td>' +
         '<td class="text-dim" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;" title="' + escHtml(m.source_identifier) + '">' + escHtml(m.source_identifier) + '</td>' +
         '<td class="text-dim">' + escHtml(m.architecture_family) + '</td>' +
         '<td>' + fmtParams(m.parameter_count) + '</td>' +
         '<td class="text-dim">' + escHtml(m.tokenizer_family) + '</td>' +
         '<td>' + statusBadge(m.runnable_status) + '</td>' +
         '<td>' +
-          '<a href="/v1/model-detail/' + m.id + '?source=external" class="btn btn-secondary btn-sm">View</a> ' +
+          '<a href="/v1/model-detail/' + encodeURIComponent(m.name) + '?source=external" class="btn btn-secondary btn-sm">View</a> ' +
           playLink +
-          '<a href="#" class="btn btn-secondary btn-sm" onclick="window.startEval(' + m.id + ', event)">Evaluate</a>' +
+          '<a href="#" class="btn btn-secondary btn-sm" onclick="window.startEval(\'' + encodeURIComponent(m.name) + '\', event)">Evaluate</a>' +
         '</td>';
       return tr;
     }
 
     function updateRow(tr, m) {
-      dom.setCellHtml(tr, 0, '<a href="/v1/model-detail/' + m.id + '?source=external" class="action-link">' + escHtml(m.display_name) + '</a>');
+      dom.setCellHtml(tr, 0, '<a href="/v1/model-detail/' + encodeURIComponent(m.name) + '?source=external" class="action-link">' + escHtml(m.display_name) + '</a>');
       dom.setAttr(dom.cell(tr, 1), 'title', m.source_identifier);
       dom.setCellHtml(tr, 1, '<span class="text-dim" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">' + escHtml(m.source_identifier) + '</span>');
       dom.setCellHtml(tr, 2, '<span class="text-dim">' + escHtml(m.architecture_family) + '</span>');
@@ -169,12 +168,12 @@
       dom.setCellHtml(tr, 4, '<span class="text-dim">' + escHtml(m.tokenizer_family) + '</span>');
       dom.setCellHtml(tr, 5, statusBadge(m.runnable_status));
       var playLink = m.runnable_status === 'runnable'
-        ? '<a href="/v1/inference-page?model_id=' + m.id + '" class="btn btn-primary btn-sm">Play</a> '
+        ? '<a href="/v1/inference-page?model_id=' + encodeURIComponent(m.name) + '" class="btn btn-primary btn-sm">Play</a> '
         : '';
       dom.setCellHtml(tr, 6,
-        '<a href="/v1/model-detail/' + m.id + '?source=external" class="btn btn-secondary btn-sm">View</a> ' +
+        '<a href="/v1/model-detail/' + encodeURIComponent(m.name) + '?source=external" class="btn btn-secondary btn-sm">View</a> ' +
         playLink +
-        '<a href="#" class="btn btn-secondary btn-sm" onclick="window.startEval(' + m.id + ', event)">Evaluate</a>');
+        '<a href="#" class="btn btn-secondary btn-sm" onclick="window.startEval(\'' + encodeURIComponent(m.name) + '\', event)">Evaluate</a>');
     }
 
     dom.syncTableBody(tbody, models, keyFn, createRow, updateRow);

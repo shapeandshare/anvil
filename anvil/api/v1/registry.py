@@ -14,7 +14,7 @@ Model IDs are resolved via convention-based naming (``dataset-<id>`` or
 
 import asyncio
 from datetime import UTC, datetime
-from typing import Annotated, Any, Optional
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from mlflow.exceptions import MlflowException

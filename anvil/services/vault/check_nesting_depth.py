@@ -33,7 +33,7 @@ _SKIP_DIRS: set[str] = {
 }
 
 
-@dataclass  # noqa: dataclass
+@dataclass
 class NestingViolation:
     """A package that exceeds the maximum allowed nesting depth."""
 
@@ -41,7 +41,7 @@ class NestingViolation:
     depth: int
 
 
-@dataclass  # noqa: dataclass
+@dataclass
 class ScanResult:
     """Aggregated scan result for the entire tree."""
 

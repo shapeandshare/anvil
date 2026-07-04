@@ -24,7 +24,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 
-@dataclass  # noqa: dataclass
+@dataclass
 class OneClassIssue:
     """A violation: file contains multiple non-companion classes."""
 
@@ -33,7 +33,7 @@ class OneClassIssue:
     message: str
 
 
-@dataclass  # noqa: dataclass
+@dataclass
 class ScanResult:
     """Aggregated scan result for a single file."""
 

@@ -70,16 +70,17 @@ def _get_responses(route: APIRoute) -> dict:
 ########################################################################
 
 _ALL_ROUTES: list[tuple[str, str]] = [
+    ("/models", "GET"),
+    ("/models/{name}", "GET"),
+    ("/models/{name}/versions/{version}", "GET"),
     ("/models/import", "POST"),
     ("/models/import/jobs", "GET"),
     ("/models/import/{job_id}/status", "GET"),
     ("/models/import/{job_id}/retry", "POST"),
-    ("/models/external", "GET"),
-    ("/models/external/{model_id}", "GET"),
-    ("/models/external/{model_id}", "DELETE"),
     ("/models/{model_id}/download", "POST"),
     ("/models/{model_id}/download/{job_id}/status", "GET"),
     ("/models/{model_id}/assets", "GET"),
+    ("/models/{name}/versions/{version}", "DELETE"),
 ]
 
 
@@ -106,13 +107,15 @@ def test_all_routes_use_annotated_depends(route_path: str, method: str) -> None:
 
 # Routes that raise HTTPException and the status codes they raise.
 _EXCEPTION_ROUTES: dict[tuple[str, str], set[int]] = {
+    ("/models", "GET"): {400, 503},
+    ("/models/{name}", "GET"): {404, 503},
+    ("/models/{name}/versions/{version}", "GET"): {404, 503},
     ("/models/import", "POST"): {422},
     ("/models/import/{job_id}/status", "GET"): {404},
     ("/models/import/{job_id}/retry", "POST"): {404},
-    ("/models/external/{model_id}", "GET"): {404},
-    ("/models/external/{model_id}", "DELETE"): {404},
     ("/models/{model_id}/download", "POST"): {404, 409},
     ("/models/{model_id}/download/{job_id}/status", "GET"): {404},
+    ("/models/{name}/versions/{version}", "DELETE"): {404},
 }
 
 

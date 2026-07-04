@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 
 from .._shared.source_type import SourceType
 

@@ -36,7 +36,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 
-@dataclass  # noqa: dataclass
+@dataclass
 class LayerViolation:
     """A single layer boundary violation.
 
@@ -61,7 +61,7 @@ class LayerViolation:
     message: str
 
 
-@dataclass  # noqa: dataclass
+@dataclass
 class ScanResult:
     """Aggregated scan result for a single file.
 

@@ -10,18 +10,17 @@ from __future__ import annotations
 import logging
 import os
 from collections.abc import Sequence
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
-import aiofiles
+import aiofiles  # type: ignore[import-untyped]
 from sqlalchemy.exc import IntegrityError
 
 from ...db.models.external_model import ExternalModel
 from ...db.models.model_import_job import ModelImportJob
 from ...db.repositories import external_models as external_models_repo
 from ...db.repositories import model_import_jobs as model_import_jobs_repo
-from .._shared.asset_state import AssetState
 from .._shared.import_types import ModelSourceError
 from .._shared.runnable_status import RunnableStatus
 from ..catalog.catalog_unavailable_error import CatalogUnavailableError
@@ -164,7 +163,7 @@ class ModelImportService:
         job = await self._model_import_job_repo.update_status(
             job_id,
             str(ModelImportJobStatus.RESOLVING),
-            started_at=datetime.now(timezone.utc),
+            started_at=datetime.now(UTC),
         )
         assert job is not None
 
@@ -203,7 +202,7 @@ class ModelImportService:
                 str(ModelImportJobStatus.COMPLETE),
                 registry_model_name=existing.registry_model_name,
                 registry_model_version=existing.registry_model_version,
-                finished_at=datetime.now(timezone.utc),
+                finished_at=datetime.now(UTC),
             )
             assert job is not None
             return job
@@ -231,7 +230,7 @@ class ModelImportService:
                     str(ModelImportJobStatus.COMPLETE),
                     registry_model_name=existing.registry_model_name,
                     registry_model_version=existing.registry_model_version,
-                    finished_at=datetime.now(timezone.utc),
+                    finished_at=datetime.now(UTC),
                 )
                 assert job is not None
                 return job
@@ -252,9 +251,8 @@ class ModelImportService:
                 f"allow-list: {{{','.join(sorted(_ALLOWED_ARCHITECTURES))}}}"
             )
 
-        runnable_status = cast(
-            RunnableStatus,
-            RunnableStatus.RUNNABLE if is_runnable else RunnableStatus.TRACK_ONLY,
+        runnable_status = (
+            RunnableStatus.RUNNABLE if is_runnable else RunnableStatus.TRACK_ONLY
         )
         try:
             ref = await self._catalog_service.register_external_model(
@@ -295,7 +293,7 @@ class ModelImportService:
             str(ModelImportJobStatus.COMPLETE),
             registry_model_name=ref.name,
             registry_model_version=ref.version,
-            finished_at=datetime.now(timezone.utc),
+            finished_at=datetime.now(UTC),
         )
         assert job is not None
         return job
@@ -313,7 +311,7 @@ class ModelImportService:
             str(ModelImportJobStatus.FAILED),
             error_code=error_code,
             error_message=error_message,
-            finished_at=datetime.now(timezone.utc),
+            finished_at=datetime.now(UTC),
         )
         assert job is not None
         return job

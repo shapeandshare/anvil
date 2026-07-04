@@ -29,7 +29,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 
-@dataclass  # noqa: dataclass
+@dataclass
 class LazyImport:
     """A lazy import found after the first module-level definition."""
 
@@ -38,7 +38,7 @@ class LazyImport:
     line: int
 
 
-@dataclass  # noqa: dataclass
+@dataclass
 class ScanResult:
     """Aggregated scan result for a single file."""
 

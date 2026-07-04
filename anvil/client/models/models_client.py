@@ -80,20 +80,20 @@ class ModelsClient:
         """
         return await self._status_cmd.execute(job_id)
 
-    async def get(self, model_id: int) -> dict[str, object]:
-        """Retrieve a single external model by ID.
+    async def get(self, name: str) -> dict[str, object]:
+        """Retrieve a single external model by catalog name.
 
         Parameters
         ----------
-        model_id : int
-            External model primary key.
+        name : str
+            Catalog model name.
 
         Returns
         -------
         dict
             Model metadata response.
         """
-        return await self._get_cmd.execute(model_id)
+        return await self._get_cmd.execute(name)
 
     async def download_assets(self, model_id: int) -> dict[str, object]:
         """Trigger async download of model assets.

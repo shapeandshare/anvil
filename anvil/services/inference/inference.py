@@ -34,7 +34,7 @@ from ...db.repositories.lora_adapter_repository import LoRAAdapterRepository
 from ...db.session import AsyncSessionLocal
 from ...services.catalog.catalog_entry import CatalogEntry
 from ...services.catalog.catalog_kind import CatalogKind
-from ...services.catalog.catalog_unavailable_error import CatalogUnavailableError
+from ...services.catalog.model_catalog_service import ModelCatalogService
 from ...services.catalog.model_ref import ModelRef
 from ..tracking.tracking import TrackingService
 from .loaded_model import LoadedModel
@@ -368,8 +368,6 @@ class InferenceService:
 
         # Look up the catalog entry
         if catalog is None:
-            from ...services.catalog.model_catalog_service import ModelCatalogService
-
             catalog = ModelCatalogService()
 
         entry: CatalogEntry | None = await catalog.get_entry(ref)
@@ -466,7 +464,7 @@ class InferenceService:
                 logger.warning("MLflow lookup failed: %s", mlf_err)
 
         # Fallback to experiment artifact file
-        experiment_path = Path(f"data/models/experiment_1.json")
+        experiment_path = Path("data/models/experiment_1.json")
         if experiment_path.exists():
             gpt_model = LlamaModel.load(str(experiment_path))
             if gpt_model.chars is None:

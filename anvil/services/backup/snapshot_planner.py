@@ -16,7 +16,7 @@ from typing import ClassVar
 from ...workspace.workspace_paths import WorkspacePaths
 
 
-@dataclass  # noqa: dataclass
+@dataclass
 class SnapshotPlan:
     """Result of planning a snapshot — the set of roots to archive and
     whether pre-flight checks passed.

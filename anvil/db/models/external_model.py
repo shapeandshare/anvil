@@ -11,8 +11,6 @@ catalog identity layer instead.
 
 from __future__ import annotations
 
-from datetime import datetime
-
 from sqlalchemy import Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 

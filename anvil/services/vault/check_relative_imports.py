@@ -24,7 +24,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 
-@dataclass  # noqa: dataclass
+@dataclass
 class AbsoluteImport:
     """A single absolute ``anvil.`` import statement found inside the package."""
 
@@ -33,7 +33,7 @@ class AbsoluteImport:
     line_text: str
 
 
-@dataclass  # noqa: dataclass
+@dataclass
 class ScanResult:
     """Aggregated scan result for a single file."""
 

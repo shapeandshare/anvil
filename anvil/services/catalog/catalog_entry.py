@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
@@ -81,7 +82,7 @@ class CatalogEntry(BaseModel):
     final_loss: float | None = None
     lifecycle_state: LifecycleState = LifecycleState("active")
     created_at: datetime | None = None
-    config: dict | None = None
+    config: dict[str, Any] | None = None
 
     def is_playable(self) -> bool:
         """Whether this model entry supports direct inference

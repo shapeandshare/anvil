@@ -25,7 +25,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-import mlflow
 from mlflow.exceptions import MlflowException
 from mlflow.tracking import MlflowClient
 
@@ -269,7 +268,7 @@ class ModelCatalogService:
                 await loop.run_in_executor(
                     None,
                     lambda k=key, v=value: client.set_model_version_tag(  # type: ignore[misc]
-                        catalog_name, version, k, v
+                        catalog_name, str(version), k, v
                     ),
                 )
             except _TRANSIENT_EXCEPTIONS as exc:
@@ -410,9 +409,7 @@ class ModelCatalogService:
 
             versions = await loop.run_in_executor(
                 None,
-                lambda: client.search_model_versions(  # type: ignore[misc]
-                    f"name='{ref.name}'"
-                ),
+                lambda: client.search_model_versions(f"name='{ref.name}'"),
             )
         except _TRANSIENT_EXCEPTIONS as exc:
             raise CatalogUnavailableError(
@@ -450,8 +447,8 @@ class ModelCatalogService:
         try:
             await loop.run_in_executor(
                 None,
-                lambda: client.set_model_version_tag(  # type: ignore[misc]
-                    ref.name, ref.version, key, value
+                lambda: client.set_model_version_tag(
+                    ref.name, str(ref.version), key, value
                 ),
             )
         except _TRANSIENT_EXCEPTIONS as exc:
@@ -480,22 +477,21 @@ class ModelCatalogService:
         try:
             versions = await loop.run_in_executor(
                 None,
-                lambda: client.search_model_versions(  # type: ignore[misc]
-                    f"name='{ref.name}'"
-                ),
+                lambda: client.search_model_versions(f"name='{ref.name}'"),
             )
             for mv in versions:
                 if int(mv.version) == ref.version and mv.run_id:
                     local_dir = await loop.run_in_executor(
                         None,
-                        lambda: client.download_artifacts(  # type: ignore[misc]
-                            run_id=mv.run_id, path="", dst_path=None
+                        lambda _mv=mv: client.download_artifacts(  # type: ignore[misc]
+                            run_id=_mv.run_id, path="", dst_path=None
                         ),
                     )
                     config_path = Path(local_dir) / "config.json"
                     if config_path.exists():
                         config_text = await asyncio.to_thread(config_path.read_text)
-                        return json.loads(config_text)
+                        result: dict[str, Any] | None = json.loads(config_text)
+                        return result
             return None
         except _TRANSIENT_EXCEPTIONS as exc:
             raise CatalogUnavailableError(
@@ -517,9 +513,9 @@ class ModelCatalogService:
         try:
             await loop.run_in_executor(
                 None,
-                lambda: client.set_model_version_tag(  # type: ignore[misc]
+                lambda: client.set_model_version_tag(
                     ref.name,
-                    ref.version,
+                    str(ref.version),
                     _TAG_ASSET_AVAILABILITY,
                     str(state),
                 ),
@@ -543,9 +539,9 @@ class ModelCatalogService:
         try:
             await loop.run_in_executor(
                 None,
-                lambda: client.set_model_version_tag(  # type: ignore[misc]
+                lambda: client.set_model_version_tag(
                     ref.name,
-                    ref.version,
+                    str(ref.version),
                     _TAG_LIFECYCLE_STATE,
                     str(LifecycleState.ARCHIVED),
                 ),
