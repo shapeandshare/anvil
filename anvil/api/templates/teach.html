@@ -41,15 +41,53 @@
         </div>
       </div>
 
-      <button type="submit" class="btn btn-primary" style="margin-top:var(--space-3);width:100%;">Create Session</button>
+      <button type="submit" class="btn btn-accent" style="margin-top:var(--space-3);width:100%;">Create Session</button>
     </form>
   </aside>
 
   {# ── Main panel ────────────────────────────────────────────────── #}
   <div class="teach-main">
 
+    {# ── Banner CTA: learning lesson ──────────────────────────────── #}
+    <div class="section-card section-card--banner" style="--stagger-i:0">
+      <div class="section-card__content" style="display:flex;align-items:center;gap:var(--space-3);">
+        <span style="font-size:1.2rem;flex-shrink:0;">&#127922;</span>
+        <div style="flex:1;">
+          <div style="font-family:var(--font-body);font-weight:600;font-size:var(--text-footnote);color:var(--text-secondary);">How the Teaching Loop Works</div>
+          <div style="font-size:var(--text-caption-2);color:var(--text-tertiary);margin-top:2px;">Iterative training, chain of experiments, and progressive model improvement — explained in the interactive learning arc.</div>
+        </div>
+        <a href="/v1/learn" class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap;">Learn More &rarr;</a>
+      </div>
+    </div>
+
+    {# ── Empty state guidance card (US1) ───────────────────────────── #}
+    <div id="empty-state-card" class="section-card" style="--stagger-i:0;display:none;text-align:center;max-width:480px;margin:var(--space-8) auto;">
+      <div class="section-card__header" style="justify-content:center;">
+        <span class="section-card__icon" style="font-size:2rem;">&#128218;</span>
+        <div class="section-card__title" style="font-size:var(--text-title-2);">Welcome to the Teaching Loop</div>
+      </div>
+      <div class="section-card__content">
+        <p class="page-intro" style="max-width:400px;margin:0 auto var(--space-4);">Train a model iteratively — provide examples, watch it improve round by round. Each round trains from the previous round's best model.</p>
+        <div class="teach-steps" style="text-align:left;max-width:320px;margin:0 auto var(--space-5);">
+          <div class="teach-step" style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) 0;">
+            <span class="teach-step-num" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;font-family:var(--font-mono);font-size:var(--text-footnote);font-weight:700;flex-shrink:0;">1</span>
+            <span style="font-size:var(--text-callout);color:var(--text);">Create a session to get started</span>
+          </div>
+          <div class="teach-step" style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) 0;">
+            <span class="teach-step-num" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--text-tertiary);color:#fff;font-family:var(--font-mono);font-size:var(--text-footnote);font-weight:700;flex-shrink:0;">2</span>
+            <span style="font-size:var(--text-callout);color:var(--text);">Train a round with example data</span>
+          </div>
+          <div class="teach-step" style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) 0;">
+            <span class="teach-step-num" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--text-tertiary);color:#fff;font-family:var(--font-mono);font-size:var(--text-footnote);font-weight:700;flex-shrink:0;">3</span>
+            <span style="font-size:var(--text-callout);color:var(--text);">Inspect and compare the results</span>
+          </div>
+        </div>
+        <button id="empty-state-create-btn" type="button" class="btn btn-primary" style="min-width:200px;font-size:var(--text-headline);" onclick="createSession(event)">Create Session</button>
+      </div>
+    </div>
+
     {# ── Active session info ──────────────────────────────────────── #}
-    <div id="active-session-panel" class="section-card" style="display:none;">
+    <div id="active-session-panel" class="section-card" style="display:none;--stagger-i:1;">
       <div class="teach-panel-header">
         <div>
           <h2 id="active-session-name" class="teach-section-title" style="margin-bottom:0;">Active session</h2>
@@ -57,10 +95,19 @@
         </div>
         <button id="refresh-session-btn" type="button" class="btn btn-secondary" onclick="loadSessionDetails()" aria-label="Refresh session details">&#x21bb;</button>
       </div>
+      <div class="teach-panel-actions" style="display:flex;gap:var(--space-2);margin-top:var(--space-3);flex-wrap:wrap;">
+        <button id="start-round-cta" type="button" class="btn btn-primary" onclick="document.getElementById('round-examples').focus()" style="margin-top:0;">Start New Round</button>
+        <button id="view-rounds-cta" type="button" class="btn btn-secondary" onclick="toggleRoundHistory()">View Rounds</button>
+        <button id="delete-session-cta" type="button" class="btn btn-secondary" onclick="deleteSession(activeSessionId)" style="color:var(--accent-red);">Delete Session</button>
+      </div>
+      <div id="round-history" class="teach-round-history" style="display:none;margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--separator);">
+        <h3 class="teach-section-title" style="font-size:var(--text-footnote);margin-bottom:var(--space-2);">Round History</h3>
+        <div id="round-history-list"><p class="teach-empty-text">Loading rounds…</p></div>
+      </div>
     </div>
 
     {# ── Round workflow panel ─────────────────────────────────────── #}
-    <div id="round-panel" class="section-card" style="display:none;">
+    <div id="round-panel" class="section-card" style="display:none;--stagger-i:2;">
       <h2 class="teach-section-title">Start a New Round</h2>
       <form id="start-round-form" onsubmit="return startRound(event)">
         <div class="ds-selectors">
@@ -99,7 +146,7 @@
     </div>
 
     {# ── Inference / Inspect panel ────────────────────────────────── #}
-    <div id="inspect-panel" class="section-card" style="display:none;">
+    <div id="inspect-panel" class="section-card" style="display:none;--stagger-i:3;">
       <h2 class="teach-section-title">Inspect Round</h2>
       <form id="inspect-form" onsubmit="return inspectRound(event)">
         <div class="ds-selectors">
@@ -133,8 +180,9 @@
     </div>
 
     {# ── Compare panel ────────────────────────────────────────────── #}
-    <div id="compare-panel" class="section-card">
+    <div id="compare-panel" class="section-card" style="--stagger-i:4;display:none;">
       <h2 class="teach-section-title">Compare Rounds</h2>
+      <p class="compare-placeholder" style="font-size:var(--text-callout);color:var(--text-tertiary);margin:var(--space-2) 0 var(--space-3);">Complete at least 2 rounds to compare models side-by-side.</p>
       <form id="compare-form" onsubmit="return compareRounds(event)">
         <div class="ds-selectors">
           <div class="teach-field-group" style="margin-top:0;">
@@ -189,6 +237,10 @@
 .teach-session-item-name { font-size:var(--text-footnote); font-weight:500; color:var(--text); }
 .teach-session-item-status { font-size:var(--text-caption-2); color:var(--text-tertiary); }
 .section-divider { border:none; border-top:1px solid var(--separator); margin:var(--space-3) 0; }
+.teach-round-history { max-height:300px; overflow-y:auto; }
+.teach-round-history-item { padding:var(--space-2) var(--space-3); border-bottom:1px solid var(--separator); font-size:var(--text-footnote); display:flex; justify-content:space-between; align-items:center; }
+.teach-round-history-item:last-child { border-bottom:none; }
+#inspect-cta-container { margin-top:var(--space-3); text-align:center; }
 </style>
 <script nonce="{{ request.state.csp_nonce }}">
 /* ── State ─────────────────────────────────────────────────────────── */
@@ -196,6 +248,7 @@ var activeSessionId = null;
 var activeRunId = null;
 var activeMlflowRunId = null;
 var activeEventSource = null;
+var completedRounds = 0;
 
 /* ── Session list ──────────────────────────────────────────────────── */
 function loadSessions() {
@@ -203,10 +256,14 @@ function loadSessions() {
     .then(function(r) { return r.json(); })
     .then(function(data) {
       var list = document.getElementById('session-list');
+      var emptyCard = document.getElementById('empty-state-card');
       if (!data.sessions || data.sessions.length === 0) {
         list.innerHTML = '<p class="teach-empty-text" role="status">No sessions yet. Create one above.</p>';
+        if (emptyCard) { emptyCard.style.display = ''; }
         return;
       }
+      if (emptyCard && !activeSessionId) { emptyCard.style.display = ''; }
+      else if (emptyCard) { emptyCard.style.display = 'none'; }
       list.innerHTML = data.sessions.map(function(s) {
         var active = activeSessionId === s.id ? ' teach-session-item--active' : '';
         return '<button type="button" class="teach-session-item' + active + '" data-id="' + s.id + '" onclick="selectSession(' + s.id + ')"><span class="teach-session-item-name">' + escHtml(s.name) + '</span><span class="teach-session-item-status">' + (s.status || '') + '</span></button>';
@@ -219,12 +276,15 @@ function loadSessions() {
 
 function selectSession(id) {
   activeSessionId = id;
+  completedRounds = 0;
   loadSessionDetails();
   loadSessions();
 }
 
 function loadSessionDetails() {
   if (!activeSessionId) return;
+  var emptyCard = document.getElementById('empty-state-card');
+  if (emptyCard) emptyCard.style.display = 'none';
   apiFetch('/v1/teach/sessions/' + activeSessionId)
     .then(function(r) { return r.json(); })
     .then(function(s) {
@@ -232,6 +292,7 @@ function loadSessionDetails() {
       document.getElementById('round-panel').style.display = '';
       document.getElementById('active-session-name').textContent = escHtml(s.name);
       document.getElementById('active-session-status').textContent = 'Status: ' + (s.status || 'draft') + ' | Chain head: ' + (s.current_base_experiment_id || 'none');
+      updateComparePanelVisibility();
     });
 }
 
@@ -362,9 +423,18 @@ function connectSSE(runId) {
     showToast('Training complete!', 'success');
     document.getElementById('training-status-text').textContent = 'Complete';
     document.getElementById('training-complete').style.display = '';
-    document.getElementById('training-complete').textContent = 'Training finished successfully. Use Inspect below to test the model.';
+    document.getElementById('training-complete').textContent = 'Training finished successfully.';
+    completedRounds += 1;
+    var ctaContainer = document.getElementById('inspect-cta-container');
+    if (!ctaContainer) {
+      ctaContainer = document.createElement('div');
+      ctaContainer.id = 'inspect-cta-container';
+      document.getElementById('training-complete').parentNode.appendChild(ctaContainer);
+    }
+    ctaContainer.innerHTML = '<button id="inspect-cta" type="button" class="btn btn-primary" onclick="showInspectWithRound(' + activeMlflowRunId + ')">Inspect This Round \u2192</button>';
     closeSSE();
     loadSessionDetails();
+    updateComparePanelVisibility();
   });
 
   activeEventSource.addEventListener('error', function(ev) {
@@ -448,6 +518,70 @@ function compareRounds(ev) {
   return false;
 }
 
+/* ── Show Inspect panel with pre-filled experiment (T007) ────────── */
+function showInspectWithRound(experimentId) {
+  var panel = document.getElementById('inspect-panel');
+  if (panel) {
+    panel.style.display = '';
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  var expInput = document.getElementById('inspect-experiment');
+  if (expInput && experimentId != null) {
+    expInput.value = experimentId;
+  }
+  var promptInput = document.getElementById('inspect-prompt');
+  if (promptInput) {
+    promptInput.focus();
+  }
+}
+
+/* ── Update Compare panel visibility (T008) ──────────────────────── */
+function updateComparePanelVisibility() {
+  var panel = document.getElementById('compare-panel');
+  if (!panel) return;
+  var placeholder = panel.querySelector('.compare-placeholder');
+  var form = document.getElementById('compare-form');
+  if (completedRounds >= 2) {
+    panel.style.display = '';
+    if (placeholder) placeholder.style.display = 'none';
+    if (form) form.style.display = '';
+  } else {
+    panel.style.display = 'none';
+  }
+}
+
+/* ── Toggle round history (T005b) ─────────────────────────────────── */
+function toggleRoundHistory() {
+  var history = document.getElementById('round-history');
+  if (!history) return;
+  if (history.style.display !== 'none') {
+    history.style.display = 'none';
+    return;
+  }
+  history.style.display = '';
+  if (!activeSessionId) return;
+  var list = document.getElementById('round-history-list');
+  if (!list) return;
+  list.innerHTML = '<p class="teach-empty-text">Loading rounds…</p>';
+  apiFetch('/v1/teach/sessions/' + activeSessionId + '/rounds')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var rounds = data.rounds || [];
+      if (rounds.length === 0) {
+        list.innerHTML = '<p class="teach-empty-text">No rounds yet.</p>';
+        return;
+      }
+      list.innerHTML = rounds.map(function(r) {
+        var status = r.status || 'unknown';
+        var loss = r.final_loss != null ? 'loss: ' + Number(r.final_loss).toFixed(4) : '';
+        return '<div class="teach-round-history-item"><span>Round ' + (r.round_index || '?') + ' (exp ' + r.experiment_id + ')</span><span style="font-family:var(--font-mono);font-size:var(--text-caption-1);color:var(--text-tertiary);">' + status + (loss ? ' | ' + loss : '') + '</span></div>';
+      }).join('');
+    })
+    .catch(function() {
+      list.innerHTML = '<p class="teach-empty-text">Failed to load rounds.</p>';
+    });
+}
+
 /* ── Helpers ───────────────────────────────────────────────────────── */
 function escHtml(str) {
   var div = document.createElement('div');
@@ -468,4 +602,14 @@ function showToast(msg, type) {
 /* ── Init ──────────────────────────────────────────────────────────── */
 loadSessions();
 </script>
+{% endblock %}
+{% block didyouknow_banner %}
+<div id="didyouknow-banner" class="didyouknow">
+  <span class="didyouknow__icon" aria-hidden="true">&#9670;</span>
+  <div>
+    <div class="didyouknow__label">&#9670; Did You Know?</div>
+    <span id="didyouknow-text"></span>
+  </div>
+  <button type="button" class="didyouknow__dismiss" aria-label="Dismiss">&#10005;</button>
+</div>
 {% endblock %}
