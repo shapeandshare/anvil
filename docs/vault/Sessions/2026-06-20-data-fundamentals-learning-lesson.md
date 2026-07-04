@@ -61,5 +61,4 @@ Banners use `--stagger-i: 0` and existing section-cards below them are increment
 ## Related
 
 - [[Design/Design|Design]] — UI design system including banner component pattern
-- [[Reference/ProgressiveWalkthroughs|Progressive Walkthroughs]] — learning arc progression context
 - [[Specs/007 Learning Content Enrichment/007 Learning Content Enrichment|007 Learning Content Enrichment]] — learning content feature specification

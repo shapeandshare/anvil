@@ -172,4 +172,3 @@ Params = 27·16 + 27·16 + 1·[4·256 + 3·42·16 + 2·16] + 16
 
 - [[TrainingDataFlow]] — How parameters enter the training loop
 - [[Glossary]] — Definitions of Adam, BOS, RMSNorm
-- [[ProgressiveWalkthroughs]] — Each progressive example uses different hyperparameter configurations

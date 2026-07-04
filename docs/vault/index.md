@@ -40,7 +40,7 @@ Open this vault in [Obsidian](https://obsidian.md) for graph navigation.
 | Topic | Docs |
 |-------|------|
 | **Architecture** | [[Reference/ArchitectureOverview|Architecture & Data Flow]] · [[Reference/DualBackend|CPU vs GPU Bridge]] · [[Reference/Hyperparameters|Hyperparameter Guide]] |
-| **Training Pipeline** | [[Reference/TrainingDataFlow|Training Render Loop]] · [[Reference/MlflowIntegration|MLflow Tracking]] · [[Reference/ProgressiveWalkthroughs|train0→train5 Progression]] |
+| **Training Pipeline** | [[Reference/TrainingDataFlow|Training Render Loop]] · [[Reference/MlflowIntegration|MLflow Tracking]] |
 | **MLflow Lineage** | [[Decisions/ADR-016-mlflow-primary-lineage|ADR-016: MLflow as Primary Lineage Source of Truth]] |
 | **Model Export** | [[Reference/SafetensorsExport|Safetensors & HF Interop]] |
 | **Tooling & CI** | [[Reference/linting-and-testing-tooling|Linting, Formatting, and Testing Tooling]] · [[Decisions/ADR-028-ci-merge-gate-enforcement|ADR-028: CI Merge Gate Enforcement]] · [[Sessions/2026-06-21-linting-testing-hooks-tooling|Tooling Session Log]] |

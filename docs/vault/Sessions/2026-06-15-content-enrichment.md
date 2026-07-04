@@ -30,7 +30,6 @@ Systematic enrichment of learning content and reference documentation across two
 | [[Reference/SafetensorsExport]] | Export pipeline diagram, tensor name mapping table (anvil→HF), config generation, tokenizer export, MLflow pyfunc model, loading guide |
 | [[Reference/DualBackend]] | CPU vs GPU comparison table, weight bridge function, architecture parity checklist, device resolution, usage scenarios |
 | [[Reference/Hyperparameters]] | Per-parameter effect analysis, interaction guide, parameter count formula, quick reference table, tuning recommendations |
-| [[Reference/ProgressiveWalkthroughs]] | train0→train5 progression with code examples, concept introduction per script, pedagogical design philosophy |
 | [[Reference/MlflowIntegration]] | System architecture, tracking data inventory, registry flow, lifecycle management, external server support, data flow diagram |
 
 ### Walkthrough Enrichments
