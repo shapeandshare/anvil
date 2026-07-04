@@ -171,7 +171,7 @@ def assert_no_console_errors():
 
         def _on_response(self, response):
             status = response.status
-            if 400 <= status < 600 and status != 503:
+            if 400 <= status < 600:
                 url = response.url
                 self._errors.append(f"FAILED_RESOURCE: {status} {url}")
 
