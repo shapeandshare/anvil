@@ -62,6 +62,7 @@ This index lists all ADRs in this repository. ADRs document significant architec
 | ADR-046 | Learning Hub Track-Based Information Architecture | Accepted | 2026-07-03 |
 | ADR-048 | Shared Environment Snapshot Extraction — Reusable Health/About Page Data | Accepted | 2026-07-04 |
 | ADR-048 | MLflow Model Registry as Model Catalog Source of Truth | Accepted | 2026-07-03 |
+| ADR-049 | Community Guidelines and Open-Source Behavior | Accepted | 2026-07-04 |
 
 **Status**: Draft → Reviewed → Canonical (human-only). See `_meta/tags.md` for lifecycle.
 
@@ -115,4 +116,5 @@ This index lists all ADRs in this repository. ADRs document significant architec
 - [[Decisions/ADR-046-learning-hub-track-ia|ADR-046-learning-hub-track-ia]] — ADR-046: Learning Hub Track-Based Information Architecture
 - [[Decisions/ADR-047-environment-snapshot-extraction|ADR-047-environment-snapshot-extraction]] — ADR-047: Shared Environment Snapshot Extraction — Reusable Health/About Page Data
 - [[Decisions/ADR-048-mlflow-model-catalog-source-of-truth|ADR-048-mlflow-model-catalog-source-of-truth]] — ADR-048: MLflow Model Registry as Model Catalog Source of Truth
+- [[Decisions/ADR-049-community-guidelines|ADR-049-community-guidelines]] — ADR-049: Community Guidelines and Open-Source Behavior
 - [[Decisions/ADR-template|ADR-template]]

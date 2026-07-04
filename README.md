@@ -7,7 +7,9 @@
   <a href="#license"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-ff9500?style=for-the-badge"></a>&nbsp;
   <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000?style=for-the-badge"></a>&nbsp;
   <a href="https://mypy-lang.org/"><img alt="Typed: mypy strict" src="https://img.shields.io/badge/typed-mypy%20strict-2a6db2?style=for-the-badge&logo=python&logoColor=white"></a>&nbsp;
-  <a href="https://www.conventionalcommits.org/"><img alt="Conventional Commits" src="https://img.shields.io/badge/commits-conventional-ffcc00?style=for-the-badge"></a>
+  <a href="https://www.conventionalcommits.org/"><img alt="Conventional Commits" src="https://img.shields.io/badge/commits-conventional-ffcc00?style=for-the-badge"></a>&nbsp;
+  <a href="CODE_OF_CONDUCT.md"><img alt="Contributor Covenant 2.1" src="https://img.shields.io/badge/code%20of%20conduct-contributor%20covenant-ff69b4?style=for-the-badge"></a>&nbsp;
+  <a href="CONTRIBUTING.md"><img alt="Contributing" src="https://img.shields.io/badge/contributing-guide-2ea44f?style=for-the-badge"></a>
 </p>
 
 <p align="center">
@@ -395,6 +397,18 @@ docker run -p 8080:8080 -p 5001:5001 -v anvil-workspace:/workspace anvil
 | Web UI slow on first load | Bootstrapping demo datasets | Normal — only on the first `make run` after `make setup` |
 | `make test-browser`: `Browser not found` | Playwright Chromium not installed | `uv run playwright install chromium` (one-time setup) — though `make test-browser` now auto-installs this; check network connectivity |
 | `make test-browser`: `ModuleNotFoundError: playwright` | `pytest-playwright` not installed | Run `make setup` / `uv sync` to install dev deps |
+
+<br>
+
+## Community
+
+anvil is an open-source project and we welcome contributions. Please review
+our community guidelines before participating:
+
+- [Code of Conduct](CODE_OF_CONDUCT.md) — behavior standards for all community interactions
+- [Contributing Guide](CONTRIBUTING.md) — how to contribute, dev setup, and PR process
+- [Security Policy](SECURITY.md) — how to report a vulnerability
+- [Support](SUPPORT.md) — where to ask questions and get help
 
 <br>
 
