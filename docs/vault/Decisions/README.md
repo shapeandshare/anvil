@@ -59,7 +59,8 @@ This index lists all ADRs in this repository. ADRs document significant architec
 | ADR-043 | Warm-Start Vocabulary Inheritance and MLflow Tag Lineage | Draft | 2026-06-28 |
 | ADR-044 | At-Rest Secret Encryption — Key Ring & KMS Envelope | Draft | 2026-06-29 |
 | ADR-045 | Training Lifecycle Extraction — TrainingRunService | Draft | 2026-07-02 |
-| ADR-046 | Shared Environment Snapshot Extraction — Reusable Health/About Page Data | Draft | 2026-07-04 |
+| ADR-046 | Learning Hub Track-Based Information Architecture | Accepted | 2026-07-03 |
+| ADR-047 | Shared Environment Snapshot Extraction — Reusable Health/About Page Data | Draft | 2026-07-04 |
 
 **Status**: Draft → Reviewed → Canonical (human-only). See `_meta/tags.md` for lifecycle.
 
@@ -110,5 +111,6 @@ This index lists all ADRs in this repository. ADRs document significant architec
 - [[Decisions/ADR-043-warm-start-vocabulary-inheritance|ADR-043-warm-start-vocabulary-inheritance]] — ADR-043: Warm-Start Vocabulary Inheritance and MLflow Tag Lineage
 - [[Decisions/ADR-044-at-rest-secret-encryption|ADR-044-at-rest-secret-encryption]] — ADR-044: At-Rest Secret Encryption — Key Ring & KMS Envelope
 - [[Decisions/ADR-045-training-lifecycle-extraction|ADR-045-training-lifecycle-extraction]] — ADR-045: Training Lifecycle Extraction — TrainingRunService for Reusable Orchestration
-- [[Decisions/ADR-046-environment-snapshot-extraction|ADR-046-environment-snapshot-extraction]] — ADR-046: Shared Environment Snapshot Extraction — Reusable Health/About Page Data
+- [[Decisions/ADR-046-learning-hub-track-ia|ADR-046-learning-hub-track-ia]] — ADR-046: Learning Hub Track-Based Information Architecture
+- [[Decisions/ADR-047-environment-snapshot-extraction|ADR-047-environment-snapshot-extraction]] — ADR-047: Shared Environment Snapshot Extraction — Reusable Health/About Page Data
 - [[Decisions/ADR-template|ADR-template]]

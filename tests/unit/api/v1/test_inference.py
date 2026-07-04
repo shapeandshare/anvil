@@ -372,3 +372,111 @@ class TestEdgeCases:
             json={"prompt": "hi"},
         )
         assert resp.json() == custom_resp
+
+
+########################################################################
+# POST /v1/inference/generate
+########################################################################
+
+
+class TestInferenceGenerate:
+    """Tests for POST /v1/inference/generate."""
+
+    async def test_generate_success(self, client, _mock_svc):
+        """Returns generated text with model_id."""
+        _mock_svc.generate = MagicMock(return_value="hello world")
+        _mock_svc.load_model = AsyncMock(return_value=MagicMock())
+
+        resp = await client.post(
+            "/v1/inference/generate",
+            json={
+                "model_id": 1,
+                "prompt": "hello",
+                "temperature": 0.7,
+                "max_tokens": 50,
+            },
+        )
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["text"] == "hello world"
+        assert data["model_id"] == 1
+
+    async def test_generate_with_adapter(self, client, _mock_svc):
+        """Returns generated text with adapter_id."""
+        _mock_svc.generate = MagicMock(return_value="adapted output")
+        _mock_svc.load_model = AsyncMock(return_value=MagicMock())
+
+        resp = await client.post(
+            "/v1/inference/generate",
+            json={
+                "model_id": 1,
+                "prompt": "hello",
+                "adapter_id": "run_42",
+            },
+        )
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["text"] == "adapted output"
+        assert data["adapter_id"] == "run_42"
+        _mock_svc.load_model.assert_called_with(model_id=1, adapter_id="run_42")
+
+    async def test_generate_model_not_found(self, client, _mock_svc):
+        """Returns 404 when model is not found."""
+        _mock_svc.load_model = AsyncMock(side_effect=ValueError("Model not found"))
+
+        resp = await client.post(
+            "/v1/inference/generate",
+            json={
+                "model_id": 999,
+                "prompt": "hello",
+            },
+        )
+
+        assert resp.status_code == 404
+        assert "Model not found" in resp.json()["detail"]
+
+    async def test_generate_file_not_found(self, client, _mock_svc):
+        """Returns 404 when model file is not found."""
+        _mock_svc.load_model = AsyncMock(side_effect=FileNotFoundError("No such file"))
+
+        resp = await client.post(
+            "/v1/inference/generate",
+            json={
+                "model_id": 999,
+                "prompt": "hello",
+            },
+        )
+
+        assert resp.status_code == 404
+
+    async def test_generate_runtime_error(self, client, _mock_svc):
+        """Returns 500 when RuntimeError is raised."""
+        _mock_svc.load_model = AsyncMock(side_effect=RuntimeError("Model init failed"))
+
+        resp = await client.post(
+            "/v1/inference/generate",
+            json={
+                "model_id": 1,
+                "prompt": "hello",
+            },
+        )
+
+        assert resp.status_code == 500
+
+    async def test_generate_validates_required_fields(self, client, _mock_svc):
+        """Pydantic validation: missing required fields returns 422."""
+        resp = await client.post(
+            "/v1/inference/generate",
+            json={},
+        )
+        assert resp.status_code == 422
+
+    async def test_generate_validates_empty_prompt(self, client, _mock_svc):
+        """Pydantic validation: empty prompt returns 422."""
+        resp = await client.post(
+            "/v1/inference/generate",
+            json={"model_id": 1, "prompt": ""},
+        )
+        assert resp.status_code == 422

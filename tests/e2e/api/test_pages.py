@@ -59,7 +59,7 @@ async def test_datasets_page(client: httpx.AsyncClient) -> None:
     r = await client.get("/v1/datasets-page")
     assert r.status_code == 200
     assert "text/html" in r.headers["content-type"]
-    assert "Add Data" in r.text
+    assert "Scan Folder" in r.text
 
 
 @pytest.mark.asyncio
@@ -382,3 +382,21 @@ async def test_model_detail_page(client: httpx.AsyncClient) -> None:
     assert r.status_code == 200
     assert "text/html" in r.headers["content-type"]
     assert "Model Detail" in r.text
+
+
+@pytest.mark.asyncio
+async def test_data_add_page(client: httpx.AsyncClient) -> None:
+    """GET /v1/data-add-page renders the add data flow page."""
+    r = await client.get("/v1/data-add-page")
+    assert r.status_code == 200
+    assert "text/html" in r.headers["content-type"]
+    assert "Provenance &amp; Governance" in r.text
+
+
+@pytest.mark.asyncio
+async def test_data_sources_page(client: httpx.AsyncClient) -> None:
+    """GET /v1/data-sources-page renders the data sources flow page."""
+    r = await client.get("/v1/data-sources-page")
+    assert r.status_code == 200
+    assert "text/html" in r.headers["content-type"]
+    assert "Analyze Path" in r.text

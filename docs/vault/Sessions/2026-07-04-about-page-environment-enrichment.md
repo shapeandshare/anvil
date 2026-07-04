@@ -55,7 +55,7 @@ they could run fully in parallel without blocking on each other.
 - `tests/unit/test_about_helpers.py` (new) — unit tests for `_get_git_commit_hash()`, including the `.git`-missing fallback
 - `tests/e2e/test_about_page.py` (new) — e2e test for `GET /v1/about` rendering the environment contract
 
-See [[Decisions/ADR-046-environment-snapshot-extraction|ADR-046]] for the full extraction rationale.
+See [[Decisions/ADR-047-environment-snapshot-extraction|ADR-047]] for the full extraction rationale.
 
 ## Key Discoveries
 
@@ -94,4 +94,4 @@ See [[Decisions/ADR-046-environment-snapshot-extraction|ADR-046]] for the full e
 
 ## See Also
 
-- [[Decisions/ADR-046-environment-snapshot-extraction|ADR-046: Shared Environment Snapshot Extraction]]
+- [[Decisions/ADR-047-environment-snapshot-extraction|ADR-047: Shared Environment Snapshot Extraction]]

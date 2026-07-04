@@ -21,7 +21,7 @@ class TestDatasetUploadWiring:
 
     def test_upload_appears_in_listing(self, page, base_url: str) -> None:
         """Upload a ``.txt`` file and verify the backend responds."""
-        page.goto(f"{base_url}/v1/datasets-page")
+        page.goto(f"{base_url}/v1/data-add-page")
         page.wait_for_load_state("networkidle")
 
         with tempfile.NamedTemporaryFile(suffix=".txt", mode="w", delete=False) as f:
@@ -50,7 +50,7 @@ class TestDatasetUploadWiring:
     ) -> None:
         """Verify the upload interaction produces zero console errors."""
         checker = assert_no_console_errors(page)
-        page.goto(f"{base_url}/v1/datasets-page")
+        page.goto(f"{base_url}/v1/data-add-page")
         page.wait_for_load_state("networkidle")
 
         with tempfile.NamedTemporaryFile(suffix=".txt", mode="w", delete=False) as f:

@@ -15,8 +15,18 @@ PAGES: list[tuple[str, str, str]] = [
     ("/", "", ""),
     (
         "/v1/datasets-page",
-        "#tab-datasets .ds-flow-title",
+        ".data-hub-actions a[href*='data-add']",
         "Add Data",
+    ),
+    (
+        "/v1/data-add-page",
+        "#upload-form",
+        "",
+    ),
+    (
+        "/v1/data-sources-page",
+        "#wiz-drop-zone",
+        "",
     ),
     (
         "/v1/training-page",

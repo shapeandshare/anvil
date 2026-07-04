@@ -1,5 +1,5 @@
 ---
-title: 'ADR-046: Shared Environment Snapshot Extraction — Reusable Health/About Page Data'
+title: 'ADR-047: Shared Environment Snapshot Extraction — Reusable Health/About Page Data'
 type: decision
 tags:
   - type/decision
@@ -14,12 +14,12 @@ code-refs:
 created: '2026-07-04'
 updated: '2026-07-04'
 aliases:
-  - ADR-046
+  - ADR-047
   - environment-snapshot-extraction
 source: 'About page enrichment session'
 ---
 
-# ADR-046: Shared Environment Snapshot Extraction — Reusable Health/About Page Data
+# ADR-047: Shared Environment Snapshot Extraction — Reusable Health/About Page Data
 
 ## Status
 

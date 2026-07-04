@@ -1,6 +1,6 @@
 # anvil — Agent Guidelines
 
-**Last updated**: 2026-07-02 (constitution v1.8.0: Article XI Simplicity First / Boring Technology + ADR-041; sonarcloud-tooling + content-repository-016-mvp; scripts-python-over-bash + package-module-migration, testing-guide consolidation; OWASP remediation spec 017 + ADRs 035/036; whole-API e2e test suite 017; TDD workflow enforcement in testing section, Principle 2, and Architecture Rules)
+**Last updated**: 2026-07-03 (constitution v1.8.0: Article XI Simplicity First / Boring Technology + ADR-041; sonarcloud-tooling + content-repository-016-mvp; scripts-python-over-bash + package-module-migration, testing-guide consolidation; OWASP remediation spec 017 + ADRs 035/036; whole-API e2e test suite 017; TDD workflow enforcement in testing section, Principle 2, and Architecture Rules)
 
 ## Project Overview
 
@@ -520,6 +520,8 @@ SomeException
 - SQLite (anvil-state.db, WAL) — new `TeachingSession` table via async SQLAlchemy + Alembic migration; MLflow runs + artifacts for TeachingRound data (055-interactive-teaching-loop)
 - Python 3.11+ + FastAPI, async SQLAlchemy (existing); `transformers`/`peft`/`torch` (existing `[finetune]` extra); `huggingface_hub` (existing `[finetune]` extra); stdlib `pathlib`, `tempfile` (063-usable-external-models)
 - SQLite (anvil-state.db, WAL) via async SQLAlchemy; LocalFileStore at `data/models/{model_id}/hf/` for assets (063-usable-external-models)
+- Jinja2 template + vanilla JS (ES5-compatible) + CSS3 + None new — reuses existing `tokens.css`, `archetypes.css`, `base.html` `didyouknow_banner` block (062-teach-page-cta)
+- N/A — all state is client-side JS variables (existing pattern) (062-teach-page-cta)
 
 ## Recent Changes
 - 025-ux-rules-integration: Added Python 3.11+ (existing repo convention) + Stdlib only — `ux_lint.py` (re/ sys/ os/), `ux_review.py` (stdlib + urllib for OpenAI-compatible API calls)

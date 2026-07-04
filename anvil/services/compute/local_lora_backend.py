@@ -154,8 +154,8 @@ def _resolve_device_config(
     device : str
         Target device (``"cpu"``, ``"cuda"``, ``"mps"``).
     torch : Any
-        The ``torch`` module (passed as a parameter to avoid an early
-        module-level import of the optional dependency).
+        The ``torch`` module (passed as a parameter to avoid importing the
+        optional dependency at module level).
 
     Returns
     -------
