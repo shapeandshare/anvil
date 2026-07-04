@@ -7,7 +7,7 @@ and triggering adapter merge operations.
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -165,7 +165,7 @@ async def merge_adapter(
 async def merge_and_export_adapter(
     model_id: int,
     adapter_id: str,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, Any]:
     """Full merge+export pipeline with safetensors and MLflow lineage.
 

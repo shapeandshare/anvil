@@ -11,7 +11,7 @@ experiments, datasets, inference, operations, learning). Extracted from
 """
 
 from collections.abc import Sequence
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
@@ -101,7 +101,7 @@ async def graph_concept_page(request: Request) -> HTMLResponse:
 @router.get("/datasets-page", response_class=HTMLResponse)
 async def datasets_page(
     request: Request,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> HTMLResponse:
     """Render the dataset management page.
 
@@ -206,7 +206,7 @@ def _arc_context(key: str) -> dict[str, Any]:
 @router.get("/teach", response_class=HTMLResponse)
 async def teach_page(
     request: Request,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> HTMLResponse:
     """Render the interactive teaching loop page.
 
@@ -286,7 +286,7 @@ async def config_page(request: Request) -> HTMLResponse:
 @router.get("/about", response_class=HTMLResponse)
 async def about_page(
     request: Request,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> HTMLResponse:
     """Render the about page with governance info, licenses, and project overview.
 
@@ -315,7 +315,7 @@ async def about_page(
 @router.get("/hf-browser", response_class=HTMLResponse)
 async def hf_browser_page(
     request: Request,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> HTMLResponse:
     """Render the HuggingFace Model Browser page.
 
