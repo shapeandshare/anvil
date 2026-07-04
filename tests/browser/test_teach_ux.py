@@ -205,9 +205,7 @@ class TestTeachUX:
         page.goto(f"{base_url}{TEACH_ROUTE}")
         page.wait_for_load_state("networkidle")
 
-        create_btn = page.locator(
-            "#create-session-form button[type='submit']"
-        )
+        create_btn = page.locator("#create-session-form button[type='submit']")
         create_btn.wait_for(state="visible", timeout=self.TIMEOUT)
 
         class_attr = create_btn.get_attribute("class") or ""
