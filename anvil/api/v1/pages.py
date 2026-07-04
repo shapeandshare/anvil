@@ -460,7 +460,6 @@ async def hf_browser_page(
             "finished_at": j.finished_at.isoformat() if j.finished_at else None,
             "error_code": j.error_code,
             "error_message": j.error_message,
-            "external_model_id": j.external_model_id,
             "created_at": j.created_at.isoformat(),
             "asset_availability": None,
         }

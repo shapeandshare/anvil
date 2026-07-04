@@ -47,7 +47,7 @@
 {% include "partials/related-lessons.html" %}
 
 <div class="section-card">
-  <div class="page-intro">Models imported from HuggingFace Hub or local files. Each entry tracks the model architecture, tokenizer, license, and asset availability.</div>
+  <div class="page-intro">Imported models and trained models. Each entry tracks the model architecture, tokenizer, license, and asset availability.</div>
   <div class="section-card__header"><span class="section-card__icon">&#128196;</span><h2 class="section-card__title">Model Registry</h2></div>
   <div id="models-empty" class="loading-indicator" style="display:block;">
     Loading models...
@@ -126,14 +126,14 @@
 
   function keyFn(m) { return String(m.name); }
 
-  fetch('/v1/models?kind=external').then(function(r) {
+  fetch('/v1/models').then(function(r) {
     if (!r.ok) { throw new Error(r.status + ': ' + r.statusText); }
     return r.json();
   }).then(function(data) {
     var models = data.data || [];
 
     if (models.length === 0) {
-      dom.setHtml(emptyEl, 'No imported models found. <a href="/v1/hf-browser" class="action-link">Browse HuggingFace Hub</a> to import one.');
+      dom.setHtml(emptyEl, 'No models found. <a href="/v1/hf-browser" class="action-link">Browse HuggingFace Hub</a> to import one, or start a <a href="/v1/training-page" class="action-link">training job</a> to train one.');
       return;
     }
 
@@ -145,14 +145,14 @@ function createRow(m) {
         ? '<a href="/v1/inference-page?model_id=' + encodeURIComponent(m.name) + '" class="btn btn-primary btn-sm">Play</a> '
         : '';
       tr.innerHTML =
-        '<td><a href="/v1/model-detail/' + encodeURIComponent(m.name) + '?source=external" class="action-link">' + escHtml(m.display_name) + '</a></td>' +
+        '<td><a href="/v1/model-detail/' + encodeURIComponent(m.name) + '" class="action-link">' + escHtml(m.display_name) + '</a></td>' +
         '<td class="text-dim" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;" title="' + escHtml(m.source_identifier) + '">' + escHtml(m.source_identifier) + '</td>' +
         '<td class="text-dim">' + escHtml(m.architecture_family) + '</td>' +
         '<td>' + fmtParams(m.parameter_count) + '</td>' +
         '<td class="text-dim">' + escHtml(m.tokenizer_family) + '</td>' +
         '<td>' + statusBadge(m.runnable_status) + '</td>' +
         '<td>' +
-          '<a href="/v1/model-detail/' + encodeURIComponent(m.name) + '?source=external" class="btn btn-secondary btn-sm">View</a> ' +
+          '<a href="/v1/model-detail/' + encodeURIComponent(m.name) + '" class="btn btn-secondary btn-sm">View</a> ' +
           playLink +
           '<a href="#" class="btn btn-secondary btn-sm" onclick="window.startEval(\'' + encodeURIComponent(m.name) + '\', event)">Evaluate</a>' +
         '</td>';
@@ -160,7 +160,7 @@ function createRow(m) {
     }
 
     function updateRow(tr, m) {
-      dom.setCellHtml(tr, 0, '<a href="/v1/model-detail/' + encodeURIComponent(m.name) + '?source=external" class="action-link">' + escHtml(m.display_name) + '</a>');
+      dom.setCellHtml(tr, 0, '<a href="/v1/model-detail/' + encodeURIComponent(m.name) + '" class="action-link">' + escHtml(m.display_name) + '</a>');
       dom.setAttr(dom.cell(tr, 1), 'title', m.source_identifier);
       dom.setCellHtml(tr, 1, '<span class="text-dim" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">' + escHtml(m.source_identifier) + '</span>');
       dom.setCellHtml(tr, 2, '<span class="text-dim">' + escHtml(m.architecture_family) + '</span>');
@@ -171,7 +171,7 @@ function createRow(m) {
         ? '<a href="/v1/inference-page?model_id=' + encodeURIComponent(m.name) + '" class="btn btn-primary btn-sm">Play</a> '
         : '';
       dom.setCellHtml(tr, 6,
-        '<a href="/v1/model-detail/' + encodeURIComponent(m.name) + '?source=external" class="btn btn-secondary btn-sm">View</a> ' +
+        '<a href="/v1/model-detail/' + encodeURIComponent(m.name) + '" class="btn btn-secondary btn-sm">View</a> ' +
         playLink +
         '<a href="#" class="btn btn-secondary btn-sm" onclick="window.startEval(\'' + encodeURIComponent(m.name) + '\', event)">Evaluate</a>');
     }

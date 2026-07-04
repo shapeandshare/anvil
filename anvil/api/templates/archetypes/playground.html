@@ -428,8 +428,8 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model_id: model.id,
-          version: version,
+          model_name: model.name,
+          model_version: version,
           temperature: parseFloat(temperatureInput.value),
           num_samples: parseInt(numSamplesInput.value),
           prompt: prompt,

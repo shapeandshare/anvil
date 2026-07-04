@@ -28,6 +28,7 @@ from ...core.engine import LlamaModel, train
 from ...db.repositories.corpora import CorpusRepository
 from ...db.session import AsyncSessionLocal
 from ..catalog.model_catalog_service import ModelCatalogService
+from ..catalog.model_ref import ModelRef
 from ..compute.compute_backend import ComputeBackend
 from ..compute.registry import get_backend
 from ..compute.resolve import resolve_backend
@@ -40,6 +41,9 @@ from ..training.training import TrainingService
 
 DEMO_MODEL_PATH = Path("data/models/demo/model.json")
 """:py:class:`~pathlib.Path`: Filesystem path to the demo model checkpoint."""
+
+logger = logging.getLogger(__name__)
+"""Module-level logger shared by warmup and fixup functions."""
 
 # Minimal embedded fallback — used when the demo dataset has not been
 # bootstrapped into the DB yet (e.g. first app startup before setup).
@@ -54,6 +58,42 @@ _FALLBACK_CORPUS = [
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz",
 ]
 _DEMO_TRAIN_LOCK = threading.Lock()
+
+
+def _fixup_demo_catalog_tags(_model: LlamaModel) -> None:
+    """Re-register catalog tags for the demo model.
+
+    Runs in the early-return path when ``model.json`` already exists.
+    Ensures the catalog entry has the correct tags even when tag-schema
+    logic changes between releases (e.g. ``kind`` moved from model-version
+    to registered-model tags).
+
+    This is a best-effort operation — failures are logged but do not
+    block the server.
+    """
+    try:
+        catalog = ModelCatalogService()
+
+        async def _fixup() -> None:
+            ref = ModelRef(name="demo", version=1)
+            entry = await catalog.get_entry(ref)
+            if entry is None:
+                logger.debug("Demo model not catalogued yet — skipping tag fixup")
+                return
+
+            # Re-register tags so they use the current tag-setting logic
+            # (rm_tags vs mv_tags split, ASSETS_AVAILABLE, etc.)
+            await catalog.register_tags_for_trained(
+                catalog_name="demo",
+                version=1,
+                final_loss=None,
+                architecture_family="LlamaForCausalLM",
+                tokenizer_family="char",
+            )
+
+        asyncio.run(_fixup())
+    except Exception:
+        logger.warning("Demo catalog tag fixup failed", exc_info=True)
 
 
 def _train_demo_model(docs: list[str] | None = None) -> LlamaModel:
@@ -99,10 +139,9 @@ def warmup_demo_via_system_pipeline() -> None:
     Runs in a background thread during server startup. Falls back to the
     inline training path if MLflow or the compute backend is unavailable.
     """
-    logger = logging.getLogger(__name__)
-
     # Skip re-training if a demo model already exists from a previous warmup.
-    # The DemoModelProvider will load it lazily on first inference request.
+    # Still re-register catalog tags so the model stays playable even when
+    # catalog tag logic changes between releases.
     if DEMO_MODEL_PATH.exists():
         logger.info("Demo model exists at %s, skipping warmup", DEMO_MODEL_PATH)
         try:
@@ -116,6 +155,9 @@ def warmup_demo_via_system_pipeline() -> None:
             )
             # Fall through to re-train below
         else:
+            # Re-register catalog tags for the existing model so that tag-schema
+            # changes (e.g. kind moved from mv_tags to rm_tags) take effect.
+            _fixup_demo_catalog_tags(model)
             return
 
     try:

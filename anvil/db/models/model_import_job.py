@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import DateTime, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ...services._shared.model_import_job_status import ModelImportJobStatus
@@ -40,8 +40,6 @@ class ModelImportJob(Base, TimestampMixin):
         Typed error code if the job failed (50 chars).
     error_message : str | None
         Human-readable error detail if the job failed.
-    external_model_id : int | None
-        FK to ``external_models.id``, set on successful completion.
     registry_model_name : str | None
         Catalog model name assigned by the MLflow Model Registry.
     registry_model_version : int | None
@@ -69,11 +67,6 @@ class ModelImportJob(Base, TimestampMixin):
     revision: Mapped[str] = mapped_column(String(255), nullable=False, default="main")
     error_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
-    external_model_id: Mapped[int | None] = mapped_column(
-        Integer,
-        ForeignKey("external_models.id", ondelete="SET NULL"),
-        nullable=True,
-    )
     registry_model_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     registry_model_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
     started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
