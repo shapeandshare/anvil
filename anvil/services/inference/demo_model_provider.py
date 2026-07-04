@@ -27,6 +27,7 @@ from typing import Any, cast
 from ...core.engine import LlamaModel, train
 from ...db.repositories.corpora import CorpusRepository
 from ...db.session import AsyncSessionLocal
+from ..catalog.model_catalog_service import ModelCatalogService
 from ..compute.compute_backend import ComputeBackend
 from ..compute.registry import get_backend
 from ..compute.resolve import resolve_backend
@@ -218,9 +219,22 @@ def warmup_demo_via_system_pipeline() -> None:
                 await tracking_svc.set_tag(
                     mlflow_run_id, "architectures", "LlamaForCausalLM"
                 )
-                await tracking_svc.register_source_model(
+                reg_result = await tracking_svc.register_source_model(
                     run_id=mlflow_run_id, name="demo"
                 )
+                # Enrich the demo model version with catalog tags so it
+                # appears in the unified listing (US1).
+                try:
+                    catalog = ModelCatalogService()
+                    await catalog.register_tags_for_trained(
+                        catalog_name=reg_result.get("name", "demo"),
+                        version=int(reg_result.get("version", 1)),
+                        final_loss=result.final_loss,
+                        architecture_family="LlamaForCausalLM",
+                        tokenizer_family="char",
+                    )
+                except Exception:
+                    logger.warning("Failed to set demo catalog tags", exc_info=True)
 
             # ── Log samples artifact and model artifact (parallels user training on_complete) ──
             samples = result.samples

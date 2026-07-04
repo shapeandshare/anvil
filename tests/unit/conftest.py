@@ -43,6 +43,7 @@ from anvil.db.models import model_asset  # isort: skip
 from anvil.db.models import runtime_config  # isort: skip
 from anvil.db.models import teaching_session  # isort: skip
 from anvil.db.models import user_secret  # isort: skip
+from anvil.db.models import catalog_identity  # isort: skip
 
 
 @pytest_asyncio.fixture(loop_scope="function")

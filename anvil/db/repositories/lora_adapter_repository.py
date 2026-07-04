@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ...services.catalog.model_ref import ModelRef
 from ..models.lora_adapter import LoRAAdapter
 
 
@@ -44,6 +45,30 @@ class LoRAAdapterRepository:
         result = await self._session.execute(stmt)
         return result.scalars().all()
 
+    async def get_by_model_ref(self, ref: ModelRef) -> Sequence[LoRAAdapter]:
+        """Return all adapters for a given catalog model reference.
+
+        Parameters
+        ----------
+        ref : ModelRef
+            Catalog model reference (name + version).
+
+        Returns
+        -------
+        Sequence[LoRAAdapter]
+            All adapter rows for the model, ordered by creation time.
+        """
+        stmt = (
+            select(LoRAAdapter)
+            .where(
+                LoRAAdapter.registry_model_name == ref.name,
+                LoRAAdapter.registry_model_version == ref.version,
+            )
+            .order_by(LoRAAdapter.id)
+        )
+        result = await self._session.execute(stmt)
+        return result.scalars().all()
+
     async def get_by_adapter_id(
         self, model_id: int, adapter_id: str
     ) -> LoRAAdapter | None:
@@ -65,6 +90,35 @@ class LoRAAdapterRepository:
             select(LoRAAdapter)
             .where(
                 LoRAAdapter.external_model_id == model_id,
+                LoRAAdapter.adapter_id == adapter_id,
+            )
+            .limit(1)
+        )
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def get_by_adapter_id_modelref(
+        self, ref: ModelRef, adapter_id: str
+    ) -> LoRAAdapter | None:
+        """Look up a single adapter by ModelRef and scoped identifier.
+
+        Parameters
+        ----------
+        ref : ModelRef
+            Catalog model reference (name + version).
+        adapter_id : str
+            The adapter's scoped identifier (e.g. ``"run_42"``).
+
+        Returns
+        -------
+        LoRAAdapter | None
+            The matching adapter, or ``None`` if not found.
+        """
+        stmt = (
+            select(LoRAAdapter)
+            .where(
+                LoRAAdapter.registry_model_name == ref.name,
+                LoRAAdapter.registry_model_version == ref.version,
                 LoRAAdapter.adapter_id == adapter_id,
             )
             .limit(1)

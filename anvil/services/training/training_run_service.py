@@ -17,6 +17,9 @@ from pathlib import Path
 from typing import Any
 
 from ...gpu import GpuInfo, detect_gpu
+from .._shared.runnable_status import RunnableStatus
+from ..catalog.model_catalog_service import ModelCatalogService
+from ..catalog.model_ref import ModelRef
 from ..compute.resolve import resolve_backend
 from ..compute.result import ComputeResult
 from ..compute.training_engine import TrainingEngine
@@ -60,11 +63,13 @@ class TrainingRunService:
         tracking: TrackingService,
         models_dir: Path,
         tasks: dict[int, asyncio.Task[Any]] | None = None,
+        catalog: ModelCatalogService | None = None,
     ) -> None:
         self._svc = svc
         self._tracking = tracking
         self._models_dir = models_dir
         self._models_dir.mkdir(parents=True, exist_ok=True)
+        self._catalog = catalog
         # Accept an optional shared tasks dict (e.g. the module-level dict
         # in the route file so SSE handlers can inspect it).
         self._tasks = tasks if tasks is not None else {}
@@ -948,7 +953,9 @@ class TrainingRunService:
             mps_thread.stop()
 
         await self._persist_adapter(result, config_dict, run_id)
-        await self._register_model(mlflow_run_id, dataset_id, corpus_id, experiment_id)
+        await self._register_model(
+            mlflow_run_id, dataset_id, corpus_id, experiment_id, final_loss
+        )
 
     async def _set_warm_start_tags(
         self,
@@ -1216,6 +1223,7 @@ class TrainingRunService:
         dataset_id: int | None,
         corpus_id: int | None,
         experiment_id: int,
+        final_loss: float | None = None,
     ) -> None:
         """Register the trained model with MLflow Model Registry.
 
@@ -1229,6 +1237,8 @@ class TrainingRunService:
             Corpus ID used for training.
         experiment_id : int
             Numeric experiment ID.
+        final_loss : float or None
+            Final training loss to tag on the catalog entry.
         """
         if mlflow_run_id:
             from ...db.repositories.corpora import (  # import-placement:allow — inherited route pattern
@@ -1256,12 +1266,26 @@ class TrainingRunService:
                         registry_name = corpus.name
 
             try:
-                await self._tracking.register_source_model(
+                result = await self._tracking.register_source_model(
                     run_id=mlflow_run_id,
                     name=registry_name,
                     dataset_id=dataset_id,
                     corpus_id=corpus_id,
                 )
+                # Enrich the registered model version with catalog tags
+                # so listing surfaces can read kind/loss from tags without
+                # per-model MLflow run lookups (SC-008).
+                if self._catalog is not None and registry_name is not None:
+                    reg_name = result.get("name", registry_name)
+                    reg_version = int(result.get("version", 1))
+                    await self._catalog.register_tags_for_trained(
+                        catalog_name=reg_name,
+                        version=reg_version,
+                        final_loss=final_loss,
+                        architecture_family="LlamaForCausalLM",
+                        tokenizer_family="char",
+                        runnable_status=RunnableStatus.RUNNABLE,
+                    )
             except Exception:  # pylint: disable=broad-exception-caught
                 logger.exception(
                     "Failed to register model for experiment %s",

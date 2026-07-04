@@ -60,7 +60,8 @@ This index lists all ADRs in this repository. ADRs document significant architec
 | ADR-044 | At-Rest Secret Encryption — Key Ring & KMS Envelope | Draft | 2026-06-29 |
 | ADR-045 | Training Lifecycle Extraction — TrainingRunService | Draft | 2026-07-02 |
 | ADR-046 | Learning Hub Track-Based Information Architecture | Accepted | 2026-07-03 |
-| ADR-047 | Shared Environment Snapshot Extraction — Reusable Health/About Page Data | Draft | 2026-07-04 |
+| ADR-048 | Shared Environment Snapshot Extraction — Reusable Health/About Page Data | Accepted | 2026-07-04 |
+| ADR-048 | MLflow Model Registry as Model Catalog Source of Truth | Accepted | 2026-07-03 |
 
 **Status**: Draft → Reviewed → Canonical (human-only). See `_meta/tags.md` for lifecycle.
 
@@ -113,4 +114,5 @@ This index lists all ADRs in this repository. ADRs document significant architec
 - [[Decisions/ADR-045-training-lifecycle-extraction|ADR-045-training-lifecycle-extraction]] — ADR-045: Training Lifecycle Extraction — TrainingRunService for Reusable Orchestration
 - [[Decisions/ADR-046-learning-hub-track-ia|ADR-046-learning-hub-track-ia]] — ADR-046: Learning Hub Track-Based Information Architecture
 - [[Decisions/ADR-047-environment-snapshot-extraction|ADR-047-environment-snapshot-extraction]] — ADR-047: Shared Environment Snapshot Extraction — Reusable Health/About Page Data
+- [[Decisions/ADR-048-mlflow-model-catalog-source-of-truth|ADR-048-mlflow-model-catalog-source-of-truth]] — ADR-048: MLflow Model Registry as Model Catalog Source of Truth
 - [[Decisions/ADR-template|ADR-template]]

@@ -81,6 +81,10 @@ class EvaluationRun(Base, TimestampMixin):
     base_external_model_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("external_models.id"), nullable=True, index=True
     )
+    model_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    model_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    base_model_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    base_model_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
     adapter_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     tokenizer_family: Mapped[str] = mapped_column(String(100), nullable=False)
     base_tokenizer_family: Mapped[str | None] = mapped_column(

@@ -10,8 +10,12 @@ from __future__ import annotations
 import logging
 import os
 from collections.abc import Sequence
-from datetime import UTC, datetime
-from typing import TYPE_CHECKING
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import TYPE_CHECKING, cast
+
+import aiofiles
+from sqlalchemy.exc import IntegrityError
 
 from ...db.models.external_model import ExternalModel
 from ...db.models.model_import_job import ModelImportJob
@@ -19,12 +23,17 @@ from ...db.repositories import external_models as external_models_repo
 from ...db.repositories import model_import_jobs as model_import_jobs_repo
 from .._shared.asset_state import AssetState
 from .._shared.import_types import ModelSourceError
+from .._shared.runnable_status import RunnableStatus
+from ..catalog.catalog_unavailable_error import CatalogUnavailableError
+from ..catalog.model_ref import derive_catalog_name
 
 if TYPE_CHECKING:
+    from ...db.repositories.catalog_identities import CatalogIdentityRepository
     from ...db.repositories.model_asset_repository import ModelAssetRepository
     from ...storage.local import LocalFileStore
+    from ..catalog.model_catalog_service import ModelCatalogService
+
 from .._shared.model_import_job_status import ModelImportJobStatus
-from .._shared.runnable_status import RunnableStatus
 from .._shared.source_type import SourceType
 from ..secrets.user_secret_service import UserSecretService
 from .model_source import ModelSource
@@ -42,27 +51,31 @@ _ALLOWED_ARCHITECTURES: frozenset[str] = frozenset({"LlamaForCausalLM"})
 
 _ACCEPTED_FORMATS: frozenset[str] = frozenset({"safetensors"})
 
+_MODELS_DIR = Path("data/models")
+"""Root directory for model artifacts on disk."""
+
 
 class ModelImportService:
     """Orchestrates async model-import jobs.
 
-    Wires a ``ModelSource`` registry to the ``ExternalModel`` and
-    ``ModelImportJob`` repositories.  The ``submit_import`` / ``run_import``
-    pair supports both inline execution (CLI) and fire-and-forget background
-    execution (API routes with their own session).
+    Wires source resolvers, the MLflow Model Catalog, and the catalog
+    identity guard to register imported models in a unified registry.
 
     Parameters
     ----------
     external_model_repo : ExternalModelRepository
-        Repository for ``ExternalModel`` CRUD.
+        Repository for ``ExternalModel`` CRUD (legacy).
     model_import_job_repo : ModelImportJobRepository
         Repository for ``ModelImportJob`` CRUD.
     sources : dict[SourceType, ModelSource]
         Registered source resolvers keyed by ``SourceType``.
+    catalog_service : ModelCatalogService
+        MLflow-backed catalog service for model registration.
+    catalog_identity_repo : CatalogIdentityRepository
+        Repository for the identity triple dedup guard.
     user_secret_service : UserSecretService | None
         Optional service for resolving HF tokens from the encrypted
-        UserSecret store.  When ``None`` (CLI path), falls back to
-        the ``HF_TOKEN`` environment variable.
+        UserSecret store.
     """
 
     def __init__(
@@ -70,11 +83,15 @@ class ModelImportService:
         external_model_repo: external_models_repo.ExternalModelRepository,
         model_import_job_repo: model_import_jobs_repo.ModelImportJobRepository,
         sources: dict[SourceType, ModelSource],
+        catalog_service: ModelCatalogService,
+        catalog_identity_repo: CatalogIdentityRepository,
         user_secret_service: UserSecretService | None = None,
     ) -> None:
         self._external_model_repo = external_model_repo
         self._model_import_job_repo = model_import_job_repo
         self._sources = sources
+        self._catalog_service = catalog_service
+        self._catalog_identity_repo = catalog_identity_repo
         self._user_secrets = user_secret_service
 
     async def submit_import(
@@ -125,9 +142,10 @@ class ModelImportService:
     async def run_import(self, job_id: int) -> ModelImportJob:
         """Execute the full import workflow for a job (inline).
 
-        Call this synchronously (CLI) or via ``asyncio.create_task``
-        (API) with its **own** session.  Updates the job through its
-        lifecycle and creates the ``ExternalModel`` entry on success.
+        Resolves metadata via ``ModelSource``, deduplicates via the
+        catalog identity guard, registers in the MLflow Model Catalog,
+        and writes ``config.json`` to disk.  Does NOT create
+        ``ExternalModel`` rows.
 
         Parameters
         ----------
@@ -146,7 +164,7 @@ class ModelImportService:
         job = await self._model_import_job_repo.update_status(
             job_id,
             str(ModelImportJobStatus.RESOLVING),
-            started_at=datetime.now(UTC),
+            started_at=datetime.now(timezone.utc),
         )
         assert job is not None
 
@@ -173,7 +191,8 @@ class ModelImportService:
                 error_message=exc.message,
             )
 
-        existing = await self._external_model_repo.find_by_source(
+        # ── Dedup via catalog identity guard ─────────────────────────
+        existing = await self._catalog_identity_repo.find_by_triple(
             source_type=str(source_type),
             source_identifier=job.source_identifier,
             revision_sha=metadata.revision_sha,
@@ -182,12 +201,49 @@ class ModelImportService:
             job = await self._model_import_job_repo.update_status(
                 job_id,
                 str(ModelImportJobStatus.COMPLETE),
-                external_model_id=existing.id,
-                finished_at=datetime.now(UTC),
+                registry_model_name=existing.registry_model_name,
+                registry_model_version=existing.registry_model_version,
+                finished_at=datetime.now(timezone.utc),
             )
             assert job is not None
             return job
 
+        # ── Derive catalog name and insert identity guard row ─────────
+        catalog_name = derive_catalog_name(source_type, job.source_identifier)
+        try:
+            identity = await self._catalog_identity_repo.add(
+                source_type=str(source_type),
+                source_identifier=job.source_identifier,
+                revision_sha=metadata.revision_sha,
+                registry_model_name=catalog_name,
+            )
+        except IntegrityError:
+            # Race: another worker inserted this triple between our
+            # find_by_triple check and add.  Resolve against the existing row.
+            existing = await self._catalog_identity_repo.find_by_triple(
+                source_type=str(source_type),
+                source_identifier=job.source_identifier,
+                revision_sha=metadata.revision_sha,
+            )
+            if existing is not None:
+                job = await self._model_import_job_repo.update_status(
+                    job_id,
+                    str(ModelImportJobStatus.COMPLETE),
+                    registry_model_name=existing.registry_model_name,
+                    registry_model_version=existing.registry_model_version,
+                    finished_at=datetime.now(timezone.utc),
+                )
+                assert job is not None
+                return job
+            return await self._fail_job(
+                job_id,
+                error_code="catalog_unavailable",
+                error_message=(
+                    "Concurrent import conflict: could not acquire identity guard"
+                ),
+            )
+
+        # ── Register in the MLflow Model Catalog ─────────────────────
         is_runnable = metadata.architecture_family in _ALLOWED_ARCHITECTURES
         runnable_reason = None
         if not is_runnable:
@@ -196,31 +252,50 @@ class ModelImportService:
                 f"allow-list: {{{','.join(sorted(_ALLOWED_ARCHITECTURES))}}}"
             )
 
-        model = ExternalModel(
-            display_name=metadata.display_name,
-            source_type=str(source_type),
-            source_identifier=job.source_identifier,
-            architecture_family=metadata.architecture_family,
-            parameter_count=metadata.parameter_count,
-            license=metadata.license,
-            tokenizer_family=metadata.tokenizer_family,
-            revision_sha=metadata.revision_sha,
-            runnable_status=(
-                str(RunnableStatus.RUNNABLE)
-                if is_runnable
-                else str(RunnableStatus.TRACK_ONLY)
-            ),
-            runnable_reason=runnable_reason,
-            asset_availability=str(AssetState.METADATA_ONLY),
-            config_json=metadata.config_json,
+        runnable_status = cast(
+            RunnableStatus,
+            RunnableStatus.RUNNABLE if is_runnable else RunnableStatus.TRACK_ONLY,
         )
-        model = await self._external_model_repo.add(model)
+        try:
+            ref = await self._catalog_service.register_external_model(
+                catalog_name=catalog_name,
+                display_name=metadata.display_name,
+                source_type=str(source_type),
+                source_identifier=job.source_identifier,
+                revision_sha=metadata.revision_sha,
+                architecture_family=metadata.architecture_family,
+                tokenizer_family=metadata.tokenizer_family,
+                license=metadata.license,
+                parameter_count=metadata.parameter_count,
+                runnable_status=runnable_status,
+                runnable_reason=runnable_reason,
+                config_json=metadata.config_json,
+            )
+        except CatalogUnavailableError:
+            return await self._fail_job(
+                job_id,
+                error_code="catalog_unavailable",
+                error_message="MLflow Model Registry is unavailable",
+            )
 
+        # ── Set version on the identity guard row ────────────────────
+        await self._catalog_identity_repo.set_version(identity.id, ref.version)
+
+        # ── Write config.json to disk ────────────────────────────────
+        if metadata.config_json:
+            config_dir = _MODELS_DIR / ref.name / str(ref.version) / "hf"
+            config_dir.mkdir(parents=True, exist_ok=True)
+            config_file = config_dir / "config.json"
+            async with aiofiles.open(str(config_file), "w") as f:
+                await f.write(metadata.config_json)
+
+        # ── Mark job complete with registry reference ────────────────
         job = await self._model_import_job_repo.update_status(
             job_id,
             str(ModelImportJobStatus.COMPLETE),
-            external_model_id=model.id,
-            finished_at=datetime.now(UTC),
+            registry_model_name=ref.name,
+            registry_model_version=ref.version,
+            finished_at=datetime.now(timezone.utc),
         )
         assert job is not None
         return job
@@ -238,7 +313,7 @@ class ModelImportService:
             str(ModelImportJobStatus.FAILED),
             error_code=error_code,
             error_message=error_message,
-            finished_at=datetime.now(UTC),
+            finished_at=datetime.now(timezone.utc),
         )
         assert job is not None
         return job

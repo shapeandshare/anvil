@@ -26,6 +26,7 @@ from .db.models.evaluation_run import EvalSample, EvaluationRun
 from .db.repositories.asset_download_job_repository import AssetDownloadJobRepository
 from .db.repositories.audit_events import AuditEventRepository
 from .db.repositories.backup_operations import BackupOperationRepository
+from .db.repositories.catalog_identities import CatalogIdentityRepository
 from .db.repositories.content_blobs import ContentBlobRepository
 from .db.repositories.content_corpora import ContentCorpusRepository
 from .db.repositories.content_import_jobs import ContentImportJobRepository
@@ -36,7 +37,6 @@ from .db.repositories.content_versions import ContentVersionRepository
 from .db.repositories.corpora import CorpusRepository
 from .db.repositories.datasets import DatasetRepository
 from .db.repositories.evaluation_runs import EvaluationRunRepository
-from .db.repositories.external_models import ExternalModelRepository
 from .db.repositories.fine_tune_datasets import FineTuneDatasetRepository
 from .db.repositories.instance_registry import (
     InstanceRegistryRepository,
@@ -52,6 +52,7 @@ from .db.repositories.user_secret_repository import UserSecretRepository
 from .services._shared.encryption import LocalEncryptionService
 from .services._shared.key_ring import KeyRing
 from .services._shared.source_type import SourceType
+from .services.catalog.model_catalog_service import ModelCatalogService
 from .services.content.composition_service import CompositionService
 from .services.content.corpus_service import CorpusService as ContentCorpusService
 from .services.content.import_service import ImportService
@@ -166,8 +167,7 @@ class AnvilWorkbench:
         # Runtime config (feature 037).
         self._runtime_config_repo: RuntimeConfigRepository | None = None
         self._runtime_config: RuntimeConfigService | None = None
-        # Model import (feature 040).
-        self._external_model_repo: ExternalModelRepository | None = None
+        # Model import (feature 040 / catalog 064).
         self._model_import_job_repo: ModelImportJobRepository | None = None
         self._model_imports: ModelImportService | None = None
         # Fine-tune dataset preparation (feature 053).
@@ -189,6 +189,9 @@ class AnvilWorkbench:
         self._training_runs: TrainingRunService | None = None
         self._teaching: TeachingService | None = None
         self._teaching_repo: TeachingSessionRepository | None = None
+        # MLflow Model Catalog (feature 064).
+        self._catalog: ModelCatalogService | None = None
+        self._catalog_identity_repo: CatalogIdentityRepository | None = None
 
     # ── Stateless service accessors ─────────────────────────────────────
 
@@ -542,13 +545,6 @@ class AnvilWorkbench:
     # ── Model import accessors (feature 040) ───────────────────────────
 
     @property
-    def external_model_repo(self) -> ExternalModelRepository:
-        """Lazily-initialised ``ExternalModelRepository`` bound to *session*."""
-        if self._external_model_repo is None:
-            self._external_model_repo = ExternalModelRepository(self._session)
-        return self._external_model_repo
-
-    @property
     def ftd_repo(self) -> FineTuneDatasetRepository:
         """Lazily-initialised ``FineTuneDatasetRepository`` bound to *session*."""
         if self._ftd_repo is None:
@@ -567,15 +563,33 @@ class AnvilWorkbench:
         """Lazily-initialised ``ModelImportService`` wired to *session*."""
         if self._model_imports is None:
             self._model_imports = ModelImportService(
-                self.external_model_repo,
+                None,  # external_model_repo — legacy, unused with catalog
                 self.model_import_job_repo,
                 {
                     SourceType.HUGGINGFACE: HfHubSource(),
                     SourceType.LOCAL: LocalSource(),
                 },
+                catalog_service=self.catalog,
+                catalog_identity_repo=self.catalog_identity_repo,
                 user_secret_service=self.user_secrets,
             )
         return self._model_imports
+
+    @property
+    def catalog(self) -> ModelCatalogService:
+        """Lazily-initialised ``ModelCatalogService`` for the MLflow Model
+        Registry-backed catalog.
+        """
+        if self._catalog is None:
+            self._catalog = ModelCatalogService()
+        return self._catalog
+
+    @property
+    def catalog_identity_repo(self) -> CatalogIdentityRepository:
+        """Lazily-initialised ``CatalogIdentityRepository`` bound to *session*."""
+        if self._catalog_identity_repo is None:
+            self._catalog_identity_repo = CatalogIdentityRepository(self._session)
+        return self._catalog_identity_repo
 
     @property
     def model_browser(self) -> ModelBrowserService:
@@ -608,7 +622,7 @@ class AnvilWorkbench:
                 lora_adapter_repo=self.lora_adapter_repo,
                 store=LocalFileStore(),
                 tracking=self.tracking,
-                external_model_repo=self.external_model_repo,
+                catalog=self.catalog,
             )
         return self._merge_service
 
@@ -627,6 +641,7 @@ class AnvilWorkbench:
                 svc=self.training,
                 tracking=self.tracking,
                 models_dir=models_dir,
+                catalog=self.catalog,
             )
         return self._training_runs
 
@@ -720,7 +735,7 @@ class AnvilWorkbench:
             self._model_assets = ModelAssetService(
                 self.model_asset_repo,
                 self.asset_download_job_repo,
-                self.external_model_repo,
+                None,  # external_model_repo — legacy
                 self.model_store,
                 hf_source=HfHubSource(),
                 user_secret_service=self.user_secrets,

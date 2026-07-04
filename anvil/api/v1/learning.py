@@ -3053,12 +3053,16 @@ async def eval_compare_page(request: Request) -> HTMLResponse:
 
 @router.get(
     "/inference/models",
-    responses={503: {"description": "Model registry (MLflow) did not respond in time"}},
+    responses={503: {"description": "Model catalog unavailable"}},
 )
 async def list_inference_models(
     workbench: AnvilWorkbench = Depends(get_workbench),
 ) -> dict[str, Any]:
-    """List all registered models available for inference.
+    """List all runnable models available for inference.
+
+    Reads from the unified model catalog, returning only entries that
+    are runnable.  Results are wrapped in ``{"models": [...]}`` for
+    template compatibility.
 
     Parameters
     ----------
@@ -3068,33 +3072,52 @@ async def list_inference_models(
     Returns
     -------
     dict
-        Dict with ``models`` (list of model dicts) and optionally a
-        ``message`` if no models are registered.
-
-    Raises
-    ------
-    HTTPException
-        If the tracking service does not respond within 15 seconds
-        (status 503).
+        Dict with ``models`` key containing catalog entries.
     """
     try:
-        models = await asyncio.wait_for(
-            workbench.tracking.list_registered_models(), timeout=15.0
+        entries = await workbench.catalog.list_entries(runnable_only=True)
+    except Exception as exc:
+        from ...services.catalog.catalog_unavailable_error import (
+            CatalogUnavailableError,
         )
-    except TimeoutError as exc:
-        raise HTTPException(
-            status_code=503,
-            detail=(
-                "Model registry is unavailable. The tracking service"
-                " (MLflow) did not respond in time."
-            ),
-        ) from exc
-    if not models:
+
+        if isinstance(exc, CatalogUnavailableError):
+            raise HTTPException(
+                status_code=503,
+                detail="Model catalog is unavailable.",
+            ) from exc
+        raise
+
+    if not entries:
         return {
             "models": [],
-            "message": "No models registered. Train an experiment and register it first.",
+            "message": "No models registered. Train an experiment and import a model first.",
         }
-    return {"models": models}
+    return {"models": [_entry_to_dict(e) for e in entries]}
+
+
+def _entry_to_dict(entry: Any) -> dict[str, Any]:
+    """Convert a catalog entry to a plain dict for API response."""
+    return {
+        "name": entry.ref.name,
+        "version": entry.ref.version,
+        "kind": str(entry.kind),
+        "display_name": entry.display_name,
+        "source_type": entry.source_type,
+        "source_identifier": entry.source_identifier,
+        "revision_sha": entry.revision_sha,
+        "architecture_family": entry.architecture_family,
+        "tokenizer_family": entry.tokenizer_family,
+        "license": entry.license,
+        "parameter_count": entry.parameter_count,
+        "runnable_status": str(entry.runnable_status),
+        "runnable_reason": entry.runnable_reason,
+        "asset_availability": str(entry.asset_availability),
+        "final_loss": entry.final_loss,
+        "lifecycle_state": str(entry.lifecycle_state),
+        "created_at": entry.created_at.isoformat() if entry.created_at else None,
+        "is_playable": entry.is_playable(),
+    }
 
 
 def _validate_sampling_params(
@@ -3435,7 +3458,7 @@ async def inference_sample(
     Parameters
     ----------
     body : InferenceSampleBody
-        Request body with ``model_id``, ``version``, and optional
+        Request body with ``model_name``, ``model_version``, and optional
         sampling parameters.
     workbench : AnvilWorkbench
         Injected session-bound workbench.
@@ -3448,14 +3471,22 @@ async def inference_sample(
     Raises
     ------
     HTTPException
-        If ``model_id`` or ``version`` are missing, or parameters are
-        invalid.
+        If the model cannot be loaded, or parameters are invalid.
     """
     top_k, top_p = _validate_sampling_params(body)
 
+    from ...services.catalog.model_ref import ModelRef  # import-placement:allow
+
+    ref: ModelRef | None = None
+    if body.model_name:
+        ref = ModelRef(
+            name=body.model_name,
+            version=body.model_version or 1,
+        )
+
     try:
-        loaded = await workbench.inference.load_model(body.model_id, body.version)
-    except (ValueError, FileNotFoundError) as e:
+        loaded = await workbench.inference.load_model_by_ref(ref)
+    except (ValueError, FileNotFoundError, RuntimeError) as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
 
     model = loaded.model

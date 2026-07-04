@@ -43,6 +43,7 @@ from ..db.repositories.corpora import CorpusRepository
 from ..db.repositories.datasets import DatasetRepository
 from ..db.session import AsyncSessionLocal, init_engine, reinit_engine
 from ..services.backup.backup_service import BackupService
+from ..services.catalog.catalog_unavailable_error import CatalogUnavailableError
 from ..services.demo.demo_bootstrap import DemoBootstrapService
 from ..services.inference.demo_model_provider import warmup_demo_via_system_pipeline
 from ..services.tracking.tracking import TrackingService
@@ -363,6 +364,20 @@ if TokenizerLoadError is not None:
                 }
             },
         )
+
+
+@app.exception_handler(CatalogUnavailableError)
+async def _catalog_unavailable_handler(
+    request: Request, exc: CatalogUnavailableError
+) -> JSONResponse:
+    """Handle catalog unavailability with a 503 response."""
+    return JSONResponse(
+        status_code=503,
+        content={
+            "detail": "Model catalog unavailable",
+            "code": "CATALOG_UNAVAILABLE",
+        },
+    )
 
 
 HERE = Path(__file__).parent

@@ -1,7 +1,7 @@
 """LoRA adapter management endpoints.
 
 Provides routes for listing adapters, looking up individual adapters,
-and triggering adapter merge operations.
+and triggering adapter merge operations — all keyed by ModelRef.
 """
 
 from __future__ import annotations
@@ -11,6 +11,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from ...services.catalog.model_ref import ModelRef
 from ...workbench import AnvilWorkbench
 from ..deps import get_workbench
 
@@ -18,17 +19,20 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.get("/models/{model_id}/adapters")
+@router.get("/models/{name}/versions/{version}/adapters")
 async def list_adapters(
-    model_id: int,
+    name: str,
+    version: int,
     workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> list[dict[str, Any]]:
-    """List all LoRA adapters for a given base model.
+    """List all LoRA adapters for a given base model (ModelRef path).
 
     Parameters
     ----------
-    model_id : int
-        The base model's external model ID.
+    name : str
+        Catalog model name.
+    version : int
+        Catalog model version.
     workbench : AnvilWorkbench
         Request-scoped workbench with access to the adapter repository.
 
@@ -39,7 +43,8 @@ async def list_adapters(
         ``lora_rank``, ``final_loss``, ``created_at``, and
         ``merged_at``.
     """
-    adapters = await workbench.lora_adapter_repo.get_by_model(model_id)
+    ref = ModelRef(name=name, version=version)
+    adapters = await workbench.lora_adapter_repo.get_by_model_ref(ref)
     return [
         {
             "adapter_id": a.adapter_id,
@@ -55,11 +60,12 @@ async def list_adapters(
 
 
 @router.get(
-    "/models/{model_id}/adapters/{adapter_id}",
+    "/models/{name}/versions/{version}/adapters/{adapter_id}",
     responses={404: {"description": "Adapter not found"}},
 )
 async def get_adapter(
-    model_id: int,
+    name: str,
+    version: int,
     adapter_id: str,
     workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, Any]:
@@ -67,8 +73,10 @@ async def get_adapter(
 
     Parameters
     ----------
-    model_id : int
-        The base model's external model ID.
+    name : str
+        Catalog model name.
+    version : int
+        Catalog model version.
     adapter_id : str
         Adapter identifier (e.g. ``"run_42"``).
     workbench : AnvilWorkbench
@@ -84,15 +92,17 @@ async def get_adapter(
     HTTPException
         If the adapter is not found (404).
     """
-    adapter = await workbench.lora_adapter_repo.get_by_adapter_id(model_id, adapter_id)
+    ref = ModelRef(name=name, version=version)
+    adapter = await workbench.lora_adapter_repo.get_by_adapter_id_modelref(
+        ref, adapter_id
+    )
     if adapter is None:
-        # Collect available IDs for the error message
-        available = await workbench.lora_adapter_repo.get_by_model(model_id)
+        available = await workbench.lora_adapter_repo.get_by_model_ref(ref)
         available_ids = [a.adapter_id for a in available]
         raise HTTPException(
             status_code=404,
             detail={
-                "error": f"Adapter {adapter_id!r} not found for model {model_id}",
+                "error": f"Adapter {adapter_id!r} not found for model {name} v{version}",
                 "available_adapters": available_ids,
             },
         )
@@ -116,14 +126,15 @@ async def get_adapter(
 
 
 @router.post(
-    "/models/{model_id}/adapters/{adapter_id}/merge",
+    "/models/{name}/versions/{version}/adapters/{adapter_id}/merge",
     responses={
         404: {"description": "Adapter not found"},
         500: {"description": "Merge operation failed"},
     },
 )
 async def merge_adapter(
-    model_id: int,
+    name: str,
+    version: int,
     adapter_id: str,
     workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, Any]:
@@ -136,8 +147,10 @@ async def merge_adapter(
 
     Parameters
     ----------
-    model_id : int
-        The base model's external model ID.
+    name : str
+        Catalog model name.
+    version : int
+        Catalog model version.
     adapter_id : str
         Adapter identifier (e.g. ``"run_42"``).
     workbench : AnvilWorkbench
@@ -153,8 +166,9 @@ async def merge_adapter(
     HTTPException
         If the adapter is not found (404) or merge fails (500).
     """
+    ref = ModelRef(name=name, version=version)
     try:
-        merged_path = await workbench.merge_service.merge(model_id, adapter_id)
+        merged_path = await workbench.merge_service.merge_by_ref(ref, adapter_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except RuntimeError as e:
@@ -165,14 +179,15 @@ async def merge_adapter(
 
 
 @router.post(
-    "/models/{model_id}/adapters/{adapter_id}/merge-and-export",
+    "/models/{name}/versions/{version}/adapters/{adapter_id}/merge-and-export",
     responses={
         404: {"description": "Adapter not found or license check failed"},
         500: {"description": "Merge or export operation failed"},
     },
 )
 async def merge_and_export_adapter(
-    model_id: int,
+    name: str,
+    version: int,
     adapter_id: str,
     workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, Any]:
@@ -184,8 +199,10 @@ async def merge_and_export_adapter(
 
     Parameters
     ----------
-    model_id : int
-        The base model's external model ID.
+    name : str
+        Catalog model name.
+    version : int
+        Catalog model version.
     adapter_id : str
         Adapter identifier (e.g. ``"run_42"``).
     workbench : AnvilWorkbench
@@ -203,11 +220,14 @@ async def merge_and_export_adapter(
         If the adapter is not found (404), export fails (500), or
         license check fails.
     """
-    result = await workbench.merge_service.merge_and_export(model_id, adapter_id)
+    ref = ModelRef(name=name, version=version)
+    result = await workbench.merge_service.merge_and_export_by_ref(ref, adapter_id)
     if "error" in result:
         err = str(result["error"])
         if "not found" in err or "license" in err:
             raise HTTPException(status_code=404, detail=err)
-        logger.exception("Merge+export failed for %s/%s: %s", model_id, adapter_id, err)
+        logger.exception(
+            "Merge+export failed for %s v%s/%s: %s", name, version, adapter_id, err
+        )
         raise HTTPException(status_code=500, detail=err)
     return result

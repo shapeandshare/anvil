@@ -16,7 +16,7 @@ class LoRAAdapter(Base, TimestampMixin):
 
     Each row represents one completed fine-tuning run that produced a LoRA
     adapter. The adapter_id is auto-generated from the training run ID and
-    scoped to the base model (``external_model_id``).
+    scoped to the base model (``registry_model_name`` / ``registry_model_version``).
 
     Attributes
     ----------
@@ -24,6 +24,10 @@ class LoRAAdapter(Base, TimestampMixin):
         Primary key, auto-increment.
     external_model_id : int
         FK to ``external_models.id`` — the base model this adapter applies to.
+    registry_model_name : str | None
+        Catalog model name (ModelRef) for the base model.
+    registry_model_version : int | None
+        Catalog model version (ModelRef) for the base model.
     run_id : int
         The training run ID that produced this adapter.
     adapter_id : str
@@ -65,6 +69,8 @@ class LoRAAdapter(Base, TimestampMixin):
         ForeignKey("external_models.id", ondelete="CASCADE"),
         nullable=False,
     )
+    registry_model_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    registry_model_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
     run_id: Mapped[int] = mapped_column(Integer, nullable=False)
     adapter_id: Mapped[str] = mapped_column(String(255), nullable=False)
     label: Mapped[str | None] = mapped_column(String(255), nullable=True)

@@ -32,6 +32,10 @@ from ...core.engine import LlamaModel, softmax
 from ...db.repositories.external_models import ExternalModelRepository
 from ...db.repositories.lora_adapter_repository import LoRAAdapterRepository
 from ...db.session import AsyncSessionLocal
+from ...services.catalog.catalog_entry import CatalogEntry
+from ...services.catalog.catalog_kind import CatalogKind
+from ...services.catalog.catalog_unavailable_error import CatalogUnavailableError
+from ...services.catalog.model_ref import ModelRef
 from ..tracking.tracking import TrackingService
 from .loaded_model import LoadedModel
 from .tokenizer_factory import create_tokenizer
@@ -310,8 +314,313 @@ class InferenceService:
             the application database when ``None``.
         """
         self._cache: dict[tuple[int, int], tuple[LlamaModel, Tokenizer]] = {}
+        self._ref_cache: dict[str, tuple[LlamaModel, Tokenizer]] = {}
         self._default_id: int | None = None
         self._adapter_repo: Any | None = adapter_repo
+
+    async def load_model_by_ref(
+        self,
+        ref: ModelRef | None = None,
+        adapter_id: str | None = None,
+        catalog: Any | None = None,
+    ) -> LoadedModel:
+        """Load a model by catalog ModelRef with kind dispatch.
+
+        Looks up the catalog entry, verifies it is playable, then
+        dispatches to the appropriate loader based on the entry's
+        ``kind`` field.  Uses a ModelRef-keyed in-memory cache.
+
+        Parameters
+        ----------
+        ref : ModelRef or None
+            Catalog reference (name + version).  ``None`` resolves to
+            the demo model.
+        adapter_id : str, optional
+            LoRA adapter identifier.
+        catalog : ModelCatalogService, optional
+            Catalog service for lookups.  Created lazily if omitted.
+
+        Returns
+        -------
+        LoadedModel
+            Container with the loaded model, vocabulary, and metadata.
+
+        Raises
+        ------
+        ValueError
+            If the model is not found, not playable, or loading fails.
+        """
+        if ref is None:
+            # Fall back to the default (demo) model
+            return await self.load_model(adapter_id=adapter_id)
+
+        cache_key = str(ref)
+        if cache_key in self._ref_cache and adapter_id is None:
+            gpt_model, tokenizer = self._ref_cache[cache_key]
+            return LoadedModel(
+                gpt_model,
+                tokenizer,
+                0,
+                ref.version,
+                cache_key,
+                adapter_path=self._resolve_adapter_path(None, adapter_id),
+            )
+
+        # Look up the catalog entry
+        if catalog is None:
+            from ...services.catalog.model_catalog_service import ModelCatalogService
+
+            catalog = ModelCatalogService()
+
+        entry: CatalogEntry | None = await catalog.get_entry(ref)
+        if entry is None:
+            raise ValueError(f"Model not found in catalog: {ref}")
+
+        if not entry.is_playable():
+            raise ValueError(
+                f"Model {ref} is not playable: "
+                f"runnable={entry.runnable_status}, "
+                f"assets={entry.asset_availability}"
+            )
+
+        # Kind dispatch
+        if entry.kind == CatalogKind.TRAINED:
+            loaded = await self._load_trained(ref, entry)
+        elif entry.kind == CatalogKind.EXTERNAL:
+            loaded = await self._load_external(ref, entry, adapter_id)
+        elif entry.kind == CatalogKind.MERGED:
+            loaded = await self._load_merged(ref, entry)
+        else:
+            raise ValueError(f"Unsupported catalog kind: {entry.kind}")
+
+        if adapter_id is None:
+            self._ref_cache[cache_key] = (loaded.model, loaded.tokenizer)
+        return loaded
+
+    async def _load_trained(self, ref: ModelRef, entry: CatalogEntry) -> LoadedModel:
+        """Load a trained model from the experiment artifact or MLflow.
+
+        Parameters
+        ----------
+        ref : ModelRef
+            Catalog reference.
+        entry : CatalogEntry
+            Catalog entry metadata.
+
+        Returns
+        -------
+        LoadedModel
+        """
+        # Try to find the experiment artifact by scanning MLflow
+        # registered models for the catalog name.
+        tracking_svc = TrackingService()
+        models = await tracking_svc.list_registered_models()
+        model_name: str | None = None
+        candidates = {ref.name}
+        for m in models:
+            if m.get("name") in candidates:
+                model_name = m["name"]
+                break
+
+        if model_name:
+            loop = asyncio.get_event_loop()
+            client = MlflowClient(get_mlflow_uri())
+            try:
+                all_versions = await loop.run_in_executor(
+                    None,
+                    lambda: client.search_model_versions(f"name='{model_name}'"),
+                )
+                if all_versions:
+                    sorted_versions = sorted(
+                        all_versions, key=lambda v: int(v.version), reverse=True
+                    )
+                    run_id = sorted_versions[0].run_id
+                    if run_id is None:
+                        raise ValueError("MLflow run_id is None")
+                    local_dir = await loop.run_in_executor(
+                        None,
+                        lambda: client.download_artifacts(
+                            run_id=run_id, path="", dst_path=None
+                        ),
+                    )
+                    model_file = Path(local_dir) / "model.json"
+                    if model_file.exists():
+                        gpt_model = LlamaModel.load(str(model_file))
+                        if gpt_model.chars is None:
+                            raise ValueError("Model has no character mapping")
+                        local_dir_path = Path(local_dir)
+                        tokenizer = create_tokenizer(
+                            tokenizer_family=gpt_model.tokenizer_family,
+                            serialization_type=gpt_model.serialization_type,
+                            chars=gpt_model.chars,
+                            artifact_dir=str(local_dir_path),
+                        )
+                        return LoadedModel(
+                            gpt_model,
+                            tokenizer,
+                            0,
+                            ref.version,
+                            model_name,
+                        )
+            except (ConnectionError, OSError) as mlf_err:
+                logger.warning("MLflow lookup failed: %s", mlf_err)
+
+        # Fallback to experiment artifact file
+        experiment_path = Path(f"data/models/experiment_1.json")
+        if experiment_path.exists():
+            gpt_model = LlamaModel.load(str(experiment_path))
+            if gpt_model.chars is None:
+                raise ValueError("Model has no character mapping")
+            tokenizer = create_tokenizer(
+                tokenizer_family=gpt_model.tokenizer_family,
+                serialization_type=gpt_model.serialization_type,
+                chars=gpt_model.chars,
+                artifact_dir=str(experiment_path.parent),
+            )
+            return LoadedModel(gpt_model, tokenizer, 0, ref.version, ref.name)
+
+        raise ValueError(f"Trained model not loadable: {ref}")
+
+    async def _load_external(
+        self,
+        ref: ModelRef,
+        entry: CatalogEntry,
+        adapter_id: str | None,
+    ) -> LoadedModel:
+        """Load an external model from FileStore assets.
+
+        Uses the FileStore layout ``data/models/{name}/{version}/hf/``
+        (spec 063 path convention).
+
+        Parameters
+        ----------
+        ref : ModelRef
+            Catalog reference.
+        entry : CatalogEntry
+            Catalog entry metadata.
+        adapter_id : str, optional
+            LoRA adapter identifier.
+
+        Returns
+        -------
+        LoadedModel
+        """
+        if not _TRANSFORMERS_AVAILABLE:
+            raise RuntimeError(
+                "External model loading requires transformers. "
+                "Install: pip install anvil[finetune]"
+            )
+
+        local_path = f"data/models/{ref.name}/{ref.version}/hf/"
+        local_path_obj = Path(local_path)
+        if not local_path_obj.exists():
+            raise ValueError(
+                f"Local assets for {ref} not found at {local_path}. "
+                f"Download assets first via POST /v1/models/{{name}}/versions/{{version}}/download"
+            )
+
+        try:
+            base_model = AutoModelForCausalLM.from_pretrained(
+                str(local_path_obj),
+                trust_remote_code=False,
+            )
+        except Exception as exc:
+            raise ValueError(
+                f"Failed to load external model {ref} from {local_path}: {exc}"
+            ) from exc
+
+        hf_config = base_model.config.to_dict() if hasattr(base_model, "config") else {}
+        tokenizer_family = entry.tokenizer_family or "subword"
+        serialization_type = self._infer_serialization_type(
+            entry.source_identifier or "", hf_config
+        )
+        anvil_data = _hf_state_dict_to_anvil_format(
+            hf_state_dict=base_model.state_dict(),
+            config=hf_config,
+            chars=None,
+            tokenizer_family=tokenizer_family,
+            serialization_type=serialization_type,
+        )
+
+        fd, tmp_path = tempfile.mkstemp(suffix=".json")
+        os.close(fd)
+        async with aiofiles.open(tmp_path, "w") as f:
+            await f.write(json.dumps(anvil_data))
+
+        try:
+            composed = LlamaModel.load(tmp_path)
+        finally:
+            Path(tmp_path).unlink(missing_ok=True)
+
+        tokenizer = self._create_adapter_tokenizer(
+            entry.source_identifier or "", local_path=local_path
+        )
+
+        return LoadedModel(
+            composed,
+            tokenizer,
+            0,
+            ref.version,
+            str(ref),
+            adapter_path=self._resolve_adapter_path(None, adapter_id),
+        )
+
+    async def _load_merged(self, ref: ModelRef, entry: CatalogEntry) -> LoadedModel:
+        """Load a merged model from its merge artifact path.
+
+        Parameters
+        ----------
+        ref : ModelRef
+            Catalog reference.
+        entry : CatalogEntry
+            Catalog entry metadata.
+
+        Returns
+        -------
+        LoadedModel
+        """
+        merge_path = Path(f"data/models/{ref.name}/{ref.version}/")
+        if not merge_path.exists():
+            raise ValueError(f"Merged model not found at {merge_path}")
+        # Merged models use HF format
+        if not _TRANSFORMERS_AVAILABLE:
+            raise RuntimeError(
+                "Merged model loading requires transformers. "
+                "Install: pip install anvil[finetune]"
+            )
+        try:
+            base_model = AutoModelForCausalLM.from_pretrained(
+                str(merge_path),
+                trust_remote_code=False,
+            )
+        except Exception as exc:
+            raise ValueError(
+                f"Failed to load merged model {ref} from {merge_path}: {exc}"
+            ) from exc
+
+        hf_config = base_model.config.to_dict() if hasattr(base_model, "config") else {}
+        anvil_data = _hf_state_dict_to_anvil_format(
+            hf_state_dict=base_model.state_dict(),
+            config=hf_config,
+            chars=None,
+            tokenizer_family=entry.tokenizer_family or "subword",
+            serialization_type="hf_fast",
+        )
+
+        fd, tmp_path = tempfile.mkstemp(suffix=".json")
+        os.close(fd)
+        async with aiofiles.open(tmp_path, "w") as f:
+            await f.write(json.dumps(anvil_data))
+
+        try:
+            composed = LlamaModel.load(tmp_path)
+        finally:
+            Path(tmp_path).unlink(missing_ok=True)
+
+        tokenizer = self._create_adapter_tokenizer(
+            entry.source_identifier or "", local_path=str(merge_path)
+        )
+        return LoadedModel(composed, tokenizer, 0, ref.version, str(ref))
 
     async def load_model(
         self,

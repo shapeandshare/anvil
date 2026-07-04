@@ -237,19 +237,15 @@ async def get_evaluation_run(
         raise HTTPException(status_code=404, detail=f"EvaluationRun {run_id} not found")
 
     metrics = await workbench.evaluation.get_metrics(run_id)
-    model = await workbench.external_model_repo.get(run.external_model_id)
-    base_model = (
-        await workbench.external_model_repo.get(run.base_external_model_id)
-        if run.base_external_model_id
-        else None
-    )
 
     return EvaluationRunResponse(
         run_id=run.id,
         model_id=run.external_model_id,
-        model_name=model.display_name if model else f"model-{run.external_model_id}",
+        model_name=run.model_name or f"model-{run.external_model_id}",
+        model_version_ref=run.model_version,
         base_model_id=run.base_external_model_id or run.external_model_id,
-        base_model_name=base_model.display_name if base_model else "base",
+        base_model_name=run.base_model_name or "base",
+        base_model_version_ref=run.base_model_version,
         adapter_id=run.adapter_id,
         tokenizer_family=run.tokenizer_family,
         base_tokenizer_family=run.base_tokenizer_family,
@@ -357,9 +353,11 @@ async def list_evaluation_runs(
             EvaluationRunResponse(
                 run_id=run.id,
                 model_id=run.external_model_id,
-                model_name=f"model-{run.external_model_id}",
+                model_name=run.model_name or f"model-{run.external_model_id}",
+                model_version_ref=run.model_version,
                 base_model_id=run.base_external_model_id or run.external_model_id,
-                base_model_name="base",
+                base_model_name=run.base_model_name or "base",
+                base_model_version_ref=run.base_model_version,
                 adapter_id=run.adapter_id,
                 tokenizer_family=run.tokenizer_family,
                 base_tokenizer_family=run.base_tokenizer_family,

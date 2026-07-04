@@ -13,6 +13,7 @@ import os
 import shutil
 from collections.abc import AsyncIterator, Sequence
 from datetime import UTC, datetime
+from typing import Any
 
 import aiofiles  # type: ignore[import-untyped]
 
@@ -21,6 +22,7 @@ from ...db.models.model_asset import ModelAsset, ModelAssetStatus, ModelAssetTyp
 from ...db.repositories.asset_download_job_repository import AssetDownloadJobRepository
 from ...db.repositories.external_models import ExternalModelRepository
 from ...db.repositories.model_asset_repository import ModelAssetRepository
+from ...services.catalog.model_ref import ModelRef
 from ...storage.interface import FileStore
 from .._shared.asset_download_job_status import AssetDownloadJobStatus
 from .._shared.asset_state import AssetState
@@ -49,6 +51,10 @@ class ModelNotFoundError(Exception):
     """Raised when an external model ID does not exist."""
 
 
+class ModelRefNotFoundError(Exception):
+    """Raised when a ModelRef does not resolve to an importable model."""
+
+
 class ModelAssetService:
     """Orchestrates async model asset download jobs.
 
@@ -56,6 +62,11 @@ class ModelAssetService:
     ``ModelImportService`` pattern — the API layer calls ``submit_download``
     and fires ``asyncio.create_task``, which calls ``run_download`` with
     its own session.
+
+    Parameters
+    ----------
+    catalog : ModelCatalogService or None, optional
+        Catalog service for updating asset availability tags.
     """
 
     def __init__(
@@ -66,6 +77,7 @@ class ModelAssetService:
         store: FileStore,
         hf_source: HfHubSource | None = None,
         user_secret_service: UserSecretService | None = None,
+        catalog: Any | None = None,
     ) -> None:
         self._asset_repo = model_asset_repo
         self._job_repo = asset_download_job_repo
@@ -73,6 +85,49 @@ class ModelAssetService:
         self._store = store
         self._hf_source = hf_source
         self._user_secrets = user_secret_service
+        self._catalog = catalog
+
+    async def submit_download_by_ref(self, ref: ModelRef) -> int:
+        """Submit an async asset download request using a ModelRef.
+
+        Resolves the model from the external model repository using
+        the ModelRef's name/version, then delegates to the existing
+        submit_download flow.
+
+        Parameters
+        ----------
+        ref : ModelRef
+            Catalog reference for the model.
+
+        Returns
+        -------
+        int
+            The ``AssetDownloadJob.id`` for status polling.
+
+        Raises
+        ------
+        ModelRefNotFoundError
+            If the model cannot be found.
+        ModelAssetAlreadyAvailableError
+            If assets are already available.
+        DuplicateDownloadError
+            If a download is already in progress.
+        """
+        # Resolve the external model by matching source_identifier
+        # to the ModelRef name.  In the ModelRef era, external
+        # models are keyed by catalog identity.
+        models = await self._model_repo.list_all()
+        target = None
+        for m in models:
+            if getattr(m, "source_identifier", None) and ref.name in str(
+                m.source_identifier
+            ):
+                target = m
+                break
+        if target is None:
+            raise ModelRefNotFoundError(f"Model not found for ref: {ref}")
+
+        return await self.submit_download(target.id)
 
     async def submit_download(
         self,
@@ -285,6 +340,22 @@ class ModelAssetService:
             await self._model_repo.update_fields(
                 model_id, asset_availability=str(AssetState.ASSETS_AVAILABLE)
             )
+            # Notify the catalog about availability change
+            if self._catalog is not None:
+                try:
+                    ref = ModelRef(
+                        name=model.source_identifier or f"model-{model_id}",
+                        version=1,
+                    )
+                    await self._catalog.set_asset_availability(
+                        ref, AssetState.ASSETS_AVAILABLE
+                    )
+                except Exception:
+                    logger.warning(
+                        "Failed to update catalog asset availability for model %d",
+                        model_id,
+                        exc_info=True,
+                    )
             await self._job_repo.update_status(
                 job_id,
                 str(AssetDownloadJobStatus.COMPLETE),

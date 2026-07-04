@@ -35,10 +35,10 @@ class InferenceSampleBody(BaseModel):
 
     Parameters
     ----------
-    model_id : int
-        Identifier of the model.
-    version : int
-        Version of the model.
+    model_name : str, optional
+        Catalog model name. Defaults to ``"demo"``.
+    model_version : int, optional
+        Catalog model version. Defaults to ``1``.
     temperature : float, optional
         Sampling temperature. Defaults to ``0.5``.
     num_samples : int, optional
@@ -53,8 +53,8 @@ class InferenceSampleBody(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    model_id: int
-    version: int
+    model_name: str | None = None
+    model_version: int | None = None
     temperature: float = 0.5
     num_samples: int = 10
     prompt: str = ""

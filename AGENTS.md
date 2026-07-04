@@ -520,6 +520,8 @@ SomeException
 - SQLite (anvil-state.db, WAL) — new `TeachingSession` table via async SQLAlchemy + Alembic migration; MLflow runs + artifacts for TeachingRound data (055-interactive-teaching-loop)
 - Python 3.11+ + FastAPI, async SQLAlchemy (existing); `transformers`/`peft`/`torch` (existing `[finetune]` extra); `huggingface_hub` (existing `[finetune]` extra); stdlib `pathlib`, `tempfile` (063-usable-external-models)
 - SQLite (anvil-state.db, WAL) via async SQLAlchemy; LocalFileStore at `data/models/{model_id}/hf/` for assets (063-usable-external-models)
+- Python 3.11+ (PEP 604 unions, `StrEnum`, `from __future__ import annotations`) + FastAPI, async SQLAlchemy + aiosqlite, Alembic, Jinja2, `mlflow>=3` client (all existing — **no new runtime dependencies**) (062-mlflow-model-catalog)
+- MLflow Model Registry (catalog SoT; sidecar server, SQLite backend at `mlruns/mlflow.db`); SQLite `anvil-state.db` (WAL) for operational state (jobs, per-file assets, adapters, evals, dedup guard); `LocalFileStore` for weights at `data/models/{catalog_name}/{version}/hf/` (062-mlflow-model-catalog)
 - Jinja2 template + vanilla JS (ES5-compatible) + CSS3 + None new — reuses existing `tokens.css`, `archetypes.css`, `base.html` `didyouknow_banner` block (062-teach-page-cta)
 - N/A — all state is client-side JS variables (existing pattern) (062-teach-page-cta)
 
