@@ -358,15 +358,18 @@ class InferenceService:
         if cache_key in self._ref_cache and adapter_id is None:
             gpt_model, tokenizer = self._ref_cache[cache_key]
             return LoadedModel(
-                gpt_model, tokenizer, 0, ref.version, cache_key,
-adapter_path=self._resolve_adapter_path(None, adapter_id),
+                gpt_model,
+                tokenizer,
+                0,
+                ref.version,
+                cache_key,
+                adapter_path=self._resolve_adapter_path(None, adapter_id),
             )
 
         # Look up the catalog entry
         if catalog is None:
-            from ...services.catalog.model_catalog_service import (
-                ModelCatalogService,
-            )
+            from ...services.catalog.model_catalog_service import ModelCatalogService
+
             catalog = ModelCatalogService()
 
         entry: CatalogEntry | None = await catalog.get_entry(ref)
@@ -394,9 +397,7 @@ adapter_path=self._resolve_adapter_path(None, adapter_id),
             self._ref_cache[cache_key] = (loaded.model, loaded.tokenizer)
         return loaded
 
-    async def _load_trained(
-        self, ref: ModelRef, entry: CatalogEntry
-    ) -> LoadedModel:
+    async def _load_trained(self, ref: ModelRef, entry: CatalogEntry) -> LoadedModel:
         """Load a trained model from the experiment artifact or MLflow.
 
         Parameters
@@ -455,7 +456,11 @@ adapter_path=self._resolve_adapter_path(None, adapter_id),
                             artifact_dir=str(local_dir_path),
                         )
                         return LoadedModel(
-                            gpt_model, tokenizer, 0, ref.version, model_name,
+                            gpt_model,
+                            tokenizer,
+                            0,
+                            ref.version,
+                            model_name,
                         )
             except (ConnectionError, OSError) as mlf_err:
                 logger.warning("MLflow lookup failed: %s", mlf_err)
@@ -516,7 +521,8 @@ adapter_path=self._resolve_adapter_path(None, adapter_id),
 
         try:
             base_model = AutoModelForCausalLM.from_pretrained(
-                str(local_path_obj), trust_remote_code=False,
+                str(local_path_obj),
+                trust_remote_code=False,
             )
         except Exception as exc:
             raise ValueError(
@@ -551,13 +557,15 @@ adapter_path=self._resolve_adapter_path(None, adapter_id),
         )
 
         return LoadedModel(
-            composed, tokenizer, 0, ref.version, str(ref),
+            composed,
+            tokenizer,
+            0,
+            ref.version,
+            str(ref),
             adapter_path=self._resolve_adapter_path(None, adapter_id),
         )
 
-    async def _load_merged(
-        self, ref: ModelRef, entry: CatalogEntry
-    ) -> LoadedModel:
+    async def _load_merged(self, ref: ModelRef, entry: CatalogEntry) -> LoadedModel:
         """Load a merged model from its merge artifact path.
 
         Parameters
@@ -582,7 +590,8 @@ adapter_path=self._resolve_adapter_path(None, adapter_id),
             )
         try:
             base_model = AutoModelForCausalLM.from_pretrained(
-                str(merge_path), trust_remote_code=False,
+                str(merge_path),
+                trust_remote_code=False,
             )
         except Exception as exc:
             raise ValueError(

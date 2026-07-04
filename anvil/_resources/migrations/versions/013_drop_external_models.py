@@ -17,8 +17,8 @@ down_revision: str | None = "012_add_catalog_identities_and_modelref"
 branch_labels: str | None = None
 depends_on: str | None = None
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 
 def upgrade() -> None:
@@ -51,8 +51,12 @@ def downgrade() -> None:
         sa.Column("runnable_reason", sa.Text(), nullable=True),
         sa.Column("asset_availability", sa.String(20), nullable=False),
         sa.Column("config_json", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
-        sa.Column("updated_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(), nullable=False, server_default=sa.func.now()
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
 

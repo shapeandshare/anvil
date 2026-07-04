@@ -14,9 +14,7 @@ Model IDs are resolved via convention-based naming (``dataset-<id>`` or
 
 import asyncio
 from datetime import UTC, datetime
-from typing import Any, Optional
-
-from typing import Annotated
+from typing import Annotated, Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from mlflow.exceptions import MlflowException
@@ -149,8 +147,7 @@ async def _do_list_registry_models(
     entries = await workbench.catalog.list_entries(search=search)
     # Filter to trained + merged for the experiments UI
     trained_merged = [
-        e for e in entries
-        if e.kind in (CatalogKind.TRAINED, CatalogKind.MERGED)
+        e for e in entries if e.kind in (CatalogKind.TRAINED, CatalogKind.MERGED)
     ]
     return {"models": [_registry_entry_to_dict(e) for e in trained_merged]}
 

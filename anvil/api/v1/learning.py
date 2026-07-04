@@ -3080,6 +3080,7 @@ async def list_inference_models(
         from ...services.catalog.catalog_unavailable_error import (
             CatalogUnavailableError,
         )
+
         if isinstance(exc, CatalogUnavailableError):
             raise HTTPException(
                 status_code=503,

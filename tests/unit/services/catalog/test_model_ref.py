@@ -1,4 +1,5 @@
 """Unit tests for ModelRef and derive_catalog_name."""
+
 # pylint: disable=missing-function-docstring
 
 import pytest
@@ -63,7 +64,9 @@ class TestDeriveCatalogName:
         assert result == "local--my-models-test"
 
     def test_sanitizes_special_chars(self) -> None:
-        result = derive_catalog_name(SourceType.HUGGINGFACE, "meta-llama/Llama-3.2-1B-Instruct")
+        result = derive_catalog_name(
+            SourceType.HUGGINGFACE, "meta-llama/Llama-3.2-1B-Instruct"
+        )
         assert "/" not in result
         assert result == "hf--meta-llama-Llama-3.2-1B-Instruct"
 

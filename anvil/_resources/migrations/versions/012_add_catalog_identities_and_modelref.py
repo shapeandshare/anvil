@@ -8,13 +8,14 @@ Revision ID: 012_add_catalog_identities_and_modelref
 Revises: 011
 Create Date: 2026-07-03
 """
+
 revision: str = "012_add_catalog_identities_and_modelref"
 down_revision: str | None = "011"
 branch_labels: str | None = None
 depends_on: str | None = None
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 
 def upgrade() -> None:

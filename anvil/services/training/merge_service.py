@@ -27,9 +27,9 @@ from typing import Any
 from uuid import uuid4
 
 from ...db.repositories.lora_adapter_repository import LoRAAdapterRepository
+from ...services.catalog.catalog_kind import CatalogKind
 from ...services.catalog.model_catalog_service import ModelCatalogService
 from ...services.catalog.model_ref import ModelRef
-from ...services.catalog.catalog_kind import CatalogKind
 from ...storage.local import LocalFileStore
 from .._shared.runnable_status import RunnableStatus
 from ..tracking.tracking import TrackingService
@@ -149,9 +149,7 @@ class AdapterMergeService:
         """
         adapter = await self._repo.get_by_adapter_id_modelref(ref, adapter_id)
         if adapter is None:
-            raise ValueError(
-                f"Adapter {adapter_id!r} not found for model {ref}"
-            )
+            raise ValueError(f"Adapter {adapter_id!r} not found for model {ref}")
         return await self.merge(adapter.external_model_id, adapter_id)
 
     async def merge(
@@ -486,7 +484,9 @@ class AdapterMergeService:
             # legacy ExternalModel path for now.
             pass
 
-        raise RuntimeError(f"Cannot resolve base model {model_id}: no catalog available")
+        raise RuntimeError(
+            f"Cannot resolve base model {model_id}: no catalog available"
+        )
 
     async def _check_license(self, model_id: int) -> tuple[bool, str]:
         """Verify that the base model's license allows redistribution.

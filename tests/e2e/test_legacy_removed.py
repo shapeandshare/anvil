@@ -24,9 +24,7 @@ class TestSc006LegacyRemoved:
         resp = await client.get("/v1/models/external")
         assert resp.status_code != 200
 
-    async def test_get_external_model_by_id_not_200(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_get_external_model_by_id_not_200(self, client: AsyncClient) -> None:
         """GET /v1/models/external/{id} should NOT return 200 (route removed)."""
         resp = await client.get("/v1/models/external/999")
         assert resp.status_code != 200

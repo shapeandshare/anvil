@@ -69,12 +69,8 @@ class LoRAAdapter(Base, TimestampMixin):
         ForeignKey("external_models.id", ondelete="CASCADE"),
         nullable=False,
     )
-    registry_model_name: Mapped[str | None] = mapped_column(
-        String(255), nullable=True
-    )
-    registry_model_version: Mapped[int | None] = mapped_column(
-        Integer, nullable=True
-    )
+    registry_model_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    registry_model_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
     run_id: Mapped[int] = mapped_column(Integer, nullable=False)
     adapter_id: Mapped[str] = mapped_column(String(255), nullable=False)
     label: Mapped[str | None] = mapped_column(String(255), nullable=True)

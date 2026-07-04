@@ -26,6 +26,7 @@ from .db.models.evaluation_run import EvalSample, EvaluationRun
 from .db.repositories.asset_download_job_repository import AssetDownloadJobRepository
 from .db.repositories.audit_events import AuditEventRepository
 from .db.repositories.backup_operations import BackupOperationRepository
+from .db.repositories.catalog_identities import CatalogIdentityRepository
 from .db.repositories.content_blobs import ContentBlobRepository
 from .db.repositories.content_corpora import ContentCorpusRepository
 from .db.repositories.content_import_jobs import ContentImportJobRepository
@@ -33,11 +34,9 @@ from .db.repositories.content_ingest_sessions import ContentIngestSessionReposit
 from .db.repositories.content_locks import ContentLockRepository
 from .db.repositories.content_sources import ContentSourceRepository
 from .db.repositories.content_versions import ContentVersionRepository
-from .db.repositories.catalog_identities import CatalogIdentityRepository
 from .db.repositories.corpora import CorpusRepository
 from .db.repositories.datasets import DatasetRepository
 from .db.repositories.evaluation_runs import EvaluationRunRepository
-
 from .db.repositories.fine_tune_datasets import FineTuneDatasetRepository
 from .db.repositories.instance_registry import (
     InstanceRegistryRepository,
@@ -53,6 +52,7 @@ from .db.repositories.user_secret_repository import UserSecretRepository
 from .services._shared.encryption import LocalEncryptionService
 from .services._shared.key_ring import KeyRing
 from .services._shared.source_type import SourceType
+from .services.catalog.model_catalog_service import ModelCatalogService
 from .services.content.composition_service import CompositionService
 from .services.content.corpus_service import CorpusService as ContentCorpusService
 from .services.content.import_service import ImportService
@@ -77,7 +77,6 @@ from .services.governance.governance_service import GovernanceService
 from .services.inference.inference import InferenceService
 from .services.inference.model_browser import ModelBrowserService
 from .services.instances.instance_lifecycle_service import InstanceLifecycleService
-from .services.catalog.model_catalog_service import ModelCatalogService
 from .services.model_import.hf_source import HfHubSource
 from .services.model_import.local_source import LocalSource
 from .services.model_import.model_asset_service import ModelAssetService
