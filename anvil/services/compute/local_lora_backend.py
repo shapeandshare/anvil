@@ -154,8 +154,8 @@ def _resolve_device_config(
     device : str
         Target device (``"cpu"``, ``"cuda"``, ``"mps"``).
     torch : Any
-        The ``torch`` module (passed as a parameter to avoid a module-level
-        import of the optional dependency).
+        The ``torch`` module (passed as a parameter to avoid an early
+        module-level import of the optional dependency).
 
     Returns
     -------
@@ -288,7 +288,7 @@ def _generate_sample(
     sample_text: str = ""
     with torch.no_grad():
         input_prefix = input_ids[:, :10]
-        generated_ids = peft_model.generate(  # type: ignore[no-untyped-call]
+        generated_ids = peft_model.generate(
             input_ids=input_prefix,
             max_new_tokens=50,
             do_sample=True,
