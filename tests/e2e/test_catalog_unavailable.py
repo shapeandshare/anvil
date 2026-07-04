@@ -19,9 +19,7 @@ from fastapi import Request
 from starlette.responses import JSONResponse
 
 from anvil.api.app import app
-from anvil.services.catalog.catalog_unavailable_error import (
-    CatalogUnavailableError,
-)
+from anvil.services.catalog.catalog_unavailable_error import CatalogUnavailableError
 
 
 def _make_request(path: str) -> Request:

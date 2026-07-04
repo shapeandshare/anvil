@@ -55,7 +55,9 @@ async def list_models(
     Returns one entry per latest active version of each logical model.
     """
     try:
-        return await _do_list_models(workbench, kind, runnable_only, include_archived, search)
+        return await _do_list_models(
+            workbench, kind, runnable_only, include_archived, search
+        )
     except CatalogUnavailableError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
@@ -121,9 +123,10 @@ async def _do_get_logical_model(
         "source_type": first.source_type,
         "source_identifier": first.source_identifier,
         "lifecycle_state": str(first.lifecycle_state),
-        "versions": [_entry_to_dict(v) for v in sorted(
-            versions, key=lambda x: x.ref.version, reverse=True
-        )],
+        "versions": [
+            _entry_to_dict(v)
+            for v in sorted(versions, key=lambda x: x.ref.version, reverse=True)
+        ],
     }
 
 

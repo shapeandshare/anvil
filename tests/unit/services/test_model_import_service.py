@@ -69,7 +69,9 @@ class _FakeCatalogIdentityRepo:
                 return _IdentityRow(**row)
         return None
 
-    async def add(self, source_type, source_identifier, revision_sha, registry_model_name):
+    async def add(
+        self, source_type, source_identifier, revision_sha, registry_model_name
+    ):
         row = {
             "id": self._next_id,
             "source_type": source_type,
@@ -92,7 +94,10 @@ class _FakeCatalogIdentityRepo:
     async def get_model_ref(self, identity_id):
         for row in self._rows:
             if row["id"] == identity_id and row["registry_model_version"] is not None:
-                return ModelRef(name=row["registry_model_name"], version=row["registry_model_version"])
+                return ModelRef(
+                    name=row["registry_model_name"],
+                    version=row["registry_model_version"],
+                )
         return None
 
 

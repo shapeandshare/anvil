@@ -87,9 +87,7 @@ class ModelAssetService:
         self._user_secrets = user_secret_service
         self._catalog = catalog
 
-    async def submit_download_by_ref(
-        self, ref: ModelRef
-    ) -> int:
+    async def submit_download_by_ref(self, ref: ModelRef) -> int:
         """Submit an async asset download request using a ModelRef.
 
         Resolves the model from the external model repository using
@@ -121,7 +119,9 @@ class ModelAssetService:
         models = await self._model_repo.list_all()
         target = None
         for m in models:
-            if getattr(m, "source_identifier", None) and ref.name in str(m.source_identifier):
+            if getattr(m, "source_identifier", None) and ref.name in str(
+                m.source_identifier
+            ):
                 target = m
                 break
         if target is None:

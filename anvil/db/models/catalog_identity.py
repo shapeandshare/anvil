@@ -63,6 +63,4 @@ class CatalogIdentity(Base, TimestampMixin):
     source_identifier: Mapped[str] = mapped_column(String(255), nullable=False)
     revision_sha: Mapped[str] = mapped_column(String(255), nullable=False)
     registry_model_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    registry_model_version: Mapped[int | None] = mapped_column(
-        Integer, nullable=True
-    )
+    registry_model_version: Mapped[int | None] = mapped_column(Integer, nullable=True)

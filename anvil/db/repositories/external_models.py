@@ -70,6 +70,4 @@ class ExternalModelRepository:
         return model
 
     async def delete(self, id: int) -> None:
-        await self._session.execute(
-            delete(ExternalModel).where(ExternalModel.id == id)
-        )
+        await self._session.execute(delete(ExternalModel).where(ExternalModel.id == id))

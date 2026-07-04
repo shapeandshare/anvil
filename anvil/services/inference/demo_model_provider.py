@@ -27,6 +27,7 @@ from typing import Any, cast
 from ...core.engine import LlamaModel, train
 from ...db.repositories.corpora import CorpusRepository
 from ...db.session import AsyncSessionLocal
+from ..catalog.model_catalog_service import ModelCatalogService
 from ..compute.compute_backend import ComputeBackend
 from ..compute.registry import get_backend
 from ..compute.resolve import resolve_backend
@@ -36,7 +37,6 @@ from ..demo.demo_bootstrap import DemoBootstrapService
 from ..tracking.tracking import TrackingService
 from ..training.export import SafetensorsExportService
 from ..training.training import TrainingService
-from ..catalog.model_catalog_service import ModelCatalogService
 
 DEMO_MODEL_PATH = Path("data/models/demo/model.json")
 """:py:class:`~pathlib.Path`: Filesystem path to the demo model checkpoint."""

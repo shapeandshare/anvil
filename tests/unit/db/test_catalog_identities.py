@@ -1,4 +1,5 @@
 """Unit tests for CatalogIdentityRepository."""
+
 # pylint: disable=missing-function-docstring
 
 import pytest

@@ -74,11 +74,7 @@ class ModelImportJob(Base, TimestampMixin):
         ForeignKey("external_models.id", ondelete="SET NULL"),
         nullable=True,
     )
-    registry_model_name: Mapped[str | None] = mapped_column(
-        String(255), nullable=True
-    )
-    registry_model_version: Mapped[int | None] = mapped_column(
-        Integer, nullable=True
-    )
+    registry_model_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    registry_model_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
     started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

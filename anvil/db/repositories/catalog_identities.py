@@ -15,11 +15,11 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..models.catalog_identity import CatalogIdentity
 from ...services.catalog.model_ref import ModelRef
+from ..models.catalog_identity import CatalogIdentity
 
 
 class CatalogIdentityRepository:

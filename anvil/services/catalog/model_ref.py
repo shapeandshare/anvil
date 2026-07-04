@@ -28,9 +28,7 @@ class ModelRef(BaseModel):
 
     model_config = {"frozen": True}
 
-    name: str = Field(
-        ..., pattern=r"^[A-Za-z0-9._-]+$", min_length=1, max_length=255
-    )
+    name: str = Field(..., pattern=r"^[A-Za-z0-9._-]+$", min_length=1, max_length=255)
     version: int = Field(..., ge=1)
 
     def __str__(self) -> str:

@@ -23,15 +23,16 @@ from ...db.repositories import external_models as external_models_repo
 from ...db.repositories import model_import_jobs as model_import_jobs_repo
 from .._shared.asset_state import AssetState
 from .._shared.import_types import ModelSourceError
+from .._shared.runnable_status import RunnableStatus
 from ..catalog.catalog_unavailable_error import CatalogUnavailableError
 from ..catalog.model_ref import derive_catalog_name
-from .._shared.runnable_status import RunnableStatus
 
 if TYPE_CHECKING:
     from ...db.repositories.catalog_identities import CatalogIdentityRepository
     from ...db.repositories.model_asset_repository import ModelAssetRepository
     from ...storage.local import LocalFileStore
     from ..catalog.model_catalog_service import ModelCatalogService
+
 from .._shared.model_import_job_status import ModelImportJobStatus
 from .._shared.source_type import SourceType
 from ..secrets.user_secret_service import UserSecretService

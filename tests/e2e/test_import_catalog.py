@@ -161,9 +161,7 @@ class TestImportCatalogE2E:
             original_id = resp.json()["job_id"]
             await asyncio.sleep(0.5)
 
-            retry_resp = await client.post(
-                f"/v1/models/import/{original_id}/retry"
-            )
+            retry_resp = await client.post(f"/v1/models/import/{original_id}/retry")
             assert retry_resp.status_code == 202
             retry_data = retry_resp.json()
             assert retry_data["status"] == "queued"

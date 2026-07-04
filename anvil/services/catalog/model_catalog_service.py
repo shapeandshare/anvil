@@ -248,7 +248,11 @@ class ModelCatalogService:
         client = await self._get_client()
         loop = asyncio.get_event_loop()
 
-        status = runnable_status if runnable_status is not None else RunnableStatus("runnable")
+        status = (
+            runnable_status
+            if runnable_status is not None
+            else RunnableStatus("runnable")
+        )
         tags: dict[str, str] = {
             _TAG_DISPLAY_NAME: catalog_name,
             _TAG_KIND: str(CatalogKind.TRAINED),
@@ -429,9 +433,7 @@ class ModelCatalogService:
     # Mutations
     ####################################################################
 
-    async def set_model_version_tag(
-        self, ref: ModelRef, key: str, value: str
-    ) -> None:
+    async def set_model_version_tag(self, ref: ModelRef, key: str, value: str) -> None:
         """Set an arbitrary tag on a model version.
 
         Parameters
@@ -457,9 +459,7 @@ class ModelCatalogService:
                 f"Failed to set tag {key} on {ref}: {exc}"
             ) from exc
 
-    async def get_config_manifest(
-        self, ref: ModelRef
-    ) -> dict[str, Any] | None:
+    async def get_config_manifest(self, ref: ModelRef) -> dict[str, Any] | None:
         """Retrieve the config manifest artifact for a model version.
 
         Downloads and parses the config JSON from the import run's
@@ -502,9 +502,7 @@ class ModelCatalogService:
                 f"Failed to get config manifest for {ref}: {exc}"
             ) from exc
 
-    async def set_asset_availability(
-        self, ref: ModelRef, state: AssetState
-    ) -> None:
+    async def set_asset_availability(self, ref: ModelRef, state: AssetState) -> None:
         """Update the asset availability tag on a model version.
 
         Parameters
@@ -526,9 +524,7 @@ class ModelCatalogService:
                     str(state),
                 ),
             )
-            logger.info(
-                "Catalog set_asset_availability: ref=%s state=%s", ref, state
-            )
+            logger.info("Catalog set_asset_availability: ref=%s state=%s", ref, state)
         except _TRANSIENT_EXCEPTIONS as exc:
             raise CatalogUnavailableError(
                 f"Failed to set asset availability for {ref}: {exc}"
@@ -548,7 +544,10 @@ class ModelCatalogService:
             await loop.run_in_executor(
                 None,
                 lambda: client.set_model_version_tag(  # type: ignore[misc]
-                    ref.name, ref.version, _TAG_LIFECYCLE_STATE, str(LifecycleState.ARCHIVED)
+                    ref.name,
+                    ref.version,
+                    _TAG_LIFECYCLE_STATE,
+                    str(LifecycleState.ARCHIVED),
                 ),
             )
             logger.info(
@@ -557,9 +556,7 @@ class ModelCatalogService:
                 LifecycleState.ARCHIVED,
             )
         except _TRANSIENT_EXCEPTIONS as exc:
-            raise CatalogUnavailableError(
-                f"Failed to archive {ref}: {exc}"
-            ) from exc
+            raise CatalogUnavailableError(f"Failed to archive {ref}: {exc}") from exc
 
     ####################################################################
     # Internals
@@ -645,17 +642,13 @@ def _build_entry_from_tags(
     except ValueError:
         runnable_status = RunnableStatus.TRACK_ONLY
 
-    avail_str = mv_tags.get(
-        _TAG_ASSET_AVAILABILITY, str(AssetState.METADATA_ONLY)
-    )
+    avail_str = mv_tags.get(_TAG_ASSET_AVAILABILITY, str(AssetState.METADATA_ONLY))
     try:
         asset_availability = AssetState(avail_str)
     except ValueError:
         asset_availability = AssetState.METADATA_ONLY
 
-    lifecycle_str = mv_tags.get(
-        _TAG_LIFECYCLE_STATE, str(LifecycleState.ACTIVE)
-    )
+    lifecycle_str = mv_tags.get(_TAG_LIFECYCLE_STATE, str(LifecycleState.ACTIVE))
     try:
         lifecycle_state = LifecycleState(lifecycle_str)
     except ValueError:
