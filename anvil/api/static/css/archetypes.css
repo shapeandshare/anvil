@@ -2272,7 +2272,7 @@ margin-bottom: var(--space-2);
   border-radius: var(--radius-md);
   font-size: var(--text-footnote);
   white-space: pre-wrap;
-  word-break: break-word;
+  overflow-wrap: anywhere;
   color: var(--text);
   margin: 0;
 }

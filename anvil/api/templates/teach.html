@@ -20,7 +20,7 @@
   <aside class="teach-sidebar section-card">
     <h2 class="teach-section-title">Sessions</h2>
     <div id="session-list" class="teach-session-list">
-      <p class="teach-empty-text" role="status">Loading sessions…</p>
+      <output class="teach-empty-text">Loading sessions…</output>
     </div>
     <hr class="section-divider">
     <form id="create-session-form" onsubmit="return createSession(event)">
@@ -52,7 +52,7 @@
     <div id="active-session-panel" class="section-card" style="display:none;">
       <div class="teach-panel-header">
         <div>
-          <h2 id="active-session-name" class="teach-section-title" style="margin-bottom:0;"></h2>
+          <h2 id="active-session-name" class="teach-section-title" style="margin-bottom:0;" aria-label="Active session name"></h2>
           <p id="active-session-status" class="teach-status-text"></p>
         </div>
         <button id="refresh-session-btn" type="button" class="btn btn-secondary" onclick="loadSessionDetails()" aria-label="Refresh session details">&#x21bb;</button>
@@ -85,7 +85,7 @@
       </form>
 
       {# ── Training SSE stream ─────────────────────────────────────── #}
-      <div id="training-progress" class="teach-progress-section" role="status" aria-live="polite">
+      <output id="training-progress" class="teach-progress-section" aria-live="polite">
         <div class="teach-progress-header">
           <span id="training-status-text">Training in progress…</span>
           <span id="training-loss-display">Loss: —</span>
@@ -95,7 +95,7 @@
         </div>
         <div id="training-error" class="teach-error-text"></div>
         <div id="training-complete" class="teach-complete-text"></div>
-      </div>
+      </output>
     </div>
 
     {# ── Inference / Inspect panel ────────────────────────────────── #}
@@ -243,7 +243,7 @@ function createSession(ev) {
   var seed = document.getElementById('session-seed').value;
   var body = { name: name };
   if (desc) body.description = desc;
-  if (seed) body.seed_experiment_id = parseInt(seed, 10);
+  if (seed) body.seed_experiment_id = Number.parseInt(seed, 10);
 
   apiFetch('/v1/teach/sessions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     .then(function(r) { return r.json(); })
@@ -284,8 +284,8 @@ function startRound(ev) {
   var examples = examplesText.split('\n').filter(function(l) { return l.trim(); });
   if (examples.length === 0) { showToast('Enter at least one example', 'error'); return false; }
 
-  var steps = parseInt(document.getElementById('round-steps').value, 10) || 100;
-  var lr = parseFloat(document.getElementById('round-lr').value) || 0.01;
+  var steps = Number.parseInt(document.getElementById('round-steps').value, 10) || 100;
+  var lr = Number.parseFloat(document.getElementById('round-lr').value) || 0.01;
 
   var trainingConfig = {
     method: 'full',
@@ -351,11 +351,11 @@ function connectSSE(runId) {
         document.getElementById('training-loss-display').textContent = 'Loss: ' + data.loss.toFixed(4);
       }
       if (data.step != null) {
-        var total = parseInt(document.getElementById('round-steps').value) || 100;
+        var total = Number.parseInt(document.getElementById('round-steps').value) || 100;
         var pct = Math.min(100, (data.step / total) * 100);
         document.getElementById('training-progress-bar').style.width = pct + '%';
       }
-    } catch(e) {}
+    } catch(e) { console.warn('SSE metrics parse error:', e); }
   });
 
   activeEventSource.addEventListener('complete', function() {
@@ -390,10 +390,10 @@ function closeSSE() {
 /* ── Inspect ───────────────────────────────────────────────────────── */
 function inspectRound(ev) {
   ev.preventDefault();
-  var expId = parseInt(document.getElementById('inspect-experiment').value, 10);
+  var expId = Number.parseInt(document.getElementById('inspect-experiment').value, 10);
   var prompt = document.getElementById('inspect-prompt').value;
-  var temp = parseFloat(document.getElementById('inspect-temp').value) || 0.7;
-  var tokens = parseInt(document.getElementById('inspect-tokens').value) || 100;
+  var temp = Number.parseFloat(document.getElementById('inspect-temp').value) || 0.7;
+  var tokens = Number.parseInt(document.getElementById('inspect-tokens').value) || 100;
   if (!activeSessionId) { showToast('Select a session first', 'error'); return false; }
 
   apiFetch('/v1/teach/sessions/' + activeSessionId + '/rounds/0/inspect', {
@@ -422,8 +422,8 @@ function inspectRound(ev) {
 /* ── Compare ───────────────────────────────────────────────────────── */
 function compareRounds(ev) {
   ev.preventDefault();
-  var left = parseInt(document.getElementById('compare-left').value, 10);
-  var right = parseInt(document.getElementById('compare-right').value, 10);
+  var left = Number.parseInt(document.getElementById('compare-left').value, 10);
+  var right = Number.parseInt(document.getElementById('compare-right').value, 10);
   var prompt = document.getElementById('compare-prompt').value;
 
   apiFetch('/v1/teach/sessions/compare', {
@@ -462,7 +462,7 @@ function showToast(msg, type) {
   toast.className = 'toast toast--' + (type || 'info');
   toast.textContent = msg;
   container.appendChild(toast);
-  setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 4000);
+  setTimeout(function() { if (toast.parentNode) toast.remove(); }, 4000);
 }
 
 /* ── Init ──────────────────────────────────────────────────────────── */
