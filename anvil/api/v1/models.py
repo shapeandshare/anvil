@@ -41,10 +41,14 @@ class ImportModelBody(BaseModel):
     name: str | None = None
 
 
-@router.post("/models/import", status_code=202)
+@router.post(
+    "/models/import",
+    status_code=202,
+    responses={422: {"description": "Invalid source type"}},
+)
 async def import_model(
     body: ImportModelBody,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, object]:
     """Submit an external model import job.
 
@@ -95,7 +99,7 @@ def _fire_background_import(job_id: int) -> None:
 
 @router.get("/models/import/jobs")
 async def list_import_jobs(
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, object]:
     """Return all model-import jobs, newest first.
 
@@ -141,10 +145,13 @@ async def list_import_jobs(
     return {"data": data}
 
 
-@router.get("/models/import/{job_id}/status")
+@router.get(
+    "/models/import/{job_id}/status",
+    responses={404: {"description": "Import job not found"}},
+)
 async def import_job_status(
     job_id: int,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, object]:
     """Poll the status of a model-import job."""
     job = await workbench.model_imports.get_job_status(job_id)
@@ -162,10 +169,14 @@ async def import_job_status(
     }
 
 
-@router.post("/models/import/{job_id}/retry", status_code=202)
+@router.post(
+    "/models/import/{job_id}/retry",
+    status_code=202,
+    responses={404: {"description": "Original import job not found"}},
+)
 async def retry_import_job(
     job_id: int,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, object]:
     """Re-submit a model-import job, creating a new job entry.
 
@@ -199,7 +210,7 @@ async def retry_import_job(
 
 @router.get("/models/external")
 async def list_external_models(
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, object]:
     """Return all external model entries."""
     models = await workbench.model_imports.list_external_models()
@@ -224,10 +235,13 @@ async def list_external_models(
     }
 
 
-@router.get("/models/external/{model_id}")
+@router.get(
+    "/models/external/{model_id}",
+    responses={404: {"description": "External model not found"}},
+)
 async def get_external_model(
     model_id: int,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, object]:
     """Return a single external model by ID."""
     model = await workbench.model_imports.get_external_model(model_id)
@@ -329,7 +343,7 @@ async def delete_external_model(
 )
 async def download_model_assets(
     model_id: int,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, object]:
     """Trigger async download of model assets (weights, tokenizer, config).
 
@@ -376,7 +390,7 @@ def _fire_background_download(job_id: int) -> None:
 async def asset_download_status(
     model_id: int,
     job_id: int,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, object]:
     """Poll the status of an asset download job with aggregate progress."""
     status = await workbench.model_assets.get_job_status(job_id)
@@ -388,7 +402,7 @@ async def asset_download_status(
 @router.get("/models/{model_id}/assets")
 async def list_model_assets(
     model_id: int,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, object]:
     """Return all assets for a model (read-only)."""
     assets = await workbench.model_assets.get_assets_for_model(model_id)

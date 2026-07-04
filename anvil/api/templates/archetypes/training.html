@@ -1279,7 +1279,14 @@ var gpuToggle = document.getElementById('compute_backend');
       dataLabel = corpusCache[cid] ? corpusCache[cid].name : 'corpus #' + cid;
     }
 
-    var methodLabel = config.method === 'lora' ? 'LoRA (r=' + config.lora_rank + ')' : config.method === 'qlora' ? 'QLoRA (r=' + config.lora_rank + ')' : 'Full';
+    var methodLabel;
+    if (config.method === 'lora') {
+      methodLabel = 'LoRA (r=' + config.lora_rank + ')';
+    } else if (config.method === 'qlora') {
+      methodLabel = 'QLoRA (r=' + config.lora_rank + ')';
+    } else {
+      methodLabel = 'Full';
+    }
 
     modalSummary.innerHTML =
       '<div class="modal-dialog__config-item"><span class="modal-dialog__config-label">Data</span><span class="modal-dialog__config-value">' + escHtml(dataLabel) + '</span></div>'

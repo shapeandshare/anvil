@@ -99,7 +99,7 @@ async def test_rotate_promotes_and_mints_new_key(
     old_current = ring.current
     assert ring.previous is None
 
-    new_kid = await svc.rotate()
+    new_kid = svc.rotate()
 
     assert ring.previous == old_current
     assert ring.current == new_kid
@@ -114,7 +114,7 @@ async def test_rotate_raises_when_rotation_in_progress(
 ) -> None:
     """A second rotate() before expire_previous() raises RotationInProgressError."""
     with pytest.raises(RotationInProgressError):
-        await svc_with_previous.rotate()
+        svc_with_previous.rotate()
 
 
 ##############################################################################
@@ -229,7 +229,7 @@ async def test_log_safety(
     the word "plaintext".
     """
     with patch("anvil.services.secrets.secret_rotation_service.logger") as mock_logger:
-        await svc.rotate()
+        svc.rotate()
 
         for _call in mock_logger.method_calls:
             args = " ".join(str(a) for a in _call.args if isinstance(a, str))

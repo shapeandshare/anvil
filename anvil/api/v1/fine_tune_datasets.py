@@ -14,7 +14,7 @@ from __future__ import annotations
 import asyncio
 import json
 from datetime import UTC, datetime
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -45,10 +45,14 @@ _tasks: dict[int, asyncio.Task[Any]] = {}
 # ── Chat Template Endpoints ──────────────────────────────────────────────
 
 
-@router.post("/chat-templates", status_code=201)
+@router.post(
+    "/chat-templates",
+    status_code=201,
+    responses={409: {"description": "Chat template name already exists"}},
+)
 async def create_chat_template(
     body: CreateChatTemplateBody,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, object]:
     """Create a new chat template.
 
@@ -91,20 +95,20 @@ async def create_chat_template(
 
 @router.get("/chat-templates")
 async def list_chat_templates(
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
     tokenizer_family: str | None = None,
     status: str | None = None,
-    workbench: AnvilWorkbench = Depends(get_workbench),
 ) -> dict[str, object]:
     """List chat templates with optional filters.
 
     Parameters
     ----------
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
     tokenizer_family : str, optional
         Filter by tokenizer family.
     status : str, optional
         Filter by template status.
-    workbench : AnvilWorkbench
-        Injected session-bound workbench.
 
     Returns
     -------
@@ -132,10 +136,17 @@ async def list_chat_templates(
 # ── Fine-Tune Dataset Endpoints ──────────────────────────────────────────
 
 
-@router.post("/fine-tune-datasets", status_code=202)
+@router.post(
+    "/fine-tune-datasets",
+    status_code=202,
+    responses={
+        404: {"description": "Source dataset not found"},
+        409: {"description": "Active preparation already exists"},
+    },
+)
 async def create_fine_tune_dataset(
     body: CreateFineTuneDatasetBody,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, object]:
     """Submit a new fine-tune dataset preparation job.
 
@@ -275,7 +286,7 @@ async def _samples_to_records(
         text = await _read_text(store, sample.file_path)
         try:
             parsed = json.loads(text)
-        except (json.JSONDecodeError, ValueError):
+        except ValueError:
             records.append({"__unparseable__": text[:200]})
             continue
         records.append(
@@ -313,10 +324,13 @@ async def _mark_failed(job_id: int, error: str) -> None:
         await session.commit()
 
 
-@router.get("/fine-tune-datasets/jobs/{job_id}/status")
+@router.get(
+    "/fine-tune-datasets/jobs/{job_id}/status",
+    responses={404: {"description": "Job not found"}},
+)
 async def get_job_status(
     job_id: int,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, object]:
     """Poll preparation job status.
 
@@ -362,10 +376,13 @@ async def get_job_status(
     }
 
 
-@router.get("/fine-tune-datasets/{ftd_id}")
+@router.get(
+    "/fine-tune-datasets/{ftd_id}",
+    responses={404: {"description": "Fine-tune dataset not found"}},
+)
 async def get_fine_tune_dataset(
     ftd_id: int,
-    workbench: AnvilWorkbench = Depends(get_workbench),
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, object]:
     """Get a prepared fine-tune dataset by ID.
 
@@ -394,10 +411,10 @@ async def get_fine_tune_dataset(
 
 @router.get("/fine-tune-datasets")
 async def list_fine_tune_datasets(
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
     dataset_id: int | None = None,
     status: str | None = None,
     base_model_ref: int | None = None,
-    workbench: AnvilWorkbench = Depends(get_workbench),
 ) -> dict[str, object]:
     """List fine-tune datasets with optional filters.
 
@@ -428,11 +445,18 @@ async def list_fine_tune_datasets(
     }
 
 
-@router.post("/fine-tune-datasets/{ftd_id}/retry", status_code=202)
+@router.post(
+    "/fine-tune-datasets/{ftd_id}/retry",
+    status_code=202,
+    responses={
+        404: {"description": "Fine-tune dataset not found"},
+        409: {"description": "Cannot retry: job not in failed status"},
+    },
+)
 async def retry_fine_tune_dataset(
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
     ftd_id: int,
     body: dict[str, Any] | None = None,
-    workbench: AnvilWorkbench = Depends(get_workbench),
 ) -> dict[str, Any]:
     """Retry a failed fine-tune dataset preparation.
 
