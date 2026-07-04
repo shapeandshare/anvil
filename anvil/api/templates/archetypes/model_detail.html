@@ -113,6 +113,7 @@
 
   var modelId = {{ model_id | tojson }};
   var urlParams = new URLSearchParams(window.location.search);
+  var _modelKind = null;  // populated by loadModelDetail
 
   function escHtml(s) {
     if (s == null) return '';
@@ -297,10 +298,26 @@
   }
 
   function loadModelDetail() {
-    if (urlParams.get('source') === 'external') {
-      loadExternalModelDetail();
-      return;
-    }
+    // Detect model type from the unified catalog first.
+    fetch('/v1/models/' + encodeURIComponent(modelId)).then(function(r) {
+      if (r.ok) return r.json().then(function(data) {
+        _modelKind = data.kind || 'trained';
+        if (_modelKind === 'external') {
+          loadExternalModelDetail();
+          return;
+        }
+        // Trained/merged — fall through to registry detail.
+        loadRegistryModelDetail();
+      });
+      // Unified catalog unavailable (503) or not found — fall back.
+      loadRegistryModelDetail();
+    }).catch(function() {
+      // Network error — fall back to registry flow.
+      loadRegistryModelDetail();
+    });
+  }
+
+  function loadRegistryModelDetail() {
     fetch('/v1/registry/models/' + encodeURIComponent(modelId)).then(function(r) {
       if (r.status === 404) {
         loadExternalModelDetail();
@@ -409,9 +426,9 @@
 
   window.deleteModel = function() {
     if (!confirm('Delete this entire model and all versions? This cannot be undone.')) return;
-    var isExternal = urlParams.get('source') === 'external';
+    var isExt = _modelKind === 'external';
     var nameForUrl = encodeURIComponent(modelId);
-    var url = isExternal ? '/v1/models/' + nameForUrl + '/versions/0' : '/v1/registry/models/' + nameForUrl;
+    var url = isExt ? '/v1/models/' + nameForUrl + '/versions/0' : '/v1/registry/models/' + nameForUrl;
     window.apiFetch(url, { method: 'DELETE' })
     .then(function(r) { return r.json(); })
     .then(function(data) {

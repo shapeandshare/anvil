@@ -9,12 +9,14 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
 
 from ...db.session import AsyncSessionLocal
+from ...services._shared.model_import_job_status import ModelImportJobStatus
 from ...services.catalog.catalog_entry import CatalogEntry
 from ...services.catalog.catalog_kind import CatalogKind
 from ...services.catalog.catalog_unavailable_error import CatalogUnavailableError
@@ -264,6 +266,19 @@ def _fire_background_import(job_id: int) -> None:
                 await session.commit()
         except Exception:
             logger.exception("Background import job %d failed", job_id)
+            try:
+                async with AsyncSessionLocal() as session:
+                    wb = AnvilWorkbench(session)
+                    await wb.model_import_job_repo.update_status(
+                        job_id,
+                        str(ModelImportJobStatus.FAILED),
+                        error_code="background_worker_error",
+                        error_message="Import worker failed — check application logs for details",
+                        finished_at=datetime.now(UTC),
+                    )
+                    await session.commit()
+            except Exception:
+                logger.exception("Failed to mark import job %d as FAILED", job_id)
 
     _task = asyncio.create_task(_worker())
     _task.add_done_callback(
