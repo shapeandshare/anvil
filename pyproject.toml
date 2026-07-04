@@ -184,7 +184,7 @@ module = "anvil.services.tracking"
 ignore_errors = true  # TODO(ADR-0NN): narrow to specific error codes; blocked by mlflow stubs
 
 [[tool.mypy.overrides]]
-module = "anvil.services.mlflow_inputs"
+module = "anvil.services.tracking.mlflow_inputs"
 ignore_errors = true  # TODO(ADR-0NN): narrow to specific error codes; blocked by mlflow stubs
 
 

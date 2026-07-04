@@ -22,6 +22,7 @@ from fastapi.responses import HTMLResponse
 
 from ...core.autograd import Value
 from ...core.engine import LlamaModel, softmax
+from ...services.catalog.catalog_unavailable_error import CatalogUnavailableError
 from ...workbench import AnvilWorkbench
 from ..deps import get_workbench
 from .schemas_misc import InferenceSampleBody
@@ -3065,17 +3066,11 @@ async def list_inference_models(
     """
     try:
         entries = await workbench.catalog.list_entries(runnable_only=True)
-    except Exception as exc:
-        from ...services.catalog.catalog_unavailable_error import (
-            CatalogUnavailableError,
-        )
-
-        if isinstance(exc, CatalogUnavailableError):
-            raise HTTPException(
-                status_code=503,
-                detail="Model catalog is unavailable.",
-            ) from exc
-        raise
+    except CatalogUnavailableError:
+        raise HTTPException(
+            status_code=503,
+            detail="Model catalog is unavailable.",
+        ) from None
 
     if not entries:
         return {

@@ -34,6 +34,7 @@ from ...db.repositories.lora_adapter_repository import LoRAAdapterRepository
 from ...db.session import AsyncSessionLocal
 from ...services.catalog.catalog_entry import CatalogEntry
 from ...services.catalog.catalog_kind import CatalogKind
+from ...services.catalog.model_catalog_service import ModelCatalogService
 from ...services.catalog.model_ref import ModelRef
 from ..tracking.tracking import TrackingService
 from .loaded_model import LoadedModel
@@ -367,8 +368,6 @@ class InferenceService:
 
         # Look up the catalog entry
         if catalog is None:
-            from ...services.catalog.model_catalog_service import ModelCatalogService
-
             catalog = ModelCatalogService()
 
         entry: CatalogEntry | None = await catalog.get_entry(ref)

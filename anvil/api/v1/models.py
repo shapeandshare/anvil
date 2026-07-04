@@ -409,8 +409,6 @@ async def archive_model(
     HTTPException
         404 if the model is not found.
     """
-    from ...services.catalog.model_ref import ModelRef
-
     ref = ModelRef(name=name, version=version)
     entry = await workbench.catalog.get_entry(ref)
     if entry is None:

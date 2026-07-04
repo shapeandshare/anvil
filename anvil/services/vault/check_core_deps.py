@@ -293,7 +293,7 @@ def _top_level_module(module: str) -> str:
     return module.split(".")[0]
 
 
-@dataclass  # noqa: dataclass
+@dataclass
 class ImportStatement:
     """A single import statement found in source code."""
 
@@ -303,7 +303,7 @@ class ImportStatement:
     raw: str
 
 
-@dataclass  # noqa: dataclass
+@dataclass
 class DepViolation:
     """A third-party dependency violation found in a file."""
 
@@ -313,7 +313,7 @@ class DepViolation:
     module: str
 
 
-@dataclass  # noqa: dataclass
+@dataclass
 class FileCheckResult:
     """Aggregated check result for a single file."""
 

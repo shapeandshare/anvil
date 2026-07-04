@@ -477,10 +477,8 @@ class AdapterMergeService:
             If the model cannot be resolved.
         """
         if self._catalog is not None:
-            # Try to look up the adapter's base model via catalog
-            adapter = await self._repo.get_by_adapter_id(model_id, adapter_id="")
-            # We don't have a specific adapter_id here, so just use the
-            # legacy ExternalModel path for now.
+            # TODO: Resolve base model via catalog when adapter_id is provided.
+            # Currently falls through to the legacy ExternalModel path.
             pass
 
         raise RuntimeError(

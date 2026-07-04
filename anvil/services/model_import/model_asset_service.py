@@ -73,7 +73,7 @@ class ModelAssetService:
         self,
         model_asset_repo: ModelAssetRepository,
         asset_download_job_repo: AssetDownloadJobRepository,
-        external_model_repo: ExternalModelRepository,
+        external_model_repo: ExternalModelRepository | None,
         store: FileStore,
         hf_source: HfHubSource | None = None,
         user_secret_service: UserSecretService | None = None,
@@ -116,7 +116,7 @@ class ModelAssetService:
         # Resolve the external model by matching source_identifier
         # to the ModelRef name.  In the ModelRef era, external
         # models are keyed by catalog identity.
-        models = await self._model_repo.list_all()
+        models = await self._model_repo.get_all()
         target = None
         for m in models:
             if getattr(m, "source_identifier", None) and ref.name in str(

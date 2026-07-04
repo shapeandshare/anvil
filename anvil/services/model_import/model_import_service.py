@@ -12,9 +12,9 @@ import os
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
-import aiofiles
+import aiofiles  # type: ignore[import-untyped]
 from sqlalchemy.exc import IntegrityError
 
 from ...db.models.external_model import ExternalModel
@@ -79,11 +79,11 @@ class ModelImportService:
 
     def __init__(
         self,
-        external_model_repo: external_models_repo.ExternalModelRepository,
+        external_model_repo: external_models_repo.ExternalModelRepository | None,
         model_import_job_repo: model_import_jobs_repo.ModelImportJobRepository,
         sources: dict[SourceType, ModelSource],
-        catalog_service: ModelCatalogService,
-        catalog_identity_repo: CatalogIdentityRepository,
+        catalog_service: ModelCatalogService | None = None,
+        catalog_identity_repo: CatalogIdentityRepository | None = None,
         user_secret_service: UserSecretService | None = None,
     ) -> None:
         self._external_model_repo = external_model_repo
@@ -251,9 +251,8 @@ class ModelImportService:
                 f"allow-list: {{{','.join(sorted(_ALLOWED_ARCHITECTURES))}}}"
             )
 
-        runnable_status = cast(
-            RunnableStatus,
-            RunnableStatus.RUNNABLE if is_runnable else RunnableStatus.TRACK_ONLY,
+        runnable_status = (
+            RunnableStatus.RUNNABLE if is_runnable else RunnableStatus.TRACK_ONLY
         )
         try:
             ref = await self._catalog_service.register_external_model(

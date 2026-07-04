@@ -48,7 +48,7 @@ _DATA_DIRS: frozenset[str] = frozenset(
 )
 
 
-@dataclass  # noqa: dataclass
+@dataclass
 class InitPyViolation:
     """A single ``__init__.py`` ownership violation."""
 
@@ -56,7 +56,7 @@ class InitPyViolation:
     message: str
 
 
-@dataclass  # noqa: dataclass
+@dataclass
 class PackageScan:
     """Scan result for a single directory under ``anvil/``."""
 
