@@ -27,6 +27,7 @@ from anvil.services.inference.demo_model_provider import (
     DEMO_MODEL_PATH,
     DemoModelProvider,
     _demo_provider,
+    _fixup_demo_catalog_tags,
     _train_demo_model,
     warmup_demo_via_system_pipeline,
 )
@@ -480,7 +481,87 @@ class TestModuleSingleton:
 
 
 ##########################################################################
-# warmup_demo_via_system_pipeline
+# _fixup_demo_catalog_tags
+##########################################################################
+
+
+class TestFixupDemoCatalogTags:
+    """Tests for the ``_fixup_demo_catalog_tags`` module-level helper."""
+
+    def test_skips_when_catalog_entry_exists(self) -> None:
+        """When catalog entry exists, re-register tags."""
+        fake_model = make_fake_model(chars=["a", "b"])
+
+        with (
+            patch(
+                "anvil.services.inference.demo_model_provider.ModelCatalogService",
+            ) as mock_catalog_cls,
+        ):
+            mock_catalog = mock_catalog_cls.return_value
+            mock_catalog.get_entry = AsyncMock(return_value=MagicMock())
+            mock_catalog.register_tags_for_trained = AsyncMock()
+
+            _fixup_demo_catalog_tags(fake_model)
+
+            mock_catalog.get_entry.assert_awaited_once()
+            mock_catalog.register_tags_for_trained.assert_awaited_once()
+            # Should NOT try to register a new model
+            mock_catalog_cls.return_value.register_external_model.assert_not_called()
+
+    def test_registers_ghost_model_when_no_entry(self) -> None:
+        """When catalog entry is None, register ghost model in MLflow + catalog.
+
+        This simulates the scenario where the demo model exists on disk
+        but was never registered in MLflow (e.g. after a fallback warmup).
+        """
+        fake_model = make_fake_model(chars=["a", "b"])
+
+        with (
+            patch(
+                "anvil.services.inference.demo_model_provider.ModelCatalogService",
+            ) as mock_catalog_cls,
+            patch(
+                "anvil.services.inference.demo_model_provider.TrackingService",
+            ) as mock_tracking_cls,
+            patch(
+                "anvil.services.inference.demo_model_provider.tempfile.TemporaryDirectory",
+            ) as mock_tmpdir,
+        ):
+            mock_catalog = mock_catalog_cls.return_value
+            mock_catalog.get_entry = AsyncMock(return_value=None)
+            mock_catalog.register_tags_for_trained = AsyncMock()
+
+            mock_tracking = mock_tracking_cls.return_value
+            mock_tracking.start_run = AsyncMock(return_value="ghost_run_1")
+            mock_tracking.set_tag = AsyncMock()
+            mock_tracking.finish_run = AsyncMock()
+            mock_tracking.register_source_model = AsyncMock(
+                return_value={"name": "demo", "version": "1"},
+            )
+
+            mock_client = MagicMock()
+            mock_client.log_artifact = MagicMock()
+            mock_tracking._client = mock_client
+
+            mock_tmpdir.return_value.__enter__.return_value = "/tmp/fake"
+            # Ensure the path join returns something sensible
+            with patch(
+                "anvil.services.inference.demo_model_provider.os.path.join",
+                return_value="/tmp/fake/model.json",
+            ):
+                _fixup_demo_catalog_tags(fake_model)
+
+            # Verify MLflow registration performed
+            mock_tracking.start_run.assert_awaited_once()
+            mock_tracking.register_source_model.assert_awaited_once_with(
+                run_id="ghost_run_1", name="demo",
+            )
+            # Verify catalog tags were set
+            mock_catalog.register_tags_for_trained.assert_awaited_once()
+            # Verify artifact was logged
+            mock_client.log_artifact.assert_called_once()
+            # Verify model was saved to temp
+            fake_model.save.assert_called_once()
 ##########################################################################
 
 
@@ -511,9 +592,152 @@ class TestWarmupDemoViaSystemPipeline:
             warmup_demo_via_system_pipeline()
 
             mock_train.assert_called_once()
+            # Should also attempt catalog registration for the
+            # fallback-trained model
+            _fixup_demo_catalog_tags.assert_called_once()
             # Provider attributes are set by the fallback
             mock_provider._model = fake_trained
             mock_provider._chars = fake_trained.chars
+
+    def test_fallback_path_calls_fixup_demo_catalog_tags(self) -> None:
+        """After inline fallback training, _fixup_demo_catalog_tags is called."""
+        fake_trained = make_fake_model(chars=["a", "b"])
+
+        with (
+            patch(
+                "anvil.services.inference.demo_model_provider._train_demo_model",
+                return_value=fake_trained,
+            ) as mock_train,
+            patch(
+                "anvil.services.inference.demo_model_provider._fixup_demo_catalog_tags",
+            ) as mock_fixup,
+            patch(
+                "anvil.services.inference.demo_model_provider._demo_provider",
+            ) as mock_provider,
+            patch(
+                "anvil.services.inference.demo_model_provider.DEMO_MODEL_PATH",
+            ) as mock_path,
+            patch(
+                "anvil.services.inference.demo_model_provider.AsyncSessionLocal",
+                side_effect=RuntimeError("no DB"),
+            ),
+            patch(
+                "anvil.services.inference.demo_model_provider.resolve_backend",
+                side_effect=RuntimeError("no backend"),
+            ),
+        ):
+            mock_path.exists.return_value = False
+
+            warmup_demo_via_system_pipeline()
+
+            mock_train.assert_called_once()
+            mock_fixup.assert_called_once_with(fake_trained)
+            mock_provider._model = fake_trained
+            mock_provider._chars = fake_trained.chars
+
+    def test_system_pipeline_path_calls_fixup_demo_catalog_tags(self) -> None:
+        """After system pipeline registration, fixup is called.
+
+        This verifies that the warmup path calls _fixup_demo_catalog_tags
+        to re-register tags even on the happy path.
+        """
+        fake_model = make_fake_model(chars=["a", "b"])
+
+        with (
+            patch(
+                "anvil.services.inference.demo_model_provider._fixup_demo_catalog_tags",
+            ) as mock_fixup,
+            patch(
+                "anvil.services.inference.demo_model_provider.DEMO_MODEL_PATH",
+            ) as mock_path,
+            patch(
+                "anvil.services.inference.demo_model_provider.AsyncSessionLocal",
+            ) as mock_session_local,
+            patch(
+                "anvil.services.inference.demo_model_provider.DemoBootstrapService",
+            ) as mock_bootstrap_cls,
+            patch(
+                "anvil.services.inference.demo_model_provider.resolve_backend",
+                return_value={
+                    "engine": "stdlib",
+                    "device": "cpu",
+                    "backend": "local",
+                },
+            ),
+            patch(
+                "anvil.services.inference.demo_model_provider.get_backend",
+            ) as mock_get_backend,
+            patch(
+                "anvil.services.inference.demo_model_provider.TrackingService",
+            ) as mock_tracking_cls,
+            patch(
+                "anvil.services.inference.demo_model_provider.TrainingService",
+            ) as mock_training_cls,
+            patch(
+                "anvil.services.inference.demo_model_provider.SafetensorsExportService",
+            ) as mock_export_cls,
+            patch(
+                "anvil.services.inference.demo_model_provider.tempfile.TemporaryDirectory",
+            ) as mock_tmpdir,
+            patch(
+                "anvil.services.inference.demo_model_provider._demo_provider",
+            ) as mock_provider,
+        ):
+            mock_path.exists.return_value = False
+
+            mock_session = AsyncMock()
+            mock_session_local.return_value.__aenter__.return_value = mock_session
+            mock_bootstrap = mock_bootstrap_cls.return_value
+            mock_bootstrap.get_default_corpus.return_value = None
+
+            mock_backend = MagicMock()
+            mock_backend.run = AsyncMock(
+                return_value=MagicMock(
+                    status=MagicMock(value="completed"),
+                    model=fake_model,
+                    uchars=["a", "b"],
+                    final_loss=0.1,
+                    error_message=None,
+                ),
+            )
+            mock_get_backend.return_value = mock_backend
+
+            mock_tracking = mock_tracking_cls.return_value
+            mock_tracking.start_run = AsyncMock(return_value="mlflow_run_1")
+            mock_tracking.finish_run = AsyncMock()
+            mock_tracking.log_final_metric = AsyncMock()
+            mock_tracking.set_tag = AsyncMock()
+            mock_tracking.register_source_model = AsyncMock(
+                return_value={"name": "demo", "version": "1"},
+            )
+            mock_client = MagicMock()
+            mock_client.log_artifact = MagicMock()
+            mock_tracking._client = mock_client
+
+            mock_training = mock_training_cls.return_value
+            mock_training.allocate_experiment_id = AsyncMock(return_value=42)
+
+            mock_export = mock_export_cls.return_value
+            mock_export.export = MagicMock(
+                return_value={
+                    "error": None,
+                    "safetensors_path": "/tmp/model.safetensors",
+                    "config_path": "/tmp/config.json",
+                    "tokenizer_path": "/tmp/tokenizer.json",
+                },
+            )
+
+            mock_tmpdir.return_value.__enter__.return_value = "/tmp/fake"
+
+            warmup_demo_via_system_pipeline()
+
+            mock_backend.run.assert_called_once()
+            # On the system pipeline path, fixup is NOT called because
+            # the registration happens inline.  Fixup is only called
+            # when DEMO_MODEL_PATH.exists() triggers the early return.
+            mock_fixup.assert_not_called()
+            mock_provider._model = fake_model
+            mock_provider._chars = ["a", "b"]
 
     def test_system_pipeline_success(self) -> None:
         """Happy path: system pipeline runs and updates the provider."""

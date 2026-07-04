@@ -68,6 +68,11 @@ def _fixup_demo_catalog_tags(_model: LlamaModel) -> None:
     logic changes between releases (e.g. ``kind`` moved from model-version
     to registered-model tags).
 
+    When no catalog entry exists (the model was trained by inline
+    fallback and never registered in MLflow), this function rescues
+    the ghost model by creating an MLflow run, logging the model
+    artifact, and registering it in the catalog.
+
     This is a best-effort operation — failures are logged but do not
     block the server.
     """
@@ -78,7 +83,45 @@ def _fixup_demo_catalog_tags(_model: LlamaModel) -> None:
             ref = ModelRef(name="demo", version=1)
             entry = await catalog.get_entry(ref)
             if entry is None:
-                logger.debug("Demo model not catalogued yet — skipping tag fixup")
+                # Ghost model rescue: the model exists on disk but was
+                # never registered in MLflow (e.g. fallback warmup path
+                # on first boot).  Create an MLflow run, log the model
+                # artifact, and register it in the catalog.
+                tracking = TrackingService()
+                run_id = await tracking.start_run(
+                    run_name="demo-ghost-rescue",
+                    engine_backend="stdlib",
+                    device="cpu",
+                )
+                if not run_id:
+                    logger.warning(
+                        "Ghost rescue: MLflow unavailable, skipping catalog registration",
+                    )
+                    return
+
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    model_path = os.path.join(tmpdir, "model.json")
+                    _model.save(model_path, _model.chars or [])
+                    client = tracking._client
+                    if client:
+                        loop = asyncio.get_event_loop()
+                        await loop.run_in_executor(
+                            None,
+                            lambda: client.log_artifact(run_id, model_path),
+                        )
+
+                reg_result = await tracking.register_source_model(
+                    run_id=run_id,
+                    name="demo",
+                )
+                await catalog.register_tags_for_trained(
+                    catalog_name=reg_result.get("name", "demo"),
+                    version=int(reg_result.get("version", 1)),
+                    final_loss=None,
+                    architecture_family="LlamaForCausalLM",
+                    tokenizer_family="char",
+                )
+                await tracking.finish_run(run_id)
                 return
 
             # Re-register tags so they use the current tag-setting logic
@@ -426,6 +469,9 @@ def warmup_demo_via_system_pipeline() -> None:
             model = _train_demo_model()
             _demo_provider._model = model
             _demo_provider._chars = model.chars
+            # Register the fallback-trained model in the catalog so
+            # it appears on the models page (ghost model rescue).
+            _fixup_demo_catalog_tags(model)
         except Exception:
             logger.warning("Demo model fallback training also failed", exc_info=True)
             pass
