@@ -198,7 +198,7 @@ def scan_file(filepath: Path) -> ScanResult:
     -------
     ScanResult
     """
-    result = ScanResult(str(filepath))
+    result = ScanResult(path=str(filepath))
     result.layer = _classify_file(str(filepath))
 
     if result.layer is None:
@@ -208,7 +208,13 @@ def scan_file(filepath: Path) -> ScanResult:
         source = filepath.read_text()
     except OSError as e:
         result.issues.append(
-            LayerViolation(str(filepath), 0, result.layer, "", f"Cannot read: {e}")
+            LayerViolation(
+                file=str(filepath),
+                line=0,
+                layer=result.layer,
+                target="",
+                message=f"Cannot read: {e}",
+            )
         )
         return result
 

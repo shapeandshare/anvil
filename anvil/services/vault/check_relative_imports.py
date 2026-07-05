@@ -91,7 +91,7 @@ def scan_file(filepath: Path) -> ScanResult:
     -------
     ScanResult
     """
-    result = ScanResult(str(filepath))
+    result = ScanResult(path=str(filepath))
     try:
         source = filepath.read_text()
     except OSError:
@@ -131,7 +131,9 @@ def scan_file(filepath: Path) -> ScanResult:
 
         # Check for absolute ``anvil.`` import
         if _ABSOLUTE_IMPORT_RE.match(stripped):
-            result.violations.append(AbsoluteImport(str(filepath), i, stripped))
+            result.violations.append(
+                AbsoluteImport(file=str(filepath), line=i, line_text=stripped)
+            )
 
     return result
 

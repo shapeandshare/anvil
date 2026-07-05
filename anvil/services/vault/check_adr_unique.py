@@ -76,8 +76,8 @@ def _extract_adr_numbers(
         if m2:
             issues.append(
                 ADRIssue(
-                    str(f),
-                    f"File '{name}' uses a numeric prefix ({m2.group(1)}) but "
+                    file=str(f),
+                    message=f"File '{name}' uses a numeric prefix ({m2.group(1)}) but "
                     f"does not follow 'ADR-0NN-*' naming convention. "
                     f"Rename to 'ADR-{m2.group(1)}-*'.",
                 )
@@ -108,8 +108,8 @@ def _find_duplicates(numbers: dict[str, list[Path]]) -> list[ADRIssue]:
             files_str = ", ".join(str(f.relative_to(f.parents[2])) for f in files)
             issues.append(
                 ADRIssue(
-                    str(files[0]),
-                    f"Duplicate ADR identifier: {adr_id} appears in "
+                    file=str(files[0]),
+                    message=f"Duplicate ADR identifier: {adr_id} appears in "
                     f"{len(files)} files: {files_str}. "
                     f"Each ADR must have a unique number.",
                 )
@@ -130,7 +130,9 @@ def _validate_adrs(decisions_dir: Path) -> list[ADRIssue]:
     list of ADRIssue
     """
     if not decisions_dir.exists():
-        return [ADRIssue(str(decisions_dir), "Decisions directory not found.")]
+        return [
+            ADRIssue(file=str(decisions_dir), message="Decisions directory not found.")
+        ]
 
     files = set(decisions_dir.iterdir())
     numbers, extract_issues = _extract_adr_numbers(files)

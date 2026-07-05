@@ -103,7 +103,7 @@ def _extract_guarded_imports(source: str, filepath: str) -> list[GuardedImport]:
                 if " as " in name:
                     name = name.split(" as ")[-1].strip()
                 if name:
-                    imports.append(GuardedImport(name, filepath, i))
+                    imports.append(GuardedImport(symbol=name, file=filepath, line=i))
 
     return imports
 
@@ -200,12 +200,14 @@ def scan_file(filepath: Path) -> ScanResult:
     -------
     ScanResult
     """
-    result = ScanResult(str(filepath))
+    result = ScanResult(path=str(filepath))
     try:
         source = filepath.read_text()
     except OSError as e:
         result.issues.append(
-            GuardedImportIssue("", str(filepath), 0, f"Cannot read: {e}")
+            GuardedImportIssue(
+                symbol="", file=str(filepath), line=0, message=f"Cannot read: {e}"
+            )
         )
         return result
 

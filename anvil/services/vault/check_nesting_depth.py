@@ -103,7 +103,7 @@ def scan_directory(root: Path) -> ScanResult:
 
         depth = _get_package_depth(root, current)
         if depth > max_depth:
-            result.violations.append(NestingViolation(str(current), depth))
+            result.violations.append(NestingViolation(path=str(current), depth=depth))
 
     return result
 

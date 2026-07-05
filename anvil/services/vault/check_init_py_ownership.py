@@ -185,15 +185,15 @@ def scan_directory(root: Path) -> list[PackageScan]:
         has_py = _has_py_files(dirpath)
         is_data = _is_data_dir(dirpath)
 
-        scan = PackageScan(str(dirpath))
+        scan = PackageScan(dirpath=str(dirpath))
 
         if is_data:
             # Data directories MUST NOT have __init__.py
             if init_path.exists():
                 scan.violations.append(
                     InitPyViolation(
-                        str(dirpath),
-                        f"Data-only directory '{dirname}' must not contain "
+                        path=str(dirpath),
+                        message=f"Data-only directory '{dirname}' must not contain "
                         f"__init__.py",
                     )
                 )
@@ -202,15 +202,16 @@ def scan_directory(root: Path) -> list[PackageScan]:
             if not init_path.exists():
                 scan.violations.append(
                     InitPyViolation(
-                        str(dirpath),
-                        f"Missing __init__.py in package directory " f"'{dirpath}'",
+                        path=str(dirpath),
+                        message=f"Missing __init__.py in package directory "
+                        f"'{dirpath}'",
                     )
                 )
             elif not _init_py_is_bare(init_path):
                 scan.violations.append(
                     InitPyViolation(
-                        str(dirpath),
-                        f"__init__.py in '{dirpath}' contains imports or "
+                        path=str(dirpath),
+                        message=f"__init__.py in '{dirpath}' contains imports or "
                         f"re-exports; must be docstring-only",
                     )
                 )

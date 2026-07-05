@@ -359,7 +359,9 @@ def _extract_imports(source: str, filepath: str) -> list[ImportStatement]:
         if not module:
             continue
 
-        imports.append(ImportStatement(module, filepath, i, stripped))
+        imports.append(
+            ImportStatement(module=module, file=filepath, line=i, raw=stripped)
+        )
 
     return imports
 
@@ -376,7 +378,7 @@ def check_file(filepath: Path) -> FileCheckResult:
     -------
     FileCheckResult
     """
-    result = FileCheckResult(str(filepath))
+    result = FileCheckResult(path=str(filepath))
     stdlib = _get_stdlib()
 
     try:

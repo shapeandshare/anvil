@@ -114,12 +114,14 @@ def scan_file(filepath: Path) -> ScanResult:
     -------
     ScanResult
     """
-    result = ScanResult(str(filepath))
+    result = ScanResult(path=str(filepath))
 
     try:
         source = filepath.read_text()
     except OSError as e:
-        result.issues.append(OneClassIssue(str(filepath), [], f"Cannot read: {e}"))
+        result.issues.append(
+            OneClassIssue(file=str(filepath), classes=[], message=f"Cannot read: {e}")
+        )
         return result
 
     if _has_suppression(source):
@@ -128,7 +130,9 @@ def scan_file(filepath: Path) -> ScanResult:
     try:
         tree = ast.parse(source, filename=str(filepath))
     except SyntaxError as e:
-        result.issues.append(OneClassIssue(str(filepath), [], f"Cannot parse: {e}"))
+        result.issues.append(
+            OneClassIssue(file=str(filepath), classes=[], message=f"Cannot parse: {e}")
+        )
         return result
 
     top_level_classes: list[ast.ClassDef] = [
@@ -153,9 +157,9 @@ def scan_file(filepath: Path) -> ScanResult:
     all_names = [c.name for c in top_level_classes]
     result.issues.append(
         OneClassIssue(
-            str(filepath),
-            all_names,
-            f"has {len(all_names)} classes: {all_names}",
+            file=str(filepath),
+            classes=all_names,
+            message=f"has {len(all_names)} classes: {all_names}",
         )
     )
 
