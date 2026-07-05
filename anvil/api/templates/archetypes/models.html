@@ -141,6 +141,7 @@
     tableEl.style.display = '';
 
 function createRow(m) {
+      var tr = document.createElement('tr');
       var playLink = m.runnable_status === 'runnable'
         ? '<a href="/v1/inference-page?model_id=' + encodeURIComponent(m.name) + '" class="btn btn-primary btn-sm">Play</a> '
         : '';
