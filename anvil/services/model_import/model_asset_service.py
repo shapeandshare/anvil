@@ -20,6 +20,7 @@ import aiofiles  # type: ignore[import-untyped]
 from ...db.models.asset_download_job import AssetDownloadJob
 from ...db.models.model_asset import ModelAsset, ModelAssetStatus, ModelAssetType
 from ...db.repositories.asset_download_job_repository import AssetDownloadJobRepository
+from ...db.repositories.catalog_identities import CatalogIdentityRepository
 from ...db.repositories.external_models import ExternalModelRepository
 from ...db.repositories.model_asset_repository import ModelAssetRepository
 from ...services.catalog.model_ref import ModelRef
@@ -78,10 +79,13 @@ class ModelAssetService:
         hf_source: HfHubSource | None = None,
         user_secret_service: UserSecretService | None = None,
         catalog: Any | None = None,
+        catalog_identity_repo: CatalogIdentityRepository | None = None,
     ) -> None:
         self._asset_repo = model_asset_repo
         self._job_repo = asset_download_job_repo
         self._model_repo = external_model_repo
+        self._catalog_identity_repo = catalog_identity_repo
+        self._identity_repo = catalog_identity_repo
         self._store = store
         self._hf_source = hf_source
         self._user_secrets = user_secret_service
@@ -90,9 +94,8 @@ class ModelAssetService:
     async def submit_download_by_ref(self, ref: ModelRef) -> int:
         """Submit an async asset download request using a ModelRef.
 
-        Resolves the model from the external model repository using
-        the ModelRef's name/version, then delegates to the existing
-        submit_download flow.
+        Resolves the model's catalog identity, then delegates to
+        ``submit_download`` with the source coordinates.
 
         Parameters
         ----------
@@ -108,37 +111,40 @@ class ModelAssetService:
         ------
         ModelRefNotFoundError
             If the model cannot be found.
-        ModelAssetAlreadyAvailableError
-            If assets are already available.
-        DuplicateDownloadError
-            If a download is already in progress.
         """
-        # Resolve the external model by matching source_identifier
-        # to the ModelRef name.  In the ModelRef era, external
-        # models are keyed by catalog identity.
-        models = await self._model_repo.get_all()
+        # Scan catalog identities for one matching the ref name.
+        identities = await self._catalog_identity_repo.find_all()
         target = None
-        for m in models:
-            if getattr(m, "source_identifier", None) and ref.name in str(
-                m.source_identifier
-            ):
-                target = m
+        for identity in identities:
+            if identity.registry_model_name == ref.name:
+                target = identity
                 break
         if target is None:
             raise ModelRefNotFoundError(f"Model not found for ref: {ref}")
-
-        return await self.submit_download(target.id)
+        return await self.submit_download(
+            source_identifier=target.source_identifier,
+            revision=target.revision_sha,
+        )
 
     async def submit_download(
         self,
-        external_model_id: int,
+        *,
+        source_identifier: str,
+        revision: str = "main",
     ) -> int:
         """Submit an async asset download request for a model.
 
+        Resolves the model's catalog identity to get the
+        ``external_model_id``, then stores the HF source coordinates
+        on the job so the background worker can download without
+        any external table lookups.
+
         Parameters
         ----------
-        external_model_id : int
-            FK to the external model to download assets for.
+        source_identifier : str
+            HF Hub repo ID.
+        revision : str
+            HF revision.  Defaults to ``"main"``.
 
         Returns
         -------
@@ -147,31 +153,35 @@ class ModelAssetService:
 
         Raises
         ------
-        ModelNotFoundError
-            Model does not exist.
         ModelAssetAlreadyAvailableError
             Model assets already downloaded.
         DuplicateDownloadError
             A download job for this model is already in flight.
         """
-        model = await self._model_repo.get(external_model_id)
-        if model is None:
-            raise ModelNotFoundError(f"External model not found: {external_model_id}")
+        # Resolve external_model_id from catalog identity (legacy FK)
+        identity = await self._identity_repo.find_latest_by_source_identifier(
+            "huggingface", source_identifier
+        )
+        model_id = identity.id if identity is not None else 0
 
-        if model.asset_availability == str(AssetState.ASSETS_AVAILABLE):
+        existing_assets = await self._asset_repo.get_by_model(model_id)
+        if existing_assets and all(
+            a.status == str(ModelAssetStatus.AVAILABLE) for a in existing_assets
+        ):
             raise ModelAssetAlreadyAvailableError(
-                f"Assets already available for model {external_model_id}"
+                f"Model assets already available for {source_identifier}"
             )
 
-        existing_jobs = await self._job_repo.get_active_for_model(external_model_id)
-        if existing_jobs:
+        existing = await self._job_repo.get_active_for_model(model_id)
+        if existing:
             raise DuplicateDownloadError(
-                f"A download job is already in progress for model "
-                f"{external_model_id}"
+                f"A download job is already in progress for {source_identifier}"
             )
 
         job = AssetDownloadJob(
-            external_model_id=external_model_id,
+            external_model_id=model_id,
+            source_identifier=source_identifier,
+            revision=revision,
             status=str(AssetDownloadJobStatus.QUEUED),
         )
         job = await self._job_repo.add(job)
@@ -273,21 +283,20 @@ class ModelAssetService:
             started_at=datetime.now(UTC),
         )
 
-        model = await self._model_repo.get(job.external_model_id)
-        if model is None:
+        model_id = job.external_model_id
+
+        # Read source coordinates from the job (set at submit time)
+        identifier = job.source_identifier
+        revision = job.revision or "main"
+        if not identifier:
             await self._job_repo.update_status(
                 job_id,
                 str(AssetDownloadJobStatus.FAILED),
-                error_code="model_not_found",
-                error_message=f"Model {job.external_model_id} not found",
+                error_code="source_identifier_missing",
+                error_message=f"Download job {job_id} has no source_identifier",
                 finished_at=datetime.now(UTC),
             )
             return
-
-        model_id = job.external_model_id
-        await self._model_repo.update_fields(
-            model_id, asset_availability=str(AssetState.ASSETS_PENDING)
-        )
 
         if self._hf_source is None:
             await self._fail_and_revert(
@@ -299,8 +308,6 @@ class ModelAssetService:
             return
 
         token = await self._resolve_token()
-        identifier = model.source_identifier
-        revision = model.revision_sha or "main"
 
         try:
             file_list = await self._hf_source.list_asset_files(
@@ -337,14 +344,19 @@ class ModelAssetService:
                 all_ok = False
 
         if all_ok:
-            await self._model_repo.update_fields(
-                model_id, asset_availability=str(AssetState.ASSETS_AVAILABLE)
-            )
+            try:
+                await self._model_repo.update_fields(
+                    model_id, asset_availability=str(AssetState.ASSETS_AVAILABLE)
+                )
+            except Exception:
+                logger.debug(
+                    "Legacy asset_availability update skipped for model %d", model_id
+                )
             # Notify the catalog about availability change
             if self._catalog is not None:
                 try:
                     ref = ModelRef(
-                        name=model.source_identifier or f"model-{model_id}",
+                        name=job.source_identifier or f"model-{model_id}",
                         version=1,
                     )
                     await self._catalog.set_asset_availability(
@@ -469,9 +481,14 @@ class ModelAssetService:
         error_message: str,
     ) -> None:
         """Mark the job FAILED and revert the model to METADATA_ONLY (SC-006)."""
-        await self._model_repo.update_fields(
-            model_id, asset_availability=str(AssetState.METADATA_ONLY)
-        )
+        try:
+            await self._model_repo.update_fields(
+                model_id, asset_availability=str(AssetState.METADATA_ONLY)
+            )
+        except Exception:
+            logger.debug(
+                "Legacy asset_availability update skipped for model %d", model_id
+            )
         await self._job_repo.update_status(
             job_id,
             str(AssetDownloadJobStatus.FAILED),

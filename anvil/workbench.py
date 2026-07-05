@@ -752,6 +752,7 @@ class AnvilWorkbench:
                 self.model_store,
                 hf_source=HfHubSource(),
                 user_secret_service=self.user_secrets,
+                catalog_identity_repo=self.catalog_identity_repo,
             )
         return self._model_assets
 

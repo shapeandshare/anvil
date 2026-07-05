@@ -18,14 +18,23 @@ class AssetDownloadJob(Base, TimestampMixin):
     """Tracks the lifecycle of an async asset-download job.
 
     Each job represents a single attempt to download all asset files
-    (weights, tokenizer, config) for a model.
+    (weights, tokenizer, config) for a model.  The ``source_identifier``
+    and ``revision`` fields store the HF Hub coordinates directly so
+    the background worker can download without querying any other table.
 
     Attributes
     ----------
     id : int
         Primary key, auto-increment.
     external_model_id : int
-        FK to ``external_models.id`` (ON DELETE CASCADE).
+        FK to ``external_models.id`` (ON DELETE CASCADE).  This is dead
+        schema since Rev 013 dropped the target table; kept as a plain
+        integer column for backward-compat with existing assets.
+    source_identifier : str or None
+        HF Hub repo ID (e.g. ``"TinyLlama/TinyLlama-1.1B-Chat-v1.0"``).
+        Set at submit time by the API layer.
+    revision : str or None
+        HF Hub revision (commit SHA or branch name).  Set at submit time.
     status : str
         Job lifecycle state (``AssetDownloadJobStatus`` value, 20 chars).
     error_code : str | None
@@ -50,6 +59,10 @@ class AssetDownloadJob(Base, TimestampMixin):
         ForeignKey("external_models.id", ondelete="CASCADE"),
         nullable=False,
     )
+    source_identifier: Mapped[str | None] = mapped_column(
+        String(255), nullable=True
+    )
+    revision: Mapped[str | None] = mapped_column(String(255), nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False)
     error_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
