@@ -75,6 +75,38 @@ class ExternalModelRepository:
         await self._session.refresh(model)
         return model
 
+    async def find_by_source_identifier(
+        self,
+        source_type: str,
+        source_identifier: str,
+    ) -> ExternalModel | None:
+        """Look up an ``ExternalModel`` by source type and identifier (ignoring revision).
+
+        Returns the most recently created match, or ``None`` if not found.
+
+        Parameters
+        ----------
+        source_type : str
+            The type of source (e.g. ``"huggingface"``, ``"local"``).
+        source_identifier : str
+            Unique identifier within the source (e.g. repo ID).
+
+        Returns
+        -------
+        ExternalModel or None
+            The most recent matching model if found, ``None`` otherwise.
+        """
+        result = await self._session.execute(
+            select(ExternalModel)
+            .where(
+                ExternalModel.source_type == source_type,
+                ExternalModel.source_identifier == source_identifier,
+            )
+            .order_by(ExternalModel.created_at.desc())
+            .limit(1)
+        )
+        return result.scalar_one_or_none()
+
     async def find_by_source(
         self,
         source_type: str,
