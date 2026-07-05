@@ -46,13 +46,14 @@ from .api.api_key_store import ApiKeyStore
 from .config import get_config
 from .db.migration import MigrationService
 from .db.migration_error import MigrationError
+from .db.repositories.catalog_identities import CatalogIdentityRepository
 from .db.repositories.corpora import CorpusRepository
 from .db.repositories.datasets import DatasetRepository
-from .db.repositories.external_models import ExternalModelRepository
 from .db.repositories.lora_adapter_repository import LoRAAdapterRepository
 from .db.repositories.model_import_jobs import ModelImportJobRepository
 from .db.session import AsyncSessionLocal
 from .services._shared.source_type import SourceType
+from .services.catalog.model_catalog_service import ModelCatalogService
 from .services.compute.compute_backend import ComputeBackend
 from .services.compute.resolve import resolve_backend
 from .services.datasets.chunking_strategy import ChunkingStrategy
@@ -889,15 +890,15 @@ def import_main() -> None:
 
     async def _run() -> None:
         async with AsyncSessionLocal() as session:
-            repo = ExternalModelRepository(session)
             job_repo = ModelImportJobRepository(session)
             svc = ModelImportService(
-                repo,
                 job_repo,
                 {
                     SourceType.HUGGINGFACE: HfHubSource(),
                     SourceType.LOCAL: LocalSource(),
-                },  # type: ignore[call-arg]
+                },
+                catalog_service=ModelCatalogService(),
+                catalog_identity_repo=CatalogIdentityRepository(session),
             )
             job_id = await svc.submit_import(
                 source=args.source,
@@ -920,9 +921,8 @@ def import_status_main() -> None:
 
     async def _run() -> None:
         async with AsyncSessionLocal() as session:
-            repo = ExternalModelRepository(session)
             job_repo = ModelImportJobRepository(session)
-            svc = ModelImportService(repo, job_repo, {})  # type: ignore[call-arg]
+            svc = ModelImportService(job_repo, {})
             job = await svc.get_job_status(args.job_id)
             if job is None:
                 print(f"Import job {args.job_id} not found", file=sys.stderr)

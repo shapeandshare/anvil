@@ -13,6 +13,11 @@ title: >-
   ModelAssetService ExternalModel Repository Wired as None: Download Pipeline
   Dead
 updated: '2026-07-04T00:00:00.000Z'
+type: discovery
+code-refs:
+  - 'anvil/workbench.py:732-743'
+  - 'anvil/services/model_import/model_asset_service.py:132-178'
+  - anvil/db/repositories/external_models.py
 ---
 # ModelAssetService ExternalModelRepository Wired as None — Download Pipeline Dead
 

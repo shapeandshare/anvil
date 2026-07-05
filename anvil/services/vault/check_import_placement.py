@@ -25,12 +25,12 @@ from __future__ import annotations
 import os
 import re
 import sys
-from dataclasses import dataclass, field
 from pathlib import Path
 
+from pydantic import BaseModel
 
-@dataclass
-class LazyImport:
+
+class LazyImport(BaseModel):
     """A lazy import found after the first module-level definition."""
 
     statement: str
@@ -38,12 +38,11 @@ class LazyImport:
     line: int
 
 
-@dataclass
-class ScanResult:
+class ScanResult(BaseModel):
     """Aggregated scan result for a single file."""
 
     path: str
-    violations: list[LazyImport] = field(default_factory=list)
+    violations: list[LazyImport] = []
 
 
 # Regex for import statements
@@ -167,7 +166,9 @@ def _scan_source_for_imports(source: str, filepath: str) -> list[LazyImport]:
                 for _, kind in context_stack
             )
             if not allowed:
-                violations.append(LazyImport(line.strip(), filepath, lineno))
+                violations.append(
+                    LazyImport(statement=line.strip(), file=filepath, line=lineno)
+                )
 
     return violations
 
@@ -184,12 +185,14 @@ def scan_file(filepath: Path) -> ScanResult:
     -------
     ScanResult
     """
-    result = ScanResult(str(filepath))
+    result = ScanResult(path=str(filepath))
     try:
         source = filepath.read_text()
     except OSError as e:
         # Treat unreadable as a violation to surface the issue
-        result.violations.append(LazyImport(f"(cannot read: {e})", str(filepath), 0))
+        result.violations.append(
+            LazyImport(statement=f"(cannot read: {e})", file=str(filepath), line=0)
+        )
         return result
 
     result.violations = _scan_source_for_imports(source, str(filepath))

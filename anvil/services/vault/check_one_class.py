@@ -20,12 +20,12 @@ from __future__ import annotations
 import ast
 import os
 import sys
-from dataclasses import dataclass, field
 from pathlib import Path
 
+from pydantic import BaseModel
 
-@dataclass
-class OneClassIssue:
+
+class OneClassIssue(BaseModel):
     """A violation: file contains multiple non-companion classes."""
 
     file: str
@@ -33,12 +33,11 @@ class OneClassIssue:
     message: str
 
 
-@dataclass
-class ScanResult:
+class ScanResult(BaseModel):
     """Aggregated scan result for a single file."""
 
     path: str
-    issues: list[OneClassIssue] = field(default_factory=list)
+    issues: list[OneClassIssue] = []
 
 
 def _has_suppression(source: str) -> bool:
@@ -115,12 +114,14 @@ def scan_file(filepath: Path) -> ScanResult:
     -------
     ScanResult
     """
-    result = ScanResult(str(filepath))
+    result = ScanResult(path=str(filepath))
 
     try:
         source = filepath.read_text()
     except OSError as e:
-        result.issues.append(OneClassIssue(str(filepath), [], f"Cannot read: {e}"))
+        result.issues.append(
+            OneClassIssue(file=str(filepath), classes=[], message=f"Cannot read: {e}")
+        )
         return result
 
     if _has_suppression(source):
@@ -129,7 +130,9 @@ def scan_file(filepath: Path) -> ScanResult:
     try:
         tree = ast.parse(source, filename=str(filepath))
     except SyntaxError as e:
-        result.issues.append(OneClassIssue(str(filepath), [], f"Cannot parse: {e}"))
+        result.issues.append(
+            OneClassIssue(file=str(filepath), classes=[], message=f"Cannot parse: {e}")
+        )
         return result
 
     top_level_classes: list[ast.ClassDef] = [
@@ -154,9 +157,9 @@ def scan_file(filepath: Path) -> ScanResult:
     all_names = [c.name for c in top_level_classes]
     result.issues.append(
         OneClassIssue(
-            str(filepath),
-            all_names,
-            f"has {len(all_names)} classes: {all_names}",
+            file=str(filepath),
+            classes=all_names,
+            message=f"has {len(all_names)} classes: {all_names}",
         )
     )
 

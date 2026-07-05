@@ -18,8 +18,9 @@ from __future__ import annotations
 
 import os
 import sys
-from dataclasses import dataclass, field
 from pathlib import Path
+
+from pydantic import BaseModel
 
 #: Directories to skip during walk (not counted as package levels).
 _SKIP_DIRS: set[str] = {
@@ -33,19 +34,17 @@ _SKIP_DIRS: set[str] = {
 }
 
 
-@dataclass
-class NestingViolation:
+class NestingViolation(BaseModel):
     """A package that exceeds the maximum allowed nesting depth."""
 
     path: str
     depth: int
 
 
-@dataclass
-class ScanResult:
+class ScanResult(BaseModel):
     """Aggregated scan result for the entire tree."""
 
-    violations: list[NestingViolation] = field(default_factory=list)
+    violations: list[NestingViolation] = []
 
 
 def _get_package_depth(root: Path, dirpath: Path) -> int:
@@ -104,7 +103,7 @@ def scan_directory(root: Path) -> ScanResult:
 
         depth = _get_package_depth(root, current)
         if depth > max_depth:
-            result.violations.append(NestingViolation(str(current), depth))
+            result.violations.append(NestingViolation(path=str(current), depth=depth))
 
     return result
 

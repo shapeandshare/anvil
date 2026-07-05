@@ -23,8 +23,9 @@ from __future__ import annotations
 import os
 import re
 import sys
-from dataclasses import dataclass, field
 from pathlib import Path
+
+from pydantic import BaseModel
 
 # Hardcoded fallback for Python < 3.10 where
 # ``sys.stdlib_module_names`` is not available.
@@ -293,8 +294,7 @@ def _top_level_module(module: str) -> str:
     return module.split(".")[0]
 
 
-@dataclass
-class ImportStatement:
+class ImportStatement(BaseModel):
     """A single import statement found in source code."""
 
     module: str
@@ -303,8 +303,7 @@ class ImportStatement:
     raw: str
 
 
-@dataclass
-class DepViolation:
+class DepViolation(BaseModel):
     """A third-party dependency violation found in a file."""
 
     file: str
@@ -313,12 +312,11 @@ class DepViolation:
     module: str
 
 
-@dataclass
-class FileCheckResult:
+class FileCheckResult(BaseModel):
     """Aggregated check result for a single file."""
 
     path: str
-    violations: list[DepViolation] = field(default_factory=list)
+    violations: list[DepViolation] = []
 
 
 def _extract_imports(source: str, filepath: str) -> list[ImportStatement]:
@@ -361,7 +359,9 @@ def _extract_imports(source: str, filepath: str) -> list[ImportStatement]:
         if not module:
             continue
 
-        imports.append(ImportStatement(module, filepath, i, stripped))
+        imports.append(
+            ImportStatement(module=module, file=filepath, line=i, raw=stripped)
+        )
 
     return imports
 
@@ -378,7 +378,7 @@ def check_file(filepath: Path) -> FileCheckResult:
     -------
     FileCheckResult
     """
-    result = FileCheckResult(str(filepath))
+    result = FileCheckResult(path=str(filepath))
     stdlib = _get_stdlib()
 
     try:
