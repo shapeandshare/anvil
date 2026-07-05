@@ -283,21 +283,20 @@ class ModelAssetService:
             started_at=datetime.now(UTC),
         )
 
-        model = await self._model_repo.get(job.external_model_id)
-        if model is None:
+        model_id = job.external_model_id
+
+        # Read source coordinates from the job (set at submit time)
+        identifier = job.source_identifier
+        revision = job.revision or "main"
+        if not identifier:
             await self._job_repo.update_status(
                 job_id,
                 str(AssetDownloadJobStatus.FAILED),
-                error_code="model_not_found",
-                error_message=f"Model {job.external_model_id} not found",
+                error_code="source_identifier_missing",
+                error_message=f"Download job {job_id} has no source_identifier",
                 finished_at=datetime.now(UTC),
             )
             return
-
-        model_id = job.external_model_id
-        await self._model_repo.update_fields(
-            model_id, asset_availability=str(AssetState.ASSETS_PENDING)
-        )
 
         if self._hf_source is None:
             await self._fail_and_revert(
@@ -309,8 +308,6 @@ class ModelAssetService:
             return
 
         token = await self._resolve_token()
-        identifier = model.source_identifier
-        revision = model.revision_sha or "main"
 
         try:
             file_list = await self._hf_source.list_asset_files(
@@ -347,9 +344,14 @@ class ModelAssetService:
                 all_ok = False
 
         if all_ok:
-            await self._model_repo.update_fields(
-                model_id, asset_availability=str(AssetState.ASSETS_AVAILABLE)
-            )
+            try:
+                await self._model_repo.update_fields(
+                    model_id, asset_availability=str(AssetState.ASSETS_AVAILABLE)
+                )
+            except Exception:
+                logger.debug(
+                    "Legacy asset_availability update skipped for model %d", model_id
+                )
             # Notify the catalog about availability change
             if self._catalog is not None:
                 try:
@@ -479,9 +481,14 @@ class ModelAssetService:
         error_message: str,
     ) -> None:
         """Mark the job FAILED and revert the model to METADATA_ONLY (SC-006)."""
-        await self._model_repo.update_fields(
-            model_id, asset_availability=str(AssetState.METADATA_ONLY)
-        )
+        try:
+            await self._model_repo.update_fields(
+                model_id, asset_availability=str(AssetState.METADATA_ONLY)
+            )
+        except Exception:
+            logger.debug(
+                "Legacy asset_availability update skipped for model %d", model_id
+            )
         await self._job_repo.update_status(
             job_id,
             str(AssetDownloadJobStatus.FAILED),
