@@ -26,9 +26,7 @@ def upgrade() -> None:
         batch_op.add_column(
             sa.Column("source_identifier", sa.String(255), nullable=True)
         )
-        batch_op.add_column(
-            sa.Column("revision", sa.String(255), nullable=True)
-        )
+        batch_op.add_column(sa.Column("revision", sa.String(255), nullable=True))
 
 
 def downgrade() -> None:
