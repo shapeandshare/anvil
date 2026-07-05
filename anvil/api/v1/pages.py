@@ -10,6 +10,8 @@ experiments, datasets, inference, operations, learning). Extracted from
 ``router.py`` as part of structural decomposition.
 """
 
+from __future__ import annotations
+
 from collections.abc import Sequence
 from typing import Annotated, Any
 
@@ -18,6 +20,7 @@ from fastapi.responses import HTMLResponse
 
 from ...api.deps import get_workbench
 from ...db.models.license_entry import LicenseEntry
+from ...services._shared.model_import_job_status import ModelImportJobStatus
 from ...services.inference.model_browser import ModelBrowserService
 from ...services.model_import.model_import_service import _ALLOWED_ARCHITECTURES
 from ...workbench import AnvilWorkbench
@@ -450,6 +453,14 @@ async def hf_browser_page(
     import_jobs_raw = await workbench.model_imports.list_jobs()
     import_jobs: list[dict[str, object]] = []
     for j in import_jobs_raw:
+        model_id: int | None = None
+        if j.status == ModelImportJobStatus.COMPLETE and j.source_identifier:
+            ext = await workbench.external_model_repo.find_by_source_identifier(
+                j.source_type, j.source_identifier
+            )
+            if ext is not None:
+                model_id = ext.id
+                imported_ids.add(j.source_identifier)
         job_dict: dict[str, object] = {
             "job_id": j.id,
             "status": j.status,
@@ -462,6 +473,7 @@ async def hf_browser_page(
             "error_message": j.error_message,
             "created_at": j.created_at.isoformat(),
             "asset_availability": None,
+            "external_model_id": model_id,
         }
         import_jobs.append(job_dict)
     host_backend = str(gpu.backend) if gpu.backend else "cpu"

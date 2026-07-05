@@ -37,6 +37,7 @@ from .db.repositories.content_versions import ContentVersionRepository
 from .db.repositories.corpora import CorpusRepository
 from .db.repositories.datasets import DatasetRepository
 from .db.repositories.evaluation_runs import EvaluationRunRepository
+from .db.repositories.external_models import ExternalModelRepository
 from .db.repositories.fine_tune_datasets import FineTuneDatasetRepository
 from .db.repositories.instance_registry import (
     InstanceRegistryRepository,
@@ -169,6 +170,7 @@ class AnvilWorkbench:
         self._runtime_config: RuntimeConfigService | None = None
         # Model import (feature 040 / catalog 064).
         self._model_import_job_repo: ModelImportJobRepository | None = None
+        self._external_model_repo: ExternalModelRepository | None = None
         self._model_imports: ModelImportService | None = None
         # Fine-tune dataset preparation (feature 053).
         self._ftd_repo: FineTuneDatasetRepository | None = None
@@ -559,11 +561,23 @@ class AnvilWorkbench:
         return self._model_import_job_repo
 
     @property
+    def external_model_repo(self) -> ExternalModelRepository:
+        """Lazily-initialised ``ExternalModelRepository`` bound to *session*.
+
+        .. deprecated::
+            Scheduled for removal — new code should use
+            ``CatalogIdentityRepository`` + ``ModelCatalogService`` instead.
+        """
+        if self._external_model_repo is None:
+            self._external_model_repo = ExternalModelRepository(self._session)
+        return self._external_model_repo
+
+    @property
     def model_imports(self) -> ModelImportService:
         """Lazily-initialised ``ModelImportService`` wired to *session*."""
         if self._model_imports is None:
             self._model_imports = ModelImportService(
-                None,  # type: ignore[arg-type]  # external_model_repo — legacy, unused with catalog
+                self.external_model_repo,
                 self.model_import_job_repo,
                 {
                     SourceType.HUGGINGFACE: HfHubSource(),
@@ -735,7 +749,7 @@ class AnvilWorkbench:
             self._model_assets = ModelAssetService(
                 self.model_asset_repo,
                 self.asset_download_job_repo,
-                None,  # type: ignore[arg-type]  # external_model_repo — legacy
+                self.external_model_repo,
                 self.model_store,
                 hf_source=HfHubSource(),
                 user_secret_service=self.user_secrets,

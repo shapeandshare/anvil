@@ -34,6 +34,7 @@ if TYPE_CHECKING:
     from ..catalog.model_catalog_service import ModelCatalogService
     from ..catalog.model_ref import ModelRef
 
+from .._shared.asset_state import AssetState
 from .._shared.model_import_job_status import ModelImportJobStatus
 from .._shared.source_type import SourceType
 from ..secrets.user_secret_service import UserSecretService
@@ -323,6 +324,27 @@ class ModelImportService:
             config_file = config_dir / "config.json"
             async with aiofiles.open(str(config_file), "w") as f:
                 await f.write(metadata.config_json)
+
+        # ── Create ExternalModel entry for legacy download support ────
+        existing_model = await self._external_model_repo.find_by_source_identifier(
+            str(source_type), job.source_identifier
+        )
+        if existing_model is None:
+            ext = ExternalModel(
+                display_name=metadata.display_name,
+                source_type=str(source_type),
+                source_identifier=job.source_identifier,
+                architecture_family=metadata.architecture_family,
+                parameter_count=metadata.parameter_count,
+                license=metadata.license,
+                tokenizer_family=metadata.tokenizer_family,
+                revision_sha=metadata.revision_sha,
+                runnable_status=str(runnable_status),
+                runnable_reason=runnable_reason,
+                asset_availability=str(AssetState.METADATA_ONLY),
+                config_json=metadata.config_json,
+            )
+            await self._external_model_repo.add(ext)
 
         # ── Mark job complete with registry reference ────────────────
         job = await self._model_import_job_repo.update_status(

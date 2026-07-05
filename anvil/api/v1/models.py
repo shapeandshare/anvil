@@ -301,23 +301,32 @@ async def list_import_jobs(
         registration in the MLflow Model Catalog.
     """
     jobs = await workbench.model_imports.list_jobs()
-    data = [
-        {
-            "job_id": j.id,
-            "status": j.status,
-            "source_type": j.source_type,
-            "source_identifier": j.source_identifier,
-            "revision": j.revision,
-            "started_at": j.started_at.isoformat() if j.started_at else None,
-            "finished_at": j.finished_at.isoformat() if j.finished_at else None,
-            "error_code": j.error_code,
-            "error_message": j.error_message,
-            "registry_model_name": j.registry_model_name,
-            "registry_model_version": j.registry_model_version,
-            "created_at": j.created_at.isoformat(),
-        }
-        for j in jobs
-    ]
+    data: list[dict[str, object]] = []
+    for j in jobs:
+        ext_id: int | None = None
+        if j.status == ModelImportJobStatus.COMPLETE and j.source_identifier:
+            ext = await workbench.external_model_repo.find_by_source_identifier(
+                j.source_type, j.source_identifier
+            )
+            if ext is not None:
+                ext_id = ext.id
+        data.append(
+            {
+                "job_id": j.id,
+                "status": j.status,
+                "source_type": j.source_type,
+                "source_identifier": j.source_identifier,
+                "revision": j.revision,
+                "started_at": j.started_at.isoformat() if j.started_at else None,
+                "finished_at": j.finished_at.isoformat() if j.finished_at else None,
+                "error_code": j.error_code,
+                "error_message": j.error_message,
+                "registry_model_name": j.registry_model_name,
+                "registry_model_version": j.registry_model_version,
+                "created_at": j.created_at.isoformat(),
+                "external_model_id": ext_id,
+            }
+        )
     return {"data": data}
 
 
