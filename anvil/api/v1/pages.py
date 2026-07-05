@@ -455,11 +455,13 @@ async def hf_browser_page(
     for j in import_jobs_raw:
         model_id: int | None = None
         if j.status == ModelImportJobStatus.COMPLETE and j.source_identifier:
-            ext = await workbench.external_model_repo.find_by_source_identifier(
-                j.source_type, j.source_identifier
+            identity = (
+                await workbench.catalog_identity_repo.find_latest_by_source_identifier(
+                    j.source_type, j.source_identifier
+                )
             )
-            if ext is not None:
-                model_id = ext.id
+            if identity is not None:
+                model_id = identity.id
                 imported_ids.add(j.source_identifier)
         job_dict: dict[str, object] = {
             "job_id": j.id,

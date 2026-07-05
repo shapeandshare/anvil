@@ -165,3 +165,37 @@ class CatalogIdentityRepository:
         """
         result = await self._session.execute(select(CatalogIdentity))
         return result.scalars().all()
+
+    async def find_latest_by_source_identifier(
+        self,
+        source_type: str,
+        source_identifier: str,
+    ) -> CatalogIdentity | None:
+        """Find the most recently created identity by source type and identifier.
+
+        Useful for UI pages that need to resolve an import job's source
+        identifier to a catalog identity without knowing the exact
+        revision SHA.  Returns the latest-created match.
+
+        Parameters
+        ----------
+        source_type : str
+            Provider type (e.g. ``"huggingface"``, ``"local"``).
+        source_identifier : str
+            Provider-specific identifier (e.g. HuggingFace repo ID).
+
+        Returns
+        -------
+        CatalogIdentity | None
+            The most recent matching identity, or ``None``.
+        """
+        result = await self._session.execute(
+            select(CatalogIdentity)
+            .where(
+                CatalogIdentity.source_type == source_type,
+                CatalogIdentity.source_identifier == source_identifier,
+            )
+            .order_by(CatalogIdentity.created_at.desc())
+            .limit(1)
+        )
+        return result.scalar_one_or_none()
