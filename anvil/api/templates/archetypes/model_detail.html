@@ -266,7 +266,6 @@
       document.getElementById('md-continue-training-link').style.display = 'none';
       document.getElementById('md-versions-table').style.display = 'none';
       document.getElementById('md-avg-loss').style.display = 'none';
-      document.getElementById('merge-section').style.display = 'none';
       extSection.style.display = '';
       dom.setText(document.getElementById('md-ext-source'), (data.source_type || 'external') + ': ' + (data.source_identifier || data.name));
       dom.setText(document.getElementById('md-ext-arch'), archFamily);
@@ -289,6 +288,7 @@
       }
       document.getElementById('md-download-btn').addEventListener('click', startDownload);
       updateAssetUI(assetAvail);
+      loadAdapters(data.name, (latest.version != null ? latest.version : '_'));
     }).catch(function(err) {
       document.getElementById('md-loading').style.display = 'none';
       var errorEl = document.getElementById('md-error');
@@ -405,6 +405,10 @@
       } else {
         tableEl.style.display = 'none';
       }
+      // Load adapters for the latest version
+      if (data.versions && data.versions.length > 0) {
+        loadAdapters(modelId, data.versions[0].version);
+      }
     }).catch(function(err) {
       document.getElementById('md-loading').style.display = 'none';
       var errorEl = document.getElementById('md-error');
@@ -440,18 +444,20 @@
 
   loadModelDetail();
 
-  // spec 044: Load adapters for this model and show merge UI
-  if (modelId) {
-    fetch('/v1/models/' + encodeURIComponent(modelId) + '/adapters')
+  var _modelVersion = null;
+
+  function loadAdapters(name, version) {
+    _modelVersion = version;
+    var section = document.getElementById('merge-section');
+    if (!section) return;
+    section.style.display = 'block';
+    fetch('/v1/models/' + encodeURIComponent(name) + '/versions/' + version + '/adapters')
       .then(function(r) { return r.json(); })
       .then(function(adapters) {
-        var section = document.getElementById('merge-section');
         var status = document.getElementById('adapter-status');
         var list = document.getElementById('adapter-list');
         var btn = document.getElementById('merge-adapter-btn');
-        if (!section) return;
-        section.style.display = 'block';
-        if (!adapters || adapters.length === 0) {
+        if (!Array.isArray(adapters) || adapters.length === 0) {
           status.textContent = 'No LoRA adapters found for this model.';
           return;
         }
@@ -471,7 +477,8 @@
     var sel = document.getElementById('adapter-select');
     if (!sel || !sel.value) return;
     if (!confirm('Merge adapter ' + sel.value + ' into the base model? This cannot be undone.')) return;
-    fetch('/v1/models/' + encodeURIComponent(modelId) + '/adapters/' + sel.value + '/merge', { method: 'POST' })
+    var ver = _modelVersion || '_';
+    fetch('/v1/models/' + encodeURIComponent(modelId) + '/versions/' + ver + '/adapters/' + sel.value + '/merge', { method: 'POST' })
       .then(function(r) { return r.json(); })
       .then(function(data) {
         alert('Adapter merged successfully: ' + data.merged_path);

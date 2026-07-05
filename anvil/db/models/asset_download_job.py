@@ -59,9 +59,7 @@ class AssetDownloadJob(Base, TimestampMixin):
         ForeignKey("external_models.id", ondelete="CASCADE"),
         nullable=False,
     )
-    source_identifier: Mapped[str | None] = mapped_column(
-        String(255), nullable=True
-    )
+    source_identifier: Mapped[str | None] = mapped_column(String(255), nullable=True)
     revision: Mapped[str | None] = mapped_column(String(255), nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False)
     error_code: Mapped[str | None] = mapped_column(String(50), nullable=True)

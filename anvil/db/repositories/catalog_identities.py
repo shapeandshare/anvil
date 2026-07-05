@@ -108,6 +108,21 @@ class CatalogIdentityRepository:
         )
         return result.scalar_one_or_none()
 
+    async def get(self, identity_id: int) -> CatalogIdentity | None:
+        """Retrieve a ``CatalogIdentity`` by primary key.
+
+        Parameters
+        ----------
+        identity_id : int
+            Primary key of the identity row.
+
+        Returns
+        -------
+        CatalogIdentity or None
+            The matching row, or ``None`` if not found.
+        """
+        return await self._session.get(CatalogIdentity, identity_id)
+
     async def set_version(
         self, identity_id: int, version: int
     ) -> CatalogIdentity | None:
