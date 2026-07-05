@@ -37,6 +37,7 @@ from .db.repositories.content_versions import ContentVersionRepository
 from .db.repositories.corpora import CorpusRepository
 from .db.repositories.datasets import DatasetRepository
 from .db.repositories.evaluation_runs import EvaluationRunRepository
+from .db.repositories.external_models import ExternalModelRepository
 from .db.repositories.fine_tune_datasets import FineTuneDatasetRepository
 from .db.repositories.instance_registry import (
     InstanceRegistryRepository,
@@ -45,7 +46,6 @@ from .db.repositories.instance_registry import (
 from .db.repositories.licenses import LicenseRepository
 from .db.repositories.lora_adapter_repository import LoRAAdapterRepository
 from .db.repositories.model_asset_repository import ModelAssetRepository
-from .db.repositories.external_models import ExternalModelRepository
 from .db.repositories.model_import_jobs import ModelImportJobRepository
 from .db.repositories.runtime_config import RuntimeConfigRepository
 from .db.repositories.teaching_session_repository import TeachingSessionRepository
