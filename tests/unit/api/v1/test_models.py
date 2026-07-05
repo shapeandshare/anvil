@@ -35,6 +35,25 @@ def override_dep(mock_workbench):
     app.dependency_overrides.clear()
 
 
+def _make_identity_repo(return_none: bool = False) -> object:
+    """Build a fake catalog-identity repo with an async ``get``.
+
+    Using a plain object avoids the ``'MagicMock' object can't be
+    awaited`` pitfall caused by ``MagicMock.get`` being non-async.
+    """
+    class _Fake:
+        def __init__(self, found: bool = True) -> None:
+            self.found = found
+        async def get(self, _id: int) -> object:
+            if not self.found:
+                return None
+            return type("Identity", (), {
+                "source_identifier": "test/model",
+                "revision_sha": "main",
+            })()
+    return _Fake(found=not return_none)
+
+
 class TestImportModel:
     async def test_import_hf(self, client, mock_workbench, override_dep):
         mock_workbench.model_imports.submit_import = AsyncMock(return_value=42)
@@ -196,6 +215,7 @@ class TestDownloadModelAssets:
         """Returns 202 with job_id."""
         mock_workbench.model_assets = MagicMock()
         mock_workbench.model_assets.submit_download = AsyncMock(return_value=42)
+        mock_workbench.catalog_identity_repo = _make_identity_repo()
 
         resp = await client.post("/v1/models/1/download")
 
@@ -206,12 +226,7 @@ class TestDownloadModelAssets:
 
     async def test_download_model_not_found(self, client, mock_workbench, override_dep):
         """Returns 404 when model not found."""
-        from anvil.services.model_import.model_asset_service import ModelNotFoundError
-
-        mock_workbench.model_assets = MagicMock()
-        mock_workbench.model_assets.submit_download = AsyncMock(
-            side_effect=ModelNotFoundError("Model 999 not found"),
-        )
+        mock_workbench.catalog_identity_repo = _make_identity_repo(return_none=True)
 
         resp = await client.post("/v1/models/999/download")
 
@@ -229,6 +244,7 @@ class TestDownloadModelAssets:
         mock_workbench.model_assets.submit_download = AsyncMock(
             side_effect=ModelAssetAlreadyAvailableError("Assets already available"),
         )
+        mock_workbench.catalog_identity_repo = _make_identity_repo()
 
         resp = await client.post("/v1/models/1/download")
 
@@ -244,6 +260,7 @@ class TestDownloadModelAssets:
         mock_workbench.model_assets.submit_download = AsyncMock(
             side_effect=DuplicateDownloadError("Download already in progress"),
         )
+        mock_workbench.catalog_identity_repo = _make_identity_repo()
 
         resp = await client.post("/v1/models/1/download")
 

@@ -24,7 +24,6 @@ from ...services.catalog.model_ref import ModelRef
 from ...services.model_import.model_asset_service import (
     DuplicateDownloadError,
     ModelAssetAlreadyAvailableError,
-    ModelNotFoundError,
 )
 from ...workbench import AnvilWorkbench
 from ..deps import get_workbench
@@ -454,27 +453,40 @@ async def archive_model(
 
 
 @router.post(
-    "/models/{model_id}/download",
+    "/models/{identity_id}/download",
     status_code=202,
     responses={
-        404: {"description": "Model not found"},
+        404: {"description": "Model identity not found"},
         409: {
             "description": "Assets already available, or a download is already in progress"
         },
     },
 )
 async def download_model_assets(
-    model_id: int,
+    identity_id: int,
     workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, object]:
     """Trigger async download of model assets (weights, tokenizer, config).
 
+    Resolves the HF source identifier and revision from the catalog
+    identity row, then submits a download job that stores those
+    coordinates on the job row so the background worker can download
+    without any external table lookups.
+
     Returns HTTP 202 with a ``job_id`` for status polling.
     """
+    identity = await workbench.catalog_identity_repo.get(identity_id)
+    if identity is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Model identity not found: {identity_id}",
+        )
+
     try:
-        job_id = await workbench.model_assets.submit_download(model_id)
-    except ModelNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+        job_id = await workbench.model_assets.submit_download(
+            source_identifier=identity.source_identifier,
+            revision=identity.revision_sha,
+        )
     except ModelAssetAlreadyAvailableError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     except DuplicateDownloadError as exc:
