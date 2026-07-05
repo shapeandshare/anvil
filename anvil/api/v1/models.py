@@ -304,11 +304,13 @@ async def list_import_jobs(
     for j in jobs:
         ext_id: int | None = None
         if j.status == ModelImportJobStatus.COMPLETE and j.source_identifier:
-            ext = await workbench.external_model_repo.find_by_source_identifier(
-                j.source_type, j.source_identifier
+            identity = (
+                await workbench.catalog_identity_repo.find_latest_by_source_identifier(
+                    j.source_type, j.source_identifier
+                )
             )
-            if ext is not None:
-                ext_id = ext.id
+            if identity is not None:
+                ext_id = identity.id
         data.append(
             {
                 "job_id": j.id,

@@ -23,8 +23,10 @@ from anvil.services._shared.model_import_job_status import ModelImportJobStatus
 def mock_workbench():
     wb = MagicMock()
     wb.model_imports = MagicMock()
-    wb.external_model_repo = MagicMock()
-    wb.external_model_repo.find_by_source_identifier = AsyncMock(return_value=None)
+    wb.catalog_identity_repo = MagicMock()
+    wb.catalog_identity_repo.find_latest_by_source_identifier = AsyncMock(
+        return_value=None
+    )
     return wb
 
 
