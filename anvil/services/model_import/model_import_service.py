@@ -18,9 +18,7 @@ from typing import TYPE_CHECKING
 import aiofiles  # type: ignore[import-untyped]
 from sqlalchemy.exc import IntegrityError
 
-from ...db.models.external_model import ExternalModel
 from ...db.models.model_import_job import ModelImportJob
-from ...db.repositories import external_models as external_models_repo
 from ...db.repositories import model_import_jobs as model_import_jobs_repo
 from .._shared.import_types import ModelSourceError
 from .._shared.runnable_status import RunnableStatus
@@ -29,12 +27,9 @@ from ..catalog.model_ref import derive_catalog_name
 
 if TYPE_CHECKING:
     from ...db.repositories.catalog_identities import CatalogIdentityRepository
-    from ...db.repositories.model_asset_repository import ModelAssetRepository
-    from ...storage.local import LocalFileStore
     from ..catalog.model_catalog_service import ModelCatalogService
     from ..catalog.model_ref import ModelRef
 
-from .._shared.asset_state import AssetState
 from .._shared.model_import_job_status import ModelImportJobStatus
 from .._shared.source_type import SourceType
 from ..secrets.user_secret_service import UserSecretService
@@ -72,16 +67,16 @@ class ModelImportService:
 
     Parameters
     ----------
-    external_model_repo : ExternalModelRepository
-        Repository for ``ExternalModel`` CRUD (legacy).
     model_import_job_repo : ModelImportJobRepository
         Repository for ``ModelImportJob`` CRUD.
     sources : dict[SourceType, ModelSource]
         Registered source resolvers keyed by ``SourceType``.
-    catalog_service : ModelCatalogService
-        MLflow-backed catalog service for model registration.
-    catalog_identity_repo : CatalogIdentityRepository
-        Repository for the identity triple dedup guard.
+    catalog_service : ModelCatalogService, optional
+        MLflow-backed catalog service for model registration. Required
+        for ``run_import()``.
+    catalog_identity_repo : CatalogIdentityRepository, optional
+        Repository for the identity triple dedup guard. Required
+        for ``run_import()``.
     user_secret_service : UserSecretService | None
         Optional service for resolving HF tokens from the encrypted
         UserSecret store.
@@ -89,14 +84,13 @@ class ModelImportService:
 
     def __init__(
         self,
-        external_model_repo: external_models_repo.ExternalModelRepository,
         model_import_job_repo: model_import_jobs_repo.ModelImportJobRepository,
         sources: dict[SourceType, ModelSource],
-        catalog_service: ModelCatalogService,
-        catalog_identity_repo: CatalogIdentityRepository,
+        *,
+        catalog_service: ModelCatalogService | None = None,
+        catalog_identity_repo: CatalogIdentityRepository | None = None,
         user_secret_service: UserSecretService | None = None,
     ) -> None:
-        self._external_model_repo = external_model_repo
         self._model_import_job_repo = model_import_job_repo
         self._sources = sources
         self._catalog_service = catalog_service
@@ -165,7 +159,17 @@ class ModelImportService:
         -------
         ModelImportJob
             The completed or failed job entry.
+
+        Raises
+        ------
+        RuntimeError
+            If the service was constructed without ``catalog_service``
+            or ``catalog_identity_repo``.
         """
+        if self._catalog_service is None or self._catalog_identity_repo is None:
+            raise RuntimeError(
+                "run_import() requires catalog_service and catalog_identity_repo"
+            )
         job = await self._model_import_job_repo.get(job_id)
         if job is None:
             raise ValueError(f"Import job not found: {job_id}")
@@ -325,27 +329,6 @@ class ModelImportService:
             async with aiofiles.open(str(config_file), "w") as f:
                 await f.write(metadata.config_json)
 
-        # ── Create ExternalModel entry for legacy download support ────
-        existing_model = await self._external_model_repo.find_by_source_identifier(
-            str(source_type), job.source_identifier
-        )
-        if existing_model is None:
-            ext = ExternalModel(
-                display_name=metadata.display_name,
-                source_type=str(source_type),
-                source_identifier=job.source_identifier,
-                architecture_family=metadata.architecture_family,
-                parameter_count=metadata.parameter_count,
-                license=metadata.license,
-                tokenizer_family=metadata.tokenizer_family,
-                revision_sha=metadata.revision_sha,
-                runnable_status=str(runnable_status),
-                runnable_reason=runnable_reason,
-                asset_availability=str(AssetState.METADATA_ONLY),
-                config_json=metadata.config_json,
-            )
-            await self._external_model_repo.add(ext)
-
         # ── Mark job complete with registry reference ────────────────
         job = await self._model_import_job_repo.update_status(
             job_id,
@@ -441,91 +424,3 @@ class ModelImportService:
             identifier=job.source_identifier,
             revision=job.revision,
         )
-
-    async def get_external_model(self, model_id: int) -> ExternalModel | None:
-        """Return an external model by primary key.
-
-        Parameters
-        ----------
-        model_id : int
-            ``ExternalModel`` primary key.
-
-        Returns
-        -------
-        ExternalModel | None
-            The model entry, or ``None`` if not found.
-        """
-        return await self._external_model_repo.get(model_id)
-
-    async def _cleanup_model_assets(
-        self,
-        model_id: int,
-        model_asset_repo: ModelAssetRepository,
-        store: LocalFileStore,
-    ) -> None:
-        """Delete asset files associated with a model.
-
-        Parameters
-        ----------
-        model_id : int
-            ``ExternalModel`` primary key.
-        model_asset_repo : ModelAssetRepository
-            Repository for listing model assets to clean up files.
-        store : LocalFileStore
-            File store for deleting asset files from disk.
-        """
-        get_by_model = getattr(model_asset_repo, "get_by_model", None)
-        if get_by_model is None:
-            return
-        assets = await get_by_model(model_id)
-        for asset in assets:
-            storage_path = getattr(asset, "storage_path", None)
-            if storage_path:
-                try:
-                    await store.delete(storage_path)
-                except Exception:
-                    logger.exception("Failed to delete asset file: %s", storage_path)
-
-    async def delete_external_model(
-        self,
-        model_id: int,
-        *,
-        model_asset_repo: ModelAssetRepository | None = None,
-        store: LocalFileStore | None = None,
-    ) -> None:
-        """Delete an external model and clean up its asset files.
-
-        Parameters
-        ----------
-        model_id : int
-            ``ExternalModel`` primary key.
-        model_asset_repo : ModelAssetRepository, optional
-            Repository for listing model assets to clean up files.
-        store : FileStore, optional
-            File store for deleting asset files from disk.
-
-        Raises
-        ------
-        ValueError
-            If the model does not exist.
-        """
-        model = await self._external_model_repo.get(model_id)
-        if model is None:
-            raise ValueError(f"External model not found: {model_id}")
-
-        if model_asset_repo is not None and store is not None:
-            await self._cleanup_model_assets(model_id, model_asset_repo, store)
-
-        await self._external_model_repo.delete(model_id)
-
-    async def list_external_models(
-        self,
-    ) -> Sequence[ExternalModel]:
-        """Return all external models, newest first.
-
-        Returns
-        -------
-        Sequence[ExternalModel]
-            All registered external model entries.
-        """
-        return await self._external_model_repo.get_all()

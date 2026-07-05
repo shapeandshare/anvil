@@ -577,7 +577,6 @@ class AnvilWorkbench:
         """Lazily-initialised ``ModelImportService`` wired to *session*."""
         if self._model_imports is None:
             self._model_imports = ModelImportService(
-                self.external_model_repo,
                 self.model_import_job_repo,
                 {
                     SourceType.HUGGINGFACE: HfHubSource(),
