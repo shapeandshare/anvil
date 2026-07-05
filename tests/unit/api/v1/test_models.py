@@ -41,16 +41,23 @@ def _make_identity_repo(return_none: bool = False) -> object:
     Using a plain object avoids the ``'MagicMock' object can't be
     awaited`` pitfall caused by ``MagicMock.get`` being non-async.
     """
+
     class _Fake:
         def __init__(self, found: bool = True) -> None:
             self.found = found
+
         async def get(self, _id: int) -> object:
             if not self.found:
                 return None
-            return type("Identity", (), {
-                "source_identifier": "test/model",
-                "revision_sha": "main",
-            })()
+            return type(
+                "Identity",
+                (),
+                {
+                    "source_identifier": "test/model",
+                    "revision_sha": "main",
+                },
+            )()
+
     return _Fake(found=not return_none)
 
 
