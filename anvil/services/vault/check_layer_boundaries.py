@@ -32,12 +32,12 @@ from __future__ import annotations
 import os
 import re
 import sys
-from dataclasses import dataclass, field
 from pathlib import Path
 
+from pydantic import BaseModel
 
-@dataclass
-class LayerViolation:
+
+class LayerViolation(BaseModel):
     """A single layer boundary violation.
 
     Attributes
@@ -61,8 +61,7 @@ class LayerViolation:
     message: str
 
 
-@dataclass
-class ScanResult:
+class ScanResult(BaseModel):
     """Aggregated scan result for a single file.
 
     Attributes
@@ -77,7 +76,7 @@ class ScanResult:
 
     path: str
     layer: str | None = None
-    issues: list[LayerViolation] = field(default_factory=list)
+    issues: list[LayerViolation] = []
 
 
 # Layer definitions: path prefix → layer name.

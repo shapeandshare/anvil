@@ -20,12 +20,12 @@ from __future__ import annotations
 import os
 import re
 import sys
-from dataclasses import dataclass, field
 from pathlib import Path
 
+from pydantic import BaseModel
 
-@dataclass
-class AbsoluteImport:
+
+class AbsoluteImport(BaseModel):
     """A single absolute ``anvil.`` import statement found inside the package."""
 
     file: str
@@ -33,12 +33,11 @@ class AbsoluteImport:
     line_text: str
 
 
-@dataclass
-class ScanResult:
+class ScanResult(BaseModel):
     """Aggregated scan result for a single file."""
 
     path: str
-    violations: list[AbsoluteImport] = field(default_factory=list)
+    violations: list[AbsoluteImport] = []
 
 
 # Pattern matching ``from anvil.`` or ``import anvil.`` at the start

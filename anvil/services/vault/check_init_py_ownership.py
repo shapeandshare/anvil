@@ -26,8 +26,9 @@ from __future__ import annotations
 import ast
 import os
 import sys
-from dataclasses import dataclass, field
 from pathlib import Path
+
+from pydantic import BaseModel
 
 # Directories that are data-only and MUST NOT contain ``__init__.py``.
 _DATA_DIRS: frozenset[str] = frozenset(
@@ -48,20 +49,18 @@ _DATA_DIRS: frozenset[str] = frozenset(
 )
 
 
-@dataclass
-class InitPyViolation:
+class InitPyViolation(BaseModel):
     """A single ``__init__.py`` ownership violation."""
 
     path: str
     message: str
 
 
-@dataclass
-class PackageScan:
+class PackageScan(BaseModel):
     """Scan result for a single directory under ``anvil/``."""
 
     dirpath: str
-    violations: list[InitPyViolation] = field(default_factory=list)
+    violations: list[InitPyViolation] = []
 
 
 def _has_py_files(dirpath: Path) -> bool:

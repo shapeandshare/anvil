@@ -20,12 +20,12 @@ from __future__ import annotations
 import ast
 import os
 import sys
-from dataclasses import dataclass, field
 from pathlib import Path
 
+from pydantic import BaseModel
 
-@dataclass
-class OneClassIssue:
+
+class OneClassIssue(BaseModel):
     """A violation: file contains multiple non-companion classes."""
 
     file: str
@@ -33,12 +33,11 @@ class OneClassIssue:
     message: str
 
 
-@dataclass
-class ScanResult:
+class ScanResult(BaseModel):
     """Aggregated scan result for a single file."""
 
     path: str
-    issues: list[OneClassIssue] = field(default_factory=list)
+    issues: list[OneClassIssue] = []
 
 
 def _has_suppression(source: str) -> bool:

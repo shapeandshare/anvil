@@ -18,15 +18,15 @@ from __future__ import annotations
 import os
 import re
 import sys
-from dataclasses import dataclass
 from pathlib import Path
+
+from pydantic import BaseModel
 
 # Match ADR-0NN-*.md files.
 _ADR_PATTERN = re.compile(r"(.+\.md)$")
 
 
-@dataclass
-class ADRIssue:
+class ADRIssue(BaseModel):
     """A detected issue with an ADR file."""
 
     file: str

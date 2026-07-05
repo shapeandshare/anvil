@@ -9,15 +9,15 @@ space/quota.
 """
 
 import shutil
-from dataclasses import dataclass, field
 from pathlib import Path
-from typing import ClassVar
+from typing import ClassVar  # type: ignore[unused-ignore]
+
+from pydantic import BaseModel
 
 from ...workspace.workspace_paths import WorkspacePaths
 
 
-@dataclass
-class SnapshotPlan:
+class SnapshotPlan(BaseModel):
     """Result of planning a snapshot — the set of roots to archive and
     whether pre-flight checks passed.
 
@@ -37,7 +37,7 @@ class SnapshotPlan:
         Whether total fits in the configured quota (projected).
     """
 
-    roots: list[Path] = field(default_factory=list)
+    roots: list[Path] = []
     total_estimated_bytes: int = 0
     required_free_bytes: int = 0
     available_bytes: int = 0

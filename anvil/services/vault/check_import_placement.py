@@ -25,12 +25,12 @@ from __future__ import annotations
 import os
 import re
 import sys
-from dataclasses import dataclass, field
 from pathlib import Path
 
+from pydantic import BaseModel
 
-@dataclass
-class LazyImport:
+
+class LazyImport(BaseModel):
     """A lazy import found after the first module-level definition."""
 
     statement: str
@@ -38,12 +38,11 @@ class LazyImport:
     line: int
 
 
-@dataclass
-class ScanResult:
+class ScanResult(BaseModel):
     """Aggregated scan result for a single file."""
 
     path: str
-    violations: list[LazyImport] = field(default_factory=list)
+    violations: list[LazyImport] = []
 
 
 # Regex for import statements

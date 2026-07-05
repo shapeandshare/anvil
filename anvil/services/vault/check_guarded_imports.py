@@ -19,12 +19,12 @@ from __future__ import annotations
 import os
 import re
 import sys
-from dataclasses import dataclass, field
 from pathlib import Path
 
+from pydantic import BaseModel
 
-@dataclass
-class GuardedImport:
+
+class GuardedImport(BaseModel):
     """A single TYPE_CHECKING-guarded import statement."""
 
     symbol: str
@@ -32,8 +32,7 @@ class GuardedImport:
     line: int
 
 
-@dataclass
-class GuardedImportIssue:
+class GuardedImportIssue(BaseModel):
     """A violation: guarded symbol used in runtime (non-annotation) code."""
 
     symbol: str
@@ -42,13 +41,12 @@ class GuardedImportIssue:
     message: str
 
 
-@dataclass
-class ScanResult:
+class ScanResult(BaseModel):
     """Aggregated scan result for a single file."""
 
     path: str
-    imports: list[GuardedImport] = field(default_factory=list)
-    issues: list[GuardedImportIssue] = field(default_factory=list)
+    imports: list[GuardedImport] = []
+    issues: list[GuardedImportIssue] = []
     has_future_annotations: bool = False
 
 
