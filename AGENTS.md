@@ -1,6 +1,6 @@
 # anvil — Agent Guidelines
 
-**Last updated**: 2026-07-03 (constitution v1.8.0: Article XI Simplicity First / Boring Technology + ADR-041; sonarcloud-tooling + content-repository-016-mvp; scripts-python-over-bash + package-module-migration, testing-guide consolidation; OWASP remediation spec 017 + ADRs 035/036; whole-API e2e test suite 017; TDD workflow enforcement in testing section, Principle 2, and Architecture Rules)
+**Last updated**: 2026-07-05 (constitution v1.8.0: Article XI Simplicity First / Boring Technology + ADR-041; sonarcloud-tooling + content-repository-016-mvp; scripts-python-over-bash + package-module-migration, testing-guide consolidation; OWASP remediation spec 017 + ADRs 035/036; whole-API e2e test suite 017; TDD workflow enforcement in testing section, Principle 2, and Architecture Rules)
 
 ## Project Overview
 
@@ -524,6 +524,8 @@ SomeException
 - MLflow Model Registry (catalog SoT; sidecar server, SQLite backend at `mlruns/mlflow.db`); SQLite `anvil-state.db` (WAL) for operational state (jobs, per-file assets, adapters, evals, dedup guard); `LocalFileStore` for weights at `data/models/{catalog_name}/{version}/hf/` (062-mlflow-model-catalog)
 - Jinja2 template + vanilla JS (ES5-compatible) + CSS3 + None new — reuses existing `tokens.css`, `archetypes.css`, `base.html` `didyouknow_banner` block (062-teach-page-cta)
 - N/A — all state is client-side JS variables (existing pattern) (062-teach-page-cta)
+- Bash (POSIX shell — matching `conjure-seed.sh` pattern) + Paperclip CLI (`npx paperclipai`), OpenCode (opencode_local adapter), cURL (health check) (063-paperclip-bootstrap)
+- N/A — Paperclip handles its own embedded Postgres state (063-paperclip-bootstrap)
 
 ## Recent Changes
 - 025-ux-rules-integration: Added Python 3.11+ (existing repo convention) + Stdlib only — `ux_lint.py` (re/ sys/ os/), `ux_review.py` (stdlib + urllib for OpenAI-compatible API calls)
