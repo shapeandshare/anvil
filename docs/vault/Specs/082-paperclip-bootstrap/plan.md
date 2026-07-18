@@ -1,7 +1,7 @@
 # Implementation Plan: Bootstrap Anvil into Paperclip
 
 **Branch**: `063-paperclip-bootstrap` | **Date**: 2026-07-05 | **Spec**: [`spec.md`](spec.md)
-**Input**: Feature specification from `specs/065-paperclip-bootstrap/spec.md`
+**Input**: Feature specification from `docs/vault/Specs/082-paperclip-bootstrap/spec.md`
 
 ## Summary
 
@@ -52,7 +52,7 @@ Create a seed script (`anvil-seed.sh`) and companion staffing plan that bootstra
 ### Artifacts (this feature)
 
 ```text
-specs/065-paperclip-bootstrap/
+docs/vault/Specs/082-paperclip-bootstrap/
 ├── spec.md              # Feature specification (already created)
 ├── plan.md              # This file (implementation plan)
 ├── research.md          # Phase 0: Research findings

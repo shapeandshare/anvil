@@ -1,6 +1,6 @@
 # Tasks: Bootstrap Anvil into Paperclip
 
-**Input**: Design documents from `specs/065-paperclip-bootstrap/`
+**Input**: Design documents from `docs/vault/Specs/082-paperclip-bootstrap/`
 **Prerequisites**: plan.md ✅, spec.md ✅, research.md ✅, data-model.md ✅, contracts/ ✅, quickstart.md ✅
 
 **Tests**: Not applicable for this feature — deliverables are operational scripts and documentation, not anvil source code. Verification is manual: run seed script against Paperclip, inspect via CLI.

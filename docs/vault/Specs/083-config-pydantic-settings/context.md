@@ -1,4 +1,4 @@
-# Context — 066 Config Migration to pydantic-settings
+# Context — 083 Config Migration to pydantic-settings
 
 > Cold-start handoff context. Cross-references: `../066-codebase-remediation/data-inventory.md` §1, `../066-codebase-remediation/shared-decisions.md` Decision 3.
 

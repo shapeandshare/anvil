@@ -1,7 +1,7 @@
 # Implementation Plan: Teach Page Onboarding & CTA Remediation
 
-**Branch**: `062-teach-page-cta` | **Date**: 2026-07-03 | **Spec**: `specs/064-teach-page-cta/spec.md`
-**Input**: Feature specification from `specs/064-teach-page-cta/spec.md`
+**Branch**: `062-teach-page-cta` | **Date**: 2026-07-03 | **Spec**: `docs/vault/Specs/081-teach-page-cta/spec.md`
+**Input**: Feature specification from `docs/vault/Specs/081-teach-page-cta/spec.md`
 
 ## Summary
 
@@ -43,7 +43,7 @@ the simplest, most boring solution that meets the requirement:
 ### Documentation (this feature)
 
 ```text
-specs/064-teach-page-cta/
+docs/vault/Specs/081-teach-page-cta/
 ├── spec.md              # Feature specification
 ├── plan.md              # This file (implementation plan)
 ├── research.md          # Phase 0 — research findings (no unknowns)

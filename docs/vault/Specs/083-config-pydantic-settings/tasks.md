@@ -1,4 +1,4 @@
-# Tasks — 066 Config Migration to pydantic-settings
+# Tasks — 083 Config Migration to pydantic-settings
 
 **TDD order (Red → Green → Refactor). Each task: write the failing test FIRST.**
 
