@@ -14,7 +14,6 @@ import pytest
 
 from anvil.services.vault.detect_increment import _merge_message, main
 
-
 ##############################################################################
 # _merge_message
 ##############################################################################
