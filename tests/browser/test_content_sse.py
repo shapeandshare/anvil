@@ -28,7 +28,7 @@ class TestContentSse:
         """Verify the content page renders without console errors."""
         checker = assert_no_console_errors(page)
         page.goto(f"{base_url}{CONTENT_PAGE}")
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("domcontentloaded")
         checker.assert_no_errors()
 
     def test_injection_monitor_sse_connects(
@@ -40,7 +40,7 @@ class TestContentSse:
         """Verify injection monitor SSE indicator renders with a state class."""
         checker = assert_no_console_errors(page)
         page.goto(f"{base_url}{CONTENT_PAGE}")
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("domcontentloaded")
 
         # Wait for the injection state indicator to be visible
         state_el = page.locator("#injection-state")
@@ -67,7 +67,7 @@ class TestContentSse:
         """Verify the injection monitor section header and badge render."""
         checker = assert_no_console_errors(page)
         page.goto(f"{base_url}{CONTENT_PAGE}")
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("domcontentloaded")
 
         # Verify the section header is visible
         section = page.locator("text=Injection Monitor").first

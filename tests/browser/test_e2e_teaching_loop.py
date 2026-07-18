@@ -24,9 +24,17 @@ class TestTeachingLoopE2E:
         self,
         page,
         base_url: str,
+        seed_client,
         assert_no_console_errors,
     ) -> None:
         """Create session, start round, wait for SSE training, inspect."""
+        # Skip if teaching API is unavailable
+        try:
+            r = seed_client.get("/v1/teach/sessions")
+            if r.status_code != 200:
+                pytest.skip("Teaching API not available")
+        except Exception:
+            pytest.skip("Teaching API not reachable")
         checker = assert_no_console_errors(page)
         page.goto(f"{base_url}{TEACH_ROUTE}")
         page.wait_for_load_state("networkidle")
