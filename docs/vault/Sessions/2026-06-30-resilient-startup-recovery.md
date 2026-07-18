@@ -49,7 +49,7 @@ Implemented the full Spec-Driven Development pipeline for spec 061 (Resilient St
 
 - **Updated**: `.specify/feature.json` — points to spec 061 directory
 - **Updated**: `AGENTS.md` — agent context updated with new tech info
-- **Updated**: `docs/vault/Specs/061-resilient-startup-recovery/spec.md` — clarifications from `/speckit.clarify`
+- **Updated**: `docs/vault/Specs/061 Resilient Startup Recovery/spec.md` — clarifications from `/speckit.clarify`
 - **Created**: All plan artifacts listed above
 
 ### Quality Gates

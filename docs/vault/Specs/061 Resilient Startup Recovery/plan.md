@@ -9,8 +9,8 @@ updated: 2026-07-03
 
 # Implementation Plan: 061 Resilient Startup & Data-Safe Database Recovery
 
-**Branch**: `061-resilient-startup-recovery` | **Date**: 2026-06-30 | **Spec**: `docs/vault/Specs/061-resilient-startup-recovery/spec.md`
-**Input**: Feature specification from `docs/vault/Specs/061-resilient-startup-recovery/spec.md`
+**Branch**: `061-resilient-startup-recovery` | **Date**: 2026-06-30 | **Spec**: `docs/vault/Specs/061 Resilient Startup Recovery/spec.md`
+**Input**: Feature specification from `docs/vault/Specs/061 Resilient Startup Recovery/spec.md`
 
 ## Summary
 
@@ -56,7 +56,7 @@ Replace the current hard-fail `sys.exit(1)` on DB schema mismatch with a pit-of-
 ### Documentation (this feature)
 
 ```text
-docs/vault/Specs/061-resilient-startup-recovery/
+docs/vault/Specs/061 Resilient Startup Recovery/
 ├── plan.md              # This file
 ├── research.md          # Phase 0 output — resolved unknowns
 ├── data-model.md        # Phase 1 output — entity definitions

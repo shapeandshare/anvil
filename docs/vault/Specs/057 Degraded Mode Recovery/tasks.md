@@ -9,7 +9,7 @@ updated: 2026-07-03
 
 # Tasks: Degraded Mode Recovery
 
-**Input**: Design documents from `docs/vault/Specs/057-degraded-mode-recovery/`
+**Input**: Design documents from `docs/vault/Specs/057 Degraded Mode Recovery/`
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/
 
 **Tests**: Included per TDD mandate (Constitution Article IV) — tests written before implementation (Red-Green-Refactor).
