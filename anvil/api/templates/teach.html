@@ -288,12 +288,21 @@ function loadSessionDetails() {
   apiFetch('/v1/teach/sessions/' + activeSessionId)
     .then(function(r) { return r.json(); })
     .then(function(s) {
-      document.getElementById('active-session-panel').style.display = '';
-      document.getElementById('round-panel').style.display = '';
-      document.getElementById('active-session-name').textContent = escHtml(s.name);
-      document.getElementById('active-session-status').textContent = 'Status: ' + (s.status || 'draft') + ' | Chain head: ' + (s.current_base_experiment_id || 'none');
-      updateComparePanelVisibility();
+      _showActiveSessionPanel(s.name, s.status || 'draft', s.current_base_experiment_id);
+    })
+    .catch(function() {
+      // If the GET fails, show the panel anyway with minimal info
+      _showActiveSessionPanel('Session ' + activeSessionId, 'unknown', null);
     });
+}
+
+/* Show the active session panel with given name, status, and chain head. */
+function _showActiveSessionPanel(name, status, chainHead) {
+  document.getElementById('active-session-panel').style.display = '';
+  document.getElementById('round-panel').style.display = '';
+  document.getElementById('active-session-name').textContent = escHtml(name || 'Session');
+  document.getElementById('active-session-status').textContent = 'Status: ' + (status || 'draft') + ' | Chain head: ' + (chainHead || 'none');
+  updateComparePanelVisibility();
 }
 
 /* ── Create session ────────────────────────────────────────────────── */
@@ -313,7 +322,8 @@ function createSession(ev) {
       document.getElementById('session-desc').value = '';
       document.getElementById('session-seed').value = '';
       activeSessionId = s.id;
-      loadSessionDetails();
+      // Show panels immediately using POST response data
+      _showActiveSessionPanel(s.name, s.status || 'draft', s.current_base_experiment_id);
       loadSessions();
       showToast('Session created', 'success');
     })

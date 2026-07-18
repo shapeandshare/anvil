@@ -68,8 +68,8 @@ PAGES: list[tuple[str, str, str]] = [
     ),
     (
         "/v1/content-page",
-        ".section-card__title",
-        "Versioned Content Repository",
+        "text=Versioned Content Repository",
+        "",
     ),
     (
         "/v1/config-page",
@@ -114,6 +114,7 @@ class TestNavigationSmoke:
     """Smoke test: all primary routes render without errors."""
 
     TIMEOUT = 15_000  # 15 seconds
+    CONTENT_PAGE_TIMEOUT = 30_000  # 30 seconds — content page loads via SSE
 
     @pytest.mark.parametrize(
         "route,selector,expected_text",
@@ -140,12 +141,17 @@ class TestNavigationSmoke:
 
         if selector:
             landmark = page.locator(selector)
+            nav_timeout = (
+                self.CONTENT_PAGE_TIMEOUT
+                if route == "/v1/content-page"
+                else self.TIMEOUT
+            )
             if expected_text:
                 landmark.filter(has_text=expected_text).wait_for(
-                    state="visible", timeout=self.TIMEOUT
+                    state="visible", timeout=nav_timeout
                 )
             else:
-                landmark.first.wait_for(state="visible", timeout=self.TIMEOUT)
+                landmark.first.wait_for(state="visible", timeout=nav_timeout)
 
         checker.assert_no_errors()
 

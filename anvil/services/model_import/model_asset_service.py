@@ -115,9 +115,7 @@ class ModelAssetService:
         """
         # Scan catalog identities for one matching the ref name.
         if self._catalog_identity_repo is None:
-            raise ModelRefNotFoundError(
-                "Catalog identity repository is not available"
-            )
+            raise ModelRefNotFoundError("Catalog identity repository is not available")
         identities = await self._catalog_identity_repo.find_all()
         target = None
         for identity in identities:
