@@ -23,7 +23,7 @@
       <output class="teach-empty-text">Loading sessions…</output>
     </div>
     <hr class="section-divider">
-    <form id="create-session-form" onsubmit="return createSession(event)">
+    <form id="create-session-form">
       <div class="ds-selectors">
         <div class="ds-field">
           <label for="session-name" class="ds-label">Session Name</label>
@@ -82,7 +82,7 @@
             <span style="font-size:var(--text-callout);color:var(--text);">Inspect and compare the results</span>
           </div>
         </div>
-        <button id="empty-state-create-btn" type="button" class="btn btn-primary" style="min-width:200px;font-size:var(--text-headline);" onclick="createSession(event)">Create Session</button>
+        <button id="empty-state-create-btn" type="button" class="btn btn-primary" style="min-width:200px;font-size:var(--text-headline);">Create Session</button>
       </div>
     </div>
 
@@ -93,12 +93,12 @@
           <h2 id="active-session-name" class="teach-section-title" style="margin-bottom:0;">Active session</h2>
           <p id="active-session-status" class="teach-status-text"></p>
         </div>
-        <button id="refresh-session-btn" type="button" class="btn btn-secondary" onclick="loadSessionDetails()" aria-label="Refresh session details">&#x21bb;</button>
+        <button id="refresh-session-btn" type="button" class="btn btn-secondary" aria-label="Refresh session details">&#x21bb;</button>
       </div>
       <div class="teach-panel-actions" style="display:flex;gap:var(--space-2);margin-top:var(--space-3);flex-wrap:wrap;">
-        <button id="start-round-cta" type="button" class="btn btn-primary" onclick="document.getElementById('round-examples').focus()" style="margin-top:0;">Start New Round</button>
-        <button id="view-rounds-cta" type="button" class="btn btn-secondary" onclick="toggleRoundHistory()">View Rounds</button>
-        <button id="delete-session-cta" type="button" class="btn btn-secondary" onclick="deleteSession(activeSessionId)" style="color:var(--accent-red);">Delete Session</button>
+        <button id="start-round-cta" type="button" class="btn btn-primary" style="margin-top:0;">Start New Round</button>
+        <button id="view-rounds-cta" type="button" class="btn btn-secondary">View Rounds</button>
+        <button id="delete-session-cta" type="button" class="btn btn-secondary" style="color:var(--accent-red);">Delete Session</button>
       </div>
       <div id="round-history" class="teach-round-history" style="display:none;margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--separator);">
         <h3 class="teach-section-title" style="font-size:var(--text-footnote);margin-bottom:var(--space-2);">Round History</h3>
@@ -109,7 +109,7 @@
     {# ── Round workflow panel ─────────────────────────────────────── #}
     <div id="round-panel" class="section-card" style="display:none;--stagger-i:2;">
       <h2 class="teach-section-title">Start a New Round</h2>
-      <form id="start-round-form" onsubmit="return startRound(event)">
+      <form id="start-round-form">
         <div class="ds-selectors">
           <div class="ds-field">
             <label for="round-examples" class="ds-label">Training Examples</label>
@@ -148,7 +148,7 @@
     {# ── Inference / Inspect panel ────────────────────────────────── #}
     <div id="inspect-panel" class="section-card" style="display:none;--stagger-i:3;">
       <h2 class="teach-section-title">Inspect Round</h2>
-      <form id="inspect-form" onsubmit="return inspectRound(event)">
+      <form id="inspect-form">
         <div class="ds-selectors">
           <div class="ds-field">
             <label for="inspect-experiment" class="ds-label">Experiment ID</label>
@@ -183,7 +183,7 @@
     <div id="compare-panel" class="section-card" style="--stagger-i:4;display:none;">
       <h2 class="teach-section-title">Compare Rounds</h2>
       <p class="compare-placeholder" style="font-size:var(--text-callout);color:var(--text-tertiary);margin:var(--space-2) 0 var(--space-3);">Complete at least 2 rounds to compare models side-by-side.</p>
-      <form id="compare-form" onsubmit="return compareRounds(event)">
+      <form id="compare-form">
         <div class="ds-selectors">
           <div class="teach-field-group" style="margin-top:0;">
             <label class="ds-label teach-field-half">
@@ -286,7 +286,7 @@ function loadSessionDetails() {
   var emptyCard = document.getElementById('empty-state-card');
   if (emptyCard) emptyCard.style.display = 'none';
   apiFetch('/v1/teach/sessions/' + activeSessionId)
-    .then(function(r) { return r.json(); })
+    .then(function(r) { if (!r.ok) throw new Error('Session fetch failed'); return r.json(); })
     .then(function(s) {
       _showActiveSessionPanel(s.name, s.status || 'draft', s.current_base_experiment_id);
     })
@@ -298,10 +298,14 @@ function loadSessionDetails() {
 
 /* Show the active session panel with given name, status, and chain head. */
 function _showActiveSessionPanel(name, status, chainHead) {
-  document.getElementById('active-session-panel').style.display = '';
-  document.getElementById('round-panel').style.display = '';
-  document.getElementById('active-session-name').textContent = escHtml(name || 'Session');
-  document.getElementById('active-session-status').textContent = 'Status: ' + (status || 'draft') + ' | Chain head: ' + (chainHead || 'none');
+  var panel = document.getElementById('active-session-panel');
+  if (panel) panel.style.display = 'block';
+  var roundPanel = document.getElementById('round-panel');
+  if (roundPanel) roundPanel.style.display = 'block';
+  var nameEl = document.getElementById('active-session-name');
+  if (nameEl) nameEl.textContent = escHtml(name || 'Session');
+  var statusEl = document.getElementById('active-session-status');
+  if (statusEl) statusEl.textContent = 'Status: ' + (status || 'draft') + ' | Chain head: ' + (chainHead || 'none');
   updateComparePanelVisibility();
 }
 
@@ -611,6 +615,17 @@ function showToast(msg, type) {
 
 /* ── Init ──────────────────────────────────────────────────────────── */
 loadSessions();
+
+/* ── Event listeners (CSP-safe: no inline handlers) ──────────────── */
+document.getElementById('create-session-form').addEventListener('submit', function(ev) { return createSession(ev); });
+document.getElementById('empty-state-create-btn').addEventListener('click', function(ev) { createSession(ev); });
+document.getElementById('start-round-form').addEventListener('submit', function(ev) { return startRound(ev); });
+document.getElementById('inspect-form').addEventListener('submit', function(ev) { return inspectRound(ev); });
+document.getElementById('compare-form').addEventListener('submit', function(ev) { return compareRounds(ev); });
+document.getElementById('start-round-cta').addEventListener('click', function() { document.getElementById('round-examples').focus(); });
+document.getElementById('view-rounds-cta').addEventListener('click', function() { toggleRoundHistory(); });
+document.getElementById('delete-session-cta').addEventListener('click', function() { if (activeSessionId) deleteSession(activeSessionId); });
+document.getElementById('refresh-session-btn').addEventListener('click', function() { loadSessionDetails(); });
 </script>
 {% endblock %}
 {% block didyouknow_banner %}
