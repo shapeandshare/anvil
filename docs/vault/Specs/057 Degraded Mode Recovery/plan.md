@@ -10,7 +10,7 @@ updated: 2026-07-03
 # Implementation Plan: Degraded Mode Recovery
 
 **Branch**: `057-degraded-mode-recovery` | **Date**: 2026-06-29 | **Spec**: [spec.md](./spec.md)
-**Input**: Feature specification from `docs/vault/Specs/057-degraded-mode-recovery/spec.md`
+**Input**: Feature specification from `docs/vault/Specs/057 Degraded Mode Recovery/spec.md`
 
 ## Summary
 
@@ -54,7 +54,7 @@ Refactor the `TrackingService` degraded mode in `anvil/services/tracking/trackin
 ### Documentation (this feature)
 
 ```text
-docs/vault/Specs/057-degraded-mode-recovery/
+docs/vault/Specs/057 Degraded Mode Recovery/
 ├── spec.md              # Feature specification
 ├── plan.md              # This file
 ├── research.md          # Phase 0 output

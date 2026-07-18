@@ -1,6 +1,6 @@
 # Tasks: Teach Page Onboarding & CTA Remediation
 
-**Input**: Design documents from `docs/vault/Specs/081-teach-page-cta/`
+**Input**: Design documents from `docs/vault/Specs/081 Teach Page CTA/`
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md
 
 **Tests**: Playwright e2e tests added for all 4 user stories following Constitution Article IV (TDD). Written before implementation.

@@ -9,7 +9,7 @@ updated: 2026-07-03
 
 # Tasks: 061 Resilient Startup & Data-Safe Database Recovery
 
-**Input**: Design documents from `docs/vault/Specs/061-resilient-startup-recovery/`
+**Input**: Design documents from `docs/vault/Specs/061 Resilient Startup Recovery/`
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/recovery-api.md
 
 **Tests**: Test tasks are included per Constitution Article IV (TDD Mandatory). Each user story has an Independent Test criterion from the spec.

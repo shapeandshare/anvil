@@ -9,7 +9,7 @@ updated: 2026-07-03
 
 # Feature Specification: Resilient Startup & Data-Safe Database Recovery
 
-**Feature Directory**: `docs/vault/Specs/061-resilient-startup-recovery`
+**Feature Directory**: `docs/vault/Specs/061 Resilient Startup Recovery`
 **Created**: 2026-06-29
 **Status**: Draft
 **Input**: User description: "I want pit-of-success recovery here — we need to be recoverable without losing data. What are the options, pros/cons?" (following a `make run` failure where the app DB was schema-desynced — `alembic_version` stamped at head but all application tables missing — and the server crashed at startup with exit code 3 and no UI feedback; the only documented fix was `rm data/anvil-state.db`, which destroys user data.)
@@ -20,7 +20,7 @@ On `make run` the FastAPI lifespan startup aborted with exit code 3 and bound no
 
 The remediation given at the time — `rm data/anvil-state.db && make run` — **destroys data**. This spec defines a *pit-of-success* recovery model where the **default, easy path is also the data-safe path**: the system detects a bad DB, preserves it, and surfaces a reachable recovery surface instead of crashing.
 
-This spec is **distinct from** [[Specs/057-degraded-mode-recovery/spec|057 Degraded Mode Recovery]] (which covers the *MLflow tracking sidecar* degraded mode) and **composes with** [[Specs/027 Deployment Backup Restore/spec|027 Deployment Backup Restore]] (the existing stdlib backup/restore engine + `RestoreJournal`) and [[Specs/011 Auto DB Schema/011 Auto DB Schema|011 Auto DB Schema]] (the Alembic auto-migration infrastructure).
+This spec is **distinct from** [[Specs/057 Degraded Mode Recovery/spec|057 Degraded Mode Recovery]] (which covers the *MLflow tracking sidecar* degraded mode) and **composes with** [[Specs/027 Deployment Backup Restore/spec|027 Deployment Backup Restore]] (the existing stdlib backup/restore engine + `RestoreJournal`) and [[Specs/011 Auto DB Schema/011 Auto DB Schema|011 Auto DB Schema]] (the Alembic auto-migration infrastructure).
 
 ## Data-Safety Invariant *(governing principle)*
 
@@ -244,12 +244,12 @@ Orchestrators and operators can distinguish "the process is alive" from "the app
 
 - Reconstructing transactions lost to physical byte corruption or an externally-lost WAL — no app-level workflow can recover what is not on disk.
 - Automatic logical merge of quarantined data back into a fresh DB.
-- The MLflow tracking-sidecar degraded mode — owned by [[Specs/057-degraded-mode-recovery/spec|057 Degraded Mode Recovery]].
+- The MLflow tracking-sidecar degraded mode — owned by [[Specs/057 Degraded Mode Recovery/spec|057 Degraded Mode Recovery]].
 - Cross-instance/global-registry corruption handling beyond per-workspace isolation.
 
 ## Related
 
 - [[Specs/027 Deployment Backup Restore/spec|027 Deployment Backup Restore]] — composes with (snapshot/restore engine, `RestoreJournal`).
-- [[Specs/057-degraded-mode-recovery/spec|057 Degraded Mode Recovery]] — sibling (MLflow tracking sidecar; different subsystem).
+- [[Specs/057 Degraded Mode Recovery/spec|057 Degraded Mode Recovery]] — sibling (MLflow tracking sidecar; different subsystem).
 - [[Specs/011 Auto DB Schema/011 Auto DB Schema|011 Auto DB Schema]] — Alembic auto-migration infrastructure this builds on.
 - `research.md` — full recovery-strategy options analysis with pros/cons and the ranked recommendation.

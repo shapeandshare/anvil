@@ -9,7 +9,7 @@ updated: 2026-07-03
 
 # Feature Specification: Degraded Mode Recovery
 
-**Feature Directory**: `docs/vault/Specs/057-degraded-mode-recovery`
+**Feature Directory**: `docs/vault/Specs/057 Degraded Mode Recovery`
 **Created**: 2026-06-29
 **Status**: Implemented
 **Input**: User description: "Resolve all 7 issues in the MLflow TrackingService degraded mode — add recovery from transient failure, strengthen user signal, narrow exception handling, decouple guards, differentiate failure modes, and add thread safety."
