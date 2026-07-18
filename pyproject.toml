@@ -75,7 +75,7 @@ dev = [
     "pytest-asyncio>=0.24,<2",
     "pytest-cov>=5.0,<6",
     "coverage>=7.0,<8",
-    "commitizen>=3.0,<4",
+    "commitizen>=4,<5",
     "pytest-playwright>=0.5,<1",
     "bandit>=1.7,<2",
 ]

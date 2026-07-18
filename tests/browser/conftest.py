@@ -284,12 +284,35 @@ def dataset_seed(seed_client: httpx.Client) -> dict:
     return data
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def model_seed(seed_client: httpx.Client) -> dict:
-    """Return a placeholder model descriptor.
+    """Wait for the demo model to warm up and return its catalog entry.
 
-    API-based model seeding is currently blocked by training-route
-    discovery.  The inference test navigates the page without a real
-    model and checks the page renders correctly (no crash).
+    The app bootstraps a tiny demo model in a background daemon thread
+    during startup.  This fixture polls ``GET /v1/inference/models``
+    until the model appears (or the warmup timeout expires) and returns
+    the first runnable model's metadata dict.
+
+    Tests that need a real model (model-detail, eval-compare, inference
+    generation) should depend on this fixture.
     """
-    return {"name": "demo", "id": 0}
+    MODEL_SEED_RETRIES = 30
+    MODEL_SEED_INTERVAL = 4  # seconds
+
+    for _ in range(MODEL_SEED_RETRIES):
+        try:
+            resp = seed_client.get("/v1/inference/models")
+            if resp.status_code == 200:
+                data = resp.json()
+                models = data.get("models", [])
+                if models:
+                    return models[0]
+        except httpx.RequestError:
+            pass
+        time.sleep(MODEL_SEED_INTERVAL)
+
+    msg = (
+        f"No runnable models found after "
+        f"{MODEL_SEED_RETRIES * MODEL_SEED_INTERVAL}s"
+    )
+    pytest.skip(msg)

@@ -17,9 +17,6 @@ import asyncio
 import os as _os
 import sys
 
-from .build_notes import main as build_notes_main
-from .bump_version import bump_main
-from .bump_version import main as bump_version_main
 from .check_adr_unique import main as check_adr_unique_main
 from .check_bump_scope import main as check_bump_scope_main
 from .check_core_deps import main as check_core_deps_main
@@ -31,7 +28,6 @@ from .check_nesting_depth import main as check_nesting_depth_main
 from .check_one_class import main as check_one_class_main
 from .check_py_typed import main as check_py_typed_main
 from .check_relative_imports import main as check_relative_imports_main
-from .check_version import main as check_version_main
 from .detect_increment import main as detect_increment_main
 from .migrate_specs import run as migrate_specs_run
 from .vault_health_service import VaultHealthService
@@ -107,40 +103,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="Git repository root path (default: .)",
     )
 
-    # --- bump ---
-    bump_p = sub.add_parser(
-        "bump",
-        help="Bump version by type (MAJOR/MINOR/PATCH) and prepend CHANGELOG entry",
-    )
-    bump_p.add_argument(
-        "--increment",
-        required=True,
-        choices=["MAJOR", "MINOR", "PATCH"],
-        help="Version increment type",
-    )
-
-    # --- bump-patch ---
-    sub.add_parser(
-        "bump-patch",
-        help="[deprecated] Bump patch version — use 'bump --increment PATCH' instead",
-    )
-
     # --- detect-increment ---
     sub.add_parser(
         "detect-increment",
         help="Classify merge commit for version increment type",
-    )
-
-    # --- check-version ---
-    sub.add_parser(
-        "check-version",
-        help="Detect whether version changed since parent commit",
-    )
-
-    # --- build-notes ---
-    sub.add_parser(
-        "build-notes",
-        help="Build release-notes.md from CHANGELOG and PR_BODY",
     )
 
     # --- migrate-specs ---
@@ -250,16 +216,8 @@ def main(argv: list[str] | None = None) -> None:
         _cmd_check_guarded_imports(args)
     elif args.command == "check-bump-scope":
         _cmd_check_bump_scope(args)
-    elif args.command == "bump-patch":
-        _cmd_bump_patch(args)
-    elif args.command == "bump":
-        _cmd_bump(args)
     elif args.command == "detect-increment":
         _cmd_detect_increment(args)
-    elif args.command == "check-version":
-        _cmd_check_version(args)
-    elif args.command == "build-notes":
-        _cmd_build_notes(args)
     elif args.command == "migrate-specs":
         _cmd_migrate_specs(args)
     elif args.command == "check-init-py":
@@ -377,41 +335,9 @@ def _cmd_check_bump_scope(args: argparse.Namespace) -> None:
     check_bump_scope_main()
 
 
-def _cmd_bump_patch(args: argparse.Namespace) -> None:
-    """Handle the ``bump-patch`` subcommand.
-
-    Parameters
-    ----------
-    args : argparse.Namespace
-        Parsed CLI arguments.
-    """
-    bump_version_main()
-
-
-def _cmd_bump(args: argparse.Namespace) -> None:
-    """Handle the ``bump`` subcommand.
-
-    Parameters
-    ----------
-    args : argparse.Namespace
-        Parsed CLI arguments.
-    """
-    bump_main(increment=args.increment)
-
-
 def _cmd_detect_increment(args: argparse.Namespace) -> None:
     """Handle the ``detect-increment`` subcommand."""
     detect_increment_main()
-
-
-def _cmd_check_version(args: argparse.Namespace) -> None:
-    """Handle the ``check-version`` subcommand."""
-    check_version_main()
-
-
-def _cmd_build_notes(args: argparse.Namespace) -> None:
-    """Handle the ``build-notes`` subcommand."""
-    build_notes_main()
 
 
 def _cmd_migrate_specs(args: argparse.Namespace) -> None:

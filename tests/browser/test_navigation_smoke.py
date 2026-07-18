@@ -55,8 +55,56 @@ PAGES: list[tuple[str, str, str]] = [
     ),
     (
         "/v1/learn",
+        "h1",
+        "Learning Hub",
+    ),
+    ####################################################################
+    # Pages below were added in the 100% coverage push
+    ####################################################################
+    (
+        "/v1/teach",
         ".section-card__title",
-        "Learning Path",
+        "Interactive Teaching Loop",
+    ),
+    (
+        "/v1/content-page",
+        ".section-card__title",
+        "Versioned Content Repository",
+    ),
+    (
+        "/v1/config-page",
+        ".section-card__title",
+        "Configuration Settings",
+    ),
+    (
+        "/v1/about",
+        ".section-card__title",
+        "About anvil",
+    ),
+    (
+        "/v1/hf-browser",
+        "h1",
+        "HuggingFace Model Browser",
+    ),
+    (
+        "/v1/eval-compare",
+        "h1",
+        "Fine-Tuned Model Evaluation",
+    ),
+    (
+        "/v1/acceptable-use",
+        ".section-card__title",
+        "Acceptable Use Policy",
+    ),
+    (
+        "/v1/learn/graph",
+        "h1",
+        "Forward Pass Explorer",
+    ),
+    (
+        "/login",
+        "#login-form",
+        "",
     ),
 ]
 
@@ -84,7 +132,11 @@ class TestNavigationSmoke:
         """Navigate to *route* and assert it loads cleanly."""
         checker = assert_no_console_errors(page)
         page.goto(f"{base_url}{route}")
-        page.wait_for_load_state("networkidle")
+        # Content page has SSE stream that keeps network active indefinitely
+        if route == "/v1/content-page":
+            page.wait_for_load_state("domcontentloaded")
+        else:
+            page.wait_for_load_state("networkidle")
 
         if selector:
             landmark = page.locator(selector)

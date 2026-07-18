@@ -47,9 +47,9 @@ class TestTeachUX:
         page.goto(f"{base_url}{TEACH_ROUTE}")
         page.wait_for_load_state("networkidle")
 
-        create_btn = page.locator("#empty-state-card #empty-state-create-btn")
-        create_btn.wait_for(state="visible", timeout=self.TIMEOUT)
-        create_btn.click()
+        # Fill session name and submit the form to create a session
+        page.fill("#session-name", "Test Session")
+        page.click("#create-session-form button[type='submit']")
 
         card = page.locator("#empty-state-card")
         card.wait_for(state="hidden", timeout=self.TIMEOUT)
@@ -72,10 +72,8 @@ class TestTeachUX:
         page.goto(f"{base_url}{TEACH_ROUTE}")
         page.wait_for_load_state("networkidle")
 
-        create_btn = page.locator("#empty-state-card #empty-state-create-btn")
-        create_btn.wait_for(state="visible", timeout=self.TIMEOUT)
-        create_btn.click()
-        page.wait_for_timeout(500)
+        page.fill("#session-name", "Test Session")
+        page.click("#create-session-form button[type='submit']")
 
         start_round_cta = page.locator("#start-round-cta")
         start_round_cta.wait_for(state="visible", timeout=self.TIMEOUT)
@@ -93,10 +91,8 @@ class TestTeachUX:
         page.goto(f"{base_url}{TEACH_ROUTE}")
         page.wait_for_load_state("networkidle")
 
-        create_btn = page.locator("#empty-state-card #empty-state-create-btn")
-        create_btn.wait_for(state="visible", timeout=self.TIMEOUT)
-        create_btn.click()
-        page.wait_for_timeout(500)
+        page.fill("#session-name", "Test Session")
+        page.click("#create-session-form button[type='submit']")
 
         delete_cta = page.locator("#delete-session-cta")
         delete_cta.wait_for(state="visible", timeout=self.TIMEOUT)
@@ -189,7 +185,7 @@ class TestTeachUX:
         page.goto(f"{base_url}{TEACH_ROUTE}")
         page.wait_for_load_state("networkidle")
 
-        banner_cta = page.locator(".section-card--banner")
+        banner_cta = page.locator("#didyouknow-banner")
         banner_cta.wait_for(state="attached", timeout=self.TIMEOUT)
 
         checker.assert_no_errors()

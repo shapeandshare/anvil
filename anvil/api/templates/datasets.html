@@ -139,13 +139,15 @@
     window.core.setUrlParams(params);
   }
 
-  function _restoreFiltersFromUrl() {
+function _restoreFiltersFromUrl() {
     if (!window.core) return;
     var params = window.core.getUrlParams();
     var q = params.get('q') || '';
-    var t = params.get('type') || 'all';
-    document.getElementById('hub-search').value = q;
-    document.getElementById('hub-type-filter').value = t;
+    var t = params.get('t') || 'all';
+    var searchEl = document.getElementById('hub-search');
+    var filterEl = document.getElementById('hub-type-filter');
+    if (searchEl) searchEl.value = q;
+    if (filterEl) filterEl.value = t;
     _currentSearch = q;
     _currentType = t;
   }
@@ -387,14 +389,18 @@
      ════════════════════════════════════════════════════════════ */
 
   function applyFilters() {
-    _currentSearch = document.getElementById('hub-search').value.trim();
-    _currentType = document.getElementById('hub-type-filter').value;
+    var searchEl = document.getElementById('hub-search');
+    var filterEl = document.getElementById('hub-type-filter');
+    if (searchEl) _currentSearch = searchEl.value.trim();
+    if (filterEl) _currentType = filterEl.value;
     _syncUrlParams();
     _renderFiltered();
   }
 
-  document.getElementById('hub-search').addEventListener('input', applyFilters);
-  document.getElementById('hub-type-filter').addEventListener('change', applyFilters);
+  var _searchInput = document.getElementById('hub-search');
+  var _filterSelect = document.getElementById('hub-type-filter');
+  if (_searchInput) _searchInput.addEventListener('input', applyFilters);
+  if (_filterSelect) _filterSelect.addEventListener('change', applyFilters);
 
   /* ════════════════════════════════════════════════════════════
      Event delegation
