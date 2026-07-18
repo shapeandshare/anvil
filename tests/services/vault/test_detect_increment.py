@@ -36,8 +36,8 @@ class TestMergeMessage:
             assert msg == ""
 
 
-class TestMainFeatMinor:
-    """Tests for ``main()`` with ``feat`` commit messages (→ MINOR)."""
+class TestMainConventionalCommit:
+    """Tests for ``main()`` with conventional commit messages."""
 
     @pytest.fixture(autouse=True)
     def _setup_env(
@@ -46,96 +46,89 @@ class TestMainFeatMinor:
         monkeypatch.delenv("GITHUB_EVENT_NAME", raising=False)
         yield
 
-    def test_feat_commit_returns_minor(
-        self, capsys: pytest.CaptureFixture[str]
-    ) -> None:
+    def test_feat_returns_auto(self, capsys: pytest.CaptureFixture[str]) -> None:
+        """A 'feat' merge message classifies as AUTO."""
         with (
             patch(
                 "anvil.services.vault.detect_increment._merge_message",
                 return_value="feat: add new training dashboard\n",
             ),
             patch(
-                "anvil.services.vault.detect_increment.read_version",
+                "anvil.services.vault.detect_increment._read_version",
                 return_value="0.5.0",
             ),
             patch(
-                "anvil.services.vault.detect_increment.parent_version",
+                "anvil.services.vault.detect_increment._parent_version",
                 return_value="0.5.0",
             ),
         ):
-            with pytest.raises(SystemExit):
-                main()
+            main()
         captured = capsys.readouterr()
-        assert "increment=MINOR" in captured.out
+        assert "increment=AUTO" in captured.out
         assert "version_changed=true" in captured.out
 
-    def test_fix_commit_returns_patch(self, capsys: pytest.CaptureFixture[str]) -> None:
+    def test_fix_returns_auto(self, capsys: pytest.CaptureFixture[str]) -> None:
+        """A 'fix' merge message classifies as AUTO."""
         with (
             patch(
                 "anvil.services.vault.detect_increment._merge_message",
                 return_value="fix: resolve model loading crash\n",
             ),
             patch(
-                "anvil.services.vault.detect_increment.read_version",
+                "anvil.services.vault.detect_increment._read_version",
                 return_value="0.5.0",
             ),
             patch(
-                "anvil.services.vault.detect_increment.parent_version",
+                "anvil.services.vault.detect_increment._parent_version",
                 return_value="0.5.0",
             ),
         ):
-            with pytest.raises(SystemExit):
-                main()
+            main()
         captured = capsys.readouterr()
-        assert "increment=PATCH" in captured.out
+        assert "increment=AUTO" in captured.out
         assert "version_changed=true" in captured.out
 
-    def test_breaking_commit_returns_major(
-        self,
-        capsys: pytest.CaptureFixture[str],
-    ) -> None:
+    def test_breaking_returns_auto(self, capsys: pytest.CaptureFixture[str]) -> None:
+        """A BREAKING CHANGE merge message classifies as AUTO."""
         with (
             patch(
                 "anvil.services.vault.detect_increment._merge_message",
-                return_value=("feat: rewrite engine\n\nBREAKING CHANGE: new API\n"),
+                return_value="feat: rewrite engine\n\nBREAKING CHANGE: new API\n",
             ),
             patch(
-                "anvil.services.vault.detect_increment.read_version",
+                "anvil.services.vault.detect_increment._read_version",
                 return_value="0.5.0",
             ),
             patch(
-                "anvil.services.vault.detect_increment.parent_version",
+                "anvil.services.vault.detect_increment._parent_version",
                 return_value="0.5.0",
             ),
         ):
-            with pytest.raises(SystemExit):
-                main()
+            main()
         captured = capsys.readouterr()
-        assert "increment=MAJOR" in captured.out
+        assert "increment=AUTO" in captured.out
         assert "version_changed=true" in captured.out
 
-    def test_chore_commit_returns_none(
-        self, capsys: pytest.CaptureFixture[str]
-    ) -> None:
+    def test_chore_returns_auto(self, capsys: pytest.CaptureFixture[str]) -> None:
+        """A 'chore' merge message classifies as AUTO."""
         with (
             patch(
                 "anvil.services.vault.detect_increment._merge_message",
                 return_value="chore: bump deps\n",
             ),
             patch(
-                "anvil.services.vault.detect_increment.read_version",
+                "anvil.services.vault.detect_increment._read_version",
                 return_value="0.5.0",
             ),
             patch(
-                "anvil.services.vault.detect_increment.parent_version",
+                "anvil.services.vault.detect_increment._parent_version",
                 return_value="0.5.0",
             ),
         ):
-            with pytest.raises(SystemExit):
-                main()
+            main()
         captured = capsys.readouterr()
-        assert "increment=NONE" in captured.out
-        assert "version_changed=false" in captured.out
+        assert "increment=AUTO" in captured.out
+        assert "version_changed=true" in captured.out
 
 
 class TestMainEnvOverrides:
@@ -149,15 +142,15 @@ class TestMainEnvOverrides:
         monkeypatch.setenv("GITHUB_EVENT_NAME", "workflow_dispatch")
         with (
             patch(
-                "anvil.services.vault.detect_increment.read_version",
+                "anvil.services.vault.detect_increment._read_version",
                 return_value="0.5.0",
             ),
             patch(
-                "anvil.services.vault.detect_increment.parent_version",
+                "anvil.services.vault.detect_increment._parent_version",
                 return_value="0.5.0",
             ),
         ):
-            main()  # workflow_dispatch path returns, does not sys.exit
+            main()
         captured = capsys.readouterr()
         assert "increment=PATCH" in captured.out
         assert "version_changed=true" in captured.out
@@ -170,15 +163,15 @@ class TestMainEnvOverrides:
         monkeypatch.delenv("GITHUB_EVENT_NAME", raising=False)
         with (
             patch(
-                "anvil.services.vault.detect_increment.read_version",
+                "anvil.services.vault.detect_increment._read_version",
                 return_value="0.6.0",
             ),
             patch(
-                "anvil.services.vault.detect_increment.parent_version",
+                "anvil.services.vault.detect_increment._parent_version",
                 return_value="0.5.0",
             ),
         ):
-            main()  # version_changed path returns, does not sys.exit
+            main()
         captured = capsys.readouterr()
         assert "increment=SKIP" in captured.out
         assert "version_changed=true" in captured.out
@@ -186,11 +179,11 @@ class TestMainEnvOverrides:
     def test_invalid_version_unknown(self, capsys: pytest.CaptureFixture[str]) -> None:
         with (
             patch(
-                "anvil.services.vault.detect_increment.read_version",
+                "anvil.services.vault.detect_increment._read_version",
                 return_value=None,
             ),
             patch(
-                "anvil.services.vault.detect_increment.parent_version",
+                "anvil.services.vault.detect_increment._parent_version",
                 return_value=None,
             ),
             patch(
@@ -198,8 +191,6 @@ class TestMainEnvOverrides:
                 return_value="",
             ),
         ):
-            with pytest.raises(SystemExit) as exc:
-                main()
-            assert exc.value.code == 0
+            main()
         captured = capsys.readouterr()
         assert "version=unknown" in captured.out

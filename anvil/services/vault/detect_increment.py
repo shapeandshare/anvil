@@ -5,18 +5,66 @@
 
 """Detect version increment from merge commit message.
 
-Classifies a merge commit by conventional commit type
-(``feat`` → MINOR, ``fix`` → PATCH, ``BREAKING CHANGE`` → MAJOR).
-Used by the release workflow to determine the version bump.
+Classifies a merge commit to decide whether a release should proceed.
+Outputs ``INCREMENT_TYPE`` (AUTO/PATCH/SKIP/NONE) for the release workflow.
+The actual version bump is delegated to ``cz bump`` (commitizen).
+
+Used by the ``anvil-vault detect-increment`` CLI subcommand from
+``.github/workflows/release.yml``.
 """
 
 from __future__ import annotations
 
 import os
+import re
 import subprocess
-import sys
 
-from .._shared.version_utils import classify_increment, parent_version, read_version
+
+def _read_version(filepath: str = "pyproject.toml") -> str | None:
+    """Extract the version string from a PEP 621 ``pyproject.toml``.
+
+    Parameters
+    ----------
+    filepath : str
+        Path to ``pyproject.toml`` (default: ``"pyproject.toml"``).
+
+    Returns
+    -------
+    str or None
+        The version string (e.g. ``"0.5.0"``), or ``None`` if not found.
+    """
+    try:
+        with open(filepath) as f:
+            for line in f:
+                m = re.match(r'^version = "(.+)"', line)
+                if m:
+                    return m.group(1)
+    except FileNotFoundError:
+        return None
+    return None
+
+
+def _parent_version() -> str | None:
+    """Read version from ``pyproject.toml`` at the parent git commit.
+
+    Returns
+    -------
+    str or None
+        Version string from ``HEAD^:pyproject.toml``, or ``None`` if
+        the parent commit does not exist or lacks a version field.
+    """
+    result = subprocess.run(
+        ["git", "show", "HEAD^:pyproject.toml"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return None
+    for line in result.stdout.splitlines():
+        m = re.match(r'^version = "(.+)"', line)
+        if m:
+            return m.group(1)
+    return None
 
 
 def _merge_message() -> str:
@@ -31,8 +79,8 @@ def _merge_message() -> str:
 
 def main() -> None:
     """Print ``key=value`` lines to stdout for ``$GITHUB_OUTPUT``."""
-    current = read_version() or "unknown"
-    prev = parent_version()
+    current = _read_version() or "unknown"
+    prev = _parent_version()
 
     print(f"version={current}")
     print(f"version_current={current}")
@@ -48,10 +96,17 @@ def main() -> None:
         print("version_changed=true")
         return
 
-    increment = classify_increment(_merge_message())
-    print(f"increment={increment}")
-    print(f"version_changed={'true' if increment != 'NONE' else 'false'}")
-    sys.exit(0)
+    msg = _merge_message()
+    if msg and re.match(
+        r"^(BREAKING CHANGE|feat|fix|perf|refactor|chore|docs|ci|test|style|build)",
+        msg,
+        re.IGNORECASE,
+    ):
+        print("increment=AUTO")
+        print("version_changed=true")
+    else:
+        print("increment=NONE")
+        print("version_changed=false")
 
 
 if __name__ == "__main__":

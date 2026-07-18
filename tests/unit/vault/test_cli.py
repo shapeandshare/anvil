@@ -135,42 +135,11 @@ class TestBuildParser:
         args = parser.parse_args(["check-bump-scope"])
         assert args.command == "check-bump-scope"
 
-    def test_bump_subcommand(self) -> None:
-        """Verify ``bump`` subcommand with increment."""
-        parser = build_parser()
-        args = parser.parse_args(["bump", "--increment", "MAJOR"])
-        assert args.command == "bump"
-        assert args.increment == "MAJOR"
-
-    def test_bump_invalid_increment(self) -> None:
-        """Verify invalid increment raises error."""
-        parser = build_parser()
-        with pytest.raises(SystemExit):
-            parser.parse_args(["bump", "--increment", "INVALID"])
-
-    def test_bump_patch(self) -> None:
-        """Verify ``bump-patch`` subcommand."""
-        parser = build_parser()
-        args = parser.parse_args(["bump-patch"])
-        assert args.command == "bump-patch"
-
     def test_detect_increment(self) -> None:
         """Verify ``detect-increment`` subcommand."""
         parser = build_parser()
         args = parser.parse_args(["detect-increment"])
         assert args.command == "detect-increment"
-
-    def test_check_version(self) -> None:
-        """Verify ``check-version`` subcommand."""
-        parser = build_parser()
-        args = parser.parse_args(["check-version"])
-        assert args.command == "check-version"
-
-    def test_build_notes(self) -> None:
-        """Verify ``build-notes`` subcommand."""
-        parser = build_parser()
-        args = parser.parse_args(["build-notes"])
-        assert args.command == "build-notes"
 
     def test_migrate_specs_dry_run(self) -> None:
         """Verify ``migrate-specs --dry-run``."""
@@ -266,11 +235,7 @@ class TestBuildParser:
             "check-adrs",
             "check-guarded-imports",
             "check-bump-scope",
-            "bump",
-            "bump-patch",
             "detect-increment",
-            "check-version",
-            "build-notes",
             "migrate-specs",
             "check-init-py",
             "check-relative-imports",
@@ -320,40 +285,10 @@ class TestMainDispatch:
             main(["check-bump-scope"])
         mock_check.assert_called_once()
 
-    @patch("anvil.services.vault.cli.bump_version_main")
-    def test_dispatch_bump_patch(self, mock_check: MagicMock) -> None:
-        """Verify ``bump-patch`` dispatches correctly."""
-        main(["bump-patch"])
-        mock_check.assert_called_once()
-
-    @patch("anvil.services.vault.cli.bump_main")
-    def test_dispatch_bump(self, mock_check: MagicMock) -> None:
-        """Verify ``bump`` dispatches correctly."""
-        main(["bump", "--increment", "PATCH"])
-        mock_check.assert_called_once_with(increment="PATCH")
-
-    @patch("anvil.services.vault.cli.bump_main")
-    def test_dispatch_bump_minor(self, mock_check: MagicMock) -> None:
-        """Verify ``bump --increment MINOR`` dispatches."""
-        main(["bump", "--increment", "MINOR"])
-        mock_check.assert_called_once_with(increment="MINOR")
-
     @patch("anvil.services.vault.cli.detect_increment_main")
     def test_dispatch_detect_increment(self, mock_check: MagicMock) -> None:
         """Verify ``detect-increment`` dispatches correctly."""
         main(["detect-increment"])
-        mock_check.assert_called_once()
-
-    @patch("anvil.services.vault.cli.check_version_main")
-    def test_dispatch_check_version(self, mock_check: MagicMock) -> None:
-        """Verify ``check-version`` dispatches correctly."""
-        main(["check-version"])
-        mock_check.assert_called_once()
-
-    @patch("anvil.services.vault.cli.build_notes_main")
-    def test_dispatch_build_notes(self, mock_check: MagicMock) -> None:
-        """Verify ``build-notes`` dispatches correctly."""
-        main(["build-notes"])
         mock_check.assert_called_once()
 
     @patch("anvil.services.vault.cli.migrate_specs_run")

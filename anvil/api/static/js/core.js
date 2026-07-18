@@ -173,12 +173,15 @@
       newScript = document.createElement('script');
       for (j = 0; j < oldScript.attributes.length; j++) {
         attr = oldScript.attributes[j];
+        if (!attr) continue;
         if (attr.name === 'nonce') continue;
         newScript.setAttribute(attr.name, attr.value);
       }
       if (pageNonce) newScript.setAttribute('nonce', pageNonce);
       newScript.textContent = oldScript.textContent;
-      oldScript.parentNode.replaceChild(newScript, oldScript);
+      if (oldScript.parentNode) {
+        oldScript.parentNode.replaceChild(newScript, oldScript);
+      }
     }
   }
 
@@ -285,6 +288,7 @@
             var ns = document.createElement('script');
             for (j = 0; j < s.attributes.length; j++) {
               attr = s.attributes[j];
+              if (!attr) continue;
               ns.setAttribute(attr.name, attr.value);
             }
             ns.onload = _flushInlines;

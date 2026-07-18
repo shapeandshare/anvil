@@ -1,10 +1,7 @@
 # Release workflow for anvil
 #
-# Single workflow handling version detection, bumping, and release.
-# Replaces the old Release + Auto Bump dual-workflow design.
-#
 # On push to main (with source changes): classifies the merge commit via
-# conventional commit → bumps MAJOR/MINOR/PATCH via anvil-vault → creates
+# conventional commit → bumps version via commitizen → creates
 # an auto-merge bump PR → tags + GitHub Release.
 #
 # workflow_dispatch is available as an escape hatch for edge cases where
@@ -14,6 +11,8 @@
 # - BUMP_PAT: Fine-grained PAT with Contents: write, Pull requests: write,
 #   Workflows: write permissions. Required because GITHUB_TOKEN PRs
 #   don't trigger CI checks under branch protection.
+#
+# Required dev dependency: commitizen>=4 (handles version bump + changelog)
 
 name: Release
 
@@ -65,7 +64,7 @@ jobs:
           anvil-vault detect-increment >> "$GITHUB_OUTPUT"
 
   # ---------------------------------------------------------------------------
-  # Job 2 -- Bump version, create auto-merge PR, tag, and GitHub Release
+  # Job 2 -- Bump version via commitizen, create auto-merge PR, tag, release
   # ---------------------------------------------------------------------------
   release:
     name: Bump and Release
@@ -86,8 +85,9 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install anvil
-        run: pip install .
+      - name: Install anvil + commitizen
+        run: |
+          pip install . "commitizen>=4,<5"
 
       # -----------------------------------------------------------------------
       # Preflight + classification
@@ -141,22 +141,36 @@ jobs:
           echo "Skipping release."
 
       # -----------------------------------------------------------------------
-      # Version bump — skipped if version was already bumped manually
+      # Version bump via commitizen
       # -----------------------------------------------------------------------
-      - name: Bump version
+      - name: Bump version via commitizen
         id: bump
         if: steps.preflight.outputs.skip != 'true' && steps.preflight.outputs.skip-bump != 'true'
         run: |
           set -euo pipefail
 
           INCREMENT="${{ needs.detect.outputs.increment }}"
-          echo "Running anvil-vault bump --increment ${INCREMENT}"
 
-          anvil-vault bump --increment "${INCREMENT}"
+          if [ "${INCREMENT}" = "AUTO" ]; then
+            echo "Running: cz bump --changelog --yes"
+            cz bump --changelog --yes
+          elif [ "${INCREMENT}" = "PATCH" ]; then
+            echo "Running: cz bump --changelog --yes --increment PATCH"
+            cz bump --changelog --yes --increment PATCH
+          fi
 
+          # Read the new version after bump
           NEW_VERSION=$(grep '^version =' pyproject.toml \
             | sed 's/version = "\(.*\)"/\1/')
           echo "new_version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+
+          # cz bump creates a git tag. We delete it here because the tag
+          # should point at main AFTER the bump PR merges, not at the
+          # bump branch. We'll re-create the tag after the PR is merged.
+          TAG="v${NEW_VERSION}"
+          git tag -d "${TAG}" || true
+          echo "Deleted local tag ${TAG} (will re-tag after PR merge)"
+
           echo "Version bumped to: ${NEW_VERSION}"
 
       - name: Read current version (skip-bump case, e.g. manual bump)
@@ -168,47 +182,19 @@ jobs:
           echo "new_version=${VERSION}" >> "$GITHUB_OUTPUT"
 
       # -----------------------------------------------------------------------
-      # Build release notes (from CHANGELOG and PR description)
+      # Build release notes from CHANGELOG
       # -----------------------------------------------------------------------
-      - name: Fetch PR description
-        id: pr-description
-        if: steps.preflight.outputs.skip != 'true'
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-
-          BRANCH=$(git log -1 --merges --format=%P | head -n1 || echo "")
-          if [ -z "${BRANCH}" ]; then
-            echo "Not a merge commit — no PR description available."
-            exit 0
-          fi
-
-          PR_BODY=$(gh pr list --state merged --head "${BRANCH}" \
-            --json body --jq '.[0].body' 2>/dev/null || echo "")
-          echo "pr_body<<PR_EOF" >> "$GITHUB_OUTPUT"
-          echo "${PR_BODY}" >> "$GITHUB_OUTPUT"
-          echo "PR_EOF" >> "$GITHUB_OUTPUT"
-
-          if [ -n "${PR_BODY}" ]; then
-            echo "PR description fetched (${#PR_BODY} chars)"
-          else
-            echo "No PR description found or fetch failed"
-          fi
-
       - name: Build release notes
         id: release-notes
         if: steps.preflight.outputs.skip != 'true'
-        env:
-          PR_BODY: ${{ steps.pr-description.outputs.pr_body }}
         run: |
           set -euo pipefail
 
-          anvil-vault build-notes
-
           VERSION="${{ steps.bump.outputs.new_version || steps.version-read.outputs.new_version }}"
           TAG="v${VERSION}"
+
+          # Extract the latest changelog entry as release notes
+          awk '/^## v/{if(seen) exit; seen=1} seen' CHANGELOG.md > release-notes.md
 
           if git tag --list "${TAG}" | grep -q "${TAG}"; then
             echo "Tag ${TAG} already exists — idempotent re-run detected."
@@ -234,21 +220,14 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # anvil-vault bump modifies files in-place. Create a commit,
-          # branch, with a descriptive message. No [skip ci] needed:
-          # the release workflow's path filter (anvil/** only) already
-          # prevents loop-triggering when the bump PR merges.
+          # cz bump has already committed pyproject.toml + CHANGELOG.md.
+          # Create a branch from that commit and push it.
           git checkout -b "${BRANCH}"
-          git add pyproject.toml CHANGELOG.md
-          git commit -m "chore: bump version to v${VERSION}
-
-          Automated version bump from release workflow."
-
           git push origin "${BRANCH}"
 
           PR_URL=$(gh pr create \
             --title "chore: bump version to v${VERSION}" \
-            --body "Automated version bump from release workflow." \
+            --body "Automated version bump from release workflow using commitizen." \
             --base main \
             --head "${BRANCH}")
 

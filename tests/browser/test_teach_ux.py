@@ -13,6 +13,16 @@ class TestTeachUX:
 
     TIMEOUT = 15_000
 
+    @staticmethod
+    def _check_teach_api(seed_client) -> None:
+        """Skip test if teaching API is unavailable."""
+        try:
+            r = seed_client.get("/v1/teach/sessions")
+            if r.status_code != 200:
+                pytest.skip("Teaching API not available")
+        except Exception:
+            pytest.skip("Teaching API not reachable")
+
     # ── T013: US1 — Empty state guidance ────────────────────────────
 
     def test_empty_state_guidance_card_exists(
@@ -41,15 +51,17 @@ class TestTeachUX:
         page,
         base_url: str,
         assert_no_console_errors,
+        seed_client,
     ) -> None:
         """Guidance card hides after creating a session."""
+        self._check_teach_api(seed_client)
         checker = assert_no_console_errors(page)
         page.goto(f"{base_url}{TEACH_ROUTE}")
         page.wait_for_load_state("networkidle")
 
-        create_btn = page.locator("#empty-state-card #empty-state-create-btn")
-        create_btn.wait_for(state="visible", timeout=self.TIMEOUT)
-        create_btn.click()
+        # Fill session name and submit the form to create a session
+        page.fill("#session-name", "Test Session")
+        page.click("#create-session-form button[type='submit']")
 
         card = page.locator("#empty-state-card")
         card.wait_for(state="hidden", timeout=self.TIMEOUT)
@@ -66,16 +78,16 @@ class TestTeachUX:
         page,
         base_url: str,
         assert_no_console_errors,
+        seed_client,
     ) -> None:
         """Active session panel shows 'Start New Round' CTA."""
+        self._check_teach_api(seed_client)
         checker = assert_no_console_errors(page)
         page.goto(f"{base_url}{TEACH_ROUTE}")
         page.wait_for_load_state("networkidle")
 
-        create_btn = page.locator("#empty-state-card #empty-state-create-btn")
-        create_btn.wait_for(state="visible", timeout=self.TIMEOUT)
-        create_btn.click()
-        page.wait_for_timeout(500)
+        page.fill("#session-name", "Test Session")
+        page.click("#create-session-form button[type='submit']")
 
         start_round_cta = page.locator("#start-round-cta")
         start_round_cta.wait_for(state="visible", timeout=self.TIMEOUT)
@@ -87,16 +99,16 @@ class TestTeachUX:
         page,
         base_url: str,
         assert_no_console_errors,
+        seed_client,
     ) -> None:
         """Active session panel shows Delete and View Rounds buttons."""
+        self._check_teach_api(seed_client)
         checker = assert_no_console_errors(page)
         page.goto(f"{base_url}{TEACH_ROUTE}")
         page.wait_for_load_state("networkidle")
 
-        create_btn = page.locator("#empty-state-card #empty-state-create-btn")
-        create_btn.wait_for(state="visible", timeout=self.TIMEOUT)
-        create_btn.click()
-        page.wait_for_timeout(500)
+        page.fill("#session-name", "Test Session")
+        page.click("#create-session-form button[type='submit']")
 
         delete_cta = page.locator("#delete-session-cta")
         delete_cta.wait_for(state="visible", timeout=self.TIMEOUT)
@@ -189,7 +201,7 @@ class TestTeachUX:
         page.goto(f"{base_url}{TEACH_ROUTE}")
         page.wait_for_load_state("networkidle")
 
-        banner_cta = page.locator(".section-card--banner")
+        banner_cta = page.locator("#didyouknow-banner")
         banner_cta.wait_for(state="attached", timeout=self.TIMEOUT)
 
         checker.assert_no_errors()

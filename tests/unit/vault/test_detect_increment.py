@@ -1,14 +1,14 @@
 """Unit tests for anvil/services/vault/detect_increment.py.
 
 Tests merge message detection and the main() entry point by
-mocking subprocess and version_utils calls.
+mocking subprocess and file I/O calls.
 """
 
 from __future__ import annotations
 
 import os
 import sys
-from unittest.mock import patch
+from unittest.mock import mock_open, patch
 
 import pytest
 
@@ -70,27 +70,14 @@ def _run_main(
     github_event : str or None
         GITHUB_EVENT_NAME env value (None = not set).
     """
-    # Patch at the import site in detect_increment (direct imports)
     with (
         patch(
-            "anvil.services.vault.detect_increment.read_version",
+            "anvil.services.vault.detect_increment._read_version",
             return_value=version,
         ),
         patch(
-            "anvil.services.vault.detect_increment.parent_version",
+            "anvil.services.vault.detect_increment._parent_version",
             return_value=parent_ver,
-        ),
-        patch(
-            "anvil.services.vault.detect_increment.classify_increment",
-            wraps=lambda msg: (
-                "MAJOR"
-                if "BREAKING" in msg.upper()
-                else (
-                    "MINOR"
-                    if msg.startswith("feat")
-                    else "PATCH" if msg.startswith("fix") else "NONE"
-                )
-            ),
         ),
         patch(
             "anvil.services.vault.detect_increment._merge_message",
@@ -105,24 +92,24 @@ def _run_main(
             main()
 
 
-def test_main_feat_minor(capsys: pytest.CaptureFixture) -> None:
-    """A 'feat' merge message classifies as MINOR."""
+def test_main_feat_auto(capsys: pytest.CaptureFixture) -> None:
+    """A 'feat' merge message classifies as AUTO (commitizen handles it)."""
     _run_main(capsys, merge_msg="feat: add widget", version="0.5.0", parent_ver="0.5.0")
     captured = capsys.readouterr()
-    assert "increment=MINOR" in captured.out
+    assert "increment=AUTO" in captured.out
     assert "version_changed=true" in captured.out
 
 
-def test_main_fix_patch(capsys: pytest.CaptureFixture) -> None:
-    """A 'fix' merge message classifies as PATCH."""
+def test_main_fix_auto(capsys: pytest.CaptureFixture) -> None:
+    """A 'fix' merge message classifies as AUTO (commitizen handles it)."""
     _run_main(capsys, merge_msg="fix: resolve bug", version="0.5.0", parent_ver="0.5.0")
     captured = capsys.readouterr()
-    assert "increment=PATCH" in captured.out
+    assert "increment=AUTO" in captured.out
     assert "version_changed=true" in captured.out
 
 
-def test_main_breaking_major(capsys: pytest.CaptureFixture) -> None:
-    """A message containing BREAKING CHANGE classifies as MAJOR."""
+def test_main_breaking_auto(capsys: pytest.CaptureFixture) -> None:
+    """A message containing BREAKING CHANGE classifies as AUTO."""
     _run_main(
         capsys,
         merge_msg="feat: big change\n\nBREAKING CHANGE: api changed",
@@ -130,12 +117,12 @@ def test_main_breaking_major(capsys: pytest.CaptureFixture) -> None:
         parent_ver="0.5.0",
     )
     captured = capsys.readouterr()
-    assert "increment=MAJOR" in captured.out
+    assert "increment=AUTO" in captured.out
     assert "version_changed=true" in captured.out
 
 
-def test_main_chore_none(capsys: pytest.CaptureFixture) -> None:
-    """A chore merge message classifies as NONE."""
+def test_main_chore_auto(capsys: pytest.CaptureFixture) -> None:
+    """A chore merge message classifies as AUTO (commitizen handles it)."""
     _run_main(
         capsys,
         merge_msg="chore: update deps",
@@ -143,8 +130,8 @@ def test_main_chore_none(capsys: pytest.CaptureFixture) -> None:
         parent_ver="0.5.0",
     )
     captured = capsys.readouterr()
-    assert "increment=NONE" in captured.out
-    assert "version_changed=false" in captured.out
+    assert "increment=AUTO" in captured.out
+    assert "version_changed=true" in captured.out
 
 
 def test_main_version_changed_skip(capsys: pytest.CaptureFixture) -> None:
@@ -163,12 +150,12 @@ def test_main_workflow_dispatch_patch(capsys: pytest.CaptureFixture) -> None:
     assert "version_changed=true" in captured.out
 
 
-def test_main_no_parent_version(capsys: pytest.CaptureFixture) -> None:
-    """When parent version is None, version_prev='none'."""
+def test_main_no_parent_auto(capsys: pytest.CaptureFixture) -> None:
+    """When parent version is None, classification falls through to merge msg."""
     _run_main(capsys, parent_ver=None, merge_msg="fix: init")
     captured = capsys.readouterr()
     assert "version_prev=none" in captured.out
-    assert "increment=PATCH" in captured.out
+    assert "increment=AUTO" in captured.out
 
 
 def test_main_outputs_version(capsys: pytest.CaptureFixture) -> None:
