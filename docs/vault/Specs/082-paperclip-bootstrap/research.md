@@ -2,7 +2,7 @@
 
 **Phase**: 0 — Outline & Research  
 **Date**: 2026-07-05  
-**Feature**: Bootstrap Anvil into Paperclip (`specs/065-paperclip-bootstrap/spec.md`)
+**Feature**: Bootstrap Anvil into Paperclip (`docs/vault/Specs/082-paperclip-bootstrap/spec.md`)
 
 ## Research Questions
 

@@ -1,6 +1,6 @@
 # Feature Specification: Config Migration to pydantic-settings
 
-**Feature Branch**: `066-config-pydantic-settings`  
+**Feature Branch**: `083-config-pydantic-settings`  
 **Created**: 2026-07-18  
 **Status**: Draft  
 **Priority**: P0  
