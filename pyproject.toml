@@ -55,7 +55,7 @@ anvil = [
 
 [project.optional-dependencies]
 gpu = [
-    "torch>=2.0,<3",
+    "torch>=2.13.0,<3",
     "nvidia-ml-py>=12,<13",
 ]
 compute = [
