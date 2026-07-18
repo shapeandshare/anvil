@@ -49,7 +49,7 @@ class TestDatasetUpload:
             )
 
             # Wait for success toast instead of checking table text
-            page.locator(".toast-success").first.wait_for(
+            page.locator(".toast-success").wait_for(
                 state="visible", timeout=self.TIMEOUT
             )
         finally:
@@ -116,8 +116,10 @@ class TestDatasetClone:
         page,
         base_url: str,
         dataset_seed: dict,
+        assert_no_console_errors,
     ) -> None:
         """Clone a dataset via the fork form."""
+        checker = assert_no_console_errors(page)
         page.goto(f"{base_url}/v1/datasets-page")
         page.wait_for_load_state("networkidle")
 
@@ -128,8 +130,6 @@ class TestDatasetClone:
 
         # Click fork button
         fork_btn = page.locator(f".fork-btn[data-id='{ds_id}']")
-        if fork_btn.count() == 0:
-            pytest.skip("Fork button not found")
         fork_btn.wait_for(state="visible", timeout=self.TIMEOUT)
         fork_btn.click()
 
@@ -141,16 +141,11 @@ class TestDatasetClone:
         # Execute clone
         exec_btn = page.locator(f"tr[data-id='{ds_id}'] .fork-execute")
         exec_btn.click()
-        page.wait_for_timeout(2000)
+        page.wait_for_timeout(500)
 
-        toast = page.locator(".toast-success")
-        if toast.count() > 0:
-            toast.first.wait_for(state="visible", timeout=5000)
-        else:
-            page.locator("#hub-search").fill(clone_name)
-            page.wait_for_timeout(500)
-            tbody = page.locator("#combined-tbody")
-            assert clone_name in (tbody.text_content() or "")
+        # Wait for success toast instead of checking table text
+        page.locator(".toast-success").wait_for(state="visible", timeout=self.TIMEOUT)
+        checker.assert_no_errors()
 
 
 @pytest.mark.usefixtures("_readiness_check")

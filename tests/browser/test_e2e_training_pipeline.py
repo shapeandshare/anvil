@@ -12,8 +12,8 @@ import tempfile
 
 import pytest
 
-SSE_TIMEOUT = 120_000
-TIMEOUT = 15_000
+SSE_TIMEOUT = 120_000  # 120 seconds (Docker CI latency)
+TIMEOUT = 15_000  # 15 seconds for regular waits
 
 
 @pytest.mark.usefixtures("_readiness_check")
@@ -24,17 +24,9 @@ class TestTrainingPipelineFlow:
         self,
         page,
         base_url: str,
-        seed_client,
         assert_no_console_errors,
     ) -> None:
         """Exercise the full training pipeline and verify each stage."""
-        # Skip if training endpoint is unavailable in this environment
-        try:
-            r = seed_client.get("/v1/training/configs")
-            if r.status_code != 200:
-                pytest.skip("Training API not available")
-        except Exception:
-            pytest.skip("Training API not reachable")
         checker = assert_no_console_errors(page)
 
         ####################################################################

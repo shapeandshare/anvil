@@ -68,8 +68,8 @@ PAGES: list[tuple[str, str, str]] = [
     ),
     (
         "/v1/content-page",
-        "",
-        "",
+        ".section-card__title",
+        "Versioned Content Repository",
     ),
     (
         "/v1/config-page",
