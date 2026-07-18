@@ -18,7 +18,6 @@ from __future__ import annotations
 import os
 import re
 import subprocess
-import sys
 
 
 def _read_version(filepath: str = "pyproject.toml") -> str | None:

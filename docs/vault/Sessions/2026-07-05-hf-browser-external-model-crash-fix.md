@@ -7,6 +7,9 @@ tags:
   - domain/architecture
 created: '2026-07-05'
 updated: '2026-07-05'
+aliases:
+  - hf-browser-external-model-crash-fix
+source: agent
 ---
 # Fix HF Browser 500: ExternalModel table dropped by migration 013
 

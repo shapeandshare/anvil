@@ -193,10 +193,11 @@ class ModelCatalogService:
             try:
                 with os.fdopen(fd, "w") as f:
                     f.write(config_json)
-                await loop.run_in_executor(
-                    None,
-                    lambda p=tmp_path: client.log_artifact(run_id, p, artifact_path=""),
-                )
+
+                def _log_artifact(path: str = tmp_path) -> None:
+                    client.log_artifact(run_id, path, artifact_path="")
+
+                await loop.run_in_executor(None, _log_artifact)
             finally:
                 os.unlink(tmp_path)
 

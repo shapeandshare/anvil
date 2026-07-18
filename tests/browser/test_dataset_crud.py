@@ -49,7 +49,7 @@ class TestDatasetUpload:
             )
 
             # Wait for success toast instead of checking table text
-            page.locator(".toast-success").wait_for(
+            page.locator(".toast-success").first.wait_for(
                 state="visible", timeout=self.TIMEOUT
             )
         finally:
@@ -111,48 +111,46 @@ class TestDatasetClone:
 
     TIMEOUT = 15_000
 
+    def test_clone_dataset(
+        self,
+        page,
+        base_url: str,
+        dataset_seed: dict,
+    ) -> None:
+        """Clone a dataset via the fork form."""
+        page.goto(f"{base_url}/v1/datasets-page")
+        page.wait_for_load_state("networkidle")
 
-def test_clone_dataset(
-    self,
-    page,
-    base_url: str,
-    dataset_seed: dict,
-) -> None:
-    """Clone a dataset via the fork form."""
-    page.goto(f"{base_url}/v1/datasets-page")
-    page.wait_for_load_state("networkidle")
+        ds_id = dataset_seed.get("id", dataset_seed.get("data", {}).get("id"))
+        assert ds_id is not None
 
-    ds_id = dataset_seed.get("id", dataset_seed.get("data", {}).get("id"))
-    assert ds_id is not None
+        clone_name = f"clone-{uuid.uuid4().hex[:8]}"
 
-    clone_name = f"clone-{uuid.uuid4().hex[:8]}"
+        # Click fork button
+        fork_btn = page.locator(f".fork-btn[data-id='{ds_id}']")
+        if fork_btn.count() == 0:
+            pytest.skip("Fork button not found")
+        fork_btn.wait_for(state="visible", timeout=self.TIMEOUT)
+        fork_btn.click()
 
-    # Click fork button
-    fork_btn = page.locator(f".fork-btn[data-id='{ds_id}']")
-    if fork_btn.count() == 0:
-        pytest.skip("Fork button not found — clone API may be unavailable")
-    fork_btn.wait_for(state="visible", timeout=self.TIMEOUT)
-    fork_btn.click()
+        # Fill fork name
+        name_input = page.locator(f"tr[data-id='{ds_id}'] .fork-name")
+        name_input.wait_for(state="visible", timeout=self.TIMEOUT)
+        name_input.fill(clone_name)
 
-    # Fill fork name
-    name_input = page.locator(f"tr[data-id='{ds_id}'] .fork-name")
-    name_input.wait_for(state="visible", timeout=self.TIMEOUT)
-    name_input.fill(clone_name)
+        # Execute clone
+        exec_btn = page.locator(f"tr[data-id='{ds_id}'] .fork-execute")
+        exec_btn.click()
+        page.wait_for_timeout(2000)
 
-    # Execute clone
-    exec_btn = page.locator(f"tr[data-id='{ds_id}'] .fork-execute")
-    exec_btn.click()
-    page.wait_for_timeout(2000)
-
-    # If toast appears, clone succeeded. Otherwise fall back to table check.
-    toast = page.locator(".toast-success")
-    if toast.count() > 0:
-        toast.first.wait_for(state="visible", timeout=5000)
-    else:
-        page.locator("#hub-search").fill(clone_name)
-        page.wait_for_timeout(500)
-        tbody = page.locator("#combined-tbody")
-        assert clone_name in (tbody.text_content() or "")
+        toast = page.locator(".toast-success")
+        if toast.count() > 0:
+            toast.first.wait_for(state="visible", timeout=5000)
+        else:
+            page.locator("#hub-search").fill(clone_name)
+            page.wait_for_timeout(500)
+            tbody = page.locator("#combined-tbody")
+            assert clone_name in (tbody.text_content() or "")
 
 
 @pytest.mark.usefixtures("_readiness_check")

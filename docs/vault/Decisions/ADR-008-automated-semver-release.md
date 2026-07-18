@@ -1,7 +1,25 @@
+---
+title: 'ADR-008: Automated Semantic Versioning & Release'
+type: decision
+tags:
+  - type/decision
+  - domain/tooling
+  - domain/infrastructure
+status: reviewed
+created: '2026-06-14'
+updated: '2026-07-18'
+code-refs:
+  - pyproject.toml
+  - .github/workflows/release.yml
+aliases:
+  - ADR-008-automated-semver-release
+source: agent
+---
+
 # ADR-008: Automated Semantic Versioning & Release
 
 **Date**: 2026-06-14  
-**Status**: Accepted  
+**Status**: Reviewed  
 **Updated**: 2026-07-18  
 
 **Deciders**: anvil contributors  

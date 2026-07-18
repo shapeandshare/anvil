@@ -110,9 +110,14 @@ class ModelAssetService:
         Raises
         ------
         ModelRefNotFoundError
-            If the model cannot be found.
+            If the model cannot be found or the catalog identity
+            repository is unavailable.
         """
         # Scan catalog identities for one matching the ref name.
+        if self._catalog_identity_repo is None:
+            raise ModelRefNotFoundError(
+                "Catalog identity repository is not available"
+            )
         identities = await self._catalog_identity_repo.find_all()
         target = None
         for identity in identities:
@@ -159,8 +164,12 @@ class ModelAssetService:
             A download job for this model is already in flight.
         """
         # Resolve external_model_id from catalog identity (legacy FK)
-        identity = await self._identity_repo.find_latest_by_source_identifier(
-            "huggingface", source_identifier
+        identity = (
+            await self._identity_repo.find_latest_by_source_identifier(
+                "huggingface", source_identifier
+            )
+            if self._identity_repo is not None
+            else None
         )
         model_id = identity.id if identity is not None else 0
 

@@ -1,8 +1,15 @@
 ---
+title: 'Session: Replace Custom Version Bump Code with Commitizen'
+type: session-log
 tags:
   - type/session-log
   - domain/tooling
   - domain/infrastructure
+created: '2026-07-18'
+updated: '2026-07-18'
+aliases:
+  - commitizen-version-management
+source: agent
 ---
 # Session Log: Replace Custom Version Bump Code with Commitizen
 
