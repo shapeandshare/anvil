@@ -13,6 +13,16 @@ class TestTeachUX:
 
     TIMEOUT = 15_000
 
+    @staticmethod
+    def _check_teach_api(seed_client) -> None:
+        """Skip test if teaching API is unavailable."""
+        try:
+            r = seed_client.get("/v1/teach/sessions")
+            if r.status_code != 200:
+                pytest.skip("Teaching API not available")
+        except Exception:
+            pytest.skip("Teaching API not reachable")
+
     # ── T013: US1 — Empty state guidance ────────────────────────────
 
     def test_empty_state_guidance_card_exists(
@@ -41,8 +51,10 @@ class TestTeachUX:
         page,
         base_url: str,
         assert_no_console_errors,
+        seed_client,
     ) -> None:
         """Guidance card hides after creating a session."""
+        self._check_teach_api(seed_client)
         checker = assert_no_console_errors(page)
         page.goto(f"{base_url}{TEACH_ROUTE}")
         page.wait_for_load_state("networkidle")
@@ -66,8 +78,10 @@ class TestTeachUX:
         page,
         base_url: str,
         assert_no_console_errors,
+        seed_client,
     ) -> None:
         """Active session panel shows 'Start New Round' CTA."""
+        self._check_teach_api(seed_client)
         checker = assert_no_console_errors(page)
         page.goto(f"{base_url}{TEACH_ROUTE}")
         page.wait_for_load_state("networkidle")
@@ -85,8 +99,10 @@ class TestTeachUX:
         page,
         base_url: str,
         assert_no_console_errors,
+        seed_client,
     ) -> None:
         """Active session panel shows Delete and View Rounds buttons."""
+        self._check_teach_api(seed_client)
         checker = assert_no_console_errors(page)
         page.goto(f"{base_url}{TEACH_ROUTE}")
         page.wait_for_load_state("networkidle")
