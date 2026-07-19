@@ -234,4 +234,4 @@ changelog_file = "CHANGELOG.md"
 # conventional commit).  Using a non-standard prefix means cz bump
 # --changelog won't include the bump commit itself — only the actual
 # source PR changes appear in the CHANGELOG.
-bump_message = "release v{new_version} [skip ci]"
+bump_message = "release v$new_version [skip ci]"
