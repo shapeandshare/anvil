@@ -236,6 +236,31 @@ async def operations_page(request: Request) -> HTMLResponse:
     )
 
 
+@router.get("/feedback-page", response_class=HTMLResponse)
+async def feedback_page(request: Request) -> HTMLResponse:
+    """Render the visual feedback annotation management page.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming HTTP request.
+
+    Returns
+    -------
+    HTMLResponse
+        Rendered ``feedback.html`` template.
+    """
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
+        request,
+        "feedback.html",
+        {
+            "related_lessons": related_lessons(
+                "data-fundamentals", "chunking", "governance"
+            ),
+        },
+    )
+
+
 @router.get("/inference-page", response_class=HTMLResponse)
 async def inference_page(request: Request) -> HTMLResponse:
     """Render the model inference/sampling playground page.

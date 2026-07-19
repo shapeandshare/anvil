@@ -38,6 +38,7 @@ from .db.repositories.corpora import CorpusRepository
 from .db.repositories.datasets import DatasetRepository
 from .db.repositories.evaluation_runs import EvaluationRunRepository
 from .db.repositories.external_models import ExternalModelRepository
+from .db.repositories.feedback_repository import FeedbackRepository
 from .db.repositories.fine_tune_datasets import FineTuneDatasetRepository
 from .db.repositories.instance_registry import (
     InstanceRegistryRepository,
@@ -71,6 +72,7 @@ from .services.datasets.dataset_import import DatasetImportService
 from .services.datasets.datasets import DatasetService
 from .services.demo.demo_bootstrap import DemoBootstrapService
 from .services.evaluation.evaluation_service import EvaluationService
+from .services.feedback.feedback_service import FeedbackService
 from .services.governance.audit_action import AuditAction
 from .services.governance.audit_outcome import AuditOutcome
 from .services.governance.audit_service import AuditService
@@ -194,6 +196,8 @@ class AnvilWorkbench:
         # MLflow Model Catalog (feature 064).
         self._catalog: ModelCatalogService | None = None
         self._catalog_identity_repo: CatalogIdentityRepository | None = None
+        # Visual Feedback Annotation (feature 001).
+        self._feedback: FeedbackService | None = None
 
     # ── Stateless service accessors ─────────────────────────────────────
 
@@ -755,6 +759,28 @@ class AnvilWorkbench:
                 catalog_identity_repo=self.catalog_identity_repo,
             )
         return self._model_assets
+
+    # ── Visual Feedback Annotation (feature 001) ─────────────────────────
+
+    @property
+    def feedback(self) -> FeedbackService:
+        """Lazy-initialised ``FeedbackService`` wired to *session*.
+
+        Stores screenshot files under the workspace ``feedback_dir``
+        via a dedicated ``LocalFileStore``.
+        """
+        if self._feedback is None:
+            feedback_dir = (
+                str(self._paths.feedback_dir)
+                if self._paths is not None
+                else "data/feedback"
+            )
+            self._feedback = FeedbackService(
+                repo=FeedbackRepository(self._session),
+                store=LocalFileStore(feedback_dir),
+                paths=self._paths,
+            )
+        return self._feedback
 
     # ── Session lifecycle ───────────────────────────────────────────────
 

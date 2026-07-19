@@ -3,7 +3,6 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-
 SPECS_DIR = Path("docs/vault/Specs")
 
 # Specs with clear codebase implementation evidence:
@@ -14,14 +13,27 @@ SPECS_DIR = Path("docs/vault/Specs")
 # data-model, research, quickstart, + checklists or contracts) are shipped.
 # Specs with <7 artifacts are incomplete — draft.
 SHIPPED = {
-    26, 27,  # Client SDK (7), Deployment Backup Restore (8)
-    39, 40, 41, 42, 43,  # Model warm-start (7), External registry (7), HF browser (7), Asset storage (7), Tokenizer (7)
-    44, 45, 46,  # LoRA (7), Adapter export (7), Compute routing (7)
-    53, 54, 55,  # Dataset prep (7), Eval (7), Teaching (7)
-    57, 58,  # Degraded mode (8), Secrets (7)
-    60, 61,  # Theme consistency (7), Startup recovery (7)
-    63, 64,  # Usable external models (8), MLflow catalog (8)
-    81, 82,  # Teach CTA (7), Paperclip bootstrap (8)
+    26,
+    27,  # Client SDK (7), Deployment Backup Restore (8)
+    39,
+    40,
+    41,
+    42,
+    43,  # Model warm-start (7), External registry (7), HF browser (7), Asset storage (7), Tokenizer (7)
+    44,
+    45,
+    46,  # LoRA (7), Adapter export (7), Compute routing (7)
+    53,
+    54,
+    55,  # Dataset prep (7), Eval (7), Teaching (7)
+    57,
+    58,  # Degraded mode (8), Secrets (7)
+    60,
+    61,  # Theme consistency (7), Startup recovery (7)
+    63,
+    64,  # Usable external models (8), MLflow catalog (8)
+    81,
+    82,  # Teach CTA (7), Paperclip bootstrap (8)
 }
 
 # Specs that were superseded by other specs
@@ -54,7 +66,9 @@ def main() -> None:
 
     for filepath in sorted(SPECS_DIR.rglob("*.md")):
         # Only update main spec files (have spec_number)
-        if not filepath.name.startswith(("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")):
+        if not filepath.name.startswith(
+            ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
+        ):
             continue
         if " - " in filepath.stem[4:]:
             continue

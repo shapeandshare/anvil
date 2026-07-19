@@ -1,0 +1,609 @@
+<!--
+  ~ Copyright © 2026 Josh Burt
+  ~
+  ~ This source code is licensed under the MIT license found in the
+  ~ LICENSE file in the root directory of this source tree.
+-->
+
+{% extends "base.html" %}
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/archetypes.css">
+<link rel="stylesheet" href="/static/css/feedback.css">
+{% endblock %}
+{% block content %}
+
+{# ── Feedback Dashboard Page ── #}
+<div class="section-card" style="--stagger-i: 0">
+  <div class="page-intro">Collect, annotate, and manage visual feedback reports. Capture screenshots of any page, add annotations, and track resolution status.</div>
+  <div class="section-card__header">
+    <span class="section-card__icon">&#128172;</span>
+    <h2 class="section-card__title">Feedback Reports</h2>
+  </div>
+
+  {# ── Filter Tabs ── #}
+  <div class="feedback-filter-tabs" role="tablist" aria-label="Filter by status">
+    <button type="button" class="feedback-filter-tab feedback-filter-tab--active" data-filter="all" role="tab" aria-selected="true">All</button>
+    <button type="button" class="feedback-filter-tab" data-filter="open" role="tab" aria-selected="false">Open</button>
+    <button type="button" class="feedback-filter-tab" data-filter="in_progress" role="tab" aria-selected="false">In Progress</button>
+    <button type="button" class="feedback-filter-tab" data-filter="resolved" role="tab" aria-selected="false">Resolved</button>
+  </div>
+
+  {# ── Report List ── #}
+  <div id="feedback-report-list">
+    {# Empty state (shown when no reports exist) #}
+    <div id="feedback-empty-state" class="feedback-empty-state">
+      <div class="feedback-empty-state__icon">&#128172;</div>
+      <div class="feedback-empty-state__title">No feedback reports yet</div>
+      <div class="feedback-empty-state__desc">Capture a screenshot of any page and add annotations to provide visual feedback. Reports will appear here once created.</div>
+    </div>
+
+    {# Report table (hidden by default, populated by JS) #}
+    <div id="feedback-report-table-container" style="display:none;">
+      {# Batch actions bar #}
+      <div class="feedback-batch-actions" id="feedback-batch-actions">
+        <span class="feedback-batch-actions__count" id="feedback-selected-count">0 selected</span>
+        <button type="button" class="btn btn-danger btn-sm" id="feedback-batch-delete-btn" disabled>Delete Selected</button>
+      </div>
+      <table class="feedback-report-table">
+        <thead>
+          <tr>
+            <th style="width:40px;"><input type="checkbox" id="feedback-select-all" aria-label="Select all reports"></th>
+            <th style="width:90px;">Screenshot</th>
+            <th>Report</th>
+            <th>Status</th>
+            <th>Annotations</th>
+            <th>Created</th>
+            <th style="width:120px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="feedback-report-tbody">
+        </tbody>
+      </table>
+      {# Pagination #}
+      <div class="feedback-pagination" id="feedback-pagination" style="display:none;">
+        <div class="feedback-pagination__info" id="feedback-pagination-info"></div>
+        <div class="feedback-pagination__controls" id="feedback-pagination-controls"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── Detail View Card (hidden by default) ── #}
+<div id="feedback-detail-card" class="section-card" style="--stagger-i: 1;display:none;">
+  <div class="section-card__header">
+    <span class="section-card__icon">&#128196;</span>
+    <h2 class="section-card__title" id="feedback-detail-title">Report Detail</h2>
+    <button type="button" class="btn btn-secondary btn-sm" id="feedback-detail-back" aria-label="Back to report list" style="margin-left:auto;">&larr; Back</button>
+  </div>
+  <div id="feedback-detail-body">
+    {# Detail content populated by JS #}
+    <div class="feedback-empty-state">
+      <div class="feedback-empty-state__desc">Select a report to view its details.</div>
+    </div>
+  </div>
+</div>
+
+{# ── Delete Confirmation Modal ── #}
+<div class="modal-overlay" id="feedback-delete-modal" style="display:none;">
+  <div class="modal-dialog">
+    <div class="modal-dialog__header">
+      <div class="modal-dialog__icon">&#9888;</div>
+      <h3 class="modal-dialog__title" id="feedback-delete-modal-title">Delete Report</h3>
+    </div>
+    <div class="modal-dialog__body">
+      <p class="modal-dialog__message" id="feedback-delete-modal-message">Are you sure you want to delete this report? This action cannot be undone.</p>
+    </div>
+    <div class="modal-dialog__actions">
+      <button type="button" class="modal-dialog__btn modal-dialog__btn--cancel" id="feedback-delete-modal-cancel">Cancel</button>
+      <button type="button" class="modal-dialog__btn modal-dialog__btn--confirm" id="feedback-delete-modal-confirm">Delete</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script nonce="{{ request.state.csp_nonce }}" src="/static/js/lib/html-to-image.js"></script>
+<script nonce="{{ request.state.csp_nonce }}" src="/static/js/annotation.js"></script>
+<script nonce="{{ request.state.csp_nonce }}">
+(function() {
+  'use strict';
+
+  var TOAST_DURATION = 3000;
+  var currentFilter = 'all';
+  var currentPage = 1;
+  var PER_PAGE = 20;
+  var deleteTargetId = null;
+  var deleteIsBatch = false;
+
+  // ── Toast helper ──
+  function toast(msg, type, duration) {
+    type = type || 'info';
+    duration = duration || (type === 'error' ? 10000 : TOAST_DURATION);
+    var container = document.getElementById('toast-container');
+    if (!container) return;
+    var el = document.createElement('div');
+    el.className = 'toast toast-' + type;
+    el.textContent = msg;
+    container.appendChild(el);
+    setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, duration);
+  }
+
+  // ── Helpers ──
+  function formatDate(isoStr) {
+    if (!isoStr) return '\u2014';
+    try {
+      var d = new Date(isoStr);
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+      return isoStr;
+    }
+  }
+
+  function getStatusBadgeClass(status) {
+    switch (status) {
+      case 'open': return 'feedback-status-badge--open';
+      case 'in_progress': return 'feedback-status-badge--in_progress';
+      case 'resolved': return 'feedback-status-badge--resolved';
+      default: return 'feedback-status-badge--open';
+    }
+  }
+
+  function getStatusDisplayName(status) {
+    switch (status) {
+      case 'open': return 'Open';
+      case 'in_progress': return 'In Progress';
+      case 'resolved': return 'Resolved';
+      default: return status || 'Unknown';
+    }
+  }
+
+  function truncateUrl(url, maxLen) {
+    maxLen = maxLen || 50;
+    if (!url) return 'Untitled';
+    if (url.length <= maxLen) return url;
+    try {
+      var u = new URL(url);
+      var path = u.pathname + u.search;
+      if (path.length > maxLen - u.host.length - 3) {
+        path = path.substring(0, maxLen - u.host.length - 6) + '...';
+      }
+      return u.host + path;
+    } catch (e) {
+      return url.substring(0, maxLen - 3) + '...';
+    }
+  }
+
+  // ── Filter tabs ──
+  var filterTabs = document.querySelectorAll('.feedback-filter-tab');
+  filterTabs.forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      filterTabs.forEach(function(t) {
+        t.classList.remove('feedback-filter-tab--active');
+        t.setAttribute('aria-selected', 'false');
+      });
+      tab.classList.add('feedback-filter-tab--active');
+      tab.setAttribute('aria-selected', 'true');
+      currentFilter = tab.dataset.filter;
+      currentPage = 1;
+      loadReports(currentFilter, currentPage);
+    });
+  });
+
+  // ── Back button (return to list from detail) ──
+  document.getElementById('feedback-detail-back').addEventListener('click', function() {
+    document.getElementById('feedback-detail-card').style.display = 'none';
+    document.getElementById('feedback-report-list').style.display = '';
+    loadReports(currentFilter, currentPage);
+  });
+
+  // ── Select-all checkbox ──
+  document.getElementById('feedback-select-all').addEventListener('change', function() {
+    var checked = this.checked;
+    var checkboxes = document.querySelectorAll('.feedback-report-check');
+    checkboxes.forEach(function(cb) { cb.checked = checked; });
+    updateBatchActions();
+  });
+
+  // ── Event delegation for dynamically created elements ──
+  document.addEventListener('click', function(e) {
+    var viewBtn = e.target.closest('.feedback-action-view');
+    if (viewBtn) {
+      showDetail(parseInt(viewBtn.dataset.reportId));
+      return;
+    }
+    var exportBtn = e.target.closest('.feedback-action-export');
+    if (exportBtn) {
+      exportReport(parseInt(exportBtn.dataset.reportId));
+      return;
+    }
+    var deleteBtn = e.target.closest('.feedback-action-delete');
+    if (deleteBtn) {
+      showDeleteModal(parseInt(deleteBtn.dataset.reportId), false);
+      return;
+    }
+    var pageBtn = e.target.closest('[data-page]');
+    if (pageBtn) {
+      var page = parseInt(pageBtn.dataset.page);
+      if (!isNaN(page) && page !== currentPage) {
+        currentPage = page;
+        loadReports(currentFilter, currentPage);
+      }
+      return;
+    }
+  });
+
+  // ── Event delegation for checkbox changes ──
+  document.addEventListener('change', function(e) {
+    var cb = e.target.closest('.feedback-report-check');
+    if (cb) {
+      updateBatchActions();
+    }
+  });
+
+  // ── Batch delete button ──
+  document.getElementById('feedback-batch-delete-btn').addEventListener('click', function() {
+    var selected = getSelectedIds();
+    if (selected.length === 0) return;
+    showDeleteModal(null, true);
+  });
+
+  // ── Modal controls ──
+  function showModal() {
+    document.getElementById('feedback-delete-modal').style.display = '';
+  }
+
+  function hideModal() {
+    document.getElementById('feedback-delete-modal').style.display = 'none';
+    deleteTargetId = null;
+    deleteIsBatch = false;
+  }
+
+  document.getElementById('feedback-delete-modal-cancel').addEventListener('click', hideModal);
+  document.getElementById('feedback-delete-modal-confirm').addEventListener('click', function() {
+    if (deleteIsBatch) {
+      batchDeleteConfirmed();
+    } else if (deleteTargetId !== null) {
+      deleteReportConfirmed(deleteTargetId);
+    }
+    hideModal();
+  });
+
+  document.getElementById('feedback-delete-modal').addEventListener('click', function(e) {
+    if (e.target === this) hideModal();
+  });
+
+  // ── Batch actions helpers ──
+  function getSelectedIds() {
+    var ids = [];
+    document.querySelectorAll('.feedback-report-check:checked').forEach(function(cb) {
+      var id = parseInt(cb.dataset.id);
+      if (!isNaN(id)) ids.push(id);
+    });
+    return ids;
+  }
+
+  function updateBatchActions() {
+    var selected = getSelectedIds();
+    var countEl = document.getElementById('feedback-selected-count');
+    var btn = document.getElementById('feedback-batch-delete-btn');
+    countEl.textContent = selected.length + ' selected';
+    btn.disabled = selected.length === 0;
+    var allCheckboxes = document.querySelectorAll('.feedback-report-check');
+    var allChecked = allCheckboxes.length > 0 && allCheckboxes.length === selected.length;
+    document.getElementById('feedback-select-all').checked = allChecked;
+  }
+
+  // ── Load reports from API ──
+  function loadReports(filter, page) {
+    filter = filter || 'all';
+    page = page || 1;
+    var url = '/v1/feedback?page=' + page + '&per_page=' + PER_PAGE;
+    if (filter !== 'all') url += '&status=' + encodeURIComponent(filter);
+
+    window.apiFetch(url).then(function(resp) {
+      return resp.json().then(function(data) {
+        if (!resp.ok) {
+          toast(data.detail || 'Failed to load reports', 'error');
+          return;
+        }
+        renderReports(data.reports || []);
+        renderPagination(data.total || 0, page);
+      });
+    }).catch(function() {
+      toast('Network error loading reports', 'error');
+    });
+  }
+
+  // ── Render report rows ──
+  function renderReports(reports) {
+    var tbody = document.getElementById('feedback-report-tbody');
+    var emptyState = document.getElementById('feedback-empty-state');
+    var tableContainer = document.getElementById('feedback-report-table-container');
+    if (!tbody) return;
+    if (reports.length === 0) {
+      emptyState.style.display = '';
+      tableContainer.style.display = 'none';
+      return;
+    }
+    emptyState.style.display = 'none';
+    tableContainer.style.display = '';
+    tbody.innerHTML = '';
+    reports.forEach(function(report, i) {
+      var tr = document.createElement('tr');
+      tr.style.setProperty('--stagger-i', String(i));
+      tr.dataset.reportId = report.id;
+      var statusClass = getStatusBadgeClass(report.status);
+      var statusName = getStatusDisplayName(report.status);
+      var createdDate = formatDate(report.created_at);
+      var pageLabel = truncateUrl(report.page_url);
+      var annotationCount = report.annotation_count != null ? report.annotation_count : 0;
+      tr.innerHTML = '<td><input type="checkbox" class="feedback-report-check" data-id="' + (report.id || '') + '" aria-label="Select report"></td>'
+        + '<td><img class="feedback-thumbnail" src="/v1/feedback/' + (report.id || '') + '/screenshot" alt="Screenshot" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';"><div class="feedback-thumbnail__placeholder" style="display:none;width:80px;height:56px;background:var(--surface-2);border-radius:var(--radius-sm);align-items:center;justify-content:center;font-size:1.2rem;color:var(--text-tertiary);border:1px solid var(--separator);">&#128247;</div></td>'
+        + '<td class="cell-wrap"><a href="' + (report.page_url || '#') + '" target="_blank" rel="noopener" title="' + (report.page_url || '') + '">' + pageLabel + '</a></td>'
+        + '<td><span class="feedback-status-badge ' + statusClass + '">' + statusName + '</span></td>'
+        + '<td>' + annotationCount + '</td>'
+        + '<td class="cell-meta">' + createdDate + '</td>'
+        + '<td><div class="feedback-action-btns">'
+        + '<button class="btn btn-secondary btn-sm feedback-action-view" data-report-id="' + (report.id || '') + '" aria-label="View report">View</button>'
+        + '<button class="btn btn-secondary btn-sm feedback-action-export" data-report-id="' + (report.id || '') + '" aria-label="Export JSON" title="Export JSON">&#128229;</button>'
+        + '<button class="btn btn-secondary btn-sm feedback-action-delete" data-report-id="' + (report.id || '') + '" aria-label="Delete report">&#128465;</button>'
+        + '</div></td>';
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ── Render pagination ──
+  function renderPagination(total, page) {
+    var pagination = document.getElementById('feedback-pagination');
+    var infoEl = document.getElementById('feedback-pagination-info');
+    var controlsEl = document.getElementById('feedback-pagination-controls');
+    var totalPages = Math.ceil(total / PER_PAGE);
+    if (totalPages <= 1) {
+      pagination.style.display = 'none';
+      return;
+    }
+    pagination.style.display = '';
+    var start = (page - 1) * PER_PAGE + 1;
+    var end = Math.min(page * PER_PAGE, total);
+    infoEl.textContent = start + '\u2013' + end + ' of ' + total;
+    var html = '';
+    html += '<button type="button" class="btn btn-secondary btn-sm feedback-page-btn" data-page="' + (page - 1) + '"' + (page <= 1 ? ' disabled' : '') + '>&larr; Prev</button>';
+    var maxVisible = 5;
+    var startPage = Math.max(1, page - Math.floor(maxVisible / 2));
+    var endPage = Math.min(totalPages, startPage + maxVisible - 1);
+    if (endPage - startPage < maxVisible - 1) {
+      startPage = Math.max(1, endPage - maxVisible + 1);
+    }
+    if (startPage > 1) {
+      html += '<button type="button" class="btn btn-secondary btn-sm feedback-page-btn" data-page="1">1</button>';
+      if (startPage > 2) html += '<span class="feedback-pagination__ellipsis">&hellip;</span>';
+    }
+    for (var p = startPage; p <= endPage; p++) {
+      html += '<button type="button" class="btn ' + (p === page ? 'btn-primary' : 'btn-secondary') + ' btn-sm feedback-page-btn' + (p === page ? ' feedback-page-btn--active' : '') + '" data-page="' + p + '">' + p + '</button>';
+    }
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) html += '<span class="feedback-pagination__ellipsis">&hellip;</span>';
+      html += '<button type="button" class="btn btn-secondary btn-sm feedback-page-btn" data-page="' + totalPages + '">' + totalPages + '</button>';
+    }
+    html += '<button type="button" class="btn btn-secondary btn-sm feedback-page-btn" data-page="' + (page + 1) + '"' + (page >= totalPages ? ' disabled' : '') + '>Next &rarr;</button>';
+    controlsEl.innerHTML = html;
+  }
+
+  // ── Show detail view ──
+  function showDetail(reportId) {
+    var detailCard = document.getElementById('feedback-detail-card');
+    var detailBody = document.getElementById('feedback-detail-body');
+    var listSection = document.getElementById('feedback-report-list');
+    if (!detailCard || !detailBody) return;
+    detailBody.innerHTML = '<div class="loading-indicator"><span class="spinner"></span> Loading report details...</div>';
+    detailCard.style.display = '';
+    listSection.style.display = 'none';
+    window.apiFetch('/v1/feedback/' + reportId).then(function(resp) {
+      return resp.json().then(function(data) {
+        if (!resp.ok) {
+          toast(data.detail || 'Failed to load report', 'error');
+          detailCard.style.display = 'none';
+          listSection.style.display = '';
+          return;
+        }
+        renderDetail(data.report);
+      });
+    }).catch(function() {
+      toast('Network error loading report details', 'error');
+      detailCard.style.display = 'none';
+      listSection.style.display = '';
+    });
+  }
+
+  // ── Render detail view ──
+  function renderDetail(report) {
+    var detailBody = document.getElementById('feedback-detail-body');
+    var titleEl = document.getElementById('feedback-detail-title');
+    if (!detailBody || !titleEl) return;
+    titleEl.textContent = 'Report #' + (report.id || '');
+    var statusClass = getStatusBadgeClass(report.status);
+    var statusName = getStatusDisplayName(report.status);
+    var createdDate = formatDate(report.created_at);
+    var updatedDate = formatDate(report.updated_at);
+    var annotations = report.annotations || [];
+    var annotationsHtml = '';
+    if (annotations.length === 0) {
+      annotationsHtml = '<div class="feedback-empty-state" style="padding:var(--space-4)"><div class="feedback-empty-state__desc">No annotations in this report.</div></div>';
+    } else {
+      annotationsHtml = '<div class="feedback-annotations-list">';
+      annotations.forEach(function(ann) {
+        var typeIcon = '';
+        switch (ann.annotation_type) {
+          case 'rect': typeIcon = '&#9632;'; break;
+          case 'circle': typeIcon = '&#9675;'; break;
+          case 'freehand': typeIcon = '&#9998;'; break;
+          case 'arrow': typeIcon = '&#8594;'; break;
+          case 'highlight': typeIcon = '&#10022;'; break;
+          default: typeIcon = '&#9679;';
+        }
+        var note = ann.note || '(no note)';
+        var annDate = formatDate(ann.created_at);
+        annotationsHtml += '<div class="feedback-annotation-item">'
+          + '<div class="feedback-annotation-item__header">'
+          + '<span class="feedback-annotation-item__type" title="' + (ann.annotation_type || '') + '">' + typeIcon + '</span>'
+          + '<span class="feedback-annotation-item__order">#' + (ann.order || '') + '</span>'
+          + '<span class="feedback-annotation-item__date">' + annDate + '</span>'
+          + '</div>'
+          + '<div class="feedback-annotation-item__note">' + escapeHtml(note) + '</div>'
+          + '</div>';
+      });
+      annotationsHtml += '</div>';
+    }
+    var statuses = ['open', 'in_progress', 'resolved'];
+    var statusOptionsHtml = '';
+    statuses.forEach(function(s) {
+      statusOptionsHtml += '<button type="button" class="feedback-status-btn' + (s === report.status ? ' feedback-status-btn--active' : '') + ' feedback-status-btn--' + s + '" data-report-id="' + (report.id || '') + '" data-status="' + s + '">' + getStatusDisplayName(s) + '</button>';
+    });
+    detailBody.innerHTML = '<div class="feedback-detail-layout">'
+      + '<div class="feedback-detail-section">'
+      + '<h3 class="feedback-detail-section__title">Report Info</h3>'
+      + '<div class="feedback-detail-info">'
+      + '<div class="feedback-detail-info__row"><span class="feedback-detail-info__label">URL</span><span class="feedback-detail-info__value"><a href="' + (report.page_url || '#') + '" target="_blank" rel="noopener">' + (report.page_url || '\u2014') + '</a></span></div>'
+      + '<div class="feedback-detail-info__row"><span class="feedback-detail-info__label">Status</span><span class="feedback-detail-info__value"><span class="feedback-status-badge ' + statusClass + '">' + statusName + '</span></span></div>'
+      + '<div class="feedback-detail-info__row"><span class="feedback-detail-info__label">Reporter</span><span class="feedback-detail-info__value">' + (report.reporter_id || '\u2014') + '</span></div>'
+      + '<div class="feedback-detail-info__row"><span class="feedback-detail-info__label">Created</span><span class="feedback-detail-info__value">' + createdDate + '</span></div>'
+      + '<div class="feedback-detail-info__row"><span class="feedback-detail-info__label">Updated</span><span class="feedback-detail-info__value">' + updatedDate + '</span></div>'
+      + '<div class="feedback-detail-info__row"><span class="feedback-detail-info__label">Viewport</span><span class="feedback-detail-info__value">' + (report.viewport_width || '?') + ' \u00d7 ' + (report.viewport_height || '?') + '</span></div>'
+      + '</div></div>'
+      + '<div class="feedback-detail-section">'
+      + '<h3 class="feedback-detail-section__title">Update Status</h3>'
+      + '<div class="feedback-status-update" id="feedback-status-update">' + statusOptionsHtml + '</div>'
+      + '</div>'
+      + '<div class="feedback-detail-section">'
+      + '<h3 class="feedback-detail-section__title">Screenshot</h3>'
+      + '<div class="feedback-detail-screenshot">'
+      + '<img class="feedback-detail-screenshot__img" src="/v1/feedback/' + (report.id || '') + '/screenshot" alt="Report screenshot" onerror="this.alt=\'Screenshot not available\';this.style.opacity=0.4;">'
+      + '</div></div>'
+      + '<div class="feedback-detail-section">'
+      + '<h3 class="feedback-detail-section__title">Annotations (' + annotations.length + ')</h3>'
+      + annotationsHtml
+      + '</div>'
+      + '</div>';
+    document.querySelectorAll('.feedback-status-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        updateStatus(parseInt(this.dataset.reportId), this.dataset.status);
+      });
+    });
+  }
+
+  // ── Update status ──
+  function updateStatus(reportId, newStatus) {
+    window.apiFetch('/v1/feedback/' + reportId + '/status', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus })
+    }).then(function(resp) {
+      return resp.json().then(function(data) {
+        if (!resp.ok) {
+          toast(data.detail || 'Failed to update status', 'error');
+          return;
+        }
+        toast('Status updated to ' + getStatusDisplayName(newStatus), 'success');
+        showDetail(reportId);
+      });
+    }).catch(function() {
+      toast('Network error updating status', 'error');
+    });
+  }
+
+  // ── Show delete confirmation modal ──
+  function showDeleteModal(reportId, isBatch) {
+    deleteTargetId = reportId;
+    deleteIsBatch = isBatch;
+    var titleEl = document.getElementById('feedback-delete-modal-title');
+    var msgEl = document.getElementById('feedback-delete-modal-message');
+    if (isBatch) {
+      var count = getSelectedIds().length;
+      titleEl.textContent = 'Delete ' + count + ' Reports';
+      msgEl.textContent = 'Are you sure you want to delete ' + count + ' selected reports? This action cannot be undone.';
+    } else {
+      titleEl.textContent = 'Delete Report';
+      msgEl.textContent = 'Are you sure you want to delete this report? This action cannot be undone.';
+    }
+    showModal();
+  }
+
+  // ── Delete single report (confirmed) ──
+  function deleteReportConfirmed(reportId) {
+    window.apiFetch('/v1/feedback/' + reportId, {
+      method: 'DELETE'
+    }).then(function(resp) {
+      if (resp.status === 204) {
+        toast('Report deleted', 'success');
+        loadReports(currentFilter, currentPage);
+        return;
+      }
+      return resp.json().then(function(data) {
+        toast(data.detail || 'Failed to delete report', 'error');
+      });
+    }).catch(function() {
+      toast('Network error deleting report', 'error');
+    });
+  }
+
+  // ── Batch delete (confirmed) ──
+  function batchDeleteConfirmed() {
+    var ids = getSelectedIds();
+    if (ids.length === 0) return;
+    window.apiFetch('/v1/feedback/batch-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: ids })
+    }).then(function(resp) {
+      return resp.json().then(function(data) {
+        if (!resp.ok) {
+          toast(data.detail || 'Failed to delete reports', 'error');
+          return;
+        }
+        toast('Deleted ' + (data.deleted || ids.length) + ' reports', 'success');
+        currentPage = 1;
+        loadReports(currentFilter, currentPage);
+      });
+    }).catch(function() {
+      toast('Network error deleting reports', 'error');
+    });
+  }
+
+  // ── Export report ──
+  function exportReport(reportId) {
+    window.apiFetch('/v1/feedback/' + reportId + '/export').then(function(resp) {
+      return resp.json().then(function(data) {
+        if (!resp.ok) {
+          toast(data.detail || 'Failed to export report', 'error');
+          return;
+        }
+        var blob = new Blob([JSON.stringify(data.export || data, null, 2)], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'feedback-report-' + reportId + '.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toast('Report exported successfully', 'success');
+      });
+    }).catch(function() {
+      toast('Network error exporting report', 'error');
+    });
+  }
+
+  // ── Escape HTML for safe rendering ──
+  function escapeHtml(str) {
+    if (!str) return '';
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+  }
+
+  // ── Initial load ──
+  loadReports('all', 1);
+})();
+</script>
+{% endblock %}

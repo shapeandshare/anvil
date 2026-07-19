@@ -15,7 +15,6 @@ import httpx
 
 from ._shared.server_config import ServerConfig
 from ._shared.transport import Transport
-
 from .compute.compute_client import ComputeClient
 from .content.content_client import ContentClient
 from .corpora.corpora_client import CorporaClient
