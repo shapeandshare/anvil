@@ -20,7 +20,7 @@ import os
 import random
 import tempfile
 from pathlib import Path
-from typing import Any
+from typing import Any, AsyncGenerator
 
 import aiofiles  # type: ignore[import-untyped]
 from mlflow.tracking import MlflowClient
@@ -2026,3 +2026,85 @@ class InferenceService:
 
         output = tokenizer.decode(generated)
         return output[len(prompt) :]
+
+    async def generate_stream(
+        self,
+        loaded: LoadedModel,
+        *,
+        prompt: str,
+        temperature: float = 0.7,
+        max_tokens: int = 200,
+    ) -> AsyncGenerator[str, None]:
+        """Generate text from a prompt, yielding each new character as it is produced.
+
+        Parameters
+        ----------
+        loaded : LoadedModel
+            The loaded model, tokenizer, and vocabulary.
+        prompt : str
+            Input prompt text.
+        temperature : float, optional
+            Sampling temperature. Default ``0.7``.
+        max_tokens : int, optional
+            Maximum tokens to generate. Default ``200``.
+
+        Yields
+        ------
+        str
+            Each newly generated character.
+
+        Notes
+        -----
+        This is an async generator that yields individual characters as they
+        are sampled from the model.  The underlying model operations are
+        synchronous but fast (tiny model), so this is safe to run inside
+        a FastAPI ``StreamingResponse`` without blocking the event loop
+        for perceptible durations.
+        """
+        model = loaded.model
+        tokenizer = loaded.tokenizer
+
+        input_ids = tokenizer.encode(prompt)
+        if not input_ids:
+            return
+
+        eos_id = loaded.bos_id if loaded.bos_id is not None else 0
+        keys: list[list[list[Value]]] = [[] for _ in range(model.n_layer)]
+        values: list[list[list[Value]]] = [[] for _ in range(model.n_layer)]
+
+        generated = list(input_ids)
+        logits: list[Value] = []
+        pos_id = 0
+        for token_id in input_ids:
+            logits = model.forward(token_id, pos_id, keys, values)
+            pos_id += 1
+
+        # Track the length of the decoded prompt for diff-based chunking.
+        # This avoids re-decoding the full sequence on every step.
+        prompt_decoded_len = len(tokenizer.decode(input_ids))
+        known_decoded_len = prompt_decoded_len
+
+        for _ in range(max_tokens):
+            if pos_id >= model.block_size or not logits:
+                break
+
+            scaled = (
+                [logit / temperature for logit in logits] if temperature > 0 else logits
+            )
+            probs = softmax(scaled)
+            next_id = random.choices(
+                range(len(probs)), weights=[p.data for p in probs], k=1
+            )[0]
+            generated.append(next_id)
+
+            if next_id == eos_id:
+                break
+
+            output = tokenizer.decode(generated)
+            chunk = output[known_decoded_len:]
+            if chunk:
+                yield chunk
+                known_decoded_len += len(chunk)
+
+            logits = model.forward(next_id, pos_id, keys, values)
+            pos_id += 1
