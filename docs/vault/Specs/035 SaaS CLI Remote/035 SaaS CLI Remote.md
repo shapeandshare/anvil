@@ -5,6 +5,7 @@ tags:
   - type/spec
   - domain/infrastructure
   - domain/tooling
+  - status/draft
 spec-refs:
   - docs/vault/Specs/035 SaaS CLI Remote/
 status: draft

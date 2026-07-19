@@ -5,6 +5,7 @@ tags:
   - type/spec
   - domain/training
   - domain/content
+  - status/draft
 spec-refs:
   - docs/vault/Specs/055 Interactive Teaching Loop/
 status: draft

@@ -5,6 +5,7 @@ tags:
   - type/spec
   - domain/infrastructure
   - domain/operations
+  - status/draft
 spec-refs:
   - docs/vault/Specs/037 SaaS Resilience DR/
 status: draft

@@ -5,7 +5,7 @@ tags:
   - type/moc
   - domain/vault
 created: 2026-06-21
-updated: 2026-06-21
+updated: 2026-07-18
 aliases:
   - Specs
 ---
@@ -19,6 +19,7 @@ Start here to see what has been specified, what is in progress, and what shipped
 ## Notes
 
 - [[Specs/001 Bootstrap LLM Workbench/001 Bootstrap LLM Workbench|001 Bootstrap LLM Workbench]]
+- [[Specs/001 Non-Educational Help Guide/001 Non-Educational Help Guide|001 Non-Educational Help Guide]]
 - [[Specs/002 Directory Corpus Ingestion/002 Directory Corpus Ingestion|002 Directory Corpus Ingestion]]
 - [[Specs/003 Model Registry Tracking/003 Model Registry Tracking|003 Model Registry Tracking]]
 - [[Specs/004 Frontend Refactor/004 Frontend Refactor|004 Frontend Refactor]]
@@ -43,6 +44,9 @@ Start here to see what has been specified, what is in progress, and what shipped
 - [[Specs/023 Header API Versioning/023 Header API Versioning|023 Header API Versioning]]
 - [[Specs/024 Unified Interface Local TLS/024 Unified Interface Local TLS|024 Unified Interface Local TLS]]
 - [[Specs/025 UX Rules Integration/025 UX Rules Integration|025 UX Rules Integration]]
+- [[Specs/026 Client SDK/026 Client SDK|026 Client SDK]]
+- [[Specs/027 Deployment Backup Restore/027 Deployment Backup Restore|027 Deployment Backup Restore]]
+- [[Specs/028 Concurrent Isolated Instances/028 Concurrent Isolated Instances|028 Concurrent Isolated Instances]]
 - [[Specs/028 SaaS Abstraction Framework/028 SaaS Abstraction Framework|028 SaaS Abstraction Framework]]
 - [[Specs/029 SaaS Dev Stack/029 SaaS Dev Stack|029 SaaS Dev Stack]]
 - [[Specs/030 SaaS Authentication/030 SaaS Authentication|030 SaaS Authentication]]
@@ -53,10 +57,51 @@ Start here to see what has been specified, what is in progress, and what shipped
 - [[Specs/035 SaaS CLI Remote/035 SaaS CLI Remote|035 SaaS CLI Remote]]
 - [[Specs/036 SaaS Observability MLflow Proxy/036 SaaS Observability MLflow Proxy|036 SaaS Observability MLflow Proxy]]
 - [[Specs/037 SaaS Resilience DR/037 SaaS Resilience DR|037 SaaS Resilience DR]]
+- [[Specs/038 Fine-Tuning Arc/038 Fine-Tuning Arc|038 Fine-Tuning Arc]]
+- [[Specs/039 Model Warm-Start/039 Model Warm-Start|039 Model Warm-Start]]
+- [[Specs/040 External Model Registry/040 External Model Registry|040 External Model Registry]]
+- [[Specs/041 HuggingFace Model Browser/041 HuggingFace Model Browser|041 HuggingFace Model Browser]]
 - [[Specs/042 Model Asset Storage/042 Model Asset Storage|042 Model Asset Storage]]
+- [[Specs/043 Subword Tokenizer Abstraction/043 Subword Tokenizer Abstraction|043 Subword Tokenizer Abstraction]]
+- [[Specs/044 Local LoRA Fine-Tuning/044 Local LoRA Fine-Tuning|044 Local LoRA Fine-Tuning]]
+- [[Specs/045 Adapter Inference Export/045 Adapter Inference Export|045 Adapter Inference Export]]
+- [[Specs/046 Fine-Tune Compute Routing/046 Fine-Tune Compute Routing|046 Fine-Tune Compute Routing]]
+- [[Specs/047 SaaS Fine-Tuning Pipeline/047 SaaS Fine-Tuning Pipeline|047 SaaS Fine-Tuning Pipeline]]
+- [[Specs/048 Learning Fine-Tuning Concepts/048 Learning Fine-Tuning Concepts|048 Learning Fine-Tuning Concepts]]
+- [[Specs/049 Learning Architecture Differences/049 Learning Architecture Differences|049 Learning Architecture Differences]]
+- [[Specs/050 GGUF Import and Run/050 GGUF Import and Run|050 GGUF Import and Run]]
+- [[Specs/051 GGUF Export/051 GGUF Export|051 GGUF Export]]
+- [[Specs/052 GGUF Fine-Tuning/052 GGUF Fine-Tuning|052 GGUF Fine-Tuning]]
+- [[Specs/053 Fine-Tuning Dataset Preparation/053 Fine-Tuning Dataset Preparation|053 Fine-Tuning Dataset Preparation]]
+- [[Specs/054 Fine-Tuned Model Evaluation/054 Fine-Tuned Model Evaluation|054 Fine-Tuned Model Evaluation]]
+- [[Specs/055 Interactive Teaching Loop/055 Interactive Teaching Loop|055 Interactive Teaching Loop]]
 - [[Specs/056 Reverse-Proxy Registry/056 Reverse-Proxy Registry|056 Reverse-Proxy Registry]]
+- [[Specs/057 Degraded Mode Recovery/057 Degraded Mode Recovery|057 Degraded Mode Recovery]]
 - [[Specs/058 At-Rest Secret Encryption/058 At-Rest Secret Encryption|058 At-Rest Secret Encryption]]
 - [[Specs/059 Local Key Custody Hardening/059 Local Key Custody Hardening|059 Local Key Custody Hardening]] (deferred)
+- [[Specs/060 Text Input Theme Consistency/060 Text Input Theme Consistency|060 Text Input Theme Consistency]]
+- [[Specs/061 Resilient Startup Recovery/061 Resilient Startup Recovery|061 Resilient Startup Recovery]]
+- [[Specs/063 Usable External Models/063 Usable External Models|063 Usable External Models]]
+- [[Specs/064 MLflow Model Catalog/064 MLflow Model Catalog|064 MLflow Model Catalog]]
+- [[Specs/065 Adapter Catalog Entries/065 Adapter Catalog Entries|065 Adapter Catalog Entries]]
+- [[Specs/066 Codebase Remediation/066 Codebase Remediation|066 Codebase Remediation]]
+- [[Specs/067 API Response Models/067 API Response Models|067 API Response Models]]
+- [[Specs/068 Training Service Async Fix/068 Training Service Async Fix|068 Training Service Async Fix]]
+- [[Specs/069 Route DI Cleanup/069 Route DI Cleanup|069 Route DI Cleanup]]
+- [[Specs/070 Experiments Service Extraction/070 Experiments Service Extraction|070 Experiments Service Extraction]]
+- [[Specs/071 Service DI Injection/071 Service DI Injection|071 Service DI Injection]]
+- [[Specs/072 Error Response Standardization/072 Error Response Standardization|072 Error Response Standardization]]
+- [[Specs/073 Pydantic Schema Validation/073 Pydantic Schema Validation|073 Pydantic Schema Validation]]
+- [[Specs/074 Module State Removal/074 Module State Removal|074 Module State Removal]]
+- [[Specs/075 Coverage Threshold Ratchet/075 Coverage Threshold Ratchet|075 Coverage Threshold Ratchet]]
+- [[Specs/076 Inference Service Decomposition/076 Inference Service Decomposition|076 Inference Service Decomposition]]
+- [[Specs/077 Session Py Cleanup/077 Session Py Cleanup|077 Session Py Cleanup]]
+- [[Specs/078 Annotations Consistency/078 Annotations Consistency|078 Annotations Consistency]]
+- [[Specs/079 Exception Hierarchy Unification/079 Exception Hierarchy Unification|079 Exception Hierarchy Unification]]
+- [[Specs/080 DB Indexes Eager Loading/080 DB Indexes Eager Loading|080 DB Indexes Eager Loading]]
+- [[Specs/081 Teach Page CTA/081 Teach Page CTA|081 Teach Page CTA]]
+- [[Specs/082 Paperclip Bootstrap/082 Paperclip Bootstrap|082 Paperclip Bootstrap]]
+- [[Specs/083 Config Pydantic Settings/083 Config Pydantic Settings|083 Config Pydantic Settings]]
 
 ## Reverse-Proxy / Single-Origin Consolidation (ADR-035 → ADR-037 → 056)
 

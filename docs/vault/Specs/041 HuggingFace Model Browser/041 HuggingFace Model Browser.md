@@ -5,6 +5,7 @@ tags:
   - type/spec
   - domain/training
   - domain/ui
+  - status/draft
 spec-refs:
   - docs/vault/Specs/041 HuggingFace Model Browser/
 status: draft

@@ -5,6 +5,7 @@ tags:
   - type/spec
   - domain/core
   - domain/training
+  - status/draft
 spec-refs:
   - docs/vault/Specs/043 Subword Tokenizer Abstraction/
 status: draft

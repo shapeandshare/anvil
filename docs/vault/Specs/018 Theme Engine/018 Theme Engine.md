@@ -4,6 +4,7 @@ type: spec
 tags:
   - type/spec
   - domain/core
+  - status/draft
 spec-refs:
   - docs/vault/Specs/018 Theme Engine/
 status: draft

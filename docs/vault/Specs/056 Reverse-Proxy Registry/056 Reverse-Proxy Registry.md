@@ -6,6 +6,7 @@ tags:
   - domain/architecture
   - domain/infrastructure
   - domain/operations
+  - status/draft
 spec-refs:
   - docs/vault/Specs/056 Reverse-Proxy Registry/
 status: draft

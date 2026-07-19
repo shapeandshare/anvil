@@ -5,6 +5,7 @@ tags:
   - type/spec
   - domain/training
   - domain/infrastructure
+  - status/draft
 spec-refs:
   - docs/vault/Specs/047 SaaS Fine-Tuning Pipeline/
 status: draft

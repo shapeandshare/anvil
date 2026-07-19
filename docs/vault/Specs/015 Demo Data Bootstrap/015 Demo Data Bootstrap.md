@@ -4,6 +4,7 @@ type: spec
 tags:
   - type/spec
   - domain/training
+  - status/draft
 spec-refs:
   - docs/vault/Specs/015 Demo Data Bootstrap/
 status: draft

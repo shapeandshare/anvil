@@ -4,6 +4,7 @@ type: spec
 tags:
   - type/spec
   - domain/training
+  - status/draft
 spec-refs:
   - docs/vault/Specs/002 Directory Corpus Ingestion/
 status: draft

@@ -4,6 +4,7 @@ type: spec
 tags:
   - type/spec
   - domain/tooling
+  - status/draft
 spec-refs:
   - docs/vault/Specs/010 Automated Semver Release/
 status: draft

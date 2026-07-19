@@ -5,6 +5,7 @@ tags:
   - type/spec
   - domain/operations
   - domain/infrastructure
+  - status/draft
 spec-refs:
   - docs/vault/Specs/028 Concurrent Isolated Instances/
 status: draft

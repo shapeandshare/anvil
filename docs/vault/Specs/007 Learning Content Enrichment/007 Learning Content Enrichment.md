@@ -4,6 +4,7 @@ type: spec
 tags:
   - type/spec
   - domain/governance
+  - status/draft
 spec-refs:
   - docs/vault/Specs/007 Learning Content Enrichment/
 status: draft

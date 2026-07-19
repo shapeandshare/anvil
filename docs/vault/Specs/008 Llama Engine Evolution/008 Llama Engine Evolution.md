@@ -4,6 +4,7 @@ type: spec
 tags:
   - type/spec
   - domain/core
+  - status/draft
 spec-refs:
   - docs/vault/Specs/008 Llama Engine Evolution/
 status: draft

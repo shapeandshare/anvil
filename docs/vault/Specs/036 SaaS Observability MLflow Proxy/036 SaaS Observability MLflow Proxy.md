@@ -6,6 +6,7 @@ tags:
   - domain/operations
   - domain/mlops
   - domain/infrastructure
+  - status/draft
 spec-refs:
   - docs/vault/Specs/036 SaaS Observability MLflow Proxy/
 status: draft

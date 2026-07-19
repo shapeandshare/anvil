@@ -5,6 +5,7 @@ tags:
   - type/spec
   - domain/training
   - domain/core
+  - status/draft
 spec-refs:
   - docs/vault/Specs/044 Local LoRA Fine-Tuning/
 status: draft

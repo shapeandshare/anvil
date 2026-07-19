@@ -4,6 +4,7 @@ type: spec
 tags:
   - type/spec
   - domain/architecture
+  - status/draft
 spec-refs:
   - docs/vault/Specs/031 SaaS Multi-Tenancy RBAC/
 status: draft

@@ -5,6 +5,7 @@ tags:
   - type/spec
   - domain/training
   - domain/content
+  - status/draft
 spec-refs:
   - docs/vault/Specs/053 Fine-Tuning Dataset Preparation/
 status: draft

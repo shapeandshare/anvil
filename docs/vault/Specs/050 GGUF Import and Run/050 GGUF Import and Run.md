@@ -5,6 +5,7 @@ tags:
   - type/spec
   - domain/training
   - domain/mlops
+  - status/draft
 spec-refs:
   - docs/vault/Specs/050 GGUF Import and Run/
 status: draft

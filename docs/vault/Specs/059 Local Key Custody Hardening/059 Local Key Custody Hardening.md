@@ -5,6 +5,7 @@ tags:
   - type/spec
   - domain/infrastructure
   - domain/operations
+  - status/draft
 spec-refs:
   - docs/vault/Specs/059 Local Key Custody Hardening/
 status: draft

@@ -4,6 +4,7 @@ type: spec
 tags:
   - type/spec
   - domain/ui
+  - status/draft
 spec-refs:
   - docs/vault/Specs/025 UX Rules Integration/
 status: draft

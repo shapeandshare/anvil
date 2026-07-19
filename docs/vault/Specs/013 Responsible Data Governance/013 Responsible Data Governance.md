@@ -4,6 +4,7 @@ type: spec
 tags:
   - type/spec
   - domain/governance
+  - status/draft
 spec-refs:
   - docs/vault/Specs/013 Responsible Data Governance/
 status: draft
