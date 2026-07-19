@@ -1,3 +1,10 @@
+## v0.16.3 (2026-07-19)
+
+### Fix
+
+- make annotation markers scroll with page via transform-based container shift (#403)
+- add visible completion messages to all demo model warmup exit paths
+
 ## v0.16.2 (2026-07-19)
 
 ### Fix
