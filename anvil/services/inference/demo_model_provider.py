@@ -201,6 +201,7 @@ def warmup_demo_via_system_pipeline() -> None:
             # Re-register catalog tags for the existing model so that tag-schema
             # changes (e.g. kind moved from mv_tags to rm_tags) take effect.
             _fixup_demo_catalog_tags(model)
+            print("Demo model warm-up complete (loaded existing model).", flush=True)
             return
 
     try:
@@ -472,8 +473,10 @@ def warmup_demo_via_system_pipeline() -> None:
             # Register the fallback-trained model in the catalog so
             # it appears on the models page (ghost model rescue).
             _fixup_demo_catalog_tags(model)
+            print("Demo model warm-up complete (inline fallback).", flush=True)
         except Exception:
             logger.warning("Demo model fallback training also failed", exc_info=True)
+            print("Demo model warm-up FAILED.", flush=True)
             pass
 
 
