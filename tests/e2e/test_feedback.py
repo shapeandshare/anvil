@@ -595,6 +595,118 @@ class TestCreateFeedbackWithCircleFreehandAnnotations:
         assert "freehand" in types
 
 
+########################################################################
+# Validation error tests for coverage
+########################################################################
+
+
+class TestCreateFeedbackValidationErrors:
+    """E2E tests for validation error paths in POST /v1/feedback."""
+
+    async def test_rejects_note_over_2000_chars(self, client) -> None:
+        """POST /v1/feedback with note > 2000 chars returns 400."""
+        annotations = json.dumps(
+            [{"type": "element", "note": "x" * 2001, "data": "{}"}]
+        )
+        r = await client.post(
+            "/v1/feedback",
+            data={
+                "page_url": "/test",
+                "viewport_width": "1920",
+                "viewport_height": "1080",
+                "annotations": annotations,
+            },
+        )
+        assert r.status_code == 400
+
+    async def test_rejects_circle_missing_fields(self, client) -> None:
+        """POST /v1/feedback with circle missing cx/cy/radius returns 400."""
+        annotations = json.dumps(
+            [{"type": "circle", "note": "bad", "data": "{}"}]
+        )
+        r = await client.post(
+            "/v1/feedback",
+            data={
+                "page_url": "/test",
+                "viewport_width": "1920",
+                "viewport_height": "1080",
+                "annotations": annotations,
+            },
+        )
+        assert r.status_code == 400
+
+    async def test_rejects_circle_negative_radius(self, client) -> None:
+        """POST /v1/feedback with circle radius <= 0 returns 400."""
+        data = json.dumps({"cx": 100, "cy": 100, "radius": 0})
+        annotations = json.dumps(
+            [{"type": "circle", "note": "bad radius", "data": data}]
+        )
+        r = await client.post(
+            "/v1/feedback",
+            data={
+                "page_url": "/test",
+                "viewport_width": "1920",
+                "viewport_height": "1080",
+                "annotations": annotations,
+            },
+        )
+        assert r.status_code == 400
+
+    async def test_rejects_freehand_missing_path(self, client) -> None:
+        """POST /v1/feedback with freehand missing path returns 400."""
+        data = json.dumps({"bounds": {"minX": 0, "minY": 0, "maxX": 10, "maxY": 10}})
+        annotations = json.dumps(
+            [{"type": "freehand", "note": "bad", "data": data}]
+        )
+        r = await client.post(
+            "/v1/feedback",
+            data={
+                "page_url": "/test",
+                "viewport_width": "1920",
+                "viewport_height": "1080",
+                "annotations": annotations,
+            },
+        )
+        assert r.status_code == 400
+
+    async def test_rejects_freehand_short_path(self, client) -> None:
+        """POST /v1/feedback with freehand path < 2 points returns 400."""
+        data = json.dumps(
+            {"path": [[10, 10]], "bounds": {"minX": 10, "minY": 10, "maxX": 10, "maxY": 10}}
+        )
+        annotations = json.dumps(
+            [{"type": "freehand", "note": "too short", "data": data}]
+        )
+        r = await client.post(
+            "/v1/feedback",
+            data={
+                "page_url": "/test",
+                "viewport_width": "1920",
+                "viewport_height": "1080",
+                "annotations": annotations,
+            },
+        )
+        assert r.status_code == 400
+
+    async def test_rejects_invalid_annotations_json(self, client) -> None:
+        """POST /v1/feedback with invalid annotations JSON defaults to
+        empty list (request still succeeds).
+        """
+        r = await client.post(
+            "/v1/feedback",
+            data={
+                "page_url": "/test",
+                "viewport_width": "1920",
+                "viewport_height": "1080",
+                "annotations": "not valid json",
+            },
+        )
+        # Invalid JSON defaults to empty annotations list, not a 400
+        assert r.status_code == 201
+        data = r.json()
+        assert data["ok"] is True
+
+
 class TestScreenshot:
     """E2E tests for GET /v1/feedback/{id}/screenshot."""
 
