@@ -1,117 +1,105 @@
-# Implementation Plan: [FEATURE]
+# Implementation Plan: Visual Feedback Annotation
 
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
-**Input**: Feature specification from `docs/vault/Specs/[###-feature-name]/spec.md`
-
-**Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/plan-template.md` for the execution workflow.
+**Branch**: `001-annotate-elements-and` | **Date**: 2026-07-18 | **Spec**: [spec.md](spec.md)
+**Input**: Feature specification from `docs/vault/Specs/001 Annotate Elements And/spec.md`
 
 ## Summary
 
-[Extract from feature spec: primary requirement + technical approach from research]
+Add a visual feedback annotation tool to the anvil web UI. Users enter an annotation mode from any page, capture a viewport screenshot via client-side DOM rendering, then mark broken UI elements by clicking, draw circles/freehand shapes, and attach text notes. Annotations are submitted as a single feedback report viewable in an admin feedback dashboard. Reports include full JSON export for automated agent consumption.
 
 ## Technical Context
 
-<!--
-  ACTION REQUIRED: Replace the content in this section with the technical details
-  for the project. The structure here is presented in advisory capacity to guide
-  the iteration process.
--->
-
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [e.g., library/cli/web-service/mobile-app/compiler/desktop-app or NEEDS CLARIFICATION]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+**Language/Version**: Python 3.11+ (backend) + Vanilla JavaScript ES2020 (frontend — no transpiler/bundler)  
+**Primary Dependencies**: Existing stack (FastAPI, Jinja2, async SQLAlchemy, aiosqlite) + `html-to-image` (CDN-loaded, for DOM-to-canvas screenshot capture)  
+**Storage**: LocalFileStore at `data/feedback/{report_id}/screenshot.png`; SQLite `anvil-state.db` via new `FeedbackReport` + `Annotation` DB models  
+**Testing**: pytest (unit + API) + Playwright (browser e2e for annotation canvas interactions)  
+**Target Platform**: Modern web browser (Chrome 90+, Safari 15+, Firefox 90+)  
+**Project Type**: Web application (monolith — FastAPI server + Jinja2 templates + vanilla JS)  
+**Performance Goals**: Annotation mode activates in <500ms; screenshot capture completes in <3s on a typical page; annotation overlay operates at 60fps  
+**Constraints**: Zero new npm/Python runtime dependencies (all CDN/vendored JS); no server-side screenshot processing; client-side only capture  
+**Scale/Scope**: Single-page viewport capture only (no full-page scrolling); supports ~50 annotations per report; ~1000 feedback reports before admin review needed
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+**Simplicity First gate (Article XI — hard MUST)**:
 
-**Simplicity First gate (Article XI — hard MUST)**: Confirm this plan favors
-the simplest, most boring solution that meets the requirement:
+- [x] **Simplest viable** (§11.1) — Client-side DOM capture via `html-to-image` is the simplest approach for viewport screenshots. No server-side headless browser needed.
+- [x] **Boring over novel** (§11.2) — Uses existing project stack (FastAPI, Jinja2, SQLAlchemy, LocalFileStore). Only new frontend dependency is `html-to-image` (CDN, 4.5M weekly downloads, battle-tested).
+- [x] **YAGNI** (§11.3) — No speculative generality: annotation tools limited to element click, circles, and freehand. No full-page capture, no video recording, no collaboration features.
+- [x] **Reuse first** (§11.4) — Reuses existing LocalFileStore, Repository pattern, service layer, CSS token system, nav-bar pattern, modal component, and toast notification system.
+- [x] **Testable** (§11.6) — Each annotation tool is independently testable via Playwright. API endpoints follow existing e2e patterns. Screenshot capture testable with known DOM fixtures.
 
-- [ ] **Simplest viable** (§11.1) — the chosen approach is the simplest that
-      satisfies the requirement; any added complexity has a concrete, present
-      justification (not a hypothetical future one).
-- [ ] **Boring over novel** (§11.2) — no novel/experimental dependency,
-      framework, or pattern is introduced where a simpler proven alternative
-      exists; any such choice is recorded in Complexity Tracking below.
-- [ ] **YAGNI** (§11.3) — no speculative generality, premature abstraction, or
-      config knobs without a present consumer.
-- [ ] **Reuse first** (§11.4) — existing libraries/patterns/abstractions are
-      reused before introducing new ones.
-- [ ] **Testable** (§11.6) — the approach is demonstrably testable; untested or
-      untestable paths are not treated as complete (pairs with Article IV TDD).
+> Any deviation from the simplest viable solution MUST be recorded in the Complexity Tracking table below (§11.5), or this gate fails.
 
-> Any deviation from the simplest viable solution MUST be recorded in the
-> Complexity Tracking table below (§11.5), or this gate fails.
+**Additional gates**:
+- [x] **Article IV (TDD)** — Tests written before implementation (Red-Green-Refactor). New DB model + repository + service + API endpoints all get unit tests.
+- [x] **Article V (Async-First)** — `FeedbackService` methods are async. API routes use async handlers. `LocalFileStore` operations are async. Consistent with existing async patterns.
+- [x] **Article VI (`__init__.py`)** — New `feedback/` service sub-package gets bare `__init__.py`. No re-exports.
+- [x] **Article VII (Layered Architecture)** — New `FeedbackService` follows existing service pattern. New `FeedbackRepository` follows Repository pattern. API routes call service via God Class.
+- [x] **Article VIII (iOS-Grade Polish)** — Annotation overlay uses existing CSS tokens, spring animations, `prefers-reduced-motion` support, and `:focus-visible` patterns.
+- [x] **Article IX (Pit of Success)** — Annotation mode gracefully degrades if screenshot capture fails (toast + retry). No crash on missing canvas support.
+- [x] **Article X (Domain-Driven Package Decomposition)** — New `feedback/` service sub-package follows DDD boundary. Result types co-located in the sub-package. Max 2 levels of nesting.
+- [x] **UI compliance** — All templates and CSS comply with `docs/ux-rules.md`. S4/S3 findings resolved before merge.
 
 ## Project Structure
 
 ### Documentation (this feature)
 
 ```text
-docs/vault/Specs/[###-feature]/
-├── plan.md              # This file (/speckit.plan command output)
-├── research.md          # Phase 0 output (/speckit.plan command)
-├── data-model.md        # Phase 1 output (/speckit.plan command)
-├── quickstart.md        # Phase 1 output (/speckit.plan command)
-├── contracts/           # Phase 1 output (/speckit.plan command)
-└── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
+docs/vault/Specs/001 Annotate Elements And/
+├── spec.md              # Feature specification
+├── plan.md              # This file
+├── research.md          # Phase 0 output — technology decisions
+├── data-model.md        # Phase 1 output — DB entities and relationships
+├── quickstart.md        # Phase 1 output — implementation quickstart guide
+├── contracts/           # Phase 1 output — API contracts
+│   └── feedback-api.md
+└── tasks.md             # Phase 2 output (created by /speckit.tasks)
 ```
 
 ### Source Code (repository root)
-<!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
--->
 
 ```text
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
-src/
-├── models/
+anvil/
+├── api/
+│   ├── static/
+│   │   ├── css/
+│   │   │   └── feedback.css        # NEW — annotation overlay + feedback dashboard styles
+│   │   └── js/
+│   │       └── annotation.js       # NEW — annotation mode, canvas, drawing tools
+│   ├── templates/
+│   │   ├── feedback.html           # NEW — feedback dashboard template
+│   │   ├── partials/
+│   │   │   └── annotation-toolbar.html  # NEW — annotation toolbar partial
+│   │   └── base.html               # MODIFY — add Feedback nav tab + annotation.js script
+│   └── v1/
+│       ├── feedback.py             # NEW — feedback API routes
+│       └── pages.py                # MODIFY — add /feedback-page route
+├── db/
+│   ├── models/
+│   │   └── feedback_report.py      # NEW — FeedbackReport ORM model
+│   └── repositories/
+│       └── feedback_repository.py  # NEW — FeedbackRepository
 ├── services/
-├── cli/
-└── lib/
+│   └── feedback/
+│       ├── __init__.py             # NEW — bare docstring
+│       └── feedback_service.py     # NEW — FeedbackService
+├── storage/
+│   └── local.py                    # MODIFY — no changes needed (LocalFileStore handles any path)
+└── workspace/
+    └── workspace_paths.py          # MODIFY — add feedback_dir property
 
 tests/
-├── contract/
-├── integration/
-└── unit/
-
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
-
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
+├── unit/
 │   └── services/
-└── tests/
-
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
+│       └── test_feedback_service.py  # NEW — unit tests
+└── e2e/
+    └── test_feedback.py            # NEW — e2e HTTP + browser tests
 ```
 
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
+**Structure Decision**: Web application (monolith) — new files follow existing patterns for each layer. No architectural changes to the project structure.
 
 ## Complexity Tracking
 
@@ -119,5 +107,6 @@ directories captured above]
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+| — | — | — |
+
+No complexity deviations — all choices follow existing patterns with minimal additions.
