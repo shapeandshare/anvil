@@ -109,12 +109,81 @@ class TestMainConventionalCommit:
         assert "increment=AUTO" in captured.out
         assert "version_changed=true" in captured.out
 
-    def test_chore_returns_auto(self, capsys: pytest.CaptureFixture[str]) -> None:
-        """A 'chore' merge message classifies as AUTO."""
+    def test_chore_returns_patch(self, capsys: pytest.CaptureFixture[str]) -> None:
+        """A 'chore' merge message classifies as PATCH (not AUTO)."""
         with (
             patch(
                 "anvil.services.vault.detect_increment._merge_message",
                 return_value="chore: bump deps\n",
+            ),
+            patch(
+                "anvil.services.vault.detect_increment._read_version",
+                return_value="0.5.0",
+            ),
+            patch(
+                "anvil.services.vault.detect_increment._parent_version",
+                return_value="0.5.0",
+            ),
+        ):
+            main()
+        captured = capsys.readouterr()
+        assert "increment=PATCH" in captured.out
+        assert "version_changed=true" in captured.out
+
+
+class TestMainConventionalCommitBreaking:
+    """Tests for ``main()`` with BREAKING CHANGE markers."""
+
+    def test_breaking_in_footer_auto(
+        self, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """BREAKING CHANGE in the footer classifies as AUTO."""
+        with (
+            patch(
+                "anvil.services.vault.detect_increment._merge_message",
+                return_value="feat: add widget\n\nBREAKING CHANGE: api changed\n",
+            ),
+            patch(
+                "anvil.services.vault.detect_increment._read_version",
+                return_value="0.5.0",
+            ),
+            patch(
+                "anvil.services.vault.detect_increment._parent_version",
+                return_value="0.5.0",
+            ),
+        ):
+            main()
+        captured = capsys.readouterr()
+        assert "increment=AUTO" in captured.out
+        assert "version_changed=true" in captured.out
+
+    def test_feat_bang_auto(self, capsys: pytest.CaptureFixture[str]) -> None:
+        """A 'feat!:' merge message classifies as AUTO."""
+        with (
+            patch(
+                "anvil.services.vault.detect_increment._merge_message",
+                return_value="feat!: rewrite engine\n",
+            ),
+            patch(
+                "anvil.services.vault.detect_increment._read_version",
+                return_value="0.5.0",
+            ),
+            patch(
+                "anvil.services.vault.detect_increment._parent_version",
+                return_value="0.5.0",
+            ),
+        ):
+            main()
+        captured = capsys.readouterr()
+        assert "increment=AUTO" in captured.out
+        assert "version_changed=true" in captured.out
+
+    def test_chore_bang_auto(self, capsys: pytest.CaptureFixture[str]) -> None:
+        """A 'chore!:' merge message classifies as AUTO (! = BREAKING CHANGE)."""
+        with (
+            patch(
+                "anvil.services.vault.detect_increment._merge_message",
+                return_value="chore!: drop python 3.10\n",
             ),
             patch(
                 "anvil.services.vault.detect_increment._read_version",
