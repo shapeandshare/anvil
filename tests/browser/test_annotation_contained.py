@@ -89,24 +89,18 @@ class TestAnnotationContainedElements:
         assert result["noHidden"], "Should exclude display:none elements"
         assert result["noInvisible"], "Should exclude visibility:hidden elements"
         assert result["hasSpatial"], "Should include spatial data"
-        assert result["sampleSpatial"]["overlapRatio"] > 0, (
-            "Spatial data should have positive overlapRatio"
-        )
-        assert "relX" in result["sampleSpatial"], (
-            "Spatial data should include relX"
-        )
-        assert "relY" in result["sampleSpatial"], (
-            "Spatial data should include relY"
-        )
-        assert result["sampleSpatial"]["width"] > 0, (
-            "Spatial data should include width"
-        )
-        assert result["sampleSpatial"]["height"] > 0, (
-            "Spatial data should include height"
-        )
-        assert result["limitedToHundred"], (
-            "Max contained elements should default to 100"
-        )
+        assert (
+            result["sampleSpatial"]["overlapRatio"] > 0
+        ), "Spatial data should have positive overlapRatio"
+        assert "relX" in result["sampleSpatial"], "Spatial data should include relX"
+        assert "relY" in result["sampleSpatial"], "Spatial data should include relY"
+        assert result["sampleSpatial"]["width"] > 0, "Spatial data should include width"
+        assert (
+            result["sampleSpatial"]["height"] > 0
+        ), "Spatial data should include height"
+        assert result[
+            "limitedToHundred"
+        ], "Max contained elements should default to 100"
 
         checker.assert_no_errors()
 
@@ -166,15 +160,17 @@ class TestAnnotationContainedElements:
         }""")
 
         assert result.get("error") is None, result.get("error", "")
-        assert result["max5Respected"], (
-            "Max 5 limit not respected: got " + str(result["max5Count"])
+        assert result["max5Respected"], "Max 5 limit not respected: got " + str(
+            result["max5Count"]
         )
-        assert result["max20Respected"], (
-            "Max 20 limit not respected: got " + str(result["max20Count"])
+        assert result["max20Respected"], "Max 20 limit not respected: got " + str(
+            result["max20Count"]
         )
         assert result["cappingWorks"], (
-            "Capping did not reduce results: 5=" + str(result["max5Count"])
-            + " 20=" + str(result["max20Count"])
+            "Capping did not reduce results: 5="
+            + str(result["max5Count"])
+            + " 20="
+            + str(result["max20Count"])
         )
 
         checker.assert_no_errors()
@@ -244,11 +240,9 @@ class TestAnnotationContainedElements:
         }""")
 
         assert result.get("error") is None, result.get("error", "")
-        assert result["hasContainedElements"], (
-            "Annotation data should include containedElements array"
-        )
-        assert result["containedCount"] > 0, (
-            "containedElements should have entries"
-        )
+        assert result[
+            "hasContainedElements"
+        ], "Annotation data should include containedElements array"
+        assert result["containedCount"] > 0, "containedElements should have entries"
 
         checker.assert_no_errors()
