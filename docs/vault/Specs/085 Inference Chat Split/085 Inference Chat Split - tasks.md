@@ -1,7 +1,7 @@
 # Tasks: Play → Inference (Rename) + New Chat Page
 
-**Input**: Design documents from `specs/001-inference-chat-split/`
-**Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/chat-stream.md
+**Input**: Design documents from `docs/vault/Specs/085 Inference Chat Split/`
+**Prerequisites**: 085 Inference Chat Split - plan.md, 085 Inference Chat Split - spec.md, 085 Inference Chat Split - research.md, 085 Inference Chat Split - data-model.md, contracts/chat-stream.md
 
 **Organization**: Tasks grouped by user story. Each story is independently testable.
 

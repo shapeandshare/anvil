@@ -1,5 +1,5 @@
 ---
-title: "001 Inference Chat Split"
+title: "085 Inference Chat Split"
 type: spec
 tags:
   - type/spec
@@ -13,7 +13,7 @@ status: draft
 doc_type: spec
 epic: "Inference & Chat UX"
 aliases:
-  - 001 Inference Chat Split
+  - 085 Inference Chat Split
 ---
 
 # Feature Specification: Play &rarr; Inference (Rename) + New Chat Page
