@@ -1,3 +1,15 @@
+## v0.16.0 (2026-07-19)
+
+### Feat
+
+- capture contained element details with spatial data in annotations
+- enrich annotation report payload with element data and metadata
+
+### Fix
+
+- check session on exempt routes so annotation toggle appears post-login (#394)
+- gate annotation toggle to authenticated pages only
+
 ## v0.15.0 (2026-07-19)
 
 ### Feat
