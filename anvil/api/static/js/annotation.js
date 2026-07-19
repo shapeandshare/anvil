@@ -840,8 +840,6 @@ function isAnnotationUI(el) {
         height: Math.round(rect.height),
         selector: selector,
         elementInfo: extractElementData(el),
-        scrollX: window.scrollX || window.pageXOffset || 0,
-        scrollY: window.scrollY || window.pageYOffset || 0,
         containedElements: this._findContainedElements(rect)
       }
     };
@@ -909,9 +907,7 @@ function isAnnotationUI(el) {
       type: 'freehand',
       data: {
         path: this._drawPath,
-        bounds: { minX: minX, minY: minY, maxX: maxX, maxY: maxY },
-        scrollX: window.scrollX || window.pageXOffset || 0,
-        scrollY: window.scrollY || window.pageYOffset || 0
+        bounds: { minX: minX, minY: minY, maxX: maxX, maxY: maxY }
       }
     };
 
@@ -1334,8 +1330,6 @@ function isAnnotationUI(el) {
         width: Math.round(rect.width),
         height: Math.round(rect.height),
         selector: this._manageSelector,
-        scrollX: window.scrollX || window.pageXOffset || 0,
-        scrollY: window.scrollY || window.pageYOffset || 0,
         containedElements: this._findContainedElements(rect)
       };
       if (this._manageElementInfo) {
@@ -1566,14 +1560,28 @@ function isAnnotationUI(el) {
     formData.append('document_title', document.title);
     formData.append('user_agent', navigator.userAgent);
 
-    // Build annotations array
+    // Capture the screenshot target's viewport position at submit time
+    // so the detail view can correctly map viewport coords to screenshot coords.
+    var target = document.querySelector('.app-main') || document.body;
+    var targetRect = target.getBoundingClientRect();
+    var captureOffsetX = targetRect.left;
+    var captureOffsetY = targetRect.top;
+
+    // Build annotations array with capture offset patched in
     var annotations = [];
     for (var i = 0; i < this._annotations.length; i++) {
       var ann = this._annotations[i];
+      var data = ann.data;
+      // Deep-copy data to avoid mutating the in-memory annotation
+      if (data && typeof data === 'object') {
+        data = JSON.parse(JSON.stringify(data));
+        data.captureOffsetX = captureOffsetX;
+        data.captureOffsetY = captureOffsetY;
+      }
       annotations.push({
         type: ann.type,
         note: ann.note,
-        data: ann.data
+        data: data
       });
     }
     formData.append('annotations', JSON.stringify(annotations));
