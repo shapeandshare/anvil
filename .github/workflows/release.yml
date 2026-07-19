@@ -149,6 +149,10 @@ jobs:
         run: |
           set -euo pipefail
 
+          # cz bump creates a git commit — the runner has no default identity.
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
           INCREMENT="${{ needs.detect.outputs.increment }}"
 
           if [ "${INCREMENT}" = "AUTO" ]; then

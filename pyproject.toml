@@ -230,3 +230,8 @@ version_provider = "pep621"
 update_changelog_on_bump = true
 changelog_incremental = true
 changelog_file = "CHANGELOG.md"
+# Don't use "bump:" prefix (which cz_conventional_commits parses as a
+# conventional commit).  Using a non-standard prefix means cz bump
+# --changelog won't include the bump commit itself — only the actual
+# source PR changes appear in the CHANGELOG.
+bump_message = "release v{new_version} [skip ci]"
