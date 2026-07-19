@@ -1,3 +1,9 @@
+## v0.16.1 (2026-07-19)
+
+### Fix
+
+- correct annotation marker alignment for page scroll offset
+
 ## v0.16.0 (2026-07-19)
 
 ### Feat
