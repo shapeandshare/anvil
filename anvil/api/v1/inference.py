@@ -13,10 +13,13 @@ from the registry (not hardcoded values).
 
 from __future__ import annotations
 
-from typing import Any
+import json
+from typing import Any, AsyncGenerator
 
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import StreamingResponse
 
+from ...services.catalog.model_ref import ModelRef
 from ...services.inference.inference import InferenceService
 from .inference_schemas import (
     InferenceAttentionBody,
@@ -409,3 +412,96 @@ async def inference_generate(body: InferenceGenerateBody) -> dict[str, Any]:
     if body.adapter_id is not None:
         result["adapter_id"] = body.adapter_id
     return result
+
+
+@router.get("/chat/stream")
+async def chat_stream(
+    prompt: str = Query(..., min_length=1, description="User message prompt"),
+    model_name: str | None = Query(None, description="Model name"),
+    model_version: int | None = Query(None, description="Model version"),
+    temperature: float = Query(0.7, ge=0.1, le=2.0, description="Sampling temperature"),
+    max_tokens: int = Query(200, ge=1, le=500, description="Max tokens to generate"),
+) -> StreamingResponse:
+    """SSE streaming endpoint for chat-style model interaction.
+
+    Accepts a user prompt and streams the model's response character-by-character
+    via Server-Sent Events.  The demo model is used when ``model_name`` is
+    not provided.
+
+    Parameters
+    ----------
+    prompt : str
+        The user's message text.
+    model_name : str or None, optional
+        Name of the model to chat with. ``None`` resolves to the demo model.
+    model_version : int or None, optional
+        Model version number.
+    temperature : float, optional
+        Sampling temperature. Default ``0.7``.
+    max_tokens : int, optional
+        Maximum tokens to generate. Default ``200``.
+
+    Returns
+    -------
+    StreamingResponse
+        SSE event stream emitting ``chunk``, ``complete``, ``error``,
+        and ``heartbeat`` events.
+    """
+    ref: ModelRef | None = None
+    if model_name:
+        ref = ModelRef(name=model_name, version=model_version or 1)
+
+    try:
+        loaded = await _svc.load_model_by_ref(ref)
+    except (ValueError, FileNotFoundError, RuntimeError) as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+    async def event_stream() -> AsyncGenerator[str, None]:
+        queue: asyncio.Queue[str | None] = asyncio.Queue()
+
+        async def _run_generation() -> None:
+            try:
+                async for char in _svc.generate_stream(
+                    loaded,
+                    prompt=prompt,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                ):
+                    await queue.put(char)
+                await queue.put(None)  # sentinel
+            except Exception as exc:
+                await queue.put(exc)
+
+        task = asyncio.create_task(_run_generation())
+
+        try:
+            while True:
+                try:
+                    item = await asyncio.wait_for(queue.get(), timeout=30)
+                except TimeoutError:
+                    yield "event: heartbeat\ndata: {}\n\n"
+                    continue
+
+                if item is None:
+                    yield "event: complete\ndata: {}\n\n"
+                    break
+                if isinstance(item, Exception):
+                    yield f"event: error\ndata: {json.dumps({'message': str(item)})}\n\n"
+                    break
+                yield f"event: chunk\ndata: {json.dumps({'text': item})}\n\n"
+        finally:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                # Expected when awaiting a cancelled background task during cleanup.
+                pass
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )

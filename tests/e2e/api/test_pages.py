@@ -400,3 +400,13 @@ async def test_data_sources_page(client: httpx.AsyncClient) -> None:
     assert r.status_code == 200
     assert "text/html" in r.headers["content-type"]
     assert "Analyze Path" in r.text
+
+
+@pytest.mark.asyncio
+async def test_chat_page(client: httpx.AsyncClient) -> None:
+    """GET /v1/chat-page renders the conversational chat page."""
+    r = await client.get("/v1/chat-page")
+    assert r.status_code == 200
+    assert "text/html" in r.headers["content-type"]
+    assert "Chat with a Model" in r.text
+    assert "Start a conversation" in r.text
