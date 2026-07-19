@@ -1,27 +1,54 @@
 ---
 title: <NNN> <Spec Name>
 type: spec
-status: draft
-related:
-  - '[[Specs]]'
-spec-refs:
-  - specs/<NNN-spec-slug>/
-created: ''
-updated: ''
 tags:
   - type/spec
   - domain/<domain>
+spec-refs:
+  - docs/vault/Specs/NNN Title/
+created: ''
+updated: ''
+spec_number: NNN
+status: draft
+doc_type: spec
 aliases:
   - <NNN> <Spec Name>
 ---
 
-{Framing sentence: what this spec is and why it exists.}
+# Feature Specification: [SPEC NAME]
 
 **Spec status:** {⏳ waiting | 🚧 in progress | ✅ done | 🚫 superseded | 📌 placeholder}
 
-## Summary
+**Feature Branch**: `[###-feature-name]`
+**Created**: [DATE]
+
+{Framing sentence: what this spec is and why it exists.}
 
 {2–4 sentence summary of what this spec delivers and why.}
+
+## User Scenarios & Testing
+
+### User Story 1 - [Brief Title] (Priority: P1)
+
+{Describe this user journey in plain language.}
+
+**Acceptance Scenarios**:
+
+1. **Given** [initial state], **When** [action], **Then** [expected outcome]
+
+### Edge Cases
+
+- What happens when [boundary condition]?
+
+## Requirements
+
+### Functional Requirements
+
+- **FR-001**: System MUST [specific capability]
+
+### Key Entities
+
+- **[Entity 1]**: [What it represents]
 
 ## Key decisions
 
@@ -32,7 +59,12 @@ aliases:
 {For "done" specs: link to the `Systems/` note(s) that implement this.}
 {For "in progress" specs: which tasks are complete, which remain.}
 {For "waiting" specs: "Not yet started."}
-{For "superseded" specs: > [!warning] SUPERSEDED by [[NNN Title of replacement spec]].}
+
+## Success Criteria
+
+### Measurable Outcomes
+
+- **SC-001**: [Measurable metric]
 
 ## Open items
 
@@ -40,5 +72,5 @@ aliases:
 
 ## References
 
-- {link to the spec-kit artifact under `specs/` — match spec-refs}
-- {wikilinks to the `Systems/` note(s) that implement this, related `Design/` notes}
+- {wikilinks to the `Systems/` note(s) that implement this}
+- [[Specs/Specs|Specs]]

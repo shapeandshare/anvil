@@ -1,8 +1,25 @@
+---
+title: "[NNN] [Spec Name]"
+type: spec
+tags:
+  - type/spec
+  - domain/<domain>
+spec-refs:
+  - docs/vault/Specs/NNN Title/
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+spec_number: NNN
+status: draft
+doc_type: spec
+aliases:
+  - NNN Spec Name
+---
+
 # Feature Specification: [FEATURE NAME]
 
+**Spec status:** ⏳ waiting
 **Feature Branch**: `[###-feature-name]`  
 **Created**: [DATE]  
-**Status**: Draft  
 **Input**: User description: "$ARGUMENTS"
 
 ## User Scenarios & Testing *(mandatory)*
@@ -113,6 +130,11 @@
 - **SC-002**: [Measurable metric, e.g., "System handles 1000 concurrent users without degradation"]
 - **SC-003**: [User satisfaction metric, e.g., "90% of users successfully complete primary task on first attempt"]
 - **SC-004**: [Business metric, e.g., "Reduce support tickets related to [X] by 50%"]
+
+## Related
+
+- [[Systems/Systems|Systems]] — replace with the Systems/ note(s) this spec modifies
+- [[Specs/Specs|Specs]] — folder MOC
 
 ## Assumptions
 
