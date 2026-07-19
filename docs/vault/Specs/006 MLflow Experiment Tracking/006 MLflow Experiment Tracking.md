@@ -4,6 +4,7 @@ type: spec
 tags:
   - type/spec
   - domain/tracking
+  - status/draft
 spec-refs:
   - docs/vault/Specs/006 MLflow Experiment Tracking/
 status: draft

@@ -6,6 +6,7 @@ tags:
   - domain/database
   - domain/infrastructure
   - domain/architecture
+  - status/draft
 spec-refs:
   - docs/vault/Specs/058 At-Rest Secret Encryption/
 status: draft

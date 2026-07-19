@@ -4,6 +4,7 @@ type: spec
 tags:
   - type/spec
   - domain/infrastructure
+  - status/draft
 spec-refs:
   - docs/vault/Specs/034 SaaS One-Command Deploy/
 status: draft

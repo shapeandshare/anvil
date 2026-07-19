@@ -4,6 +4,7 @@ type: spec
 tags:
   - type/spec
   - domain/vault
+  - status/draft
 spec-refs:
   - docs/vault/Specs/001 Bootstrap LLM Workbench/
 status: draft

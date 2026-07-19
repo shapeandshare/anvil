@@ -4,6 +4,7 @@ type: spec
 tags:
   - type/spec
   - domain/ui
+  - status/draft
 spec-refs:
   - docs/vault/Specs/021 API E2E Suite/
 status: draft

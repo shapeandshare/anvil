@@ -5,6 +5,7 @@ tags:
   - type/spec
   - domain/training
   - domain/core
+  - status/draft
 spec-refs:
   - docs/vault/Specs/039 Model Warm-Start/
 status: draft

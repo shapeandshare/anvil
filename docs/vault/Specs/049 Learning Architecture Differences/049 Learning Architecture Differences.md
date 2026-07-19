@@ -5,6 +5,7 @@ tags:
   - type/spec
   - domain/content
   - domain/ui
+  - status/draft
 spec-refs:
   - docs/vault/Specs/049 Learning Architecture Differences/
 status: draft

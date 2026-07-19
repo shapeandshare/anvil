@@ -5,6 +5,7 @@ tags:
   - type/spec
   - domain/training
   - domain/operations
+  - status/draft
 spec-refs:
   - docs/vault/Specs/046 Fine-Tune Compute Routing/
 status: draft

@@ -4,6 +4,7 @@ type: spec
 tags:
   - type/spec
   - domain/tooling
+  - status/draft
 spec-refs:
   - docs/vault/Specs/023 Header API Versioning/
 status: draft

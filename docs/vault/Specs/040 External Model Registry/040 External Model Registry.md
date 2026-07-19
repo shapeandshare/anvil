@@ -5,6 +5,7 @@ tags:
   - type/spec
   - domain/training
   - domain/tracking
+  - status/draft
 spec-refs:
   - docs/vault/Specs/040 External Model Registry/
 status: draft

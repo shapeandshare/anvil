@@ -5,6 +5,7 @@ tags:
   - type/spec
   - domain/content
   - domain/ui
+  - status/draft
 spec-refs:
   - docs/vault/Specs/048 Learning Fine-Tuning Concepts/
 status: draft

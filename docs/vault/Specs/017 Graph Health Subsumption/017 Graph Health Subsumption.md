@@ -4,6 +4,7 @@ type: spec
 tags:
   - type/spec
   - domain/vault
+  - status/draft
 spec-refs:
   - docs/vault/Specs/017 Graph Health Subsumption/
 status: draft

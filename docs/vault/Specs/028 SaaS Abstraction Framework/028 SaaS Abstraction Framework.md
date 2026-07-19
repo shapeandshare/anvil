@@ -5,6 +5,7 @@ tags:
   - type/spec
   - domain/infrastructure
   - domain/architecture
+  - status/draft
 spec-refs:
   - docs/vault/Specs/028 SaaS Abstraction Framework/
 status: draft

@@ -6,6 +6,7 @@ tags:
   - domain/training
   - domain/operations
   - domain/infrastructure
+  - status/draft
 spec-refs:
   - docs/vault/Specs/032 SaaS Training Pipeline/
 status: draft
