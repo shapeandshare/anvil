@@ -286,6 +286,31 @@ async def inference_page(request: Request) -> HTMLResponse:
     )
 
 
+@router.get("/chat-page", response_class=HTMLResponse)
+async def chat_page(request: Request) -> HTMLResponse:
+    """Render the conversational chat page.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming HTTP request.
+
+    Returns
+    -------
+    HTMLResponse
+        Rendered ``archetypes/chat.html`` template.
+    """
+    return request.app.state.templates.TemplateResponse(  # type: ignore[no-any-return]
+        request,
+        "archetypes/chat.html",
+        {
+            "related_lessons": related_lessons(
+                "sampling", "attention", "embeddings", "graph"
+            ),
+        },
+    )
+
+
 def _arc_context(key: str) -> dict[str, Any]:
     """Look up the learning arc context dictionary for a given key.
 

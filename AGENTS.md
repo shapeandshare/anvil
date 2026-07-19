@@ -1,6 +1,6 @@
 # anvil — Agent Guidelines
 
-**Last updated**: 2026-07-18 (constitution v1.8.0: Article XI Simplicity First / Boring Technology + ADR-041; sonarcloud-tooling + content-repository-016-mvp; scripts-python-over-bash + package-module-migration, testing-guide consolidation; OWASP remediation spec 017 + ADRs 035/036; whole-API e2e test suite 017; TDD workflow enforcement in testing section, Principle 2, and Architecture Rules)
+**Last updated**: 2026-07-19 (constitution v1.8.0: Article XI Simplicity First / Boring Technology + ADR-041; sonarcloud-tooling + content-repository-016-mvp; scripts-python-over-bash + package-module-migration, testing-guide consolidation; OWASP remediation spec 017 + ADRs 035/036; whole-API e2e test suite 017; TDD workflow enforcement in testing section, Principle 2, and Architecture Rules)
 
 ## Project Overview
 
@@ -529,6 +529,8 @@ SomeException
 - N/A — Paperclip handles its own embedded Postgres state (063-paperclip-bootstrap)
 - Python 3.11+ (backend) + Vanilla JavaScript ES2020 (frontend — no transpiler/bundler) + Existing stack (FastAPI, Jinja2, async SQLAlchemy, aiosqlite) + `html-to-image` (CDN-loaded, for DOM-to-canvas screenshot capture) (001-annotate-elements-and)
 - LocalFileStore at `data/feedback/{report_id}/screenshot.png`; SQLite `anvil-state.db` via new `FeedbackReport` + `Annotation` DB models (001-annotate-elements-and)
+- Python 3.11+ + FastAPI, Jinja2, SSE (all existing — no new deps) (001-inference-chat-split)
+- In-memory (ephemeral chat conversations); existing SQLite + LocalFileStore for model metadata (001-inference-chat-split)
 
 ## Recent Changes
 - 025-ux-rules-integration: Added Python 3.11+ (existing repo convention) + Stdlib only — `ux_lint.py` (re/ sys/ os/), `ux_review.py` (stdlib + urllib for OpenAI-compatible API calls)

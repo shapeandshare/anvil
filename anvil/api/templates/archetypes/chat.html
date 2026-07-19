@@ -1,0 +1,431 @@
+<!--
+  ~ Copyright © 2026 Josh Burt
+  ~
+  ~ This source code is licensed under the MIT license found in the
+  ~ LICENSE file in the root directory of this source tree.
+-->
+
+{% extends "base.html" %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css"><link rel="stylesheet" href="/static/css/components.css">{% endblock %}
+{% block content %}
+
+<div class="playground-layout">
+
+  <div class="section-card" style="--stagger-i: 0">
+    <div class="section-card__header">
+      <span class="section-card__icon">&#128172;</span>
+      <div class="section-card__title">Chat with a Model</div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:var(--space-2);">
+        <button type="button" class="chat-export-btn" id="chat-export-btn" style="display:none;" title="Export conversation">Export</button>
+        <div id="chat-connection-state" class="connection-dot connection-dot--disconnected" title="Disconnected" aria-live="polite"></div>
+      </div>
+    </div>
+    <div class="section-card__content" style="padding:0;">
+      {# -- Model selection bar -- #}
+      <div class="chat-controls" style="border-bottom:1px solid var(--border);padding:var(--space-2) var(--space-3);">
+        <label style="flex:1;">
+          Model
+          <select id="chat-model-select" class="form-select" aria-label="Select model">
+            <option value="">Loading models...</option>
+          </select>
+        </label>
+        <label id="chat-version-label" style="display:none;">
+          Version
+          <select id="chat-version-select" class="form-select"></select>
+        </label>
+      </div>
+      <div class="chat-history" id="chat-history" role="log" aria-label="Chat messages" aria-live="polite" aria-relevant="additions">
+        <div class="chat-empty-state" id="chat-empty-state">
+          <div style="font-size:2rem;opacity:0.3;">&#128172;</div>
+          <div style="font-weight:600;color:var(--text-secondary);">Start a conversation</div>
+          <div style="font-size:var(--text-footnote);color:var(--text-tertiary);">Type a message below to chat with the demo model.</div>
+        </div>
+      </div>
+
+      {# -- Context usage indicator -- #}
+      <div style="padding:0 var(--space-3);">
+        <div class="chat-context-bar" id="chat-context-bar" style="display:none;" title="Context usage">
+          <div class="chat-context-bar__fill" id="chat-context-fill" style="width:0%;"></div>
+        </div>
+      </div>
+
+      {# -- Controls: temperature -- #}
+      <div class="chat-controls">
+        <label title="Controls how random the output is. Low = precise, high = creative.">
+          Temperature
+          <input type="range" id="chat-temp" min="0.1" max="2.0" step="0.1" value="0.7" aria-label="Temperature">
+          <span id="chat-temp-value" style="font-family:var(--font-mono);font-size:var(--text-footnote);min-width:2em;">0.7</span>
+        </label>
+        <span id="chat-char-warn" style="color:var(--accent-red);font-size:var(--text-caption-2);display:none;">Limit: 2000 chars</span>
+      </div>
+
+      {# -- Input area -- #}
+      <div class="chat-input-area">
+        <textarea id="chat-input" placeholder="Type a message..." rows="1" aria-label="Message input" maxlength="2000"></textarea>
+        <button type="button" class="chat-send-btn" id="chat-send-btn" aria-label="Send message" disabled>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M2 21L23 12 2 3v7l15 2-15 2v7z"/></svg>
+        </button>
+        <button type="button" class="chat-cancel-btn" id="chat-cancel-btn" style="display:none;" aria-label="Cancel generation">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+{% block scripts %}
+<script nonce="{{ request.state.csp_nonce }}">
+(function() {
+  'use strict';
+
+  /* ── State ── */
+  var conversation = [];          // {role, text, status}
+  var currentStream = null;       // EventSource or null
+  var isGenerating = false;
+  var modelsData = [];            // loaded models list
+  var selectedModel = null;       // current model object
+  var selectedVersion = 1;
+
+  /* ── Model helpers ── */
+  function modelKey(m) { return m.id != null ? String(m.id) : m.name; }
+  function findModelByKey(key) {
+    return modelsData.find(function(m) { return modelKey(m) === key; });
+  }
+  function modelOptKey(m) { return 'm_' + (m.id != null ? String(m.id) : m.name); }
+
+  /* ── DOM refs ── */
+  var historyEl = document.getElementById('chat-history');
+  var emptyState = document.getElementById('chat-empty-state');
+  var inputEl = document.getElementById('chat-input');
+  var sendBtn = document.getElementById('chat-send-btn');
+  var cancelBtn = document.getElementById('chat-cancel-btn');
+  var exportBtn = document.getElementById('chat-export-btn');
+  var tempInput = document.getElementById('chat-temp');
+  var tempValue = document.getElementById('chat-temp-value');
+  var charWarn = document.getElementById('chat-char-warn');
+  var contextFill = document.getElementById('chat-context-fill');
+  var contextBar = document.getElementById('chat-context-bar');
+  var connState = document.getElementById('chat-connection-state');
+  var modelSelect = document.getElementById('chat-model-select');
+  var versionLabel = document.getElementById('chat-version-label');
+  var versionSelect = document.getElementById('chat-version-select');
+
+  /* ── Helpers ── */
+  function escHtml(s) {
+    if (s == null) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function showToast(msg, type) {
+    var container = document.getElementById('toast-container');
+    if (!container) return;
+    var el = document.createElement('div');
+    el.className = 'toast toast-' + type;
+    el.textContent = msg;
+    container.appendChild(el);
+    setTimeout(function() { if (el.parentNode) el.remove(); }, type === 'error' ? 10000 : 3000);
+  }
+
+  function setConnectionState(state) {
+    connState.className = 'connection-dot connection-dot--' + state;
+    connState.title = state === 'connected' ? 'Connected' : state === 'streaming' ? 'Streaming' : 'Disconnected';
+  }
+
+  function updateEmptyState() {
+    emptyState.style.display = conversation.length === 0 ? '' : 'none';
+    exportBtn.style.display = conversation.length > 0 ? '' : 'none';
+  }
+
+  function updateContextBar() {
+    var pct = Math.min(100, conversation.length * 8);
+    contextBar.style.display = pct > 0 ? '' : 'none';
+    contextFill.style.width = pct + '%';
+  }
+
+  function addMessage(role, text, status) {
+    status = status || 'complete';
+    conversation.push({ role: role, text: text, status: status });
+    var msg = document.createElement('div');
+    msg.className = 'chat-message chat-message--' + role + (status !== 'complete' ? ' chat-message--' + status : '');
+    if (status === 'streaming') msg.classList.add('streaming');
+    msg.innerHTML = '<div class="chat-message__label">' + (role === 'user' ? 'You' : 'Model') + '</div>'
+      + '<div class="chat-message__text">' + escHtml(text) + '</div>';
+    historyEl.appendChild(msg);
+    historyEl.scrollTop = historyEl.scrollHeight;
+    updateEmptyState();
+    updateContextBar();
+  }
+
+  function updateLastMessage(text, status) {
+    var last = conversation[conversation.length - 1];
+    if (!last) return;
+    last.text = text;
+    if (status) last.status = status;
+    var msgEl = historyEl.lastElementChild;
+    if (msgEl && msgEl.classList.contains('chat-message--assistant')) {
+      msgEl.className = 'chat-message chat-message--assistant' + (status && status !== 'complete' ? ' chat-message--' + status : '');
+      if (status === 'streaming') msgEl.classList.add('streaming');
+      var textEl = msgEl.querySelector('.chat-message__text');
+      if (textEl) textEl.textContent = text;
+    }
+    historyEl.scrollTop = historyEl.scrollHeight;
+  }
+
+  /* ── Temperature slider ── */
+  tempInput.addEventListener('input', function() {
+    tempValue.textContent = this.value;
+  });
+
+  /* ── Input validation ── */
+  inputEl.addEventListener('input', function() {
+    var len = this.value.length;
+    if (len > 2000) {
+      this.value = this.value.substring(0, 2000);
+      charWarn.style.display = '';
+    } else {
+      charWarn.style.display = 'none';
+    }
+    sendBtn.disabled = this.value.trim().length === 0 || isGenerating;
+  });
+
+  inputEl.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  /* ── Send message ── */
+  function sendMessage() {
+    var text = inputEl.value.trim();
+    if (!text || isGenerating) return;
+    if (text.length > 2000) {
+      showToast('Message exceeds 2000 character limit', 'error');
+      return;
+    }
+
+    // Warn when context is nearly full — oldest messages will be dropped
+    if (conversation.length > 20) {
+      showToast('Conversation is long — oldest messages may be dropped to fit context', 'info');
+    }
+
+    addMessage('user', text, 'complete');
+    inputEl.value = '';
+    sendBtn.disabled = true;
+    isGenerating = true;
+    cancelBtn.style.display = '';
+    setConnectionState('streaming');
+
+    var url = '/v1/chat/stream?prompt=' + encodeURIComponent(text)
+      + '&temperature=' + encodeURIComponent(tempInput.value);
+
+    if (modelSelect.value) {
+      var model = findModelByKey(modelSelect.value);
+      if (model) {
+        url += '&model_name=' + encodeURIComponent(model.name);
+        if (versionLabel.style.display !== 'none' && versionSelect.value) {
+          url += '&model_version=' + encodeURIComponent(versionSelect.value);
+        }
+      }
+    }
+
+    addMessage('assistant', '', 'streaming');
+    currentStream = new EventSource(url);
+
+    currentStream.addEventListener('chunk', function(e) {
+      try {
+        var d = JSON.parse(e.data);
+        var lastMsg = conversation[conversation.length - 1];
+        if (lastMsg) {
+          var newText = lastMsg.text + d.text;
+          updateLastMessage(newText, 'streaming');
+        }
+      } catch (err) {
+        // ignore malformed chunk
+      }
+    });
+
+    currentStream.addEventListener('complete', function() {
+      endStream('complete');
+    });
+
+    currentStream.addEventListener('error', function(e) {
+      if (currentStream && currentStream.readyState === EventSource.CLOSED) {
+        endStream('interrupted');
+      } else {
+        // transient error — EventSource will auto-reconnect
+      }
+    });
+  }
+
+  function endStream(status) {
+    if (currentStream) {
+      currentStream.close();
+      currentStream = null;
+    }
+    isGenerating = false;
+    cancelBtn.style.display = 'none';
+    setConnectionState('disconnected');
+    sendBtn.disabled = inputEl.value.trim().length === 0;
+
+    if (conversation.length > 0) {
+      var last = conversation[conversation.length - 1];
+      if (last.role === 'assistant' && last.status === 'streaming') {
+        updateLastMessage(last.text, status || 'complete');
+      }
+    }
+  }
+
+  /* ── Cancel ── */
+  cancelBtn.addEventListener('click', function() {
+    endStream('cancelled');
+    showToast('Generation cancelled', 'info');
+  });
+
+  /* ── Send button ── */
+  sendBtn.addEventListener('click', sendMessage);
+
+  /* ── Model loading ── */
+  function createModelOpt(m) {
+    var opt = document.createElement('option');
+    if (m._placeholder) {
+      opt.value = m.value || '';
+      opt.textContent = m.label || '';
+    } else {
+      opt.value = modelKey(m);
+      var loss = m.final_loss != null ? m.final_loss.toFixed(4) : '?';
+      opt.textContent = m.name + ' \u2014 loss: ' + loss;
+    }
+    return opt;
+  }
+
+  function updateModelOpt(opt, m) {
+    if (m._placeholder) {
+      dom.setAttr(opt, 'value', m.value || '');
+      dom.setText(opt, m.label || '');
+    } else {
+      dom.setAttr(opt, 'value', modelKey(m));
+      var loss = m.final_loss != null ? m.final_loss.toFixed(4) : '?';
+      dom.setText(opt, m.name + ' \u2014 loss: ' + loss);
+    }
+  }
+
+  function updateVersionSelect() {
+    var key = modelSelect.value;
+    if (!key) { versionLabel.style.display = 'none'; return; }
+    var model = findModelByKey(key);
+    if (model && model.total_versions > 1) {
+      versionLabel.style.display = '';
+      var versions = [];
+      for (var v = 1; v <= model.total_versions; v++) {
+        versions.push({ v: v, selected: v === (model.latest_version || 1) });
+      }
+      dom.syncList(versionSelect, versions, function(it) { return 'v' + it.v; },
+        function createVerOpt(it) {
+          var opt = document.createElement('option');
+          opt.value = String(it.v);
+          opt.textContent = 'v' + it.v;
+          if (it.selected) opt.selected = true;
+          return opt;
+        },
+        function updateVerOpt(opt, it) {
+          dom.setAttr(opt, 'value', String(it.v));
+          dom.setText(opt, 'v' + it.v);
+          if (opt.selected !== it.selected) opt.selected = it.selected;
+        }
+      );
+    } else {
+      versionLabel.style.display = 'none';
+    }
+  }
+
+  function loadModels() {
+    fetch('/v1/inference/models').then(function(r) { return r.json(); }).then(function(data) {
+      if (data.models.length === 0) {
+        dom.setHtml(modelSelect, '<option value="">No models registered</option>');
+        return;
+      }
+      modelsData = data.models;
+      modelSelect.innerHTML = '';
+      var items = [{ _placeholder: true, value: '', label: '\u2014 select a model \u2014' }].concat(modelsData);
+      dom.syncList(modelSelect, items, function(it) {
+        return it._placeholder ? '_placeholder' : modelOptKey(it);
+      }, createModelOpt, updateModelOpt);
+
+      /* Pre-select demo model if available */
+      for (var i = 0; i < modelSelect.options.length; i++) {
+        var opt = modelSelect.options[i];
+        if (opt.value) {
+          var model = findModelByKey(opt.value);
+          if (model && (model.name === 'demo' || model.name && model.name.indexOf('demo') !== -1)) {
+            modelSelect.value = opt.value;
+            break;
+          }
+        }
+      }
+      /* Fallback: select first real model */
+      if (!modelSelect.value && modelSelect.options.length > 1) {
+        modelSelect.value = modelSelect.options[1].value;
+      }
+
+      updateVersionSelect();
+
+      /* URL param pre-selection */
+      var params = core.getUrlParams();
+      var preselectKey = params.get('model_id');
+      if (preselectKey) {
+        for (var i = 0; i < modelSelect.options.length; i++) {
+          if (modelSelect.options[i].value === preselectKey) {
+            modelSelect.value = preselectKey;
+            updateVersionSelect();
+            break;
+          }
+        }
+      }
+    }).catch(function() {
+      dom.setHtml(modelSelect, '<option value="">Failed to load models</option>');
+    });
+  }
+
+  modelSelect.addEventListener('change', function() {
+    updateVersionSelect();
+  });
+  exportBtn.addEventListener('click', function() {
+    var lines = [];
+    lines.push('Conversation \u2014 ' + new Date().toISOString().split('T')[0]);
+    lines.push('');
+    conversation.forEach(function(msg) {
+      lines.push('\u2500\u2500\u2500 ' + (msg.role === 'user' ? 'User' : 'Assistant') + ' \u2500\u2500\u2500');
+      lines.push(msg.text);
+      lines.push('');
+    });
+    var text = lines.join('\n');
+    var blob = new Blob([text], { type: 'text/plain' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'conversation-' + new Date().toISOString().split('T')[0] + '.txt';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    showToast('Conversation exported', 'success');
+  });
+
+  /* ── Init ── */
+  sendBtn.disabled = true;
+  setConnectionState('disconnected');
+  updateEmptyState();
+  loadModels();
+
+  })();
+</script>
+{% endblock %}
+{% block didyouknow_banner %}
+<div id="didyouknow-banner" class="didyouknow">
+  <span class="didyouknow__icon" aria-hidden="true">&#9670;</span>
+  <div>
+    <div class="didyouknow__label">&#9670; Did You Know?</div>
+    <span id="didyouknow-text"></span>
+  </div>
+  <button type="button" class="didyouknow__dismiss" aria-label="Dismiss">&#10005;</button>
+</div>
+{% endblock %}
