@@ -590,7 +590,7 @@ class VaultAuditService:
             except OSError as e:
                 report.add(
                     Finding(
-                        note_path=note_path_str,
+                        note_path=str(note_path_str),
                         line=0,
                         rule="read_error",
                         message=f"cannot read file: {e}",
