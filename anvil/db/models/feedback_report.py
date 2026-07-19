@@ -2,6 +2,9 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
+# one-class:allow — bidirectional ORM relationship() cycle between
+# FeedbackReport ↔ FeedbackAnnotation; merging is the constitution-
+# prescribed resolution for co-dependent model classes (Article VI).
 
 """FeedbackReport and FeedbackAnnotation ORM models.
 

@@ -206,7 +206,7 @@ class FeedbackRepository:
             delete(FeedbackReport).where(FeedbackReport.id == report_id)
         )
         await self._session.flush()
-        return result.rowcount > 0
+        return result.rowcount > 0  # type: ignore[attr-defined, no-any-return]
 
     async def batch_delete(self, report_ids: list[int]) -> int:
         """Delete multiple feedback reports by primary key.
@@ -225,7 +225,7 @@ class FeedbackRepository:
             delete(FeedbackReport).where(FeedbackReport.id.in_(report_ids))
         )
         await self._session.flush()
-        return result.rowcount
+        return result.rowcount  # type: ignore[attr-defined, no-any-return]
 
     async def add_annotation(
         self,
