@@ -187,6 +187,7 @@ function isAnnotationUI(el) {
 
     // Toolbar & toggle
     this._toggleBtn = null;
+    this._onBoundToggleClick = null;
 
     // Scroll tracking — RAF-throttled re-render
     this._scrollRAF = null;
@@ -313,42 +314,35 @@ function isAnnotationUI(el) {
   /* ── Toggle Button ─────────────────────────────────────────── */
 
   /**
-   * Create the floating toggle button (always visible outside annotation mode).
+   * Find the existing toggle button in the nav bar and wire it up.
    */
   AnnotationCanvas.prototype._createToggleButton = function() {
     if (this._toggleBtn) return;
 
-    var btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'feedback-toggle-btn';
-    btn.setAttribute('aria-label', 'Toggle annotation mode');
-    btn.setAttribute('title', 'Annotate this page');
-    btn.innerHTML =
-      '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true">' +
-        '<path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/>' +
-        '<path d="M20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>' +
-      '</svg>';
+    var btn = document.getElementById('feedback-toggle-btn');
+    if (!btn) return;
 
     var self = this;
-    btn.addEventListener('click', function() {
+    this._onBoundToggleClick = function() {
       if (self._annotationMode) {
         self._exitAnnotationMode();
       } else {
         self._enterAnnotationMode();
       }
-    });
-
-    document.body.appendChild(btn);
+    };
+    btn.addEventListener('click', this._onBoundToggleClick);
     this._toggleBtn = btn;
   };
 
   /**
-   * Remove the toggle button.
+   * Unbind the toggle button (static nav bar element, not removed).
    */
   AnnotationCanvas.prototype._removeToggleButton = function() {
-    if (this._toggleBtn && this._toggleBtn.parentNode) {
-      this._toggleBtn.parentNode.removeChild(this._toggleBtn);
+    if (this._toggleBtn && this._onBoundToggleClick) {
+      this._toggleBtn.classList.remove('feedback-toggle-btn--active');
+      this._toggleBtn.removeEventListener('click', this._onBoundToggleClick);
     }
+    this._onBoundToggleClick = null;
     this._toggleBtn = null;
   };
 
@@ -363,7 +357,7 @@ function isAnnotationUI(el) {
     this._hasUnsavedChanges = false;
 
     if (this._toggleBtn) {
-      this._toggleBtn.style.display = 'none';
+      this._toggleBtn.classList.add('feedback-toggle-btn--active');
     }
 
     this._createOverlay();
@@ -392,7 +386,7 @@ function isAnnotationUI(el) {
     this._removeBeforeUnload();
 
     if (this._toggleBtn) {
-      this._toggleBtn.style.display = '';
+      this._toggleBtn.classList.remove('feedback-toggle-btn--active');
     }
 
     if (this.options.onClose) {

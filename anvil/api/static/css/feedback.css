@@ -360,35 +360,7 @@
   border-color: var(--accent);
 }
 
-/* ── Annotation Toggle Button (floating) ── */
-.feedback-toggle-btn {
-  position: fixed;
-  bottom: var(--space-6);
-  right: var(--space-6);
-  z-index: 8999;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: none;
-  background: var(--accent);
-  color: #fff;
-  font-size: 1.4rem;
-  cursor: pointer;
-  box-shadow: var(--shadow-lg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform var(--dur-fast) var(--spring-quick), box-shadow var(--dur-fast) var(--ease);
-}
 
-.feedback-toggle-btn:hover {
-  transform: scale(1.08);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
-}
-
-.feedback-toggle-btn:active {
-  transform: scale(0.95);
-}
 
 /* ── Report Status Badges ── */
 .feedback-status-badge {
