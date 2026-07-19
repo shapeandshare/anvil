@@ -216,6 +216,22 @@ jobs:
       - name: Run constitution checks
         run: make constitution-check
 
+  # ── Gitleaks secrets scan gate ──
+  gitleaks-scan:
+    name: Gitleaks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: bump-scope-guard
+    if: needs.bump-scope-guard.outputs.scope != 'version-only' && github.ref_name != 'main'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   # ── UX lint gate (deterministic, no network) ──
   ux-lint:
     name: UX Lint
@@ -260,7 +276,7 @@ jobs:
     name: Gate Status
     runs-on: ubuntu-latest
     timeout-minutes: 3
-    needs: [bump-scope-guard, format, lint, typecheck, test, sonar-scan, vault-audit, constitution-check, ux-lint]
+    needs: [bump-scope-guard, format, lint, typecheck, test, sonar-scan, vault-audit, constitution-check, gitleaks-scan, ux-lint]
     if: always()
     steps:
       - name: Summarize gate results
@@ -277,5 +293,6 @@ jobs:
           echo "| sonar-scan | ${{ needs.sonar-scan.result }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| vault-audit | ${{ needs.vault-audit.result }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| constitution-check | ${{ needs.constitution-check.result }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| gitleaks-scan | ${{ needs.gitleaks-scan.result }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| ux-lint | ${{ needs.ux-lint.result }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
