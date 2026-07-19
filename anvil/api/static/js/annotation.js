@@ -3,1183 +3,255 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+/**
+ * Visual feedback annotation — live-page overlay with two modes:
+ *   element-select (click-to-highlight) and freehand (SVG drawing).
+ *
+ * Screenshot is captured ONLY at submit time via window.htmlToImage.
+ * The overlay is transparent — the page shows through at all times.
+ *
+ * Public API:
+ *   window.AnnotationCanvas(container, options)
+ *   window.initAnnotationMode(containerOrSelector, options)
+ *   instance.init()
+ */
+
 (function() {
   'use strict';
 
+  /* ── Helpers ────────────────────────────────────────────────── */
+
   /**
-   * AnnotationCanvas — manages the annotation overlay on a page element.
+   * Build a robust CSS selector for an element.
+   * Prefers #id; otherwise builds a path using tag + nth-of-type
+   * up the ancestor chain, stopping at the first id-bearing ancestor.
    *
-   * Captures a screenshot of the target container, draws it onto a
-   * canvas overlay, and provides methods for drawing element annotation
-   * markers, managing notes, and submitting the report.
+   * @param {Element} el
+   * @return {string}
+   */
+  function generateSelector(el) {
+    if (el.id) {
+      return '#' + el.id;
+    }
+
+    var parts = [];
+    var current = el;
+
+    while (current && current !== document.body && current !== document.documentElement) {
+      var tag = current.tagName.toLowerCase();
+      var parent = current.parentElement;
+      if (!parent) break;
+
+      // Count same-tag siblings and determine nth-of-type position
+      var sameTagSiblings = 0;
+      var nthOfType = 0;
+      var children = parent.children;
+      for (var i = 0; i < children.length; i++) {
+        if (children[i].tagName === current.tagName) {
+          sameTagSiblings++;
+          if (children[i] === current) {
+            nthOfType = sameTagSiblings;
+          }
+        }
+      }
+
+      var part = tag;
+      if (sameTagSiblings > 1) {
+        part += ':nth-of-type(' + nthOfType + ')';
+      }
+      parts.unshift(part);
+
+      current = parent;
+      if (current.id) {
+        parts.unshift('#' + current.id);
+        break;
+      }
+    }
+
+    return parts.join(' > ');
+  }
+
+  /**
+   * Check if an element is part of the annotation UI (overlay, toolbar, popup, markers).
+   * @param {Element} el
+   * @return {boolean}
+   */
+  function isAnnotationUI(el) {
+    while (el) {
+      if (el.classList && (
+          el.classList.contains('feedback-annotation-overlay') ||
+          el.classList.contains('feedback-annotation-toolbar') ||
+          el.classList.contains('feedback-note-popup') ||
+          el.classList.contains('feedback-toggle-btn') ||
+          el.classList.contains('feedback-markers-container') ||
+          el.classList.contains('feedback-hover-highlight') ||
+          el.id === 'annotation-toolbar')) {
+        return true;
+      }
+      el = el.parentElement;
+    }
+    return false;
+  }
+
+  /**
+   * Read CSS custom property from document root.
+   * @param {string} name
+   * @return {string}
+   */
+  function getCSSVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+
+  /* ── AnnotationCanvas ──────────────────────────────────────── */
+
+  /**
+   * AnnotationCanvas — manages annotation overlay on a live page.
+   *
+   * Two modes: element-select (click to highlight an element) and
+   * freehand (draw strokes on a transparent SVG overlay).
+   * Screenshot captured only at submit time.
    *
    * @param {HTMLElement} container  The DOM element to annotate over.
    * @param {Object}      options    Optional configuration.
-   * @param {string}      options.accentColor  Override accent colour (default reads from CSS).
-   * @param {string}      options.pageUrl      Override page URL (defaults to window.location.href).
-   * @param {function}    options.onSubmit     Callback after successful submission.
-   * @param {function}    options.onClose      Callback when annotation mode is closed.
+   * @param {string}      options.pageUrl   Override page URL (defaults to window.location.href).
+   * @param {function}    options.onSubmit  Callback after successful submission.
+   * @param {function}    options.onClose   Callback when annotation mode is closed.
    */
   function AnnotationCanvas(container, options) {
     if (!container) throw new Error('AnnotationCanvas requires a container element');
 
     this.container = container;
     this.options = options || {};
-    this._markers = [];
+    this._annotations = [];
     this._activeTool = null;
     this._isDrawing = false;
-    this._isAnnotating = false;
-    this._overlayEl = null;
-    this._canvasEl = null;
-    this._ctx = null;
-    this._screenshotDataUrl = null;
-    this._notePopup = null;
-    this._currentTarget = null;
     this._hasUnsavedChanges = false;
-    this._toolbarEl = null;
-    this._toggleBtn = null;
     this._annotationMode = false;
 
+    // Overlay elements
+    this._overlayEl = null;
+    this._svgEl = null;
+    this._svgPathEl = null;
+    this._hoverHighlightEl = null;
+    this._markersContainer = null;
+    this._counterEl = null;
+
     // Drawing state
-    this._drawStart = null;
-    this._drawCurrent = null;
     this._drawPath = null;
-    this._drawingType = null;
-    this._onBoundMouseDown = null;
-    this._onBoundMouseMove = null;
-    this._onBoundMouseUp = null;
+    this._pendingAnnotation = null;
 
-    // Review panel
-    this._reviewPanel = null;
-    this._selectedMarkerIndex = -1;
+    // Note popup
+    this._notePopup = null;
 
-    this._accentColor = this.options.accentColor || '';
-    this._pageUrl = this.options.pageUrl || window.location.href;
+    // Manage popup state (element annotations CRUD)
+    this._manageAnnotations = null;   // [{index, annotation}, ...] for current element
+    this._manageRect = null;          // Bounding rect of clicked element
+    this._manageSelector = null;      // CSS selector of clicked element
+    this._manageSubMode = null;       // 'edit' or 'add' when in editor sub-mode
+    this._manageEditingIdx = -1;      // Index into _manageAnnotations for edit target
 
-    this._onBoundClick = null;
+    // Toolbar & toggle
+    this._toggleBtn = null;
+
+    // Bound handlers for cleanup
+    this._onBoundOverlayMouseMove = null;
+    this._onBoundOverlayClick = null;
+    this._onBoundOverlayMouseDown = null;
+    this._onBoundOverlayMouseUp = null;
     this._onBoundKeydown = null;
     this._onBoundBeforeUnload = null;
 
-    this._initColors();
+    this._pageUrl = this.options.pageUrl || window.location.href;
+    this._accentColor = getCSSVar('--accent') || '#007aff';
   }
 
   /**
-   * Read CSS custom properties for accent colour.
+   * Initialize — create the floating toggle button.
    */
-  AnnotationCanvas.prototype._initColors = function() {
-    if (!this._accentColor) {
-      var style = getComputedStyle(document.documentElement);
-      this._accentColor = style.getPropertyValue('--accent').trim() || '#007aff';
-    }
+  AnnotationCanvas.prototype.init = function() {
+    this._createToggleButton();
   };
 
   /**
-   * Build the overlay DOM structure (backdrop + canvas) and append it
-   * to the document body.
+   * Get current annotations (copy).
+   * @return {Array<Object>}
    */
-  AnnotationCanvas.prototype._createOverlay = function() {
-    var overlay = document.createElement('div');
-    overlay.className = 'feedback-annotation-overlay';
-    overlay.setAttribute('role', 'dialog');
-    overlay.setAttribute('aria-modal', 'true');
-    overlay.setAttribute('aria-label', 'Annotation overlay');
-
-    var canvas = document.createElement('canvas');
-    canvas.style.width = '100%';
-    canvas.style.height = '100%';
-    overlay.appendChild(canvas);
-
-    this._overlayEl = overlay;
-    this._canvasEl = canvas;
-    this._ctx = canvas.getContext('2d');
+  AnnotationCanvas.prototype.getMarkers = function() {
+    return this._annotations.slice();
   };
 
   /**
-   * Capture a screenshot of the target container using html-to-image
-   * (window.htmlToImage), then initialise the canvas with the result.
-   *
-   * Falls back to a blank canvas if the library is unavailable.
-   *
-   * @return {Promise<void>}
-   */
-  AnnotationCanvas.prototype._captureScreenshot = function() {
-    var self = this;
-    var el = this.container;
-
-    return new Promise(function(resolve) {
-      if (typeof window.htmlToImage !== 'undefined' && window.htmlToImage.toPng) {
-        window.htmlToImage.toPng(el, { useCORS: true, cacheBust: true })
-          .then(function(dataUrl) {
-            self._screenshotDataUrl = dataUrl;
-            self._initCanvas(dataUrl);
-            resolve();
-          })
-          .catch(function() {
-            self._showToast('Screenshot capture failed, using blank canvas', 'error');
-            self._initCanvas(null);
-            resolve();
-          });
-      } else {
-        self._showToast('Screenshot library not available', 'error');
-        self._initCanvas(null);
-        resolve();
-      }
-    });
-  };
-
-  /**
-   * Initialise the canvas with the screenshot image (or a solid fill
-   * if no image is available), applying DPR scaling.
-   *
-   * @param {string|null} dataUrl  PNG data URL, or null for a blank canvas.
-   */
-  AnnotationCanvas.prototype._initCanvas = function(dataUrl) {
-    var dpr = window.devicePixelRatio || 1;
-    var w = window.innerWidth;
-    var h = window.innerHeight;
-    var img, self, style, bgColor;
-
-    this._canvasEl.width = w * dpr;
-    this._canvasEl.height = h * dpr;
-    this._canvasEl.style.width = w + 'px';
-    this._canvasEl.style.height = h + 'px';
-    this._ctx.scale(dpr, dpr);
-
-    if (dataUrl) {
-      img = new Image();
-      self = this;
-      img.onload = function() {
-        self._ctx.drawImage(img, 0, 0, w, h);
-        self._drawExistingMarkers();
-      };
-      img.src = dataUrl;
-    } else {
-      style = getComputedStyle(document.documentElement);
-      bgColor = style.getPropertyValue('--bg').trim() || '#000000';
-      this._ctx.fillStyle = bgColor;
-      this._ctx.fillRect(0, 0, w, h);
-      this._drawExistingMarkers();
-    }
-  };
-
-  /**
-   * Re-draw all stored markers on the canvas.
-   */
-  AnnotationCanvas.prototype._drawExistingMarkers = function() {
-    var ctx = this._ctx;
-    var markers = this._markers;
-    for (var i = 0; i < markers.length; i++) {
-      this._drawMarker(ctx, markers[i]);
-    }
-  };
-
-  /**
-   * Draw a single annotation marker on the canvas.
-   * Supports element (circle badge), circle (outlined arc), and
-   * freehand (stroked path) types.
-   *
-   * @param {CanvasRenderingContext2D} ctx
-   * @param {Object} marker  Marker object with type, note, order, data.
-   */
-  AnnotationCanvas.prototype._drawMarker = function(ctx, marker) {
-    var index = marker.order !== undefined ? marker.order + 1 : 1;
-
-    if (marker.type === 'circle') {
-      this._drawCircleMarker(ctx, marker, index);
-    } else if (marker.type === 'freehand') {
-      this._drawFreehandMarker(ctx, marker, index);
-    } else {
-      this._drawElementMarker(ctx, marker, index);
-    }
-  };
-
-  /**
-   * Draw an element-type marker (circle badge with number).
-   */
-  AnnotationCanvas.prototype._drawElementMarker = function(ctx, marker, index) {
-    var cx = marker.x;
-    var cy = marker.y;
-    var radius = 12;
-
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius + 3, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0, 122, 255, 0.2)';
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-    ctx.fillStyle = this._accentColor;
-    ctx.fill();
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 11px -apple-system, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(String(index), cx, cy);
-  };
-
-  /**
-   * Draw a circle-type annotation (outlined arc with center badge).
-   */
-  AnnotationCanvas.prototype._drawCircleMarker = function(ctx, marker, index) {
-    var data = marker.data;
-    var cx = marker.x, cy = marker.y, radius = 20;
-    if (typeof data === 'string') {
-      try { var parsed = JSON.parse(data); cx = parsed.cx !== undefined ? parsed.cx : cx; cy = parsed.cy !== undefined ? parsed.cy : cy; radius = parsed.radius !== undefined ? parsed.radius : radius; } catch(e) {}
-    } else if (data) {
-      cx = data.cx !== undefined ? data.cx : cx;
-      cy = data.cy !== undefined ? data.cy : cy;
-      radius = data.radius !== undefined ? data.radius : radius;
-    }
-
-    // Filled circle annotation
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0, 122, 255, 0.1)';
-    ctx.fill();
-    ctx.strokeStyle = this._accentColor;
-    ctx.lineWidth = 2.5;
-    ctx.setLineDash([6, 3]);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Center badge
-    ctx.beginPath();
-    ctx.arc(cx, cy, 12, 0, Math.PI * 2);
-    ctx.fillStyle = this._accentColor;
-    ctx.fill();
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 11px -apple-system, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(String(index), cx, cy);
-  };
-
-  /**
-   * Draw a freehand-type annotation (stroked path with start badge).
-   */
-  AnnotationCanvas.prototype._drawFreehandMarker = function(ctx, marker, index) {
-    var data = marker.data;
-    var path = null;
-    if (typeof data === 'string') {
-      try { var parsed = JSON.parse(data); path = parsed.path; } catch(e) {}
-    } else if (data) {
-      path = data.path;
-    }
-
-    if (path && path.length > 0) {
-      ctx.beginPath();
-      ctx.moveTo(path[0][0], path[0][1]);
-      for (var i = 1; i < path.length; i++) {
-        ctx.lineTo(path[i][0], path[i][1]);
-      }
-      ctx.strokeStyle = this._accentColor;
-      ctx.lineWidth = 2.5;
-      ctx.stroke();
-    }
-
-    // Start badge
-    var sx = path ? path[0][0] : (marker.x || 0);
-    var sy = path ? path[0][1] : (marker.y || 0);
-    ctx.beginPath();
-    ctx.arc(sx, sy, 12, 0, Math.PI * 2);
-    ctx.fillStyle = this._accentColor;
-    ctx.fill();
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 11px -apple-system, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(String(index), sx, sy);
-  };
-
-  /**
-   * Set the active drawing tool.
-   *
-   * @param {string|null} tool  Tool name or null to deactivate.
+   * Set the active tool.
+   * @param {string|null} tool  'element', 'freehand', or null to deactivate.
    */
   AnnotationCanvas.prototype.setTool = function(tool) {
     this._activeTool = tool;
-    this._overlayEl.style.cursor = tool ? 'crosshair' : 'default';
-  };
-
-  /**
-   * Open the annotation overlay and capture the screenshot.
-   *
-   * @return {Promise<void>}
-   */
-  AnnotationCanvas.prototype.open = function() {
-    var self = this;
-    document.body.appendChild(this._overlayEl);
-    this._isAnnotating = true;
-    return this._captureScreenshot().then(function() {
-      self._bindCanvasEvents();
-    });
-  };
-
-  /**
-   * Close the annotation overlay and remove it from the DOM.
-   */
-  AnnotationCanvas.prototype.close = function() {
-    if (this._overlayEl && this._overlayEl.parentNode) {
-      this._overlayEl.parentNode.removeChild(this._overlayEl);
+    if (this._overlayEl) {
+      if (tool) {
+        this._overlayEl.style.cursor = 'crosshair';
+        this._overlayEl.style.pointerEvents = 'auto';
+      } else {
+        // No active tool: let clicks/hover pass through to the live page so the
+        // user can scroll and interact normally. Saved markers stay visible.
+        this._overlayEl.style.cursor = 'default';
+        this._overlayEl.style.pointerEvents = 'none';
+      }
     }
-    this._isAnnotating = false;
-    this.setTool(null);
-    this._removeNotePopup();
-    this._removeReviewPanel();
-    this._unbindCanvasEvents();
-  };
-
-  /**
-   * Get the current marker data for serialisation.
-   *
-   * @return {Array<Object>}  Array of marker objects.
-   */
-  AnnotationCanvas.prototype.getMarkers = function() {
-    return this._markers.slice();
-  };
-
-  /**
-   * Clear all markers and reset the canvas.
-   */
-  AnnotationCanvas.prototype.clear = function() {
-    this._markers = [];
-    this._hasUnsavedChanges = true;
-    if (this._screenshotDataUrl) {
-      this._initCanvas(this._screenshotDataUrl);
-    } else {
-      this._initCanvas(null);
+    if (this._hoverHighlightEl && !tool) {
+      this._hoverHighlightEl.style.display = 'none';
     }
   };
 
   /**
-   * Remove the last marker (undo).
+   * Remove the last annotation (undo).
    */
   AnnotationCanvas.prototype.undo = function() {
-    if (this._markers.length === 0) return;
-    this._markers.pop();
+    if (this._annotations.length === 0) return;
+    this._annotations.pop();
     this._hasUnsavedChanges = true;
-    if (this._screenshotDataUrl) {
-      this._initCanvas(this._screenshotDataUrl);
-    } else {
-      this._initCanvas(null);
-    }
+    this._renderMarkers();
+    this._updateCounter();
   };
 
   /**
-   * Destroy the annotation canvas and clean up.
+   * Clear all annotations.
    */
-  AnnotationCanvas.prototype.destroy = function() {
-    this.close();
-    this._markers = [];
-    this._screenshotDataUrl = null;
-    this._canvasEl = null;
-    this._ctx = null;
-    this._overlayEl = null;
-    this._removeToolbar();
-    this._removeToggleButton();
-    this._removeBeforeUnload();
-  };
-
-  /**
-   * Bind canvas click, drawing, and keydown events.
-   */
-  AnnotationCanvas.prototype._bindCanvasEvents = function() {
-    var self = this;
-
-    this._onBoundClick = function(e) {
-      self._onCanvasClick(e);
-    };
-    this._onBoundKeydown = function(e) {
-      self._onKeydown(e);
-    };
-    this._onBoundMouseDown = function(e) {
-      self._onCanvasMouseDown(e);
-    };
-    this._onBoundMouseMove = function(e) {
-      self._onCanvasMouseMove(e);
-    };
-    this._onBoundMouseUp = function(e) {
-      self._onCanvasMouseUp(e);
-    };
-
-    this._canvasEl.addEventListener('click', this._onBoundClick);
-    this._canvasEl.addEventListener('mousedown', this._onBoundMouseDown);
-    this._canvasEl.addEventListener('mousemove', this._onBoundMouseMove);
-    this._canvasEl.addEventListener('mouseup', this._onBoundMouseUp);
-    document.addEventListener('keydown', this._onBoundKeydown);
-  };
-
-  /**
-   * Unbind canvas click, drawing, and keydown events.
-   */
-  AnnotationCanvas.prototype._unbindCanvasEvents = function() {
-    if (this._onBoundClick) {
-      this._canvasEl.removeEventListener('click', this._onBoundClick);
-    }
-    if (this._onBoundMouseDown) {
-      this._canvasEl.removeEventListener('mousedown', this._onBoundMouseDown);
-    }
-    if (this._onBoundMouseMove) {
-      this._canvasEl.removeEventListener('mousemove', this._onBoundMouseMove);
-    }
-    if (this._onBoundMouseUp) {
-      this._canvasEl.removeEventListener('mouseup', this._onBoundMouseUp);
-    }
-    if (this._onBoundKeydown) {
-      document.removeEventListener('keydown', this._onBoundKeydown);
-    }
-  };
-
-  /**
-   * Handle canvas click — detect the element under cursor in annotation
-   * mode, highlight it, and show the note input popup.
-   * Only fires for the 'element' tool; circle/freehand use drawing.
-   */
-  AnnotationCanvas.prototype._onCanvasClick = function(e) {
-    // Ignore clicks on note popup or toolbar
-    if (this._notePopup && this._notePopup.contains(e.target)) return;
-    if (this._toolbarEl && this._toolbarEl.contains(e.target)) return;
-
-    // For circle/freehand tools, clicking is handled by drawing events
-    if (this._activeTool === 'circle' || this._activeTool === 'freehand') {
-      return;
-    }
-
-    // If in review mode (no active tool), check for click on existing marker
-    if (!this._activeTool) {
-      this._handleMarkerClick(e);
-      return;
-    }
-
-    this._removeNotePopup();
-
-    var rect = this._canvasEl.getBoundingClientRect();
-    var x = e.clientX - rect.left;
-    var y = e.clientY - rect.top;
-
-    // Save the clicked position
-    this._currentTarget = { x: x, y: y };
-
-    // Draw a temporary highlight
-    this._drawTemporaryHighlight(x, y);
-
-    // Show note input popup
-    this._showNotePopup(x, y);
-  };
-
-  /**
-   * Handle mousedown on the canvas for circle/freehand drawing.
-   */
-  AnnotationCanvas.prototype._onCanvasMouseDown = function(e) {
-    if (this._activeTool !== 'circle' && this._activeTool !== 'freehand') return;
-    if (this._notePopup && this._notePopup.contains(e.target)) return;
-    if (this._toolbarEl && this._toolbarEl.contains(e.target)) return;
-
-    this._removeNotePopup();
-
-    var rect = this._canvasEl.getBoundingClientRect();
-    var x = e.clientX - rect.left;
-    var y = e.clientY - rect.top;
-
-    this._isDrawing = true;
-    this._drawStart = { x: x, y: y };
-    this._drawCurrent = { x: x, y: y };
-    this._drawingType = this._activeTool;
-
-    if (this._activeTool === 'freehand') {
-      this._drawPath = [{ x: x, y: y }];
-    }
-
-    this._drawPreview();
-  };
-
-  /**
-   * Handle mousemove on the canvas for drawing preview.
-   */
-  AnnotationCanvas.prototype._onCanvasMouseMove = function(e) {
-    if (!this._isDrawing) return;
-    if (this._activeTool !== 'circle' && this._activeTool !== 'freehand') return;
-
-    var rect = this._canvasEl.getBoundingClientRect();
-    var x = e.clientX - rect.left;
-    var y = e.clientY - rect.top;
-
-    this._drawCurrent = { x: x, y: y };
-
-    if (this._activeTool === 'freehand' && this._drawPath) {
-      this._drawPath.push({ x: x, y: y });
-    }
-
-    this._drawPreview();
-  };
-
-  /**
-   * Handle mouseup on the canvas to finalize drawing.
-   */
-  AnnotationCanvas.prototype._onCanvasMouseUp = function(e) {
-    if (!this._isDrawing) return;
-    if (this._activeTool !== 'circle' && this._activeTool !== 'freehand') return;
-
-    this._isDrawing = false;
-
-    var rect = this._canvasEl.getBoundingClientRect();
-    var x = e.clientX - rect.left;
-    var y = e.clientY - rect.top;
-    this._drawCurrent = { x: x, y: y };
-
-    // Finalize the drawing
-    if (this._drawingType === 'circle') {
-      var dx = this._drawCurrent.x - this._drawStart.x;
-      var dy = this._drawCurrent.y - this._drawStart.y;
-      var radius = Math.round(Math.sqrt(dx * dx + dy * dy));
-      this._currentTarget = {
-        type: 'circle',
-        cx: Math.round(this._drawStart.x),
-        cy: Math.round(this._drawStart.y),
-        radius: radius,
-      };
-    } else if (this._drawingType === 'freehand' && this._drawPath) {
-      var path = this._drawPath.map(function(p) { return [Math.round(p.x), Math.round(p.y)]; });
-      var xs = path.map(function(p) { return p[0]; });
-      var ys = path.map(function(p) { return p[1]; });
-      var minX = Math.min.apply(null, xs);
-      var maxX = Math.max.apply(null, xs);
-      var minY = Math.min.apply(null, ys);
-      var maxY = Math.max.apply(null, ys);
-      this._currentTarget = {
-        type: 'freehand',
-        path: path,
-        bounds: { minX: minX, minY: minY, maxX: maxX, maxY: maxY },
-      };
-    }
-
-    this._drawStart = null;
-    this._drawCurrent = null;
-    this._drawPath = null;
-    this._drawingType = null;
-
-    // Show the note popup for the finalized annotation
-    if (this._currentTarget) {
-      this._showNotePopup(this._currentTarget.cx || this._currentTarget.path[0][0] || 0,
-                          this._currentTarget.cy || this._currentTarget.path[0][1] || 0);
-    }
-  };
-
-  /**
-   * Draw a preview of the current shape while dragging.
-   */
-  AnnotationCanvas.prototype._drawPreview = function() {
-    var ctx = this._ctx;
-
-    // Re-draw the base image
-    if (this._screenshotDataUrl) {
-      var img = new Image();
-      var self = this;
-      img.onload = function() {
-        var dpr = window.devicePixelRatio || 1;
-        ctx.save();
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.clearRect(0, 0, self._canvasEl.width, self._canvasEl.height);
-        ctx.restore();
-        ctx.drawImage(img, 0, 0, window.innerWidth, window.innerHeight);
-        self._drawExistingMarkers();
-        self._renderPreviewShape(ctx);
-      };
-      img.src = this._screenshotDataUrl;
-    } else {
-      this._drawExistingMarkers();
-      this._renderPreviewShape(ctx);
-    }
-  };
-
-  /**
-   * Render the preview shape (circle or freehand path) on the canvas.
-   */
-  AnnotationCanvas.prototype._renderPreviewShape = function(ctx) {
-    if (!this._drawStart || !this._drawCurrent) return;
-
-    ctx.save();
-    ctx.strokeStyle = this._accentColor;
-    ctx.lineWidth = 2.5;
-    ctx.setLineDash([6, 4]);
-    ctx.fillStyle = 'rgba(0, 122, 255, 0.08)';
-
-    if (this._activeTool === 'circle' || this._drawingType === 'circle') {
-      var dx = this._drawCurrent.x - this._drawStart.x;
-      var dy = this._drawCurrent.y - this._drawStart.y;
-      var radius = Math.sqrt(dx * dx + dy * dy);
-      ctx.beginPath();
-      ctx.arc(this._drawStart.x, this._drawStart.y, radius, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-    } else if ((this._activeTool === 'freehand' || this._drawingType === 'freehand') && this._drawPath) {
-      ctx.beginPath();
-      ctx.moveTo(this._drawPath[0].x, this._drawPath[0].y);
-      for (var i = 1; i < this._drawPath.length; i++) {
-        ctx.lineTo(this._drawPath[i].x, this._drawPath[i].y);
-      }
-      ctx.stroke();
-    }
-
-    ctx.setLineDash([]);
-    ctx.restore();
-  };
-
-  /**
-   * Handle click on an existing annotation marker to show its note.
-   */
-  AnnotationCanvas.prototype._handleMarkerClick = function(e) {
-    var rect = this._canvasEl.getBoundingClientRect();
-    var x = e.clientX - rect.left;
-    var y = e.clientY - rect.top;
-
-    for (var i = 0; i < this._markers.length; i++) {
-      var m = this._markers[i];
-      var hit = false;
-      if (m.type === 'element') {
-        var dx = x - m.x;
-        var dy = y - m.y;
-        hit = (dx * dx + dy * dy) < 400; // within 20px
-      } else if (m.type === 'circle') {
-        var data = m.data;
-        if (typeof data === 'string') { try { data = JSON.parse(data); } catch(e) { data = {}; } }
-        var cx = data.cx !== undefined ? data.cx : (m.x || 0);
-        var cy = data.cy !== undefined ? data.cy : (m.y || 0);
-        var r = data.radius || 20;
-        var dx2 = x - cx;
-        var dy2 = y - cy;
-        var dist = Math.sqrt(dx2 * dx2 + dy2 * dy2);
-        hit = Math.abs(dist - r) < 15;
-      } else if (m.type === 'freehand') {
-        var data2 = m.data;
-        if (typeof data2 === 'string') { try { data2 = JSON.parse(data2); } catch(e) { data2 = {}; } }
-        var bounds = data2.bounds;
-        if (bounds) {
-          hit = x >= bounds.minX && x <= bounds.maxX && y >= bounds.minY && y <= bounds.maxY;
-        }
-      }
-
-      if (hit) {
-        this._selectedMarkerIndex = i;
-        this._showAnnotationEditPopup(m, i);
-        return;
-      }
-    }
-  };
-
-  /**
-   * Show an edit popup for an existing annotation.
-   */
-  AnnotationCanvas.prototype._showAnnotationEditPopup = function(marker, index) {
-    var self = this;
-    this._removeNotePopup();
-
-    var popup = document.createElement('div');
-    popup.className = 'feedback-note-popup';
-    var displayX = marker.type === 'circle' ? 0 : (marker.x || 0);
-    var displayY = marker.type === 'circle' ? 0 : (marker.y || 0);
-
-    var offsetX = Math.min(displayX + 20, window.innerWidth - 280);
-    var offsetY = Math.min(displayY + 20, window.innerHeight - 220);
-    popup.style.left = Math.max(10, offsetX) + 'px';
-    popup.style.top = Math.max(10, offsetY) + 'px';
-
-    var typeLabel = document.createElement('div');
-    typeLabel.style.cssText = 'font-size:11px;color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;';
-    typeLabel.textContent = marker.type + ' annotation';
-    popup.appendChild(typeLabel);
-
-    var textarea = document.createElement('textarea');
-    textarea.className = 'feedback-note-popup__textarea';
-    textarea.value = marker.note || '';
-    textarea.maxLength = 2000;
-    textarea.placeholder = 'Edit annotation note... (2000 char max)';
-    textarea.setAttribute('aria-label', 'Edit annotation note');
-    popup.appendChild(textarea);
-
-    var charCount = document.createElement('div');
-    charCount.style.cssText = 'font-size:11px;color:var(--text-tertiary);text-align:right;margin-top:4px;';
-    charCount.textContent = (marker.note || '').length + ' / 2000';
-    popup.appendChild(charCount);
-
-    textarea.addEventListener('input', function() {
-      charCount.textContent = textarea.value.length + ' / 2000';
-    });
-
-    var actions = document.createElement('div');
-    actions.className = 'feedback-note-popup__actions';
-
-    var deleteBtn = document.createElement('button');
-    deleteBtn.type = 'button';
-    deleteBtn.className = 'btn btn--danger';
-    deleteBtn.textContent = 'Delete';
-    deleteBtn.setAttribute('aria-label', 'Delete annotation');
-
-    var cancelBtn = document.createElement('button');
-    cancelBtn.type = 'button';
-    cancelBtn.className = 'btn btn--ghost';
-    cancelBtn.textContent = 'Cancel';
-    cancelBtn.setAttribute('aria-label', 'Cancel edit');
-
-    var saveBtn = document.createElement('button');
-    saveBtn.type = 'button';
-    saveBtn.className = 'btn btn--primary';
-    saveBtn.textContent = 'Save';
-    saveBtn.setAttribute('aria-label', 'Save annotation');
-
-    deleteBtn.addEventListener('click', function() {
-      self._markers.splice(index, 1);
-      // Re-order remaining markers
-      for (var i = index; i < self._markers.length; i++) {
-        self._markers[i].order = i;
-      }
-      self._hasUnsavedChanges = true;
-      self._removeNotePopup();
-      self._redrawCanvas();
-      self._renderReviewPanel();
-      self._showToast('Annotation deleted', 'info');
-    });
-
-    cancelBtn.addEventListener('click', function() {
-      self._removeNotePopup();
-      self._selectedMarkerIndex = -1;
-    });
-
-    saveBtn.addEventListener('click', function() {
-      var note = textarea.value.trim();
-      marker.note = note || null;
-      self._hasUnsavedChanges = true;
-      self._removeNotePopup();
-      self._selectedMarkerIndex = -1;
-      self._redrawCanvas();
-      self._renderReviewPanel();
-      self._showToast('Annotation updated', 'success');
-    });
-
-    actions.appendChild(deleteBtn);
-    actions.appendChild(cancelBtn);
-    actions.appendChild(saveBtn);
-    popup.appendChild(actions);
-
-    this._overlayEl.appendChild(popup);
-    this._notePopup = popup;
-
-    setTimeout(function() {
-      textarea.focus();
-    }, 100);
-  };
-
-  /**
-   * Create and show the annotation review panel.
-   */
-  AnnotationCanvas.prototype._createReviewPanel = function() {
-    if (this._reviewPanel) {
-      this._reviewPanel.parentNode.removeChild(this._reviewPanel);
-    }
-
-    var panel = document.createElement('div');
-    panel.className = 'feedback-review-panel';
-    panel.setAttribute('role', 'region');
-    panel.setAttribute('aria-label', 'Annotation review panel');
-
-    var header = document.createElement('div');
-    header.className = 'feedback-review-panel__header';
-    header.textContent = 'Annotations (' + this._markers.length + ')';
-    panel.appendChild(header);
-
-    if (this._markers.length === 0) {
-      var empty = document.createElement('div');
-      empty.className = 'feedback-review-panel__empty';
-      empty.textContent = 'No annotations yet';
-      panel.appendChild(empty);
-    } else {
-      var list = document.createElement('div');
-      list.className = 'feedback-review-panel__list';
-      list.setAttribute('role', 'list');
-      panel.appendChild(list);
-    }
-
-    this._overlayEl.appendChild(panel);
-    this._reviewPanel = panel;
-    this._renderReviewPanel();
-  };
-
-  /**
-   * Render the annotation review panel content.
-   */
-  AnnotationCanvas.prototype._renderReviewPanel = function() {
-    if (!this._reviewPanel) return;
-
-    var panel = this._reviewPanel;
-    var header = panel.querySelector('.feedback-review-panel__header');
-    if (header) {
-      header.textContent = 'Annotations (' + this._markers.length + ')';
-    }
-
-    var list = panel.querySelector('.feedback-review-panel__list');
-    if (!list) return;
-
-    // Clear existing items
-    while (list.firstChild) {
-      list.removeChild(list.firstChild);
-    }
-
-    if (this._markers.length === 0) {
-      var empty = panel.querySelector('.feedback-review-panel__empty');
-      if (!empty) {
-        empty = document.createElement('div');
-        empty.className = 'feedback-review-panel__empty';
-        panel.appendChild(empty);
-      }
-      empty.textContent = 'No annotations yet';
-      return;
-    }
-
-    var self = this;
-    for (var i = 0; i < this._markers.length; i++) {
-      var m = this._markers[i];
-      var item = document.createElement('div');
-      item.className = 'feedback-review-panel__item' + (this._selectedMarkerIndex === i ? ' feedback-review-panel__item--selected' : '');
-      item.setAttribute('role', 'listitem');
-      item.setAttribute('tabindex', '0');
-      item.setAttribute('aria-label', m.type + ' annotation: ' + (m.note || 'no note'));
-
-      // Type icon
-      var icon = document.createElement('span');
-      icon.className = 'feedback-review-panel__icon';
-      var iconSvg = '';
-      if (m.type === 'circle') {
-        iconSvg = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/></svg>';
-      } else if (m.type === 'freehand') {
-        iconSvg = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 17c3-4 6-1 8-3s4-5 6-6 4 2 3 5-5 10-8 11-5-2-3-5"/></svg>';
-      } else {
-        iconSvg = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>';
-      }
-      icon.innerHTML = iconSvg;
-      item.appendChild(icon);
-
-      // Note preview
-      var noteEl = document.createElement('span');
-      noteEl.className = 'feedback-review-panel__note';
-      noteEl.textContent = m.note || '(no note)';
-      item.appendChild(noteEl);
-
-      // Delete button
-      var delBtn = document.createElement('button');
-      delBtn.type = 'button';
-      delBtn.className = 'feedback-review-panel__delete';
-      delBtn.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
-      delBtn.setAttribute('aria-label', 'Delete annotation ' + (i + 1));
-      delBtn.setAttribute('title', 'Delete');
-
-      (function(idx) {
-        delBtn.addEventListener('click', function(e) {
-          e.stopPropagation();
-          self._markers.splice(idx, 1);
-          for (var j = idx; j < self._markers.length; j++) {
-            self._markers[j].order = j;
-          }
-          self._hasUnsavedChanges = true;
-          self._redrawCanvas();
-          self._renderReviewPanel();
-          self._showToast('Annotation deleted', 'info');
-        });
-
-        item.addEventListener('click', function() {
-          self._selectedMarkerIndex = idx;
-          self._showAnnotationEditPopup(self._markers[idx], idx);
-          self._renderReviewPanel();
-        });
-      })(i);
-
-      item.appendChild(delBtn);
-      list.appendChild(item);
-    }
-  };
-
-  /**
-   * Remove the review panel from the DOM.
-   */
-  AnnotationCanvas.prototype._removeReviewPanel = function() {
-    if (this._reviewPanel && this._reviewPanel.parentNode) {
-      this._reviewPanel.parentNode.removeChild(this._reviewPanel);
-    }
-    this._reviewPanel = null;
-    this._selectedMarkerIndex = -1;
-  };
-
-  /**
-   * Draw a temporary highlight circle at the clicked position.
-   */
-  AnnotationCanvas.prototype._drawTemporaryHighlight = function(x, y) {
-    var ctx = this._ctx;
-
-    // Re-draw the base image first
-    if (this._screenshotDataUrl) {
-      var img = new Image();
-      var self = this;
-      img.onload = function() {
-        var dpr = window.devicePixelRatio || 1;
-        ctx.save();
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.clearRect(0, 0, self._canvasEl.width, self._canvasEl.height);
-        ctx.restore();
-        ctx.drawImage(img, 0, 0, window.innerWidth, window.innerHeight);
-        self._drawExistingMarkers();
-
-        // Pulsing highlight
-        ctx.beginPath();
-        ctx.arc(x, y, 20, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(0, 122, 255, 0.15)';
-        ctx.fill();
-        ctx.strokeStyle = self._accentColor;
-        ctx.lineWidth = 2;
-        ctx.setLineDash([4, 4]);
-        ctx.stroke();
-        ctx.setLineDash([]);
-      };
-      img.src = this._screenshotDataUrl;
-    } else {
-      this._drawExistingMarkers();
-      ctx.beginPath();
-      ctx.arc(x, y, 20, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(0, 122, 255, 0.15)';
-      ctx.fill();
-      ctx.strokeStyle = this._accentColor;
-      ctx.lineWidth = 2;
-      ctx.setLineDash([4, 4]);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-  };
-
-  /**
-   * Show the note input popup at the given position.
-   *
-   * @param {number} x  X position relative to canvas.
-   * @param {number} y  Y position relative to canvas.
-   */
-  AnnotationCanvas.prototype._showNotePopup = function(x, y) {
-    var self = this;
-    this._removeNotePopup();
-
-    var popup = document.createElement('div');
-    popup.className = 'feedback-note-popup';
-
-    // Position the popup near the click, offset to avoid covering the marker
-    var offsetX = Math.min(x + 20, window.innerWidth - 240);
-    var offsetY = Math.min(y + 20, window.innerHeight - 180);
-    popup.style.left = Math.max(10, offsetX) + 'px';
-    popup.style.top = Math.max(10, offsetY) + 'px';
-
-    var textarea = document.createElement('textarea');
-    textarea.className = 'feedback-note-popup__textarea';
-    textarea.maxLength = 2000;
-    textarea.placeholder = 'Describe the issue... (2000 char max)';
-    textarea.setAttribute('aria-label', 'Annotation note');
-    popup.appendChild(textarea);
-
-    var charCount = document.createElement('div');
-    charCount.style.cssText = 'font-size:11px;color:var(--text-tertiary);text-align:right;margin-top:4px;';
-    charCount.textContent = '0 / 2000';
-    popup.appendChild(charCount);
-
-    textarea.addEventListener('input', function() {
-      charCount.textContent = textarea.value.length + ' / 2000';
-    });
-
-    var actions = document.createElement('div');
-    actions.className = 'feedback-note-popup__actions';
-
-    var cancelBtn = document.createElement('button');
-    cancelBtn.type = 'button';
-    cancelBtn.className = 'btn btn--ghost';
-    cancelBtn.textContent = 'Cancel';
-    cancelBtn.setAttribute('aria-label', 'Cancel annotation');
-
-    var confirmBtn = document.createElement('button');
-    confirmBtn.type = 'button';
-    confirmBtn.className = 'btn btn--primary';
-    confirmBtn.textContent = 'Confirm';
-    confirmBtn.setAttribute('aria-label', 'Confirm annotation');
-
-    cancelBtn.addEventListener('click', function() {
-      self._removeNotePopup();
-      self._currentTarget = null;
-      // Re-draw to remove the temporary highlight
-      self._redrawCanvas();
-    });
-
-    confirmBtn.addEventListener('click', function() {
-      var note = textarea.value.trim();
-      self._addAnnotation(note);
-      self._removeNotePopup();
-    });
-
-    actions.appendChild(cancelBtn);
-    actions.appendChild(confirmBtn);
-    popup.appendChild(actions);
-
-    this._overlayEl.appendChild(popup);
-    this._notePopup = popup;
-
-    // Focus the textarea after a short delay
-    setTimeout(function() {
-      textarea.focus();
-    }, 100);
-  };
-
-  /**
-   * Remove the note popup from the DOM.
-   */
-  AnnotationCanvas.prototype._removeNotePopup = function() {
-    if (this._notePopup && this._notePopup.parentNode) {
-      this._notePopup.parentNode.removeChild(this._notePopup);
-    }
-    this._notePopup = null;
-  };
-
-  /**
-   * Add an annotation marker with the given note.
-   * Supports element, circle, and freehand types.
-   *
-   * @param {string} note  The annotation note text.
-   */
-  AnnotationCanvas.prototype._addAnnotation = function(note) {
-    if (!this._currentTarget) return;
-    if (!note) {
-      this._showToast('Please enter a note', 'error');
-      return;
-    }
-
-    var target = this._currentTarget;
-    var marker;
-
-    if (target.type === 'circle') {
-      marker = {
-        type: 'circle',
-        x: target.cx,
-        y: target.cy,
-        note: note,
-        order: this._markers.length,
-        data: JSON.stringify({
-          cx: target.cx,
-          cy: target.cy,
-          radius: target.radius,
-        }),
-      };
-    } else if (target.type === 'freehand') {
-      marker = {
-        type: 'freehand',
-        x: target.path[0][0],
-        y: target.path[0][1],
-        note: note,
-        order: this._markers.length,
-        data: JSON.stringify({
-          path: target.path,
-          bounds: target.bounds,
-        }),
-      };
-    } else {
-      marker = {
-        type: 'element',
-        x: Math.round(target.x),
-        y: Math.round(target.y),
-        note: note,
-        order: this._markers.length,
-        data: JSON.stringify({
-          x: Math.round(target.x),
-          y: Math.round(target.y),
-          note: note,
-        }),
-      };
-    }
-
-    this._markers.push(marker);
+  AnnotationCanvas.prototype.clear = function() {
+    if (this._annotations.length === 0) return;
+    if (!window.confirm('Clear all annotations?')) return;
+    this._annotations = [];
     this._hasUnsavedChanges = true;
-    this._currentTarget = null;
-
-    // Re-draw canvas with all markers
-    this._redrawCanvas();
-    this._renderReviewPanel();
+    this._renderMarkers();
+    this._updateCounter();
   };
 
   /**
-   * Re-draw the canvas with the screenshot and all markers.
-   */
-  AnnotationCanvas.prototype._redrawCanvas = function() {
-    if (this._screenshotDataUrl) {
-      this._initCanvas(this._screenshotDataUrl);
-    } else {
-      this._initCanvas(null);
-    }
-  };
-
-  /**
-   * Handle keyboard events — Escape to close popup, Ctrl+Z to undo.
-   */
-  AnnotationCanvas.prototype._onKeydown = function(e) {
-    if (e.key === 'Escape') {
-      if (this._notePopup) {
-        this._removeNotePopup();
-        this._currentTarget = null;
-        this._redrawCanvas();
-      }
-    }
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-      e.preventDefault();
-      this.undo();
-    }
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-      // Submit via Ctrl+Enter when popup is open
-      if (this._notePopup) {
-        var textarea = this._notePopup.querySelector('textarea');
-        if (textarea) {
-          var note = textarea.value.trim();
-          this._addAnnotation(note);
-          this._removeNotePopup();
-        }
-      }
-    }
-  };
-
-  /**
-   * Serialize annotations as JSON and submit the report to /v1/feedback.
-   *
-   * Posts the screenshot as a file, page metadata, and annotations as
-   * JSON. Handles success and error cases.
+   * Submit annotations — capture screenshot, POST to /v1/feedback.
+   * @return {Promise<Object|null>}
    */
   AnnotationCanvas.prototype.submit = function() {
     var self = this;
 
-    if (this._markers.length === 0) {
+    if (this._annotations.length === 0) {
       this._showToast('No annotations to submit', 'error');
       return Promise.resolve(null);
     }
 
-    this._showToast('Submitting report...', 'info');
+    this._showToast('Submitting report…', 'info');
 
-    return this._captureScreenshotForUpload().then(function(screenshotBlob) {
+    return this._captureScreenshot().then(function(screenshotBlob) {
       return self._uploadReport(screenshotBlob);
     }).then(function(result) {
-      if (result) {
+      if (result && result.ok) {
         self._hasUnsavedChanges = false;
         self._removeBeforeUnload();
         if (self.options.onSubmit) {
           self.options.onSubmit(result);
         }
+        self._showToast('Report submitted successfully', 'success');
+        self._annotations = [];
+        self._exitAnnotationMode();
       }
       return result;
     }).catch(function(err) {
@@ -1189,284 +261,20 @@
   };
 
   /**
-   * Capture the current annotated canvas as a PNG blob for upload.
-   *
-   * @return {Promise<Blob|null>}
+   * Destroy the instance and clean up all DOM.
    */
-  AnnotationCanvas.prototype._captureScreenshotForUpload = function() {
-    var self = this;
-
-    if (this._screenshotDataUrl) {
-      // Use the existing screenshot data URL
-      return new Promise(function(resolve) {
-        var img = new Image();
-        img.onload = function() {
-          var dpr = window.devicePixelRatio || 1;
-          var w = window.innerWidth;
-          var h = window.innerHeight;
-          var captureCanvas = document.createElement('canvas');
-          captureCanvas.width = w * dpr;
-          captureCanvas.height = h * dpr;
-          var captureCtx = captureCanvas.getContext('2d');
-          captureCtx.scale(dpr, dpr);
-          captureCtx.drawImage(img, 0, 0, w, h);
-
-          // Draw markers on top
-          for (var i = 0; i < self._markers.length; i++) {
-            self._drawMarker(captureCtx, self._markers[i]);
-          }
-
-          captureCanvas.toBlob(function(blob) {
-            resolve(blob);
-          }, 'image/png');
-        };
-        img.src = self._screenshotDataUrl;
-      });
-    }
-
-    // Fallback: capture container again
-    return new Promise(function(resolve) {
-      if (typeof window.htmlToImage !== 'undefined' && window.htmlToImage.toPng) {
-        window.htmlToImage.toPng(self.container, { useCORS: true, cacheBust: true })
-          .then(function(dataUrl) {
-            var img = new Image();
-            img.onload = function() {
-              var captureCanvas = document.createElement('canvas');
-              captureCanvas.width = img.width;
-              captureCanvas.height = img.height;
-              var captureCtx = captureCanvas.getContext('2d');
-              captureCtx.drawImage(img, 0, 0);
-              captureCanvas.toBlob(function(blob) {
-                resolve(blob);
-              }, 'image/png');
-            };
-            img.src = dataUrl;
-          })
-          .catch(function() {
-            resolve(null);
-          });
-      } else {
-        resolve(null);
-      }
-    });
+  AnnotationCanvas.prototype.destroy = function() {
+    this._exitAnnotationMode(true);
+    this._removeToggleButton();
+    this._removeBeforeUnload();
+    this._annotations = [];
   };
 
-  /**
-   * Upload the report to the server via POST /v1/feedback.
-   *
-   * @param {Blob|null} screenshotBlob  The screenshot PNG blob.
-   * @return {Promise<Object|null>}
-   */
-  AnnotationCanvas.prototype._uploadReport = function(screenshotBlob) {
-    var formData = new FormData();
-    formData.append('page_url', this._pageUrl);
-    formData.append('viewport_width', String(window.innerWidth));
-    formData.append('viewport_height', String(window.innerHeight));
-    formData.append('reporter_id', 'default');
 
-    if (this._markers.length > 0) {
-      var annotations = [];
-      for (var i = 0; i < this._markers.length; i++) {
-        annotations.push({
-          type: this._markers[i].type,
-          note: this._markers[i].note,
-          data: this._markers[i].data,
-        });
-      }
-      formData.append('annotations', JSON.stringify(annotations));
-    }
-
-    if (screenshotBlob) {
-      formData.append('screenshot', screenshotBlob, 'screenshot.png');
-    }
-
-    var fetchFn = window.apiFetch || window.fetch;
-
-    return fetchFn('/v1/feedback', {
-      method: 'POST',
-      body: formData,
-    }).then(function(response) {
-      if (!response.ok) {
-        return response.json().then(function(err) {
-          throw new Error(err.detail || 'Server error');
-        });
-      }
-      return response.json();
-    }).then(function(data) {
-      if (data.ok) {
-        self._showToast('Report submitted successfully', 'success');
-      }
-      return data;
-    });
-  };
+  /* ── Toggle Button ─────────────────────────────────────────── */
 
   /**
-   * Set up the beforeunload event to warn about unsaved changes.
-   */
-  AnnotationCanvas.prototype._setupBeforeUnload = function() {
-    var self = this;
-    this._onBoundBeforeUnload = function(e) {
-      if (self._hasUnsavedChanges && self._isAnnotating) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-    window.addEventListener('beforeunload', this._onBoundBeforeUnload);
-  };
-
-  /**
-   * Remove the beforeunload event.
-   */
-  AnnotationCanvas.prototype._removeBeforeUnload = function() {
-    if (this._onBoundBeforeUnload) {
-      window.removeEventListener('beforeunload', this._onBoundBeforeUnload);
-      this._onBoundBeforeUnload = null;
-    }
-  };
-
-  /**
-   * Show a toast notification.
-   *
-   * @param {string} msg   The message to display.
-   * @param {string} type  The toast type: 'success', 'error', 'info'.
-   */
-  AnnotationCanvas.prototype._showToast = function(msg, type) {
-    type = type || 'info';
-    var container = document.getElementById('toast-container');
-    if (!container) {
-      container = document.createElement('div');
-      container.id = 'toast-container';
-      container.className = 'toast-container';
-      document.body.appendChild(container);
-    }
-    var toast = document.createElement('div');
-    toast.className = 'toast toast-' + type;
-    toast.textContent = msg;
-    container.appendChild(toast);
-    setTimeout(function() {
-      toast.style.opacity = '0';
-      toast.style.transition = 'opacity 0.3s ease';
-      setTimeout(function() { toast.remove(); }, 300);
-    }, 3000);
-  };
-
-  /**
-   * Create the annotation toolbar and wire it to the canvas.
-   */
-  AnnotationCanvas.prototype._createToolbar = function() {
-    // Look for existing toolbar template
-    var toolbar = document.getElementById('annotation-toolbar');
-    if (!toolbar) {
-      toolbar = document.createElement('div');
-      toolbar.id = 'annotation-toolbar';
-      toolbar.className = 'feedback-annotation-toolbar';
-      toolbar.setAttribute('role', 'toolbar');
-      toolbar.setAttribute('aria-label', 'Annotation tools');
-      toolbar.innerHTML =
-        '<button type="button" class="feedback-annotation-toolbar__btn" data-tool="element" aria-label="Element annotation" title="Element">' +
-          '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>' +
-        '</button>' +
-        '<span class="feedback-annotation-toolbar__sep" aria-hidden="true"></span>' +
-        '<button type="button" class="feedback-annotation-toolbar__btn" id="annotation-toolbar-undo" aria-label="Undo last annotation" title="Undo">' +
-          '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>' +
-        '</button>' +
-        '<button type="button" class="feedback-annotation-toolbar__btn" id="annotation-toolbar-clear" aria-label="Clear all annotations" title="Clear">' +
-          '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>' +
-        '</button>' +
-        '<span class="feedback-annotation-toolbar__sep" aria-hidden="true"></span>' +
-        '<button type="button" class="feedback-annotation-toolbar__btn" id="annotation-toolbar-submit" aria-label="Submit annotations" title="Submit">' +
-          '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>' +
-        '</button>' +
-        '<button type="button" class="feedback-annotation-toolbar__btn" id="annotation-toolbar-close" aria-label="Close annotation mode" title="Close">' +
-          '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
-        '</button>';
-      document.body.appendChild(toolbar);
-    }
-
-    this._toolbarEl = toolbar;
-    this._wireToolbarEvents();
-  };
-
-  /**
-   * Wire toolbar button events.
-   */
-  AnnotationCanvas.prototype._wireToolbarEvents = function() {
-    var self = this;
-
-    // Tool buttons
-    var toolBtns = this._toolbarEl.querySelectorAll('[data-tool]');
-    for (var i = 0; i < toolBtns.length; i++) {
-      toolBtns[i].addEventListener('click', function() {
-        var tool = this.getAttribute('data-tool');
-        self.setTool(tool);
-        // Toggle active state
-        var allBtns = self._toolbarEl.querySelectorAll('[data-tool]');
-        for (var j = 0; j < allBtns.length; j++) {
-          allBtns[j].classList.remove('feedback-annotation-toolbar__btn--active');
-        }
-        this.classList.add('feedback-annotation-toolbar__btn--active');
-      });
-    }
-
-    var undoBtn = document.getElementById('annotation-toolbar-undo');
-    if (undoBtn) {
-      undoBtn.addEventListener('click', function() {
-        self.undo();
-      });
-    }
-
-    var clearBtn = document.getElementById('annotation-toolbar-clear');
-    if (clearBtn) {
-      clearBtn.addEventListener('click', function() {
-        self.clear();
-      });
-    }
-
-    var submitBtn = document.getElementById('annotation-toolbar-submit');
-    if (submitBtn) {
-      submitBtn.addEventListener('click', function() {
-        self.submit();
-      });
-    }
-
-    var closeBtn = document.getElementById('annotation-toolbar-close');
-    if (closeBtn) {
-      closeBtn.addEventListener('click', function() {
-        self._exitAnnotationMode();
-      });
-    }
-  };
-
-  /**
-   * Show the toolbar.
-   */
-  AnnotationCanvas.prototype._showToolbar = function() {
-    if (this._toolbarEl) {
-      this._toolbarEl.style.display = '';
-    }
-  };
-
-  /**
-   * Hide the toolbar.
-   */
-  AnnotationCanvas.prototype._hideToolbar = function() {
-    if (this._toolbarEl) {
-      this._toolbarEl.style.display = 'none';
-    }
-  };
-
-  /**
-   * Remove the toolbar from the DOM.
-   */
-  AnnotationCanvas.prototype._removeToolbar = function() {
-    if (this._toolbarEl && this._toolbarEl.parentNode) {
-      this._toolbarEl.parentNode.removeChild(this._toolbarEl);
-    }
-    this._toolbarEl = null;
-  };
-
-  /**
-   * Create the floating toggle button for entering annotation mode.
+   * Create the floating toggle button (always visible outside annotation mode).
    */
   AnnotationCanvas.prototype._createToggleButton = function() {
     if (this._toggleBtn) return;
@@ -1475,8 +283,12 @@
     btn.type = 'button';
     btn.className = 'feedback-toggle-btn';
     btn.setAttribute('aria-label', 'Toggle annotation mode');
-    btn.setAttribute('title', 'Toggle annotation mode');
-    btn.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
+    btn.setAttribute('title', 'Annotate this page');
+    btn.innerHTML =
+      '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true">' +
+        '<path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/>' +
+        '<path d="M20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>' +
+      '</svg>';
 
     var self = this;
     btn.addEventListener('click', function() {
@@ -1501,11 +313,13 @@
     this._toggleBtn = null;
   };
 
+
+  /* ── Enter / Exit Annotation Mode ──────────────────────────── */
+
   /**
-   * Enter annotation mode — open overlay, show toolbar, bind events.
+   * Enter annotation mode — create overlay, show toolbar, bind events.
    */
   AnnotationCanvas.prototype._enterAnnotationMode = function() {
-    var self = this;
     this._annotationMode = true;
     this._hasUnsavedChanges = false;
 
@@ -1513,25 +327,28 @@
       this._toggleBtn.style.display = 'none';
     }
 
-    this._createToolbar();
+    this._createOverlay();
     this._showToolbar();
-    this.open();
-    this._createReviewPanel();
+    this._bindEvents();
     this._setupBeforeUnload();
+    this._updateCounter();
   };
 
   /**
-   * Exit annotation mode — close overlay, hide toolbar, show toggle.
+   * Exit annotation mode — remove overlay, hide toolbar, show toggle.
+   * @param {boolean} force  Skip confirm dialog.
    */
-  AnnotationCanvas.prototype._exitAnnotationMode = function() {
-    if (this._markers.length > 0 && this._hasUnsavedChanges) {
-      if (!confirm('You have unsaved annotations. Close without submitting?')) {
+  AnnotationCanvas.prototype._exitAnnotationMode = function(force) {
+    if (!force && this._hasUnsavedChanges && this._annotations.length > 0) {
+      if (!window.confirm('You have unsaved annotations. Close without submitting?')) {
         return;
       }
     }
 
     this._annotationMode = false;
-    this.close();
+    this._activeTool = null;
+    this._removeNotePopup();
+    this._removeOverlay();
     this._hideToolbar();
     this._removeBeforeUnload();
 
@@ -1544,31 +361,1189 @@
     }
   };
 
+
+  /* ── Overlay ────────────────────────────────────────────────── */
+
   /**
-   * Initialize the annotation system — create the toggle button and
-   * set up the overlay.
+   * Create the transparent full-page overlay and its children.
    */
-  AnnotationCanvas.prototype.init = function() {
-    this._createOverlay();
-    this._createToggleButton();
-    return this;
+  AnnotationCanvas.prototype._createOverlay = function() {
+    var overlay = document.createElement('div');
+    overlay.className = 'feedback-annotation-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', 'Annotation overlay');
+    overlay.style.display = '';
+
+    // SVG layer for freehand drawing (pointer-events:none so overlay captures events)
+    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'feedback-annotation-overlay__svg');
+    svg.setAttribute('aria-hidden', 'true');
+    overlay.appendChild(svg);
+    this._svgEl = svg;
+
+    // Hover highlight for element mode
+    var highlight = document.createElement('div');
+    highlight.className = 'feedback-hover-highlight';
+    highlight.style.display = 'none';
+    overlay.appendChild(highlight);
+    this._hoverHighlightEl = highlight;
+
+    // Markers container for saved annotation visual markers
+    var markers = document.createElement('div');
+    markers.className = 'feedback-markers-container';
+    markers.setAttribute('aria-hidden', 'true');
+    overlay.appendChild(markers);
+    this._markersContainer = markers;
+
+    document.body.appendChild(overlay);
+    this._overlayEl = overlay;
+
+    // Explicit initial state: no tool active until the user picks one.
+    this.setTool(this._activeTool);
   };
 
-  // ── Expose globally ──
+  /**
+   * Remove the overlay and all children from the DOM.
+   */
+  AnnotationCanvas.prototype._removeOverlay = function() {
+    if (this._overlayEl && this._overlayEl.parentNode) {
+      this._overlayEl.parentNode.removeChild(this._overlayEl);
+    }
+    this._overlayEl = null;
+    this._svgEl = null;
+    this._svgPathEl = null;
+    this._hoverHighlightEl = null;
+    this._markersContainer = null;
+    this._counterEl = null;
+  };
+
+
+  /* ── Toolbar ────────────────────────────────────────────────── */
+
+  /**
+   * Find the toolbar (rendered from annotation-toolbar.html partial) and show it.
+   */
+  AnnotationCanvas.prototype._showToolbar = function() {
+    var toolbar = document.getElementById('annotation-toolbar');
+    if (!toolbar) return;
+    toolbar.style.display = '';
+    this._wireToolbar(toolbar);
+  };
+
+  /**
+   * Hide the toolbar.
+   */
+  AnnotationCanvas.prototype._hideToolbar = function() {
+    var toolbar = document.getElementById('annotation-toolbar');
+    if (toolbar) {
+      toolbar.style.display = 'none';
+    }
+  };
+
+  /**
+   * Wire toolbar button events. Idempotent — uses flag to avoid double-wiring.
+   * @param {HTMLElement} toolbar
+   */
+  AnnotationCanvas.prototype._wireToolbar = function(toolbar) {
+    if (toolbar._wired) return;
+    toolbar._wired = true;
+
+    var self = this;
+
+    // Tool buttons
+    var toolBtns = toolbar.querySelectorAll('[data-tool]');
+    for (var i = 0; i < toolBtns.length; i++) {
+      toolBtns[i].addEventListener('click', function() {
+        var tool = this.getAttribute('data-tool');
+        var allBtns = toolbar.querySelectorAll('[data-tool]');
+        for (var j = 0; j < allBtns.length; j++) {
+          allBtns[j].classList.remove('feedback-annotation-toolbar__btn--active');
+        }
+
+        // Re-clicking the active tool toggles it off (deselect)
+        if (self._activeTool === tool) {
+          self.setTool(null);
+          return;
+        }
+
+        self.setTool(tool);
+        this.classList.add('feedback-annotation-toolbar__btn--active');
+      });
+    }
+
+    // Undo
+    var undoBtn = document.getElementById('annotation-toolbar-undo');
+    if (undoBtn) {
+      undoBtn.addEventListener('click', function() {
+        self.undo();
+      });
+    }
+
+    // Clear
+    var clearBtn = document.getElementById('annotation-toolbar-clear');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', function() {
+        self.clear();
+      });
+    }
+
+    // Submit
+    var submitBtn = document.getElementById('annotation-toolbar-submit');
+    if (submitBtn) {
+      submitBtn.addEventListener('click', function() {
+        self.submit();
+      });
+    }
+
+    // Close
+    var closeBtn = document.getElementById('annotation-toolbar-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function() {
+        self._exitAnnotationMode();
+      });
+    }
+  };
+
+
+  /* ── Event Binding ──────────────────────────────────────────── */
+
+  /**
+   * Bind overlay mouse/keyboard events.
+   */
+  AnnotationCanvas.prototype._bindEvents = function() {
+    var self = this;
+
+    this._onBoundOverlayMouseMove = function(e) {
+      self._onOverlayMouseMove(e);
+    };
+    this._onBoundOverlayClick = function(e) {
+      self._onOverlayClick(e);
+    };
+    this._onBoundOverlayMouseDown = function(e) {
+      self._onOverlayMouseDown(e);
+    };
+    this._onBoundOverlayMouseUp = function(e) {
+      self._onOverlayMouseUp(e);
+    };
+    this._onBoundKeydown = function(e) {
+      self._onKeydown(e);
+    };
+
+    this._overlayEl.addEventListener('mousemove', this._onBoundOverlayMouseMove);
+    this._overlayEl.addEventListener('click', this._onBoundOverlayClick);
+    this._overlayEl.addEventListener('mousedown', this._onBoundOverlayMouseDown);
+    // Bind mouseup to document so release outside overlay still fires
+    document.addEventListener('mouseup', this._onBoundOverlayMouseUp);
+    document.addEventListener('keydown', this._onBoundKeydown);
+  };
+
+  /**
+   * Unbind overlay mouse/keyboard events.
+   */
+  AnnotationCanvas.prototype._unbindEvents = function() {
+    if (this._onBoundOverlayMouseMove) {
+      this._overlayEl.removeEventListener('mousemove', this._onBoundOverlayMouseMove);
+    }
+    if (this._onBoundOverlayClick) {
+      this._overlayEl.removeEventListener('click', this._onBoundOverlayClick);
+    }
+    if (this._onBoundOverlayMouseDown) {
+      this._overlayEl.removeEventListener('mousedown', this._onBoundOverlayMouseDown);
+    }
+    if (this._onBoundOverlayMouseUp) {
+      document.removeEventListener('mouseup', this._onBoundOverlayMouseUp);
+    }
+    if (this._onBoundKeydown) {
+      document.removeEventListener('keydown', this._onBoundKeydown);
+    }
+
+    this._onBoundOverlayMouseMove = null;
+    this._onBoundOverlayClick = null;
+    this._onBoundOverlayMouseDown = null;
+    this._onBoundOverlayMouseUp = null;
+    this._onBoundKeydown = null;
+  };
+
+
+  /* ── Element Detection ──────────────────────────────────────── */
+
+  /**
+   * Get the real page element under the cursor, ignoring the annotation UI.
+   * Temporarily disables overlay pointer-events to query elementFromPoint.
+   * @param {MouseEvent} e
+   * @return {Element|null}
+   */
+  AnnotationCanvas.prototype._getElementUnderCursor = function(e) {
+    // Temporarily let events pass through so we can find the real element,
+    // then restore based on tool state (none when no tool is active).
+    this._overlayEl.style.pointerEvents = 'none';
+    var el = document.elementFromPoint(e.clientX, e.clientY);
+    this._overlayEl.style.pointerEvents = this._activeTool ? 'auto' : 'none';
+
+    // Skip annotation UI elements
+    if (el && isAnnotationUI(el)) {
+      return null;
+    }
+    return el;
+  };
+
+
+  /* ── Mouse Handlers ─────────────────────────────────────────── */
+
+  /**
+   * Mousemove on overlay — element hover highlight or freehand drawing.
+   */
+  AnnotationCanvas.prototype._onOverlayMouseMove = function(e) {
+    if (this._notePopup) return; // Popup open, don't interfere
+
+    if (this._activeTool === 'element') {
+      this._updateHoverHighlight(e);
+    } else if (this._activeTool === 'freehand' && this._isDrawing) {
+      this._extendFreehandPath(e);
+    }
+  };
+
+  /**
+   * Click on overlay — element selection.
+   */
+  AnnotationCanvas.prototype._onOverlayClick = function(e) {
+    if (this._notePopup) return;
+    if (this._activeTool !== 'element') return;
+
+    var el = this._getElementUnderCursor(e);
+    if (!el) return;
+
+    // Reject html/body/app-shell targets whose box is the whole page
+    var tag = el.tagName ? el.tagName.toLowerCase() : '';
+    if (tag === 'html' || tag === 'body') {
+      this._showToast('Click a specific element, not the page background', 'error');
+      return;
+    }
+
+    // Get bounding box in viewport coordinates
+    var rect = el.getBoundingClientRect();
+
+    // Reject degenerate (too small) or near-full-viewport boxes
+    if (rect.width < 4 || rect.height < 4) {
+      this._showToast('That element is too small to annotate', 'error');
+      return;
+    }
+    if (rect.width >= window.innerWidth - 4 && rect.height >= window.innerHeight - 4) {
+      this._showToast('Click a more specific element', 'error');
+      return;
+    }
+
+    var selector = generateSelector(el);
+
+    // Check for existing element annotations matching this selector
+    var matchingAnnotations = [];
+    for (var mi = 0; mi < this._annotations.length; mi++) {
+      var ann = this._annotations[mi];
+      if (ann.type === 'element' && ann.data.selector === selector) {
+        matchingAnnotations.push({ index: mi, annotation: ann });
+      }
+    }
+
+    if (matchingAnnotations.length > 0) {
+      // Show manage popup with existing annotations
+      var popupX = rect.left + rect.width + 10;
+      var popupY = rect.top;
+      this._showManagePopup(popupX, popupY, matchingAnnotations, rect, selector);
+      return;
+    }
+
+    this._pendingAnnotation = {
+      type: 'element',
+      data: {
+        x: Math.round(rect.left),
+        y: Math.round(rect.top),
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+        selector: selector
+      }
+    };
+
+    // Show note popup near the element
+    var popupX = rect.left + rect.width + 10;
+    var popupY = rect.top;
+    this._showNotePopup(popupX, popupY);
+  };
+
+  /**
+   * Mousedown on overlay — start freehand drawing.
+   */
+  AnnotationCanvas.prototype._onOverlayMouseDown = function(e) {
+    if (this._notePopup) return;
+    if (this._activeTool !== 'freehand') return;
+
+    // Ignore if clicking on toolbar through overlay
+    var target = e.target;
+    if (target && (target.closest('#annotation-toolbar') || target.closest('.feedback-note-popup'))) {
+      return;
+    }
+
+    this._isDrawing = true;
+    this._drawPath = [[e.clientX, e.clientY]];
+
+    // Create a new SVG path for the live preview
+    var svg = this._svgEl;
+    svg.innerHTML = '';
+    var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', 'M ' + e.clientX + ' ' + e.clientY);
+    path.setAttribute('class', 'feedback-annotation-overlay__draw-path');
+    svg.appendChild(path);
+    this._svgPathEl = path;
+  };
+
+  /**
+   * Mouseup — finalize freehand drawing.
+   */
+  AnnotationCanvas.prototype._onOverlayMouseUp = function(e) {
+    if (!this._isDrawing || !this._drawPath) return;
+    this._isDrawing = false;
+
+    // If path is too short, discard
+    if (this._drawPath.length < 2) {
+      this._drawPath = null;
+      if (this._svgEl) this._svgEl.innerHTML = '';
+      this._svgPathEl = null;
+      return;
+    }
+
+    // Compute bounds
+    var xs = [];
+    var ys = [];
+    for (var i = 0; i < this._drawPath.length; i++) {
+      xs.push(this._drawPath[i][0]);
+      ys.push(this._drawPath[i][1]);
+    }
+    var minX = Math.min.apply(null, xs);
+    var maxX = Math.max.apply(null, xs);
+    var minY = Math.min.apply(null, ys);
+    var maxY = Math.max.apply(null, ys);
+
+    this._pendingAnnotation = {
+      type: 'freehand',
+      data: {
+        path: this._drawPath,
+        bounds: { minX: minX, minY: minY, maxX: maxX, maxY: maxY }
+      }
+    };
+
+    // Clear the live preview path — the note popup save will render the permanent marker
+    this._drawPath = null;
+    if (this._svgEl) this._svgEl.innerHTML = '';
+    this._svgPathEl = null;
+
+    // Show note popup near the start of the path
+    var popupX = Math.min(xs[0] + 10, window.innerWidth - 250);
+    var popupY = Math.min(ys[0] + 10, window.innerHeight - 200);
+    this._showNotePopup(Math.max(10, popupX), Math.max(10, popupY));
+  };
+
+
+  /* ── Hover Highlight ────────────────────────────────────────── */
+
+  /**
+   * Update the hover highlight overlay to match the element under the cursor.
+   * @param {MouseEvent} e
+   */
+  AnnotationCanvas.prototype._updateHoverHighlight = function(e) {
+    var el = this._getElementUnderCursor(e);
+    if (!el) {
+      this._hoverHighlightEl.style.display = 'none';
+      return;
+    }
+
+    var rect = el.getBoundingClientRect();
+    var hl = this._hoverHighlightEl;
+    hl.style.display = '';
+    hl.style.left = rect.left + 'px';
+    hl.style.top = rect.top + 'px';
+    hl.style.width = rect.width + 'px';
+    hl.style.height = rect.height + 'px';
+  };
+
+
+  /* ── Freehand Drawing ───────────────────────────────────────── */
+
+  /**
+   * Extend the freehand path with the current mouse position.
+   * @param {MouseEvent} e
+   */
+  AnnotationCanvas.prototype._extendFreehandPath = function(e) {
+    if (!this._drawPath) return;
+    this._drawPath.push([e.clientX, e.clientY]);
+
+    // Update SVG path
+    var d = 'M ' + this._drawPath[0][0] + ' ' + this._drawPath[0][1];
+    for (var i = 1; i < this._drawPath.length; i++) {
+      d += ' L ' + this._drawPath[i][0] + ' ' + this._drawPath[i][1];
+    }
+    if (this._svgPathEl) {
+      this._svgPathEl.setAttribute('d', d);
+    }
+  };
+
+
+  /* ── Note Popup ─────────────────────────────────────────────── */
+
+  /**
+   * Show the note input popup at the given position.
+   * @param {number} x  Viewport X coordinate.
+   * @param {number} y  Viewport Y coordinate.
+   */
+  AnnotationCanvas.prototype._showNotePopup = function(x, y) {
+    var self = this;
+    this._removeNotePopup();
+
+    if (!this._pendingAnnotation) return;
+
+    var popup = document.createElement('div');
+    popup.className = 'feedback-note-popup';
+
+    // Position within viewport bounds
+    var popupW = 280;
+    var popupH = 200;
+    var posX = Math.min(x, window.innerWidth - popupW - 10);
+    var posY = Math.min(y, window.innerHeight - popupH - 10);
+    posX = Math.max(10, posX);
+    posY = Math.max(10, posY);
+    popup.style.left = posX + 'px';
+    popup.style.top = posY + 'px';
+
+    // Type label
+    var typeLabel = document.createElement('div');
+    typeLabel.className = 'feedback-note-popup__type-label';
+    typeLabel.textContent = this._pendingAnnotation.type === 'element' ? 'Element annotation' : 'Freehand drawing';
+    popup.appendChild(typeLabel);
+
+    // Textarea
+    var textarea = document.createElement('textarea');
+    textarea.className = 'feedback-note-popup__textarea';
+    textarea.maxLength = 2000;
+    textarea.placeholder = 'Describe the issue… (2000 char max)';
+    textarea.setAttribute('aria-label', 'Annotation note');
+    popup.appendChild(textarea);
+
+    // Character count
+    var charCount = document.createElement('div');
+    charCount.className = 'feedback-note-popup__charcount';
+    charCount.textContent = '0 / 2000';
+    popup.appendChild(charCount);
+
+    textarea.addEventListener('input', function() {
+      charCount.textContent = textarea.value.length + ' / 2000';
+    });
+
+    // Actions
+    var actions = document.createElement('div');
+    actions.className = 'feedback-note-popup__actions';
+
+    var cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'btn btn--ghost feedback-note-popup__btn';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.setAttribute('aria-label', 'Discard annotation');
+
+    var saveBtn = document.createElement('button');
+    saveBtn.type = 'button';
+    saveBtn.className = 'btn btn--primary feedback-note-popup__btn';
+    saveBtn.textContent = 'Save';
+    saveBtn.setAttribute('aria-label', 'Save annotation');
+
+    cancelBtn.addEventListener('click', function() {
+      // Discard pending annotation and its visual marker
+      self._pendingAnnotation = null;
+      self._removeNotePopup();
+    });
+
+    saveBtn.addEventListener('click', function() {
+      var note = textarea.value.trim();
+      if (!note) {
+        self._showToast('Please enter a description', 'error');
+        return;
+      }
+      self._commitAnnotation(note);
+      self._removeNotePopup();
+    });
+
+    actions.appendChild(cancelBtn);
+    actions.appendChild(saveBtn);
+    popup.appendChild(actions);
+
+    // Stop popup interactions from bubbling to the overlay's click/mousedown
+    // handlers, which would otherwise re-trigger element selection or drawing.
+    popup.addEventListener('click', function(ev) { ev.stopPropagation(); });
+    popup.addEventListener('mousedown', function(ev) { ev.stopPropagation(); });
+
+    // Append to overlay (so it's inside the fixed-position context)
+    this._overlayEl.appendChild(popup);
+    this._notePopup = popup;
+
+    // Focus textarea after render
+    setTimeout(function() {
+      textarea.focus();
+    }, 100);
+  };
+
+/**
+   * Remove the note popup from the DOM.
+   */
+  AnnotationCanvas.prototype._removeNotePopup = function() {
+    if (this._notePopup && this._notePopup.parentNode) {
+      this._notePopup.parentNode.removeChild(this._notePopup);
+    }
+    this._notePopup = null;
+    this._manageAnnotations = null;
+    this._manageRect = null;
+    this._manageSelector = null;
+    this._manageSubMode = null;
+    this._manageEditingIdx = -1;
+  };
+
+
+  /* ── Manage Popup (element CRUD) ─────────────────────────────── */
+
+  /**
+   * Show the manage popup listing existing annotations for a clicked element.
+   * @param {number} x  Viewport X.
+   * @param {number} y  Viewport Y.
+   * @param {Array} matchingAnnotations  [{index, annotation}, ...].
+   * @param {Object} rect  Bounding rect of the clicked element.
+   * @param {string} selector  CSS selector of the clicked element.
+   */
+  AnnotationCanvas.prototype._showManagePopup = function(x, y, matchingAnnotations, rect, selector) {
+    var self = this;
+    this._removeNotePopup();
+
+    var popup = document.createElement('div');
+    popup.className = 'feedback-note-popup feedback-note-popup--manage';
+
+    // Position within viewport bounds
+    var popupW = 300;
+    var popupH = matchingAnnotations.length * 52 + 130;
+    popupH = Math.max(200, Math.min(popupH, 360));
+    var posX = Math.min(x, window.innerWidth - popupW - 10);
+    var posY = Math.min(y, window.innerHeight - popupH - 10);
+    posX = Math.max(10, posX);
+    posY = Math.max(10, posY);
+    popup.style.left = posX + 'px';
+    popup.style.top = posY + 'px';
+
+    // Store manage state
+    this._manageAnnotations = matchingAnnotations;
+    this._manageRect = rect;
+    this._manageSelector = selector;
+    this._manageSubMode = null;
+    this._manageEditingIdx = -1;
+
+    this._buildManageList(popup);
+
+    popup.addEventListener('click', function(ev) { ev.stopPropagation(); });
+    popup.addEventListener('mousedown', function(ev) { ev.stopPropagation(); });
+
+    this._overlayEl.appendChild(popup);
+    this._notePopup = popup;
+  };
+
+  /**
+   * Build the list view inside the manage popup.
+   * @param {HTMLElement} popup
+   */
+  AnnotationCanvas.prototype._buildManageList = function(popup) {
+    var self = this;
+    popup.innerHTML = '';
+
+    var matchingAnnotations = this._manageAnnotations;
+    var count = matchingAnnotations.length;
+
+    // Type label
+    var typeLabel = document.createElement('div');
+    typeLabel.className = 'feedback-note-popup__type-label';
+    typeLabel.textContent = 'Element annotations (' + count + ')';
+    popup.appendChild(typeLabel);
+
+    // List of existing annotations
+    if (count > 0) {
+      var list = document.createElement('div');
+      list.className = 'feedback-note-popup__list';
+
+      for (var li = 0; li < count; li++) {
+        var item = matchingAnnotations[li];
+        var itemEl = document.createElement('div');
+        itemEl.className = 'feedback-note-popup__list-item';
+
+        // Index badge
+        var idxBadge = document.createElement('span');
+        idxBadge.className = 'feedback-note-popup__item-index';
+        idxBadge.textContent = '#' + (li + 1);
+        itemEl.appendChild(idxBadge);
+
+        // Note text (truncated)
+        var noteEl = document.createElement('span');
+        noteEl.className = 'feedback-note-popup__item-note';
+        var noteText = item.annotation.note || '(empty)';
+        noteEl.textContent = noteText;
+        noteEl.title = noteText;
+        itemEl.appendChild(noteEl);
+
+        // Action buttons
+        var actionsEl = document.createElement('span');
+        actionsEl.className = 'feedback-note-popup__item-actions';
+
+        // Edit button — closure captures li
+        var editBtn = document.createElement('button');
+        editBtn.type = 'button';
+        editBtn.className = 'feedback-note-popup__edit-btn';
+        editBtn.textContent = 'Edit';
+        editBtn.setAttribute('aria-label', 'Edit annotation ' + (li + 1));
+        editBtn.addEventListener('click', (function(idx) {
+          return function() {
+            self._buildManageEditor(popup, idx);
+          };
+        })(li));
+
+        // Delete button — closure captures li
+        var deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'feedback-note-popup__delete-btn';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.setAttribute('aria-label', 'Delete annotation ' + (li + 1));
+        deleteBtn.addEventListener('click', (function(idx) {
+          return function() {
+            self._deleteManageAnnotation(popup, idx);
+          };
+        })(li));
+
+        actionsEl.appendChild(editBtn);
+        actionsEl.appendChild(deleteBtn);
+        itemEl.appendChild(actionsEl);
+
+        list.appendChild(itemEl);
+      }
+
+      popup.appendChild(list);
+    }
+
+    // Add-new button
+    var addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.className = 'feedback-note-popup__add-btn';
+    addBtn.textContent = '+ Add new annotation';
+    addBtn.setAttribute('aria-label', 'Add new annotation for this element');
+    addBtn.addEventListener('click', function() {
+      self._buildManageEditor(popup, -1);
+    });
+    popup.appendChild(addBtn);
+
+    // Actions bar
+    var actionsBar = document.createElement('div');
+    actionsBar.className = 'feedback-note-popup__actions';
+
+    var closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'btn btn--ghost feedback-note-popup__btn';
+    closeBtn.textContent = 'Close';
+    closeBtn.setAttribute('aria-label', 'Close annotation list');
+    closeBtn.addEventListener('click', function() {
+      self._pendingAnnotation = null;
+      self._removeNotePopup();
+    });
+
+    actionsBar.appendChild(closeBtn);
+    popup.appendChild(actionsBar);
+
+    this._manageSubMode = null;
+
+    // Focus first actionable control
+    setTimeout(function() {
+      var firstBtn = popup.querySelector('button');
+      if (firstBtn) firstBtn.focus();
+    }, 100);
+  };
+
+  /**
+   * Build the editor view (edit or add mode) inside the manage popup.
+   * @param {HTMLElement} popup
+   * @param {number} manageIdx  Index into _manageAnnotations, or -1 for add.
+   */
+  AnnotationCanvas.prototype._buildManageEditor = function(popup, manageIdx) {
+    var self = this;
+    var isAdd = manageIdx === -1;
+    var editingAnnotation = isAdd ? null : this._manageAnnotations[manageIdx].annotation;
+    var existingNote = isAdd ? '' : (editingAnnotation.note || '');
+
+    this._manageSubMode = isAdd ? 'add' : 'edit';
+    this._manageEditingIdx = manageIdx;
+
+    popup.innerHTML = '';
+    popup.style.width = '280px';
+    popup.style.maxWidth = '';
+
+    // Type label
+    var typeLabel = document.createElement('div');
+    typeLabel.className = 'feedback-note-popup__type-label';
+    typeLabel.textContent = isAdd ? 'New annotation' : 'Edit annotation';
+    popup.appendChild(typeLabel);
+
+    // Textarea
+    var textarea = document.createElement('textarea');
+    textarea.className = 'feedback-note-popup__textarea';
+    textarea.maxLength = 2000;
+    textarea.placeholder = 'Describe the issue… (2000 char max)';
+    textarea.value = existingNote;
+    textarea.setAttribute('aria-label', isAdd ? 'New annotation note' : 'Edit annotation note');
+    popup.appendChild(textarea);
+
+    // Character count
+    var charCount = document.createElement('div');
+    charCount.className = 'feedback-note-popup__charcount';
+    charCount.textContent = existingNote.length + ' / 2000';
+    popup.appendChild(charCount);
+
+    textarea.addEventListener('input', function() {
+      charCount.textContent = textarea.value.length + ' / 2000';
+    });
+
+    // Actions
+    var actions = document.createElement('div');
+    actions.className = 'feedback-note-popup__actions';
+
+    var cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'btn btn--ghost feedback-note-popup__btn';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.setAttribute('aria-label', isAdd ? 'Cancel new annotation' : 'Cancel edit');
+
+    var saveBtn = document.createElement('button');
+    saveBtn.type = 'button';
+    saveBtn.className = 'btn btn--primary feedback-note-popup__btn';
+    saveBtn.textContent = 'Save';
+    saveBtn.setAttribute('aria-label', isAdd ? 'Save new annotation' : 'Save edited annotation');
+
+    cancelBtn.addEventListener('click', function() {
+      self._manageSubMode = null;
+      self._manageEditingIdx = -1;
+      self._rescanManageAnnotations();
+      self._buildManageList(popup);
+    });
+
+    saveBtn.addEventListener('click', function() {
+      var newNote = textarea.value.trim();
+      if (!newNote) {
+        self._showToast('Please enter a description', 'error');
+        return;
+      }
+      self._handleManageSave(newNote);
+    });
+
+    actions.appendChild(cancelBtn);
+    actions.appendChild(saveBtn);
+    popup.appendChild(actions);
+
+    // Focus textarea after render
+    setTimeout(function() {
+      textarea.focus();
+    }, 100);
+  };
+
+  /**
+   * Save the currently-edited or newly-created annotation from the manage editor.
+   * @param {string} note
+   */
+  AnnotationCanvas.prototype._handleManageSave = function(note) {
+    if (!this._notePopup) return;
+
+    if (this._manageSubMode === 'add') {
+      var rect = this._manageRect;
+      this._annotations.push({
+        type: 'element',
+        note: note,
+        data: {
+          x: Math.round(rect.left),
+          y: Math.round(rect.top),
+          width: Math.round(rect.width),
+          height: Math.round(rect.height),
+          selector: this._manageSelector
+        }
+      });
+    } else if (this._manageSubMode === 'edit' && this._manageEditingIdx >= 0) {
+      var item = this._manageAnnotations[this._manageEditingIdx];
+      if (item) {
+        item.annotation.note = note;
+      }
+    }
+
+    this._hasUnsavedChanges = true;
+    this._rescanManageAnnotations();
+    this._renderMarkers();
+    this._updateCounter();
+
+    this._manageSubMode = null;
+    this._manageEditingIdx = -1;
+    this._buildManageList(this._notePopup);
+  };
+
+  /**
+   * Delete an annotation from the manage list and rebuild.
+   * @param {HTMLElement} popup
+   * @param {number} manageIdx  Index into _manageAnnotations.
+   */
+  AnnotationCanvas.prototype._deleteManageAnnotation = function(popup, manageIdx) {
+    var item = this._manageAnnotations[manageIdx];
+    if (!item) return;
+
+    this._annotations.splice(item.index, 1);
+    this._hasUnsavedChanges = true;
+
+    this._rescanManageAnnotations();
+    this._renderMarkers();
+    this._updateCounter();
+
+    if (this._manageAnnotations.length === 0) {
+      this._pendingAnnotation = null;
+      this._removeNotePopup();
+      return;
+    }
+
+    this._manageSubMode = null;
+    this._manageEditingIdx = -1;
+    this._buildManageList(popup);
+  };
+
+  /**
+   * Re-scan this._annotations for element annotations matching _manageSelector.
+   * Updates _manageAnnotations in place.
+   */
+  AnnotationCanvas.prototype._rescanManageAnnotations = function() {
+    var selector = this._manageSelector;
+    if (!selector) {
+      this._manageAnnotations = [];
+      return;
+    }
+    var matching = [];
+    for (var ri = 0; ri < this._annotations.length; ri++) {
+      var ann = this._annotations[ri];
+      if (ann.type === 'element' && ann.data.selector === selector) {
+        matching.push({ index: ri, annotation: ann });
+      }
+    }
+    this._manageAnnotations = matching;
+  };
+
+
+  /* ── Commit Annotation ──────────────────────────────────────── */
+
+  /**
+   * Commit the pending annotation with a note and render its marker.
+   * @param {string} note
+   */
+  AnnotationCanvas.prototype._commitAnnotation = function(note) {
+    if (!this._pendingAnnotation) return;
+
+    var annotation = {
+      type: this._pendingAnnotation.type,
+      note: note,
+      data: this._pendingAnnotation.data
+    };
+
+    this._annotations.push(annotation);
+    this._hasUnsavedChanges = true;
+    this._pendingAnnotation = null;
+
+    this._renderMarkers();
+    this._updateCounter();
+  };
+
+
+  /* ── Markers ────────────────────────────────────────────────── */
+
+  /**
+   * Render all saved annotation markers in the markers container.
+   * Clears and rebuilds.
+   */
+  AnnotationCanvas.prototype._renderMarkers = function() {
+    if (!this._markersContainer) return;
+
+    this._markersContainer.innerHTML = '';
+
+    for (var i = 0; i < this._annotations.length; i++) {
+      var ann = this._annotations[i];
+      var markerEl = null;
+
+      if (ann.type === 'element') {
+        markerEl = document.createElement('div');
+        markerEl.className = 'feedback-marker feedback-marker--rect';
+        markerEl.style.left = ann.data.x + 'px';
+        markerEl.style.top = ann.data.y + 'px';
+        markerEl.style.width = ann.data.width + 'px';
+        markerEl.style.height = ann.data.height + 'px';
+        markerEl.setAttribute('title', 'Annotation ' + (i + 1) + ': ' + (ann.note || ''));
+      } else if (ann.type === 'freehand') {
+        // Render freehand path as an SVG
+        var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('class', 'feedback-marker feedback-marker--freehand');
+        svg.setAttribute('aria-hidden', 'true');
+        svg.setAttribute('width', '100%');
+        svg.setAttribute('height', '100%');
+        svg.style.position = 'fixed';
+        svg.style.inset = '0';
+        svg.style.pointerEvents = 'none';
+        svg.style.zIndex = '9005';
+
+        var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        var d = 'M ' + ann.data.path[0][0] + ' ' + ann.data.path[0][1];
+        for (var j = 1; j < ann.data.path.length; j++) {
+          d += ' L ' + ann.data.path[j][0] + ' ' + ann.data.path[j][1];
+        }
+        path.setAttribute('d', d);
+        svg.appendChild(path);
+
+        markerEl = svg;
+      }
+
+      if (markerEl) {
+        this._markersContainer.appendChild(markerEl);
+      }
+    }
+  };
+
+  /**
+   * Update the annotation counter badge.
+   */
+  AnnotationCanvas.prototype._updateCounter = function() {
+    if (!this._markersContainer) return;
+
+    // Remove existing counter
+    if (this._counterEl && this._counterEl.parentNode) {
+      this._counterEl.parentNode.removeChild(this._counterEl);
+    }
+
+    var count = this._annotations.length;
+    var counter = document.createElement('div');
+    counter.className = 'feedback-annotation-counter';
+    counter.textContent = count + ' annotation' + (count !== 1 ? 's' : '');
+    counter.setAttribute('aria-live', 'polite');
+
+    this._markersContainer.appendChild(counter);
+    this._counterEl = counter;
+  };
+
+
+  /* ── Screenshot Capture ─────────────────────────────────────── */
+
+  /**
+   * Capture the page as a PNG blob using window.htmlToImage.
+   * Called ONLY at submit time.
+   * @return {Promise<Blob|null>}
+   */
+  AnnotationCanvas.prototype._captureScreenshot = function() {
+    var self = this;
+
+    return new Promise(function(resolve) {
+      if (typeof window.htmlToImage === 'undefined' || !window.htmlToImage.toPng) {
+        self._showToast('Screenshot library not available, submitting without image', 'warning');
+        resolve(null);
+        return;
+      }
+
+      // Capture .app-main or fallback to body
+      var target = document.querySelector('.app-main') || document.body;
+
+      window.htmlToImage.toPng(target, { cacheBust: true })
+        .then(function(dataUrl) {
+          // Convert data URL to Blob
+          var byteString = atob(dataUrl.split(',')[1]);
+          var mimeString = 'image/png';
+          var ab = new ArrayBuffer(byteString.length);
+          var ia = new Uint8Array(ab);
+          for (var i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
+          }
+          resolve(new Blob([ab], { type: mimeString }));
+        })
+        .catch(function() {
+          self._showToast('Screenshot capture failed, submitting without image', 'warning');
+          resolve(null);
+        });
+    });
+  };
+
+
+  /* ── Upload ─────────────────────────────────────────────────── */
+
+  /**
+   * Upload the report to /v1/feedback as multipart FormData.
+   *
+   * @param {Blob|null} screenshotBlob
+   * @return {Promise<Object|null>}
+   */
+  AnnotationCanvas.prototype._uploadReport = function(screenshotBlob) {
+    var formData = new FormData();
+    formData.append('page_url', this._pageUrl);
+    formData.append('viewport_width', String(window.innerWidth));
+    formData.append('viewport_height', String(window.innerHeight));
+    formData.append('reporter_id', 'default');
+
+    // Build annotations array
+    var annotations = [];
+    for (var i = 0; i < this._annotations.length; i++) {
+      var ann = this._annotations[i];
+      annotations.push({
+        type: ann.type,
+        note: ann.note,
+        data: ann.data
+      });
+    }
+    formData.append('annotations', JSON.stringify(annotations));
+
+    if (screenshotBlob) {
+      formData.append('screenshot', screenshotBlob, 'screenshot.png');
+    }
+
+    var fetchFn = window.apiFetch || window.fetch;
+
+    return fetchFn('/v1/feedback', {
+      method: 'POST',
+      body: formData
+    }).then(function(response) {
+      if (!response.ok) {
+        return response.json().then(function(err) {
+          throw new Error(err.detail || 'Server error');
+        });
+      }
+      return response.json();
+    }).then(function(data) {
+      if (data && data.ok) {
+        return data;
+      }
+      return data;
+    });
+  };
+
+
+  /* ── Beforeunload ───────────────────────────────────────────── */
+
+  /**
+   * Set up beforeunload warning for unsaved changes.
+   */
+  AnnotationCanvas.prototype._setupBeforeUnload = function() {
+    var self = this;
+    this._onBoundBeforeUnload = function(e) {
+      if (self._hasUnsavedChanges && self._annotationMode) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', this._onBoundBeforeUnload);
+  };
+
+  /**
+   * Remove the beforeunload handler.
+   */
+  AnnotationCanvas.prototype._removeBeforeUnload = function() {
+    if (this._onBoundBeforeUnload) {
+      window.removeEventListener('beforeunload', this._onBoundBeforeUnload);
+      this._onBoundBeforeUnload = null;
+    }
+  };
+
+
+  /* ── Keyboard ────────────────────────────────────────────────── */
+
+  /**
+   * Handle keyboard events.
+   */
+  AnnotationCanvas.prototype._onKeydown = function(e) {
+    // Escape closes note popup and discards pending annotation
+    if (e.key === 'Escape') {
+      if (this._notePopup) {
+        if (this._manageSubMode) {
+          // In edit/add sub-mode — return to list
+          this._manageSubMode = null;
+          this._manageEditingIdx = -1;
+          this._rescanManageAnnotations();
+          this._buildManageList(this._notePopup);
+          return;
+        }
+        this._pendingAnnotation = null;
+        this._removeNotePopup();
+      }
+      return;
+    }
+
+    // Ctrl+Z / Cmd+Z undo
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+      e.preventDefault();
+      this.undo();
+      return;
+    }
+
+    // Ctrl+Enter / Cmd+Enter save note popup
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      if (this._notePopup) {
+        var textarea = this._notePopup.querySelector('textarea');
+        if (textarea) {
+          var note = textarea.value.trim();
+          if (note) {
+            if (this._manageSubMode) {
+              this._handleManageSave(note);
+            } else {
+              this._commitAnnotation(note);
+              this._removeNotePopup();
+            }
+          }
+        }
+      }
+    }
+  };
+
+
+  /* ── Toast ───────────────────────────────────────────────────── */
+
+  /**
+   * Show a toast notification.
+   * @param {string} msg
+   * @param {string} type  'success', 'error', 'info', 'warning'
+   */
+  AnnotationCanvas.prototype._showToast = function(msg, type) {
+    type = type || 'info';
+    var container = document.getElementById('toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'toast-container';
+      container.className = 'toast-container';
+      document.body.appendChild(container);
+    }
+    var toast = document.createElement('div');
+    toast.className = 'toast toast-' + (type === 'warning' ? 'error' : type);
+    toast.textContent = msg;
+    container.appendChild(toast);
+    setTimeout(function() {
+      toast.style.opacity = '0';
+      toast.style.transition = 'opacity 0.3s ease';
+      setTimeout(function() {
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+      }, 300);
+    }, 3000);
+  };
+
+
+  /* ── Public API ──────────────────────────────────────────────── */
+
   window.AnnotationCanvas = AnnotationCanvas;
 
   /**
-   * Convenience function to initialize annotation mode on a page.
+   * Convenience factory — creates an AnnotationCanvas instance, calls
+   * .init(), and returns it.
    *
-   * Creates an AnnotationCanvas instance, wires it to the given
-   * container element (or the document body), and returns the instance.
-   *
-   * @param {HTMLElement|string} containerOrSelector  Container element or CSS selector.
-   * @param {Object} options  Options passed to AnnotationCanvas.
+   * @param {HTMLElement|string} containerOrSelector  Element or CSS selector.
+   * @param {Object}             options               See AnnotationCanvas constructor.
    * @return {AnnotationCanvas}
    */
   window.initAnnotationMode = function(containerOrSelector, options) {
-    options = options || {};
     var container = containerOrSelector;
     if (typeof containerOrSelector === 'string') {
       container = document.querySelector(containerOrSelector);
@@ -1576,9 +1551,10 @@
     if (!container) {
       container = document.body;
     }
-
-    var canvas = new AnnotationCanvas(container, options);
-    canvas.init();
-    return canvas;
+    options = options || {};
+    var instance = new AnnotationCanvas(container, options);
+    instance.init();
+    return instance;
   };
+
 })();
