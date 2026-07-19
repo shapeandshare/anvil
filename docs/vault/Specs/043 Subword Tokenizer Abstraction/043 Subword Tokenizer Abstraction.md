@@ -13,6 +13,8 @@ created: '2026-06-28'
 updated: '2026-06-28'
 aliases:
   - 043 Subword Tokenizer Abstraction
+spec_number: 43
+doc_type: spec
 ---
 
 # 043 Subword Tokenizer Abstraction

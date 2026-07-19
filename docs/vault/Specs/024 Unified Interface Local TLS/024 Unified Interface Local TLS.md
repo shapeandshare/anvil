@@ -12,6 +12,8 @@ created: '2026-06-21'
 updated: '2026-06-22'
 aliases:
   - 024 Unified Interface Local TLS
+spec_number: 24
+doc_type: spec
 ---
 
 # 024 Unified Interface Local TLS

@@ -12,6 +12,8 @@ created: '2026-07-18'
 updated: '2026-07-18'
 aliases:
   - 026 Client SDK
+spec_number: 26
+doc_type: spec
 ---
 
 # 026 Client SDK

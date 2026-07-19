@@ -12,6 +12,8 @@ created: '2026-06-19'
 updated: '2026-06-22'
 aliases:
   - 015 Demo Data Bootstrap
+spec_number: 15
+doc_type: spec
 ---
 
 # 015 Demo Data Bootstrap

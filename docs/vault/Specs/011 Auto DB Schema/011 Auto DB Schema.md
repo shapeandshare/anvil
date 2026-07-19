@@ -12,6 +12,8 @@ created: '2026-06-18'
 updated: '2026-06-22'
 aliases:
   - 011 Auto DB Schema
+spec_number: 11
+doc_type: spec
 ---
 
 # 011 Auto DB Schema

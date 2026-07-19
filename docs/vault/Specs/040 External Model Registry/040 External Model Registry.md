@@ -13,6 +13,8 @@ created: '2026-06-28'
 updated: '2026-06-28'
 aliases:
   - 040 External Model Registry
+spec_number: 40
+doc_type: spec
 ---
 
 # 040 External Model Registry

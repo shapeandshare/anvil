@@ -12,6 +12,8 @@ created: '2026-06-27'
 updated: '2026-06-27'
 aliases:
   - 030 SaaS Authentication
+spec_number: 30
+doc_type: spec
 ---
 
 # 030 SaaS Authentication

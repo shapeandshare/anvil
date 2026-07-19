@@ -13,6 +13,8 @@ created: '2026-06-28'
 updated: '2026-06-28'
 aliases:
   - 045 Adapter Inference Export
+spec_number: 45
+doc_type: spec
 ---
 
 # 045 Adapter Inference Export

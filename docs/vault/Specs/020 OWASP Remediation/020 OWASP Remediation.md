@@ -12,6 +12,8 @@ created: '2026-06-21'
 updated: '2026-06-22'
 aliases:
   - 020 OWASP Remediation
+spec_number: 20
+doc_type: spec
 ---
 
 # 020 OWASP Remediation

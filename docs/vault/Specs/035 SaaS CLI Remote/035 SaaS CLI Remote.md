@@ -13,6 +13,8 @@ created: '2026-06-27'
 updated: '2026-06-27'
 aliases:
   - 035 SaaS CLI Remote
+spec_number: 35
+doc_type: spec
 ---
 
 # 035 SaaS CLI Remote & Cluster Management

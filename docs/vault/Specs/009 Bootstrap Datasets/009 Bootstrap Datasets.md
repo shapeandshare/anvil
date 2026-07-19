@@ -12,6 +12,8 @@ created: '2026-06-14'
 updated: '2026-06-22'
 aliases:
   - 009 Bootstrap Datasets
+spec_number: 9
+doc_type: spec
 ---
 
 # 009 Bootstrap Datasets

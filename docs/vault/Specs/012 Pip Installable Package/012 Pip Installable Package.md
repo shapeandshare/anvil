@@ -12,6 +12,8 @@ created: '2026-06-18'
 updated: '2026-06-22'
 aliases:
   - 012 Pip Installable Package
+spec_number: 12
+doc_type: spec
 ---
 
 # 012 Pip Installable Package

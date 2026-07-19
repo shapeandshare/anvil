@@ -14,6 +14,8 @@ created: '2026-06-29'
 updated: '2026-06-29'
 aliases:
   - 058 At-Rest Secret Encryption
+spec_number: 58
+doc_type: spec
 ---
 
 # 058 At-Rest Secret Encryption

@@ -12,6 +12,8 @@ created: '2026-07-18'
 updated: '2026-07-18'
 aliases:
   - 080 DB Indexes Eager Loading
+spec_number: 80
+doc_type: spec
 ---
 
 # 080 DB Indexes Eager Loading

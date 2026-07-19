@@ -12,6 +12,8 @@ created: '2026-07-18'
 updated: '2026-07-18'
 aliases:
   - 071 Service DI Injection
+spec_number: 71
+doc_type: spec
 ---
 
 # 071 Service DI Injection

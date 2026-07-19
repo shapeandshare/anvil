@@ -13,6 +13,8 @@ created: '2026-06-28'
 updated: '2026-06-28'
 aliases:
   - 051 GGUF Export
+spec_number: 51
+doc_type: spec
 ---
 
 # 051 GGUF Export

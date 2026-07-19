@@ -12,6 +12,8 @@ created: '2026-06-13'
 updated: '2026-06-22'
 aliases:
   - 007 Learning Content Enrichment
+spec_number: 7
+doc_type: spec
 ---
 
 # 007 Learning Content Enrichment

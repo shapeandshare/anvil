@@ -12,6 +12,8 @@ created: '2026-07-18'
 updated: '2026-07-18'
 aliases:
   - 077 Session Py Cleanup
+spec_number: 77
+doc_type: spec
 ---
 
 # 077 Session Py Cleanup

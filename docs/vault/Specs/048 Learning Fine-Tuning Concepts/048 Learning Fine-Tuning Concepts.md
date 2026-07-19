@@ -13,6 +13,8 @@ created: '2026-06-28'
 updated: '2026-06-28'
 aliases:
   - 048 Learning Fine-Tuning Concepts
+spec_number: 48
+doc_type: spec
 ---
 
 # 048 Learning Fine-Tuning Concepts

@@ -12,6 +12,8 @@ created: '2026-06-19'
 updated: '2026-06-27'
 aliases:
   - 016 SaaS Architecture
+spec_number: 16
+doc_type: spec
 ---
 
 # 016 SaaS Architecture

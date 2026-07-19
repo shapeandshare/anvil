@@ -13,6 +13,8 @@ created: '2026-06-28'
 updated: '2026-06-28'
 aliases:
   - 053 Fine-Tuning Dataset Preparation
+spec_number: 53
+doc_type: spec
 ---
 
 # 053 Fine-Tuning Dataset Preparation

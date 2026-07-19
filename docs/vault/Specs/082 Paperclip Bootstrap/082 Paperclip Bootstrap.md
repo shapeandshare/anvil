@@ -12,6 +12,8 @@ created: '2026-07-18'
 updated: '2026-07-18'
 aliases:
   - 082 Paperclip Bootstrap
+spec_number: 82
+doc_type: spec
 ---
 
 # 082 Paperclip Bootstrap

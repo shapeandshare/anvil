@@ -13,6 +13,8 @@ created: '2026-06-28'
 updated: '2026-06-28'
 aliases:
   - 042 Model Asset Storage
+spec_number: 42
+doc_type: spec
 ---
 
 # 042 Model Asset Storage

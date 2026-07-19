@@ -13,6 +13,8 @@ created: '2026-06-28'
 updated: '2026-06-28'
 aliases:
   - 039 Model Warm-Start
+spec_number: 39
+doc_type: spec
 ---
 
 # 039 Model Warm-Start

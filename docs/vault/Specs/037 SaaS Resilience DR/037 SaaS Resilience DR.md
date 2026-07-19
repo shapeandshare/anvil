@@ -13,6 +13,8 @@ created: '2026-06-27'
 updated: '2026-06-27'
 aliases:
   - 037 SaaS Resilience DR
+spec_number: 37
+doc_type: spec
 ---
 
 # 037 SaaS Resilience DR

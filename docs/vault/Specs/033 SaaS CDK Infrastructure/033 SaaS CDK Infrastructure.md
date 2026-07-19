@@ -12,6 +12,8 @@ created: '2026-06-27'
 updated: '2026-06-27'
 aliases:
   - 033 SaaS CDK Infrastructure
+spec_number: 33
+doc_type: spec
 ---
 
 # 033 SaaS CDK Infrastructure

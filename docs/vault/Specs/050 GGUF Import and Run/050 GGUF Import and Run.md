@@ -13,6 +13,8 @@ created: '2026-06-28'
 updated: '2026-06-28'
 aliases:
   - 050 GGUF Import and Run
+spec_number: 50
+doc_type: spec
 ---
 
 # 050 GGUF Import and Run

@@ -12,6 +12,8 @@ created: '2026-07-18'
 updated: '2026-07-18'
 aliases:
   - 060 Text Input Theme Consistency
+spec_number: 60
+doc_type: spec
 ---
 
 # 060 Text Input Theme Consistency

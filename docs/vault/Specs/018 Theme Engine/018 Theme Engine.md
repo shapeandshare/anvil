@@ -12,6 +12,8 @@ created: '2026-06-19'
 updated: '2026-06-22'
 aliases:
   - 018 Theme Engine
+spec_number: 18
+doc_type: spec
 ---
 
 # 018 Theme Engine

@@ -12,6 +12,8 @@ created: '2026-07-18'
 updated: '2026-07-18'
 aliases:
   - 001 Non-Educational Help Guide
+spec_number: 1
+doc_type: spec
 ---
 
 # 001 Non-Educational Help Guide

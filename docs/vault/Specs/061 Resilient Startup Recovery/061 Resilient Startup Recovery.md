@@ -12,6 +12,8 @@ created: '2026-07-18'
 updated: '2026-07-18'
 aliases:
   - 061 Resilient Startup Recovery
+spec_number: 61
+doc_type: spec
 ---
 
 # 061 Resilient Startup Recovery

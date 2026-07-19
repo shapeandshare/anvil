@@ -12,6 +12,8 @@ created: '2026-07-18'
 updated: '2026-07-18'
 aliases:
   - 070 Experiments Service Extraction
+spec_number: 70
+doc_type: spec
 ---
 
 # 070 Experiments Service Extraction

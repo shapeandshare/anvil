@@ -12,6 +12,8 @@ created: '2026-06-21'
 updated: '2026-06-22'
 aliases:
   - 022 Playwright UI Smoke
+spec_number: 22
+doc_type: spec
 ---
 
 # 022 Playwright UI Smoke

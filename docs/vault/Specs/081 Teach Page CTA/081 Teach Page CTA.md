@@ -12,6 +12,8 @@ created: '2026-07-18'
 updated: '2026-07-18'
 aliases:
   - 081 Teach Page CTA
+spec_number: 81
+doc_type: spec
 ---
 
 # 081 Teach Page CTA

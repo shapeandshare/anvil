@@ -12,6 +12,8 @@ created: '2026-07-18'
 updated: '2026-07-18'
 aliases:
   - 063 Usable External Models
+spec_number: 63
+doc_type: spec
 ---
 
 # 063 Usable External Models

@@ -12,6 +12,8 @@ created: '2026-06-19'
 updated: '2026-06-22'
 aliases:
   - 017 Graph Health Subsumption
+spec_number: 17
+doc_type: spec
 ---
 
 # 017 Graph Health Subsumption

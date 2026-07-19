@@ -12,6 +12,8 @@ created: '2026-06-11'
 updated: '2026-06-22'
 aliases:
   - 003 Model Registry Tracking
+spec_number: 3
+doc_type: spec
 ---
 
 # 003 Model Registry Tracking

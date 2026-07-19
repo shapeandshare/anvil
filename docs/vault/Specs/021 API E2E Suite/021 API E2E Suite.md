@@ -12,6 +12,8 @@ created: '2026-06-21'
 updated: '2026-06-22'
 aliases:
   - 021 API E2E Suite
+spec_number: 21
+doc_type: spec
 ---
 
 # 021 API E2E Suite

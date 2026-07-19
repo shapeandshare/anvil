@@ -12,6 +12,8 @@ created: '2026-07-18'
 updated: '2026-07-18'
 aliases:
   - 074 Module State Removal
+spec_number: 74
+doc_type: spec
 ---
 
 # 074 Module State Removal

@@ -12,6 +12,8 @@ created: '2026-06-27'
 updated: '2026-06-27'
 aliases:
   - 029 SaaS Dev Stack
+spec_number: 29
+doc_type: spec
 ---
 
 # 029 SaaS Dev Stack

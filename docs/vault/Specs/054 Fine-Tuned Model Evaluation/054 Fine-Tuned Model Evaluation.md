@@ -13,6 +13,8 @@ created: '2026-06-28'
 updated: '2026-06-28'
 aliases:
   - 054 Fine-Tuned Model Evaluation
+spec_number: 54
+doc_type: spec
 ---
 
 # 054 Fine-Tuned Model Evaluation

@@ -12,6 +12,8 @@ created: '2026-07-18'
 updated: '2026-07-18'
 aliases:
   - 072 Error Response Standardization
+spec_number: 72
+doc_type: spec
 ---
 
 # 072 Error Response Standardization

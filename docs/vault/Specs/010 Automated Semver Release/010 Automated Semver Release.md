@@ -12,6 +12,8 @@ created: '2026-06-14'
 updated: '2026-06-22'
 aliases:
   - 010 Automated Semver Release
+spec_number: 10
+doc_type: spec
 ---
 
 # 010 Automated Semver Release

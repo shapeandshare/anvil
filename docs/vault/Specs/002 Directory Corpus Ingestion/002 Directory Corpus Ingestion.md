@@ -12,6 +12,8 @@ created: '2026-06-11'
 updated: '2026-06-22'
 aliases:
   - 002 Directory Corpus Ingestion
+spec_number: 2
+doc_type: spec
 ---
 
 # 002 Directory Corpus Ingestion

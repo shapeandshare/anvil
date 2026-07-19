@@ -12,6 +12,8 @@ created: '2026-06-27'
 updated: '2026-06-27'
 aliases:
   - 031 SaaS Multi-Tenancy RBAC
+spec_number: 31
+doc_type: spec
 ---
 
 # 031 SaaS Multi-Tenancy RBAC

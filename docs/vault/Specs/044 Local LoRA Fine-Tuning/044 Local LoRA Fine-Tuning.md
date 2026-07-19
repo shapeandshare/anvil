@@ -13,6 +13,8 @@ created: '2026-06-28'
 updated: '2026-06-28'
 aliases:
   - 044 Local LoRA Fine-Tuning
+spec_number: 44
+doc_type: spec
 ---
 
 # 044 Local LoRA Fine-Tuning

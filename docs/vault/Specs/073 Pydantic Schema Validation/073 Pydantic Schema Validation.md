@@ -12,6 +12,8 @@ created: '2026-07-18'
 updated: '2026-07-18'
 aliases:
   - 073 Pydantic Schema Validation
+spec_number: 73
+doc_type: spec
 ---
 
 # 073 Pydantic Schema Validation

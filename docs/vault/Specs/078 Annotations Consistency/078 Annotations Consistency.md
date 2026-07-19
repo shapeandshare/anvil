@@ -12,6 +12,8 @@ created: '2026-07-18'
 updated: '2026-07-18'
 aliases:
   - 078 Annotations Consistency
+spec_number: 78
+doc_type: spec
 ---
 
 # 078 Annotations Consistency

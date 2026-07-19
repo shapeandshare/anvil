@@ -12,6 +12,8 @@ created: '2026-07-18'
 updated: '2026-07-18'
 aliases:
   - 067 API Response Models
+spec_number: 67
+doc_type: spec
 ---
 
 # 067 API Response Models
