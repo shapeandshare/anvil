@@ -31,4 +31,5 @@
 
 ## Notes
 
+- Clarifications completed: 5 questions asked and encoded into spec on 2026-07-18
 - Items marked incomplete require spec updates before `/speckit.clarify` or `/speckit.plan`
