@@ -84,8 +84,6 @@
   var currentStream = null;       // EventSource or null
   var isGenerating = false;
   var modelsData = [];            // loaded models list
-  var selectedModel = null;       // current model object
-  var selectedVersion = 1;
 
   /* ── Model helpers ── */
   function modelKey(m) { return m.id != null ? String(m.id) : m.name; }

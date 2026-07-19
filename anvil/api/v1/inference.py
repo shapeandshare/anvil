@@ -493,8 +493,8 @@ async def chat_stream(
             task.cancel()
             try:
                 await task
-            except (asyncio.CancelledError, Exception):
-                pass
+            except asyncio.CancelledError:
+                pass  # expected — we initiated the cancel above
 
     return StreamingResponse(
         event_stream(),
