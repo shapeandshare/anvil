@@ -529,8 +529,8 @@ SomeException
 - N/A — Paperclip handles its own embedded Postgres state (063-paperclip-bootstrap)
 - Python 3.11+ (backend) + Vanilla JavaScript ES2020 (frontend — no transpiler/bundler) + Existing stack (FastAPI, Jinja2, async SQLAlchemy, aiosqlite) + `html-to-image` (CDN-loaded, for DOM-to-canvas screenshot capture) (001-annotate-elements-and)
 - LocalFileStore at `data/feedback/{report_id}/screenshot.png`; SQLite `anvil-state.db` via new `FeedbackReport` + `Annotation` DB models (001-annotate-elements-and)
-- Python 3.11+ + FastAPI, Jinja2, SSE (all existing — no new deps) (001-inference-chat-split)
-- In-memory (ephemeral chat conversations); existing SQLite + LocalFileStore for model metadata (001-inference-chat-split)
+- Python 3.11+ + FastAPI, Jinja2, SSE (all existing — no new deps) (001 Inference Chat Split)
+- In-memory (ephemeral chat conversations); existing SQLite + LocalFileStore for model metadata (001 Inference Chat Split)
 
 ## Recent Changes
 - 025-ux-rules-integration: Added Python 3.11+ (existing repo convention) + Stdlib only — `ux_lint.py` (re/ sys/ os/), `ux_review.py` (stdlib + urllib for OpenAI-compatible API calls)
