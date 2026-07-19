@@ -71,6 +71,8 @@ class FeedbackService:
         annotations: list[dict[str, Any]] | None = None,
         reporter_id: str = "default",
         notes_summary: str | None = None,
+        document_title: str | None = None,
+        user_agent: str | None = None,
     ) -> FeedbackReport:
         """Create a new feedback report and store associated screenshot
         files and annotations.
@@ -101,6 +103,10 @@ class FeedbackService:
             Defaults to ``"default"``.
         notes_summary : str, optional
             Optional summary text for the report.
+        document_title : str, optional
+            Document title at annotation time.
+        user_agent : str, optional
+            Browser user agent string at annotation time.
 
         Returns
         -------
@@ -115,6 +121,8 @@ class FeedbackService:
             annotated_path=None,
             reporter_id=reporter_id,
             notes_summary=notes_summary,
+            document_title=document_title,
+            user_agent=user_agent,
         )
 
         if screenshot_data is not None:

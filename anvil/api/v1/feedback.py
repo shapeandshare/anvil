@@ -33,6 +33,8 @@ async def create_feedback_report(
     annotations: str = Form("[]", description="JSON array of annotation objects"),
     reporter_id: str = Form("default", description="Reporter identifier"),
     notes_summary: str | None = Form(None, description="Optional summary note"),
+    document_title: str | None = Form(None, description="Document title at annotation time"),
+    user_agent: str | None = Form(None, description="Browser user agent string"),
     screenshot: UploadFile | None = None,
     annotated: UploadFile | None = None,
 ) -> dict[str, Any]:
@@ -178,6 +180,8 @@ async def create_feedback_report(
         annotations=parsed_annotations,
         reporter_id=reporter_id,
         notes_summary=notes_summary,
+        document_title=document_title,
+        user_agent=user_agent,
     )
     return {"ok": True, "id": report.id}
 
@@ -227,6 +231,8 @@ async def list_feedback_reports(
                 "status": r.status,
                 "reporter_id": r.reporter_id,
                 "notes_summary": r.notes_summary,
+                "document_title": r.document_title,
+                "user_agent": r.user_agent,
                 "screenshot_path": r.screenshot_path,
                 "annotated_path": r.annotated_path,
                 "annotation_count": len(r.annotations) if r.annotations else 0,

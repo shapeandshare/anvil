@@ -64,6 +64,8 @@ class FeedbackReport(Base, TimestampMixin):
     status: Mapped[str] = mapped_column(String(16), default="open")
     reporter_id: Mapped[str] = mapped_column(String(255), default="default")
     notes_summary: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    document_title: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    user_agent: Mapped[str | None] = mapped_column(String(512), nullable=True)
 
     annotations: Mapped[list[FeedbackAnnotation]] = relationship(
         "FeedbackAnnotation",
