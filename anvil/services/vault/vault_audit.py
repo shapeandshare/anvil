@@ -579,6 +579,32 @@ class VaultAuditService:
                         )
                     )
 
+        vault_specs_dir = vault_root / "Specs"
+        if vault_specs_dir.exists():
+            for spec_subdir in sorted(vault_specs_dir.iterdir()):
+                if not spec_subdir.is_dir():
+                    continue
+                if not re.match(r"^\d{3} ", spec_subdir.name):
+                    continue
+                title_md = spec_subdir / f"{spec_subdir.name}.md"
+                if not title_md.exists():
+                    try:
+                        rel = str(spec_subdir.relative_to(vault_root.parent))
+                    except ValueError:
+                        rel = str(spec_subdir)
+                    report.add(
+                        Finding(
+                            note_path=rel,
+                            line=0,
+                            rule="orphan_spec_subdir",
+                            message=(
+                                f"spec subdirectory missing primary note: "
+                                f"{spec_subdir.name}"
+                            ),
+                            severity="WARN",
+                        )
+                    )
+
         # Validate schema and wikilinks against the fully-built index.
         for md_path, note_path_str in scannable:
             fm = parse_frontmatter(md_path)
