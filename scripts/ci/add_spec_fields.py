@@ -3,7 +3,6 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-
 SPECS_DIR = Path("docs/vault/Specs")
 
 
@@ -13,7 +12,7 @@ def is_main_spec_file(path: Path) -> bool:
     if not m:
         return False
     stem = path.stem
-    if " - " in stem[len(m.group(1)) + 1:]:
+    if " - " in stem[len(m.group(1)) + 1 :]:
         return False
     return True
 

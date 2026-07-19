@@ -80,6 +80,10 @@ class WorkspacePaths:
     def backup_dir(self) -> Path:
         return self._resolve("backup_dir", self._root / "data" / "backups")
 
+    @property
+    def feedback_dir(self) -> Path:
+        return self._resolve("feedback_dir", self._root / "data" / "feedback")
+
     # ── Experiment tracking ───────────────────────────────────────
 
     @property

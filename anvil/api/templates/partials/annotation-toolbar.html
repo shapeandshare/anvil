@@ -1,0 +1,40 @@
+<!--
+  ~ Copyright © 2026 Josh Burt
+  ~
+  ~ This source code is licensed under the MIT license found in the
+  ~ LICENSE file in the root directory of this source tree.
+-->
+
+{# ── Annotation Toolbar ── #}
+<div id="annotation-toolbar" class="feedback-annotation-toolbar" style="display:none;" role="toolbar" aria-label="Annotation tools">
+  <button type="button" class="feedback-annotation-toolbar__btn" data-tool="rect" aria-label="Rectangle annotation" title="Rectangle">
+    <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+  </button>
+  <button type="button" class="feedback-annotation-toolbar__btn" data-tool="circle" aria-label="Circle annotation" title="Circle">
+    <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/></svg>
+  </button>
+  <button type="button" class="feedback-annotation-toolbar__btn" data-tool="freehand" aria-label="Freehand drawing" title="Freehand">
+    <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 17c3-4 6-1 8-3s4-5 6-6 4 2 3 5-5 10-8 11-5-2-3-5"/></svg>
+  </button>
+  <button type="button" class="feedback-annotation-toolbar__btn" data-tool="arrow" aria-label="Arrow annotation" title="Arrow">
+    <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="19" x2="19" y2="5"/><polyline points="12 5 19 5 19 12"/></svg>
+  </button>
+  <button type="button" class="feedback-annotation-toolbar__btn" data-tool="highlight" aria-label="Highlight annotation" title="Highlight">
+    <svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M6 20l-2 2h4l8-8-4-4-6 10zM15.5 6.5l-2-2 2.5-2.5 2 2-2.5 2.5z"/></svg>
+  </button>
+
+  <span class="feedback-annotation-toolbar__sep" aria-hidden="true"></span>
+
+  <button type="button" class="feedback-annotation-toolbar__btn" id="annotation-toolbar-undo" aria-label="Undo last annotation" title="Undo">
+    <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+  </button>
+  <button type="button" class="feedback-annotation-toolbar__btn" id="annotation-toolbar-clear" aria-label="Clear all annotations" title="Clear">
+    <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+  </button>
+
+  <span class="feedback-annotation-toolbar__sep" aria-hidden="true"></span>
+
+  <button type="button" class="feedback-annotation-toolbar__btn" id="annotation-toolbar-close" aria-label="Close annotation mode" title="Close">
+    <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+</div>
