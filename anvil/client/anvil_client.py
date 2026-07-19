@@ -11,27 +11,10 @@ It aggregates per-domain sub-clients over a single shared ``Transport``.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import httpx
 
 from ._shared.server_config import ServerConfig
 from ._shared.transport import Transport
-
-if TYPE_CHECKING:
-    from .compute.compute_client import ComputeClient
-    from .content.content_client import ContentClient
-    from .corpora.corpora_client import CorporaClient
-    from .datasets.datasets_client import DatasetsClient
-    from .eval.eval_client import EvalClient
-    from .experiments.experiments_client import ExperimentsClient
-    from .governance.governance_client import GovernanceClient
-    from .health.health_client import HealthClient
-    from .inference.inference_client import InferenceClient
-    from .models.models_client import ModelsClient
-    from .registry.registry_client import RegistryClient
-    from .services.services_client import ServicesClient
-    from .training.training_client import TrainingClient
 
 from .compute.compute_client import ComputeClient
 from .content.content_client import ContentClient
