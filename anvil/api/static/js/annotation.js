@@ -197,6 +197,7 @@ function isAnnotationUI(el) {
     this._onBoundBeforeUnload = null;
 
     this._pageUrl = this.options.pageUrl || window.location.href;
+    this._maxContainedElements = this.options.maxContainedElements || 100;
     this._accentColor = getCSSVar('--accent') || '#007aff';
   }
 
@@ -623,6 +624,149 @@ function isAnnotationUI(el) {
   };
 
 
+  /* ── Contained Elements Discovery ─────────────────────────── */
+
+  /**
+   * Check whether an element should be excluded from contained-element
+   * capture. Excludes script/style tags and hidden/invisible elements.
+   * @param {Element} el
+   * @return {boolean}
+   */
+  AnnotationCanvas.prototype._isExcludedElement = function(el) {
+    if (!el || !el.tagName) return true;
+    var tag = el.tagName.toLowerCase();
+    if (tag === 'script' || tag === 'style' || tag === 'html' || tag === 'body') {
+      return true;
+    }
+    var style = getComputedStyle(el);
+    if (style.display === 'none' || style.visibility === 'hidden' ||
+        parseFloat(style.opacity) === 0) {
+      return true;
+    }
+    return false;
+  };
+
+  /**
+   * Compute spatial data for an element relative to a bounding rect.
+   * Returns relX, relY, width, height, and overlapRatio (0.0–1.0).
+   * @param {Element} el
+   * @param {DOMRect} boundingRect
+   * @return {Object}
+   */
+  AnnotationCanvas.prototype._computeElementSpatialData = function(el, boundingRect) {
+    var elRect = el.getBoundingClientRect();
+
+    var overlapLeft = Math.max(elRect.left, boundingRect.left);
+    var overlapTop = Math.max(elRect.top, boundingRect.top);
+    var overlapRight = Math.min(elRect.right, boundingRect.right);
+    var overlapBottom = Math.min(elRect.bottom, boundingRect.bottom);
+
+    var overlapWidth = Math.max(0, overlapRight - overlapLeft);
+    var overlapHeight = Math.max(0, overlapBottom - overlapTop);
+    var overlapArea = overlapWidth * overlapHeight;
+    var elArea = elRect.width * elRect.height;
+    var overlapRatio = elArea > 0 ? overlapArea / elArea : 0;
+
+    return {
+      relX: Math.round(elRect.left - boundingRect.left),
+      relY: Math.round(elRect.top - boundingRect.top),
+      width: Math.round(elRect.width),
+      height: Math.round(elRect.height),
+      overlapRatio: Math.round(overlapRatio * 100) / 100
+    };
+  };
+
+  /**
+   * Find all non-excluded elements that intersect (even partially)
+   * with the given bounding rect. Uses grid-based sampling of
+   * document.elementsFromPoint() to discover elements, then filters
+   * and computes spatial data for each.
+   *
+   * Results are sorted by overlap ratio (highest first), then by
+   * DOM depth (deepest first).
+   *
+   * @param {DOMRect} rect  Bounding rect in viewport coordinates.
+   * @return {Array<Object>}  Array of element info objects with spatial data.
+   */
+  AnnotationCanvas.prototype._findContainedElements = function(rect) {
+    var maxCount = this._maxContainedElements;
+    var seen = {};        // Dedup by CSS selector string
+    var elements = [];    // [[selector, element], ...]
+
+    // Adaptive step size: at most 10 samples per axis, at least 4px
+    var stepX = Math.max(4, Math.floor(rect.width / 10));
+    var stepY = Math.max(4, Math.floor(rect.height / 10));
+
+    // Also sample the four corners and center
+    var samplePoints = [
+      [rect.left, rect.top],
+      [rect.left, rect.bottom],
+      [rect.right, rect.top],
+      [rect.right, rect.bottom],
+      [rect.left + rect.width / 2, rect.top + rect.height / 2]
+    ];
+
+    // Generate grid points
+    for (var gy = rect.top; gy <= rect.bottom; gy += stepY) {
+      for (var gx = rect.left; gx <= rect.right; gx += stepX) {
+        samplePoints.push([gx, gy]);
+      }
+    }
+
+    // Collect elements from each sample point
+    for (var pi = 0; pi < samplePoints.length; pi++) {
+      if (Object.keys(seen).length >= maxCount * 2) break;
+      var px = samplePoints[pi][0];
+      var py = samplePoints[pi][1];
+
+      // Skip points outside viewport
+      if (px < 0 || py < 0 || px > window.innerWidth || py > window.innerHeight) continue;
+
+      var elsAtPoint;
+      try {
+        elsAtPoint = document.elementsFromPoint(px, py);
+      } catch (e) {
+        continue;
+      }
+      if (!elsAtPoint) continue;
+
+      for (var ei = 0; ei < elsAtPoint.length; ei++) {
+        var el = elsAtPoint[ei];
+        if (this._isExcludedElement(el)) continue;
+        var key = generateSelector(el);
+        if (!seen[key]) {
+          seen[key] = true;
+          elements.push(el);
+        }
+      }
+    }
+
+    // Convert to result array with spatial data and element info
+    var result = [];
+    for (var ri = 0; ri < elements.length; ri++) {
+      var el = elements[ri];
+      var spatial = this._computeElementSpatialData(el, rect);
+      if (spatial.overlapRatio > 0) {
+        var info = extractElementData(el);
+        info.spatial = spatial;
+        result.push(info);
+      }
+    }
+
+    // Sort by overlap ratio descending, then by DOM depth descending
+    result.sort(function(a, b) {
+      if (a.spatial.overlapRatio !== b.spatial.overlapRatio) {
+        return b.spatial.overlapRatio - a.spatial.overlapRatio;
+      }
+      var depthA = a.selector ? a.selector.split(' > ').length : 0;
+      var depthB = b.selector ? b.selector.split(' > ').length : 0;
+      return depthB - depthA;
+    });
+
+    return result.slice(0, maxCount);
+  };
+
+
   /* ── Mouse Handlers ─────────────────────────────────────────── */
 
   /**
@@ -695,7 +839,8 @@ function isAnnotationUI(el) {
         width: Math.round(rect.width),
         height: Math.round(rect.height),
         selector: selector,
-        elementInfo: extractElementData(el)
+        elementInfo: extractElementData(el),
+        containedElements: this._findContainedElements(rect)
       }
     };
 
@@ -1184,7 +1329,8 @@ function isAnnotationUI(el) {
         y: Math.round(rect.top),
         width: Math.round(rect.width),
         height: Math.round(rect.height),
-        selector: this._manageSelector
+        selector: this._manageSelector,
+        containedElements: this._findContainedElements(rect)
       };
       if (this._manageElementInfo) {
         addData.elementInfo = this._manageElementInfo;
