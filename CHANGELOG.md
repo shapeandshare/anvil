@@ -1,3 +1,10 @@
+## v0.15.0 (2026-07-19)
+
+### Feat
+
+- live-page annotation overlay with element/freehand tools and CRUD
+- visual feedback annotation — annotate broken elements, circle areas, leave notes, admin review (#389)
+
 ## v0.14.0 (2026-07-19)
 
 ### Feat
