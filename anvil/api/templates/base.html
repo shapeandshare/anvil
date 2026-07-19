@@ -193,14 +193,15 @@ window.apiFetch = function(url, opts) {
 {% block scripts %}{% endblock %}
 <script src="/static/js/lib/html-to-image.js"></script>
 <script src="/static/js/annotation.js"></script>
+{% if request.state.authenticated %}
 <script nonce="{{ request.state.csp_nonce }}">
 (function() {
-  // Only show annotation toggle on authenticated pages
   var p = window.location.pathname;
   if (p === '/v1/feedback-page' || p === '/login') return;
   var container = document.querySelector('.app-main') || document.body;
   window._annotationCanvas = window.initAnnotationMode(container);
 })();
 </script>
+{% endif %}
 </body>
 </html>

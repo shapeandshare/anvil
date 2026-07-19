@@ -428,9 +428,17 @@ async def auth_middleware(
     path = request.url.path
 
     if request.method == "OPTIONS":
+        request.state.authenticated = False
         return await call_next(request)
 
     if is_exempt_route(path):
+        # Still check for a valid session on exempt routes so templates
+        # can conditionally show auth-gated UI (e.g. annotation button).
+        session_store = get_session_store()
+        session_id = request.cookies.get(SESSION_COOKIE_NAME)
+        request.state.authenticated = (
+            session_id is not None and session_store.validate(session_id)
+        )
         return await call_next(request)
 
     api_key_store = get_api_key_store()
@@ -469,6 +477,7 @@ async def auth_middleware(
                         },
                     )
 
+    request.state.authenticated = True
     return await call_next(request)
 
 
