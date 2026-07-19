@@ -572,10 +572,9 @@ class AdapterMergeService:
                     ref, "anvil.kind", str(CatalogKind.MERGED)
                 )
             except Exception:
-                logger.warning(
+                logger.exception(
                     "Failed to set catalog tags for merged model %s",
                     reg_name,
-                    exc_info=True,
                 )
 
         tags: dict[str, str] = {

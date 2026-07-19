@@ -46,6 +46,7 @@ class RestoreJournal:
                 f"directory {resolved_base}"
             )
         self._path = resolved_path
+        self._base_dir = resolved_base
 
     def write(
         self,
@@ -116,9 +117,21 @@ class RestoreJournal:
         safety_id = data.get("safety_snapshot_id")
         roots = data.get("roots", [])
 
+        # Validate root paths against base_dir to prevent path traversal.
+        validated_roots: list[str] = []
+        for rel in roots:
+            candidate = self._base_dir / rel
+            resolved = candidate.resolve()
+            if not str(resolved).startswith(str(self._base_dir)):
+                raise ValueError(
+                    f"Root path {rel} resolves outside base directory "
+                    f"{self._base_dir}"
+                )
+            validated_roots.append(str(resolved))
+
         # Try to roll back each root from its .bak copy.
         all_rolled_back = True
-        for rel in roots:
+        for rel in validated_roots:
             bak_path = Path(rel + ".bak")
             live_path = Path(rel)
             if bak_path.exists():

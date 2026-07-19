@@ -226,7 +226,7 @@ async def merge_and_export_adapter(
         err = str(result["error"])
         if "not found" in err or "license" in err:
             raise HTTPException(status_code=404, detail=err)
-        logger.exception(
+        logger.error(
             "Merge+export failed for %s v%s/%s: %s", name, version, adapter_id, err
         )
         raise HTTPException(status_code=500, detail=err)
