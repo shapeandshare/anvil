@@ -1,0 +1,18 @@
+views:
+  - type: table
+    name: Table
+    filters:
+      and:
+        - type == "spec"
+    order:
+      - file.name
+      - spec_number
+      - status
+    sort:
+      - property: doc_type
+        direction: ASC
+      - property: spec_number
+        direction: ASC
+    columnSize:
+      file.name: 372
+      note.spec_number: 138

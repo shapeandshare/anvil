@@ -12,9 +12,9 @@ aliases:
 
 # Specs
 
-Specification notes that track the status, key decisions, and implementation traceability of anvil feature specs. Each note mirrors a spec authored under `specs/` (the spec-kit workflow) and surfaces it inside the knowledge graph so specs link to the `Systems/` and `Code/` notes that implement them.
+Specification notes that track the status, key decisions, and implementation traceability of anvil feature specs. Each note is the canonical spec artifact (authored via the spec-kit workflow) and surfaces inside the knowledge graph so specs link to the `Systems/` and `Code/` notes that implement them.
 
-Start here to see what has been specified, what is in progress, and what shipped. The authoritative spec artifacts (`spec.md`, `plan.md`, `tasks.md`) live under `specs/`; these notes are the graph-resident index over them.
+Start here to see what has been specified, what is in progress, and what shipped. The authoritative spec content lives in each `NNN Name.md` vault note, with supporting artifacts (`plan.md`, `tasks.md`, `research.md`, etc.) in the same directory. The `Specs.base` file defines the Obsidian database folder view for this directory.
 
 ## Notes
 
@@ -123,8 +123,11 @@ split into the ten per-feature specs above. Shared architecture decisions live i
 
 ## Conventions
 
-- One note per spec, named `NNN Spec Name.md` (matches the `specs/NNN-slug/` directory).
-- Carries `type/spec` and a `spec-refs:` field pointing at the `specs/` artifact directory.
+- One note per spec, named `NNN Spec Name.md` — the canonical spec artifact (full spec content, not a stub).
+- `Specs.base` at the directory root defines the Obsidian database folder view (table grouped by status, sorted by spec_number).
+- Frontmatter MUST include `spec_number` (int), `doc_type` (str: `"spec"`), `status` (str), and `type: spec` for the database view to function.
+- Supporting artifacts use `NNN Name - type.md` naming (e.g., `083 Config Pydantic Settings - tasks.md`, `083 Config Pydantic Settings - plan.md`).
+- Carries `spec-refs:` field pointing at the spec directory.
 - Links forward to the `Systems/` or `Code/` note(s) that implement the spec.
 
 ## Related MOCs
