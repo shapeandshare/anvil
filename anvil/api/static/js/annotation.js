@@ -188,6 +188,10 @@ function isAnnotationUI(el) {
     // Toolbar & toggle
     this._toggleBtn = null;
 
+    // Scroll tracking — RAF-throttled re-render
+    this._scrollRAF = null;
+    this._onBoundScroll = null;
+
     // Bound handlers for cleanup
     this._onBoundOverlayMouseMove = null;
     this._onBoundOverlayClick = null;
@@ -565,12 +569,27 @@ function isAnnotationUI(el) {
       self._onKeydown(e);
     };
 
+    // RAF-throttled scroll — move markers container via translate()
+    this._onBoundScroll = function() {
+      if (self._scrollRAF) return;
+      self._scrollRAF = requestAnimationFrame(function() {
+        self._scrollRAF = null;
+        if (self._markersContainer) {
+          var sx = window.scrollX || 0;
+          var sy = window.scrollY || 0;
+          self._markersContainer.style.transform = 'translate(-' + sx + 'px, -' + sy + 'px)';
+        }
+      });
+    };
+
     this._overlayEl.addEventListener('mousemove', this._onBoundOverlayMouseMove);
     this._overlayEl.addEventListener('click', this._onBoundOverlayClick);
     this._overlayEl.addEventListener('mousedown', this._onBoundOverlayMouseDown);
     // Bind mouseup to document so release outside overlay still fires
     document.addEventListener('mouseup', this._onBoundOverlayMouseUp);
     document.addEventListener('keydown', this._onBoundKeydown);
+    // Bind scroll to window so markers follow page content
+    window.addEventListener('scroll', this._onBoundScroll, { passive: true });
   };
 
   /**
@@ -591,6 +610,9 @@ function isAnnotationUI(el) {
     }
     if (this._onBoundKeydown) {
       document.removeEventListener('keydown', this._onBoundKeydown);
+    }
+    if (this._onBoundScroll) {
+      window.removeEventListener('scroll', this._onBoundScroll);
     }
 
     this._onBoundOverlayMouseMove = null;
@@ -1453,16 +1475,16 @@ function isAnnotationUI(el) {
         markerEl.style.height = ann.data.height + 'px';
         markerEl.setAttribute('title', 'Annotation ' + (i + 1) + ': ' + (ann.note || ''));
       } else if (ann.type === 'freehand') {
-        // Render freehand path as an SVG
         var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svg.setAttribute('class', 'feedback-marker feedback-marker--freehand');
         svg.setAttribute('aria-hidden', 'true');
-        svg.setAttribute('width', '100%');
-        svg.setAttribute('height', '100%');
-        svg.style.position = 'fixed';
-        svg.style.inset = '0';
+        svg.style.position = 'absolute';
+        svg.style.top = '0';
+        svg.style.left = '0';
+        svg.style.width = '100%';
+        svg.style.height = '100%';
         svg.style.pointerEvents = 'none';
-        svg.style.zIndex = '9005';
+        svg.style.overflow = 'visible';
 
         var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         var d = 'M ' + ann.data.path[0][0] + ' ' + ann.data.path[0][1];
@@ -1485,7 +1507,7 @@ function isAnnotationUI(el) {
    * Update the annotation counter badge.
    */
   AnnotationCanvas.prototype._updateCounter = function() {
-    if (!this._markersContainer) return;
+    if (!this._overlayEl) return;
 
     // Remove existing counter
     if (this._counterEl && this._counterEl.parentNode) {
@@ -1498,7 +1520,9 @@ function isAnnotationUI(el) {
     counter.textContent = count + ' annotation' + (count !== 1 ? 's' : '');
     counter.setAttribute('aria-live', 'polite');
 
-    this._markersContainer.appendChild(counter);
+    // Append to overlay (fixed-position container) so counter stays at a
+    // fixed viewport position independent of the scroll-shifted markers container.
+    this._overlayEl.appendChild(counter);
     this._counterEl = counter;
   };
 
