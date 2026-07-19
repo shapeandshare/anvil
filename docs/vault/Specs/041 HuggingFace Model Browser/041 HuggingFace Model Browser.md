@@ -13,6 +13,8 @@ created: '2026-06-28'
 updated: '2026-06-28'
 aliases:
   - 041 HuggingFace Model Browser
+spec_number: 41
+doc_type: spec
 ---
 
 # 041 HuggingFace Model Browser

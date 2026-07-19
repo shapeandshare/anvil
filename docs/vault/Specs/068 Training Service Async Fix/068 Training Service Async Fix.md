@@ -12,6 +12,8 @@ created: '2026-07-18'
 updated: '2026-07-18'
 aliases:
   - 068 Training Service Async Fix
+spec_number: 68
+doc_type: spec
 ---
 
 # 068 Training Service Async Fix

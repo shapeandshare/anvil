@@ -12,6 +12,8 @@ created: '2026-07-18'
 updated: '2026-07-18'
 aliases:
   - 075 Coverage Threshold Ratchet
+spec_number: 75
+doc_type: spec
 ---
 
 # 075 Coverage Threshold Ratchet

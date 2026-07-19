@@ -12,6 +12,8 @@ created: '2026-06-14'
 updated: '2026-06-22'
 aliases:
   - 008 Llama Engine Evolution
+spec_number: 8
+doc_type: spec
 ---
 
 # 008 Llama Engine Evolution

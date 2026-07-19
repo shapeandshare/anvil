@@ -13,6 +13,8 @@ created: '2026-06-28'
 updated: '2026-06-28'
 aliases:
   - 046 Fine-Tune Compute Routing
+spec_number: 46
+doc_type: spec
 ---
 
 # 046 Fine-Tune Compute Routing

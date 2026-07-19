@@ -12,6 +12,8 @@ created: '2026-06-27'
 updated: '2026-06-27'
 aliases:
   - 034 SaaS One-Command Deploy
+spec_number: 34
+doc_type: spec
 ---
 
 # 034 SaaS One-Command Deploy

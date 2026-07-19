@@ -12,6 +12,8 @@ created: '2026-07-18'
 updated: '2026-07-18'
 aliases:
   - 069 Route DI Cleanup
+spec_number: 69
+doc_type: spec
 ---
 
 # 069 Route DI Cleanup

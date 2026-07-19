@@ -16,6 +16,8 @@ aliases:
   - 056 Reverse-Proxy Registry
   - Reverse-Proxy Registry & Single-Origin Front Door
   - Single-Origin Front Door
+spec_number: 56
+doc_type: spec
 ---
 
 # 056 Reverse-Proxy Registry & Single-Origin Front Door

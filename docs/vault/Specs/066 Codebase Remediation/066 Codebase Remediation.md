@@ -12,6 +12,8 @@ created: '2026-07-18'
 updated: '2026-07-18'
 aliases:
   - 066 Codebase Remediation
+spec_number: 66
+doc_type: spec
 ---
 
 # 066 Codebase Remediation

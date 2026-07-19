@@ -14,6 +14,8 @@ created: '2026-06-27'
 updated: '2026-06-27'
 aliases:
   - 036 SaaS Observability MLflow Proxy
+spec_number: 36
+doc_type: spec
 ---
 
 # 036 SaaS Observability & MLflow Proxy

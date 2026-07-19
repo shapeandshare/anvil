@@ -13,6 +13,8 @@ created: '2026-06-28'
 updated: '2026-06-28'
 aliases:
   - 038 Fine-Tuning Arc
+spec_number: 38
+doc_type: spec
 ---
 
 # 038 Fine-Tuning Arc

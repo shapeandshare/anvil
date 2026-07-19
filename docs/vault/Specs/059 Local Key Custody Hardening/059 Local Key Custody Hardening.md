@@ -13,6 +13,8 @@ created: '2026-06-29'
 updated: '2026-06-29'
 aliases:
   - 059 Local Key Custody Hardening
+spec_number: 59
+doc_type: spec
 ---
 
 # 059 Local Key Custody Hardening

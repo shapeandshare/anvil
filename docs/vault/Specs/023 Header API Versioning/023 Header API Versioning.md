@@ -12,6 +12,8 @@ created: '2026-06-21'
 updated: '2026-06-22'
 aliases:
   - 023 Header API Versioning
+spec_number: 23
+doc_type: spec
 ---
 
 # 023 Header API Versioning

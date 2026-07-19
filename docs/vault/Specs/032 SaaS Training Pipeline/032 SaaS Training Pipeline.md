@@ -14,6 +14,8 @@ created: '2026-06-27'
 updated: '2026-06-27'
 aliases:
   - 032 SaaS Training Pipeline
+spec_number: 32
+doc_type: spec
 ---
 
 # 032 SaaS Training Pipeline

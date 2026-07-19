@@ -12,6 +12,8 @@ created: '2026-07-18'
 updated: '2026-07-18'
 aliases:
   - 057 Degraded Mode Recovery
+spec_number: 57
+doc_type: spec
 ---
 
 # 057 Degraded Mode Recovery

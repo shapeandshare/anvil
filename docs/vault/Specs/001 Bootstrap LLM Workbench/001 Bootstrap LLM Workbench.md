@@ -12,6 +12,8 @@ created: '2026-06-10'
 updated: '2026-06-22'
 aliases:
   - 001 Bootstrap LLM Workbench
+spec_number: 1
+doc_type: spec
 ---
 
 # 001 Bootstrap LLM Workbench

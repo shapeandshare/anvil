@@ -12,6 +12,8 @@ created: '2026-07-18'
 updated: '2026-07-18'
 aliases:
   - 064 MLflow Model Catalog
+spec_number: 64
+doc_type: spec
 ---
 
 # 064 MLflow Model Catalog

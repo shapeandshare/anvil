@@ -12,6 +12,8 @@ created: '2026-06-21'
 updated: '2026-06-22'
 aliases:
   - 025 UX Rules Integration
+spec_number: 25
+doc_type: spec
 ---
 
 # 025 UX Rules Integration

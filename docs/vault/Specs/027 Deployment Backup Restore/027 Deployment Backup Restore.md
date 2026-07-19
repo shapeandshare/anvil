@@ -12,6 +12,8 @@ created: '2026-07-18'
 updated: '2026-07-18'
 aliases:
   - 027 Deployment Backup Restore
+spec_number: 27
+doc_type: spec
 ---
 
 # 027 Deployment Backup Restore

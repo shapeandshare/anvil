@@ -12,6 +12,8 @@ created: '2026-06-19'
 updated: '2026-06-22'
 aliases:
   - 013 Responsible Data Governance
+spec_number: 13
+doc_type: spec
 ---
 
 # 013 Responsible Data Governance

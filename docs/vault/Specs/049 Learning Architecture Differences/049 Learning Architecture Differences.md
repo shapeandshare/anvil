@@ -13,6 +13,8 @@ created: '2026-06-28'
 updated: '2026-06-28'
 aliases:
   - 049 Learning Architecture Differences
+spec_number: 49
+doc_type: spec
 ---
 
 # 049 Learning Architecture Differences

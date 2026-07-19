@@ -12,6 +12,8 @@ created: '2026-07-18'
 updated: '2026-07-18'
 aliases:
   - 076 Inference Service Decomposition
+spec_number: 76
+doc_type: spec
 ---
 
 # 076 Inference Service Decomposition

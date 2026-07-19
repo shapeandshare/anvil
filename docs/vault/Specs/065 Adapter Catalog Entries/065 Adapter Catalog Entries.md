@@ -12,6 +12,8 @@ created: '2026-07-18'
 updated: '2026-07-18'
 aliases:
   - 065 Adapter Catalog Entries
+spec_number: 65
+doc_type: spec
 ---
 
 # 065 Adapter Catalog Entries

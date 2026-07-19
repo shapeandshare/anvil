@@ -12,6 +12,8 @@ created: '2026-07-18'
 updated: '2026-07-18'
 aliases:
   - 079 Exception Hierarchy Unification
+spec_number: 79
+doc_type: spec
 ---
 
 # 079 Exception Hierarchy Unification

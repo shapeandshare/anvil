@@ -4,15 +4,21 @@ views:
     filters:
       and:
         - type == "spec"
+        - spec_number > 0
     order:
       - file.name
       - spec_number
       - status
-    sort:
-      - property: doc_type
-        direction: ASC
-      - property: spec_number
-        direction: ASC
+      - doc_type
+      - tags
+      - created
+      - updated
+    sort: []
     columnSize:
       file.name: 372
-      note.spec_number: 138
+      note.spec_number: 80
+      note.status: 100
+      note.doc_type: 80
+      note.tags: 240
+      note.created: 140
+      note.updated: 140

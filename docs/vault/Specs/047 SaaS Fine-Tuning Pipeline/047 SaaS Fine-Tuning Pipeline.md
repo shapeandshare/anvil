@@ -13,6 +13,8 @@ created: '2026-06-28'
 updated: '2026-06-28'
 aliases:
   - 047 SaaS Fine-Tuning Pipeline
+spec_number: 47
+doc_type: spec
 ---
 
 # 047 SaaS Fine-Tuning Pipeline

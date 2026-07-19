@@ -13,6 +13,8 @@ created: '2026-06-27'
 updated: '2026-06-27'
 aliases:
   - 028 SaaS Abstraction Framework
+spec_number: 28
+doc_type: spec
 ---
 
 # 028 SaaS Abstraction Framework

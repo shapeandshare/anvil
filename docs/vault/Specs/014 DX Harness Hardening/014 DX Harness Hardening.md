@@ -12,6 +12,8 @@ created: '2026-06-19'
 updated: '2026-06-22'
 aliases:
   - 014 DX Harness Hardening
+spec_number: 14
+doc_type: spec
 ---
 
 # 014 DX Harness Hardening

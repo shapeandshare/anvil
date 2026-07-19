@@ -12,6 +12,8 @@ created: '2026-06-12'
 updated: '2026-06-22'
 aliases:
   - 005 Dataset Curation
+spec_number: 5
+doc_type: spec
 ---
 
 # 005 Dataset Curation

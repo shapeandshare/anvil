@@ -12,6 +12,8 @@ created: '2026-06-13'
 updated: '2026-06-22'
 aliases:
   - 006 MLflow Experiment Tracking
+spec_number: 6
+doc_type: spec
 ---
 
 # 006 MLflow Experiment Tracking
