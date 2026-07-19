@@ -1,0 +1,377 @@
+# Semgrep rules for anvil
+#
+# Broad Python security coverage: injection, secrets, crypto, deserialization,
+# path traversal, network, SQL, and general anti-patterns.
+#
+# Run via: semgrep --config=.semgrep.yml anvil/
+# Integrated into `make lint` as a blocking gate.
+
+rules:
+
+  # ── Injection ──────────────────────────────────────────────────────────
+
+  - id: python.eval-exec
+    patterns:
+      - pattern-either:
+          - pattern: eval($ARG)
+          - pattern: exec($ARG)
+          - pattern: exec($ARG, $ANY)
+    message: "Use of eval() or exec() — potential arbitrary code execution. Validate or use a safer alternative."
+    severity: ERROR
+    languages:
+      - python
+
+  - id: python.os-system
+    patterns:
+      - pattern-either:
+          - pattern: os.system($ARG)
+          - pattern: os.popen($ARG)
+          - pattern: commands.getstatusoutput($ARG)
+          - pattern: commands.getoutput($ARG)
+    message: "Use of os.system() or os.popen() — potential command injection. Prefer subprocess.run() with a list argument."
+    severity: WARNING
+    languages:
+      - python
+
+  - id: python.subprocess-shell-true
+    patterns:
+      - pattern: subprocess.$FUNC($ARG, shell=True)
+      - pattern: subprocess.$FUNC($ARG, ..., shell=True, ...)
+    message: "subprocess call with shell=True — potential shell injection. Use a list of args instead of a string."
+    severity: ERROR
+    languages:
+      - python
+
+  - id: python.subprocess-with-string
+    patterns:
+      - pattern: subprocess.$FUNC("...", ...)
+    message: "subprocess call with a string argument — prefer a list of arguments to avoid shell injection."
+    severity: WARNING
+    languages:
+      - python
+
+  # ── Secrets / Credentials ──────────────────────────────────────────────
+
+  - id: python.hardcoded-password
+    pattern-regex: (?i)(password|passwd|secret|api[_-]?key|token)\s*=\s*["'][^"'\s]{6,}["']
+    paths:
+      exclude:
+        - "*test*"
+        - "*conftest*"
+        - "*_test.py"
+        - "test_*.py"
+    message: "Hardcoded credential detected — use environment variables or a secrets manager instead."
+    severity: ERROR
+    languages:
+      - python
+
+  - id: python.hardcoded-private-key
+    patterns:
+      - pattern: '"""$KEY"""'
+      - pattern: '"$KEY"'
+      - pattern: "'$KEY'"
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: -----BEGIN (RSA|EC|DSA|PGP|OPENSSH) PRIVATE KEY-----
+    message: "Hardcoded private key detected — store securely and load from file."
+    severity: ERROR
+    languages:
+      - python
+
+  # ── Crypto / Hashing ───────────────────────────────────────────────────
+
+  - id: python.md5-used
+    patterns:
+      - pattern-either:
+          - pattern: hashlib.md5($ARG)
+          - pattern: hashlib.md5($ARG, ...)
+          - pattern: Crypto.Hash.MD5.new($ARG)
+    message: "Use of MD5 — cryptographically broken. Use SHA-256 or SHA-3 instead."
+    severity: WARNING
+    languages:
+      - python
+    fix: hashlib.sha256
+
+  - id: python.sha1-used
+    patterns:
+      - pattern-either:
+          - pattern: hashlib.sha1($ARG)
+          - pattern: hashlib.sha1($ARG, ...)
+          - pattern: Crypto.Hash.SHA.new($ARG)
+    message: "Use of SHA-1 — cryptographically weakened. Use SHA-256 or SHA-3 instead."
+    severity: WARNING
+    languages:
+      - python
+    fix: hashlib.sha256
+
+  - id: python.weak-cipher-ecb
+    patterns:
+      - pattern-either:
+          - pattern: Crypto.Cipher.AES.new($KEY, Crypto.Cipher.AES.MODE_ECB)
+          - pattern: Crypto.Cipher.AES.new($KEY, $ANY, AES.MODE_ECB)
+          - pattern: cryptography.hazmat.primitives.ciphers.algorithms.AES($KEY)
+    message: "AES in ECB mode — deterministic, not semantically secure. Use GCM or CBC mode."
+    severity: ERROR
+    languages:
+      - python
+
+  - id: python.dangerous-pycrypto
+    patterns:
+      - pattern-either:
+          - pattern: Cryptodome.Cipher.$CIPHER.new($KEY, Cryptodome.Cipher.$CIPHER.MODE_ECB)
+          - pattern: cryptography.hazmat.primitives.ciphers.modes.ECB()
+    message: "Use of weak cipher or mode — prefer authenticated encryption (AES-GCM)."
+    severity: WARNING
+    languages:
+      - python
+
+  # ── Deserialization ────────────────────────────────────────────────────
+
+  - id: python.pickle-deserialization
+    patterns:
+      - pattern-either:
+          - pattern: pickle.loads($ARG)
+          - pattern: pickle.load($ARG)
+          - pattern: cPickle.loads($ARG)
+          - pattern: _pickle.loads($ARG)
+    message: "Unsafe deserialization with pickle — can execute arbitrary code. Prefer JSON, Pydantic, or validate the source."
+    severity: ERROR
+    languages:
+      - python
+
+  - id: python.yaml-load
+    patterns:
+      - pattern: yaml.load($ARG)
+      - pattern: yaml.load($ARG, yaml.Loader)
+      - pattern: yaml.load($ARG, yaml.FullLoader)
+    message: "yaml.load() without safe loader — can execute arbitrary code. Use yaml.safe_load() instead."
+    severity: ERROR
+    languages:
+      - python
+    fix: yaml.safe_load($ARG)
+
+  - id: python.marshal-load
+    patterns:
+      - pattern-either:
+          - pattern: marshal.loads($ARG)
+          - pattern: marshal.load($ARG)
+    message: "Unsafe deserialization with marshal — can execute arbitrary code. Avoid untrusted data."
+    severity: ERROR
+    languages:
+      - python
+
+  # ── Path Traversal ─────────────────────────────────────────────────────
+
+  - id: python.path-traversal-join
+    patterns:
+      - pattern: os.path.join($BASE, $USER_INPUT)
+      - pattern: pathlib.Path($BASE) / $USER_INPUT
+      - metavariable-regex:
+          metavariable: $USER_INPUT
+          regex: (request\.\w+|user_input|filename|path|filepath|upload|download)
+      - pattern-not: os.path.join($BASE, "$CONST")
+      - pattern-not: os.path.join($BASE, "$CONST/$CONST")
+    message: "Path construction with user-controlled input — potential path traversal. Validate/restrict the path."
+    severity: WARNING
+    languages:
+      - python
+
+  - id: python.send-file-user-input
+    patterns:
+      - pattern-either:
+          - pattern: FileResponse($USER_INPUT)
+          - pattern: send_file($USER_INPUT)
+      - metavariable-regex:
+          metavariable: $USER_INPUT
+          regex: (request\.\w+|user_input|filename|path|filepath)
+    message: "File serving with user-controlled path — potential path traversal. Restrict to a safe directory."
+    severity: WARNING
+    languages:
+      - python
+
+  # ── Network / HTTP ─────────────────────────────────────────────────────
+
+  - id: python.requests-timeout-missing
+    patterns:
+      - pattern-either:
+          - pattern: httpx.get($URL)
+          - pattern: httpx.post($URL)
+          - pattern: httpx.put($URL)
+          - pattern: httpx.patch($URL)
+          - pattern: httpx.delete($URL)
+          - pattern: requests.get($URL)
+          - pattern: requests.post($URL)
+          - pattern: requests.put($URL)
+          - pattern: requests.patch($URL)
+          - pattern: requests.delete($URL)
+          - pattern: httpx.get($URL, ...)
+          - pattern: httpx.post($URL, ...)
+          - pattern: httpx.put($URL, ...)
+          - pattern: httpx.patch($URL, ...)
+          - pattern: httpx.delete($URL, ...)
+          - pattern: requests.get($URL, ...)
+          - pattern: requests.post($URL, ...)
+          - pattern: requests.put($URL, ...)
+          - pattern: requests.patch($URL, ...)
+          - pattern: requests.delete($URL, ...)
+      - pattern-not: httpx.$METHOD($URL, timeout=$VAL, ...)
+      - pattern-not: httpx.$METHOD($URL, ..., timeout=$VAL, ...)
+      - pattern-not: requests.$METHOD($URL, timeout=$VAL, ...)
+      - pattern-not: requests.$METHOD($URL, ..., timeout=$VAL, ...)
+      - pattern-not: httpx.$METHOD($URL, ..., timeout=$VAL)
+      - pattern-not: requests.$METHOD($URL, ..., timeout=$VAL)
+      - pattern-not: httpx.$METHOD($URL, timeout=httpx.Timeout($VAL), ...)
+      - pattern-not: httpx.$METHOD($URL, ..., timeout=httpx.Timeout($VAL), ...)
+    message: "HTTP request without timeout — may hang indefinitely. Set a timeout."
+    severity: WARNING
+    languages:
+      - python
+
+  - id: python.ssl-verify-disabled
+    patterns:
+      - pattern-either:
+          - pattern: httpx.$METHOD($URL, verify=False, ...)
+          - pattern: requests.$METHOD($URL, verify=False, ...)
+          - pattern: httpx.Client(verify=False, ...)
+          - pattern: ssl._create_unverified_context(...)
+    message: "SSL/TLS verification disabled — vulnerable to man-in-the-middle attacks."
+    severity: ERROR
+    languages:
+      - python
+
+  # ── SQL Injection ──────────────────────────────────────────────────────
+
+  - id: python.sql-injection-fstring
+    pattern-regex: (?i)(?:cursor|execute|executemany)\(f["'].*(?:SELECT|INSERT|UPDATE|DELETE|DROP|ALTER|CREATE).*\{.*\}.*["']\s*\)
+    paths:
+      exclude:
+        - "*test*"
+        - "test_*.py"
+    message: "SQL query built with f-string interpolation — SQL injection risk. Use parameterized queries."
+    severity: ERROR
+    languages:
+      - python
+
+  - id: python.raw-sql-execute
+    patterns:
+      - pattern-either:
+          - pattern: |
+              $DB.execute(text($ARG))
+          - pattern: |
+              $DB.execute($ARG)
+          - pattern: |
+              $SESSION.execute(text($ARG))
+          - pattern: |
+              $SESSION.execute($ARG)
+      - metavariable-regex:
+          metavariable: $ARG
+          regex: f["'].*
+      - pattern-not: $DB.execute($ANY, parameters=$VAL)
+      - pattern-not: $SESSION.execute($ANY, parameters=$VAL)
+    message: "Raw SQL execution with f-string — use parameterized queries to prevent SQL injection."
+    severity: ERROR
+    languages:
+      - python
+
+  # ── Jinja2 / Template ─────────────────────────────────────────────────
+
+  - id: python.jinja2-autoescape-off
+    pattern-regex: \bjinja2\.Environment\([^)]*autoescape\s*=\s*False[^)]*\)
+    message: "Jinja2 autoescape disabled — risk of cross-site scripting (XSS). Enable autoescape."
+    severity: ERROR
+    languages:
+      - python
+
+  - id: python.jinja2-template-injection
+    patterns:
+      - pattern-either:
+          - pattern: jinja2.Environment().$METHOD($USER_INPUT)
+          - pattern: Template($USER_INPUT)
+      - metavariable-regex:
+          metavariable: $USER_INPUT
+          regex: (request\.\w+|user_input|input|body|form|query)
+    message: "Template from user-controlled input — server-side template injection. Use static templates only."
+    severity: ERROR
+    languages:
+      - python
+
+  # ── File Operations ────────────────────────────────────────────────────
+
+  - id: python.tempfile-mktemp
+    patterns:
+      - pattern: tempfile.mktemp(...)
+    message: "tempfile.mktemp() is insecure — use tempfile.mkstemp() or tempfile.NamedTemporaryFile() instead."
+    severity: WARNING
+    languages:
+      - python
+
+  - id: python.unsafe-chmod
+    patterns:
+      - pattern-either:
+          - pattern: os.chmod($PATH, 0o777)
+          - pattern: os.chmod($PATH, 0777)
+    message: "Overly permissive file permissions (0o777) — restrict to minimum required."
+    severity: WARNING
+    languages:
+      - python
+
+  # ── General Python Anti-patterns ───────────────────────────────────────
+
+  - id: python.mutable-default-arg
+    patterns:
+      - pattern-either:
+          - pattern: |
+              def $F($ARGS, $NAME=[]):
+          - pattern: |
+              def $F($ARGS, $NAME={}):
+    message: "Mutable default argument — shared across all calls. Use None and initialize inside the function."
+    severity: WARNING
+    languages:
+      - python
+
+  - id: python.flask-debug-mode
+    patterns:
+      - pattern: app.run(debug=True, ...)
+      - pattern: app.run(..., debug=True, ...)
+    message: "Debug mode enabled in production — potential code execution via debugger."
+    severity: WARNING
+    languages:
+      - python
+
+  - id: python.dangerous-imports
+    patterns:
+      - pattern-either:
+          - pattern: import telnetlib
+          - pattern: import ftplib
+          - pattern: import poplib
+          - pattern: import imaplib
+          - pattern: import smtplib
+    message: "Import of $IMPORT — cleartext network protocol module. Use TLS/SSL-enabled alternatives."
+    severity: WARNING
+    languages:
+      - python
+
+  - id: python.requests-import
+    patterns:
+      - pattern: import requests
+    message: "Import of 'requests' library — prefer httpx (already a project dependency) for consistency."
+    severity: INFO
+    languages:
+      - python
+
+  - id: python.shell-import
+    patterns:
+      - pattern: import shlex
+    message: "Import of shlex — indicates shell command construction. Prefer subprocess with list args."
+    severity: INFO
+    languages:
+      - python
+
+  # ── Starlette / FastAPI (project-specific) ────────────────────────────
+
+  - id: python.fastapi-cors-wide-open
+    pattern-regex: CORSMiddleware\([^)]*allow_origins\s*=\s*\["[*]"\][^)]*\)
+    message: "CORS with allow_origins=['*'] — wide open in production. Restrict to specific origins."
+    severity: WARNING
+    languages:
+      - python
