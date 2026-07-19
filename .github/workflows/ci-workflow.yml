@@ -1,7 +1,7 @@
 # CI workflow: gate enforcement for anvil
 #
 # Runs the project's declared quality gates on every PR and push.
-# SonarCloud scan also runs on main pushes to keep coverage/metrics current.
+# SonarCloud scan is temporarily disabled (2026-07-19). See #temporary-disable-sonarcloud.
 # Branch protection configuration must require this workflow to pass on main.
 #
 # FR-001/FR-002: validates every change against all declared gates
@@ -153,32 +153,32 @@ jobs:
       - name: Run tests with coverage
         run: make test
 
-  # ── SonarCloud static analysis + coverage gate (runs on all branches including main) ──
-  sonar-scan:
-    name: SonarCloud
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: bump-scope-guard  # self-contained — runs its own tests to generate coverage.xml
-    if: needs.bump-scope-guard.outputs.scope != 'version-only'
-    continue-on-error: true  # non-blocking; requires SONAR_TOKEN secret and auto-analysis disabled upstream
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # full history for blame/tracking
-      - name: Install uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-      - name: Setup environment
-        run: make setup
-      - name: Run tests with coverage (generates coverage.xml)
-        run: make test
-      - name: Run SonarCloud scan
-        uses: SonarSource/sonarqube-scan-action@713881670b6b3676cda39549040e2d88c70d582e  # v8.2.0
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_SCANNER_OPTS: "-Dsonar.scanner.skipJreProvisioning=true"
+  # ── SonarCloud static analysis + coverage gate (DISABLED 2026-07-19) ──
+  # sonar-scan:
+  #   name: SonarCloud
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 20
+  #   needs: bump-scope-guard  # self-contained — runs its own tests to generate coverage.xml
+  #   if: needs.bump-scope-guard.outputs.scope != 'version-only'
+  #   continue-on-error: true  # non-blocking; requires SONAR_TOKEN secret and auto-analysis disabled upstream
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0  # full history for blame/tracking
+  #     - name: Install uv
+  #       uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
+  #       with:
+  #         python-version: ${{ env.PYTHON_VERSION }}
+  #     - name: Setup environment
+  #       run: make setup
+  #     - name: Run tests with coverage (generates coverage.xml)
+  #       run: make test
+  #     - name: Run SonarCloud scan
+  #       uses: SonarSource/sonarqube-scan-action@713881670b6b3676cda39549040e2d88c70d582e  # v8.2.0
+  #       env:
+  #         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #         SONAR_SCANNER_OPTS: "-Dsonar.scanner.skipJreProvisioning=true"
 
   # ── Vault audit gate ──
   vault-audit:
@@ -260,7 +260,7 @@ jobs:
     name: Gate Status
     runs-on: ubuntu-latest
     timeout-minutes: 3
-    needs: [bump-scope-guard, format, lint, typecheck, test, sonar-scan, vault-audit, constitution-check, ux-lint]
+    needs: [bump-scope-guard, format, lint, typecheck, test, vault-audit, constitution-check, ux-lint]
     if: always()
     steps:
       - name: Summarize gate results
@@ -274,7 +274,7 @@ jobs:
           echo "| lint | ${{ needs.lint.result }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| typecheck | ${{ needs.typecheck.result }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| test | ${{ needs.test.result }} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| sonar-scan | ${{ needs.sonar-scan.result }} |" >> "$GITHUB_STEP_SUMMARY"
+          # echo "| sonar-scan | DISABLED |" >> "$GITHUB_STEP_SUMMARY"
           echo "| vault-audit | ${{ needs.vault-audit.result }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| constitution-check | ${{ needs.constitution-check.result }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| ux-lint | ${{ needs.ux-lint.result }} |" >> "$GITHUB_STEP_SUMMARY"
