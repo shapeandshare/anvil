@@ -494,7 +494,8 @@ async def chat_stream(
             try:
                 await task
             except asyncio.CancelledError:
-                pass  # expected — we initiated the cancel above
+                # Expected when awaiting a cancelled background task during cleanup.
+                pass
 
     return StreamingResponse(
         event_stream(),
