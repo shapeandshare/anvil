@@ -146,7 +146,7 @@ class MLflowService:
         after the poll window expires (the race window is reduced rather
         than eliminated).
         """
-        url = f"http://{self.host}:{self.port}/"
+        url = f"{self._tracking_uri.rstrip('/')}/"
         deadline = time.monotonic() + self._STARTUP_TIMEOUT
         last_log: float = 0.0
 

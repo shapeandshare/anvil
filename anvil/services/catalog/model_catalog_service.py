@@ -241,9 +241,9 @@ class ModelCatalogService:
             "Catalog registration: ref=%s kind=%s source=%s/%s display=%s",
             ref,
             CatalogKind.EXTERNAL,
-            source_type,
-            source_identifier,
-            display_name,
+            _sanitise(source_type),
+            _sanitise(source_identifier),
+            _sanitise(display_name),
         )
         return ref
 
@@ -426,7 +426,7 @@ class ModelCatalogService:
             kind,
             runnable_only,
             include_archived,
-            search,
+            _sanitise(search) if search else None,
             len(result),
         )
         return result
@@ -743,3 +743,24 @@ def _parse_float(value: str | None) -> float | None:
         return float(value)
     except (ValueError, TypeError):
         return None
+
+
+def _sanitise(value: str) -> str:
+    """Sanitise user-controlled data for safe logging.
+
+    Replaces control characters (newlines, carriage returns, tabs) with
+    safe underscores to prevent log injection attacks (``S5145``).
+
+    Parameters
+    ----------
+    value : str
+        The raw user-controlled string.
+
+    Returns
+    -------
+    str
+        Sanitised string safe for logging.
+    """
+    for ch in ("\n", "\r", "\t", "\x00"):
+        value = value.replace(ch, "_")
+    return value
