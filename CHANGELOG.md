@@ -1,3 +1,26 @@
+## v0.14.0 (2026-07-19)
+
+### Feat
+
+- add orphan_spec_subdir audit rule for spec directories missing primary notes (#387)
+- enrich Specs.base view and add spec_number/doc_type to all spec files
+- add Specs.base Obsidian database view with vault-note-authoritative spec pattern (#379)
+- consolidate vault CLI, add browser test suite (#371)
+- bootstrap anvil into Paperclip (#367)
+
+### Fix
+
+- configure git identity for cz bump and prevent boilerplate changelogs (#386)
+- resolve SonarCloud code scanning alerts — path injection, log injection, HTTP scheme (#385)
+- correct spec numbering cross-references — config migration is 083, not 066 (#383)
+- update Obsidian workspace state — active tab, backlinks, recent files (#382)
+- correct spec statuses — restrict shipped to 22 fully-articulated specs
+- add missing copyright header, clarify __init__.py ownership policy in AGENTS.md (#372)
+
+### Refactor
+
+- remove redundant TYPE_CHECKING block from AnvilClient (#384)
+
 ## v0.13.8 (2026-07-05)
 
 ### Features
