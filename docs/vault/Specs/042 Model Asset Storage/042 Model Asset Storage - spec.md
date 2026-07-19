@@ -14,8 +14,8 @@ related:
   - '[[Reference/FineTuningArchitectureDecisions]]'
 created: '2026-06-28'
 updated: '2026-06-28'
+epic: "Model Lifecycle"
 ---
-
 # Feature Specification: Model Asset Acquisition & Storage (LakeFS-ready)
 
 **Feature Branch**: `042-model-asset-storage`

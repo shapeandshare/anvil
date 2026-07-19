@@ -14,8 +14,8 @@ aliases:
   - 074 Module State Removal
 spec_number: 74
 doc_type: spec
+epic: "Code Health"
 ---
-
 # 074 Module State Removal
 
 ## Summary

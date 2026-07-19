@@ -9,6 +9,7 @@ related:
   - '[[014 DX Harness Hardening]]'
 created: ~
 updated: ~
+epic: "Ops & DevOps"
 ---
 # Feature Specification: Developer & Agent Experience Hardening
 

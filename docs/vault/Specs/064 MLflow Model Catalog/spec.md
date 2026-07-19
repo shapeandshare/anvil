@@ -5,8 +5,8 @@ tags:
   - type/spec
 created: 2026-07-03
 updated: 2026-07-03
+epic: "Model Lifecycle"
 ---
-
 # Feature Specification: Unified MLflow Model Catalog
 
 **Feature Branch**: `062-mlflow-model-catalog`

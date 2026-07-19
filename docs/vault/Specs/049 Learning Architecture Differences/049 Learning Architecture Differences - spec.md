@@ -14,8 +14,8 @@ related:
   - '[[Reference/FineTuningArchitectureDecisions]]'
 created: '2026-06-28'
 updated: '2026-06-28'
+epic: "Learning & Content"
 ---
-
 # Feature Specification: Learning Arc — Architecture Differences
 
 **Feature Branch**: `049-learning-architecture-differences`

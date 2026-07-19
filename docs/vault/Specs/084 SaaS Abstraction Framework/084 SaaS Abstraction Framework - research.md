@@ -1,12 +1,12 @@
 ---
-title: 028 SaaS Abstraction Framework - research
+title: 084 SaaS Abstraction Framework - research
 type: research
 tags:
   - type/spec
 spec-refs:
-  - docs/vault/Specs/028 SaaS Abstraction Framework/
+  - docs/vault/Specs/084 SaaS Abstraction Framework/
 related:
-  - '[[028 SaaS Abstraction Framework]]'
+  - '[[084 SaaS Abstraction Framework]]'
 created: '2026-06-27'
 updated: '2026-06-27'
 ---

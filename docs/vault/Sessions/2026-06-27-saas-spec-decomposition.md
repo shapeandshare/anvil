@@ -95,7 +95,7 @@ Final `make vault-audit`: **0 errors, 0 warnings, 100.0/100** health (553 notes)
 | Entity | Action |
 |--------|--------|
 | `docs/vault/Reference/SaaSArchitectureDecisions.md` | **CREATED** — shared AD-1..AD-17 |
-| `docs/vault/Specs/028 SaaS Abstraction Framework/` | **CREATED** — full artifact set |
+| `docs/vault/Specs/084 SaaS Abstraction Framework/` | **CREATED** — full artifact set |
 | `docs/vault/Specs/029 SaaS Dev Stack/` | **CREATED** — full artifact set |
 | `docs/vault/Specs/030 SaaS Authentication/` | **CREATED** — full artifact set |
 | `docs/vault/Specs/031 SaaS Multi-Tenancy RBAC/` | **CREATED** — full artifact set |

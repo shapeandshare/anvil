@@ -13,8 +13,8 @@ related:
   - '[[Reference/FineTuningArchitectureDecisions]]'
 created: '2026-06-28'
 updated: '2026-06-28'
+epic: "Training & Experiments"
 ---
-
 # Feature Specification: Fine-Tuning Arc — From Pretraining to Specializing Real Models
 
 **Feature Branch**: `038-fine-tuning-arc`

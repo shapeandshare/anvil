@@ -9,6 +9,7 @@ related:
   - '[[001 Bootstrap LLM Workbench]]'
 created: ~
 updated: ~
+epic: "Core Engine"
 ---
 # Feature Specification: Bootstrap LLM Workbench
 

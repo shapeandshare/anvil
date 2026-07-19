@@ -14,8 +14,8 @@ related:
   - '[[Reference/FineTuningArchitectureDecisions]]'
 created: '2026-06-28'
 updated: '2026-06-28'
+epic: "Model Lifecycle"
 ---
-
 # Feature Specification: HuggingFace Model Browser & Curated Catalog
 
 **Feature Branch**: `041-huggingface-model-browser`

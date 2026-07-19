@@ -10,8 +10,8 @@ related:
 created: '2026-06-27'
 updated: '2026-06-27'
 status: draft
+epic: "SaaS Platform"
 ---
-
 # Feature Specification: SaaS CDK Infrastructure
 
 **Feature Branch**: `033-saas-cdk-infrastructure`

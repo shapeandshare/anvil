@@ -5,8 +5,8 @@ tags:
   - type/spec
 created: 
 updated: 2026-07-03
+epic: "SaaS Platform"
 ---
-
 # Feature Specification: Degraded Mode Recovery
 
 **Feature Directory**: `docs/vault/Specs/057 Degraded Mode Recovery`

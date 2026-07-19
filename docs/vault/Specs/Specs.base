@@ -13,12 +13,16 @@ views:
       - tags
       - created
       - updated
-    sort: []
+    sort:
+      - property: file.name
+        direction: ASC
+      - property: doc_type
+        direction: DESC
     columnSize:
       file.name: 372
       note.spec_number: 80
       note.status: 100
-      note.doc_type: 80
+      note.doc_type: 111
       note.tags: 240
       note.created: 140
       note.updated: 140

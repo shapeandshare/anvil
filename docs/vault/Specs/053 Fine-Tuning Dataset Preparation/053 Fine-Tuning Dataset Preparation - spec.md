@@ -14,8 +14,8 @@ related:
   - '[[Reference/FineTuningArchitectureDecisions]]'
 created: '2026-06-28'
 updated: '2026-06-28'
+epic: "Training & Experiments"
 ---
-
 # Feature Specification: Fine-Tuning Dataset Preparation
 
 **Feature Branch**: `053-fine-tuning-dataset-preparation`

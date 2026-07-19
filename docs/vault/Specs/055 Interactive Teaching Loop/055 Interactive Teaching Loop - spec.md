@@ -14,8 +14,8 @@ related:
   - '[[Reference/FineTuningArchitectureDecisions]]'
 created: '2026-06-28'
 updated: '2026-06-28'
+epic: "Training & Experiments"
 ---
-
 # Feature Specification: Interactive Teaching Loop
 
 **Feature Branch**: `055-interactive-teaching-loop`

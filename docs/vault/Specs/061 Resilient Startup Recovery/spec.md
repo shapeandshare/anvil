@@ -5,8 +5,8 @@ tags:
   - type/spec
 created: 
 updated: 2026-07-03
+epic: "SaaS Platform"
 ---
-
 # Feature Specification: Resilient Startup & Data-Safe Database Recovery
 
 **Feature Directory**: `docs/vault/Specs/061 Resilient Startup Recovery`

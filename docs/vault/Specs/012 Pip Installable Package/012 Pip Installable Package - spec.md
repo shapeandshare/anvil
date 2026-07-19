@@ -9,6 +9,7 @@ related:
   - '[[012 Pip Installable Package]]'
 created: ~
 updated: ~
+epic: "Ops & DevOps"
 ---
 # Feature Specification: Pip-Installable Package
 

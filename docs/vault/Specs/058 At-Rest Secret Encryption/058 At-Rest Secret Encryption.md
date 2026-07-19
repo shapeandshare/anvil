@@ -9,7 +9,7 @@ tags:
   - status/draft
 spec-refs:
   - docs/vault/Specs/058 At-Rest Secret Encryption/
-status: draft
+status: shipped
 created: '2026-06-29'
 updated: '2026-06-29'
 aliases:

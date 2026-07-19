@@ -7,9 +7,9 @@ tags:
 status: draft
 created: '2026-06-22'
 updated: '2026-06-22'
+epic: "Learning & Content"
 ---
-
-Back to [[Specs/001 Non-Educational Help Guide/spec]].
+Back to [[Specs/062 Non-Educational Help Guide/spec]].
 
 ### User Story 3 - Access help content without leaving the workspace (Priority: P2)
 

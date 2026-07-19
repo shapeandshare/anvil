@@ -11,8 +11,8 @@ related:
   - '[[034 SaaS One-Command Deploy]]'
 created: '2026-06-27'
 updated: '2026-06-27'
+epic: "SaaS Platform"
 ---
-
 # Feature Specification: SaaS One-Command Deploy + Agentic Verify
 
 **Feature Branch**: `034-saas-one-command-deploy`

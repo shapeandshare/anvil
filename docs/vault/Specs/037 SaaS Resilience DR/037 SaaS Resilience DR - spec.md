@@ -9,8 +9,8 @@ related:
   - '[[037 SaaS Resilience DR]]'
 created: '2026-06-27'
 updated: '2026-06-27'
+epic: "SaaS Platform"
 ---
-
 # Feature Specification: SaaS Resilience & Disaster Recovery
 
 **Feature Branch**: `037-saas-resilience-dr`

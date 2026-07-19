@@ -7,15 +7,15 @@ tags:
   - status/draft
 spec-refs:
   - docs/vault/Specs/081 Teach Page CTA/
-status: draft
+status: shipped
 created: '2026-07-18'
 updated: '2026-07-18'
 aliases:
   - 081 Teach Page CTA
 spec_number: 81
 doc_type: spec
+epic: "UI/UX & Design System"
 ---
-
 # 081 Teach Page CTA
 
 ## Summary

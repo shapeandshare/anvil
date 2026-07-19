@@ -9,6 +9,7 @@ related:
   - '[[011 Auto DB Schema]]'
 created: ~
 updated: ~
+epic: "Ops & DevOps"
 ---
 # Feature Specification: Auto Database Schema Management
 

@@ -17,7 +17,7 @@ status: draft
 # Tasks: SaaS Training Pipeline — Durable Job State & Live Metrics
 
 **Input**: Design documents from `docs/vault/Specs/032 SaaS Training Pipeline/`
-**Prerequisites**: [[Specs/028 SaaS Abstraction Framework/028 SaaS Abstraction Framework|028 SaaS Abstraction Framework]], [[Specs/029 SaaS Dev Stack/029 SaaS Dev Stack|029 SaaS Dev Stack]], [[Specs/030 SaaS Authentication/030 SaaS Authentication|030 SaaS Authentication]], [[Specs/031 SaaS Multi-Tenancy RBAC/031 SaaS Multi-Tenancy RBAC|031 SaaS Multi-Tenancy]]
+**Prerequisites**: [[Specs/084 SaaS Abstraction Framework/084 SaaS Abstraction Framework|084 SaaS Abstraction Framework]], [[Specs/029 SaaS Dev Stack/029 SaaS Dev Stack|029 SaaS Dev Stack]], [[Specs/030 SaaS Authentication/030 SaaS Authentication|030 SaaS Authentication]], [[Specs/031 SaaS Multi-Tenancy RBAC/031 SaaS Multi-Tenancy RBAC|031 SaaS Multi-Tenancy]]
 
 **Parent tasks**: T038–T058 from `016 SaaS Architecture - tasks.md`.
 

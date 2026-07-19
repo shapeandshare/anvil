@@ -70,7 +70,7 @@ independently shippable specs:
 
 - [[Reference/SaaSArchitectureDecisions|SaaS Architecture Decisions]] — AD-1 (Batch compute), AD-4 (job_events), AD-17 (LakeFS)
 - [[Specs/032 SaaS Training Pipeline/032 SaaS Training Pipeline|032 SaaS Training Pipeline]]
-- [[Specs/028 SaaS Abstraction Framework/028 SaaS Abstraction Framework|028 SaaS Abstraction Framework]]
+- [[Specs/084 SaaS Abstraction Framework/084 SaaS Abstraction Framework|084 SaaS Abstraction Framework]]
 - [[Specs/019 LakeFS Content Repo/019 LakeFS Content Repo|019 LakeFS Content Repo]]
 - [[Specs/003 Model Registry Tracking/003 Model Registry Tracking|003 Model Registry Tracking]]
 - [[Specs/008 Llama Engine Evolution/008 Llama Engine Evolution|008 Llama Engine Evolution]]

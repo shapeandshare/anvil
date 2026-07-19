@@ -9,6 +9,7 @@ related:
   - '[[003 Model Registry Tracking]]'
 created: ~
 updated: ~
+epic: "Model Lifecycle"
 ---
 # Feature Specification: Model Registry Tracking
 

@@ -12,8 +12,8 @@ created: '2026-06-27'
 updated: '2026-06-27'
 aliases:
   - 028 Concurrent Isolated Instances
+epic: "SaaS Platform"
 ---
-
 # Feature Specification: Concurrent Isolated Instances
 
 **Feature Branch**: `028-concurrent-isolated-instances`

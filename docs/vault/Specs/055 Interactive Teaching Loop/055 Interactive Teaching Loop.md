@@ -8,7 +8,7 @@ tags:
   - status/draft
 spec-refs:
   - docs/vault/Specs/055 Interactive Teaching Loop/
-status: draft
+status: shipped
 created: '2026-06-28'
 updated: '2026-06-28'
 aliases:

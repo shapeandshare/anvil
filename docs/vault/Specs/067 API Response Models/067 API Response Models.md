@@ -14,8 +14,8 @@ aliases:
   - 067 API Response Models
 spec_number: 67
 doc_type: spec
+epic: "API & SDK"
 ---
-
 # 067 API Response Models
 
 ## Summary

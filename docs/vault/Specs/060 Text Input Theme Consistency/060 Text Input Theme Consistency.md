@@ -7,7 +7,7 @@ tags:
   - status/draft
 spec-refs:
   - docs/vault/Specs/060 Text Input Theme Consistency/
-status: draft
+status: shipped
 created: '2026-07-18'
 updated: '2026-07-18'
 aliases:

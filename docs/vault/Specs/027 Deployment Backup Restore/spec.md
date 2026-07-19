@@ -7,8 +7,8 @@ tags:
 status: draft
 created: '2026-06-21'
 updated: '2026-06-21'
+epic: "Ops & DevOps"
 ---
-
 Back to [[Specs/027 Deployment Backup Restore/spec]].
 
 ### User Story 3 - CLI Backup & Restore for Automation (Priority: P2)

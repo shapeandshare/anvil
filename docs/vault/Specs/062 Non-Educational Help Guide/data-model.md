@@ -9,7 +9,7 @@ created: '2026-06-22'
 updated: '2026-06-22'
 ---
 
-Back to [[Specs/001 Non-Educational Help Guide/spec]].
+Back to [[Specs/062 Non-Educational Help Guide/spec]].
 
 # Data Model: Non-Educational Help Guide
 

@@ -1,20 +1,20 @@
 ---
-title: 028 SaaS Abstraction Framework - plan
+title: 084 SaaS Abstraction Framework - plan
 type: plan
 tags:
   - type/spec
 spec-refs:
-  - docs/vault/Specs/028 SaaS Abstraction Framework/
+  - docs/vault/Specs/084 SaaS Abstraction Framework/
 related:
-  - '[[028 SaaS Abstraction Framework]]'
+  - '[[084 SaaS Abstraction Framework]]'
 created: '2026-06-27'
 updated: '2026-06-27'
 ---
 
 # Implementation Plan: SaaS Abstraction Framework
 
-**Branch**: `028-saas-abstraction-framework` | **Date**: 2026-06-27 | **Spec**: docs/vault/Specs/028 SaaS Abstraction Framework/spec.md
-**Input**: Feature specification from `docs/vault/Specs/028 SaaS Abstraction Framework/spec.md`
+**Branch**: `028-saas-abstraction-framework` | **Date**: 2026-06-27 | **Spec**: docs/vault/Specs/084 SaaS Abstraction Framework/spec.md
+**Input**: Feature specification from `docs/vault/Specs/084 SaaS Abstraction Framework/spec.md`
 
 ## Summary
 
@@ -80,8 +80,8 @@ FileStore / EventBus / JobQueue (+ ResourceSpec) / ComputeBackend interfaces + l
 ### Documentation (this feature)
 
 ```text
-docs/vault/Specs/028 SaaS Abstraction Framework/
-├── 028 SaaS Abstraction Framework.md       # Index note
+docs/vault/Specs/084 SaaS Abstraction Framework/
+├── 084 SaaS Abstraction Framework.md       # Index note
 ├── spec.md                                  # Feature specification
 ├── plan.md                                  # This file
 ├── research.md                              # Research findings

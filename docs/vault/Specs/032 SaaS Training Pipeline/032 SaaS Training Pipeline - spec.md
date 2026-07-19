@@ -13,8 +13,8 @@ related:
 created: '2026-06-27'
 updated: '2026-06-27'
 status: draft
+epic: "SaaS Platform"
 ---
-
 # Feature Specification: SaaS Training Pipeline — Durable Job State & Live Metrics
 
 **Feature Branch**: `032-saas-training-pipeline`
@@ -201,7 +201,7 @@ PLUS confirm the **local in-process training flow still streams metrics via `InP
 
 ## Dependencies
 
-- [[Specs/028 SaaS Abstraction Framework/028 SaaS Abstraction Framework|028 SaaS Abstraction Framework]] — abstraction interfaces (`FileStore`, `EventBus`, `JobQueue`, `ComputeBackend`, `ResourceSpec`)
+- [[Specs/084 SaaS Abstraction Framework/084 SaaS Abstraction Framework|084 SaaS Abstraction Framework]] — abstraction interfaces (`FileStore`, `EventBus`, `JobQueue`, `ComputeBackend`, `ResourceSpec`)
 - [[Specs/029 SaaS Dev Stack/029 SaaS Dev Stack|029 SaaS Dev Stack]] — docker compose environment for local testing
 - [[Specs/030 SaaS Authentication/030 SaaS Authentication|030 SaaS Authentication]] — JWT auth middleware, SSE signed-token auth
 - [[Specs/031 SaaS Multi-Tenancy RBAC/031 SaaS Multi-Tenancy RBAC|031 SaaS Multi-Tenancy]] — RBAC models, org-scoped repository queries

@@ -9,6 +9,7 @@ related:
   - '[[002 Directory Corpus Ingestion]]'
 created: ~
 updated: ~
+epic: "Training & Experiments"
 ---
 # Feature Specification: Directory Corpus Ingestion
 

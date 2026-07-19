@@ -7,8 +7,8 @@ tags:
 status: draft
 created: '2026-06-21'
 updated: '2026-06-21'
+epic: "API & SDK"
 ---
-
 Back to [[Specs/026 Client SDK/Spec]].
 
 ### User Story 3 - Train Models Programmatically (Priority: P1)

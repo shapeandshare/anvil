@@ -9,6 +9,7 @@ related:
   - '[[010 Automated Semver Release]]'
 created: ~
 updated: ~
+epic: "Ops & DevOps"
 ---
 # Feature Specification: Automated Semantic Versioning & Release
 

@@ -9,6 +9,7 @@ related:
   - '[[007 Learning Content Enrichment]]'
 created: ~
 updated: ~
+epic: "Learning & Content"
 ---
 # Feature Specification: Learning Content Enrichment
 

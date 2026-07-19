@@ -9,6 +9,7 @@ related:
   - '[[019 LakeFS Content Repo]]'
 created: ~
 updated: ~
+epic: "SaaS Platform"
 ---
 # Feature Specification: LakeFS Content Repository
 

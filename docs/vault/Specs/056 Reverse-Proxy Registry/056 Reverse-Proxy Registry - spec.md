@@ -10,6 +10,7 @@ related:
 created: '2026-06-28'
 updated: '2026-06-28'
 status: draft
+epic: "SaaS Platform"
 ---
 # Feature Specification: Reverse-Proxy Registry & Single-Origin Front Door
 

@@ -14,8 +14,8 @@ related:
   - '[[Reference/FineTuningArchitectureDecisions]]'
 created: '2026-06-28'
 updated: '2026-07-01'
+epic: "Training & Experiments"
 ---
-
 # Feature Specification: Fine-Tuned Model Evaluation
 
 **Feature Branch**: `054-fine-tuned-model-evaluation`

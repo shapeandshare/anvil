@@ -9,6 +9,7 @@ related:
   - '[[005 Dataset Curation]]'
 created: ~
 updated: ~
+epic: "Training & Experiments"
 ---
 # Feature Specification: Dataset Curation
 

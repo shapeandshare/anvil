@@ -9,8 +9,8 @@ related:
   - '[[029 SaaS Dev Stack]]'
 created: '2026-06-27'
 updated: '2026-06-27'
+epic: "SaaS Platform"
 ---
-
 # Feature Specification: SaaS Dev Stack — Docker Compose Local SaaS Emulation
 
 **Feature Branch**: `029-saas-dev-stack`

@@ -9,6 +9,7 @@ related:
   - '[[020 OWASP Remediation]]'
 created: ~
 updated: ~
+epic: "Ops & DevOps"
 ---
 # Feature Specification: OWASP Top 10 Security Remediation
 
