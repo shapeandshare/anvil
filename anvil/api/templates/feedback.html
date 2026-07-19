@@ -518,10 +518,9 @@
       var displayH = img.clientHeight;
       if (!displayW || !displayH) return;
       // Use a uniform scale based on width to prevent skew.
-      // Annotations are in viewport CSS coordinates; the screenshot
-      // was taken of .app-main (full viewport width but may have
-      // less height than the viewport). A uniform scale keeps
-      // shapes undistorted even if the exact Y mapping is approximate.
+      // Annotations store viewport coordinates; the screenshot captures
+      // .app-main from its own origin. The captureOffsetY stored at
+      // submit time bridges the two: screenshot_y = viewport_y - captureOffsetY.
       var scale = displayW / vw;
       var scaleY = scale;
 
@@ -535,10 +534,10 @@
         switch (ann.annotation_type) {
           case 'element':
           case 'rect':
-            var sx = data.scrollX || 0;
-            var sy = data.scrollY || 0;
-            var x = (data.x + sx || 0) * scale;
-            var y = (data.y + sy || 0) * scaleY;
+            var captureY = data.captureOffsetY || 0;
+            var captureX = data.captureOffsetX || 0;
+            var x = ((data.x || 0) - captureX) * scale;
+            var y = ((data.y || 0) - captureY) * scaleY;
             var w = (data.width || 0) * scale;
             var h = (data.height || 0) * scaleY;
             el = document.createElement('div');
@@ -559,11 +558,11 @@
             svg.style.position = 'absolute';
             svg.style.inset = '0';
             svg.style.overflow = 'visible';
-            var fhSx = data.scrollX || 0;
-            var fhSy = data.scrollY || 0;
-            var d = 'M ' + ((pathData[0][0] + fhSx) * scale) + ' ' + ((pathData[0][1] + fhSy) * scaleY);
+            var fhCaptureY = data.captureOffsetY || 0;
+            var fhCaptureX = data.captureOffsetX || 0;
+            var d = 'M ' + ((pathData[0][0] - fhCaptureX) * scale) + ' ' + ((pathData[0][1] - fhCaptureY) * scaleY);
             for (var pi = 1; pi < pathData.length; pi++) {
-              d += ' L ' + ((pathData[pi][0] + fhSx) * scale) + ' ' + ((pathData[pi][1] + fhSy) * scaleY);
+              d += ' L ' + ((pathData[pi][0] - fhCaptureX) * scale) + ' ' + ((pathData[pi][1] - fhCaptureY) * scaleY);
             }
             var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             path.setAttribute('d', d);
@@ -572,10 +571,10 @@
             break;
 
           case 'circle':
-            var cSx = data.scrollX || 0;
-            var cSy = data.scrollY || 0;
-            var cx = (data.cx + cSx || 0) * scale;
-            var cy = (data.cy + cSy || 0) * scaleY;
+            var cCaptureY = data.captureOffsetY || 0;
+            var cCaptureX = data.captureOffsetX || 0;
+            var cx = ((data.cx || 0) - cCaptureX) * scale;
+            var cy = ((data.cy || 0) - cCaptureY) * scaleY;
             var r = (data.radius || 0) * scale;
             var circleSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             circleSvg.setAttribute('class', 'feedback-detail-marker feedback-detail-marker--circle');
@@ -607,15 +606,15 @@
           var lx, ly;
           if (ann.annotation_type === 'freehand') {
             var pd = data.path || [];
-            var fhSx = data.scrollX || 0;
-            var fhSy = data.scrollY || 0;
-            lx = (pd.length > 0 ? (pd[0][0] + fhSx) : 0) * scale - 8;
-            ly = (pd.length > 0 ? (pd[0][1] + fhSy) : 0) * scaleY - 12;
+            var labelCaptureY = data.captureOffsetY || 0;
+            var labelCaptureX = data.captureOffsetX || 0;
+            lx = (pd.length > 0 ? ((pd[0][0] - labelCaptureX)) : 0) * scale - 8;
+            ly = (pd.length > 0 ? ((pd[0][1] - labelCaptureY)) : 0) * scaleY - 12;
           } else {
-            var cSx = data.scrollX || 0;
-            var cSy = data.scrollY || 0;
-            lx = ((data.cx || 0) + cSx) * scale - 8;
-            ly = ((data.cy || 0) + cSy) * scaleY - 12;
+            var cCapY = data.captureOffsetY || 0;
+            var cCapX = data.captureOffsetX || 0;
+            lx = ((data.cx || 0) - cCapX) * scale - 8;
+            ly = ((data.cy || 0) - cCapY) * scaleY - 12;
           }
           label.style.left = lx + 'px';
           label.style.top = ly + 'px';
