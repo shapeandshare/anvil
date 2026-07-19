@@ -44,8 +44,24 @@ gitleaks: ## Run gitleaks secrets scan (requires gitleaks binary: brew install g
 		exit 0; \
 	fi
 
-build: ## Build a PEP 517 wheel via uv (fall back to python -m build)
+ANVIL_VERSION := $(shell grep '^version =' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+
+build: dist/anvil-$(ANVIL_VERSION)-sbom.cyclonedx.json ## Build PEP 517 wheel + CycloneDX SBOM
 	uv build --wheel --out-dir dist . 2>/dev/null || python3 -m build --wheel --outdir dist .
+
+sbom: dist/anvil-$(ANVIL_VERSION)-sbom.cyclonedx.json ## Generate CycloneDX 1.5 SBOM (production deps only)
+	@echo "SBOM generated: dist/anvil-$(ANVIL_VERSION)-sbom.cyclonedx.json"
+
+dist/anvil-$(ANVIL_VERSION)-sbom.cyclonedx.json: uv.lock pyproject.toml
+	@mkdir -p dist
+	uv export --format cyclonedx1.5 --no-dev --frozen > "$@"
+
+sbom-full: dist/anvil-$(ANVIL_VERSION)-sbom.full.cyclonedx.json ## Generate CycloneDX 1.5 SBOM with all extras/dev groups
+	@echo "Full SBOM generated: dist/anvil-$(ANVIL_VERSION)-sbom.full.cyclonedx.json"
+
+dist/anvil-$(ANVIL_VERSION)-sbom.full.cyclonedx.json: uv.lock pyproject.toml
+	@mkdir -p dist
+	uv export --format cyclonedx1.5 --all-extras --frozen > "$@"
 
 format: $(VENV_DIR)/activate ## Auto-format with black and isort
 	$(PYTHON) -m black .
@@ -54,4 +70,4 @@ format: $(VENV_DIR)/activate ## Auto-format with black and isort
 typecheck: $(VENV_DIR)/activate ## Run mypy strict type checking
 	$(PYTHON) -m mypy anvil/ --no-incremental
 
-.PHONY: install build lint format typecheck clean bandit semgrep gitleaks
+.PHONY: install build sbom sbom-full lint format typecheck clean bandit semgrep gitleaks
