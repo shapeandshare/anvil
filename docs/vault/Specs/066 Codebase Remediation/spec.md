@@ -15,7 +15,7 @@ This is a **master specification** for a suite of 15 remediation specs (066–08
 
 | # | Spec | Focus | Effort |
 |---|------|-------|--------|
-| 066 | [Config Migration to pydantic-settings](../066-config-pydantic-settings/spec.md) | Replace `dict[str, Any]` config with `BaseSettings` | 2-3 days |
+| 083 | [Config Migration to pydantic-settings](../083%20Config%20Pydantic%20Settings/083%20Config%20Pydantic%20Settings.md) | Replace `dict[str, Any]` config with `BaseSettings` | 2-3 days |
 | 067 | [Add response_model to All Routes](../067-api-response-models/spec.md) | Complete OpenAPI response schemas | 3-5 days |
 | 068 | [Remove asyncio.run() Blocking Call](../068-training-service-async-fix/spec.md) | Fix thread-blocking in TrainingService | 1 day |
 | 069 | [Replace Module-Level Service Singletons with DI](../069-route-di-cleanup/spec.md) | Use FastAPI Depends() for services | 2-3 days |
@@ -45,7 +45,7 @@ This is a **master specification** for a suite of 15 remediation specs (066–08
 
 ```mermaid
 graph TD
-    066[066: Config pydantic-settings]
+    083[083: Config pydantic-settings]
     067[067: response_model]
     068[068: asyncio.run fix]
     069[069: Route DI]
@@ -61,7 +61,7 @@ graph TD
     079[079: Exception hierarchy]
     080[080: FK indexes/N+1]
 
-    066 --> 069
+    083 --> 069
     069 --> 070
     069 --> 074
     071 --> 068
@@ -101,10 +101,10 @@ The original review had inaccuracies now corrected in `context.md`/`data-invento
 
 ## Handoff Notes
 
-1. **Branch**: Master overview lives on `066-codebase-remediation`. Each individual spec (066–080) has its own directory. When implementing, create individual feature branches per spec (e.g. `066-config-pydantic-settings`).
+1. **Branch**: Master overview lives on `066-codebase-remediation`. Each individual spec has its own directory. When implementing, create individual feature branches per spec (e.g. `083-config-pydantic-settings`).
 2. **PR**: Single PR containing all spec documents, research, and design artifacts.
 3. **Implementation**: Work will be picked up later in a separate session — start each spec by reading its `context.md`, then follow `tasks.md`.
 4. **Re-verify first**: Line numbers drift. Each `context.md` includes re-verify grep commands — run them before editing.
 5. **TDD**: All implementation MUST follow Red-Green-Refactor (Constitution Article IV). `tasks.md` marks `[Red]`/`[Green]`/`[Refactor]` phases.
 6. **Constitution Check**: Every implementation must pass the Simplicity First gate (Article XI).
-7. **Suggested order**: quick wins first (073 extra="forbid", 078 annotations), then 079 → 072 (exceptions → error format), 071 → 068 (DI → async fix), 066 (config), 069 → 070 (route DI → experiments), 074 (state), 067 (response models — largest), 076/077/080 (P2), 075 (coverage — LAST).
+7. **Suggested order**: quick wins first (073 extra="forbid", 078 annotations), then 079 → 072 (exceptions → error format), 071 → 068 (DI → async fix), 083 (config), 069 → 070 (route DI → experiments), 074 (state), 067 (response models — largest), 076/077/080 (P2), 075 (coverage — LAST).

@@ -4,7 +4,7 @@
 
 ---
 
-## 1. `get_config()` call sites (spec 066)
+## 1. `get_config()` call sites (spec 083)
 
 **Total**: 40 references across 18 files; 25 use subscript access `get_config()["key"]`.
 

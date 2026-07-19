@@ -92,7 +92,7 @@ This remediation spec suite was produced from a comprehensive codebase review ac
 
 | # | Priority | Title | Directory |
 |---|----------|-------|-----------|
-| 066 | P0 | Migrate config to pydantic-settings | `066-config-pydantic-settings/` |
+| 083 | P0 | Migrate config to pydantic-settings | `083-config-pydantic-settings/` |
 | 067 | P0 | Add response_model to all routes | `067-api-response-models/` |
 | 068 | P0 | Remove asyncio.run() blocking call | `068-training-service-async-fix/` |
 | 069 | P0 | Replace module-level service singletons | `069-route-di-cleanup/` |
