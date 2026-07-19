@@ -97,6 +97,35 @@ body {
   cursor: not-allowed;
 }
 
+/* ── Annotation Toggle (nav bar) ── */
+.feedback-toggle-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  color: var(--accent);
+  background: var(--surface-2);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  min-height: var(--touch-min);
+  min-width: var(--touch-min);
+  font-size: 1.2rem;
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.feedback-toggle-btn:hover {
+  background: var(--surface-2);
+  opacity: 0.8;
+}
+
+.feedback-toggle-btn--active {
+  background: var(--accent);
+  color: #fff;
+}
+
 .theme-picker {
   position: relative;
   flex-shrink: 0;

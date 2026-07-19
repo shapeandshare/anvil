@@ -1,5 +1,7 @@
 # SonarCloud static analysis tooling
 #
+# DISABLED 2026-07-19 — temporarily disabled. See ci-workflow.yml for status.
+#
 # Prerequisites:
 #   - sonar-scanner CLI: brew install sonar-scanner
 #   - SONAR_TOKEN: Generate at https://sonarcloud.io/account/security
@@ -14,107 +16,71 @@ SONAR_ORG := shapeandshare
 SONARCLOUD_API := https://sonarcloud.io/api
 
 #############################################################################
-# Prerequisite checks
+# Prerequisite checks (all DISABLED)
 #############################################################################
 
 .PHONY: sonar-check
-sonar-check: ## Verify sonar-scanner CLI is installed
-	@which sonar-scanner >/dev/null 2>&1 || { \
-		echo "ERROR: sonar-scanner not found. Install with:"; \
-		echo "  brew install sonar-scanner"; \
-		echo "  # or:  npm install -g @sonar/scan"; \
-		exit 1; \
-	}
+sonar-check: ## [DISABLED] Verify sonar-scanner CLI is installed
+	@echo "SKIPPED — SonarCloud is temporarily disabled. Remove the gate in ci-workflow.yml and uncomment targets in shared/sonar.mk to re-enable."
 
 .PHONY: sonar-check-env
-sonar-check-env: ## Verify SONAR_TOKEN is set
-	@test -n "$(SONAR_TOKEN)" || { \
-		echo "ERROR: SONAR_TOKEN not set."; \
-		echo "Generate one at https://sonarcloud.io/account/security"; \
-		echo "Then: export SONAR_TOKEN=squ_xxxxx"; \
-		exit 1; \
-	}
+sonar-check-env: ## [DISABLED] Verify SONAR_TOKEN is set
+	@echo "SKIPPED — SonarCloud is temporarily disabled. Remove the gate in ci-workflow.yml and uncomment targets in shared/sonar.mk to re-enable."
 
 .PHONY: sonar-check-env-mcp
 sonar-check-env-mcp:
-	@test -n "$(SONARQUBE_TOKEN)" -o -n "$(SONAR_TOKEN)" || { \
-		echo "ERROR: neither SONARQUBE_TOKEN nor SONAR_TOKEN is set."; \
-		echo "Set one of: export SONAR_TOKEN=squ_xxxxx"; \
-		echo "          export SONARQUBE_TOKEN=squ_xxxxx"; \
-		exit 1; \
-	}
+	@echo "SKIPPED — SonarCloud is temporarily disabled."
 
 #############################################################################
-# Scanner
+# Scanner (all DISABLED)
 #############################################################################
 
 .PHONY: sonar-scan
-sonar-scan: $(VENV_DIR)/activate sonar-check sonar-check-env ## Run SonarCloud static analysis (requires coverage.xml from make test)
-	sonar-scanner
-	@echo ""
-	@echo "SonarCloud analysis submitted."
-	@echo "View results at: https://sonarcloud.io/project/overview?id=$(SONAR_PROJECT_KEY)"
+sonar-scan: ## [DISABLED] Run SonarCloud static analysis
+	@echo "SKIPPED — SonarCloud is temporarily disabled. Remove the gate in ci-workflow.yml and uncomment targets in shared/sonar.mk to re-enable."
 
 .PHONY: sonar-scan-docker
-sonar-scan-docker: sonar-check-env ## Run SonarCloud analysis via Docker (no local install needed)
-	docker run --rm \
-		-e SONAR_TOKEN \
-		-e SONAR_HOST_URL="https://sonarcloud.io" \
-		-v "$(PWD):/usr/src" \
-		sonarsource/sonar-scanner-cli
+sonar-scan-docker: ## [DISABLED] Run SonarCloud analysis via Docker
+	@echo "SKIPPED — SonarCloud is temporarily disabled."
 
 #############################################################################
-# API queries (read-only, requires SONAR_TOKEN)
+# API queries (all DISABLED)
 #############################################################################
 
 .PHONY: sonar-status
-sonar-status: sonar-check-env ## Fetch quality gate status
-	@curl -s -H "Authorization: Bearer $(SONAR_TOKEN)" \
-		"$(SONARCLOUD_API)/qualitygates/project_status?projectKey=$(SONAR_PROJECT_KEY)" | \
-		python3 -m json.tool
+sonar-status: ## [DISABLED] Fetch quality gate status
+	@echo "SKIPPED — SonarCloud is temporarily disabled."
 
 .PHONY: sonar-issues
-sonar-issues: sonar-check-env ## Fetch open bugs, vulnerabilities, and code smells
-	@curl -s -H "Authorization: Bearer $(SONAR_TOKEN)" \
-		"$(SONARCLOUD_API)/issues/search?componentKeys=$(SONAR_PROJECT_KEY)&types=BUG,VULNERABILITY,CODE_SMELL&statuses=OPEN,CONFIRMED&ps=50" | \
-		python3 -m json.tool
+sonar-issues: ## [DISABLED] Fetch open bugs, vulnerabilities, and code smells
+	@echo "SKIPPED — SonarCloud is temporarily disabled."
 
 .PHONY: sonar-issues-bugs
-sonar-issues-bugs: sonar-check-env ## Fetch open bugs only
-	@curl -s -H "Authorization: Bearer $(SONAR_TOKEN)" \
-		"$(SONARCLOUD_API)/issues/search?componentKeys=$(SONAR_PROJECT_KEY)&types=BUG&statuses=OPEN,CONFIRMED" | \
-		python3 -m json.tool
+sonar-issues-bugs: ## [DISABLED] Fetch open bugs only
+	@echo "SKIPPED — SonarCloud is temporarily disabled."
 
 .PHONY: sonar-measures
-sonar-measures: sonar-check-env ## Fetch quality metrics (loc, bugs, coverage, duplications, etc.)
-	@curl -s -H "Authorization: Bearer $(SONAR_TOKEN)" \
-		"$(SONARCLOUD_API)/measures/component?component=$(SONAR_PROJECT_KEY)&metricKeys=ncloc,bugs,vulnerabilities,code_smells,coverage,duplicated_lines_density,security_hotspots,reliability_rating,security_rating,sqale_rating" | \
-		python3 -m json.tool
+sonar-measures: ## [DISABLED] Fetch quality metrics
+	@echo "SKIPPED — SonarCloud is temporarily disabled."
 
 #############################################################################
-# MCP server (local Docker for OpenCode / Claude / Cursor integration)
+# MCP server (DISABLED)
 #############################################################################
 
 MCP_SONAR_IMAGE := mcp/sonarqube
 
 .PHONY: sonar-mcp
-sonar-mcp: sonar-check-env-mcp ## Start SonarCloud MCP server (Docker, foreground, Ctrl+C to stop)
-	@export SONARQUBE_TOKEN=$${SONARQUBE_TOKEN:-$$SONAR_TOKEN}; \
-	docker run --init --pull=always -i --rm \
-		-e SONARQUBE_TOKEN \
-		-e SONARQUBE_ORG=$(SONAR_ORG) \
-		-e SONARQUBE_PROJECT_KEY=$(SONAR_PROJECT_KEY) \
-		$(MCP_SONAR_IMAGE)
+sonar-mcp: ## [DISABLED] Start SonarCloud MCP server
+	@echo "SKIPPED — SonarCloud is temporarily disabled. Re-enable the sonarcloud MCP in opencode.json and uncomment targets in shared/sonar.mk."
 
 .PHONY: sonar-mcp-check
-sonar-mcp-check: ## Verify MCP config in opencode.json
-	@test -f opencode.json || { echo "ERROR: opencode.json not found"; exit 1; }
-	@python3 -c "import json; cfg=json.load(open('opencode.json')); mcp=cfg.get('mcp',{}); enabled='sonarcloud' in mcp and mcp['sonarcloud'].get('enabled'); print('OK: sonarcloud MCP is enabled in opencode.json' if enabled else 'WARNING: sonarcloud MCP not found or disabled in opencode.json')"
+sonar-mcp-check: ## [DISABLED] Verify MCP config in opencode.json
+	@echo "SKIPPED — SonarCloud is temporarily disabled. sonarcloud MCP is currently disabled in opencode.json."
 
 #############################################################################
-# Comprehensive scan: test (with coverage) + sonar analysis
+# Comprehensive scan (DISABLED)
 #############################################################################
 
 .PHONY: sonar-full
-sonar-full: test sonar-scan ## Run tests with coverage, then run SonarCloud analysis
-	@echo "Full SonarCloud scan complete."
+sonar-full: ## [DISABLED] Run tests with coverage + SonarCloud analysis
+	@echo "SKIPPED — SonarCloud is temporarily disabled."

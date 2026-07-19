@@ -1,0 +1,109 @@
+# Dependabot version updates for anvil
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates
+
+version: 2
+updates:
+  # Python dependencies (pyproject.toml + uv.lock)
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "America/Los_Angeles"
+    labels:
+      - "dependencies"
+      - "python"
+    open-pull-requests-limit: 10
+    rebase-strategy: "auto"
+    groups:
+      test-deps:
+        patterns:
+          - "pytest*"
+          - "coverage*"
+        update-types:
+          - "minor"
+          - "patch"
+      lint-deps:
+        patterns:
+          - "ruff"
+          - "black"
+          - "isort"
+          - "pylint"
+          - "mypy"
+        update-types:
+          - "minor"
+          - "patch"
+      fastapi-deps:
+        patterns:
+          - "fastapi*"
+          - "starlette*"
+          - "uvicorn*"
+          - "pydantic*"
+          - "jinja2*"
+          - "python-multipart*"
+          - "httpx*"
+          - "aiofiles*"
+          - "python-dotenv*"
+        update-types:
+          - "minor"
+          - "patch"
+      db-deps:
+        patterns:
+          - "sqlalchemy*"
+          - "aiosqlite*"
+          - "alembic*"
+        update-types:
+          - "minor"
+          - "patch"
+      ml-deps:
+        patterns:
+          - "mlflow*"
+          - "safetensors*"
+          - "numpy*"
+          - "networkx*"
+          - "pyyaml*"
+          - "psutil*"
+          - "pathspec*"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      # Major version updates require manual review (breaking changes)
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+
+  # Docker base images (Dockerfile)
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "America/Los_Angeles"
+    labels:
+      - "dependencies"
+      - "docker"
+    open-pull-requests-limit: 3
+    rebase-strategy: "auto"
+
+  # GitHub Actions (workflow files)
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "America/Los_Angeles"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    open-pull-requests-limit: 5
+    rebase-strategy: "auto"
+    groups:
+      actions-deps:
+        patterns:
+          - "actions/*"
+          - "astral-sh/*"
+          - "SonarSource/*"
