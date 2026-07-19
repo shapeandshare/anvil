@@ -18,6 +18,7 @@
 <link rel="stylesheet" href="/static/css/base.css?v={{ version }}">
 <link rel="stylesheet" href="/static/css/utilities.css">
 <link rel="stylesheet" href="/static/css/components.css">
+<link rel="stylesheet" href="/static/css/feedback.css">
 <link rel="stylesheet" href="/static/css/code.css">
 <script nonce="{{ request.state.csp_nonce }}">
 window.ANVIL_VERSION = '{{ version }}';
@@ -192,5 +193,13 @@ window.apiFetch = function(url, opts) {
 {% block scripts %}{% endblock %}
 <script src="/static/js/lib/html-to-image.js"></script>
 <script src="/static/js/annotation.js"></script>
+<script nonce="{{ request.state.csp_nonce }}">
+(function() {
+  // Skip on the feedback dashboard itself
+  if (window.location.pathname === '/v1/feedback-page') return;
+  var container = document.querySelector('.app-main') || document.body;
+  window._annotationCanvas = window.initAnnotationMode(container);
+})();
+</script>
 </body>
 </html>
