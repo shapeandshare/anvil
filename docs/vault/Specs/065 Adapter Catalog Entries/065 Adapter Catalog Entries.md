@@ -7,7 +7,7 @@ tags:
   - status/draft
 spec-refs:
   - docs/vault/Specs/065 Adapter Catalog Entries/
-status: draft
+status: deferred
 created: '2026-07-18'
 updated: '2026-07-18'
 aliases:

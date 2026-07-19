@@ -5,8 +5,8 @@ tags:
   - type/spec
 created: 2026-07-03
 updated: 2026-07-03
+epic: "Model Lifecycle"
 ---
-
 # Feature Specification: Adapters as First-Class Catalog Entries
 
 **Feature Branch**: *(not yet started — backlog follow-up to Spec 064)*

@@ -16,8 +16,8 @@ related:
   - '[[Reference/SaaSArchitectureDecisions]]'
 created: '2026-06-29'
 updated: '2026-06-29'
+epic: "SaaS Platform"
 ---
-
 # Feature Specification: At-Rest Secret Encryption — Key Ring + KMS Envelope
 
 **Feature Branch**: `058-at-rest-secret-encryption`

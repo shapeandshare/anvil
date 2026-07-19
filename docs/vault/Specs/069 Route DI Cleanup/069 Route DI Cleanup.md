@@ -14,8 +14,8 @@ aliases:
   - 069 Route DI Cleanup
 spec_number: 69
 doc_type: spec
+epic: "Code Health"
 ---
-
 # 069 Route DI Cleanup
 
 ## Summary

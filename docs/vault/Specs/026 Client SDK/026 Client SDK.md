@@ -7,7 +7,7 @@ tags:
   - status/draft
 spec-refs:
   - docs/vault/Specs/026 Client SDK/
-status: draft
+status: shipped
 created: '2026-07-18'
 updated: '2026-07-18'
 aliases:

@@ -12,8 +12,8 @@ related:
 created: '2026-06-27'
 updated: '2026-06-27'
 status: draft
+epic: "SaaS Platform"
 ---
-
 # Feature Specification: SaaS Multi-Tenancy & RBAC
 
 **Spec**: 031 — Multi-Tenancy & RBAC · **Phase**: 4 (US3) · **Gate**: G4

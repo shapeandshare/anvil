@@ -14,8 +14,8 @@ aliases:
   - 073 Pydantic Schema Validation
 spec_number: 73
 doc_type: spec
+epic: "API & SDK"
 ---
-
 # 073 Pydantic Schema Validation
 
 ## Summary

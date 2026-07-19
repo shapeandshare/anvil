@@ -5,8 +5,8 @@ tags:
   - type/spec
 created: 
 updated: 2026-07-03
+epic: "UI/UX & Design System"
 ---
-
 # Feature Specification: Text Input Theme Consistency
 
 **Feature Branch**: `060-text-input-theme-consistency`  

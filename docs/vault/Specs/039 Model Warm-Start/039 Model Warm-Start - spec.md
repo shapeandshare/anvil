@@ -15,8 +15,8 @@ related:
 created: '2026-06-28'
 updated: '2026-06-28'
 clarified: '2026-06-28'
+epic: "Training & Experiments"
 ---
-
 # Feature Specification: Model Warm-Start & Run Lineage
 
 **Feature Branch**: `014-model-warm-start`

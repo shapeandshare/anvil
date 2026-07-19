@@ -5,8 +5,8 @@ tags:
   - type/spec
 created: 
 updated: 2026-07-03
+epic: "Core Engine"
 ---
-
 # Feature Specification: Usable External Models
 
 **Feature Branch**: `063-usable-external-models`

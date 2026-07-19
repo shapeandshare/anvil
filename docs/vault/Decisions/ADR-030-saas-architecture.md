@@ -18,7 +18,7 @@ related:
   - '[[Reference/SaaSArchitectureDecisions]]'
 code-refs:
   - docs/vault/Reference/SaaSArchitectureDecisions.md
-  - docs/vault/Specs/028 SaaS Abstraction Framework/
+  - docs/vault/Specs/084 SaaS Abstraction Framework/
   - docs/vault/Specs/030 SaaS Authentication/
   - docs/vault/Specs/031 SaaS Multi-Tenancy RBAC/
   - docs/vault/Specs/032 SaaS Training Pipeline/

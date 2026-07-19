@@ -1,22 +1,22 @@
 ---
-title: 001 Non-Educational Help Guide
+title: 062 Non-Educational Help Guide
 type: spec
 tags:
   - type/spec
   - domain/content
   - status/draft
 spec-refs:
-  - docs/vault/Specs/001 Non-Educational Help Guide/
+  - docs/vault/Specs/062 Non-Educational Help Guide/
 status: draft
 created: '2026-07-18'
 updated: '2026-07-18'
 aliases:
-  - 001 Non-Educational Help Guide
-spec_number: 1
+  - 062 Non-Educational Help Guide
+spec_number: 62
 doc_type: spec
 ---
 
-# 001 Non-Educational Help Guide
+# 062 Non-Educational Help Guide
 
 ## Summary
 

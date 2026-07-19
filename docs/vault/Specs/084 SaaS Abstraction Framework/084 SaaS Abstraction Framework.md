@@ -1,5 +1,5 @@
 ---
-title: 028 SaaS Abstraction Framework
+title: 084 SaaS Abstraction Framework
 type: spec
 tags:
   - type/spec
@@ -7,17 +7,17 @@ tags:
   - domain/architecture
   - status/draft
 spec-refs:
-  - docs/vault/Specs/028 SaaS Abstraction Framework/
+  - docs/vault/Specs/084 SaaS Abstraction Framework/
 status: draft
 created: '2026-06-27'
 updated: '2026-06-27'
 aliases:
-  - 028 SaaS Abstraction Framework
-spec_number: 28
+  - 084 SaaS Abstraction Framework
+spec_number: 84
 doc_type: spec
 ---
 
-# 028 SaaS Abstraction Framework
+# 084 SaaS Abstraction Framework
 
 ## Summary
 
@@ -25,12 +25,12 @@ Four core abstraction interfaces (`FileStore`, `EventBus`, `JobQueue`, `ComputeB
 
 ## Artifacts
 
-- [[028 SaaS Abstraction Framework - spec|spec]]
-- [[028 SaaS Abstraction Framework - plan|plan]]
-- [[028 SaaS Abstraction Framework - tasks|tasks]]
-- [[028 SaaS Abstraction Framework - research|research]]
-- [[028 SaaS Abstraction Framework - data-model|data-model]]
-- [[028 SaaS Abstraction Framework - quickstart|quickstart]]
+- [[084 SaaS Abstraction Framework - spec|spec]]
+- [[084 SaaS Abstraction Framework - plan|plan]]
+- [[084 SaaS Abstraction Framework - tasks|tasks]]
+- [[084 SaaS Abstraction Framework - research|research]]
+- [[084 SaaS Abstraction Framework - data-model|data-model]]
+- [[084 SaaS Abstraction Framework - quickstart|quickstart]]
 
 ## Parent
 

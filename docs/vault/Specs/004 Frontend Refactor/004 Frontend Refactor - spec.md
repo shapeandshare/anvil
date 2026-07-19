@@ -9,6 +9,7 @@ related:
   - '[[004 Frontend Refactor]]'
 created: ~
 updated: ~
+epic: "UI/UX & Design System"
 ---
 # Feature Specification: Systemic Frontend Refactor — microGPT Learning Tool
 

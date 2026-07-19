@@ -14,8 +14,8 @@ related:
   - '[[Reference/FineTuningArchitectureDecisions]]'
 created: '2026-06-28'
 updated: '2026-06-28'
+epic: "Training & Experiments"
 ---
-
 # Feature Specification: SaaS Fine-Tuning Pipeline
 
 **Feature Branch**: `047-saas-fine-tuning-pipeline`

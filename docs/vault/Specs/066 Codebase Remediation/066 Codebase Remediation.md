@@ -14,8 +14,8 @@ aliases:
   - 066 Codebase Remediation
 spec_number: 66
 doc_type: spec
+epic: "Code Health"
 ---
-
 # 066 Codebase Remediation
 
 ## Summary

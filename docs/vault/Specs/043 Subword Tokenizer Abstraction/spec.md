@@ -14,8 +14,8 @@ related:
   - '[[Reference/FineTuningArchitectureDecisions]]'
 created: '2026-06-28'
 updated: '2026-06-28'  # +7 clarification items, +rejected alternatives +FR-014b/015b, +contracts+plan
+epic: "Core Engine"
 ---
-
 # Feature Specification: Subword Tokenizer Abstraction
 
 **Feature Branch**: `043-subword-tokenizer-abstraction`

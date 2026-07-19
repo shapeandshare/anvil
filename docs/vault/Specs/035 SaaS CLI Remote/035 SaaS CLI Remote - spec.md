@@ -12,8 +12,8 @@ related:
 created: '2026-06-27'
 updated: '2026-06-27'
 status: draft
+epic: "SaaS Platform"
 ---
-
 # Feature Specification: SaaS CLI Remote & Cluster Management
 
 **Plan phase**: 11 (US9) · **Tasks**: T094–T099

@@ -9,6 +9,7 @@ related:
   - '[[006 MLflow Experiment Tracking]]'
 created: ~
 updated: ~
+epic: "Training & Experiments"
 ---
 # Feature Specification: MLflow Experiment & Data Lifecycle Tracking
 

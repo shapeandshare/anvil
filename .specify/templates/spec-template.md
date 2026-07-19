@@ -11,6 +11,7 @@ updated: YYYY-MM-DD
 spec_number: NNN
 status: draft
 doc_type: spec
+epic: "[Epic Name — see docs/vault/_meta/epics.md for valid values]"
 aliases:
   - NNN Spec Name
 ---

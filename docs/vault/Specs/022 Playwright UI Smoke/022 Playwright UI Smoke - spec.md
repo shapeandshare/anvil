@@ -9,6 +9,7 @@ related:
   - '[[022 Playwright UI Smoke]]'
 created: ~
 updated: ~
+epic: "Ops & DevOps"
 ---
 # Feature Specification: Playwright UI Smoke Harness
 

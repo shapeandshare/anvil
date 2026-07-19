@@ -13,8 +13,8 @@ related:
 created: '2026-06-27'
 updated: '2026-06-27'
 status: draft
+epic: "SaaS Platform"
 ---
-
 # Feature Specification: SaaS Observability & MLflow Proxy
 
 **Feature Branch**: `036-saas-observability-mlflow-proxy`

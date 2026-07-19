@@ -9,6 +9,7 @@ related:
   - '[[025 UX Rules Integration]]'
 created: ~
 updated: ~
+epic: "UI/UX & Design System"
 ---
 # Feature Specification: UX Rules Integration
 

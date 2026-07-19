@@ -7,15 +7,15 @@ tags:
   - status/draft
 spec-refs:
   - docs/vault/Specs/082 Paperclip Bootstrap/
-status: draft
+status: shipped
 created: '2026-07-18'
 updated: '2026-07-18'
 aliases:
   - 082 Paperclip Bootstrap
 spec_number: 82
 doc_type: spec
+epic: "Ops & DevOps"
 ---
-
 # 082 Paperclip Bootstrap
 
 ## Summary

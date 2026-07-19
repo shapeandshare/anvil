@@ -42,5 +42,5 @@ App-managed OIDC/JWT authentication via Amazon Cognito User Pools for the anvil 
 ## References
 
 - [[Specs/Specs|Specs]]
-- [[Specs/028 SaaS Abstraction Framework/028 SaaS Abstraction Framework|028 SaaS Package Structure]]
+- [[Specs/084 SaaS Abstraction Framework/084 SaaS Abstraction Framework|028 SaaS Package Structure]]
 - [[Specs/029 SaaS Dev Stack/029 SaaS Dev Stack|029 SaaS Abstractions]]

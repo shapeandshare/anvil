@@ -12,8 +12,8 @@ related:
 status: superseded
 created: '2026-06-19'
 updated: '2026-06-27'
+epic: "SaaS Platform"
 ---
-
 > [!WARNING] Superseded — This artifact is retained for historical reference.
 > This spec has been superseded by per-feature specs 028–037. Architecture decisions (AD-1..AD-17)
 > moved to [[Reference/SaaSArchitectureDecisions|SaaS Architecture Decisions]]. See

@@ -14,8 +14,8 @@ related:
   - '[[ADR-044-at-rest-secret-encryption]]'
 created: '2026-06-29'
 updated: '2026-06-29'
+epic: "SaaS Platform"
 ---
-
 # Feature Specification: Local Key Custody Hardening (OS Keyring & Passphrase)
 
 **Feature Branch**: `059-local-key-custody-hardening`

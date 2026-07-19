@@ -9,12 +9,12 @@ spec-refs:
 status: draft
 spec_number: 83
 doc_type: spec
+epic: "Code Health"
 created: '2026-07-18'
 updated: '2026-07-18'
 aliases:
   - 083 Config Pydantic Settings
 ---
-
 # Feature Specification: Config Migration to pydantic-settings
 
 **Spec status:** ⏳ waiting

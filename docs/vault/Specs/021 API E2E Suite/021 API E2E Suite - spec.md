@@ -9,6 +9,7 @@ related:
   - '[[021 API E2E Suite]]'
 created: ~
 updated: ~
+epic: "API & SDK"
 ---
 # Feature Specification: Whole-API E2E Test Suite
 

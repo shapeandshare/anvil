@@ -8,7 +8,7 @@ tags:
   - status/draft
 spec-refs:
   - docs/vault/Specs/059 Local Key Custody Hardening/
-status: draft
+status: deferred
 created: '2026-06-29'
 updated: '2026-06-29'
 aliases:

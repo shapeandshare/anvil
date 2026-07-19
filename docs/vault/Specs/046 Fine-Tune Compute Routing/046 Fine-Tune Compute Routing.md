@@ -8,7 +8,7 @@ tags:
   - status/draft
 spec-refs:
   - docs/vault/Specs/046 Fine-Tune Compute Routing/
-status: draft
+status: shipped
 created: '2026-06-28'
 updated: '2026-06-28'
 aliases:

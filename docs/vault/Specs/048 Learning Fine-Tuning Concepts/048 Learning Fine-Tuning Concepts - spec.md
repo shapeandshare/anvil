@@ -14,8 +14,8 @@ related:
   - '[[Reference/FineTuningArchitectureDecisions]]'
 created: '2026-06-28'
 updated: '2026-06-28'
+epic: "Learning & Content"
 ---
-
 # Feature Specification: Learning Arc — Fine-Tuning Concepts
 
 **Feature Branch**: `048-learning-fine-tuning-concepts`

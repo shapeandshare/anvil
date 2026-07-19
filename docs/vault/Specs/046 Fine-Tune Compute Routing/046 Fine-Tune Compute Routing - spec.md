@@ -14,8 +14,8 @@ related:
   - '[[Reference/FineTuningArchitectureDecisions]]'
 created: '2026-06-28'
 updated: '2026-07-01'
+epic: "Core Engine"
 ---
-
 # Feature Specification: Fine-Tune Compute Routing & Adapter Results
 
 **Feature Branch**: `046-fine-tune-compute-routing`

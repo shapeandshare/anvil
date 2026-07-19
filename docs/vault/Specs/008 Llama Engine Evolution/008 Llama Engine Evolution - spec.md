@@ -9,6 +9,7 @@ related:
   - '[[008 Llama Engine Evolution]]'
 created: ~
 updated: ~
+epic: "Core Engine"
 ---
 # Feature Specification: anvil — Llama Engine Evolution & Safetensors Export
 

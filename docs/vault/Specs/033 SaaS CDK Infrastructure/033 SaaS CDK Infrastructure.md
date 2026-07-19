@@ -44,6 +44,6 @@ Codified, repeatable AWS infrastructure for the anvil SaaS deployment. A full CD
 ## References
 
 - [[Specs/Specs|Specs]]
-- [[Specs/028 SaaS Abstraction Framework/028 SaaS Abstraction Framework|028 SaaS Package Structure]]
+- [[Specs/084 SaaS Abstraction Framework/084 SaaS Abstraction Framework|028 SaaS Package Structure]]
 - [[Specs/030 SaaS Authentication/030 SaaS Authentication|030 SaaS Cognito Auth]]
 - [[Specs/032 SaaS Training Pipeline/032 SaaS Training Pipeline|032 SaaS Durable Training]]

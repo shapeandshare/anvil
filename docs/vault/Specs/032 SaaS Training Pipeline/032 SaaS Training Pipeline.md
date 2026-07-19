@@ -44,7 +44,7 @@ The core product experience in SaaS mode: a logged-in user uploads a text corpus
 ## References
 
 - [[Specs/Specs|Specs]]
-- [[Specs/028 SaaS Abstraction Framework/028 SaaS Abstraction Framework|028 SaaS Abstraction Framework]]
+- [[Specs/084 SaaS Abstraction Framework/084 SaaS Abstraction Framework|084 SaaS Abstraction Framework]]
 - [[Specs/029 SaaS Dev Stack/029 SaaS Dev Stack|029 SaaS Dev Stack]]
 - [[Specs/030 SaaS Authentication/030 SaaS Authentication|030 SaaS Authentication]]
 - [[Specs/031 SaaS Multi-Tenancy RBAC/031 SaaS Multi-Tenancy RBAC|031 SaaS Multi-Tenancy]]

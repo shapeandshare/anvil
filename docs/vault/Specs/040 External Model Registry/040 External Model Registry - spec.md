@@ -14,8 +14,8 @@ related:
   - '[[Reference/FineTuningArchitectureDecisions]]'
 created: '2026-06-28'
 updated: '2026-06-28'
+epic: "Model Lifecycle"
 ---
-
 # Feature Specification: External Model Registry & Import Paradigm
 
 **Feature Branch**: `040-external-model-registry`

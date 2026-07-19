@@ -19,7 +19,6 @@ Start here to see what has been specified, what is in progress, and what shipped
 ## Notes
 
 - [[Specs/001 Bootstrap LLM Workbench/001 Bootstrap LLM Workbench|001 Bootstrap LLM Workbench]]
-- [[Specs/001 Non-Educational Help Guide/001 Non-Educational Help Guide|001 Non-Educational Help Guide]]
 - [[Specs/002 Directory Corpus Ingestion/002 Directory Corpus Ingestion|002 Directory Corpus Ingestion]]
 - [[Specs/003 Model Registry Tracking/003 Model Registry Tracking|003 Model Registry Tracking]]
 - [[Specs/004 Frontend Refactor/004 Frontend Refactor|004 Frontend Refactor]]
@@ -47,7 +46,6 @@ Start here to see what has been specified, what is in progress, and what shipped
 - [[Specs/026 Client SDK/026 Client SDK|026 Client SDK]]
 - [[Specs/027 Deployment Backup Restore/027 Deployment Backup Restore|027 Deployment Backup Restore]]
 - [[Specs/028 Concurrent Isolated Instances/028 Concurrent Isolated Instances|028 Concurrent Isolated Instances]]
-- [[Specs/028 SaaS Abstraction Framework/028 SaaS Abstraction Framework|028 SaaS Abstraction Framework]]
 - [[Specs/029 SaaS Dev Stack/029 SaaS Dev Stack|029 SaaS Dev Stack]]
 - [[Specs/030 SaaS Authentication/030 SaaS Authentication|030 SaaS Authentication]]
 - [[Specs/031 SaaS Multi-Tenancy RBAC/031 SaaS Multi-Tenancy RBAC|031 SaaS Multi-Tenancy RBAC]]
@@ -81,6 +79,7 @@ Start here to see what has been specified, what is in progress, and what shipped
 - [[Specs/059 Local Key Custody Hardening/059 Local Key Custody Hardening|059 Local Key Custody Hardening]] (deferred)
 - [[Specs/060 Text Input Theme Consistency/060 Text Input Theme Consistency|060 Text Input Theme Consistency]]
 - [[Specs/061 Resilient Startup Recovery/061 Resilient Startup Recovery|061 Resilient Startup Recovery]]
+- [[Specs/062 Non-Educational Help Guide/062 Non-Educational Help Guide|062 Non-Educational Help Guide]]
 - [[Specs/063 Usable External Models/063 Usable External Models|063 Usable External Models]]
 - [[Specs/064 MLflow Model Catalog/064 MLflow Model Catalog|064 MLflow Model Catalog]]
 - [[Specs/065 Adapter Catalog Entries/065 Adapter Catalog Entries|065 Adapter Catalog Entries]]
@@ -102,6 +101,7 @@ Start here to see what has been specified, what is in progress, and what shipped
 - [[Specs/081 Teach Page CTA/081 Teach Page CTA|081 Teach Page CTA]]
 - [[Specs/082 Paperclip Bootstrap/082 Paperclip Bootstrap|082 Paperclip Bootstrap]]
 - [[Specs/083 Config Pydantic Settings/083 Config Pydantic Settings|083 Config Pydantic Settings]]
+- [[Specs/084 SaaS Abstraction Framework/084 SaaS Abstraction Framework|084 SaaS Abstraction Framework]]
 
 ## Reverse-Proxy / Single-Origin Consolidation (ADR-035 → ADR-037 → 056)
 

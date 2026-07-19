@@ -14,8 +14,8 @@ related:
   - '[[Reference/FineTuningArchitectureDecisions]]'
 created: '2026-06-28'
 updated: '2026-06-28'
+epic: "Core Engine"
 ---
-
 # Feature Specification: GGUF Import & Run
 
 **Feature Branch**: `050-gguf-import-and-run`

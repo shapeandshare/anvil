@@ -14,8 +14,8 @@ aliases:
   - 076 Inference Service Decomposition
 spec_number: 76
 doc_type: spec
+epic: "Code Health"
 ---
-
 # 076 Inference Service Decomposition
 
 ## Summary

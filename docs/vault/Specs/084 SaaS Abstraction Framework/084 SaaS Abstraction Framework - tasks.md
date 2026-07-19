@@ -1,19 +1,19 @@
 ---
-title: 028 SaaS Abstraction Framework - tasks
+title: 084 SaaS Abstraction Framework - tasks
 type: tasks
 tags:
   - type/spec
 spec-refs:
-  - docs/vault/Specs/028 SaaS Abstraction Framework/
+  - docs/vault/Specs/084 SaaS Abstraction Framework/
 related:
-  - '[[028 SaaS Abstraction Framework]]'
+  - '[[084 SaaS Abstraction Framework]]'
 created: '2026-06-27'
 updated: '2026-06-27'
 ---
 
 # Tasks: SaaS Abstraction Framework
 
-**Input**: Design documents from `docs/vault/Specs/028 SaaS Abstraction Framework/`
+**Input**: Design documents from `docs/vault/Specs/084 SaaS Abstraction Framework/`
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/
 
 **Organization**: Tasks grouped by phase. Each phase ends at an **Acceptance Gate** (G1, G2 in spec.md) that MUST pass before dependent phases begin.

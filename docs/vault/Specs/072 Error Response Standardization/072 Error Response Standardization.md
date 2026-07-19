@@ -14,8 +14,8 @@ aliases:
   - 072 Error Response Standardization
 spec_number: 72
 doc_type: spec
+epic: "API & SDK"
 ---
-
 # 072 Error Response Standardization
 
 ## Summary

@@ -9,6 +9,7 @@ related:
   - '[[009 Bootstrap Datasets]]'
 created: ~
 updated: ~
+epic: "Training & Experiments"
 ---
 # Feature Specification: Bootstrap Demo Datasets
 
