@@ -9,6 +9,14 @@ Classifies a merge commit to decide whether a release should proceed.
 Outputs ``INCREMENT_TYPE`` (AUTO/PATCH/SKIP/NONE) for the release workflow.
 The actual version bump is delegated to ``cz bump`` (commitizen).
 
+Classification rules:
+- ``feat``, ``fix``, ``perf``, or ``BREAKING CHANGE`` (incl. ``!`` suffix
+  or footer) → ``AUTO`` — commitizen determines the semver bump.
+- Any other conventional commit type (``chore``, ``docs``, ``refactor``,
+  ``test``, ``style``, ``ci``, ``build``) → ``PATCH`` — at least a
+  revision bump for any intentional change.
+- No conventional commit detected → ``NONE`` — no release.
+
 Used by the ``anvil-vault detect-increment`` CLI subcommand from
 ``.github/workflows/release.yml``.
 """
@@ -77,6 +85,18 @@ def _merge_message() -> str:
     return result.stdout.strip() if result.returncode == 0 else ""
 
 
+# Commitizen bump types — cz bump automatically determines the semver
+# increment for these (major for BREAKING CHANGE, minor for feat, patch
+# for fix/perf).
+_COMMITIZEN_BUMP_TYPES = frozenset({"feat", "fix", "perf"})
+
+# Conventional commit types that are recognized but wouldn't trigger
+# a bump via ``cz bump`` alone. We force a PATCH for these.
+_OTHER_CONVENTIONAL_TYPES = frozenset(
+    {"refactor", "chore", "docs", "ci", "test", "style", "build"}
+)
+
+
 def main() -> None:
     """Print ``key=value`` lines to stdout for ``$GITHUB_OUTPUT``."""
     current = _read_version() or "unknown"
@@ -97,16 +117,41 @@ def main() -> None:
         return
 
     msg = _merge_message()
-    if msg and re.match(
-        r"^(BREAKING CHANGE|feat|fix|perf|refactor|chore|docs|ci|test|style|build)",
-        msg,
-        re.IGNORECASE,
-    ):
-        print("increment=AUTO")
-        print("version_changed=true")
-    else:
-        print("increment=NONE")
-        print("version_changed=false")
+    if msg:
+        # BREAKING CHANGE anywhere in the message → AUTO (commitizen handles
+        # the major bump from the footer or ! suffix).
+        if "BREAKING CHANGE" in msg.upper():
+            print("increment=AUTO")
+            print("version_changed=true")
+            return
+
+        # Extract the conventional commit type prefix.
+        m = re.match(r"^(\w+)", msg)
+        if m:
+            prefix = m.group(1).lower()
+            rest = msg[len(m.group(0)) :]
+
+            # feat! or fix! → BREAKING CHANGE indicator → AUTO
+            if rest.startswith("!"):
+                print("increment=AUTO")
+                print("version_changed=true")
+                return
+
+            # Types that commitizen bumps automatically.
+            if prefix in _COMMITIZEN_BUMP_TYPES:
+                print("increment=AUTO")
+                print("version_changed=true")
+                return
+
+            # Any other conventional commit → at least a patch.
+            if prefix in _OTHER_CONVENTIONAL_TYPES:
+                print("increment=PATCH")
+                print("version_changed=true")
+                return
+
+    # No conventional commit detected, or unrecognized prefix.
+    print("increment=NONE")
+    print("version_changed=false")
 
 
 if __name__ == "__main__":

@@ -121,11 +121,89 @@ def test_main_breaking_auto(capsys: pytest.CaptureFixture) -> None:
     assert "version_changed=true" in captured.out
 
 
-def test_main_chore_auto(capsys: pytest.CaptureFixture) -> None:
-    """A chore merge message classifies as AUTO (commitizen handles it)."""
+def test_main_chore_patch(capsys: pytest.CaptureFixture) -> None:
+    """A chore merge message classifies as PATCH (not AUTO)."""
     _run_main(
         capsys,
         merge_msg="chore: update deps",
+        version="0.5.0",
+        parent_ver="0.5.0",
+    )
+    captured = capsys.readouterr()
+    assert "increment=PATCH" in captured.out
+    assert "version_changed=true" in captured.out
+
+
+def test_main_docs_patch(capsys: pytest.CaptureFixture) -> None:
+    """A docs merge message classifies as PATCH."""
+    _run_main(
+        capsys,
+        merge_msg="docs: fix typo in README",
+        version="0.5.0",
+        parent_ver="0.5.0",
+    )
+    captured = capsys.readouterr()
+    assert "increment=PATCH" in captured.out
+    assert "version_changed=true" in captured.out
+
+
+def test_main_refactor_patch(capsys: pytest.CaptureFixture) -> None:
+    """A refactor merge message classifies as PATCH."""
+    _run_main(
+        capsys,
+        merge_msg="refactor: extract validation helper",
+        version="0.5.0",
+        parent_ver="0.5.0",
+    )
+    captured = capsys.readouterr()
+    assert "increment=PATCH" in captured.out
+    assert "version_changed=true" in captured.out
+
+
+def test_main_non_conventional_none(capsys: pytest.CaptureFixture) -> None:
+    """A non-conventional commit message classifies as NONE."""
+    _run_main(
+        capsys,
+        merge_msg="random update to files",
+        version="0.5.0",
+        parent_ver="0.5.0",
+    )
+    captured = capsys.readouterr()
+    assert "increment=NONE" in captured.out
+    assert "version_changed=false" in captured.out
+
+
+def test_main_feat_bang_breaking_auto(capsys: pytest.CaptureFixture) -> None:
+    """A feat!: merge message classifies as AUTO (BREAKING CHANGE via !)."""
+    _run_main(
+        capsys,
+        merge_msg="feat!: rewrite api",
+        version="0.5.0",
+        parent_ver="0.5.0",
+    )
+    captured = capsys.readouterr()
+    assert "increment=AUTO" in captured.out
+    assert "version_changed=true" in captured.out
+
+
+def test_main_chore_bang_breaking_auto(capsys: pytest.CaptureFixture) -> None:
+    """A chore: with ! suffix classifies as AUTO (BREAKING CHANGE)."""
+    _run_main(
+        capsys,
+        merge_msg="chore!: drop python 3.10",
+        version="0.5.0",
+        parent_ver="0.5.0",
+    )
+    captured = capsys.readouterr()
+    assert "increment=AUTO" in captured.out
+    assert "version_changed=true" in captured.out
+
+
+def test_main_breaking_in_footer_auto(capsys: pytest.CaptureFixture) -> None:
+    """A message with BREAKING CHANGE in the footer classifies as AUTO."""
+    _run_main(
+        capsys,
+        merge_msg="feat: add widget\n\nBREAKING CHANGE: api changed",
         version="0.5.0",
         parent_ver="0.5.0",
     )
