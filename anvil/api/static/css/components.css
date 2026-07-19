@@ -693,3 +693,187 @@ font-size: var(--text-body);
   50% { box-shadow: 0 2px 24px color-mix(in srgb, var(--accent-orange) 50%, transparent); }
 }
 
+/* ── Chat Page ── */
+.chat-message {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius);
+  max-width: 85%;
+  animation: message-entrance 0.3s var(--spring-quick) both;
+}
+@keyframes message-entrance {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.chat-message--user {
+  align-self: flex-end;
+  background: var(--accent);
+  color: #fff;
+  border-bottom-right-radius: var(--radius-sm);
+}
+.chat-message--assistant {
+  align-self: flex-start;
+  background: var(--surface-2);
+  color: var(--text);
+  border-bottom-left-radius: var(--radius-sm);
+}
+.chat-message--assistant.streaming::after {
+  content: '\u258C';
+  animation: cursor-blink 1s step-end infinite;
+  margin-left: 1px;
+}
+@keyframes cursor-blink {
+  50% { opacity: 0; }
+}
+.chat-message--cancelled {
+  opacity: 0.7;
+}
+.chat-message--cancelled .chat-message__label::after {
+  content: ' (cancelled)';
+  color: var(--text-tertiary);
+  font-size: var(--text-caption-2);
+}
+.chat-message--interrupted {
+  opacity: 0.7;
+}
+.chat-message__label {
+  font-size: var(--text-caption-2);
+  font-weight: 600;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-1);
+}
+.chat-message__text {
+  font-size: var(--text-callout);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.chat-input-area {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-end;
+  padding: var(--space-3);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+.chat-input-area textarea {
+  flex: 1;
+  resize: none;
+  min-height: 44px;
+  max-height: 120px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--text-callout);
+  line-height: 1.4;
+}
+.chat-input-area textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+.chat-send-btn {
+  min-width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+.chat-send-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.chat-send-btn:hover:not(:disabled) {
+  filter: brightness(1.15);
+}
+.chat-cancel-btn {
+  min-width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--accent-red);
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+.chat-cancel-btn:hover {
+  background: color-mix(in srgb, var(--accent-red) 10%, transparent);
+}
+.chat-context-bar {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--surface-2);
+  overflow: hidden;
+  margin-top: var(--space-1);
+}
+.chat-context-bar__fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+.chat-history {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  overflow-y: auto;
+  max-height: 60vh;
+  min-height: 200px;
+}
+.chat-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-6);
+  color: var(--text-tertiary);
+  text-align: center;
+}
+.chat-export-btn {
+  font-size: var(--text-footnote);
+  color: var(--text-tertiary);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-1) var(--space-3);
+  cursor: pointer;
+}
+.chat-export-btn:hover {
+  background: var(--surface-2);
+  color: var(--text-secondary);
+}
+.chat-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+}
+.chat-controls label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-footnote);
+  color: var(--text-secondary);
+}
+.chat-controls input[type="range"] {
+  width: 80px;
+  height: 4px;
+  accent-color: var(--accent);
+}
+
