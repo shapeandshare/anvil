@@ -40,5 +40,5 @@ Read the `TOTAL ... NN%` line. Set `fail_under` to `floor(NN)`.
 ## Gotchas
 
 - Coverage excludes migrations and system/browser tests (already configured in `[tool.coverage.run] omit`).
-- If coverage legitimately drops due to dead-code removal (e.g., removing `get_config` shim in spec 066), the numerator shrinks — account for this; don't penalize simplification.
+- If coverage legitimately drops due to dead-code removal (e.g., removing `get_config` shim in spec 083), the numerator shrinks — account for this; don't penalize simplification.
 - Document the ratcheting policy in CONTRIBUTING.md (FR-005).

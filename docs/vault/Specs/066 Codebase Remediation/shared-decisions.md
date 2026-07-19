@@ -41,7 +41,7 @@
 
 ## Decision 3 — Backward-Compatibility Strategy for config Migration
 
-**Affects**: 066 (config pydantic-settings).
+**Affects**: 083 (config pydantic-settings).
 
 **The problem**: 40 `get_config()` references across 18 files (25 use subscript `["key"]`). A big-bang migration risks breakage.
 
@@ -51,7 +51,7 @@
 
 **RECOMMENDATION**: **Option A** — dual-run. Rationale: enables incremental, testable migration (TDD-friendly), reduces blast radius per commit.
 
-**DECISION**: **Option A**. `get_config()` becomes a thin compatibility shim over `AppConfig` and is removed only after all call sites are migrated (final task of spec 066).
+**DECISION**: **Option A**. `get_config()` becomes a thin compatibility shim over `AppConfig` and is removed only after all call sites are migrated (final task of spec 083).
 
 ---
 
