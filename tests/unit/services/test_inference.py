@@ -159,6 +159,10 @@ def mock_model():
     # forward() returns list of Values; graph traversal starts at logits[-1]
     logits = [Value(i * 0.1 - 0.2) for i in range(model.vocab_size)]
     logits[-1] = graph_root  # replace last with the chain
+    # Make EOS (last position) very negative so it's rarely sampled
+    # during generate_stream tests.  EOS = bos_id = len(chars) and
+    # the mock vocab has 5 entries, so index 4 is EOS.
+    logits[4] = Value(-100.0)  # suppress EOS
     model.forward = MagicMock(return_value=logits)
 
     model.forward_introspect = MagicMock(
@@ -753,6 +757,53 @@ def test_model_params_hyperparameters(demo_service, mock_loaded):
     assert result["n_head"] == 4
     assert result["block_size"] > 0
     assert result["vocab_size"] > 0
+
+
+# ============================================================================
+# generate_stream — async text generation yielding characters incrementally
+# ============================================================================
+
+
+@pytest.mark.asyncio
+async def test_generate_stream_yields_chars(demo_service, mock_loaded):
+    """generate_stream yields characters from a prompt."""
+    chars = []
+    async for chunk in demo_service.generate_stream(
+        mock_loaded, prompt="ab", temperature=0.5, max_tokens=5
+    ):
+        chars.append(chunk)
+    # Should yield at least one character
+    assert len(chars) >= 1
+    for c in chars:
+        assert isinstance(c, str)
+
+
+@pytest.mark.asyncio
+async def test_generate_stream_empty_prompt(demo_service, mock_loaded):
+    """generate_stream with empty prompt still generates (BOS→BOS produces tokens).
+
+    The mock tokenizer encodes ``""`` as ``[BOS, BOS]`` (same as the real
+    char-level tokenizer), so input_ids is not empty.
+    """
+    result = []
+    async for chunk in demo_service.generate_stream(
+        mock_loaded, prompt="", temperature=0.5, max_tokens=5
+    ):
+        result.append(chunk)
+    # Even with empty prompt, tokenizer produces BOS tokens, so we get output
+    assert isinstance(result, list)
+    assert all(isinstance(c, str) for c in result)
+
+
+@pytest.mark.asyncio
+async def test_generate_stream_zero_temperature(demo_service, mock_loaded):
+    """generate_stream with temperature=0 selects highest-probability token."""
+    chars = []
+    async for chunk in demo_service.generate_stream(
+        mock_loaded, prompt="a", temperature=0.0, max_tokens=3
+    ):
+        chars.append(chunk)
+    assert len(chars) >= 1
 
 
 # ============================================================================

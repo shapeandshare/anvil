@@ -49,6 +49,11 @@ PAGES: list[tuple[str, str, str]] = [
         "Inference",
     ),
     (
+        "/v1/chat-page",
+        ".section-card__title",
+        "Chat with a Model",
+    ),
+    (
         "/v1/operations-page",
         ".section-card__title",
         "Operations",
