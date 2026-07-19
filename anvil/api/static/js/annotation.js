@@ -76,21 +76,54 @@
    * @param {Element} el
    * @return {boolean}
    */
-  function isAnnotationUI(el) {
+function isAnnotationUI(el) {
     while (el) {
       if (el.classList && (
-          el.classList.contains('feedback-annotation-overlay') ||
-          el.classList.contains('feedback-annotation-toolbar') ||
-          el.classList.contains('feedback-note-popup') ||
-          el.classList.contains('feedback-toggle-btn') ||
-          el.classList.contains('feedback-markers-container') ||
-          el.classList.contains('feedback-hover-highlight') ||
-          el.id === 'annotation-toolbar')) {
+        el.classList.contains('feedback-annotation-overlay') ||
+        el.classList.contains('feedback-annotation-toolbar') ||
+        el.classList.contains('feedback-note-popup') ||
+        el.classList.contains('feedback-markers-container') ||
+        el.classList.contains('feedback-marker') ||
+        el.classList.contains('feedback-toggle-btn')
+      )) {
         return true;
       }
       el = el.parentElement;
     }
     return false;
+  }
+
+  /**
+   * Extract observability data from a DOM element for coding agents.
+   * Returns a flat object with outerHTML, textContent, tagName, id,
+   * className, and key attributes.
+   * @param {Element} el
+   * @return {Object}
+   */
+  function extractElementData(el) {
+    var data = {
+      tagName: el.tagName ? el.tagName.toLowerCase() : '',
+      id: el.id || '',
+      className: (el.className && typeof el.className === 'string') ? el.className : '',
+      textContent: (el.textContent || '').substring(0, 500),
+      outerHTML: (el.outerHTML || '').substring(0, 2000),
+      selector: generateSelector(el)
+    };
+
+    // Capture key attributes
+    var attrs = ['href', 'src', 'alt', 'title', 'value', 'type', 'placeholder',
+                 'role', 'aria-label', 'aria-describedby', 'disabled', 'href',
+                 'target', 'rel', 'for', 'name'];
+    data.attributes = {};
+    for (var ai = 0; ai < attrs.length; ai++) {
+      var attrName = attrs[ai];
+      var attrVal = el.getAttribute(attrName);
+      if (attrVal !== null && attrVal !== '') {
+        data.attributes[attrName] = attrVal;
+      }
+    }
+
+    return data;
   }
 
   /**
@@ -148,6 +181,7 @@
     this._manageAnnotations = null;   // [{index, annotation}, ...] for current element
     this._manageRect = null;          // Bounding rect of clicked element
     this._manageSelector = null;      // CSS selector of clicked element
+    this._manageElementInfo = null;   // Enriched element data (outerHTML, etc.)
     this._manageSubMode = null;       // 'edit' or 'add' when in editor sub-mode
     this._manageEditingIdx = -1;      // Index into _manageAnnotations for edit target
 
@@ -649,7 +683,7 @@
       // Show manage popup with existing annotations
       var popupX = rect.left + rect.width + 10;
       var popupY = rect.top;
-      this._showManagePopup(popupX, popupY, matchingAnnotations, rect, selector);
+      this._showManagePopup(popupX, popupY, matchingAnnotations, rect, selector, extractElementData(el));
       return;
     }
 
@@ -660,7 +694,8 @@
         y: Math.round(rect.top),
         width: Math.round(rect.width),
         height: Math.round(rect.height),
-        selector: selector
+        selector: selector,
+        elementInfo: extractElementData(el)
       }
     };
 
@@ -913,29 +948,15 @@
    * @param {Array} matchingAnnotations  [{index, annotation}, ...].
    * @param {Object} rect  Bounding rect of the clicked element.
    * @param {string} selector  CSS selector of the clicked element.
+   * @param {Object} elementInfo  Enriched element data for coding agents.
    */
-  AnnotationCanvas.prototype._showManagePopup = function(x, y, matchingAnnotations, rect, selector) {
+  AnnotationCanvas.prototype._showManagePopup = function(x, y, matchingAnnotations, rect, selector, elementInfo) {
     var self = this;
     this._removeNotePopup();
 
-    var popup = document.createElement('div');
-    popup.className = 'feedback-note-popup feedback-note-popup--manage';
-
-    // Position within viewport bounds
-    var popupW = 300;
-    var popupH = matchingAnnotations.length * 52 + 130;
-    popupH = Math.max(200, Math.min(popupH, 360));
-    var posX = Math.min(x, window.innerWidth - popupW - 10);
-    var posY = Math.min(y, window.innerHeight - popupH - 10);
-    posX = Math.max(10, posX);
-    posY = Math.max(10, posY);
-    popup.style.left = posX + 'px';
-    popup.style.top = posY + 'px';
-
-    // Store manage state
-    this._manageAnnotations = matchingAnnotations;
     this._manageRect = rect;
     this._manageSelector = selector;
+    this._manageElementInfo = elementInfo;
     this._manageSubMode = null;
     this._manageEditingIdx = -1;
 
@@ -1158,16 +1179,20 @@
 
     if (this._manageSubMode === 'add') {
       var rect = this._manageRect;
+      var addData = {
+        x: Math.round(rect.left),
+        y: Math.round(rect.top),
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+        selector: this._manageSelector
+      };
+      if (this._manageElementInfo) {
+        addData.elementInfo = this._manageElementInfo;
+      }
       this._annotations.push({
         type: 'element',
         note: note,
-        data: {
-          x: Math.round(rect.left),
-          y: Math.round(rect.top),
-          width: Math.round(rect.width),
-          height: Math.round(rect.height),
-          selector: this._manageSelector
-        }
+        data: addData
       });
     } else if (this._manageSubMode === 'edit' && this._manageEditingIdx >= 0) {
       var item = this._manageAnnotations[this._manageEditingIdx];
@@ -1386,6 +1411,8 @@
     formData.append('viewport_width', String(window.innerWidth));
     formData.append('viewport_height', String(window.innerHeight));
     formData.append('reporter_id', 'default');
+    formData.append('document_title', document.title);
+    formData.append('user_agent', navigator.userAgent);
 
     // Build annotations array
     var annotations = [];

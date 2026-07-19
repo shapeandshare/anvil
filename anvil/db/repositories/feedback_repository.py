@@ -50,6 +50,8 @@ class FeedbackRepository:
         annotated_path: str | None = None,
         reporter_id: str = "default",
         notes_summary: str | None = None,
+        document_title: str | None = None,
+        user_agent: str | None = None,
     ) -> FeedbackReport:
         """Persist a new feedback report and flush to generate its
         primary key.
@@ -71,6 +73,10 @@ class FeedbackRepository:
             Defaults to ``"default"``.
         notes_summary : str, optional
             Optional summary text for the report.
+        document_title : str, optional
+            Document title at annotation time.
+        user_agent : str, optional
+            Browser user agent string at annotation time.
 
         Returns
         -------
@@ -85,6 +91,8 @@ class FeedbackRepository:
             annotated_path=annotated_path,
             reporter_id=reporter_id,
             notes_summary=notes_summary,
+            document_title=document_title,
+            user_agent=user_agent,
         )
         self._session.add(report)
         await self._session.flush()
