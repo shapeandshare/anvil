@@ -4,20 +4,17 @@
     "type": "split",
     "children": [
       {
-        "id": "d4b39757271ce3b1",
+        "id": "574c566b442267e3",
         "type": "tabs",
         "children": [
           {
-            "id": "7c4c70e65afd5606",
+            "id": "155f78efb7c5e829",
             "type": "leaf",
             "state": {
-              "type": "bases",
-              "state": {
-                "file": "Specs/Specs.base",
-                "viewName": "Table"
-              },
-              "icon": "lucide-table",
-              "title": "Specs"
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "New tab"
             }
           }
         ]
@@ -93,7 +90,6 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Specs/Specs.base",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -103,7 +99,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for Specs"
+              "title": "Backlinks"
             }
           },
           {
@@ -180,12 +176,15 @@
       "bases:Create new base": false
     }
   },
-  "active": "7c4c70e65afd5606",
+  "active": "155f78efb7c5e829",
   "lastOpenFiles": [
-    "Specs/082 Paperclip Bootstrap/spec.md",
-    "Specs/069 Route DI Cleanup/069 Route DI Cleanup.md",
     "Specs/Specs.base",
-    "Specs/Specs.md",
+    "Specs/065 Adapter Catalog Entries/065 Adapter Catalog Entries.md",
+    "Specs/084 SaaS Abstraction Framework/contracts/job_queue.py",
+    "Specs/084 SaaS Abstraction Framework/contracts/filestore.py",
+    "Specs/084 SaaS Abstraction Framework/contracts/event_bus.py",
+    "Specs/084 SaaS Abstraction Framework/contracts/compute_backend.py",
+    "Specs/084 SaaS Abstraction Framework/contracts",
     "Specs/084 SaaS Abstraction Framework/084 SaaS Abstraction Framework.md",
     "Specs/084 SaaS Abstraction Framework/084 SaaS Abstraction Framework - tasks.md",
     "Specs/084 SaaS Abstraction Framework/084 SaaS Abstraction Framework - spec.md",
@@ -193,30 +192,26 @@
     "Specs/084 SaaS Abstraction Framework/084 SaaS Abstraction Framework - quickstart.md",
     "Specs/084 SaaS Abstraction Framework/084 SaaS Abstraction Framework - plan.md",
     "Specs/084 SaaS Abstraction Framework/084 SaaS Abstraction Framework - data-model.md",
-    "Specs/062 Non-Educational Help Guide/062 Non-Educational Help Guide.md",
-    "Specs/084 SaaS Abstraction Framework/contracts/job_queue.py",
-    "Specs/084 SaaS Abstraction Framework/contracts/filestore.py",
-    "Specs/084 SaaS Abstraction Framework/contracts/event_bus.py",
-    "Specs/084 SaaS Abstraction Framework/contracts/compute_backend.py",
-    "Specs/084 SaaS Abstraction Framework/contracts",
-    "Specs/084 SaaS Abstraction Framework/028 SaaS Abstraction Framework.md",
-    "Specs/084 SaaS Abstraction Framework/028 SaaS Abstraction Framework - tasks.md",
-    "Specs/084 SaaS Abstraction Framework/028 SaaS Abstraction Framework - spec.md",
-    "Specs/084 SaaS Abstraction Framework/028 SaaS Abstraction Framework - research.md",
-    "Specs/084 SaaS Abstraction Framework/028 SaaS Abstraction Framework - quickstart.md",
-    "Specs/084 SaaS Abstraction Framework/028 SaaS Abstraction Framework - plan.md",
-    "Specs/084 SaaS Abstraction Framework/028 SaaS Abstraction Framework - data-model.md",
     "Specs/084 SaaS Abstraction Framework",
-    "Specs/062 Non-Educational Help Guide/contracts/http-route.md",
     "Specs/062 Non-Educational Help Guide/contracts/template-interface.md",
+    "Specs/062 Non-Educational Help Guide/contracts/http-route.md",
     "Specs/062 Non-Educational Help Guide/checklists/requirements.md",
     "Specs/062 Non-Educational Help Guide/tasks.md",
     "Specs/062 Non-Educational Help Guide/spec.md",
     "Specs/062 Non-Educational Help Guide/research.md",
     "Specs/062 Non-Educational Help Guide/quickstart.md",
     "Specs/062 Non-Educational Help Guide/plan.md",
+    "Specs/062 Non-Educational Help Guide/data-model.md",
     "Specs/062 Non-Educational Help Guide/contracts",
     "Specs/062 Non-Educational Help Guide/checklists",
-    "Specs/062 Non-Educational Help Guide"
+    "Specs/062 Non-Educational Help Guide/062 Non-Educational Help Guide.md",
+    "Specs/062 Non-Educational Help Guide",
+    "Specs/076 Inference Service Decomposition/076 Inference Service Decomposition.md",
+    "Specs/071 Service DI Injection/071 Service DI Injection.md",
+    "Specs/028 SaaS Abstraction Framework/028 SaaS Abstraction Framework.md",
+    "Specs/028 SaaS Abstraction Framework/028 SaaS Abstraction Framework - tasks.md",
+    "Specs/028 SaaS Abstraction Framework/028 SaaS Abstraction Framework - spec.md",
+    "Specs/028 SaaS Abstraction Framework/028 SaaS Abstraction Framework - research.md",
+    "Specs/028 SaaS Abstraction Framework/028 SaaS Abstraction Framework - quickstart.md"
   ]
 }
