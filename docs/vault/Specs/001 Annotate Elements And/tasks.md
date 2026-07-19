@@ -54,6 +54,7 @@
 - [ ] T018 [P] Add `get /v1/feedback-page` route handler in `anvil/api/v1/pages.py` (renders `feedback.html` template)
 - [ ] T019 [P] Add "Feedback" nav tab to `anvil/api/templates/base.html` after the "Ops" tab
 - [ ] T020 [P] Load `html-to-image` CDN script and `annotation.js` in `anvil/api/templates/base.html` (before `</body>`)
+- [ ] T020a [P] Include `annotation-toolbar.html` partial in `anvil/api/templates/base.html` via `{% include "partials/annotation-toolbar.html" %}` (inside the app shell, before the modals container)
 
 **Checkpoint**: Foundation ready — user story implementation can now begin in parallel
 
@@ -169,6 +170,8 @@
 - [ ] T076 [P] **UX compliance gate**: Run `make ux-lint` on all changed UI/template/CSS files — must pass GATE: PASS before merge
 - [ ] T077 [P] **AI UX review**: Run `make ux-review FILES=anvil/api/templates/feedback.html,anvil/api/templates/partials/annotation-toolbar.html,anvil/api/static/css/feedback.css,anvil/api/static/js/annotation.js` with `UX_API_KEY` set
 - [ ] T078 [P] Add `prefers-reduced-motion` support for annotation overlay animations in `anvil/api/static/css/feedback.css`
+- [ ] T078a [P] Add Playwright e2e test for annotation pixel accuracy — place annotations at known screen coordinates, submit, and verify coordinates are preserved within 1px tolerance in `tests/e2e/test_feedback.py`
+- [ ] T078b [P] Add Playwright e2e test for annotation overlay non-blocking performance — verify annotation mode does not drop below 30fps during drawing operations on a mid-complexity page in `tests/e2e/test_feedback.py`
 - [ ] T079 [P] Add `:focus-visible` styles for all annotation toolbar buttons in `anvil/api/static/css/feedback.css`
 - [ ] T080 [P] Test annotation mode in both dark and light mode themes
 - [ ] T081 [P] Add loading states for screenshot capture and submission in `anvil/api/static/js/annotation.js`
@@ -271,4 +274,4 @@ With multiple developers:
 - Verify tests fail before implementing
 - Commit after each task or logical group
 - Stop at any checkpoint to validate story independently
-- Total tasks: 86 (11 Setup + 9 Foundational + 16 US1 + 11 US2 + 28 US3 + 11 Polish)
+- Total tasks: 89 (11 Setup + 10 Foundational + 16 US1 + 11 US2 + 28 US3 + 13 Polish)

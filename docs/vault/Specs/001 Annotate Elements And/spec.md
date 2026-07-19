@@ -108,15 +108,14 @@ An administrator or developer reviews feedback submissions to see what users hav
 - **FR-007**: Users MUST be able to review, edit, and delete their annotations (both element markers and circles) before submission.
 - **FR-008**: Users MUST be able to submit all annotations as a single feedback report.
 - **FR-009**: Each submitted feedback report MUST include: the page URL, a timestamp, the viewport screenshot with all annotations overlaid, and the text of each note.
-- **FR-010**: Submitted feedback reports MUST be persisted and viewable in a feedback management interface.
+- **FR-010**: Submitted feedback reports MUST be persisted via the app database and file storage, and accessible via an in-app feedback dashboard within the existing admin/operations interface, viewable by users with administrative privileges.
 - **FR-011**: Administrators MUST be able to view submitted feedback reports, see all annotations on the screenshot, read notes, and update the report status (e.g., open, in progress, resolved).
 - **FR-012**: The system MUST warn users before they navigate away or close the tab while unsaved annotations exist.
 - **FR-013**: Notes MUST have a maximum length of 2000 characters.
-- **FR-014**: Submitted feedback reports MUST be accessible via an in-app feedback dashboard within the existing admin/operations interface, viewable by users with administrative privileges.
-- **FR-015**: Administrators MUST be able to delete individual feedback reports, with confirmation, from the feedback dashboard.
-- **FR-016**: The feedback dashboard MUST support bulk selection and deletion of multiple feedback reports at once.
-- **FR-017**: Administrators MUST be able to export individual feedback reports as a structured machine-readable format (JSON with all metadata, annotations, notes, and page URL) plus the annotated screenshot image.
-- **FR-018**: The export format MUST include sufficient structure (coordinates, element selectors, note text, annotation types) for automated agents to parse and act on the feedback.
+- **FR-014**: Administrators MUST be able to delete individual feedback reports, with confirmation, from the feedback dashboard.
+- **FR-015**: The feedback dashboard MUST support bulk selection and deletion of multiple feedback reports at once.
+- **FR-016**: Administrators MUST be able to export individual feedback reports as a structured machine-readable format (JSON with all metadata, annotations, notes, and page URL) plus the annotated screenshot image.
+- **FR-017**: The export format MUST include sufficient structure (coordinates, element selectors, note text, annotation types) for automated agents to parse and act on the feedback.
 
 ### Key Entities
 
