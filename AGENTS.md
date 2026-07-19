@@ -1,6 +1,6 @@
 # anvil — Agent Guidelines
 
-**Last updated**: 2026-07-19 (constitution v1.8.0: Article XI Simplicity First / Boring Technology + ADR-041; sonarcloud-tooling + content-repository-016-mvp; scripts-python-over-bash + package-module-migration, testing-guide consolidation; OWASP remediation spec 017 + ADRs 035/036; whole-API e2e test suite 017; TDD workflow enforcement in testing section, Principle 2, and Architecture Rules)
+**Last updated**: 2026-07-19 (temporarily disabled SonarCloud CI integration — see #temporary-disable-sonarcloud)
 
 ## Project Overview
 
@@ -33,13 +33,13 @@ The design system is implemented via CSS custom properties in `anvil/api/static/
 | `make vault-audit-apply` | Run vault audit with safe auto-fixes |
 | `make vault-audit-diff` | Preview audit auto-fixes (no changes) |
 | `make vault-audit-fast` | Mechanical audit only (skip graph-health) |
-| `make sonar-scan` | Run SonarCloud analysis (`brew install sonar-scanner` + `SONAR_TOKEN` req.) |
-| `make sonar-scan-docker` | Run SonarCloud analysis via Docker (no local install) |
-| `make sonar-status` | Fetch quality gate status from SonarCloud API |
-| `make sonar-issues` | Fetch open bugs/vulnerabilities/code smells |
-| `make sonar-measures` | Fetch quality metrics (coverage, duplications, ratings) |
-| `make sonar-mcp` | Start SonarCloud MCP server for OpenCode/Claude integration (Docker) |
-| `make sonar-full` | Run tests with coverage + SonarCloud analysis |
+| ~~`make sonar-scan`~~ | **[DISABLED]** Run SonarCloud analysis (see #temporary-disable-sonarcloud) |
+| ~~`make sonar-scan-docker`~~ | **[DISABLED]** Run SonarCloud analysis via Docker |
+| ~~`make sonar-status`~~ | **[DISABLED]** Fetch quality gate status from SonarCloud API |
+| ~~`make sonar-issues`~~ | **[DISABLED]** Fetch open bugs/vulnerabilities/code smells |
+| ~~`make sonar-measures`~~ | **[DISABLED]** Fetch quality metrics (coverage, duplications, ratings) |
+| ~~`make sonar-mcp`~~ | **[DISABLED]** Start SonarCloud MCP server for OpenCode/Claude integration (Docker) |
+| ~~`make sonar-full`~~ | **[DISABLED]** Run tests with coverage + SonarCloud analysis |
 | `make ux-lint` | Run deterministic UX lint (mechanical S4 gate) |
 | `make ux-review` | Run AI UX review (requires UX_API_KEY) |
 

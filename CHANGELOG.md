@@ -1,3 +1,10 @@
+## v0.16.4 (2026-07-19)
+
+### Fix
+
+- style related-lessons chips as filled accent buttons (#407)
+- move Related Lessons above dataset table on datasets page (#406)
+
 ## v0.16.3 (2026-07-19)
 
 ### Fix

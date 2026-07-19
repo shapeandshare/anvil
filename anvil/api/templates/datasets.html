@@ -45,6 +45,11 @@
   </select>
 </div>
 
+
+  
+{# ── Related Lessons (above the list) ── #}
+{% include "partials/related-lessons.html" %}
+
 {# ── Unified Data Table ── #}
 <div class="section-card" style="--stagger-i:1">
   <div id="combined-table-container" class="ds-table-wrapper" style="overflow-x:auto;">
@@ -65,8 +70,6 @@
     </div>
   </div>
 </div>
-
-{% include "partials/related-lessons.html" %}
 
 {% endblock %}
 {% block scripts %}
