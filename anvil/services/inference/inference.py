@@ -2089,9 +2089,7 @@ class InferenceService:
                 break
 
             scaled = (
-                [logit / temperature for logit in logits]
-                if temperature > 0
-                else logits
+                [logit / temperature for logit in logits] if temperature > 0 else logits
             )
             probs = softmax(scaled)
             next_id = random.choices(

@@ -436,8 +436,8 @@ async def auth_middleware(
         # can conditionally show auth-gated UI (e.g. annotation button).
         session_store = get_session_store()
         session_id = request.cookies.get(SESSION_COOKIE_NAME)
-        request.state.authenticated = (
-            session_id is not None and session_store.validate(session_id)
+        request.state.authenticated = session_id is not None and session_store.validate(
+            session_id
         )
         return await call_next(request)
 

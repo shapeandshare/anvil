@@ -33,7 +33,9 @@ async def create_feedback_report(
     annotations: str = Form("[]", description="JSON array of annotation objects"),
     reporter_id: str = Form("default", description="Reporter identifier"),
     notes_summary: str | None = Form(None, description="Optional summary note"),
-    document_title: str | None = Form(None, description="Document title at annotation time"),
+    document_title: str | None = Form(
+        None, description="Document title at annotation time"
+    ),
     user_agent: str | None = Form(None, description="Browser user agent string"),
     screenshot: UploadFile | None = None,
     annotated: UploadFile | None = None,
