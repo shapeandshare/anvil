@@ -196,6 +196,11 @@ window.apiFetch = function(url, opts) {
 {% if request.state.authenticated %}
 <script nonce="{{ request.state.csp_nonce }}">
 (function() {
+  // Destroy any stale canvas from a previous SPA navigation
+  if (window._annotationCanvas) {
+    window._annotationCanvas.destroy();
+    window._annotationCanvas = null;
+  }
   var p = window.location.pathname;
   if (p === '/v1/feedback-page' || p === '/login') return;
   var container = document.querySelector('.app-main') || document.body;
