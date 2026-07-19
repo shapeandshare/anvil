@@ -2,7 +2,7 @@
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-07-19
-**Feature**: [spec.md](../../specs/001-inference-chat-split/spec.md)
+**Feature**: [spec](../001%20Inference%20Chat%20Split%20-%20spec.md)
 
 ## Content Quality
 

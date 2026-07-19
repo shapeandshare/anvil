@@ -1,6 +1,6 @@
 # Implementation Plan: Play → Inference (Rename) + New Chat Page
 
-**Branch**: `001-inference-chat-split` | **Date**: 2026-07-19 | **Spec**: [spec.md](spec.md)
+**Branch**: `001-inference-chat-split` | **Date**: 2026-07-19 | **Spec**: [spec](085%20Inference%20Chat%20Split%20-%20spec.md)
 
 ## Summary
 
@@ -50,13 +50,13 @@ Two-part feature: (1) Rename the existing "Play" nav label to "Inference" with z
 ### Documentation (this feature)
 
 ```text
-specs/001-inference-chat-split/
-├── spec.md              # Feature specification
-├── plan.md              # This file
-├── research.md          # Phase 0 — pattern analysis
-├── data-model.md        # Phase 1 — in-memory chat data structures
-├── quickstart.md        # Phase 1 — implementation steps
-└── contracts/           # Phase 1 — API contracts
+docs/vault/Specs/085 Inference Chat Split/
+├── 085 Inference Chat Split - spec.md       # Feature specification
+├── 085 Inference Chat Split - plan.md       # This file
+├── 085 Inference Chat Split - research.md   # Phase 0 — pattern analysis
+├── 085 Inference Chat Split - data-model.md # Phase 1 — in-memory chat data structures
+├── 085 Inference Chat Split - quickstart.md # Phase 1 — implementation steps
+└── contracts/                               # Phase 1 — API contracts
     └── chat-stream.md
 ```
 

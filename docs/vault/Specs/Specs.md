@@ -102,7 +102,7 @@ Start here to see what has been specified, what is in progress, and what shipped
 - [[Specs/082 Paperclip Bootstrap/082 Paperclip Bootstrap|082 Paperclip Bootstrap]]
 - [[Specs/083 Config Pydantic Settings/083 Config Pydantic Settings|083 Config Pydantic Settings]]
 - [[Specs/084 SaaS Abstraction Framework/084 SaaS Abstraction Framework|084 SaaS Abstraction Framework]]
-- [[Specs/001 Inference Chat Split/001 Inference Chat Split|001 Inference Chat Split]]
+- [[Specs/085 Inference Chat Split/085 Inference Chat Split|085 Inference Chat Split]]
 
 ## Reverse-Proxy / Single-Origin Consolidation (ADR-035 → ADR-037 → 056)
 
