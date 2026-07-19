@@ -840,6 +840,8 @@ function isAnnotationUI(el) {
         height: Math.round(rect.height),
         selector: selector,
         elementInfo: extractElementData(el),
+        scrollX: window.scrollX || window.pageXOffset || 0,
+        scrollY: window.scrollY || window.pageYOffset || 0,
         containedElements: this._findContainedElements(rect)
       }
     };
@@ -907,7 +909,9 @@ function isAnnotationUI(el) {
       type: 'freehand',
       data: {
         path: this._drawPath,
-        bounds: { minX: minX, minY: minY, maxX: maxX, maxY: maxY }
+        bounds: { minX: minX, minY: minY, maxX: maxX, maxY: maxY },
+        scrollX: window.scrollX || window.pageXOffset || 0,
+        scrollY: window.scrollY || window.pageYOffset || 0
       }
     };
 
@@ -1330,6 +1334,8 @@ function isAnnotationUI(el) {
         width: Math.round(rect.width),
         height: Math.round(rect.height),
         selector: this._manageSelector,
+        scrollX: window.scrollX || window.pageXOffset || 0,
+        scrollY: window.scrollY || window.pageYOffset || 0,
         containedElements: this._findContainedElements(rect)
       };
       if (this._manageElementInfo) {
