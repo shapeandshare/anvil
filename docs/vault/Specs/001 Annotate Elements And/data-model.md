@@ -15,14 +15,13 @@ Represents a single feedback submission — a collection of annotations captured
 | `screenshot_path` | `str` (512) | Yes | `None` | Relative path in LocalFileStore to the raw screenshot |
 | `annotated_path` | `str` (512) | Yes | `None` | Relative path in LocalFileStore to the annotated screenshot |
 | `status` | `FeedbackStatus` | No | `OPEN` | Report status: `open`, `in_progress`, `resolved` |
-| `reporter_id` | `int` FK | Yes | `None` | References `User` who submitted (nullable for anonymous) |
+| `reporter_id` | `str` (255) | No | `"default"` | String identifier of the submitting session (no FK — the codebase has no `User` table; follows the `UserSecret.user_id` string-identifier pattern; always `"default"` in single-user mode) |
 | `notes_summary` | `str` (1000) | Yes | `None` | Optional brief summary of the issue |
 | `created_at` | `datetime` | No | `utcnow()` | When the report was submitted |
 | `updated_at` | `datetime` | No | `utcnow()` | Last update timestamp |
 
 **Relationships**:
 - `FeedbackReport` 1──N `FeedbackAnnotation` (cascade delete)
-- `FeedbackReport` N──1 `User` (optional, via `reporter_id`)
 
 **Validation Rules**:
 - `page_url` must be a valid URL path (starts with `/`)
@@ -89,6 +88,8 @@ Represents a single annotation (element marker, circle, or freehand stroke) with
 
 ## Enums
 
+Both enums live in `anvil/db/models/` (e.g., `feedback_status.py`, `annotation_type.py`), following the `teaching_session_status.py` precedent — DB-status enums co-locate with the ORM models that consume them, preserving layer discipline (the DB layer never imports from the service layer).
+
 ### FeedbackStatus (StrEnum)
 ```python
 class FeedbackStatus(StrEnum):
@@ -151,8 +152,8 @@ def feedback_dir(self) -> Path:
 
 ## Alembic Migration
 
-A new migration adds two tables:
+A new hand-written numbered migration file `anvil/_resources/migrations/versions/015_add_feedback_reports.py` (following the `011_add_teaching_sessions.py` pattern) adds two tables:
 - `feedback_reports` — columns matching `FeedbackReport` fields above
 - `feedback_annotations` — columns matching `FeedbackAnnotation` fields above
 
-Both tables use the existing `TimestampMixin` for `created_at`/`updated_at`.
+Both tables use the existing `TimestampMixin` for `created_at`/`updated_at`. Migrations apply automatically at app startup via `ANVIL_DB_AUTO_MIGRATE` (there is no `make db-revision` target — migration files are written by hand with sequential numbering).

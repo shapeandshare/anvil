@@ -6,9 +6,9 @@ Follow this order to implement the feature incrementally:
 
 ### Step 1: Data Layer
 
-1. **Add enums** — Create `FeedbackStatus` and `AnnotationType` `StrEnum` classes in `anvil/services/feedback/`
+1. **Add enums** — Create `FeedbackStatus` in `anvil/db/models/feedback_status.py` and `AnnotationType` in `anvil/db/models/annotation_type.py` (following the `teaching_session_status.py` pattern — DB enums live in the DB layer)
 2. **Create DB model** — `anvil/db/models/feedback_report.py` with `FeedbackReport` and `FeedbackAnnotation` ORM models
-3. **Add Alembic migration** — `make db-revision` to create `feedback_reports` and `feedback_annotations` tables
+3. **Write migration** — Hand-write `anvil/_resources/migrations/versions/015_add_feedback_reports.py` following the `011_add_teaching_sessions.py` pattern (migrations auto-apply at startup via `ANVIL_DB_AUTO_MIGRATE`; there is no `make db-revision` target)
 4. **Add WorkspacePaths property** — Add `feedback_dir` to `anvil/workspace/workspace_paths.py`
 5. **Create repository** — `anvil/db/repositories/feedback_repository.py` with `FeedbackRepository`
 
@@ -31,9 +31,10 @@ Follow this order to implement the feature incrementally:
 
 ### Step 4: Frontend
 
+9a. **Vendor library** — Download the `html-to-image` IIFE/UMD build (v1.11.11) into `anvil/api/static/js/lib/html-to-image.js` (mandatory: CSP blocks CDN scripts on app routes)
 10. **Create CSS** — `anvil/api/static/css/feedback.css` for annotation overlay styles
 11. **Create JS** — `anvil/api/static/js/annotation.js` with `AnnotationCanvas` class:
-    - Screenshot capture via `html-to-image`
+    - Screenshot capture via vendored `html-to-image`
     - Canvas initialization with DPR scaling
     - Drawing tools (element click, circle, freehand)
     - Annotation management (add/edit/delete/reorder)
@@ -67,9 +68,6 @@ python -m pytest tests/e2e/test_feedback.py -v
 
 # Run all tests
 make test
-
-# Create Alembic migration
-make db-revision msg="add feedback reports and annotations tables"
 
 # Type check
 make typecheck

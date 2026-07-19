@@ -10,13 +10,13 @@ Add a visual feedback annotation tool to the anvil web UI. Users enter an annota
 ## Technical Context
 
 **Language/Version**: Python 3.11+ (backend) + Vanilla JavaScript ES2020 (frontend — no transpiler/bundler)  
-**Primary Dependencies**: Existing stack (FastAPI, Jinja2, async SQLAlchemy, aiosqlite) + `html-to-image` (CDN-loaded, for DOM-to-canvas screenshot capture)  
-**Storage**: LocalFileStore at `data/feedback/{report_id}/screenshot.png`; SQLite `anvil-state.db` via new `FeedbackReport` + `Annotation` DB models  
+**Primary Dependencies**: Existing stack (FastAPI, Jinja2, async SQLAlchemy, aiosqlite) + `html-to-image` (vendored locally at `anvil/api/static/js/lib/` — the strict CSP `script-src 'self' 'nonce-…'` blocks external CDN scripts on app routes)  
+**Storage**: LocalFileStore at `data/feedback/{report_id}/screenshot.png`; SQLite `anvil-state.db` via new `FeedbackReport` + `FeedbackAnnotation` DB models  
 **Testing**: pytest (unit + API) + Playwright (browser e2e for annotation canvas interactions)  
 **Target Platform**: Modern web browser (Chrome 90+, Safari 15+, Firefox 90+)  
 **Project Type**: Web application (monolith — FastAPI server + Jinja2 templates + vanilla JS)  
 **Performance Goals**: Annotation mode activates in <500ms; screenshot capture completes in <3s on a typical page; annotation overlay operates at 60fps  
-**Constraints**: Zero new npm/Python runtime dependencies (all CDN/vendored JS); no server-side screenshot processing; client-side only capture  
+**Constraints**: Zero new npm/Python runtime dependencies (JS vendored into `static/js/lib/`); CSP forbids external CDN scripts on app routes; no server-side screenshot processing; client-side only capture  
 **Scale/Scope**: Single-page viewport capture only (no full-page scrolling); supports ~50 annotations per report; ~1000 feedback reports before admin review needed
 
 ## Constitution Check
@@ -26,7 +26,7 @@ Add a visual feedback annotation tool to the anvil web UI. Users enter an annota
 **Simplicity First gate (Article XI — hard MUST)**:
 
 - [x] **Simplest viable** (§11.1) — Client-side DOM capture via `html-to-image` is the simplest approach for viewport screenshots. No server-side headless browser needed.
-- [x] **Boring over novel** (§11.2) — Uses existing project stack (FastAPI, Jinja2, SQLAlchemy, LocalFileStore). Only new frontend dependency is `html-to-image` (CDN, 4.5M weekly downloads, battle-tested).
+- [x] **Boring over novel** (§11.2) — Uses existing project stack (FastAPI, Jinja2, SQLAlchemy, LocalFileStore). Only new frontend dependency is `html-to-image` (vendored, 4.5M weekly downloads, battle-tested).
 - [x] **YAGNI** (§11.3) — No speculative generality: annotation tools limited to element click, circles, and freehand. No full-page capture, no video recording, no collaboration features.
 - [x] **Reuse first** (§11.4) — Reuses existing LocalFileStore, Repository pattern, service layer, CSS token system, nav-bar pattern, modal component, and toast notification system.
 - [x] **Testable** (§11.6) — Each annotation tool is independently testable via Playwright. API endpoints follow existing e2e patterns. Screenshot capture testable with known DOM fixtures.
@@ -68,7 +68,9 @@ anvil/
 │   │   ├── css/
 │   │   │   └── feedback.css        # NEW — annotation overlay + feedback dashboard styles
 │   │   └── js/
-│   │       └── annotation.js       # NEW — annotation mode, canvas, drawing tools
+│   │       ├── annotation.js       # NEW — annotation mode, canvas, drawing tools
+│   │       └── lib/
+│   │           └── html-to-image.js  # NEW — vendored DOM-capture library (CSP requires local)
 │   ├── templates/
 │   │   ├── feedback.html           # NEW — feedback dashboard template
 │   │   ├── partials/

@@ -5,7 +5,7 @@
 ## 1. Screenshot Capture Library
 
 ### Decision
-Use **`html-to-image`** (CDN-loaded) for client-side DOM → canvas screenshot capture.
+Use **`html-to-image`** (vendored locally) for client-side DOM → canvas screenshot capture.
 
 ### Rationale
 - 4.5M weekly npm downloads — the most widely used and battle-tested library in this category
@@ -24,8 +24,8 @@ Use **`html-to-image`** (CDN-loaded) for client-side DOM → canvas screenshot c
 | **Server-side headless browser** | Adds infrastructure complexity (chromium/playwright on server). Violates Simplicity First §11.1. |
 
 ### Integration Approach
-- Load `html-to-image` from CDN (`https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/+esm`) as an ES module
-- Alternatively vendor it into `anvil/api/static/js/lib/html-to-image.js` for offline/air-gapped use
+- **Vendor the library locally** into `anvil/api/static/js/lib/html-to-image.js` (IIFE/UMD build, v1.11.11). **This is mandatory, not optional**: the app's CSP on all application routes is `script-src 'self' 'nonce-…'` (set in `anvil/api/app.py`) — external CDN scripts are blocked. The relaxed CDN-permissive CSP applies only to `/docs`/`/redoc` routes. Vendoring also preserves offline/air-gapped operation and matches the codebase's zero-external-dependency frontend (no existing template loads any CDN script).
+- Load via `<script src="/static/js/lib/html-to-image.js"></script>` in `base.html` — `'self'` satisfies the CSP
 - Call `toPng(document.body, { pixelRatio: devicePixelRatio })` when annotation mode activates
 - The resulting data URL becomes the background of the annotation canvas
 

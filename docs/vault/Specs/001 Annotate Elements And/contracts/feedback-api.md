@@ -117,7 +117,7 @@ GET /v1/feedback/{id}
   "viewport_width": 1440,
   "viewport_height": 900,
   "status": "open",
-  "reporter_id": 1,
+  "reporter_id": "default",
   "notes_summary": null,
   "annotations": [
     {

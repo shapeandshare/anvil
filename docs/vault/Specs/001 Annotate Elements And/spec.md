@@ -79,7 +79,7 @@ An administrator or developer reviews feedback submissions to see what users hav
 
 1. **Given** a feedback report has been submitted, **When** an admin views the feedback dashboard, **Then** the report appears in a list with timestamp, page URL, and annotation count
 2. **Given** an admin opens a submitted feedback report, **When** they view the report details, **Then** they see a screenshot of the page with all annotations (element markers and circles) overlaid at their original positions, along with the associated notes
-3. **Given** an admin reviews a feedback report, **When** they mark it as resolved or add a response, **Then** the status is updated and visible to the original reporter
+3. **Given** an admin reviews a feedback report, **When** they mark it as resolved, **Then** the status is updated and reflected in the feedback dashboard list
 
 ---
 
@@ -108,7 +108,7 @@ An administrator or developer reviews feedback submissions to see what users hav
 - **FR-007**: Users MUST be able to review, edit, and delete their annotations (both element markers and circles) before submission.
 - **FR-008**: Users MUST be able to submit all annotations as a single feedback report.
 - **FR-009**: Each submitted feedback report MUST include: the page URL, a timestamp, the viewport screenshot with all annotations overlaid, and the text of each note.
-- **FR-010**: Submitted feedback reports MUST be persisted via the app database and file storage, and accessible via an in-app feedback dashboard within the existing admin/operations interface, viewable by users with administrative privileges.
+- **FR-010**: Submitted feedback reports MUST be persisted via the app database and file storage, and accessible via an in-app feedback dashboard page, reachable only by authenticated sessions (the app's existing session/API-key auth middleware — no role system exists in the current single-user deployment).
 - **FR-011**: Administrators MUST be able to view submitted feedback reports, see all annotations on the screenshot, read notes, and update the report status (e.g., open, in progress, resolved).
 - **FR-012**: The system MUST warn users before they navigate away or close the tab while unsaved annotations exist.
 - **FR-013**: Notes MUST have a maximum length of 2000 characters.
@@ -145,6 +145,6 @@ An administrator or developer reviews feedback submissions to see what users hav
 - Feedback reports are consumed by the app's development or support team — not by end users.
 - Users will not need to annotate content that spans multiple pages or requires cross-page navigation.
 - The annotation tool captures only the current viewport (visible area), not the full page height.
-- Screenshot capture uses client-side DOM-based rendering (e.g., html2canvas) — consistent with industry-standard in-browser annotation tools.
-- The existing authentication system will be reused — only logged-in users can submit feedback.
+- Screenshot capture uses client-side DOM-based rendering (html-to-image, vendored locally — selected over the unmaintained html2canvas during research) — consistent with industry-standard in-browser annotation tools.
+- The existing authentication system will be reused — only authenticated sessions can submit feedback. The app uses a single API key with session cookies (no per-user accounts, no role system); "administrator" in this spec means any authenticated session. Reporter identity is recorded as a string identifier (`"default"` in the current single-user deployment) for forward compatibility.
 - Mobile/responsive layout feedback is supported as long as the viewport capture works correctly at any screen size.

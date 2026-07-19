@@ -26,16 +26,17 @@
 **Purpose**: Project initialization and basic structure for the feedback annotation feature
 
 - [ ] T001 [P] Create `anvil/services/feedback/` package with bare `__init__.py` (docstring-only)
-- [ ] T002 [P] Create `anvil/db/models/feedback_report.py` with `FeedbackReport` and `FeedbackAnnotation` ORM models (use `TimestampMixin`, `Base`, `mapped_column`, `StrEnum`)
-- [ ] T003 [P] Create `FeedbackStatus` and `AnnotationType` `StrEnum` classes in `anvil/services/feedback/`
+- [ ] T002 [P] Create `anvil/db/models/feedback_status.py` with `FeedbackStatus` `StrEnum` and `anvil/db/models/annotation_type.py` with `AnnotationType` `StrEnum` (following `teaching_session_status.py` pattern — enums co-locate with the DB models that consume them, preserving layer discipline)
+- [ ] T003 Create `anvil/db/models/feedback_report.py` with `FeedbackReport` and `FeedbackAnnotation` ORM models (use `TimestampMixin`, `Base`, `mapped_column`; single file permitted per ORM bidirectional-relationship exception; imports enums from T002)
 - [ ] T004 [P] Add `feedback_dir` property to `anvil/workspace/workspace_paths.py` returning `Path` for `data/feedback/`
-- [ ] T005 [P] Create `anvil/db/repositories/feedback_repository.py` with `FeedbackRepository` class (CRUD methods for both `FeedbackReport` and `FeedbackAnnotation`)
-- [ ] T006 Generate Alembic migration for `feedback_reports` and `feedback_annotations` tables
-- [ ] T007 [P] Create `anvil/api/v1/feedback.py` with route stubs for all feedback endpoints
+- [ ] T005 [P] Create `anvil/db/repositories/feedback_repository.py` with `FeedbackRepository` class skeleton (constructor + method signatures only; implementations come in T013)
+- [ ] T006 Write migration file `anvil/_resources/migrations/versions/015_add_feedback_reports.py` creating `feedback_reports` and `feedback_annotations` tables (hand-written numbered migration following `011_add_teaching_sessions.py` pattern; applied automatically at startup via `ANVIL_DB_AUTO_MIGRATE`)
+- [ ] T007 [P] Create `anvil/api/v1/feedback.py` with route stubs for all feedback endpoints (POST /feedback, GET /feedback, GET /feedback/{id}, GET /feedback/{id}/screenshot, GET /feedback/{id}/export, PATCH /feedback/{id}/status, DELETE /feedback/{id}, POST /feedback/batch-delete)
 - [ ] T008 [P] Create `anvil/api/static/css/feedback.css` with annotation overlay styles (using existing design tokens)
 - [ ] T009 [P] Create `anvil/api/static/js/annotation.js` with `AnnotationCanvas` class skeleton (IIFE pattern, following `chart.js` conventions)
 - [ ] T010 [P] Create `anvil/api/templates/partials/annotation-toolbar.html` with toolbar HTML structure
 - [ ] T011 [P] Create `anvil/api/templates/feedback.html` extending `base.html` (following `operations.html` pattern)
+- [ ] T011a [P] Vendor `html-to-image` library: download the IIFE/UMD build (v1.11.11) into `anvil/api/static/js/lib/html-to-image.js` (CSP `script-src 'self' 'nonce-…'` blocks external CDN scripts on app routes — local vendoring is mandatory)
 
 ---
 
@@ -45,15 +46,15 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T012 [P] Run Alembic migration (`make db-revision`) to apply `feedback_reports` and `feedback_annotations` tables to the database
+- [ ] T012 Verify migration 015 applies cleanly — start the app (or run `make test` with a fresh in-memory DB) and confirm `feedback_reports` and `feedback_annotations` tables exist (migrations auto-apply at startup via `ANVIL_DB_AUTO_MIGRATE`)
 - [ ] T013 [P] Implement `FeedbackRepository` CRUD methods: `create_report`, `get_report`, `list_reports`, `update_status`, `delete_report`, `batch_delete`, `add_annotation`, `get_annotations`
 - [ ] T014 [P] Create `anvil/services/feedback/feedback_service.py` with `FeedbackService` class signature (constructor takes `FeedbackRepository`, `LocalFileStore`, `WorkspacePaths`)
 - [ ] T015 [P] Add `FeedbackService` to the `AnvilWorkbench` god class
 - [ ] T016 [P] Register feedback API routes in the FastAPI router
-- [ ] T017 [P] Add `post /v1/feedback` endpoint stub in `anvil/api/v1/feedback.py` (accepts multipart form data with screenshot files)
+- [ ] T017 [P] Wire `FeedbackService` dependency injection into `anvil/api/v1/feedback.py` route handlers (follow the existing `get_workbench` dependency pattern used by other v1 routes)
 - [ ] T018 [P] Add `get /v1/feedback-page` route handler in `anvil/api/v1/pages.py` (renders `feedback.html` template)
 - [ ] T019 [P] Add "Feedback" nav tab to `anvil/api/templates/base.html` after the "Ops" tab
-- [ ] T020 [P] Load `html-to-image` CDN script and `annotation.js` in `anvil/api/templates/base.html` (before `</body>`)
+- [ ] T020 [P] Load vendored `/static/js/lib/html-to-image.js` and `/static/js/annotation.js` scripts in `anvil/api/templates/base.html` (before `</body>`; local paths satisfy the strict `script-src 'self' 'nonce-…'` CSP — external CDN scripts are blocked on app routes)
 - [ ] T020a [P] Include `annotation-toolbar.html` partial in `anvil/api/templates/base.html` via `{% include "partials/annotation-toolbar.html" %}` (inside the app shell, before the modals container)
 
 **Checkpoint**: Foundation ready — user story implementation can now begin in parallel
@@ -82,7 +83,7 @@
 - [ ] T029 [US1] Implement note input UI in `anvil/api/static/js/annotation.js` — inline text input with 2000 char limit, confirm/cancel buttons
 - [ ] T030 [US1] Implement annotation marker rendering in `anvil/api/static/js/annotation.js` — draw a small circle/badge at the element position on the canvas
 - [ ] T031 [US1] Implement `FeedbackService.submit_report` in `anvil/services/feedback/feedback_service.py` — store screenshots via `LocalFileStore`, create `FeedbackReport` + `FeedbackAnnotation` records
-- [ ] T032 [US1] Implement `POST /v1/feedback` endpoint in `anvil/api/v1/feedback.py` — accept multipart form with `screenshot`, `annotated`, `page_url`, `viewport_width`, `viewport_height`, `annotations` JSON
+- [ ] T032 [US1] Implement `POST /v1/feedback` endpoint in `anvil/api/v1/feedback.py` — accept multipart form with `screenshot`, `annotated`, `page_url`, `viewport_width`, `viewport_height`, `annotations` JSON; enforce server-side note length ≤ 2000 chars (reject with 400)
 - [ ] T033 [US1] Implement annotation submission flow in `anvil/api/static/js/annotation.js` — serialize annotations as JSON, POST to `/v1/feedback` with screenshot files, handle success/error
 - [ ] T034 [US1] Implement navigation away warning in `anvil/api/static/js/annotation.js` — `beforeunload` event when unsaved annotations exist
 - [ ] T035 [US1] Implement toast notifications for errors in `anvil/api/static/js/annotation.js` — capture failure, empty submission, network error (using existing `toast-container` pattern)
@@ -157,7 +158,7 @@
 - [ ] T072 [US3] Implement batch delete UI in `anvil/api/templates/feedback.html` — checkbox selection, bulk delete button with confirmation
 - [ ] T073 [US3] Implement report export button in `anvil/api/templates/feedback.html` — download JSON button per report row
 - [ ] T074 [US3] Implement status filter UI in `anvil/api/templates/feedback.html` — filter tabs/buttons with active state
-- [ ] T075 [US3] Add `GET /v1/feedback-page` route handler in `anvil/api/v1/pages.py` — render `feedback.html` template with context
+- [ ] T075 [US3] Wire dashboard page initialization in `anvil/api/templates/feedback.html` scripts block — load report list via `window.apiFetch('/v1/feedback')` on page load, render with `dom.syncTableBody` (route handler itself is created in T018)
 
 **Checkpoint**: All user stories should now be independently functional
 
@@ -210,8 +211,8 @@
 
 ### Parallel Opportunities
 
-- All Setup tasks marked [P] can run in parallel (11 parallel tasks)
-- All Foundational tasks marked [P] can run in parallel (9 parallel tasks)
+- Setup tasks marked [P] can run in parallel (T003 depends on T002; T006 depends on T003)
+- Foundational tasks marked [P] can run in parallel (T012 runs after T006 lands)
 - Once Foundational completes, US1 and US2 can start in parallel
 - US3 can start once US1/US2 have created at least one report each
 - All tests within a story marked [P] can run in parallel
@@ -239,8 +240,8 @@ pytest tests/e2e/test_feedback.py -k "test_submit_feedback or test_get_feedback"
 
 ### MVP First (User Story 1 Only)
 
-1. Complete Phase 1: Setup (11 parallel tasks)
-2. Complete Phase 2: Foundational (9 parallel tasks)
+1. Complete Phase 1: Setup (12 tasks, mostly parallel)
+2. Complete Phase 2: Foundational (10 tasks, mostly parallel)
 3. Complete Phase 3: User Story 1 (16 tasks — tests first)
 4. **STOP and VALIDATE**: Test User Story 1 independently
 5. Deploy/demo if ready
@@ -274,4 +275,4 @@ With multiple developers:
 - Verify tests fail before implementing
 - Commit after each task or logical group
 - Stop at any checkpoint to validate story independently
-- Total tasks: 89 (11 Setup + 10 Foundational + 16 US1 + 11 US2 + 28 US3 + 13 Polish)
+- Total tasks: 90 (12 Setup + 10 Foundational + 16 US1 + 11 US2 + 28 US3 + 13 Polish)
