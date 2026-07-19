@@ -41,7 +41,7 @@ jobs:
     outputs:
       scope: ${{ steps.classify.outputs.scope }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 2
       - name: Log fork status
@@ -61,7 +61,7 @@ jobs:
           SCOPE=$(grep "^BUMP_SCOPE=" scope_output.txt | cut -d= -f2)
           echo "scope=${SCOPE}" >> "$GITHUB_OUTPUT"
       - name: Upload scope artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bump-scope-output
           path: scope_output.txt
@@ -74,9 +74,9 @@ jobs:
     needs: bump-scope-guard
     if: needs.bump-scope-guard.outputs.scope != 'version-only' && github.ref_name != 'main'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
+        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990  # v8.3.2
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Setup environment
@@ -94,11 +94,11 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Install uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
+        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990  # v8.3.2
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Setup environment
@@ -125,9 +125,9 @@ jobs:
     needs: bump-scope-guard
     if: needs.bump-scope-guard.outputs.scope != 'version-only' && github.ref_name != 'main'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
+        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990  # v8.3.2
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Setup environment
@@ -143,9 +143,9 @@ jobs:
     needs: bump-scope-guard
     if: needs.bump-scope-guard.outputs.scope != 'version-only' && github.ref_name != 'main'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
+        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990  # v8.3.2
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Setup environment
@@ -162,11 +162,11 @@ jobs:
   #   if: needs.bump-scope-guard.outputs.scope != 'version-only'
   #   continue-on-error: true  # non-blocking; requires SONAR_TOKEN secret and auto-analysis disabled upstream
   #   steps:
-  #     - uses: actions/checkout@v4
+  #     - uses: actions/checkout@v7
   #       with:
   #         fetch-depth: 0  # full history for blame/tracking
   #     - name: Install uv
-  #       uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
+  #       uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990  # v8.3.2
   #       with:
   #         python-version: ${{ env.PYTHON_VERSION }}
   #     - name: Setup environment
@@ -188,9 +188,9 @@ jobs:
     needs: bump-scope-guard
     if: needs.bump-scope-guard.outputs.scope != 'version-only' && github.ref_name != 'main'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
+        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990  # v8.3.2
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Setup environment
@@ -206,9 +206,9 @@ jobs:
     needs: bump-scope-guard
     if: needs.bump-scope-guard.outputs.scope != 'version-only' && github.ref_name != 'main'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
+        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990  # v8.3.2
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Setup environment
@@ -224,7 +224,7 @@ jobs:
     needs: bump-scope-guard
     if: needs.bump-scope-guard.outputs.scope != 'version-only' && github.ref_name != 'main'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Run gitleaks
@@ -240,9 +240,9 @@ jobs:
     needs: bump-scope-guard
     if: needs.bump-scope-guard.outputs.scope != 'version-only' && github.ref_name != 'main'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
+        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990  # v8.3.2
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Setup environment
@@ -259,9 +259,9 @@ jobs:
     if: needs.bump-scope-guard.outputs.scope != 'version-only' && github.ref_name != 'main'
     continue-on-error: true  # v1: non-blocking; see ADR-034 for promotion criteria
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
+        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990  # v8.3.2
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Setup environment
