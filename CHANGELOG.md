@@ -1,3 +1,9 @@
+## v0.16.2 (2026-07-19)
+
+### Fix
+
+- correct annotation marker alignment using capture target viewport offset
+
 ## v0.16.1 (2026-07-19)
 
 ### Fix
