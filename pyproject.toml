@@ -32,7 +32,7 @@ dependencies = [
     "safetensors>=0.4,<1",
     "numpy>=1.24,<2",
 "networkx>=3.6.1",
-    "pyyaml>=6,<7",
+    "pyyaml>=6.0.3,<7",
     "starlette>=1.3.1,<2",  # transitive via fastapi/mlflow; CVE-2026-54283 (DoS via form limits)
 ]
 
@@ -66,7 +66,7 @@ vault-health = [
     "networkx>=3,<4",
 ]
 dev = [
-    "ruff>=0.5,<1",
+    "ruff>=0.15.22,<1",
     "black>=26.3.1,<27",
     "isort>=5.13,<6",
     "pylint>=3.2,<4",
@@ -87,7 +87,7 @@ finetune = [
     "sentencepiece>=0.1.99,<1",
     "transformers>=5.14.1,<6",
     "peft>=0.19.1,<1",
-    "bitsandbytes>=0.41,<1",
+    "bitsandbytes>=0.49.2,<1",
     "datasets>=2.14,<3",
     "accelerate>=0.24,<1",
 ]
