@@ -77,7 +77,7 @@ dev = [
     "pytest-cov>=5.0,<6",
     "coverage>=7.0,<8",
     "commitizen>=4,<5",
-    "pytest-playwright>=0.5,<1",
+    "pytest-playwright>=0.8.0,<1",
     "bandit>=1.9.4,<2",
     "semgrep>=1.144,<2",
 ]
