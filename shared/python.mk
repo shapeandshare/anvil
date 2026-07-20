@@ -35,14 +35,7 @@ bandit: $(VENV_DIR)/activate ## Run bandit security linter on the anvil package
 semgrep: $(VENV_DIR)/activate ## Run semgrep SAST on the anvil package
 	$(PYTHON) -m semgrep --config=.semgrep.yml anvil/ --error
 
-gitleaks: ## Run gitleaks secrets scan (requires gitleaks binary: brew install gitleaks)
-	@if command -v gitleaks >/dev/null 2>&1; then \
-		gitleaks detect --source . --no-git -v; \
-	else \
-		echo "gitleaks not found. Install: brew install gitleaks"; \
-		echo "Or run 'make gitleaks-ci' for CI-only scanning."; \
-		exit 0; \
-	fi
+
 
 ANVIL_VERSION := $(shell grep '^version =' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
 
@@ -70,4 +63,4 @@ format: $(VENV_DIR)/activate ## Auto-format with black and isort
 typecheck: $(VENV_DIR)/activate ## Run mypy strict type checking
 	$(PYTHON) -m mypy anvil/ --no-incremental
 
-.PHONY: install build sbom sbom-full lint format typecheck clean bandit semgrep gitleaks
+.PHONY: install build sbom sbom-full lint format typecheck clean bandit semgrep
