@@ -60,7 +60,7 @@ gpu = [
     "nvidia-ml-py>=12,<13",
 ]
 compute = [
-    "modal>=0.70,<1",
+    "modal>=1.5.2,<2",
 ]
 vault-health = [
     "networkx>=3,<4",
