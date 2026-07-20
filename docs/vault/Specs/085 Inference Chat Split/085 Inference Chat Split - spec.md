@@ -3,7 +3,6 @@ title: "085 Inference Chat Split"
 type: spec
 tags:
   - type/spec
-  - domain/api
   - domain/ui
 spec-refs: []
 created: 2026-07-19

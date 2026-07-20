@@ -134,9 +134,7 @@ class TestMainConventionalCommit:
 class TestMainConventionalCommitBreaking:
     """Tests for ``main()`` with BREAKING CHANGE markers."""
 
-    def test_breaking_in_footer_auto(
-        self, capsys: pytest.CaptureFixture[str]
-    ) -> None:
+    def test_breaking_in_footer_auto(self, capsys: pytest.CaptureFixture[str]) -> None:
         """BREAKING CHANGE in the footer classifies as AUTO."""
         with (
             patch(

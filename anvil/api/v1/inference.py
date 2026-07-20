@@ -13,8 +13,10 @@ from the registry (not hardcoded values).
 
 from __future__ import annotations
 
+import asyncio
 import json
-from typing import Any, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
@@ -457,7 +459,7 @@ async def chat_stream(
         raise HTTPException(status_code=404, detail=str(e)) from e
 
     async def event_stream() -> AsyncGenerator[str, None]:
-        queue: asyncio.Queue[str | None] = asyncio.Queue()
+        queue: asyncio.Queue[str | None | Exception] = asyncio.Queue()
 
         async def _run_generation() -> None:
             try:
@@ -476,6 +478,7 @@ async def chat_stream(
 
         try:
             while True:
+                item: str | None | Exception | None = None
                 try:
                     item = await asyncio.wait_for(queue.get(), timeout=30)
                 except TimeoutError:

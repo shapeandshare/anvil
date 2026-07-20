@@ -3,7 +3,6 @@ title: 085 Inference Chat Split
 type: spec
 tags:
   - type/spec
-  - domain/api
   - domain/ui
   - status/draft
 spec-refs:

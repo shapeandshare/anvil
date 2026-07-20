@@ -588,13 +588,14 @@ class VaultAuditService:
                     continue
                 title_md = spec_subdir / f"{spec_subdir.name}.md"
                 if not title_md.exists():
+                    rel_str: str
                     try:
-                        rel = str(spec_subdir.relative_to(vault_root.parent))
+                        rel_str = str(spec_subdir.relative_to(vault_root.parent))
                     except ValueError:
-                        rel = str(spec_subdir)
+                        rel_str = str(spec_subdir)
                     report.add(
                         Finding(
-                            note_path=rel,
+                            note_path=rel_str,
                             line=0,
                             rule="orphan_spec_subdir",
                             message=(

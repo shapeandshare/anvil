@@ -15,7 +15,8 @@ TEST_ROUTE = "/v1/training-page"
 @pytest.mark.usefixtures("_readiness_check")
 class TestAnnotationContainedElements:
     """Browser tests for contained element capture in annotation
-    bounding boxes."""
+    bounding boxes.
+    """
 
     TIMEOUT = 15_000
 
@@ -26,7 +27,8 @@ class TestAnnotationContainedElements:
         assert_no_console_errors,
     ) -> None:
         """_findContainedElements returns child elements with spatial
-        data and filters out excluded element types."""
+        data and filters out excluded element types.
+        """
         checker = assert_no_console_errors(page)
         page.goto(f"{base_url}{TEST_ROUTE}")
         page.wait_for_load_state("networkidle")
@@ -110,7 +112,7 @@ class TestAnnotationContainedElements:
         base_url: str,
         assert_no_console_errors,
     ) -> None:
-        """maxContainedElements configuration is respected."""
+        """MaxContainedElements configuration is respected."""
         checker = assert_no_console_errors(page)
         page.goto(f"{base_url}{TEST_ROUTE}")
         page.wait_for_load_state("networkidle")
@@ -182,7 +184,8 @@ class TestAnnotationContainedElements:
         assert_no_console_errors,
     ) -> None:
         """Saved element annotations include containedElements in their
-        data payload."""
+        data payload.
+        """
         checker = assert_no_console_errors(page)
         page.goto(f"{base_url}{TEST_ROUTE}")
         page.wait_for_load_state("networkidle")
