@@ -78,7 +78,7 @@ dev = [
     "coverage>=7.0,<8",
     "commitizen>=4,<5",
     "pytest-playwright>=0.5,<1",
-    "bandit>=1.7,<2",
+    "bandit>=1.9.4,<2",
     "semgrep>=1.144,<2",
 ]
 finetune = [
