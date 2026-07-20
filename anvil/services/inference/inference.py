@@ -19,8 +19,9 @@ import math
 import os
 import random
 import tempfile
+from collections.abc import AsyncGenerator
 from pathlib import Path
-from typing import Any, AsyncGenerator
+from typing import Any
 
 import aiofiles  # type: ignore[import-untyped]
 from mlflow.tracking import MlflowClient
