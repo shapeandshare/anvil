@@ -79,7 +79,7 @@ dev = [
     "commitizen>=4,<5",
     "pytest-playwright>=0.5,<1",
     "bandit>=1.7,<2",
-    "semgrep>=1.60,<2",
+    "semgrep>=1.144,<2",
 ]
 finetune = [
     "huggingface_hub>=0.24,<2",
