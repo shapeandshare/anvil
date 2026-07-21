@@ -21,9 +21,9 @@
         How the three-layer resolution chain works &mdash; override &gt; env &gt; default &mdash; and what each apply class means.
       </div>
     </div>
-    <a href="/v1/learn/runtime-config" class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap;">
+    <button type="button" id="learn-more-cta-btn" class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap;">
       Learn More &rarr;
-    </a>
+    </button>
   </div>
 </div>
 
@@ -151,6 +151,11 @@
 
 <script nonce="{{ request.state.csp_nonce }}">
 (function() {
+  /* ── Static CTA buttons (CSP-safe: no inline onclick) ────────────── */
+  document.getElementById('learn-more-cta-btn').addEventListener('click', function() {
+    window.location.href = '/v1/learn/runtime-config';
+  });
+
   var TOAST_DURATION = 3000;
 
   function toast(msg, type) {
