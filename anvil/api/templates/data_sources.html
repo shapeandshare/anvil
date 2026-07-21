@@ -466,7 +466,7 @@
       if (maxFiles < 1000000 && fileCount <= 1000000) {
         warnings.push(
           '<span class="ds-warn">&#9888; ' + fileCount + ' files found &mdash; max_files is ' + maxFiles + ', files beyond the limit will be skipped</span>'
-          + ' <button class="btn btn-sm btn-accent" onclick="window.boostMaxFiles(' + fileCount + ')">raise to ' + fileCount + '</button>'
+          + ' <button type="button" class="btn btn-sm btn-accent ds-boost-max-files" data-count="' + fileCount + '">raise to ' + fileCount + '</button>'
         );
       } else {
         warnings.push(
@@ -486,11 +486,11 @@
         var recBs = rec && rec.block_size ? rec.block_size : null;
         var fixBut = '';
         if (recBs && recBs < 1024) {
-          fixBut = ' <button class="btn btn-sm btn-accent" onclick="window.resetBlockSize(' + recBs + ')">reset to recommended (' + recBs + ')</button>';
+          fixBut = ' <button type="button" class="btn btn-sm btn-accent ds-reset-block-size" data-size="' + recBs + '">reset to recommended (' + recBs + ')</button>';
         } else if (recBs === 1024) {
           fixBut = ' <span class="text-muted type-caption-2">(at recommended value)</span>';
         } else {
-          fixBut = ' <button class="btn btn-sm btn-accent" onclick="window.resetBlockSize(64)">reset to default (64)</button>';
+          fixBut = ' <button type="button" class="btn btn-sm btn-accent ds-reset-block-size" data-size="64">reset to default (64)</button>';
         }
         warnings.push(
           '<span class="ds-warn">&#9888; block_size at maximum (1024)</span>' + fixBut
@@ -513,6 +513,14 @@
     document.getElementById('wiz-bs-value').textContent = bs;
     updateEstimate();
   };
+
+  /* ── delegated click: dynamic estimate-warning buttons ── */
+  document.addEventListener('click', function(e) {
+    var boost = e.target.closest ? e.target.closest('.ds-boost-max-files') : null;
+    if (boost) { window.boostMaxFiles(Number(boost.getAttribute('data-count'))); return; }
+    var reset = e.target.closest ? e.target.closest('.ds-reset-block-size') : null;
+    if (reset) { window.resetBlockSize(Number(reset.getAttribute('data-size'))); }
+  });
 
   /* ── wizard: strategy/param listeners ────────────────── */
 

@@ -15,6 +15,9 @@
   };
 
   document.querySelectorAll('.faq-item').forEach(function(el) {
+    el.addEventListener('click', function() {
+      globalThis.toggleFaq(el);
+    });
     el.addEventListener('keydown', function(e) {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();

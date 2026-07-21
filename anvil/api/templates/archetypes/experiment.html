@@ -80,7 +80,7 @@
   <div id="detail-artifact-placeholder" class="type-caption-1 text-muted" style="padding:var(--space-2);display:none;"></div>
 </div>
       <div style="margin-top:var(--space-3);display:flex;gap:var(--space-2);flex-wrap:wrap;">
-        <button class="btn btn-secondary btn-sm" id="btn-retry-export" style="display:none;" onclick="retryExport()">Retry Export</button>
+        <button class="btn btn-secondary btn-sm" id="btn-retry-export" style="display:none;" type="button">Retry Export</button>
       </div>
       <div id="detail-st-error" class="error-text" style="margin-top:var(--space-2);display:none;"></div>
     </div>
@@ -366,6 +366,8 @@
       btn.textContent = 'Retry Export';
     });
   };
+
+  document.getElementById('btn-retry-export').addEventListener('click', function() { retryExport(); });
 })();
 </script>
 {% endblock %}

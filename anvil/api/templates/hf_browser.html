@@ -152,11 +152,12 @@
         <div style="margin-top:var(--space-2);display:flex;gap:var(--space-1);flex-wrap:wrap;">
           {% if entry.hf_id in imported_ids %}
           <button class="btn btn-sm btn-success" disabled>Imported ✓</button>
+          <button class="btn btn-sm btn-accent hf-download-btn" data-hf-id="{{ entry.hf_id }}" data-name="{{ entry.display_name }}">Download</button>
           {% else %}
           <button class="btn btn-sm btn-primary hf-import-btn" data-hf-id="{{ entry.hf_id }}" data-name="{{ entry.display_name }}">Import</button>
+          <button class="btn btn-sm btn-secondary" disabled title="Import the model first">Download</button>
           {% endif %}
-          <button class="btn btn-sm btn-accent hf-download-btn" data-hf-id="{{ entry.hf_id }}" data-name="{{ entry.display_name }}">Download</button>
-          <a href="{{ entry.url }}" target="_blank" rel="noopener" class="btn btn-sm btn-secondary" style="text-decoration:none;">View on HF</a>
+          <a href="{{ entry.url }}" target="_blank" rel="noopener" class="btn btn-sm btn-secondary" style="text-decoration:none;">View on HF ↗</a>
           {% if entry.runnable_status == "track_only" and lesson_049_available %}
           <a href="/v1/learn/architecture-differences" class="btn btn-sm btn-secondary" style="text-decoration:none;">Why not run?</a>
           {% endif %}

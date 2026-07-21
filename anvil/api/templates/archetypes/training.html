@@ -158,7 +158,7 @@
         <div class="param-label-row"><label class="param-label" for="compute_backend">Compute Backend</label>
         <span class="tooltip-trigger"><span class="tooltip-icon">ⓘ</span><span class="tooltip-content">Where training runs. Auto picks the best available. Local CPU uses pure Python (stdlib). Local GPU uses PyTorch (CUDA/MPS). Modal runs on cloud GPUs (local mode only — requires the modal package).</span></span></div>
         <div class="device-toggle">
-          <select id="compute_backend" class="form-input" onchange="window.updateModelStats()" style="width:100%;">
+          <select id="compute_backend" class="form-input" style="width:100%;">
             <option value="auto">Auto</option>
             <option value="local-cpu">Local (CPU)</option>
             <option value="local-gpu">Local (GPU)</option>
@@ -285,7 +285,7 @@
   </div>
 
   <div class="training-output section-card" style="--stagger-i: 6">
-    <div class="section-card__header section-card__header--clickable" id="output-header" role="button" tabindex="0" aria-expanded="false" aria-controls="output-body" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
+    <div class="section-card__header section-card__header--clickable" id="output-header" role="button" tabindex="0" aria-expanded="false" aria-controls="output-body">
       <span class="section-card__icon">&#128228;</span>
       <h2 class="section-card__title">Output</h2>
       <span class="output-indicator" id="output-indicator"></span>
@@ -615,7 +615,7 @@ function updateMetrics(d) {
         + ' = ' + coverage + '% visit rate'
         + (coverage < 10
           ? ' <span class="ds-warn">(low &mdash; more steps recommended)</span>'
-          + ' <button class="btn btn-sm btn-accent" onclick="window.boostSteps()">boost steps</button>'
+          + ' <button type="button" class="btn btn-sm btn-accent tr-boost-steps">boost steps</button>'
           : '')
         + '</div>';
     }
@@ -881,6 +881,11 @@ var gpuToggle = document.getElementById('compute_backend');
     document.getElementById('num_steps').value = targetSteps;
     updateModelStats(cid, did);
   };
+
+  /* ── delegated click: dynamic boost-steps button ── */
+  document.addEventListener('click', function(e) {
+    if (e.target.closest && e.target.closest('.tr-boost-steps')) window.boostSteps();
+  });
 
   /* ── Multi-run session persistence ── */
   function saveTrainingState() {
