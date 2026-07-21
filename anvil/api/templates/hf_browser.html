@@ -218,6 +218,7 @@
           btn.textContent = 'imported (job #' + data.job_id + ')';
           btn.classList.remove('btn-primary');
           btn.classList.add('btn-success');
+          btn.disabled = false;
           fetchJobs();
         } else {
           btn.textContent = 'import failed';
@@ -386,9 +387,10 @@
               body: JSON.stringify({ source: 'huggingface', identifier: hid, name: nm })
             });
             var d = await r.json();
-            if (r.ok) { b.textContent = 'done'; fetchJobs(); } else { b.textContent = 'failed'; }
+            if (r.ok) { b.textContent = 'done'; b.disabled = false; fetchJobs(); } else { b.textContent = 'failed'; b.disabled = false; }
           } catch (err) {
             b.textContent = 'error';
+            b.disabled = false;
           }
         });
       });

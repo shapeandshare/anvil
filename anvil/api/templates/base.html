@@ -209,7 +209,7 @@ window.apiFetch = function(url, opts) {
     window._annotationCanvas = null;
   }
   var p = window.location.pathname;
-  if (p === '/v1/feedback-page' || p === '/login') return;
+  if (p === '/login') return;
   var container = document.querySelector('.app-main') || document.body;
   window._annotationCanvas = window.initAnnotationMode(container);
 })();

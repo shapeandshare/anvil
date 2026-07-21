@@ -350,6 +350,8 @@ iOS-style system buttons with forge variants:
 
 **Plain/Tertiary**: Text-only or tinted with no fill. For least prominent actions.
 
+**Navigation-styled-as-button (documented exception, ADR-050)**: A small, explicitly-scoped set of navigation CTAs ("Learn More →" banner links, the Models-table "View"/"Inference" actions, and `model_detail.html`'s "Inference"/"Continue Training" buttons) render as `<button type="button">` rather than `<a href>`, per user feedback that the hyperlink affordance (status-bar URL preview, "Open in new tab" context menu) broke the native-app illusion. This is a narrow, feedback-driven override of the codebase's own accessibility rule (`docs/ux-rules.md` S4/S2) — do NOT generalize it to other navigation links without equivalent user-reported justification. Any such button MUST navigate via `addEventListener` (never inline `onclick=`, which this project's CSP blocks — see `[[Discoveries/csp-nonce-does-not-cover-inline-onclick-handlers]]`).
+
 ### Section Cards (Forge/Accent/Banner variants)
 Cards used in content sections below the hero, with optional left accent border:
 - `section-card--forge`: 3px orange left border

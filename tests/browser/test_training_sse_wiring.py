@@ -71,7 +71,9 @@ class TestTrainingSseWiring:
         )
         banner.wait_for(state="visible", timeout=5000)
         assert "How Training Works" in (banner.text_content() or "")
-        assert banner.locator('a[href*="training-loop"]').is_visible()
+        # Learn More CTA is a <button> (not <a href>) — CSP-safe click
+        # navigation via addEventListener, per the nav-button conversion.
+        assert banner.locator("#learn-more-cta-btn").is_visible()
 
         checker.assert_no_errors()
 

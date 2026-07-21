@@ -21,9 +21,9 @@
         How each curated sample becomes character tokens the model learns from &mdash; now in the interactive learning arc.
       </div>
     </div>
-    <a href="/v1/learn/tokenization" class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap;">
+    <button type="button" id="learn-more-cta-btn" class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap;">
       Learn More &rarr;
-    </a>
+    </button>
   </div>
 </div>
 {% include "partials/related-lessons.html" %}
@@ -190,6 +190,11 @@
 {% block scripts %}
 <script nonce="{{ request.state.csp_nonce }}">
 (function() {
+  /* ── Static CTA buttons (CSP-safe: no inline onclick) ────────────── */
+  document.getElementById('learn-more-cta-btn').addEventListener('click', function() {
+    window.location.href = '/v1/learn/tokenization';
+  });
+
   var DATASET_ID = {{ dataset.id }};
 
   /* ── Pagination state ── */

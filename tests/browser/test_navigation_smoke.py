@@ -185,3 +185,61 @@ class TestNavigationSmoke:
             page.wait_for_load_state("networkidle")
             if target:
                 assert target in page.url or target.rstrip("/") in page.url.rstrip("/")
+
+
+@pytest.mark.usefixtures("_readiness_check")
+class TestLearnMoreButtons:
+    """Regression: "Learn More →" CTAs are <button> elements, not <a>.
+
+    FIX #3 — All banner CTA "Learn More" / "Learn Why" links were converted
+    from ``<a href="...">`` to ``<button type="button" onclick="...">``.
+    This test verifies the tag type and that the onclick navigation works.
+    """
+
+    TIMEOUT = 15_000
+
+    # (page_route, btn_text_substring, expected_url_substring)
+    LEARN_MORE_PAGES: list[tuple[str, str, str]] = [
+        ("/v1/datasets-page", "Learn More", "/v1/learn/data-fundamentals"),
+        ("/v1/config-page", "Learn More", "/v1/learn/runtime-config"),
+        ("/v1/operations-page", "Learn More", "/v1/learn/cloud-compute"),
+    ]
+
+    @pytest.mark.parametrize(
+        "route,btn_text,expected_url",
+        LEARN_MORE_PAGES,
+        ids=[p[0] for p in LEARN_MORE_PAGES],
+    )
+    def test_learn_more_is_button_navigates(
+        self,
+        page,
+        base_url: str,
+        assert_no_console_errors,
+        route: str,
+        btn_text: str,
+        expected_url: str,
+    ) -> None:
+        """Visit *route*, find the Learn More button, verify it's <button> and navigates."""
+        checker = assert_no_console_errors(page)
+        page.goto(f"{base_url}{route}")
+        page.wait_for_load_state("networkidle")
+
+        # Locate the button by its text content
+        btn = page.locator(f"button:has-text('{btn_text}')").first
+        btn.wait_for(state="visible", timeout=self.TIMEOUT)
+
+        # Assert it is a <button> element, not <a>
+        tag_name = btn.evaluate("el => el.tagName")
+        assert tag_name == "BUTTON", (
+            f"Expected tagName BUTTON for '{btn_text}' on {route}, " f"got {tag_name}"
+        )
+
+        # Click the button and verify the URL navigates to the expected learn path
+        btn.click()
+        page.wait_for_load_state("networkidle")
+        assert expected_url in page.url, (
+            f"Expected URL to contain {expected_url} after clicking "
+            f"'{btn_text}' on {route}, got {page.url}"
+        )
+
+        checker.assert_no_errors()

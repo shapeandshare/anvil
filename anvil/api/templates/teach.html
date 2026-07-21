@@ -56,7 +56,7 @@
           <div style="font-family:var(--font-body);font-weight:600;font-size:var(--text-footnote);color:var(--text-secondary);">How the Teaching Loop Works</div>
           <div style="font-size:var(--text-caption-2);color:var(--text-tertiary);margin-top:2px;">Iterative training, chain of experiments, and progressive model improvement — explained in the interactive learning arc.</div>
         </div>
-        <a href="/v1/learn" class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap;">Learn More &rarr;</a>
+        <button type="button" id="learn-more-cta-btn" class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap;">Learn More &rarr;</button>
       </div>
     </div>
 
@@ -243,6 +243,11 @@
 #inspect-cta-container { margin-top:var(--space-3); text-align:center; }
 </style>
 <script nonce="{{ request.state.csp_nonce }}">
+/* ── Static CTA buttons (CSP-safe: no inline onclick) ────────────────── */
+document.getElementById('learn-more-cta-btn').addEventListener('click', function() {
+  window.location.href = '/v1/learn';
+});
+
 /* ── State ─────────────────────────────────────────────────────────── */
 var activeSessionId = null;
 var activeRunId = null;

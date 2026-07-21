@@ -21,9 +21,9 @@
         Safetensors export and HuggingFace compatibility &mdash; now in the interactive learning arc.
       </div>
     </div>
-    <a href="/v1/learn/export" class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap;">
+    <button type="button" id="learn-more-export-btn" class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap;">
       Learn More &rarr;
-    </a>
+    </button>
   </div>
 </div>
 
@@ -39,9 +39,9 @@
         Why some models can run locally and others are tracked-but-not-runnable &mdash; explained in the learning arc.
       </div>
     </div>
-    <a href="/v1/learn/architecture-differences#allow-list" class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap;">
+    <button type="button" id="learn-why-allowlist-btn" class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap;">
       Learn Why &rarr;
-    </a>
+    </button>
   </div>
 </div>
 {% include "partials/related-lessons.html" %}
@@ -95,28 +95,90 @@
 
   function startEval(modelId, e) {
     e.preventDefault();
-    var baseModelId = prompt('Enter the Base Model ID to compare against:');
-    if (!baseModelId) return;
-    var baseId = Number.parseInt(baseModelId, 10);
-    if (Number.isNaN(baseId)) { alert('Invalid base model ID.'); return; }
-    var evalDatasetName = prompt('Enter the Eval Dataset name:');
-    if (!evalDatasetName) return;
+    var triggerBtn = e.target.closest ? e.target.closest('.eval-btn') : null;
+    showEvalModal(modelId, triggerBtn);
+  }
 
-    fetch('/v1/eval/fine-tuned', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        model_id: modelId,
-        base_model_id: baseId,
-        eval_dataset_name: evalDatasetName
-      })
-    }).then(function(r) {
-      if (!r.ok) { return r.json().then(function(err) { throw new Error(err.detail || 'Evaluation failed'); }); }
-      return r.json();
-    }).then(function(d) {
-      globalThis.location.href = '/v1/eval-compare?run_id=' + d.run_id;
-    }).catch(function(err) {
-      alert('Failed to start evaluation: ' + err.message);
+  function showEvalModal(modelId, triggerBtn) {
+    var overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.innerHTML = '<div class="modal-dialog">'
+      + '<div class="modal-dialog__header">'
+      + '<div class="modal-dialog__icon" style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent);">&#128202;</div>'
+      + '<h3 class="modal-dialog__title">Evaluate Model</h3></div>'
+      + '<div class="modal-dialog__body" style="text-align:left;">'
+      + '<div style="margin-bottom:var(--space-3);">'
+      + '<label for="eval-base-id" style="display:block;font-size:var(--text-footnote);color:var(--text-secondary);margin-bottom:var(--space-1);">Base Model ID</label>'
+      + '<input type="text" id="eval-base-id" class="form-input" placeholder="e.g. 42" autocomplete="off" style="width:100%;box-sizing:border-box;">'
+      + '<div id="eval-base-id-error" style="display:none;font-size:var(--text-footnote);color:var(--accent-red);margin-top:var(--space-1);"></div>'
+      + '</div>'
+      + '<div>'
+      + '<label for="eval-dataset" style="display:block;font-size:var(--text-footnote);color:var(--text-secondary);margin-bottom:var(--space-1);">Eval Dataset name</label>'
+      + '<input type="text" id="eval-dataset" class="form-input" placeholder="e.g. my-eval-dataset" autocomplete="off" style="width:100%;box-sizing:border-box;">'
+      + '</div>'
+      + '</div>'
+      + '<div class="modal-dialog__actions">'
+      + '<button type="button" class="modal-dialog__btn modal-dialog__btn--cancel" id="eval-modal-cancel">Cancel</button>'
+      + '<button type="button" class="modal-dialog__btn modal-dialog__btn--confirm" id="eval-modal-confirm">Evaluate</button>'
+      + '</div></div>';
+
+    document.body.appendChild(overlay);
+    document.getElementById('eval-base-id').focus();
+
+    var close = function() {
+      overlay.classList.add('modal-overlay--closing');
+      setTimeout(function() { overlay.remove(); if (triggerBtn) triggerBtn.focus(); }, 250);
+    };
+
+    document.getElementById('eval-modal-cancel').addEventListener('click', close);
+    document.getElementById('eval-modal-confirm').addEventListener('click', function() {
+      var baseModelId = document.getElementById('eval-base-id').value;
+      var evalDatasetName = document.getElementById('eval-dataset').value;
+      var errorEl = document.getElementById('eval-base-id-error');
+      errorEl.style.display = 'none';
+
+      if (!baseModelId || !evalDatasetName) {
+        var msg = !baseModelId ? 'Base Model ID is required.' : 'Eval Dataset name is required.';
+        errorEl.textContent = msg;
+        errorEl.style.display = '';
+        if (!baseModelId) document.getElementById('eval-base-id').focus();
+        else document.getElementById('eval-dataset').focus();
+        return;
+      }
+
+      var baseId = Number.parseInt(baseModelId, 10);
+      if (Number.isNaN(baseId)) {
+        errorEl.textContent = 'Invalid base model ID. Please enter a valid number.';
+        errorEl.style.display = '';
+        document.getElementById('eval-base-id').focus();
+        return;
+      }
+
+      close();
+
+      fetch('/v1/eval/fine-tuned', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          model_id: modelId,
+          base_model_id: baseId,
+          eval_dataset_name: evalDatasetName
+        })
+      }).then(function(r) {
+        if (!r.ok) { return r.json().then(function(err) { throw new Error(err.detail || 'Evaluation failed'); }); }
+        return r.json();
+      }).then(function(d) {
+        globalThis.location.href = '/v1/eval-compare?run_id=' + d.run_id;
+      }).catch(function(err) {
+        alert('Failed to start evaluation: ' + err.message);
+      });
+    });
+
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) close(); });
+    document.addEventListener('keydown', function handler(e) {
+      if (e.key === 'Escape') { close(); document.removeEventListener('keydown', handler); }
     });
   }
 
@@ -143,7 +205,7 @@
 function createRow(m) {
       var tr = document.createElement('tr');
       var playLink = m.runnable_status === 'runnable'
-        ? '<a href="/v1/inference-page?model_id=' + encodeURIComponent(m.name) + '" class="btn btn-primary btn-sm">Inference</a> '
+        ? '<button type="button" class="btn btn-primary btn-sm nav-btn" data-nav-url="/v1/inference-page?model_id=' + encodeURIComponent(m.name) + '">Inference</button> '
         : '';
       tr.innerHTML =
         '<td><a href="/v1/model-detail/' + encodeURIComponent(m.name) + '" class="action-link">' + escHtml(m.display_name) + '</a></td>' +
@@ -153,7 +215,7 @@ function createRow(m) {
         '<td class="text-dim">' + escHtml(m.tokenizer_family) + '</td>' +
         '<td>' + statusBadge(m.runnable_status) + '</td>' +
         '<td>' +
-          '<a href="/v1/model-detail/' + encodeURIComponent(m.name) + '" class="btn btn-secondary btn-sm">View</a> ' +
+          '<button type="button" class="btn btn-secondary btn-sm nav-btn" data-nav-url="/v1/model-detail/' + encodeURIComponent(m.name) + '">View</button> ' +
           playLink +
           '<button type="button" class="btn btn-secondary btn-sm eval-btn" data-model-id="' + encodeURIComponent(m.name) + '">Evaluate</button>' +
         '</td>';
@@ -169,10 +231,10 @@ function createRow(m) {
       dom.setCellHtml(tr, 4, '<span class="text-dim">' + escHtml(m.tokenizer_family) + '</span>');
       dom.setCellHtml(tr, 5, statusBadge(m.runnable_status));
       var playLink = m.runnable_status === 'runnable'
-        ? '<a href="/v1/inference-page?model_id=' + encodeURIComponent(m.name) + '" class="btn btn-primary btn-sm">Inference</a> '
+        ? '<button type="button" class="btn btn-primary btn-sm nav-btn" data-nav-url="/v1/inference-page?model_id=' + encodeURIComponent(m.name) + '">Inference</button> '
         : '';
       dom.setCellHtml(tr, 6,
-        '<a href="/v1/model-detail/' + encodeURIComponent(m.name) + '" class="btn btn-secondary btn-sm">View</a> ' +
+        '<button type="button" class="btn btn-secondary btn-sm nav-btn" data-nav-url="/v1/model-detail/' + encodeURIComponent(m.name) + '">View</button> ' +
         playLink +
         '<button type="button" class="btn btn-secondary btn-sm eval-btn" data-model-id="' + encodeURIComponent(m.name) + '">Evaluate</button>');
     }
@@ -182,10 +244,20 @@ function createRow(m) {
     emptyEl.textContent = 'Failed to load models: ' + err.message;
   });
 
-  /* Delegated handler: inline onclick is blocked by the CSP (script-src nonce). */
+  /* Delegated handlers: inline onclick is blocked by the CSP (script-src nonce). */
   tbody.addEventListener('click', function(e) {
-    var btn = e.target.closest ? e.target.closest('.eval-btn') : null;
-    if (btn) startEval(btn.getAttribute('data-model-id'), e);
+    var evalBtn = e.target.closest ? e.target.closest('.eval-btn') : null;
+    if (evalBtn) { startEval(evalBtn.getAttribute('data-model-id'), e); return; }
+    var navBtn = e.target.closest ? e.target.closest('.nav-btn') : null;
+    if (navBtn) { window.location.href = navBtn.getAttribute('data-nav-url'); }
+  });
+
+  /* ── Static CTA buttons (CSP-safe: no inline onclick) ────────────── */
+  document.getElementById('learn-more-export-btn').addEventListener('click', function() {
+    window.location.href = '/v1/learn/export';
+  });
+  document.getElementById('learn-why-allowlist-btn').addEventListener('click', function() {
+    window.location.href = '/v1/learn/architecture-differences#allow-list';
   });
 })();
 </script>

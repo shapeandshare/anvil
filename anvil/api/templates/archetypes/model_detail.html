@@ -24,8 +24,8 @@
         <h3 class="model-name" id="md-name"></h3>
         <p id="md-description" class="text-dim" style="display:none;"></p>
         <div class="model-header__actions">
-          <a id="md-play-link" href="#" class="btn btn-primary btn-sm">Inference</a>
-          <a id="md-continue-training-link" href="#" class="btn btn-accent btn-sm">Continue Training</a>
+          <button type="button" id="md-play-link" class="btn btn-primary btn-sm">Inference</button>
+          <button type="button" id="md-continue-training-link" class="btn btn-accent btn-sm">Continue Training</button>
         </div>
       </div>
       <div class="metrics-grid">
@@ -282,9 +282,9 @@
       // Enable Play button when assets available + runnable (spec 063)
       if (assetAvail === 'assets_available' && runnableStatus === 'runnable') {
         document.getElementById('md-play-link').style.display = '';
-        document.getElementById('md-play-link').href = '/v1/inference-page?model_id=' + encodeURIComponent(modelId);
+        document.getElementById('md-play-link').setAttribute('data-nav-url', '/v1/inference-page?model_id=' + encodeURIComponent(modelId));
         document.getElementById('md-continue-training-link').style.display = '';
-        document.getElementById('md-continue-training-link').href = '/v1/training-page?base_model_ref=' + encodeURIComponent(modelId);
+        document.getElementById('md-continue-training-link').setAttribute('data-nav-url', '/v1/training-page?base_model_ref=' + encodeURIComponent(modelId));
       }
       document.getElementById('md-download-btn').addEventListener('click', startDownload);
       updateAssetUI(assetAvail);
@@ -351,8 +351,8 @@
         descEl.style.display = 'none';
       }
 
-      document.getElementById('md-play-link').href = '/v1/inference-page?model_id=' + encodeURIComponent(modelId);
-      document.getElementById('md-continue-training-link').href = '/v1/training-page?base_model_ref=' + encodeURIComponent(modelId);
+      document.getElementById('md-play-link').setAttribute('data-nav-url', '/v1/inference-page?model_id=' + encodeURIComponent(modelId));
+      document.getElementById('md-continue-training-link').setAttribute('data-nav-url', '/v1/training-page?base_model_ref=' + encodeURIComponent(modelId));
 
       dom.setText(document.getElementById('md-versions'), String(data.versions.length));
       dom.setText(document.getElementById('md-created'), data.created_at || '\u2014');
@@ -488,6 +488,12 @@
   };
 
   // Wire CSP-safe event listeners (replaces inline onclick)
+  function navigateToDataUrl() {
+    var url = this.getAttribute('data-nav-url');
+    if (url) window.location.href = url;
+  }
+  document.getElementById('md-play-link').addEventListener('click', navigateToDataUrl);
+  document.getElementById('md-continue-training-link').addEventListener('click', navigateToDataUrl);
   document.getElementById('md-delete-model-btn').addEventListener('click', function() { window.deleteModel(); });
   document.getElementById('merge-adapter-btn').addEventListener('click', function() { window.mergeSelectedAdapter(); });
   document.getElementById('md-versions-tbody').addEventListener('click', function(e) {
