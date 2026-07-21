@@ -119,7 +119,7 @@ Every change MUST favor the simplest, most boring solution that fully satisfies 
 - Lean dependencies; new deps justified in an ADR/plan; optional/heavy deps (e.g. GPU) go in `[project.optional-dependencies]`.
 - Significant decisions recorded as ADRs in `docs/vault/Decisions/`; vault enriched per session.
 - Pydantic `BaseModel` MUST be used for all structured data/value-object classes over `dataclasses.dataclass`. Existing `@dataclass` usages are grandfathered until touched for other reasons, but all NEW code MUST use `BaseModel`.
-- **UI compliance (MUST)** — All UI, template, and CSS work MUST comply with `docs/ux-rules.md`. S4/S3 findings block; resolve them, never dilute the rule.
+- **UI compliance (MUST)** — All UI, template, and CSS work MUST comply with `docs/ux-rules.md`. S4/S3 findings block; resolve them, never dilute the rule. The sole exception mechanism: a narrowly-scoped, explicitly user-approved override recorded in its own ADR (per Governance) — never a blanket exemption, never silent. See ADR-050 for the current exception (specific navigation CTAs rendered as `<button>` per reported UX feedback).
 - **One class per file** — Every Python source file MUST contain exactly one class definition. Utility constants, functions, enums, and module-level helpers are permitted in the same file as the primary class only when they are inseparable from that class's interface. Exception and error classes that are tightly coupled may share a file with their primary class. Enforcement is at merge review — any reintroduced multi-class file without explicit exception approval is reject-worthy.
 
 ## Development Workflow & Quality Gates
@@ -132,4 +132,4 @@ Every change MUST favor the simplest, most boring solution that fully satisfies 
 
 This constitution supersedes all other practices in this repository. Amendments require documentation in an Architecture Decision Record (ADR), approval, and version bump. All PRs and agent sessions must verify compliance with these articles.
 
-**Version**: 1.8.0 | **Ratified**: 2026-06-10 | **Last Amended**: 2026-06-22
+**Version**: 1.9.0 | **Ratified**: 2026-06-10 | **Last Amended**: 2026-07-21
