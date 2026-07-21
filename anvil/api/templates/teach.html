@@ -266,7 +266,7 @@ function loadSessions() {
       else if (emptyCard) { emptyCard.style.display = 'none'; }
       list.innerHTML = data.sessions.map(function(s) {
         var active = activeSessionId === s.id ? ' teach-session-item--active' : '';
-        return '<button type="button" class="teach-session-item' + active + '" data-id="' + s.id + '" onclick="selectSession(' + s.id + ')"><span class="teach-session-item-name">' + escHtml(s.name) + '</span><span class="teach-session-item-status">' + (s.status || '') + '</span></button>';
+        return '<button type="button" class="teach-session-item' + active + '" data-id="' + s.id + '"><span class="teach-session-item-name">' + escHtml(s.name) + '</span><span class="teach-session-item-status">' + (s.status || '') + '</span></button>';
       }).join('');
     }).catch(function() {
       var list = document.getElementById('session-list');
@@ -280,6 +280,12 @@ function selectSession(id) {
   loadSessionDetails();
   loadSessions();
 }
+
+/* ── delegated click: session list items ── */
+document.addEventListener('click', function(e) {
+  var item = e.target.closest ? e.target.closest('.teach-session-item') : null;
+  if (item && item.hasAttribute('data-id')) selectSession(Number(item.getAttribute('data-id')));
+});
 
 function loadSessionDetails() {
   if (!activeSessionId) return;
@@ -445,7 +451,10 @@ function connectSSE(runId) {
       ctaContainer.id = 'inspect-cta-container';
       document.getElementById('training-complete').parentNode.appendChild(ctaContainer);
     }
-    ctaContainer.innerHTML = '<button id="inspect-cta" type="button" class="btn btn-primary" onclick="showInspectWithRound(' + activeMlflowRunId + ')">Inspect This Round \u2192</button>';
+    ctaContainer.innerHTML = '<button id="inspect-cta" type="button" class="btn btn-primary">Inspect This Round \u2192</button>';
+    document.getElementById('inspect-cta').addEventListener('click', function() {
+      showInspectWithRound(activeMlflowRunId);
+    });
     closeSSE();
     loadSessionDetails();
     updateComparePanelVisibility();

@@ -35,7 +35,7 @@
       <a href="{{ item.path }}" class="learn-card" data-key="{{ item.key }}" data-title="{{ item.title | lower }}" data-desc="{{ item.desc | lower | striptags }}">
         <div class="learn-card__body">
           <span class="learn-card__title">{{ item.title }}</span>
-          <span class="learn-card__desc">{{ item.desc | safe }}</span>
+          <span class="learn-card__desc">{{ item.desc | safe }}</span>{# ux-lint:allow server-owned static lesson copy from learning.py (HTML entities), not user input #}
         </div>
         <div class="learn-card__meta">
           {% if item.has_widget %}
@@ -101,7 +101,7 @@
   background: var(--bg);
   border: var(--border-width) solid var(--border);
   border-radius: var(--radius);
-  outline: none;
+  outline: none; /* ux-lint:allow focus replaced by border-color + box-shadow on :focus below */
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .learn-hub__filter-input:focus {
@@ -152,7 +152,7 @@
 .learn-card {
   display: flex;
   flex-direction: column;
-  background: var(--bg);
+  background: var(--surface);
   border: var(--border-width) solid var(--border);
   border-radius: var(--radius);
   padding: var(--space-3) var(--space-4);

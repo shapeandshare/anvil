@@ -24,7 +24,7 @@
         <h3 class="model-name" id="md-name"></h3>
         <p id="md-description" class="text-dim" style="display:none;"></p>
         <div class="model-header__actions">
-          <a id="md-play-link" href="#" class="btn btn-primary btn-sm">Play</a>
+          <a id="md-play-link" href="#" class="btn btn-primary btn-sm">Inference</a>
           <a id="md-continue-training-link" href="#" class="btn btn-accent btn-sm">Continue Training</a>
         </div>
       </div>
@@ -38,14 +38,14 @@
         <tbody id="md-versions-tbody"></tbody>
       </table>
       <div style="margin:var(--space-4) 0;">
-        <button class="btn btn-secondary" onclick="deleteModel()" style="color:var(--danger);">Delete Entire Model</button>
+        <button type="button" class="btn btn-secondary" id="md-delete-model-btn" style="color:var(--danger);">Delete Entire Model</button>
       </div>
       <!-- Merge Adapter button (spec 044) -->
       <div id="merge-section" class="action-block" style="display:none;">
         <h3>LoRA Adapters</h3>
         <p class="action-desc" id="adapter-status">No adapters found for this model.</p>
         <div id="adapter-list"></div>
-        <button id="merge-adapter-btn" class="btn btn-primary" style="display:none;" onclick="window.mergeSelectedAdapter()">
+        <button id="merge-adapter-btn" class="btn btn-primary" style="display:none;" type="button">
           Merge Selected Adapter
         </button>
       </div>
@@ -381,7 +381,7 @@
             + '<td class="loss-value">' + (v.final_loss != null ? v.final_loss.toFixed(4) : '\u2014') + '</td>'
             + '<td class="text-dim">' + (v.dataset_name || '\u2014') + '</td>'
             + '<td class="text-dim">' + (v.created_at || '') + '</td>'
-            + '<td><button class="btn btn-secondary btn-sm" onclick="deleteVersion(' + v.version + ')">Delete</button></td>'
+            + '<td><button type="button" class="btn btn-secondary btn-sm md-del-version-btn" data-version="' + v.version + '">Delete</button></td>'
             + '</tr>';
 
           if (v.hyperparameters) {
@@ -486,6 +486,14 @@
       })
       .catch(function(err) { alert('Merge failed: ' + err.message); });
   };
+
+  // Wire CSP-safe event listeners (replaces inline onclick)
+  document.getElementById('md-delete-model-btn').addEventListener('click', function() { window.deleteModel(); });
+  document.getElementById('merge-adapter-btn').addEventListener('click', function() { window.mergeSelectedAdapter(); });
+  document.getElementById('md-versions-tbody').addEventListener('click', function(e) {
+    var btn = e.target.closest ? e.target.closest('.md-del-version-btn') : null;
+    if (btn) window.deleteVersion(Number(btn.getAttribute('data-version')));
+  });
 })();
 </script>
 {% endif %}

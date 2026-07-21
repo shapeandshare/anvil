@@ -36,7 +36,7 @@
   <div style="max-width: 640px; margin: 0 auto;">
     {% for step in steps %}
     {# ux-lint:allow-next established FAQ accordion pattern; keyboard support via faq-common.html #}
-    <div class="faq-item section-card" style="cursor: pointer; margin-bottom: var(--space-2);" id="{{ step.key }}" onclick="toggleFaq(this)" tabindex="0" role="button" aria-expanded="false">
+    <div class="faq-item section-card" style="cursor: pointer; margin-bottom: var(--space-2);" id="{{ step.key }}"  tabindex="0" role="button" aria-expanded="false">
       <div class="faq-question section-card__header" style="margin-bottom: 0; cursor: pointer;">
         <span class="section-card__title">{{ step.title }}</span>
         <span class="faq-toggle text-mono type-caption-1" style="flex-shrink:0;">[+]</span>

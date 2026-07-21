@@ -19,6 +19,7 @@ data/*
 !data/demo/
 !data/demo/**
 anvil-state.db
+feedback-export.json
 logs/
 mlruns/
 mlartifacts/

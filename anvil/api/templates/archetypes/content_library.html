@@ -35,7 +35,7 @@
     <div class="section-card__header">
       <span class="section-card__icon">&#128193;</span>
       <h2 class="section-card__title section-card__title--forge">Corpus Library</h2>
-      <button type="button" class="btn btn-primary btn-sm" id="btn-new-corpus" onclick="content.showCorpusForm()">+ New Corpus</button>
+      <button type="button" class="btn btn-primary btn-sm" id="btn-new-corpus">+ New Corpus</button>
     </div>
     <div id="corpus-list">
       <div class="empty-state-card">
@@ -76,8 +76,8 @@
         </label>
       </div>
       <div style="display:flex;gap:var(--space-2);">
-        <button type="button" class="btn btn-primary" onclick="content.createCorpus()">Create</button>
-        <button type="button" class="btn btn-secondary" onclick="content.hideCorpusForm()">Cancel</button>
+        <button type="button" class="btn btn-primary" id="btn-create-corpus">Create</button>
+        <button type="button" class="btn btn-secondary" id="btn-cancel-corpus">Cancel</button>
       </div>
       <div id="corpus-form-status" class="ds-status-line" style="display:none;"></div>
     </div>
@@ -116,7 +116,7 @@
           <option value="import">import</option>
           <option value="api">api</option>
         </select>
-        <button type="button" class="btn btn-primary btn-sm" onclick="content.createSource()">Register</button>
+        <button type="button" class="btn btn-primary btn-sm" id="btn-register-source">Register</button>
       </div>
       <div id="source-status" class="ds-status-line" style="margin-top:var(--space-2);display:none;"></div>
     </div>
@@ -137,20 +137,20 @@
         <select class="form-select" id="ingest-source" style="flex:1;min-width:180px;" aria-label="Ingest Source">
           <option value="">— select source —</option>
         </select>
-        <button type="button" class="btn btn-primary btn-sm" id="btn-open-session" onclick="content.openSession()">Open Session</button>
+        <button type="button" class="btn btn-primary btn-sm" id="btn-open-session">Open Session</button>
       </div>
       <div id="session-info" style="margin-top:var(--space-2);"></div>
       <div id="stage-area" style="display:none;margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--separator);">
         <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;">
           <input type="text" class="form-input" id="stage-path" placeholder="path/to/file.txt" style="flex:2;min-width:180px;" aria-label="Stage Path">
           <input type="file" class="form-input" id="stage-file" style="flex:1;min-width:140px;" aria-label="Stage File">
-          <button type="button" class="btn btn-primary btn-sm" id="btn-stage" onclick="content.stageFile()">Stage</button>
+          <button type="button" class="btn btn-primary btn-sm" id="btn-stage">Stage</button>
         </div>
         <div id="stage-status" class="ds-status-line" style="margin-top:var(--space-2);"></div>
         <div style="display:flex;gap:var(--space-2);margin-top:var(--space-2);">
-          <button type="button" class="btn btn-accent btn-sm" id="btn-validate" onclick="content.validateSession()">&#10003; Validate</button>
-          <button type="button" class="btn btn-accent btn-sm" id="btn-accept" onclick="content.acceptSession()">&#9874; Accept</button>
-          <button type="button" class="btn btn-secondary btn-sm" id="btn-abandon" onclick="content.abandonSession()">Abandon</button>
+          <button type="button" class="btn btn-accent btn-sm" id="btn-validate">&#10003; Validate</button>
+          <button type="button" class="btn btn-accent btn-sm" id="btn-accept">&#9874; Accept</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-abandon">Abandon</button>
         </div>
         <div id="validation-report" style="margin-top:var(--space-2);"></div>
         <div id="accept-result" style="margin-top:var(--space-2);"></div>
@@ -163,7 +163,7 @@
     <div class="section-card__header">
       <span class="section-card__icon">&#128196;</span>
       <h2 class="section-card__title">Version Timeline</h2>
-      <select class="form-select" id="timeline-corpus" style="min-width:180px;margin-left:auto;" onchange="content.loadTimeline()" aria-label="Timeline Corpus">
+      <select class="form-select" id="timeline-corpus" style="min-width:180px;margin-left:auto;" aria-label="Timeline Corpus">
         <option value="">— select corpus —</option>
       </select>
     </div>
@@ -207,6 +207,25 @@
   if (window.composer && typeof window.composer.mount === 'function') {
     window.composer.mount();
   }
+
+  /* ── Event delegation for CSP-safe button interactions ── */
+  var staticBtnMap = {
+    'btn-new-corpus': function() { content.showCorpusForm(); },
+    'btn-create-corpus': function() { content.createCorpus(); },
+    'btn-cancel-corpus': function() { content.hideCorpusForm(); },
+    'btn-register-source': function() { content.createSource(); },
+    'btn-open-session': function() { content.openSession(); },
+    'btn-stage': function() { content.stageFile(); },
+    'btn-validate': function() { content.validateSession(); },
+    'btn-accept': function() { content.acceptSession(); },
+    'btn-abandon': function() { content.abandonSession(); }
+  };
+  Object.keys(staticBtnMap).forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('click', staticBtnMap[id]);
+  });
+  var timelineCorpus = document.getElementById('timeline-corpus');
+  if (timelineCorpus) timelineCorpus.addEventListener('change', function() { content.loadTimeline(); });
 })();
 </script>
 {% endblock %}

@@ -11,9 +11,9 @@
 
 {# ── BANNER CTA: Data Fundamentals (compact) ── #}
 <div class="section-card section-card--banner" style="--stagger-i:0;margin-bottom:var(--space-3);">
-  <div class="section-card__content" style="display:flex;align-items:center;gap:var(--space-3);">
+  <div class="section-card__content" style="display:flex;align-items:center;gap:var(--space-3);flex-wrap:wrap;">
     <span style="font-size:1.2rem;flex-shrink:0;">&#128218;</span>
-    <div style="flex:1;">
+    <div style="flex:1;min-width:200px;">
       <div style="font-family:var(--font-body);font-weight:600;font-size:var(--text-footnote);color:var(--text-secondary);">
         Understanding Datasets &amp; Corpora
       </div>
@@ -26,6 +26,9 @@
     </a>
   </div>
 </div>
+
+{# ── Related Lessons (inline, next to CTA) ── #}
+{% include "partials/related-lessons.html" %}
 
 {# ── Primary Actions Row ── #}
 <div class="data-hub-actions" style="display:flex;gap:var(--space-2);margin-bottom:var(--space-3);flex-wrap:wrap;">
@@ -47,9 +50,6 @@
 
 
   
-{# ── Related Lessons (above the list) ── #}
-{% include "partials/related-lessons.html" %}
-
 {# ── Unified Data Table ── #}
 <div class="section-card" style="--stagger-i:1">
   <div id="combined-table-container" class="ds-table-wrapper" style="overflow-x:auto;">
