@@ -23,9 +23,9 @@
           Temperature, top-K, and probability distributions &mdash; now in the interactive learning arc.
         </div>
       </div>
-      <a href="/v1/learn/sampling" class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap;">
+      <button type="button" id="learn-more-cta-btn" class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap;">
         Learn More &rarr;
-      </a>
+      </button>
     </div>
   </div>
   {% include "partials/related-lessons.html" %}
@@ -125,6 +125,11 @@
 <script nonce="{{ request.state.csp_nonce }}">
 (function() {
   'use strict';
+
+  /* ── Static CTA buttons (CSP-safe: no inline onclick) ────────────── */
+  document.getElementById('learn-more-cta-btn').addEventListener('click', function() {
+    window.location.href = '/v1/learn/sampling';
+  });
 
   /* ── State ── */
   var modelsData = [];
