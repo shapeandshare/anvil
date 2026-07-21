@@ -21,9 +21,9 @@
         Remote GPU training with Modal &mdash; now in the interactive learning arc.
       </div>
     </div>
-    <a href="/v1/learn/cloud-compute" class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap;">
+    <button type="button" id="learn-more-cta-btn" class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap;">
       Learn More &rarr;
-    </a>
+    </button>
   </div>
 </div>
 {% include "partials/related-lessons.html" %}
@@ -1018,6 +1018,7 @@ _updateBackupRow: function(tr, b, index) {
     'btn-rebootstrap-demo': ops.rebootstrapDemo,
     'btn-backup-create': backup.create,
     'btn-backup-cleanup-safety': backup.cleanupSafety,
+    'learn-more-cta-btn': function() { window.location.href = '/v1/learn/cloud-compute'; },
   };
   Object.keys(staticBtnMap).forEach(function(id) {
     var el = document.getElementById(id);

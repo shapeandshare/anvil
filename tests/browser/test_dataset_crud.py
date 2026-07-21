@@ -156,6 +156,50 @@ class TestDatasetClone:
 
 
 @pytest.mark.usefixtures("_readiness_check")
+class TestDatasetEmptyState:
+    """Regression: empty-state placeholder does not render raw escape sequences.
+
+    The ``#combined-empty`` element previously rendered the literal string
+    ``\\u2026`` instead of a proper ellipsis. This test verifies no raw
+    escape sequences leak into the rendered DOM text.
+    """
+
+    TIMEOUT = 15_000
+
+    def test_combined_empty_no_raw_escape(
+        self,
+        page,
+        base_url: str,
+        assert_no_console_errors,
+    ) -> None:
+        """Assert ``#combined-empty`` text does NOT contain raw ``\\u2026``."""
+        checker = assert_no_console_errors(page)
+        page.goto(f"{base_url}/v1/datasets-page")
+        page.wait_for_load_state("networkidle")
+
+        empty_el = page.locator("#combined-empty")
+        is_visible = empty_el.is_visible()
+
+        if is_visible:
+            text = (empty_el.text_content() or "").strip()
+            # The literal 6-character substring \u2026 must NOT appear.
+            # Python string "\\u2026" represents the 6 raw chars: backslash, u, 2, 0, 2, 6.
+            assert "\\u2026" not in text, (
+                f"Raw escape sequence '\\\\u2026' found in #combined-empty "
+                f"text: {text!r}"
+            )
+            # If the text mentions loading or empty state, it should contain
+            # a properly rendered ellipsis character (… = U+2026) or no
+            # escape-like sequences at all.
+            assert (
+                "\\u" not in text
+            ), f"Unescaped '\\\\u' pattern found in #combined-empty text: {text!r}"
+        # If the element is hidden (data loaded), the test passes vacuously
+        # — the element still exists in the DOM and was not polluted.
+        checker.assert_no_errors()
+
+
+@pytest.mark.usefixtures("_readiness_check")
 class TestDatasetDelete:
     """Golden-path: delete a dataset via the rm button."""
 

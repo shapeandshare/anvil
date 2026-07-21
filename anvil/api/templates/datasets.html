@@ -21,9 +21,9 @@
         How data flows into training &mdash; now in the interactive learning arc.
       </div>
     </div>
-    <a href="/v1/learn/data-fundamentals" class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap;">
+    <button type="button" id="learn-more-cta-btn" class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap;">
       Learn More &rarr;
-    </a>
+    </button>
   </div>
 </div>
 
@@ -66,7 +66,7 @@
       </table>
     </div>
     <div id="combined-empty" aria-live="polite" class="text-muted type-subhead" style="padding:var(--space-4);text-align:center;">
-      Loading\u2026
+      Loading&hellip;
     </div>
   </div>
 </div>
@@ -75,6 +75,11 @@
 {% block scripts %}
 <script nonce="{{ request.state.csp_nonce }}">
 (function() {
+
+  /* ── Static CTA buttons (CSP-safe: no inline onclick) ────────────── */
+  document.getElementById('learn-more-cta-btn').addEventListener('click', function() {
+    window.location.href = '/v1/learn/data-fundamentals';
+  });
 
   /* ════════════════════════════════════════════════════════════
      Helpers

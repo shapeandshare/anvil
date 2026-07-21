@@ -380,6 +380,7 @@ function isAnnotationUI(el) {
 
     this._annotationMode = false;
     this._activeTool = null;
+    this._unbindEvents();
     this._removeNotePopup();
     this._removeOverlay();
     this._hideToolbar();
@@ -1120,6 +1121,20 @@ function isAnnotationUI(el) {
     this._manageElementInfo = elementInfo;
     this._manageSubMode = null;
     this._manageEditingIdx = -1;
+    this._manageAnnotations = matchingAnnotations;
+
+    var popup = document.createElement('div');
+    popup.className = 'feedback-note-popup';
+
+    // Position within viewport bounds
+    var popupW = 280;
+    var popupH = 200;
+    var posX = Math.min(x, window.innerWidth - popupW - 10);
+    var posY = Math.min(y, window.innerHeight - popupH - 10);
+    posX = Math.max(10, posX);
+    posY = Math.max(10, posY);
+    popup.style.left = posX + 'px';
+    popup.style.top = posY + 'px';
 
     this._buildManageList(popup);
 
