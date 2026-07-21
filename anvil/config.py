@@ -19,6 +19,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from dotenv import load_dotenv
+from starlette.requests import Request
 
 load_dotenv()
 
