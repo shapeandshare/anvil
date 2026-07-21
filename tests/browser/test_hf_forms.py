@@ -71,3 +71,66 @@ class TestHfBrowserForms:
             state="visible", timeout=self.TIMEOUT
         )
         checker.assert_no_errors()
+
+    def test_import_button_re_enables_after_click(
+        self, page, base_url: str, assert_no_console_errors
+    ) -> None:
+        """Regression: Import button re-enables after success or failure.
+
+        The bug: Import buttons on curated cards stayed disabled after a
+        successful import -- only the error/catch branches called
+        ``btn.disabled = false``. The fix adds ``btn.disabled = false``
+        to the success branch (and was already present in the
+        search-results handler for parity).
+
+        The curated grid (``.hf-card``) is rendered server-side from a
+        bundled YAML (``curated-models.yaml``), so cards are always
+        present without needing HF Hub network access. However, the POST
+        to ``/v1/models/import`` does require HF Hub access to resolve
+        the model identifier, which Docker CI typically lacks. In that
+        case the backend returns a 422, the frontend error branch fires,
+        and the button is re-enabled. This test verifies the button is
+        re-enabled regardless of outcome.
+        """
+        checker = assert_no_console_errors(page)
+        page.goto(f"{base_url}/v1/hf-browser")
+        page.wait_for_load_state("networkidle")
+
+        # Find the first curated card Import button
+        import_btn = page.locator(".hf-import-btn[data-hf-id]").first
+        if import_btn.count() == 0:
+            # All models already imported -- nothing to test in this env
+            checker.assert_no_errors()
+            return
+
+        # Click Import -- button enters "importing..." transient state
+        import_btn.click()
+
+        # Wait for the button to exit the "importing..." transient state.
+        # After the API call resolves (success or failure), the text
+        # changes to one of: "imported (job #N)", "import failed", or
+        # "error". The button.disabled is set to false in ALL branches.
+        page.wait_for_function(
+            "document.querySelector('.hf-import-btn[data-hf-id]')"
+            "?.textContent !== 'importing...'",
+            timeout=self.TIMEOUT,
+        )
+
+        # The button MUST be re-enabled regardless of outcome
+        assert not import_btn.is_disabled(), (
+            "Import button should be re-enabled after the import attempt "
+            "(success or failure -- the fix ensures both paths call "
+            "btn.disabled = false)"
+        )
+
+        # Graceful degradation: the import requires HF Hub network
+        # access, which Docker CI typically doesn't have. The backend
+        # will likely return a 422 error, which the console checker
+        # would record as a FAILED_RESOURCE. In that case, the key
+        # regression check (button re-enabled) already passed -- return
+        # early.
+        current_text = (import_btn.text_content() or "").strip()
+        if not current_text.startswith("imported"):
+            return
+
+        checker.assert_no_errors()
