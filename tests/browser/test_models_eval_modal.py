@@ -35,9 +35,10 @@ class TestModelsEvalModal:
         checker = assert_no_console_errors(page)
 
         # Fail hard if any native browser dialog appears
-        page.on("dialog", lambda dialog: pytest.fail(
-            "Native dialog appeared: " + dialog.message
-        ))
+        page.on(
+            "dialog",
+            lambda dialog: pytest.fail("Native dialog appeared: " + dialog.message),
+        )
 
         page.goto(f"{base_url}/v1/models-page")
         page.wait_for_load_state("networkidle")
@@ -60,9 +61,9 @@ class TestModelsEvalModal:
         title = overlay.locator(".modal-dialog__title")
         assert title.is_visible(), "Modal title should be visible"
         title_text = (title.text_content() or "").strip()
-        assert "Evaluate Model" in title_text, (
-            f"Expected 'Evaluate Model' in modal title, got {title_text!r}"
-        )
+        assert (
+            "Evaluate Model" in title_text
+        ), f"Expected 'Evaluate Model' in modal title, got {title_text!r}"
 
         # Verify both labeled inputs are visible
         base_id_input = overlay.locator("#eval-base-id")
@@ -90,9 +91,10 @@ class TestModelsEvalModal:
         """Enter invalid Base Model ID and verify inline error appears."""
         checker = assert_no_console_errors(page)
 
-        page.on("dialog", lambda dialog: pytest.fail(
-            "Native dialog appeared: " + dialog.message
-        ))
+        page.on(
+            "dialog",
+            lambda dialog: pytest.fail("Native dialog appeared: " + dialog.message),
+        )
 
         page.goto(f"{base_url}/v1/models-page")
         page.wait_for_load_state("networkidle")
@@ -134,9 +136,10 @@ class TestModelsEvalModal:
         """Fill valid inputs, click Cancel, verify modal closes without navigation."""
         checker = assert_no_console_errors(page)
 
-        page.on("dialog", lambda dialog: pytest.fail(
-            "Native dialog appeared: " + dialog.message
-        ))
+        page.on(
+            "dialog",
+            lambda dialog: pytest.fail("Native dialog appeared: " + dialog.message),
+        )
 
         page.goto(f"{base_url}/v1/models-page")
         page.wait_for_load_state("networkidle")
@@ -166,8 +169,7 @@ class TestModelsEvalModal:
 
         # Verify we're still on the models page (no navigation to eval-compare)
         assert "models-page" in page.url, (
-            f"Expected to stay on models-page after Cancel, "
-            f"but URL is {page.url}"
+            f"Expected to stay on models-page after Cancel, " f"but URL is {page.url}"
         )
 
         checker.assert_no_errors()
@@ -182,9 +184,10 @@ class TestModelsEvalModal:
         """Open eval modal, press Escape, verify it closes."""
         checker = assert_no_console_errors(page)
 
-        page.on("dialog", lambda dialog: pytest.fail(
-            "Native dialog appeared: " + dialog.message
-        ))
+        page.on(
+            "dialog",
+            lambda dialog: pytest.fail("Native dialog appeared: " + dialog.message),
+        )
 
         page.goto(f"{base_url}/v1/models-page")
         page.wait_for_load_state("networkidle")

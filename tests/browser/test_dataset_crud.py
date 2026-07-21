@@ -191,9 +191,9 @@ class TestDatasetEmptyState:
             # If the text mentions loading or empty state, it should contain
             # a properly rendered ellipsis character (… = U+2026) or no
             # escape-like sequences at all.
-            assert "\\u" not in text, (
-                f"Unescaped '\\\\u' pattern found in #combined-empty text: {text!r}"
-            )
+            assert (
+                "\\u" not in text
+            ), f"Unescaped '\\\\u' pattern found in #combined-empty text: {text!r}"
         # If the element is hidden (data loaded), the test passes vacuously
         # — the element still exists in the DOM and was not polluted.
         checker.assert_no_errors()

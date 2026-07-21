@@ -231,8 +231,7 @@ class TestLearnMoreButtons:
         # Assert it is a <button> element, not <a>
         tag_name = btn.evaluate("el => el.tagName")
         assert tag_name == "BUTTON", (
-            f"Expected tagName BUTTON for '{btn_text}' on {route}, "
-            f"got {tag_name}"
+            f"Expected tagName BUTTON for '{btn_text}' on {route}, " f"got {tag_name}"
         )
 
         # Click the button and verify the URL navigates to the expected learn path

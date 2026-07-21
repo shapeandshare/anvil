@@ -337,9 +337,9 @@ class TestAnnotationToggleRegression:
         assert result["overlay1Created"], "First enter should create overlay"
         assert result["overlay1Removed"], "Exit should remove overlay"
         assert result["overlay2Created"], "Re-enter should create new overlay"
-        assert result["isNewOverlay"], (
-            "Should create new overlay instance, not reuse stale one"
-        )
+        assert result[
+            "isNewOverlay"
+        ], "Should create new overlay instance, not reuse stale one"
         assert result["toolSet"], "Should be able to set tool after re-enter"
 
         checker.assert_no_errors()
@@ -434,12 +434,12 @@ class TestAnnotationToggleRegression:
         assert result.get("error") is None, result.get("error", "")
         assert result["popupCreated"], "Should create popup element"
         assert result["popupInDom"], "Popup should be in the DOM"
-        assert "feedback-note-popup" in result["popupClass"], (
-            "Popup should have correct class name"
-        )
-        assert result["manageAnnotationsSet"], (
-            "_manageAnnotations should be set before _buildManageList"
-        )
+        assert (
+            "feedback-note-popup" in result["popupClass"]
+        ), "Popup should have correct class name"
+        assert result[
+            "manageAnnotationsSet"
+        ], "_manageAnnotations should be set before _buildManageList"
 
         checker.assert_no_errors()
 
@@ -490,24 +490,22 @@ class TestAnnotationToggleRegression:
             };
         }""")
 
-        assert result["canvasDefined"], (
-            "Annotation canvas should be defined on /v1/feedback-page"
-        )
-        assert result["toggleBtnExists"], (
-            "Toggle button should exist on feedback page"
-        )
-        assert result["reportListExists"], (
-            "Feedback report list should still be present"
-        )
-        assert result["emptyStateExists"], (
-            "Feedback empty state should still be present"
-        )
-        assert result["overlayCreated"], (
-            "Should be able to enter annotation mode on feedback page"
-        )
-        assert result["overlayRemoved"], (
-            "Should be able to exit annotation mode on feedback page"
-        )
+        assert result[
+            "canvasDefined"
+        ], "Annotation canvas should be defined on /v1/feedback-page"
+        assert result["toggleBtnExists"], "Toggle button should exist on feedback page"
+        assert result[
+            "reportListExists"
+        ], "Feedback report list should still be present"
+        assert result[
+            "emptyStateExists"
+        ], "Feedback empty state should still be present"
+        assert result[
+            "overlayCreated"
+        ], "Should be able to enter annotation mode on feedback page"
+        assert result[
+            "overlayRemoved"
+        ], "Should be able to exit annotation mode on feedback page"
 
         checker.assert_no_errors()
 
@@ -620,26 +618,24 @@ class TestAnnotationToggleRegression:
         assert result["overlay1Created"], "First enter should create overlay"
         assert result["overlay1Removed"], "Exit should remove overlay"
         assert result["overlay2Created"], "Re-enter should create new overlay"
-        assert result["isNewOverlay"], (
-            "Should create new overlay instance, not reuse stale one"
-        )
-        assert result["hlDisplayed"], (
-            "Hover highlight should be displayed after re-enter + mousemove"
-        )
-        assert result["hlWidth"] >= 1, (
-            "Hover highlight should have positive width: got "
-            + str(result["hlWidth"])
-        )
+        assert result[
+            "isNewOverlay"
+        ], "Should create new overlay instance, not reuse stale one"
+        assert result[
+            "hlDisplayed"
+        ], "Hover highlight should be displayed after re-enter + mousemove"
+        assert (
+            result["hlWidth"] >= 1
+        ), "Hover highlight should have positive width: got " + str(result["hlWidth"])
         assert result["matchesTarget"], (
             "Hover highlight should match the target element's rect, "
             "confirming the overlay's hit-testing (via "
             "_getElementUnderCursor) resolved to our synthetic "
             "element rather than an unrelated page element"
         )
-        assert result["hlHeight"] >= 1, (
-            "Hover highlight should have positive height: got "
-            + str(result["hlHeight"])
-        )
+        assert (
+            result["hlHeight"] >= 1
+        ), "Hover highlight should have positive height: got " + str(result["hlHeight"])
 
         checker.assert_no_errors()
 
@@ -752,15 +748,15 @@ class TestAnnotationToggleRegression:
         assert result.get("error") is None, result.get("error", "")
         assert result["popupCreated"], "Should create popup element"
         assert result["popupInDom"], "Popup should be in the DOM"
-        assert "feedback-note-popup" in result["popupClass"], (
-            "Popup should have correct class name"
-        )
-        assert result["contentDefined"], (
-            "Popup should have defined (non-undefined) content"
-        )
-        assert result["manageAnnotationsSet"], (
-            "_manageAnnotations should be set before _buildManageList"
-        )
+        assert (
+            "feedback-note-popup" in result["popupClass"]
+        ), "Popup should have correct class name"
+        assert result[
+            "contentDefined"
+        ], "Popup should have defined (non-undefined) content"
+        assert result[
+            "manageAnnotationsSet"
+        ], "_manageAnnotations should be set before _buildManageList"
 
         checker.assert_no_errors()
 
@@ -828,20 +824,18 @@ class TestAnnotationToggleRegression:
             };
         }""")
 
-        assert result["canvasDefined"], (
-            "Annotation canvas should be defined on /v1/feedback-page"
-        )
-        assert result["toggleBtnExists"], (
-            "Toggle button should exist on feedback page"
-        )
-        assert result["overlayCreated"], (
-            "Toggle button click should enter annotation mode"
-        )
-        assert result["overlayRemoved"], (
-            "Second toggle click should exit annotation mode"
-        )
-        assert result["reportListVisible"], (
-            "Feedback report list should remain visible in annotation mode"
-        )
+        assert result[
+            "canvasDefined"
+        ], "Annotation canvas should be defined on /v1/feedback-page"
+        assert result["toggleBtnExists"], "Toggle button should exist on feedback page"
+        assert result[
+            "overlayCreated"
+        ], "Toggle button click should enter annotation mode"
+        assert result[
+            "overlayRemoved"
+        ], "Second toggle click should exit annotation mode"
+        assert result[
+            "reportListVisible"
+        ], "Feedback report list should remain visible in annotation mode"
 
         checker.assert_no_errors()
