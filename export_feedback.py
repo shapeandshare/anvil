@@ -26,10 +26,22 @@ def _req(url: str, api_key: str) -> dict:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Export feedback reports from anvil API")
-    parser.add_argument("--host", default="http://localhost:8080", help="Base URL of running anvil instance")
-    parser.add_argument("--api-key", default=None, help="API key (required, or set ANVIL_API_KEY env var)")
-    parser.add_argument("--output", default="feedback-export.json", help="Output JSON file")
+    parser = argparse.ArgumentParser(
+        description="Export feedback reports from anvil API"
+    )
+    parser.add_argument(
+        "--host",
+        default="http://localhost:8080",
+        help="Base URL of running anvil instance",
+    )
+    parser.add_argument(
+        "--api-key",
+        default=None,
+        help="API key (required, or set ANVIL_API_KEY env var)",
+    )
+    parser.add_argument(
+        "--output", default="feedback-export.json", help="Output JSON file"
+    )
     args = parser.parse_args()
     api_key = args.api_key or os.environ.get("ANVIL_API_KEY")
     if not api_key:
