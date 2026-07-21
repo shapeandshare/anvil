@@ -3,15 +3,15 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-"""Per-instance runtime configuration overrides.
+"""Runtime configuration overrides.
 
-Stored in the per-instance app database (``data/anvil-state.db`` in
-the instance's workspace).  Each row is a single key/value override
-with an ``apply_class`` describing how it takes effect.
+Stored in the app database (``data/anvil-state.db``).  Each row is a
+single key/value override with an ``apply_class`` describing how it
+takes effect.
 
-Boot-critical values (workspace root, web port, MLflow port, DB path)
-live in the workspace ``instance.json`` boot file — they are NOT
-stored in this table.
+Boot-critical values (web port, MLflow port, DB path) are resolved
+from environment variables at startup — they are NOT stored in this
+table.
 """
 
 from __future__ import annotations

@@ -104,7 +104,6 @@ anvil-show-api-key = "anvil.cli:show_api_key"
 anvil-backup = "anvil.services.backup.cli:main"
 anvil-import = "anvil.cli:import_main"
 anvil-import-status = "anvil.cli:import_status_main"
-anvil-instance = "anvil.services.instances.cli:main"
 
 [tool.ruff]
 target-version = "py311"

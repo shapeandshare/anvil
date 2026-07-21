@@ -41,7 +41,7 @@ from ..db import models  # noqa: F401  # pylint: disable=unused-import
 from ..db.migration import MigrationService
 from ..db.repositories.corpora import CorpusRepository
 from ..db.repositories.datasets import DatasetRepository
-from ..db.session import AsyncSessionLocal, init_engine, reinit_engine
+from ..db.session import AsyncSessionLocal, init_engine
 from ..services.backup.backup_service import BackupService
 from ..services.catalog.catalog_unavailable_error import CatalogUnavailableError
 from ..services.demo.demo_bootstrap import DemoBootstrapService
@@ -49,8 +49,6 @@ from ..services.inference.demo_model_provider import warmup_demo_via_system_pipe
 from ..services.tracking.tracking import TrackingService
 from ..supervisor.services import MLflowService
 from ..workbench import AnvilWorkbench
-from ..workspace.boot_config import BootConfig
-from ..workspace.workspace_paths import WorkspacePaths
 from .auth import (
     SESSION_COOKIE_NAME,
     generate_csrf_token,
@@ -263,50 +261,13 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     Delegates each startup phase to a dedicated helper function for
     maintainability.  On shutdown the MLflow sidecar is stopped if it
     was started by this process.
-
-    When ``ANVIL_WORKSPACE_DIR`` is set (feature-028 workspace mode),
-    the engine/env-vars are already configured by the instance-launch
-    process; this lifespan stores the ``WorkspacePaths`` and a startup-
-    config snapshot in ``app.state`` for per-instance path isolation
-    and the pending-restart diff mechanism.
     """
     _setup_logging()
 
-    # ── Workspace-aware state initialisation (feature-028) ─────────
-    ws_dir = os.environ.get("ANVIL_WORKSPACE_DIR")
-    workspace_paths: object = None
-    boot_snapshot: dict[str, object] | None = None
-
-    if ws_dir:
-        ws_root = await asyncio.to_thread(lambda: Path(ws_dir).resolve())
-        boot_file = ws_root / "instance.json"
-
-        # Explicitly redirect the engine to the workspace DB path so
-        # that the lifespan is robust regardless of env-var timing.
-        boot_cfg = BootConfig.load(boot_file)
-        await reinit_engine(boot_cfg.state_db_path)
-
-        workspace_paths = WorkspacePaths(ws_root)
-
-        # Capture the effective boot-config at process start for the
-        # pending-restart diff (US3/T049).
-        boot_snapshot = {
-            "workspace_root": str(ws_root),
-            "web_port": int(os.environ.get("ANVIL_PORT", str(boot_cfg.web_port))),
-            "mlflow_port": int(
-                os.environ.get(
-                    "ANVIL_MLFLOW_URI", f"http://127.0.0.1:{boot_cfg.mlflow_port}"
-                ).rsplit(":", 1)[-1]
-            ),
-            "state_db_path": os.environ.get(
-                "ANVIL_STATE_DB_PATH", boot_cfg.state_db_path
-            ),
-        }
-
     await _init_database()
 
-    _app.state.workspace_paths = workspace_paths
-    _app.state.boot_snapshot = boot_snapshot
+    _app.state.workspace_paths = None
+    _app.state.boot_snapshot = None
 
     cfg = get_config()
     _start_mlflow_if_needed(_app, cfg)

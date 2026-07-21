@@ -12,8 +12,8 @@ PID-file-based process tracking.
 
 Module-level constant ``_PID_DIR`` controls the default directory
 where PID files are stored.  It is resolved from
-``get_config()["log_dir"]`` so that ``ANVIL_LOG_DIR`` and
-``ANVIL_WORKSPACE_DIR`` are honoured automatically.
+``get_config()["log_dir"]`` so that ``ANVIL_LOG_DIR`` is honoured
+automatically.
 """
 
 import os
@@ -24,8 +24,7 @@ from pathlib import Path
 from ..config import get_config
 
 # Default directory for PID files created by write_pid / kill_pid_file.
-# Resolved from config so that ANVIL_LOG_DIR and ANVIL_WORKSPACE_DIR
-# are honoured.
+# Resolved from config so that ANVIL_LOG_DIR is honoured.
 _PID_DIR: str = get_config()["log_dir"]
 
 

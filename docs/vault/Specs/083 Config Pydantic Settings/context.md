@@ -51,7 +51,7 @@ grep -rn 'get_config()\[' anvil --include="*.py"
 
 ## Key Constraints
 
-- **Workspace overlay** (`config.py:106-118, 171-184`): when `ANVIL_WORKSPACE_DIR` set, `WorkspacePaths` provides path defaults; env vars still win. This precedence MUST be preserved in `AppConfig`.
+- **Workspace overlay**: *(Retired — the `ANVIL_WORKSPACE_DIR` overlay was removed with the reverted spec 028 multi-instance feature. `AppConfig` needs no workspace logic.)*
 - **`.env` loading**: `load_dotenv()` at `config.py:30` — `pydantic-settings` `SettingsConfigDict(env_file=".env")` replaces this.
 - **`@lru_cache`**: current caching behavior — `BaseSettings` instances are cheap; use a module-level cached singleton or `@lru_cache` on a factory.
 - **Test env**: `tests/conftest.py:22` sets `ANVIL_MLFLOW_URI=sqlite:///:memory:` — must still resolve.

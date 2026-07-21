@@ -6,9 +6,9 @@
 """Repository for RuntimeConfig persistence.
 
 Each row is a single key/value override with an ``apply_class``
-describing how it takes effect.  Boot-critical values (workspace root,
-web port, MLflow port, DB path) live in the workspace ``instance.json``
-boot file — this repository does NOT store them.
+describing how it takes effect.  Boot-critical values (web port,
+MLflow port, DB path) are resolved from environment variables at
+startup — this repository does NOT store them.
 """
 
 from __future__ import annotations

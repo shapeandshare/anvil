@@ -45,7 +45,6 @@ Start here to see what has been specified, what is in progress, and what shipped
 - [[Specs/025 UX Rules Integration/025 UX Rules Integration|025 UX Rules Integration]]
 - [[Specs/026 Client SDK/026 Client SDK|026 Client SDK]]
 - [[Specs/027 Deployment Backup Restore/027 Deployment Backup Restore|027 Deployment Backup Restore]]
-- [[Specs/028 Concurrent Isolated Instances/028 Concurrent Isolated Instances|028 Concurrent Isolated Instances]]
 - [[Specs/029 SaaS Dev Stack/029 SaaS Dev Stack|029 SaaS Dev Stack]]
 - [[Specs/030 SaaS Authentication/030 SaaS Authentication|030 SaaS Authentication]]
 - [[Specs/031 SaaS Multi-Tenancy RBAC/031 SaaS Multi-Tenancy RBAC|031 SaaS Multi-Tenancy RBAC]]

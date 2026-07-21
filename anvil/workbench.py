@@ -14,7 +14,6 @@ dependency for request-scoped usage.
 
 from __future__ import annotations
 
-import asyncio
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -40,10 +39,6 @@ from .db.repositories.evaluation_runs import EvaluationRunRepository
 from .db.repositories.external_models import ExternalModelRepository
 from .db.repositories.feedback_repository import FeedbackRepository
 from .db.repositories.fine_tune_datasets import FineTuneDatasetRepository
-from .db.repositories.instance_registry import (
-    InstanceRegistryRepository,
-    create_registry_session,
-)
 from .db.repositories.licenses import LicenseRepository
 from .db.repositories.lora_adapter_repository import LoRAAdapterRepository
 from .db.repositories.model_asset_repository import ModelAssetRepository
@@ -79,7 +74,6 @@ from .services.governance.audit_service import AuditService
 from .services.governance.governance_service import GovernanceService
 from .services.inference.inference import InferenceService
 from .services.inference.model_browser import ModelBrowserService
-from .services.instances.instance_lifecycle_service import InstanceLifecycleService
 from .services.model_import.hf_source import HfHubSource
 from .services.model_import.local_source import LocalSource
 from .services.model_import.model_asset_service import ModelAssetService
@@ -112,9 +106,6 @@ class AnvilWorkbench:
         Derived paths from the workspace root.  Set by workspace-
         aware callers; defaults to ``None`` (legacy single-instance
         paths).
-    registry_session : AsyncSession, optional
-        Session bound to the global registry DB (``~/.anvil/registry.db``).
-        Created lazily if omitted.
     """
 
     # Re-exported audit enums for route-layer consumption
@@ -126,11 +117,9 @@ class AnvilWorkbench:
         self,
         session: AsyncSession,
         paths: WorkspacePaths | None = None,
-        registry_session: AsyncSession | None = None,
     ) -> None:
         self._session = session
         self._paths = paths
-        self._registry_session = registry_session
         # DB-backed lazy references.
         self._training: TrainingService | None = None
         self._tracking: TrackingService | None = None
@@ -165,8 +154,6 @@ class AnvilWorkbench:
         # Backup & Restore (feature 026).
         self._backup_repo: BackupOperationRepository | None = None
         # Instance lifecycle (feature 028).
-        self._instances: InstanceLifecycleService | None = None
-        self._instance_registry: InstanceRegistryRepository | None = None
         # Runtime config (feature 037).
         self._runtime_config_repo: RuntimeConfigRepository | None = None
         self._runtime_config: RuntimeConfigService | None = None
@@ -501,34 +488,6 @@ class AnvilWorkbench:
         if self._backup_repo is None:
             self._backup_repo = BackupOperationRepository(self._session)
         return self._backup_repo
-
-    # ── Instance lifecycle accessors (feature 028) ──────────────────────
-
-    @property
-    def instances(self) -> InstanceLifecycleService:
-        """Lazily-initialised ``InstanceLifecycleService`` wired to
-        *session*.
-        """
-        if self._instances is None:
-            self._instances = InstanceLifecycleService(
-                self._session,
-                registry_session=self._registry_session,
-                audit=self._audit,
-            )
-        return self._instances
-
-    @property
-    def instance_registry(self) -> InstanceRegistryRepository:
-        """Lazily-initialised ``InstanceRegistryRepository`` bound to
-        the global registry session.
-        """
-        if self._instance_registry is None:
-            # Create registry session lazily if the caller did not
-            # provide one.
-            if self._registry_session is None:
-                self._registry_session = asyncio.run(create_registry_session())
-            self._instance_registry = InstanceRegistryRepository(self._registry_session)
-        return self._instance_registry
 
     # ── Runtime config accessors (feature 037) ──────────────────────────
 
