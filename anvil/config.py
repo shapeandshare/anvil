@@ -152,7 +152,8 @@ def get_config() -> dict[str, Any]:
         "log_dir": os.getenv("ANVIL_LOG_DIR", "logs"),
         "mlflow_uri": default_mlflow_uri,
         "mlflow_port": _parse_port_from_uri(default_mlflow_uri),
-        "mlflow_backend_store_uri": "sqlite:///" + str(Path("mlruns/mlflow.db").resolve()),
+        "mlflow_backend_store_uri": "sqlite:///"
+        + str(Path("mlruns/mlflow.db").resolve()),
         "mlflow_disable_local": mlflow_disable_local,
         "db_auto_migrate": os.getenv("ANVIL_DB_AUTO_MIGRATE", "true").lower()
         in ("true", "1", "yes"),
