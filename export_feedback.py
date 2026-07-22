@@ -26,6 +26,7 @@ def _req(url: str, api_key: str) -> dict:
 
 
 def main() -> None:
+    """Export feedback reports from the anvil API."""
     parser = argparse.ArgumentParser(
         description="Export feedback reports from anvil API"
     )
