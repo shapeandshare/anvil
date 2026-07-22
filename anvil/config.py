@@ -89,6 +89,18 @@ def get_mlflow_browser_uri(request: Request) -> str:
 
 
 def _parse_port_from_uri(uri: str) -> int:
+    """Extract the port number from an MLflow URI.
+
+    Parameters
+    ----------
+    uri : str
+        MLflow tracking URI (e.g. ``http://127.0.0.1:5001``).
+
+    Returns
+    -------
+    int
+        The port number, or ``5001`` if parsing fails.
+    """
     try:
         parsed = urlparse(uri)
         return parsed.port or 5001

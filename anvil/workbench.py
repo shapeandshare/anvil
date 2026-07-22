@@ -153,7 +153,6 @@ class AnvilWorkbench:
         self._content_locks: LockService | None = None
         # Backup & Restore (feature 026).
         self._backup_repo: BackupOperationRepository | None = None
-        # Instance lifecycle (feature 028).
         # Runtime config (feature 037).
         self._runtime_config_repo: RuntimeConfigRepository | None = None
         self._runtime_config: RuntimeConfigService | None = None
