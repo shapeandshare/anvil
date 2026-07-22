@@ -6,9 +6,10 @@
 """Repository for RuntimeConfig persistence.
 
 Each row is a single key/value override with an ``apply_class``
-describing how it takes effect.  Boot-critical values (web port,
-MLflow port, DB path) are resolved from environment variables at
-startup — this repository does NOT store them.
+describing how it takes effect.  Boot-critical overrides (web port,
+MLflow port, DB path) are stored here but only take effect after
+a restart — the effective values at startup are resolved from
+environment variables.
 """
 
 from __future__ import annotations

@@ -9,9 +9,9 @@ Stored in the app database (``data/anvil-state.db``).  Each row is a
 single key/value override with an ``apply_class`` describing how it
 takes effect.
 
-Boot-critical values (web port, MLflow port, DB path) are resolved
-from environment variables at startup — they are NOT stored in this
-table.
+Boot-critical overrides (web port, MLflow port, DB path) are stored
+in this table but only take effect after a restart — the effective
+values at startup are resolved from environment variables.
 """
 
 from __future__ import annotations
