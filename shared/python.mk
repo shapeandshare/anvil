@@ -33,7 +33,7 @@ bandit: $(VENV_DIR)/activate ## Run bandit security linter on the anvil package
 	$(PYTHON) -m bandit -r anvil/ -c pyproject.toml
 
 semgrep: $(VENV_DIR)/activate ## Run semgrep SAST on the anvil package
-	$(PYTHON) -m semgrep --config=.semgrep.yml anvil/ --error
+	$(VENV_BIN)/semgrep --config=.semgrep.yml anvil/ --error
 
 
 

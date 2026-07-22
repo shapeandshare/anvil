@@ -157,7 +157,7 @@ class TestDatasetClone:
 
 @pytest.mark.usefixtures("_readiness_check")
 class TestDatasetEmptyState:
-    """Regression: empty-state placeholder does not render raw escape sequences.
+    r"""Regression: empty-state placeholder does not render raw escape sequences.
 
     The ``#combined-empty`` element previously rendered the literal string
     ``\\u2026`` instead of a proper ellipsis. This test verifies no raw
@@ -172,7 +172,7 @@ class TestDatasetEmptyState:
         base_url: str,
         assert_no_console_errors,
     ) -> None:
-        """Assert ``#combined-empty`` text does NOT contain raw ``\\u2026``."""
+        r"""Assert ``#combined-empty`` text does NOT contain raw ``\\u2026``."""
         checker = assert_no_console_errors(page)
         page.goto(f"{base_url}/v1/datasets-page")
         page.wait_for_load_state("networkidle")

@@ -13,18 +13,10 @@ Module-level Variables
 async_engine : AsyncEngine
     The singleton async SQLAlchemy engine with WAL-mode-friendly
     configuration.  Initialised lazily on first module import from
-    ``get_config()["state_db_path"]`` (default boot path), or
-    explicitly via ``reinit_engine()`` for workspace-based instances.
+    ``get_config()["state_db_path"]``.
 AsyncSessionLocal : async_sessionmaker[AsyncSession]
     Factory that produces ``AsyncSession`` instances bound to
     ``async_engine``.
-
-Starting with the v2.0 (feature-028) refactoring, the engine is NOT
-created at import time — it is deferred to ``_bootstrap_engine()``
-which auto-runs on the first module import so backward compatibility
-is preserved for the default (single-instance) path.  Workspace-aware
-callers use ``reinit_engine(db_path)`` to redirect the engine to a
-per-instance SQLite database.
 """
 
 from __future__ import annotations
@@ -44,7 +36,7 @@ from ..config import get_config
 
 logger = logging.getLogger(__name__)
 
-# ── Module-level globals (set by _bootstrap_engine / reinit_engine) ──
+# ── Module-level globals (set by _bootstrap_engine) ──
 
 _engine: AsyncEngine | None = None
 _session_maker: async_sessionmaker[AsyncSession] | None = None
@@ -103,31 +95,6 @@ async def init_engine() -> None:
         await conn.exec_driver_sql("PRAGMA journal_mode=WAL")
         await conn.exec_driver_sql("PRAGMA foreign_keys=ON")
         await conn.commit()
-
-
-async def reinit_engine(db_path: str) -> None:
-    """Reinitialise the engine with a new database path.
-
-    Disposes the existing engine (if any) and creates a fresh one
-    targeted at ``db_path``, then runs the WAL initialisation.
-    This is the entry point for workspace-based instances that need
-    a per-workspace SQLite database (feature-028).
-
-    Parameters
-    ----------
-    db_path : str
-        Absolute path to the per-instance SQLite database file.
-    """
-    global _engine, _session_maker, async_engine, AsyncSessionLocal
-
-    # Dispose the old engine if it exists.
-    if _engine is not None:
-        await _engine.dispose()
-
-    _bootstrap_engine(db_path)
-    async_engine = cast("AsyncEngine", _engine)
-    AsyncSessionLocal = cast("async_sessionmaker[AsyncSession]", _session_maker)
-    await init_engine()
 
 
 async def get_db() -> AsyncGenerator[AsyncSession]:

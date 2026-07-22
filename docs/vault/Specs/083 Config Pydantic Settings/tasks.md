@@ -10,11 +10,11 @@
 - [ ] T010 **[Red]** Write `tests/unit/test_config.py::test_appconfig_defaults` — asserts `AppConfig()` yields port=8080, host="127.0.0.1", etc. with no env set. Confirm it FAILS (AppConfig doesn't exist).
 - [ ] T011 **[Red]** Write `test_appconfig_env_override` — `ANVIL_PORT=9090` → `AppConfig().port == 9090`.
 - [ ] T012 **[Red]** Write `test_appconfig_invalid_port_raises` — `ANVIL_PORT=abc` → `ValidationError`.
-- [ ] T013 **[Red]** Write `test_appconfig_workspace_overlay` — `ANVIL_WORKSPACE_DIR` set → workspace path defaults applied, env overrides win.
+- [ ] T013 *(Removed — `ANVIL_WORKSPACE_DIR` overlay retired with reverted spec 028.)*
 - [ ] T014 **[Red]** Write `test_appconfig_mlflow_port_derived` — `mlflow_port` derived from `mlflow_uri`.
 - [ ] T015 **[Red]** Write `test_appconfig_retention_empty_is_none` — empty `ANVIL_BACKUP_RETENTION_MAX_COUNT` → `None`.
-- [ ] T020 **[Green]** Implement `AppConfig(BaseSettings)` in `anvil/config.py` with all 18 fields, validators, computed `mlflow_port`, workspace overlay. Make T010-T015 pass.
-- [ ] T021 **[Refactor]** Extract workspace-overlay logic into a clean helper; ensure `mypy --strict` passes.
+- [ ] T020 **[Green]** Implement `AppConfig(BaseSettings)` in `anvil/config.py` with all fields, validators, computed `mlflow_port`. Make T010-T015 pass.
+- [ ] T021 **[Refactor]** Ensure `mypy --strict` passes.
 
 ## Phase 2 — Backward-compat shim
 - [ ] T030 **[Red]** Write `test_get_config_shim_matches_appconfig` — `get_config()["port"] == AppConfig().port` for all keys.

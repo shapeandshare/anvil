@@ -10,7 +10,6 @@ from __future__ import annotations
 import pytest
 
 from anvil.db.repositories.backup_operations import BackupOperationRepository
-from anvil.db.repositories.instance_registry import InstanceRegistryRepository
 from anvil.db.repositories.runtime_config import RuntimeConfigRepository
 from anvil.services.content.corpus_service import CorpusService as ContentCorpusService
 from anvil.services.datasets.corpora import CorpusService
@@ -22,7 +21,6 @@ from anvil.services.demo.demo_bootstrap import DemoBootstrapService
 from anvil.services.governance.audit_service import AuditService
 from anvil.services.governance.governance_service import GovernanceService
 from anvil.services.inference.inference import InferenceService
-from anvil.services.instances.instance_lifecycle_service import InstanceLifecycleService
 from anvil.services.model_import.model_import_service import ModelImportService
 from anvil.services.runtime_config.runtime_config_service import RuntimeConfigService
 from anvil.services.tracking.tracking import TrackingService
@@ -107,27 +105,6 @@ class TestAnvilWorkbenchProperties:
         svc = wb.content_corpora
         assert isinstance(svc, ContentCorpusService)
         assert wb.content_corpora is svc
-
-    # ── Instance lifecycle accessors (feature 028) ────────────────────
-
-    @pytest.mark.asyncio
-    async def test_instances(self, in_memory_session) -> None:
-        wb = AnvilWorkbench(session=in_memory_session)
-        svc = wb.instances
-        assert isinstance(svc, InstanceLifecycleService)
-        assert wb.instances is svc
-
-    @pytest.mark.asyncio
-    async def test_instance_registry(self, in_memory_session) -> None:
-        """Provide the same session as registry_session to avoid
-        ``asyncio.run()`` inside an async test.
-        """
-        wb = AnvilWorkbench(
-            session=in_memory_session, registry_session=in_memory_session
-        )
-        repo = wb.instance_registry
-        assert isinstance(repo, InstanceRegistryRepository)
-        assert wb.instance_registry is repo
 
     # ── Runtime config accessors (feature 037) ────────────────────────
 

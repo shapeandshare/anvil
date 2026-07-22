@@ -4,7 +4,7 @@
 
 ## Current State (quoted)
 
-`anvil/config.py:121-213` — the offending function:
+`anvil/config.py:99-176` — the offending function:
 ```python
 @lru_cache
 def get_config() -> dict[str, Any]:
@@ -12,22 +12,22 @@ def get_config() -> dict[str, Any]:
     return {
         "port": int(os.getenv("ANVIL_PORT", "8080")),
         "host": os.getenv("ANVIL_HOST", "127.0.0.1"),
-        "state_db_path": os.getenv("ANVIL_STATE_DB_PATH") or _ws_state_db,
-        "log_dir": os.getenv("ANVIL_LOG_DIR", _ws_log_dir),
+        "state_db_path": os.getenv("ANVIL_STATE_DB_PATH") or str(Path("data/anvil-state.db").resolve()),
+        "log_dir": os.getenv("ANVIL_LOG_DIR", "logs"),
         "mlflow_uri": default_mlflow_uri,
         "mlflow_port": _parse_port_from_uri(default_mlflow_uri),
-        "mlflow_backend_store_uri": _ws_mlflow_backend,
+        "mlflow_backend_store_uri": "sqlite:///" + str(Path("mlruns/mlflow.db").resolve()),
         "mlflow_disable_local": mlflow_disable_local,
         "db_auto_migrate": os.getenv("ANVIL_DB_AUTO_MIGRATE", "true").lower() in (...),
         "storage_backend": os.getenv("ANVIL_STORAGE_BACKEND", "local"),
         "device": os.getenv("ANVIL_DEVICE", ""),
-        "content_dir": os.getenv("ANVIL_CONTENT_DIR", _ws_content_dir),
-        "backup_dir": os.getenv("ANVIL_BACKUP_DIR", _ws_backup_dir),
+        "content_dir": os.getenv("ANVIL_CONTENT_DIR", "data/content"),
+        "backup_dir": os.getenv("ANVIL_BACKUP_DIR", str(Path("data/backups"))),
         "backup_quota_bytes": int(os.getenv("ANVIL_BACKUP_QUOTA_BYTES", str(10 * 1024**3))),
         "backup_quota_warn_fraction": float(os.getenv("ANVIL_BACKUP_QUOTA_WARN", "0.8")),
         "backup_retention_max_count": (int(v) if (v := os.getenv("ANVIL_BACKUP_RETENTION_MAX_COUNT")) else None),
         "backup_retention_max_age_days": (int(v) if (v := os.getenv("ANVIL_BACKUP_RETENTION_MAX_AGE_DAYS")) else None),
-        "workspace_root": str(wp.root) if wp else "",
+        "workspace_root": "",
     }
 ```
 
@@ -51,7 +51,7 @@ grep -rn 'get_config()\[' anvil --include="*.py"
 
 ## Key Constraints
 
-- **Workspace overlay** (`config.py:106-118, 171-184`): when `ANVIL_WORKSPACE_DIR` set, `WorkspacePaths` provides path defaults; env vars still win. This precedence MUST be preserved in `AppConfig`.
+- **Workspace overlay**: *(Retired — the `ANVIL_WORKSPACE_DIR` overlay was removed with the reverted spec 028 multi-instance feature. `AppConfig` needs no workspace logic.)*
 - **`.env` loading**: `load_dotenv()` at `config.py:30` — `pydantic-settings` `SettingsConfigDict(env_file=".env")` replaces this.
 - **`@lru_cache`**: current caching behavior — `BaseSettings` instances are cheap; use a module-level cached singleton or `@lru_cache` on a factory.
 - **Test env**: `tests/conftest.py:22` sets `ANVIL_MLFLOW_URI=sqlite:///:memory:` — must still resolve.
