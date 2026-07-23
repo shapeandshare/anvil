@@ -82,7 +82,7 @@ dev = [
     "semgrep>=1.144,<2",
 ]
 finetune = [
-    "huggingface_hub>=0.24,<2",
+    "huggingface_hub>=1.24.0,<2",
     "tokenizers>=0.22.0,<1",
     "sentencepiece>=0.1.99,<1",
     "transformers>=5.14.1,<6",
