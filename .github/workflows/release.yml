@@ -21,6 +21,8 @@ on:
     branches: [main]
     paths:
       - 'anvil/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
       - '!CHANGELOG.md'
       - '!.github/**'
   workflow_dispatch:

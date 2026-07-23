@@ -251,3 +251,16 @@ def test_main_unknown_version(capsys: pytest.CaptureFixture) -> None:
     captured = capsys.readouterr()
     assert "version=unknown" in captured.out
     assert "version_prev=none" in captured.out
+
+
+def test_main_revert_patch(capsys: pytest.CaptureFixture) -> None:
+    """A revert merge message classifies as PATCH (meaningful code change)."""
+    _run_main(
+        capsys,
+        merge_msg="revert: remove feature X (#123)",
+        version="0.5.0",
+        parent_ver="0.5.0",
+    )
+    captured = capsys.readouterr()
+    assert "increment=PATCH" in captured.out
+    assert "version_changed=true" in captured.out

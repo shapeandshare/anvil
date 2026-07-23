@@ -12,7 +12,7 @@ The actual version bump is delegated to ``cz bump`` (commitizen).
 Classification rules:
 - ``feat``, ``fix``, ``perf``, or ``BREAKING CHANGE`` (incl. ``!`` suffix
   or footer) → ``AUTO`` — commitizen determines the semver bump.
-- Any other conventional commit type (``chore``, ``docs``, ``refactor``,
+- Any other conventional commit type (``chore``, ``docs``, ``refactor``, ``revert``,
   ``test``, ``style``, ``ci``, ``build``) → ``PATCH`` — at least a
   revision bump for any intentional change.
 - No conventional commit detected → ``NONE`` — no release.
@@ -93,7 +93,7 @@ _COMMITIZEN_BUMP_TYPES = frozenset({"feat", "fix", "perf"})
 # Conventional commit types that are recognized but wouldn't trigger
 # a bump via ``cz bump`` alone. We force a PATCH for these.
 _OTHER_CONVENTIONAL_TYPES = frozenset(
-    {"refactor", "chore", "docs", "ci", "test", "style", "build"}
+    {"refactor", "chore", "docs", "ci", "test", "style", "build", "revert"}
 )
 
 
