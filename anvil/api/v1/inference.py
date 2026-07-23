@@ -459,7 +459,7 @@ async def chat_stream(
         raise HTTPException(status_code=404, detail=str(e)) from e
 
     async def event_stream() -> AsyncGenerator[str, None]:
-        queue: asyncio.Queue[str | None | Exception] = asyncio.Queue()
+        queue: asyncio.Queue[str | Exception | None] = asyncio.Queue()
 
         async def _run_generation() -> None:
             try:

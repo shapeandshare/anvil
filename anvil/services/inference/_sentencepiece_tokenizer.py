@@ -12,18 +12,20 @@ protocol and is gated behind the ``[finetune]`` extra.
 
 from __future__ import annotations
 
+from types import ModuleType
 from typing import Any
 
 from ...core._tokenizer_base import Tokenizer
 
 _HAS_SP_DEPS: bool = False
-_HAS_SP_DEPS = False
+_sentencepiece_lib: ModuleType | None = None
 try:
-    import sentencepiece as _sentencepiece_lib
+    import sentencepiece
 
+    _sentencepiece_lib = sentencepiece
     _HAS_SP_DEPS = True
 except ImportError:
-    _sentencepiece_lib = None
+    pass
 
 
 class SentencePieceTokenizer(Tokenizer):
@@ -68,6 +70,7 @@ class SentencePieceTokenizer(Tokenizer):
                 "The sentencepiece library is required. "
                 "Install with: pip install anvil[finetune]"
             )
+        assert _sentencepiece_lib is not None
         processor = _sentencepiece_lib.SentencePieceProcessor()
         processor.load(path)
         return cls(processor)
