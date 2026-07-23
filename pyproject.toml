@@ -161,6 +161,9 @@ disable = [
 
 [tool.mypy]
 python_version = "3.11"
+namespace_packages = true
+explicit_package_bases = true
+plugins = ["pydantic.mypy"]
 strict = true
 ignore_missing_imports = true
 disallow_untyped_defs = true
@@ -172,6 +175,9 @@ enable_error_code = [
     "redundant-expr",
 ]
 warn_unused_ignores = true
+
+[tool.pydantic-mypy]
+init_typed = true
 
 [[tool.mypy.overrides]]
 module = "google.*"
