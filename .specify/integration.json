@@ -2,7 +2,8 @@
   "version": "0.12.11",
   "integration_state_schema": 1,
   "installed_integrations": [
-    "codex"
+    "codex",
+    "opencode"
   ],
   "integration_settings": {
     "codex": {
