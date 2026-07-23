@@ -66,6 +66,12 @@ steps:
     input:
       args: "{{ inputs.spec }}"
 
+  - id: review-tasks
+    type: gate
+    message: "Review the generated tasks before starting implementation."
+    options: [approve, reject]
+    on_reject: abort
+
   - id: implement
     command: speckit.implement
     integration: "{{ inputs.integration }}"
