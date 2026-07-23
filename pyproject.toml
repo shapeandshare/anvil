@@ -88,7 +88,7 @@ finetune = [
     "transformers>=5.14.1,<6",
     "peft>=0.19.1,<1",
     "bitsandbytes>=0.49.2,<1",
-    "datasets>=2.14,<3",
+    "datasets>=5.0.0,<6",
     "accelerate>=0.24,<1",
 ]
 
