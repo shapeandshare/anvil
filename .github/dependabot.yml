@@ -73,6 +73,14 @@ updates:
       - dependency-name: "*"
         update-types:
           - "version-update:semver-major"
+      # setuptools is a build-system dependency and transitive dep of torch.
+      # Dependabot's uv file updater crashes trying to update it (internal error),
+      # and it doesn't need automated bumps — it's pinned in uv.lock via torch.
+      - dependency-name: "setuptools"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
 
   # Docker base images (Dockerfile)
   - package-ecosystem: "docker"
