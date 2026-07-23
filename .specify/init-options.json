@@ -5,6 +5,5 @@
   "here": true,
   "integration": "codex",
   "script": "sh",
-  "speckit_version": "0.12.11",
-  "branch_numbering": "sequential"
+  "speckit_version": "0.12.11"
 }
