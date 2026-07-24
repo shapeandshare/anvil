@@ -12,9 +12,13 @@ FROM python:3.13-slim AS builder
 
 WORKDIR /src
 
-# Install uv (fast Python package/resolver) for wheel building
+# Install uv (fast Python package/resolver) and C build tools
+# (gcc/g++ are needed to compile numpy from source for Python 3.13,
+# which has no pre-built numpy wheel on PyPI)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    gcc \
+    g++ \
     && rm -rf /var/lib/apt/lists/* \
     && curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.local/bin:${PATH}"
@@ -26,18 +30,23 @@ COPY anvil/ anvil/
 # Build the PEP 517 wheel
 RUN uv build --wheel --out-dir /dist .
 
+# Pre-build dependency wheels that need compilation (numpy for Python 3.13),
+# so the runtime stage doesn't need a C compiler.
+RUN pip wheel --no-cache-dir --wheel-dir /dist "numpy>=1.24,<2"
+
 # ---- Stage 2: runtime — install ONLY the wheel (no source tree) ----
 FROM python:3.13-slim AS runtime
 
 # Create a non-root user for security
 RUN useradd --create-home --uid 1000 anvil
 
-# Copy the pre-built wheel from the builder stage
+# Copy the pre-built wheels from the builder stage
 COPY --from=builder /dist/*.whl /tmp/wheels/
 
 # Install the wheel + its dependencies.
 # This pulls dependencies from PyPI (no source tree is present,
 # so this genuinely exercises "pip install <wheel>").
+# numpy is already a pre-built wheel in /tmp/wheels, so no compiler needed.
 RUN pip install --no-cache-dir /tmp/wheels/*.whl \
     && rm -rf /tmp/wheels
 
