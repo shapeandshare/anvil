@@ -64,6 +64,8 @@ This index lists all ADRs in this repository. ADRs document significant architec
 | ADR-048 | MLflow Model Registry as Model Catalog Source of Truth | Accepted | 2026-07-03 |
 | ADR-049 | Community Guidelines and Open-Source Behavior | Accepted | 2026-07-04 |
 | ADR-050 | Navigation CTA Elements Rendered as `<button>`, Overriding ux-rules.md S4 | Accepted | 2026-07-21 |
+| ADR-051 | vllm-mlx Apple Silicon Serving Backend | Proposed | 2026-07-23 |
+
 
 **Status**: Draft → Reviewed → Canonical (human-only). See `_meta/tags.md` for lifecycle.
 
