@@ -85,11 +85,11 @@
               {% if j.status == "complete" and j.external_model_id %}
               <a class="btn btn-sm btn-secondary" href="/v1/model-detail/{{ j.external_model_id }}?source=external">View →</a>
               {% if j.asset_availability == "assets_available" %}
-              <button class="btn btn-sm btn-success" disabled>Done</button>
+              <button class="btn btn-sm btn-success job-download-btn" data-model-id="{{ j.external_model_id }}">Done</button>
               {% elif j.asset_availability == "assets_pending" %}
               <button class="btn btn-sm btn-cyan" disabled>Downloading...</button>
               {% else %}
-              <button class="btn btn-sm btn-primary job-download-btn" data-model-id="{{ j.external_model_id }}">Download</button>
+              <button class="btn btn-sm btn-accent job-download-btn" data-model-id="{{ j.external_model_id }}">Download</button>
               {% endif %}
               {% elif j.status == "failed" %}
               <button class="btn btn-sm btn-primary job-retry-btn" data-job-id="{{ j.job_id }}">Retry</button>
@@ -199,6 +199,72 @@
     });
   });
 
+  function showInlineFeedback(btn, message, isError) {
+    var container = btn.parentNode;
+    if (!container) return;
+    var feedback = container.querySelector('[data-hf-feedback]');
+    if (!feedback) {
+      feedback = document.createElement('div');
+      feedback.setAttribute('data-hf-feedback', '');
+      feedback.className = 'type-caption-2';
+      feedback.style.flexBasis = '100%';
+      feedback.style.marginTop = 'var(--space-1)';
+      container.appendChild(feedback);
+    }
+    feedback.style.color = isError ? 'var(--danger)' : 'var(--accent-green)';
+    feedback.textContent = message;
+  }
+
+  function clearInlineFeedback(btn) {
+    var container = btn.parentNode;
+    var feedback = container && container.querySelector('[data-hf-feedback]');
+    if (feedback) feedback.remove();
+  }
+
+  async function responseError(response) {
+    try {
+      var data = await response.json();
+      var detail = data.detail || data.message || data.error;
+      return typeof detail === 'string' ? detail : 'Request failed';
+    } catch (err) {
+      return 'Request failed';
+    }
+  }
+
+  function showToast(message, type) {
+    var container = document.getElementById('toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'toast-container';
+      container.className = 'toast-container';
+      document.body.appendChild(container);
+    }
+    var toast = document.createElement('div');
+    toast.className = 'toast toast-' + type;
+    toast.textContent = message;
+    container.appendChild(toast);
+    setTimeout(function() { toast.remove(); }, 4000);
+  }
+
+  function completeCardDownload(btn) {
+    btn.disabled = false;
+    btn.textContent = 'Done';
+    btn.classList.remove('btn-accent', 'btn-cyan', 'btn-danger');
+    btn.classList.add('btn-success');
+    clearInlineFeedback(btn);
+    showInlineFeedback(btn, 'Download complete.', false);
+    showToast('Model download complete.', 'success');
+    fetchJobs();
+  }
+
+  function failCardDownload(btn, label, message) {
+    btn.disabled = false;
+    btn.textContent = label;
+    btn.classList.remove('btn-accent', 'btn-cyan', 'btn-success');
+    btn.classList.add('btn-danger');
+    showInlineFeedback(btn, message, true);
+  }
+
   /* ── Import button: POST /v1/models/import ── */
   document.querySelectorAll('.hf-import-btn').forEach(function(btn) {
     btn.addEventListener('click', async function(e) {
@@ -213,8 +279,8 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ source: 'huggingface', identifier: hfId, name: name })
         });
-        var data = await resp.json();
         if (resp.ok) {
+          var data = await resp.json();
           btn.textContent = 'imported (job #' + data.job_id + ')';
           btn.classList.remove('btn-primary');
           btn.classList.add('btn-success');
@@ -224,10 +290,12 @@
           btn.textContent = 'import failed';
           btn.disabled = false;
           btn.classList.add('btn-danger');
+          showInlineFeedback(btn, await responseError(resp), true);
         }
       } catch (err) {
         btn.textContent = 'error';
         btn.disabled = false;
+        showInlineFeedback(btn, err.message || 'Import request failed.', true);
         console.error('Import error:', err);
       }
     });
@@ -250,7 +318,10 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ source: 'huggingface', identifier: hfId, name: name })
         });
-        if (!resp.ok) { btn.textContent = 'failed'; btn.classList.add('btn-danger'); return; }
+        if (!resp.ok) {
+          failCardDownload(btn, 'failed', await responseError(resp));
+          return;
+        }
         var data = await resp.json();
         var jobId = data.job_id;
         /* Step 2: Poll import job until complete */
@@ -274,22 +345,31 @@
                 }
               }
             }
-            if (!modelId) { btn.textContent = 'imported'; btn.classList.add('btn-success'); fetchJobs(); return; }
+            if (!modelId) {
+              btn.textContent = 'imported';
+              btn.disabled = false;
+              btn.classList.add('btn-success');
+              fetchJobs();
+              return;
+            }
             break;
           }
-          if (st.status === 'failed') { btn.textContent = 'import failed'; btn.classList.add('btn-danger'); return; }
+          if (st.status === 'failed') {
+            failCardDownload(btn, 'import failed', st.error_message || st.error_code || 'Import failed.');
+            return;
+          }
         }
-        if (!modelId) { btn.textContent = 'timeout'; btn.classList.add('btn-danger'); return; }
+        if (!modelId) {
+          failCardDownload(btn, 'timeout', 'Import did not finish in time.');
+          return;
+        }
         /* Step 3: Start asset download */
         btn.textContent = 'downloading...';
         var dlResp = await window.apiFetch('/v1/models/' + modelId + '/download', { method: 'POST' });
         if (dlResp.status === 409) {
           var dlErr = await dlResp.json();
           if (dlErr.detail && dlErr.detail.indexOf('already available') !== -1) {
-            btn.textContent = 'Done';
-            btn.classList.remove('btn-cyan');
-            btn.classList.add('btn-success');
-            fetchJobs();
+            completeCardDownload(btn);
           } else {
             btn.textContent = 'queued';
             btn.classList.remove('btn-cyan');
@@ -298,14 +378,16 @@
           }
           return;
         }
-        if (!dlResp.ok) { btn.textContent = 'download failed'; btn.classList.add('btn-danger'); return; }
+        if (!dlResp.ok) {
+          failCardDownload(btn, 'download failed', await responseError(dlResp));
+          return;
+        }
         var dlData = await dlResp.json();
         /* Step 4: Poll download status */
         btn.textContent = 'queued';
         pollCardDownload(btn, modelId, dlData.job_id);
       } catch (err) {
-        btn.textContent = 'error';
-        btn.disabled = false;
+        failCardDownload(btn, 'error', err.message || 'Download request failed.');
         console.error('Download error:', err);
       }
     });
@@ -317,15 +399,9 @@
       return r.json();
     }).then(function(status) {
       if (status.status === 'complete') {
-        btn.textContent = 'Done';
-        btn.disabled = true;
-        btn.classList.remove('btn-cyan');
-        btn.classList.add('btn-success');
-        fetchJobs();
+        completeCardDownload(btn);
       } else if (status.status === 'failed') {
-        btn.textContent = 'Failed';
-        btn.classList.remove('btn-cyan');
-        btn.classList.add('btn-danger');
+        failCardDownload(btn, 'Failed', status.error_message || status.error_code || 'Download failed.');
       } else {
         btn.textContent = status.status === 'queued' ? 'Waiting...' : 'Downloading...';
         setTimeout(function() { pollCardDownload(btn, modelId, jobId); }, 2000);
@@ -386,11 +462,20 @@
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ source: 'huggingface', identifier: hid, name: nm })
             });
-            var d = await r.json();
-            if (r.ok) { b.textContent = 'done'; b.disabled = false; fetchJobs(); } else { b.textContent = 'failed'; b.disabled = false; }
+            if (r.ok) {
+              await r.json();
+              b.textContent = 'done';
+              b.disabled = false;
+              fetchJobs();
+            } else {
+              b.textContent = 'failed';
+              b.disabled = false;
+              showInlineFeedback(b, await responseError(r), true);
+            }
           } catch (err) {
             b.textContent = 'error';
             b.disabled = false;
+            showInlineFeedback(b, err.message || 'Import request failed.', true);
           }
         });
       });
@@ -409,7 +494,10 @@
               method: 'POST', headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ source: 'huggingface', identifier: hid, name: nm })
             });
-            if (!r.ok) { b.textContent = 'failed'; b.classList.add('btn-danger'); return; }
+            if (!r.ok) {
+              failCardDownload(b, 'failed', await responseError(r));
+              return;
+            }
             var d = await r.json();
             var jobId = d.job_id;
             b.textContent = 'resolving...';
@@ -431,20 +519,30 @@
                     }
                   }
                 }
-                if (!modelId) { b.textContent = 'imported'; b.classList.add('btn-success'); fetchJobs(); return; }
+                if (!modelId) {
+                  b.textContent = 'imported';
+                  b.disabled = false;
+                  b.classList.add('btn-success');
+                  fetchJobs();
+                  return;
+                }
                 break;
               }
-              if (st.status === 'failed') { b.textContent = 'import failed'; b.classList.add('btn-danger'); return; }
+              if (st.status === 'failed') {
+                failCardDownload(b, 'import failed', st.error_message || st.error_code || 'Import failed.');
+                return;
+              }
             }
-            if (!modelId) { b.textContent = 'timeout'; b.classList.add('btn-danger'); return; }
+            if (!modelId) {
+              failCardDownload(b, 'timeout', 'Import did not finish in time.');
+              return;
+            }
             b.textContent = 'downloading...';
             var dr = await window.apiFetch('/v1/models/' + modelId + '/download', { method: 'POST' });
             if (dr.status === 409) {
               var de = await dr.json();
               if (de.detail && de.detail.indexOf('already available') !== -1) {
-                b.textContent = 'Done';
-                b.classList.remove('btn-cyan');
-                b.classList.add('btn-success');
+                completeCardDownload(b);
               } else {
                 b.textContent = 'queued';
                 b.classList.remove('btn-cyan');
@@ -453,13 +551,15 @@
               fetchJobs();
               return;
             }
-            if (!dr.ok) { b.textContent = 'download failed'; b.classList.add('btn-danger'); return; }
+            if (!dr.ok) {
+              failCardDownload(b, 'download failed', await responseError(dr));
+              return;
+            }
             var dd = await dr.json();
             b.textContent = 'queued';
             pollCardDownload(b, modelId, dd.job_id);
           } catch (err2) {
-            b.textContent = 'error';
-            b.disabled = false;
+            failCardDownload(b, 'error', err2.message || 'Download request failed.');
           }
         });
       });
@@ -558,10 +658,10 @@
         + (j.status === 'complete' && j.external_model_id
           ? '<a class="btn btn-sm btn-secondary" href="/v1/model-detail/' + j.external_model_id + '?source=external">View \u2192</a>'
           + (j.asset_availability === 'assets_available'
-            ? '<button class="btn btn-sm btn-success" disabled>Done</button>'
+            ? '<button class="btn btn-sm btn-success job-download-btn" data-model-id="' + j.external_model_id + '">Done</button>'
             : j.asset_availability === 'assets_pending'
               ? '<button class="btn btn-sm btn-cyan" disabled>Downloading...</button>'
-              : '<button class="btn btn-sm btn-primary job-download-btn" data-model-id="' + j.external_model_id + '">Download</button>')
+              : '<button class="btn btn-sm btn-accent job-download-btn" data-model-id="' + j.external_model_id + '">Download</button>')
           : (j.status === 'failed'
             ? '<button class="btn btn-sm btn-primary job-retry-btn" data-job-id="' + j.job_id + '">Retry</button><button class="btn btn-sm btn-secondary job-dismiss-btn">Dismiss</button>'
             : ''))
@@ -627,7 +727,7 @@
     }).then(function(status) {
       if (status.status === 'complete') {
         btn.textContent = 'Done';
-        btn.disabled = true;
+        btn.disabled = false;
         btn.classList.remove('btn-cyan');
         btn.classList.add('btn-success');
         /* Re-fetch jobs to update the asset_availability badge */
@@ -637,6 +737,7 @@
         btn.disabled = false;
         btn.classList.remove('btn-cyan');
         btn.classList.add('btn-danger');
+        showInlineFeedback(btn, status.error_message || status.error_code || 'Download failed.', true);
       } else {
         btn.textContent = status.status === 'queued' ? 'Waiting...' : 'Downloading...';
         setTimeout(function() { pollDownloadStatus(btn, modelId, jobId); }, 2000);
@@ -657,12 +758,12 @@
           btn.disabled = false;
           if (d.detail && d.detail.indexOf('already available') !== -1) {
             btn.textContent = 'Done';
-            btn.classList.remove('btn-primary');
+            btn.classList.remove('btn-accent');
             btn.classList.add('btn-success');
             fetchJobs();
           } else if (d.detail && d.detail.indexOf('in progress') !== -1) {
             btn.textContent = 'queued';
-            btn.classList.remove('btn-primary');
+            btn.classList.remove('btn-accent');
             btn.classList.add('btn-cyan');
             /* Extract job_id from error detail if available, or re-fetch to get status */
             fetchJobs();
@@ -671,18 +772,25 @@
           }
         });
       }
-      if (!r.ok) throw new Error(r.status + ' ' + r.statusText);
+      if (!r.ok) {
+        return responseError(r).then(function(message) {
+          throw new Error(message);
+        });
+      }
       return r.json();
     }).then(function(data) {
       if (!data) return;
       btn.textContent = 'queued';
-      btn.classList.remove('btn-primary');
+      btn.classList.remove('btn-accent');
       btn.classList.add('btn-cyan');
       /* Start polling download status */
       pollDownloadStatus(btn, modelId, data.job_id);
     }).catch(function(err) {
       btn.disabled = false;
       btn.textContent = 'Download';
+      btn.classList.remove('btn-cyan');
+      btn.classList.add('btn-accent');
+      showInlineFeedback(btn, err.message || 'Download request failed.', true);
       console.error('Download error:', err);
     });
   }

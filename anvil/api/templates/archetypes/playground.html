@@ -6,7 +6,7 @@
 -->
 
 {% extends "base.html" %}
-{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css"><link rel="stylesheet" href="/static/css/components.css">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css"><link rel="stylesheet" href="/static/css/components.css"><style nonce="{{ request.state.csp_nonce }}">#model-select option.track-only-option:disabled { color: var(--text-tertiary); font-style: italic; }</style>{% endblock %}
 {% block content %}
 
 <div class="playground-layout">
@@ -139,6 +139,7 @@
   function findModelByKey(key) {
     return modelsData.find(function(m) { return modelKey(m) === key; });
   }
+  function isTrackOnlyModel(m) { return m && m.runnable_status === 'track_only'; }
 
   /* ── Model Select ── */
   var modelSelect = document.getElementById('model-select');
@@ -163,7 +164,10 @@
     } else {
       opt.value = modelKey(m);
       var loss = m.final_loss != null ? m.final_loss.toFixed(4) : '?';
-      opt.textContent = m.name + ' — loss: ' + loss;
+      var trackOnly = isTrackOnlyModel(m);
+      opt.textContent = m.name + ' — loss: ' + loss + (trackOnly ? ' (track only)' : '');
+      opt.disabled = trackOnly;
+      opt.classList.toggle('track-only-option', trackOnly);
     }
     return opt;
   }
@@ -175,7 +179,10 @@
     } else {
       dom.setAttr(opt, 'value', modelKey(m));
       var loss = m.final_loss != null ? m.final_loss.toFixed(4) : '?';
-      dom.setText(opt, m.name + ' — loss: ' + loss);
+      var trackOnly = isTrackOnlyModel(m);
+      dom.setText(opt, m.name + ' — loss: ' + loss + (trackOnly ? ' (track only)' : ''));
+      opt.disabled = trackOnly;
+      opt.classList.toggle('track-only-option', trackOnly);
     }
   }
 
@@ -200,6 +207,7 @@
       updateVersionSelect();
       updateModelInfo();
       updateModelInfoCard();
+      updateGenerateAvailability();
 
       /* ── URL param pre-selection ── */
       var params = core.getUrlParams();
@@ -211,6 +219,7 @@
             updateVersionSelect();
             updateModelInfo();
             updateModelInfoCard();
+            updateGenerateAvailability();
             break;
           }
         }
@@ -248,6 +257,13 @@
       versionLabel.style.display = 'none';
     }
     updateModelInfoCard();
+  }
+
+  function updateGenerateAvailability() {
+    var trackOnly = isTrackOnlyModel(findModelByKey(modelSelect.value));
+    generateBtn.disabled = trackOnly;
+    generateBtn.title = trackOnly ? 'Track-only models cannot generate samples.' : '';
+    if (trackOnly) statusEl.textContent = 'This model is track only and cannot generate samples.';
   }
 
   function updateModelInfo() {
@@ -397,6 +413,7 @@
     updateVersionSelect();
     updateModelInfo();
     updateModelInfoCard();
+    updateGenerateAvailability();
   });
 
   /* ── Example Chips ── */
@@ -416,6 +433,12 @@
     var model = findModelByKey(modelKey);
     if (!model) {
       statusEl.textContent = 'Model not found';
+      return;
+    }
+    if (isTrackOnlyModel(model)) {
+      statusEl.textContent = 'This model is track only and cannot generate samples.';
+      generateBtn.disabled = true;
+      generateBtn.title = 'Track-only models cannot generate samples.';
       return;
     }
     var version = versionLabel.style.display !== 'none'
