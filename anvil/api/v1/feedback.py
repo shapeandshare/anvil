@@ -483,3 +483,40 @@ async def batch_delete_feedback_reports(
         )
     deleted = await workbench.feedback.batch_delete(ids)
     return {"ok": True, "deleted": deleted}
+
+
+@router.post("/feedback/batch-export")
+async def batch_export_feedback_reports(
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
+    request: Request,
+) -> dict[str, Any]:
+    """Batch export multiple feedback reports.
+
+    Accepts a list of report IDs and returns a JSON array of all
+    exported reports in a single response.
+
+    Parameters
+    ----------
+    workbench : AnvilWorkbench
+        Injected session-bound workbench.
+    request : Request
+        The incoming HTTP request (for JSON body parsing).
+
+    Returns
+    -------
+    dict[str, Any]
+        ``{"ok": True, "exports": [...]}``
+    """
+    body = await request.json()
+    ids = body.get("ids", [])
+    if not isinstance(ids, list) or not ids:
+        raise HTTPException(
+            status_code=400,
+            detail="Missing or invalid required field: ids (must be a non-empty list of integers)",
+        )
+    exports = []
+    for rid in ids:
+        export = await workbench.feedback.export_report(rid)
+        if export is not None:
+            exports.append(export)
+    return {"ok": True, "exports": exports}

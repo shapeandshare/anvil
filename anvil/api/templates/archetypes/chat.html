@@ -6,7 +6,7 @@
 -->
 
 {% extends "base.html" %}
-{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css"><link rel="stylesheet" href="/static/css/components.css">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/archetypes.css"><link rel="stylesheet" href="/static/css/components.css"><style nonce="{{ request.state.csp_nonce }}">#chat-model-select option.track-only-option:disabled { color: var(--text-tertiary); font-style: italic; }</style>{% endblock %}
 {% block content %}
 
 <div class="playground-layout">
@@ -90,6 +90,7 @@
   function findModelByKey(key) {
     return modelsData.find(function(m) { return modelKey(m) === key; });
   }
+  function isTrackOnlyModel(m) { return m && m.runnable_status === 'track_only'; }
   function modelOptKey(m) { return 'm_' + (m.id != null ? String(m.id) : m.name); }
 
   /* ── DOM refs ── */
@@ -141,6 +142,12 @@
     contextFill.style.width = pct + '%';
   }
 
+  function updateSendAvailability() {
+    var trackOnly = isTrackOnlyModel(findModelByKey(modelSelect.value));
+    sendBtn.disabled = inputEl.value.trim().length === 0 || isGenerating || trackOnly;
+    sendBtn.title = trackOnly ? 'Track-only models cannot be used for chat.' : '';
+  }
+
   function addMessage(role, text, status) {
     status = status || 'complete';
     conversation.push({ role: role, text: text, status: status });
@@ -184,7 +191,7 @@
     } else {
       charWarn.style.display = 'none';
     }
-    sendBtn.disabled = this.value.trim().length === 0 || isGenerating;
+    updateSendAvailability();
   });
 
   inputEl.addEventListener('keydown', function(e) {
@@ -200,6 +207,11 @@
     if (!text || isGenerating) return;
     if (text.length > 2000) {
       showToast('Message exceeds 2000 character limit', 'error');
+      return;
+    }
+    if (isTrackOnlyModel(findModelByKey(modelSelect.value))) {
+      showToast('Track-only models cannot be used for chat.', 'error');
+      updateSendAvailability();
       return;
     }
 
@@ -265,7 +277,7 @@
     isGenerating = false;
     cancelBtn.style.display = 'none';
     setConnectionState('disconnected');
-    sendBtn.disabled = inputEl.value.trim().length === 0;
+    updateSendAvailability();
 
     if (conversation.length > 0) {
       var last = conversation[conversation.length - 1];
@@ -293,7 +305,10 @@
     } else {
       opt.value = modelKey(m);
       var loss = m.final_loss != null ? m.final_loss.toFixed(4) : '?';
-      opt.textContent = m.name + ' \u2014 loss: ' + loss;
+      var trackOnly = isTrackOnlyModel(m);
+      opt.textContent = m.name + ' \u2014 loss: ' + loss + (trackOnly ? ' (track only)' : '');
+      opt.disabled = trackOnly;
+      opt.classList.toggle('track-only-option', trackOnly);
     }
     return opt;
   }
@@ -305,7 +320,10 @@
     } else {
       dom.setAttr(opt, 'value', modelKey(m));
       var loss = m.final_loss != null ? m.final_loss.toFixed(4) : '?';
-      dom.setText(opt, m.name + ' \u2014 loss: ' + loss);
+      var trackOnly = isTrackOnlyModel(m);
+      dom.setText(opt, m.name + ' \u2014 loss: ' + loss + (trackOnly ? ' (track only)' : ''));
+      opt.disabled = trackOnly;
+      opt.classList.toggle('track-only-option', trackOnly);
     }
   }
 
@@ -368,6 +386,7 @@
       }
 
       updateVersionSelect();
+      updateSendAvailability();
 
       /* URL param pre-selection */
       var params = core.getUrlParams();
@@ -377,6 +396,7 @@
           if (modelSelect.options[i].value === preselectKey) {
             modelSelect.value = preselectKey;
             updateVersionSelect();
+            updateSendAvailability();
             break;
           }
         }
@@ -388,6 +408,10 @@
 
   modelSelect.addEventListener('change', function() {
     updateVersionSelect();
+    updateSendAvailability();
+    if (isTrackOnlyModel(findModelByKey(modelSelect.value))) {
+      showToast('Track-only models cannot be used for chat.', 'error');
+    }
   });
   exportBtn.addEventListener('click', function() {
     var lines = [];

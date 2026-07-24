@@ -43,6 +43,7 @@
       <div class="feedback-batch-actions" id="feedback-batch-actions">
         <span class="feedback-batch-actions__count" id="feedback-selected-count">0 selected</span>
         <button type="button" class="btn btn-danger btn-sm" id="feedback-batch-delete-btn" disabled>Delete Selected</button>
+        <button type="button" class="btn btn-accent btn-sm" id="feedback-batch-export-btn" disabled>Export Selected</button>
       </div>
       <table class="feedback-report-table">
         <thead>
@@ -248,6 +249,10 @@
     showDeleteModal(null, true);
   });
 
+  document.getElementById('feedback-batch-export-btn').addEventListener('click', function() {
+    batchExportReports();
+  });
+
   // ── Modal controls ──
   function showModal() {
     document.getElementById('feedback-delete-modal').style.display = '';
@@ -286,9 +291,11 @@
   function updateBatchActions() {
     var selected = getSelectedIds();
     var countEl = document.getElementById('feedback-selected-count');
-    var btn = document.getElementById('feedback-batch-delete-btn');
+    var deleteBtn = document.getElementById('feedback-batch-delete-btn');
+    var exportBtn = document.getElementById('feedback-batch-export-btn');
     countEl.textContent = selected.length + ' selected';
-    btn.disabled = selected.length === 0;
+    deleteBtn.disabled = selected.length === 0;
+    exportBtn.disabled = selected.length === 0;
     var allCheckboxes = document.querySelectorAll('.feedback-report-check');
     var allChecked = allCheckboxes.length > 0 && allCheckboxes.length === selected.length;
     document.getElementById('feedback-select-all').checked = allChecked;
@@ -709,6 +716,36 @@
       });
     }).catch(function() {
       toast('Network error deleting reports', 'error');
+    });
+  }
+
+  // ── Batch export ──
+  function batchExportReports() {
+    var ids = getSelectedIds();
+    if (ids.length === 0) return;
+    window.apiFetch('/v1/feedback/batch-export', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: ids })
+    }).then(function(resp) {
+      return resp.json().then(function(data) {
+        if (!resp.ok) {
+          toast(data.detail || 'Failed to export reports', 'error');
+          return;
+        }
+        var blob = new Blob([JSON.stringify(data.exports || [], null, 2)], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'feedback-bulk-export-' + new Date().toISOString().slice(0, 10) + '.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toast('Selected reports exported successfully', 'success');
+      });
+    }).catch(function() {
+      toast('Network error exporting reports', 'error');
     });
   }
 
