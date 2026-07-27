@@ -83,7 +83,7 @@ dev = [
 ]
 finetune = [
     "huggingface_hub>=1.24.0,<2",
-    "tokenizers>=0.22.0,<1",
+    "tokenizers>=0.23.1,<1",
     "sentencepiece>=0.2.2,<1",
     "transformers>=5.14.1,<6",
     "peft>=0.19.1,<1",
