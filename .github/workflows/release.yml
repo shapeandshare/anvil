@@ -44,7 +44,7 @@ jobs:
   # ---------------------------------------------------------------------------
   browser-smoke:
     name: Browser Smoke
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
@@ -64,7 +64,7 @@ jobs:
   # ---------------------------------------------------------------------------
   detect:
     name: Detect Version Bump
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
     timeout-minutes: 5
     outputs:
       version_changed: ${{ steps.check.outputs.version_changed }}
@@ -90,7 +90,7 @@ jobs:
   # ---------------------------------------------------------------------------
   release:
     name: Bump and Release
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
     needs: [browser-smoke, detect]
     if: needs.detect.outputs.version_changed == 'true'
     timeout-minutes: 15
