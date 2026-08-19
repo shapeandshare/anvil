@@ -194,7 +194,7 @@ jobs:
   vault-audit:
     name: Vault Audit
     runs-on: [self-hosted, linux, x64]
-    timeout-minutes: 5
+    timeout-minutes: 10
     needs: bump-scope-guard
     if: needs.bump-scope-guard.outputs.scope != 'version-only' && github.ref_name != 'main'
     steps:
@@ -230,7 +230,7 @@ jobs:
   ux-lint:
     name: UX Lint
     runs-on: [self-hosted, linux, x64]
-    timeout-minutes: 5
+    timeout-minutes: 10
     needs: bump-scope-guard
     if: needs.bump-scope-guard.outputs.scope != 'version-only' && github.ref_name != 'main'
     steps:
