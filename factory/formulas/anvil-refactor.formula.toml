@@ -22,7 +22,7 @@ Start a run with:
   gc sling {{rig}}/factory.planner <bead-id> --on anvil-refactor
 """
 formula = "anvil-refactor"
-version = 1
+version = 2
 
 [vars]
 [vars.issue]
@@ -80,8 +80,8 @@ instead of guessing.
 """
 
 [[steps]]
-id = "green"
-title = "Builder: make the change, keep the suite green"
+id = "build"
+title = "Builder: make the change, clean up, commit, open the PR"
 needs = ["plan"]
 description = """
 **1. Read the acceptance:**
@@ -108,56 +108,38 @@ git commit -m "refactor(<task_id>): <what changed>"
 The hook runs the full gate and takes ~2 minutes. Let it. Do **not** use `--no-verify` — there is no
 Red phase here, so there is no reason to bypass anything.
 
-**5. Route onward:**
-```bash
-bd update {{issue}} --assignee ""
-gc sling {{rig}}/factory.builder {{issue}}
-gc runtime drain-ack
-```
-
-If you arrive here carrying a verdict, read it, push a fix to the same branch, and route back the way
-you came. Do not open a second pull request.
-"""
-
-[[steps]]
-id = "refactor"
-title = "Builder: clean up without changing behaviour"
-needs = ["green"]
-description = """
-**1. Clean up what the change left behind** — duplication, poor names, a helper that wants
-extracting. Nothing that alters behaviour.
-
-**2. Confirm nothing regressed:**
+**5. Clean up if warranted** — duplication, naming, an extracted helper. Behaviour must not change.
+If there is nothing to clean, skip it and note that rather than inventing churn. If you do:
 ```bash
 make test
-```
-
-**3. Commit:**
-```bash
 make format
 git add -A
 git commit -m "refactor(<task_id>): clean up <what>"
 ```
 
-If there is genuinely nothing to clean, skip the commit and say so in the notes rather than inventing
-churn.
-
-**4. Open the pull request and record it:**
+**6. Open the pull request and record it:**
 ```bash
 git push -u origin <branch>
 gh pr create --fill
 PR_URL=$(gh pr view --json url --jq .url)
 bd update {{issue}} --set-metadata pr_url="$PR_URL"
+```
+
+**7. Route onward:**
+```bash
 bd update {{issue}} --assignee ""
 gc sling {{rig}}/factory.architect {{issue}}
 gc runtime drain-ack
 ```
+
+If you arrive here carrying a gate verdict, read it, push a fix to the **same** branch, and route back
+to the architect. Do not open a second pull request.
 """
 
 [[steps]]
 id = "gate"
 title = "Architect: mechanical gate, then four judgment calls"
-needs = ["refactor"]
+needs = ["build"]
 description = """
 **1. Run the non-mutating mechanical gate.** Not `make pr-ready` — it starts with `make format` and
 would dirty the tree:
