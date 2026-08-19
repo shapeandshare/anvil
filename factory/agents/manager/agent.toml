@@ -1,0 +1,7 @@
+# Always-on named session. You talk to it; it routes work to the other four.
+#
+# No max_active_sessions here on purpose: a [[named_session]] template must not
+# carry pool settings, or `gc lint` rejects it as pool-controlled.
+wake_mode = "fresh"
+idle_timeout = "8h"
+attach = true

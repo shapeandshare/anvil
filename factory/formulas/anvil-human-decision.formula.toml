@@ -1,0 +1,114 @@
+description = """
+Refuse one HUMAN_DECISION task and hand it back, with the context needed to decide.
+
+Some tasks cannot be automated because they require a human's judgment about product intent,
+priorities, or approval. Examples from anvil's backlog:
+
+  T002  Confirm Decision 3 (dual-run) with owner.
+  ---   Decide whether to keep the get_config() shim or remove it now.
+  ---   Approve the retention policy before implementing.
+
+The factory does **not** attempt these. An agent answering a product question is guessing, and a
+confident guess is worse than an open question. This formula exists so that refusal is explicit,
+recorded, and routed — rather than a bead silently rotting in the queue.
+
+The sequence:
+
+  plan      planner   assembles the context and states the decision needed
+  blocked   manager   reports to the human; bead stays open awaiting the answer
+
+Start a run with:
+
+  gc sling {{rig}}/factory.planner <bead-id> --on anvil-human-decision
+"""
+formula = "anvil-human-decision"
+version = 1
+
+[vars]
+[vars.issue]
+description = "The bead requiring a human decision"
+required = true
+
+[vars.rig]
+description = "Rig name the agents are bound to"
+default = "anvil"
+
+[[steps]]
+id = "plan"
+title = "Planner: frame the decision, do not make it"
+description = """
+**1. Read the task and its spec context:**
+```bash
+bd show {{issue}}
+```
+Quote all paths — spec directory names contain spaces.
+
+**2. Confirm it genuinely needs a human.** If the answer is actually determinable from the codebase or
+the spec, this is not a human decision — it is an investigation. Correct it:
+```bash
+bd update {{issue}} --set-metadata task_type=investigation
+```
+Only keep `human_decision` when the question is about intent, priority, or approval — something no
+amount of reading the repo can settle.
+
+**3. Do the homework a human would otherwise have to do.** You cannot decide, but you can make
+deciding cheap: gather the relevant facts, find the affected call sites, name the options and their
+consequences.
+
+**4. Record the decision request:**
+```bash
+bd update {{issue}} --set-metadata blocked=true \\
+  --append-notes "$(cat <<'DEC'
+## Decision needed
+- Question: <the decision, stated so it can be answered directly>
+- Why the factory cannot decide: <what makes this intent/priority/approval>
+- Context gathered: <facts, affected paths, counts>
+- Options:
+  1. <option> — consequence: <what follows>
+  2. <option> — consequence: <what follows>
+- Recommendation (advisory only): <if you have one, and why>
+- Unblocks: <what work is waiting on this>
+DEC
+)"
+```
+
+Your recommendation is advisory. Do **not** act on it, and do **not** set `task_type` to something
+executable in order to proceed.
+
+**5. Route to the manager:**
+```bash
+gc sling {{rig}}/factory.manager {{issue}}
+gc runtime drain-ack
+```
+"""
+
+[[steps]]
+id = "blocked"
+title = "Manager: report to the human and leave the bead open"
+needs = ["plan"]
+description = """
+**1. Read the decision request:**
+```bash
+bd show {{issue}}
+```
+
+**2. Report it to the human** in plain language: the bead id, the question, the options with their
+consequences, and what work is blocked behind it.
+
+**3. Leave the bead OPEN.** Do not close it. Do not invoke `speckit.clarify` or
+`speckit.converge` — those are human-in-the-loop workflows and an agent answering their questions is
+just guessing at intent. Do not re-sling it onto an executable formula.
+
+```bash
+bd update {{issue}} --set-metadata gc.outcome=blocked_human
+```
+
+The bead stays in the queue as a visible, answerable question. When the human answers, they will set
+the real `task_type` and re-sling it onto `anvil-refactor`, `anvil-feature`, or
+`anvil-investigation`.
+
+**4. Finish:**
+```bash
+gc runtime drain-ack
+```
+"""
