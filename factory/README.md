@@ -49,6 +49,33 @@ manager selects with `--on`.
 `anvil-refactor` is the workhorse. Only ~73 of anvil's 474 open task rows carry TDD markers, so most
 work has no Red phase to write — and fabricating one to satisfy a pipeline would violate Article XI.
 
+## Step handoff: release the assignee before routing
+
+Every routing site in a formula **must** clear the assignee before slinging onward:
+
+```bash
+bd update {{issue}} --assignee ""
+gc sling {{rig}}/factory.<next> {{issue}}
+gc runtime drain-ack
+```
+
+This is not cosmetic. `gc sling` assigns the bead to the target agent's session **only when the bead
+is unassigned**, and it is idempotent on an already-routed bead. So if an agent routes onward while
+still holding the assignment, the result is:
+
+```
+warning: bead av-pmh routed to "anvil/factory.builder"
+         but assigned to "factory__planner-af-yxww"
+```
+
+The next pool agent spawns, finds nothing under
+`bd list --status=open --assignee="$GC_SESSION_NAME"`, and idles. **The pipeline stalls silently
+after the first step** — no error, just a bead that never advances.
+
+Found the hard way during the first live run; see E17 in the onboarding plan. Order matters: clear
+*then* sling. Clearing after the sling is too late, because the sling has already been skipped as
+idempotent.
+
 ## Two rules the prompts encode that are easy to get wrong
 
 **The gate must not run `make pr-ready`.** `pr-ready` begins with `make format`, which rewrites files.

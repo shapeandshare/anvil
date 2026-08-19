@@ -70,6 +70,7 @@ ACC
 
 **5. Route onward:**
 ```bash
+bd update {{issue}} --assignee ""
 gc sling {{rig}}/factory.builder {{issue}}
 gc runtime drain-ack
 ```
@@ -109,6 +110,7 @@ Red phase here, so there is no reason to bypass anything.
 
 **5. Route onward:**
 ```bash
+bd update {{issue}} --assignee ""
 gc sling {{rig}}/factory.builder {{issue}}
 gc runtime drain-ack
 ```
@@ -146,6 +148,7 @@ git push -u origin <branch>
 gh pr create --fill
 PR_URL=$(gh pr view --json url --jq .url)
 bd update {{issue}} --set-metadata pr_url="$PR_URL"
+bd update {{issue}} --assignee ""
 gc sling {{rig}}/factory.architect {{issue}}
 gc runtime drain-ack
 ```
@@ -166,6 +169,7 @@ Non-zero exit → **hard block**, route back to the builder:
 ```bash
 bd update {{issue}} --set-metadata gate_verdict=fail \\
   --append-notes "Mechanical gate failed: <command> — <error>"
+bd update {{issue}} --assignee ""
 gc sling {{rig}}/factory.builder {{issue}}
 gc runtime drain-ack
 ```
@@ -179,6 +183,7 @@ list. **TDD ordering does not apply to a refactor** — the absence of a `test:`
 Pass:
 ```bash
 bd update {{issue}} --set-metadata gate_verdict=pass
+bd update {{issue}} --assignee ""
 gc sling {{rig}}/factory.scribe {{issue}}
 gc runtime drain-ack
 ```
@@ -187,6 +192,7 @@ Violations — one round only, then force forward with both readings recorded:
 ```bash
 bd update {{issue}} --set-metadata gate_verdict=violations \\
   --append-notes "Gate: <which check, which file:line, what would fix it>"
+bd update {{issue}} --assignee ""
 gc sling {{rig}}/factory.builder {{issue}}
 gc runtime drain-ack
 ```
