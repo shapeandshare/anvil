@@ -268,3 +268,31 @@ jobs:
           echo "| constitution-check | ${{ needs.constitution-check.result }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| ux-lint | ${{ needs.ux-lint.result }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
+
+      # Without this, Gate Status only summarises and always succeeds, so a failed
+      # gate cannot block a merge. "skipped" stays acceptable: gates are legitimately
+      # skipped for version-only bumps and on pushes to main.
+      - name: Enforce gate results
+        run: |
+          failed=""
+          for gate in \
+            "bump-scope-guard=${{ needs.bump-scope-guard.result }}" \
+            "format=${{ needs.format.result }}" \
+            "lint=${{ needs.lint.result }}" \
+            "typecheck=${{ needs.typecheck.result }}" \
+            "test=${{ needs.test.result }}" \
+            "vault-audit=${{ needs.vault-audit.result }}" \
+            "constitution-check=${{ needs.constitution-check.result }}" \
+            "ux-lint=${{ needs.ux-lint.result }}"; do
+            name="${gate%%=*}"
+            result="${gate#*=}"
+            case "$result" in
+              success|skipped) ;;
+              *) failed="${failed} ${name}(${result})" ;;
+            esac
+          done
+          if [ -n "${failed}" ]; then
+            echo "::error::Gates did not pass:${failed}"
+            exit 1
+          fi
+          echo "All gates passed or were legitimately skipped."
