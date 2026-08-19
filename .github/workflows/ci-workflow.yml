@@ -60,10 +60,13 @@ jobs:
         run: |
           uv venv
           uv pip install .
+      # Call the console script directly, not via `uv run`: `uv run` re-resolves the
+      # project including extras, and anvil[compute] is currently unsatisfiable
+      # (core requires protobuf>=7.35.1; modal caps protobuf below 7.0).
       - name: Classify change scope
         id: classify
         run: |
-          uv run anvil-vault check-bump-scope > scope_output.txt
+          .venv/bin/anvil-vault check-bump-scope > scope_output.txt
           cat scope_output.txt
           SCOPE=$(grep "^BUMP_SCOPE=" scope_output.txt | cut -d= -f2)
           echo "scope=${SCOPE}" >> "$GITHUB_OUTPUT"
