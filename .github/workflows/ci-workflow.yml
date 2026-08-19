@@ -56,6 +56,7 @@ jobs:
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
       - name: Install anvil
         run: |
           uv venv
@@ -89,6 +90,7 @@ jobs:
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
       - name: Setup environment
         run: make setup
       - name: Run lint
@@ -111,6 +113,7 @@ jobs:
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
       - name: Setup environment
         run: make setup
       - name: Run auto-format
@@ -140,6 +143,7 @@ jobs:
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
       - name: Setup environment
         run: make setup
       - name: Run typecheck
@@ -158,6 +162,7 @@ jobs:
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
       - name: Setup environment
         run: make setup
       - name: Run tests with coverage
@@ -203,6 +208,7 @@ jobs:
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
       - name: Setup environment
         run: make setup
       - name: Run vault audit
@@ -221,6 +227,7 @@ jobs:
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
       - name: Setup environment
         run: make setup
       - name: Run constitution checks
@@ -239,6 +246,7 @@ jobs:
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
       - name: Setup environment
         run: make setup
       - name: Run UX lint
