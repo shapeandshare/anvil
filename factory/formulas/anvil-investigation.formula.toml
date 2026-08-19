@@ -68,6 +68,7 @@ ACC
 
 **4. Route onward:**
 ```bash
+bd update {{issue}} --assignee ""
 gc sling {{rig}}/factory.builder {{issue}}
 gc runtime drain-ack
 ```
@@ -109,6 +110,7 @@ bd create --type=task --priority=2 "<what needs doing>"
 
 **5. Route onward:**
 ```bash
+bd update {{issue}} --assignee ""
 gc sling {{rig}}/factory.scribe {{issue}}
 gc runtime drain-ack
 ```

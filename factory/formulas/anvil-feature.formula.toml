@@ -72,6 +72,7 @@ ACC
 
 **5. Route onward:**
 ```bash
+bd update {{issue}} --assignee ""
 gc sling {{rig}}/factory.builder {{issue}}
 gc runtime drain-ack
 ```
@@ -115,6 +116,7 @@ RED
 
 **6. Route onward:**
 ```bash
+bd update {{issue}} --assignee ""
 gc sling {{rig}}/factory.builder {{issue}}
 gc runtime drain-ack
 ```
@@ -145,6 +147,7 @@ triggers a minor version bump and a release on merge. **Do not use `--no-verify`
 
 **3. Route onward:**
 ```bash
+bd update {{issue}} --assignee ""
 gc sling {{rig}}/factory.builder {{issue}}
 gc runtime drain-ack
 ```
@@ -176,6 +179,7 @@ git push -u origin <branch>
 gh pr create --fill
 PR_URL=$(gh pr view --json url --jq .url)
 bd update {{issue}} --set-metadata pr_url="$PR_URL"
+bd update {{issue}} --assignee ""
 gc sling {{rig}}/factory.architect {{issue}}
 gc runtime drain-ack
 ```
@@ -210,6 +214,7 @@ file list.
 Pass:
 ```bash
 bd update {{issue}} --set-metadata gate_verdict=pass
+bd update {{issue}} --assignee ""
 gc sling {{rig}}/factory.scribe {{issue}}
 gc runtime drain-ack
 ```
@@ -218,6 +223,7 @@ Violations — one round, then force forward with both readings recorded:
 ```bash
 bd update {{issue}} --set-metadata gate_verdict=violations \\
   --append-notes "Gate: <which check, which file:line, what would fix it>"
+bd update {{issue}} --assignee ""
 gc sling {{rig}}/factory.builder {{issue}}
 gc runtime drain-ack
 ```

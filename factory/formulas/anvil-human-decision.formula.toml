@@ -77,6 +77,7 @@ executable in order to proceed.
 
 **5. Route to the manager:**
 ```bash
+bd update {{issue}} --assignee ""
 gc sling {{rig}}/factory.manager {{issue}}
 gc runtime drain-ack
 ```
