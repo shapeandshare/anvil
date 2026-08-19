@@ -47,16 +47,23 @@ jobs:
       - name: Log fork status
         run: |
           if [ "${{ github.event.pull_request.head.repo.fork }}" = "true" ]; then
-            echo "::notice::Running on fork PR — pip install executes untrusted code."
+            echo "::notice::Running on fork PR — installing the package executes untrusted code."
             echo "::notice::Mitigation: GitHub approval gate required for first-time contributors."
           fi
+      # Do NOT replace with a bare `pip install`: the self-hosted runner has no pip,
+      # and the resulting exit-127 skips every downstream gate while Gate Status passes.
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
       - name: Install anvil
         run: |
-          pip install .
+          uv venv
+          uv pip install .
       - name: Classify change scope
         id: classify
         run: |
-          anvil-vault check-bump-scope > scope_output.txt
+          uv run anvil-vault check-bump-scope > scope_output.txt
           cat scope_output.txt
           SCOPE=$(grep "^BUMP_SCOPE=" scope_output.txt | cut -d= -f2)
           echo "scope=${SCOPE}" >> "$GITHUB_OUTPUT"
