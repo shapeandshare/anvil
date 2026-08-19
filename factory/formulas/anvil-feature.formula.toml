@@ -8,12 +8,14 @@ makes the ordering auditable.
 
 The sequence:
 
-  plan       planner    writes concrete acceptance, confirms task type
-  red        builder    writes the failing test, confirms it FAILS, commits with --no-verify
-  green      builder    minimal implementation until it passes, commits (gated)
-  refactor   builder    cleans up, tests still green, commits (gated)
-  gate       architect  mechanical checks, then four judgment calls incl. TDD ordering
-  scribe     scribe     vault notes, vault-audit, closes the bead
+  plan     planner    writes concrete acceptance, confirms task type
+  build    builder    Red -> Green -> Refactor as three ordered commits, then opens the PR
+  gate     architect  mechanical checks, then four judgment calls incl. TDD ordering
+  scribe   scribe     vault notes, vault-audit, closes the bead
+
+Note there is **one** builder step. Article IV constrains commit ORDER, not step count, and
+consecutive steps owned by the same agent cannot hand off — `gc sling` only assigns an unassigned
+bead and is idempotent on an already-routed one, so builder->builder is a no-op that stalls the run.
 
 Only ~73 of anvil's 474 open task rows carry TDD markers, so most work uses anvil-refactor instead.
 Use this formula only when a genuinely new failing test is possible.
@@ -23,7 +25,7 @@ Start a run with:
   gc sling {{rig}}/factory.planner <bead-id> --on anvil-feature
 """
 formula = "anvil-feature"
-version = 1
+version = 2
 
 [vars]
 [vars.issue]
@@ -79,33 +81,31 @@ gc runtime drain-ack
 """
 
 [[steps]]
-id = "red"
-title = "Builder: write the failing test FIRST and prove it fails"
+id = "build"
+title = "Builder: Red, then Green, then Refactor — three ordered commits"
 needs = ["plan"]
 description = """
-**Write only the test. No implementation code in this step.**
+All three TDD phases happen in this one step, as three **separate, ordered commits**. Article IV
+constrains commit order, not step count — and consecutive steps owned by the same agent cannot hand
+off (`gc sling` is idempotent on an already-routed bead), so splitting them stalls the run.
 
-**1. Branch:**
+**1. Branch FIRST, before editing anything:**
 ```bash
 git switch -c <task_id>-<slug>
 ```
 
-**2. Write the test named in the acceptance.** It must be syntactically valid and fail at *runtime*
-(asserting behaviour that does not exist yet) — not fail at import or lint time.
-
-**3. Confirm it fails, and capture the output:**
+**2. RED — write only the test. No implementation code yet.**
+It must be syntactically valid and fail at *runtime* (asserting behaviour that does not exist), not at
+import or lint time.
 ```bash
-python -m pytest tests/ -k <test_name> -x
-```
-
-**4. Commit with `--no-verify`.** This is the only step where that flag is permitted: the hook runs
-`make test`, which would reject a deliberately failing test.
-```bash
+python -m pytest tests/ -k <test_name> -x     # CONFIRM IT FAILS
 git add -A
 git commit --no-verify -m "test(<task_id>): add failing test for <behaviour>"
 ```
+`--no-verify` is permitted **only** on this commit: the hook runs `make test`, which would reject a
+deliberately failing test.
 
-**5. Record the evidence — the architect checks for this:**
+Record the evidence — the architect checks for it:
 ```bash
 bd update {{issue}} --append-notes "$(cat <<'RED'
 ## RED phase
@@ -114,81 +114,48 @@ RED
 )"
 ```
 
-**6. Route onward:**
-```bash
-bd update {{issue}} --assignee ""
-gc sling {{rig}}/factory.builder {{issue}}
-gc runtime drain-ack
-```
-"""
-
-[[steps]]
-id = "green"
-title = "Builder: minimal implementation until the test passes"
-needs = ["red"]
-description = """
-**Write the least code that makes the test pass.** No speculative generality, no extra behaviour, no
-premature abstraction — those are Article XI violations and the gate checks for them.
-
-**1. Implement, then verify:**
+**3. GREEN — the least code that makes the test pass.** No speculative generality.
 ```bash
 python -m pytest tests/ -k <test_name> -x    # now passes
 make test                                     # nothing else regressed
-```
-
-**2. Commit — `make format` BEFORE staging, hooks ACTIVE:**
-```bash
 make format
 git add -A
 git commit -m "feat(<task_id>): <what behaviour was added>"
 ```
-Use `fix(` instead if this corrects a bug rather than adding behaviour. Choose honestly — `feat:`
-triggers a minor version bump and a release on merge. **Do not use `--no-verify` here.**
+Use `fix(` instead if this corrects a bug. Choose honestly — `feat:` triggers a minor version bump and
+a release on merge. **Do not use `--no-verify` here.**
 
-**3. Route onward:**
-```bash
-bd update {{issue}} --assignee ""
-gc sling {{rig}}/factory.builder {{issue}}
-gc runtime drain-ack
-```
-"""
-
-[[steps]]
-id = "refactor"
-title = "Builder: clean up, then open the PR"
-needs = ["green"]
-description = """
-**1. Clean up the implementation** — duplication, naming, extract helpers. Behaviour must not change.
-
-**2. Confirm green:**
+**4. REFACTOR — clean up, behaviour unchanged.** Skip and note it if there is nothing to clean.
 ```bash
 make test
-```
-
-**3. Commit:**
-```bash
 make format
 git add -A
 git commit -m "refactor(<task_id>): clean up <what>"
 ```
-If there is nothing to clean, skip this commit and note it rather than inventing churn.
 
-**4. Open the PR and record it:**
+**5. Open the pull request and record it:**
 ```bash
 git push -u origin <branch>
 gh pr create --fill
 PR_URL=$(gh pr view --json url --jq .url)
 bd update {{issue}} --set-metadata pr_url="$PR_URL"
+```
+
+**6. Route onward:**
+```bash
 bd update {{issue}} --assignee ""
 gc sling {{rig}}/factory.architect {{issue}}
 gc runtime drain-ack
 ```
+
+If you arrive here carrying a gate verdict, push a fix to the **same** branch and route back to the
+architect. Do not open a second pull request.
 """
 
 [[steps]]
 id = "gate"
 title = "Architect: mechanical gate, then four judgment calls"
-needs = ["refactor"]
+needs = ["build"]
 description = """
 **1. Mechanical gate** (non-mutating — never `make pr-ready`):
 ```bash

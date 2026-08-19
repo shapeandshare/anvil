@@ -41,10 +41,15 @@ manager selects with `--on`.
 
 | `task_type` | Formula | Steps |
 | --- | --- | --- |
-| `refactor` | `anvil-refactor` | plan → green → refactor → gate → scribe |
-| `feature` | `anvil-feature` | plan → **red** → green → refactor → gate → scribe |
+| `refactor` | `anvil-refactor` | plan → build → gate → scribe |
+| `feature` | `anvil-feature` | plan → build (Red→Green→Refactor commits) → gate → scribe |
 | `investigation` | `anvil-investigation` | plan → investigate → scribe |
 | `human_decision` | `anvil-human-decision` | plan → blocked |
+
+**One builder step per formula, never two.** Consecutive steps owned by the same agent cannot hand
+off — see below — so all builder work lives in a single step. For `anvil-feature` that step still
+produces three separate, ordered commits (`test:` → `feat:` → `refactor:`); Article IV constrains
+commit order, not step count, and the architect verifies ordering from `git log`.
 
 `anvil-refactor` is the workhorse. Only ~73 of anvil's 474 open task rows carry TDD markers, so most
 work has no Red phase to write — and fabricating one to satisfy a pipeline would violate Article XI.
@@ -75,6 +80,16 @@ after the first step** — no error, just a bead that never advances.
 Found the hard way during the first live run; see E17 in the onboarding plan. Order matters: clear
 *then* sling. Clearing after the sling is too late, because the sling has already been skipped as
 idempotent.
+
+### Corollary: never give two consecutive steps to the same agent
+
+The same idempotency defeats a builder→builder handoff entirely. If step *n* and step *n+1* are both
+owned by `builder`, routing onward does not change `gc.routed_to`, so the sling is skipped, the
+assignee is never set, and **the run stalls with no error** — the commit from step *n* is left
+unpushed on a local branch.
+
+Found on the second live run (E18). Both `anvil-refactor` and `anvil-feature` were restructured to a
+single `build` step for this reason.
 
 ## Two rules the prompts encode that are easy to get wrong
 
