@@ -1,0 +1,266 @@
+description = """
+Carry one FEATURE task through the anvil factory, under strict TDD.
+
+A feature has a real behavioural delta that a new test can express. Article IV makes the ordering a
+hard gate: the failing test must exist, and be confirmed failing, BEFORE any implementation code.
+That is why Red and Green are separate steps producing separate commits — the commit history is what
+makes the ordering auditable.
+
+The sequence:
+
+  plan       planner    writes concrete acceptance, confirms task type
+  red        builder    writes the failing test, confirms it FAILS, commits with --no-verify
+  green      builder    minimal implementation until it passes, commits (gated)
+  refactor   builder    cleans up, tests still green, commits (gated)
+  gate       architect  mechanical checks, then four judgment calls incl. TDD ordering
+  scribe     scribe     vault notes, vault-audit, closes the bead
+
+Only ~73 of anvil's 474 open task rows carry TDD markers, so most work uses anvil-refactor instead.
+Use this formula only when a genuinely new failing test is possible.
+
+Start a run with:
+
+  gc sling {{rig}}/factory.planner <bead-id> --on anvil-feature
+"""
+formula = "anvil-feature"
+version = 1
+
+[vars]
+[vars.issue]
+description = "The task bead to carry through the factory"
+required = true
+
+[vars.rig]
+description = "Rig name the agents are bound to"
+default = "anvil"
+
+[[steps]]
+id = "plan"
+title = "Planner: pin down the behavioural delta and its test"
+description = """
+**1. Read the task and spec context:**
+```bash
+bd show {{issue}}
+```
+Quote all paths — spec directory names contain spaces.
+
+**2. Confirm this really is a feature.** The test is: can a *new* failing test express the delta? If
+not — if existing coverage already asserts the behaviour and only the implementation changes — it is a
+refactor. Correct it and say so:
+```bash
+bd update {{issue}} --set-metadata task_type=refactor
+```
+Getting this wrong forces the builder to invent a meaningless test, which is worse than no test.
+
+**3. Flag migrations** if Alembic revisions are involved:
+```bash
+bd update {{issue}} --set-metadata needs_migration=true
+```
+
+**4. Write the acceptance, naming the test:**
+```bash
+bd update {{issue}} --append-notes "$(cat <<'ACC'
+## Acceptance
+- Files in scope: <exact paths, including the test file>
+- New test: <tests/unit/...::test_name> — asserts <what>
+- Behaviour: <what must become true>
+- Verification: python -m pytest tests/ -k <test_name> -x, then make test
+- Out of scope: <what must not change>
+ACC
+)"
+```
+
+**5. Route onward:**
+```bash
+gc sling {{rig}}/factory.builder {{issue}}
+gc runtime drain-ack
+```
+"""
+
+[[steps]]
+id = "red"
+title = "Builder: write the failing test FIRST and prove it fails"
+needs = ["plan"]
+description = """
+**Write only the test. No implementation code in this step.**
+
+**1. Branch:**
+```bash
+git switch -c <task_id>-<slug>
+```
+
+**2. Write the test named in the acceptance.** It must be syntactically valid and fail at *runtime*
+(asserting behaviour that does not exist yet) — not fail at import or lint time.
+
+**3. Confirm it fails, and capture the output:**
+```bash
+python -m pytest tests/ -k <test_name> -x
+```
+
+**4. Commit with `--no-verify`.** This is the only step where that flag is permitted: the hook runs
+`make test`, which would reject a deliberately failing test.
+```bash
+git add -A
+git commit --no-verify -m "test(<task_id>): add failing test for <behaviour>"
+```
+
+**5. Record the evidence — the architect checks for this:**
+```bash
+bd update {{issue}} --append-notes "$(cat <<'RED'
+## RED phase
+<last ~40 lines of pytest output showing the failure>
+RED
+)"
+```
+
+**6. Route onward:**
+```bash
+gc sling {{rig}}/factory.builder {{issue}}
+gc runtime drain-ack
+```
+"""
+
+[[steps]]
+id = "green"
+title = "Builder: minimal implementation until the test passes"
+needs = ["red"]
+description = """
+**Write the least code that makes the test pass.** No speculative generality, no extra behaviour, no
+premature abstraction — those are Article XI violations and the gate checks for them.
+
+**1. Implement, then verify:**
+```bash
+python -m pytest tests/ -k <test_name> -x    # now passes
+make test                                     # nothing else regressed
+```
+
+**2. Commit — `make format` BEFORE staging, hooks ACTIVE:**
+```bash
+make format
+git add -A
+git commit -m "feat(<task_id>): <what behaviour was added>"
+```
+Use `fix(` instead if this corrects a bug rather than adding behaviour. Choose honestly — `feat:`
+triggers a minor version bump and a release on merge. **Do not use `--no-verify` here.**
+
+**3. Route onward:**
+```bash
+gc sling {{rig}}/factory.builder {{issue}}
+gc runtime drain-ack
+```
+"""
+
+[[steps]]
+id = "refactor"
+title = "Builder: clean up, then open the PR"
+needs = ["green"]
+description = """
+**1. Clean up the implementation** — duplication, naming, extract helpers. Behaviour must not change.
+
+**2. Confirm green:**
+```bash
+make test
+```
+
+**3. Commit:**
+```bash
+make format
+git add -A
+git commit -m "refactor(<task_id>): clean up <what>"
+```
+If there is nothing to clean, skip this commit and note it rather than inventing churn.
+
+**4. Open the PR and record it:**
+```bash
+git push -u origin <branch>
+gh pr create --fill
+PR_URL=$(gh pr view --json url --jq .url)
+bd update {{issue}} --set-metadata pr_url="$PR_URL"
+gc sling {{rig}}/factory.architect {{issue}}
+gc runtime drain-ack
+```
+"""
+
+[[steps]]
+id = "gate"
+title = "Architect: mechanical gate, then four judgment calls"
+needs = ["refactor"]
+description = """
+**1. Mechanical gate** (non-mutating — never `make pr-ready`):
+```bash
+make lint && make typecheck && make vault-audit && make constitution-check && make test
+```
+Non-zero → hard block back to builder with `gate_verdict=fail` and the error output.
+
+**2. Judge four things.** For a feature, **TDD ordering is the first and most important**:
+```bash
+git log --oneline origin/main..HEAD
+```
+- The sequence must read `test:` → `feat:`/`fix:` → `refactor:`.
+- The bead notes must contain a `## RED phase` block showing a real failure.
+- The `test:` commit must be the **only** one that used `--no-verify`.
+- The `test:` commit should touch only test files: `git diff --name-only <test-sha>` should be
+  confined to `tests/`.
+
+Then: enum-vs-magic-string, Simplicity/YAGNI, domain placement, and scope against the acceptance's
+file list.
+
+**3. Verdict.**
+
+Pass:
+```bash
+bd update {{issue}} --set-metadata gate_verdict=pass
+gc sling {{rig}}/factory.scribe {{issue}}
+gc runtime drain-ack
+```
+
+Violations — one round, then force forward with both readings recorded:
+```bash
+bd update {{issue}} --set-metadata gate_verdict=violations \\
+  --append-notes "Gate: <which check, which file:line, what would fix it>"
+gc sling {{rig}}/factory.builder {{issue}}
+gc runtime drain-ack
+```
+
+A missing or out-of-order Red phase is a **hard block**, not a judgment call — Article IV makes it
+mechanical. Send it back.
+"""
+
+[[steps]]
+id = "scribe"
+title = "Scribe: vault notes, then close"
+needs = ["gate"]
+description = """
+**1. Read the outcome:**
+```bash
+bd show {{issue}}
+```
+
+**2. Write the session log** to `docs/vault/Sessions/YYYY-MM-DD-<topic-slug>.md`. Add an ADR in
+`docs/vault/Decisions/` if a genuine architecture decision was made — a new feature is more likely to
+warrant one than a refactor.
+
+Hard constraints: tags **only** from `docs/vault/_meta/tags.md`; required frontmatter; ≥1 inbound
+wikilink; **never** `status: canonical`.
+
+**3. Verify and commit:**
+```bash
+make vault-audit
+make format
+git add -A
+git commit -m "docs(<task_id>): vault notes for <what>"
+```
+
+**4. Close and report:**
+```bash
+PR_URL=$(bd show {{issue}} --json | jq -r '.[0].metadata.pr_url')
+bd update {{issue}} --set-metadata gc.outcome=pass
+bd close {{issue}}
+```
+
+`<task_id> is ready to merge: <pr_url>. Gate passed, TDD order verified.`
+
+```bash
+gc runtime drain-ack
+```
+"""
