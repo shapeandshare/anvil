@@ -7,7 +7,7 @@ PYTHON := $(VENV_BIN)/python3
 
 # Auto-create venv via uv if missing
 $(VENV_DIR)/activate: pyproject.toml uv.lock
-	uv venv $(VENV_DIR)
+	@test -d $(VENV_DIR) || uv venv $(VENV_DIR)
 	uv sync --all-extras
 	@touch $(VENV_DIR)/activate
 

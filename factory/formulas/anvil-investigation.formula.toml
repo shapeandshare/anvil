@@ -1,0 +1,162 @@
+description = """
+Carry one INVESTIGATION task through the anvil factory.
+
+An investigation produces prose, not code: run a search, count call sites, confirm a claim, verify
+gates are green, report drift. There is no diff, so there is no PR and no architect gate — sending an
+empty diff through a code review gate would waste tokens on nothing.
+
+Roughly a third of anvil's backlog looks like this. Examples:
+
+  T001  Re-verify current state: run grep -rn 'get_config()' … Note any drift.
+  T032  Verify all existing tests still pass: make test.
+  T060  make lint && make typecheck && make test && make vault-audit all green.
+  T061  Confirm SC-004: anvil/config.py line count did not increase.
+
+The sequence:
+
+  plan          planner    confirms this is really an investigation, states the question
+  investigate   builder    runs the commands, writes findings to the bead notes
+  scribe        scribe     vault notes if anything was learned, closes the bead
+
+Start a run with:
+
+  gc sling {{rig}}/factory.planner <bead-id> --on anvil-investigation
+"""
+formula = "anvil-investigation"
+version = 1
+
+[vars]
+[vars.issue]
+description = "The investigation bead to carry through the factory"
+required = true
+
+[vars.rig]
+description = "Rig name the agents are bound to"
+default = "anvil"
+
+[[steps]]
+id = "plan"
+title = "Planner: state the question precisely"
+description = """
+**1. Read the task:**
+```bash
+bd show {{issue}}
+```
+
+**2. Confirm the type.** If the task actually requires changing code, it is not an investigation —
+correct it so the manager can re-sling:
+```bash
+bd update {{issue}} --set-metadata task_type=refactor
+```
+If it requires a human's judgment or approval ("confirm with owner", "decide whether"), it is
+`human_decision` — the factory cannot answer it:
+```bash
+bd update {{issue}} --set-metadata task_type=human_decision
+```
+
+**3. Write the question and how it gets answered.** An investigation is only useful if the answer is
+falsifiable:
+```bash
+bd update {{issue}} --append-notes "$(cat <<'ACC'
+## Question
+- <the precise question, stated so the answer is yes/no or a number>
+- Commands that answer it: <exact commands>
+- Report format: <what a complete answer looks like>
+ACC
+)"
+```
+
+**4. Route onward:**
+```bash
+bd update {{issue}} --assignee ""
+gc sling {{rig}}/factory.builder {{issue}}
+gc runtime drain-ack
+```
+"""
+
+[[steps]]
+id = "investigate"
+title = "Builder: run it, report exactly what you found"
+needs = ["plan"]
+description = """
+**This step is read-only. Change no files. Make no commits. Open no PR.**
+
+**1. Read the question:**
+```bash
+bd show {{issue}}
+```
+
+**2. Run the commands.** Quote all paths — spec directory names contain spaces.
+
+**3. Write the findings to the bead.** Report what you actually observed, including counts and exact
+output. If the answer is "no drift" or "already green", say so plainly — a null result is a valid and
+useful finding:
+```bash
+bd update {{issue}} --append-notes "$(cat <<'FIND'
+## Findings
+- Question: <restated>
+- Commands run: <exact commands>
+- Result: <what you observed — numbers, paths, exact output>
+- Answer: <the direct answer to the question>
+- Follow-ups: <bead ids you opened, or "none">
+FIND
+)"
+```
+
+**4. Open beads for anything you discovered** rather than fixing it here:
+```bash
+bd create --type=task --priority=2 "<what needs doing>"
+```
+
+**5. Route onward:**
+```bash
+bd update {{issue}} --assignee ""
+gc sling {{rig}}/factory.scribe {{issue}}
+gc runtime drain-ack
+```
+
+If the investigation cannot be completed — a command fails, the question turns out to be ambiguous —
+set `blocked=true` with the reason and route to the manager. Do not guess an answer.
+"""
+
+[[steps]]
+id = "scribe"
+title = "Scribe: record only if something was learned"
+needs = ["investigate"]
+description = """
+**1. Read the findings:**
+```bash
+bd show {{issue}}
+```
+
+**2. Judge whether this belongs in the vault.** Most investigations do not. Write a discovery note
+**only** if a non-obvious constraint was found that would cost someone else real time to rediscover.
+A routine "gates are green" check does not need a note.
+
+Always write a short session log to `docs/vault/Sessions/YYYY-MM-DD-<topic-slug>.md` recording that
+the check happened and what it concluded.
+
+Hard constraints: tags **only** from `docs/vault/_meta/tags.md`; required frontmatter (`title`, `type`,
+`tags`, `created`, `updated`); at least one inbound wikilink; **never** set `status: canonical`.
+
+**3. If you wrote anything, verify and commit:**
+```bash
+make vault-audit
+make format
+git add -A
+git commit -m "docs(<task_id>): <what was investigated>"
+```
+`make vault-audit` must report 0 errors.
+
+**4. Close and report:**
+```bash
+bd update {{issue}} --set-metadata gc.outcome=pass
+bd close {{issue}}
+```
+
+One line: `<task_id>: <the answer>. <vault note path, or "no vault note needed">.`
+
+```bash
+gc runtime drain-ack
+```
+"""
