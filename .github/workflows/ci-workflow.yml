@@ -47,16 +47,27 @@ jobs:
       - name: Log fork status
         run: |
           if [ "${{ github.event.pull_request.head.repo.fork }}" = "true" ]; then
-            echo "::notice::Running on fork PR — pip install executes untrusted code."
+            echo "::notice::Running on fork PR — installing the package executes untrusted code."
             echo "::notice::Mitigation: GitHub approval gate required for first-time contributors."
           fi
+      # Do NOT replace with a bare `pip install`: the self-hosted runner has no pip,
+      # and the resulting exit-127 skips every downstream gate while Gate Status passes.
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
       - name: Install anvil
         run: |
-          pip install .
+          uv venv
+          uv pip install .
+      # Call the console script directly, not via `uv run`: `uv run` re-resolves the
+      # project including extras, and anvil[compute] is currently unsatisfiable
+      # (core requires protobuf>=7.35.1; modal caps protobuf below 7.0).
       - name: Classify change scope
         id: classify
         run: |
-          anvil-vault check-bump-scope > scope_output.txt
+          .venv/bin/anvil-vault check-bump-scope > scope_output.txt
           cat scope_output.txt
           SCOPE=$(grep "^BUMP_SCOPE=" scope_output.txt | cut -d= -f2)
           echo "scope=${SCOPE}" >> "$GITHUB_OUTPUT"
@@ -79,6 +90,7 @@ jobs:
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
       - name: Setup environment
         run: make setup
       - name: Run lint
@@ -101,6 +113,7 @@ jobs:
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
       - name: Setup environment
         run: make setup
       - name: Run auto-format
@@ -130,6 +143,7 @@ jobs:
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
       - name: Setup environment
         run: make setup
       - name: Run typecheck
@@ -148,6 +162,7 @@ jobs:
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
       - name: Setup environment
         run: make setup
       - name: Run tests with coverage
@@ -184,7 +199,7 @@ jobs:
   vault-audit:
     name: Vault Audit
     runs-on: [self-hosted, linux, x64]
-    timeout-minutes: 5
+    timeout-minutes: 10
     needs: bump-scope-guard
     if: needs.bump-scope-guard.outputs.scope != 'version-only' && github.ref_name != 'main'
     steps:
@@ -193,6 +208,7 @@ jobs:
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
       - name: Setup environment
         run: make setup
       - name: Run vault audit
@@ -211,6 +227,7 @@ jobs:
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
       - name: Setup environment
         run: make setup
       - name: Run constitution checks
@@ -220,7 +237,7 @@ jobs:
   ux-lint:
     name: UX Lint
     runs-on: [self-hosted, linux, x64]
-    timeout-minutes: 5
+    timeout-minutes: 10
     needs: bump-scope-guard
     if: needs.bump-scope-guard.outputs.scope != 'version-only' && github.ref_name != 'main'
     steps:
@@ -229,6 +246,7 @@ jobs:
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
       - name: Setup environment
         run: make setup
       - name: Run UX lint
@@ -258,3 +276,31 @@ jobs:
           echo "| constitution-check | ${{ needs.constitution-check.result }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| ux-lint | ${{ needs.ux-lint.result }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
+
+      # Without this, Gate Status only summarises and always succeeds, so a failed
+      # gate cannot block a merge. "skipped" stays acceptable: gates are legitimately
+      # skipped for version-only bumps and on pushes to main.
+      - name: Enforce gate results
+        run: |
+          failed=""
+          for gate in \
+            "bump-scope-guard=${{ needs.bump-scope-guard.result }}" \
+            "format=${{ needs.format.result }}" \
+            "lint=${{ needs.lint.result }}" \
+            "typecheck=${{ needs.typecheck.result }}" \
+            "test=${{ needs.test.result }}" \
+            "vault-audit=${{ needs.vault-audit.result }}" \
+            "constitution-check=${{ needs.constitution-check.result }}" \
+            "ux-lint=${{ needs.ux-lint.result }}"; do
+            name="${gate%%=*}"
+            result="${gate#*=}"
+            case "$result" in
+              success|skipped) ;;
+              *) failed="${failed} ${name}(${result})" ;;
+            esac
+          done
+          if [ -n "${failed}" ]; then
+            echo "::error::Gates did not pass:${failed}"
+            exit 1
+          fi
+          echo "All gates passed or were legitimately skipped."

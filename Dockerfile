@@ -8,7 +8,7 @@
 # Run:    docker run -p 8080:8080 -p 5001:5001 anvil
 
 # ---- Stage 1: builder — build the wheel ----
-FROM python:3.13-slim AS builder
+FROM python:3.14-slim AS builder
 
 WORKDIR /src
 
@@ -35,7 +35,7 @@ RUN uv build --wheel --out-dir /dist .
 RUN pip wheel --no-cache-dir --wheel-dir /dist "numpy>=1.24,<2"
 
 # ---- Stage 2: runtime — install ONLY the wheel (no source tree) ----
-FROM python:3.13-slim AS runtime
+FROM python:3.14-slim AS runtime
 
 # Create a non-root user for security
 RUN useradd --create-home --uid 1000 anvil

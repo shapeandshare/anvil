@@ -1,0 +1,9 @@
+# Pool agent. Spawns when work is routed here, exits when its step is done.
+#
+# max_active_sessions = 1 is deliberate and applies to EVERY agent in this
+# pack: all agents share the single rig checkout. Two agents writing branches
+# in one working tree collide. Raise this only after giving each agent its own
+# git worktree.
+wake_mode = "fresh"
+idle_timeout = "1h"
+max_active_sessions = 1

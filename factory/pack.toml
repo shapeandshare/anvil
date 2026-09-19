@@ -1,0 +1,25 @@
+# anvil-factory-pack — the agent pack that builds anvil.
+#
+# Everything the pack contains lives in three places:
+#
+#   agents/<name>/agent.toml            how each agent runs
+#   agents/<name>/prompt.template.md    what each agent knows
+#   formulas/anvil-*.formula.toml       the order they work in, per task type
+#
+# The agents are deliberately generic about *sequence* — no prompt says what
+# runs before or after it. The formulas own ordering, so changing the pipeline
+# means editing one formula rather than five prompts.
+#
+# Agents are declared BY DIRECTORY (schema 2). There are no [[agent]] tables
+# here on purpose: an inline table silently shadows the matching
+# agents/<name>/agent.toml and `gc doctor` flags it as a legacy declaration.
+
+[pack]
+name = "factory"
+schema = 2
+
+# The manager is the only always-on agent and the only one a human talks to.
+# The other four are pools that spawn when work reaches them and exit after.
+[[named_session]]
+template = "manager"
+mode = "always"

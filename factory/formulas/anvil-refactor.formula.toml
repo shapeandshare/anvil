@@ -1,0 +1,222 @@
+description = """
+Carry one REFACTOR task through the anvil factory.
+
+A refactor changes structure, not behaviour: migrate a call site, rename, extract, move, delete.
+Existing tests already cover the behaviour, so there is deliberately **no Red phase** — you cannot
+write a new failing test for "same behaviour, different implementation", and fabricating one would
+violate Article XI.
+
+This is the common case. Roughly 85% of anvil's open backlog carries no TDD marker, so this formula
+runs far more often than anvil-feature.
+
+The sequence:
+
+  plan       planner    writes concrete acceptance, confirms task type, flags migrations
+  green      builder    makes the change, existing tests must still pass, commits
+  refactor   builder    cleans up, tests still green, commits
+  gate       architect  mechanical checks, then four judgment calls
+  scribe     scribe     vault notes, vault-audit, closes the bead
+
+Start a run with:
+
+  gc sling {{rig}}/factory.planner <bead-id> --on anvil-refactor
+"""
+formula = "anvil-refactor"
+version = 2
+
+[vars]
+[vars.issue]
+description = "The task bead to carry through the factory"
+required = true
+
+[vars.rig]
+description = "Rig name the agents are bound to"
+default = "anvil"
+
+[[steps]]
+id = "plan"
+title = "Planner: pin down what this refactor must produce"
+description = """
+**1. Read the task and its spec context:**
+```bash
+bd show {{issue}}
+```
+Metadata carries `spec_title`, `task_id`, and paths under `docs/vault/Specs/`. **Quote every path —
+spec directory names contain spaces.**
+
+**2. Confirm the task type.** If this is not actually a refactor — if it has a real behavioural delta
+a new test could express — correct it and say so, so the manager can re-sling on the right formula:
+```bash
+bd update {{issue}} --set-metadata task_type=feature
+```
+
+**3. Flag migrations.** If the task touches Alembic revisions:
+```bash
+bd update {{issue}} --set-metadata needs_migration=true
+```
+
+**4. Write the acceptance.** Name the exact files in scope and the command that verifies the change.
+For a refactor the verification is almost always "the existing suite still passes":
+```bash
+bd update {{issue}} --append-notes "$(cat <<'ACC'
+## Acceptance
+- Files in scope: <exact paths>
+- Behaviour: unchanged — this is a structural change only
+- Verification: make test (existing coverage must still pass)
+- Out of scope: <what must not change>
+ACC
+)"
+```
+
+**5. Route onward:**
+```bash
+bd update {{issue}} --assignee ""
+gc sling {{rig}}/factory.builder {{issue}}
+gc runtime drain-ack
+```
+
+If the task is mis-specified or blocked, set `blocked=true` with a reason and route to the manager
+instead of guessing.
+"""
+
+[[steps]]
+id = "build"
+title = "Builder: make the change, clean up, commit, open the PR"
+needs = ["plan"]
+description = """
+**1. Read the acceptance:**
+```bash
+bd show {{issue}}
+```
+
+**2. Branch, then change only the files the acceptance names:**
+```bash
+git switch -c <task_id>-<slug>
+```
+
+**3. Verify existing behaviour is preserved** — this is the whole verification for a refactor:
+```bash
+make test
+```
+
+**4. Commit. `make format` FIRST, before staging:**
+```bash
+make format
+git add -A
+git commit -m "refactor(<task_id>): <what changed>"
+```
+The hook runs the full gate and takes ~2 minutes. Let it. Do **not** use `--no-verify` — there is no
+Red phase here, so there is no reason to bypass anything.
+
+**5. Clean up if warranted** — duplication, naming, an extracted helper. Behaviour must not change.
+If there is nothing to clean, skip it and note that rather than inventing churn. If you do:
+```bash
+make test
+make format
+git add -A
+git commit -m "refactor(<task_id>): clean up <what>"
+```
+
+**6. Open the pull request and record it:**
+```bash
+git push -u origin <branch>
+gh pr create --fill
+PR_URL=$(gh pr view --json url --jq .url)
+bd update {{issue}} --set-metadata pr_url="$PR_URL"
+```
+
+**7. Route onward:**
+```bash
+bd update {{issue}} --assignee ""
+gc sling {{rig}}/factory.architect {{issue}}
+gc runtime drain-ack
+```
+
+If you arrive here carrying a gate verdict, read it, push a fix to the **same** branch, and route back
+to the architect. Do not open a second pull request.
+"""
+
+[[steps]]
+id = "gate"
+title = "Architect: mechanical gate, then four judgment calls"
+needs = ["build"]
+description = """
+**1. Run the non-mutating mechanical gate.** Not `make pr-ready` — it starts with `make format` and
+would dirty the tree:
+```bash
+make lint && make typecheck && make vault-audit && make constitution-check && make test
+```
+
+Non-zero exit → **hard block**, route back to the builder:
+```bash
+bd update {{issue}} --set-metadata gate_verdict=fail \\
+  --append-notes "Mechanical gate failed: <command> — <error>"
+bd update {{issue}} --assignee ""
+gc sling {{rig}}/factory.builder {{issue}}
+gc runtime drain-ack
+```
+
+**2. Judge exactly four things** (everything else is already covered mechanically — see your prompt):
+enum-vs-magic-string, Simplicity/YAGNI, domain placement, and scope against the acceptance's file
+list. **TDD ordering does not apply to a refactor** — the absence of a `test:` commit is correct here.
+
+**3. Verdict.**
+
+Pass:
+```bash
+bd update {{issue}} --set-metadata gate_verdict=pass
+bd update {{issue}} --assignee ""
+gc sling {{rig}}/factory.scribe {{issue}}
+gc runtime drain-ack
+```
+
+Violations — one round only, then force forward with both readings recorded:
+```bash
+bd update {{issue}} --set-metadata gate_verdict=violations \\
+  --append-notes "Gate: <which check, which file:line, what would fix it>"
+bd update {{issue}} --assignee ""
+gc sling {{rig}}/factory.builder {{issue}}
+gc runtime drain-ack
+```
+"""
+
+[[steps]]
+id = "scribe"
+title = "Scribe: vault notes, then close"
+needs = ["gate"]
+description = """
+**1. Read the outcome:**
+```bash
+bd show {{issue}}
+```
+
+**2. Write the session log** to `docs/vault/Sessions/YYYY-MM-DD-<topic-slug>.md`. Add a discovery note
+or an ADR only if something was genuinely learned or decided.
+
+Hard constraints: tags **only** from `docs/vault/_meta/tags.md`; frontmatter `title`, `type`, `tags`,
+`created`, `updated`; at least one inbound wikilink (add a MOC line if none); and **never** set
+`status: canonical`.
+
+**3. Verify and commit:**
+```bash
+make vault-audit
+make format
+git add -A
+git commit -m "docs(<task_id>): vault notes for <what>"
+```
+`make vault-audit` must report 0 errors. Do not close the bead on a failing audit.
+
+**4. Close and report:**
+```bash
+PR_URL=$(bd show {{issue}} --json | jq -r '.[0].metadata.pr_url')
+bd update {{issue}} --set-metadata gc.outcome=pass
+bd close {{issue}}
+```
+
+Say it in one line: `<task_id> is ready to merge: <pr_url>. Gate passed.`
+
+Nobody here merges. A human does.
+```bash
+gc runtime drain-ack
+```
+"""
