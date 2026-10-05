@@ -39,3 +39,6 @@ class AuditTargetType(StrEnum):
     BACKUP = "backup"
     RUNTIME_CONFIG = "runtime_config"
     INSTANCE = "instance"
+    TRAINING_RUN = "training_run"
+    EXPERIMENT = "experiment"
+    MODEL = "model"

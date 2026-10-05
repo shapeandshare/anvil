@@ -18,11 +18,14 @@ import os
 from pathlib import Path
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
-from ...api.deps import get_workbench
+from ...api.deps import get_actor_from_request, get_workbench
 from ...services.datasets.chunking_strategy import ChunkingStrategy
 from ...services.datasets.corpus_loader import CorpusLoader
+from ...services.governance.audit_action import AuditAction
+from ...services.governance.audit_outcome import AuditOutcome
+from ...services.governance.audit_target_type import AuditTargetType
 from ...services.tracking.tracking import (
     TAG_ENTITY_ID,
     TAG_ENTITY_TYPE,
@@ -309,16 +312,21 @@ async def get_corpus(
 
 @router.delete("/corpora/{corpus_id}")
 async def delete_corpus(
-    corpus_id: int, workbench: Annotated[AnvilWorkbench, Depends(get_workbench)]
+    corpus_id: int,
+    request: Request,
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, Any]:
     """Delete a corpus by ID.
 
-    Also logs a lifecycle event via ``TrackingService``.
+    Also logs a lifecycle event via ``TrackingService`` and emits an
+    audit record (R-002).
 
     Parameters
     ----------
-    id : int
+    corpus_id : int
         The corpus ID.
+    request : Request
+        Incoming HTTP request (used to extract actor identity for audit).
     workbench : AnvilWorkbench
         Injected session-bound workbench.
 
@@ -335,7 +343,18 @@ async def delete_corpus(
     deleted = await workbench.corpora.delete(corpus_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Corpus not found")
-    # Phase 1B: lifecycle tracking for delete
+
+    actor = get_actor_from_request(request)
+    await workbench.audit.record(
+        action_type=AuditAction.DELETE.value,
+        target_type=AuditTargetType.CORPUS.value,
+        target_id=str(corpus_id),
+        actor=actor,
+        outcome=AuditOutcome.SUCCESS.value,
+        params={"corpus_id": corpus_id},
+    )
+    await workbench.session.commit()
+
     tracking_svc_del = TrackingService()
     if not tracking_svc_del.is_degraded:
         try:

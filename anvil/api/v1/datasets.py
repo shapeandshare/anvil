@@ -23,7 +23,7 @@ from starlette.responses import StreamingResponse
 from starlette.templating import _TemplateResponse as TemplateResponse
 
 from ...workbench import AnvilWorkbench
-from ..deps import get_workbench
+from ..deps import get_actor_from_request, get_workbench
 from .learning import related_lessons
 from .schemas_dataset import (
     CloneDatasetBody,
@@ -239,6 +239,7 @@ async def update_dataset(
 @router.post("/datasets/upload")
 async def upload_dataset(
     file: UploadFile,
+    request: Request,
     workbench: AnvilWorkbench = Depends(get_workbench),
 ) -> dict[str, object]:
     """Upload a dataset file and create a dataset record.
@@ -250,6 +251,8 @@ async def upload_dataset(
     ----------
     file : UploadFile
         The uploaded file.
+    request : Request
+        Incoming HTTP request (used to extract actor identity for audit).
     workbench : AnvilWorkbench
         Injected session-bound workbench.
 
@@ -277,7 +280,7 @@ async def upload_dataset(
         action_type=AnvilWorkbench.AuditAction.UPLOAD.value,
         target_type="dataset",
         target_id=str(dataset.id),
-        actor="system",
+        actor=get_actor_from_request(request),
         outcome=AnvilWorkbench.AuditOutcome.SUCCESS.value,
         params={
             "name": dataset.name,
@@ -466,6 +469,7 @@ async def clone_dataset(
 async def import_dataset(
     dataset_id: int,
     body: ImportBody,
+    request: Request,
     workbench: AnvilWorkbench = Depends(get_workbench),
 ) -> dict[str, object]:
     """Import raw text into an existing dataset.
@@ -482,6 +486,8 @@ async def import_dataset(
     body : ImportBody
         Request body with ``format`` (e.g. ``"txt"``, ``"csv"``, ``"jsonl"``)
         and ``text`` content to import.
+    request : Request
+        Incoming HTTP request (used to extract actor identity for audit).
     workbench : AnvilWorkbench
         Injected session-bound workbench.
 
@@ -506,7 +512,7 @@ async def import_dataset(
         action_type=AnvilWorkbench.AuditAction.IMPORT.value,
         target_type="dataset",
         target_id=str(dataset_id),
-        actor="system",
+        actor=get_actor_from_request(request),
         outcome=AnvilWorkbench.AuditOutcome.SUCCESS.value,
         params={"format": body.format, "rows_imported": result.rows_imported},
     )

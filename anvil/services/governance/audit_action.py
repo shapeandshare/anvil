@@ -58,3 +58,6 @@ class AuditAction(StrEnum):
     INSTANCE_STOP = "instance_stop"
     INSTANCE_RESTART = "instance_restart"
     INSTANCE_DESTROY = "instance_destroy"
+    TRAINING_START = "training_start"
+    TRAINING_STOP = "training_stop"
+    EXPERIMENT_DELETE = "experiment_delete"

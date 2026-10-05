@@ -12,7 +12,7 @@ import logging
 from datetime import UTC, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict
 
 from ...db.session import AsyncSessionLocal
@@ -21,12 +21,15 @@ from ...services.catalog.catalog_entry import CatalogEntry
 from ...services.catalog.catalog_kind import CatalogKind
 from ...services.catalog.catalog_unavailable_error import CatalogUnavailableError
 from ...services.catalog.model_ref import ModelRef
+from ...services.governance.audit_action import AuditAction
+from ...services.governance.audit_outcome import AuditOutcome
+from ...services.governance.audit_target_type import AuditTargetType
 from ...services.model_import.model_asset_service import (
     DuplicateDownloadError,
     ModelAssetAlreadyAvailableError,
 )
 from ...workbench import AnvilWorkbench
-from ..deps import get_workbench
+from ..deps import get_actor_from_request, get_workbench
 
 logger = logging.getLogger(__name__)
 
@@ -407,13 +410,15 @@ async def retry_import_job(
 async def archive_model(
     name: str,
     version: int,
+    request: Request,
     workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
 ) -> dict[str, object]:
     """Archive a model version (tag-only, FR-008, spec 064 US4).
 
     Marks the catalog entry as ``ARCHIVED``, removing it from active
     listings. The entry remains queryable for lineage (``include_archived``).
-    Local asset files are cleaned up from FileStore.
+    Local asset files are cleaned up from FileStore. Emits an audit
+    record (R-002).
 
     Parameters
     ----------
@@ -421,6 +426,8 @@ async def archive_model(
         Catalog model name.
     version : int
         Catalog model version.
+    request : Request
+        Incoming HTTP request (used to extract actor identity for audit).
     workbench : AnvilWorkbench
         Session-bound workbench.
 
@@ -443,6 +450,20 @@ async def archive_model(
         )
 
     await workbench.catalog.archive(ref)
+
+    actor = get_actor_from_request(request)
+    try:
+        await workbench.audit.record(
+            action_type=AuditAction.DELETE.value,
+            target_type=AuditTargetType.MODEL.value,
+            target_id=f"{name}@v{version}",
+            actor=actor,
+            outcome=AuditOutcome.SUCCESS.value,
+            params={"model_name": name, "model_version": version},
+        )
+        await workbench.session.commit()
+    except Exception:
+        logger.warning("Audit record for model archive failed", exc_info=True)
 
     return {
         "status": "archived",

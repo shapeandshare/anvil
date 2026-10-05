@@ -22,7 +22,7 @@ from ...services.governance.audit_action import AuditAction
 from ...services.governance.audit_outcome import AuditOutcome
 from ...services.governance.audit_target_type import AuditTargetType
 from ...workbench import AnvilWorkbench
-from ..deps import get_workbench
+from ..deps import get_actor_from_request, get_workbench
 
 router = APIRouter()
 
@@ -44,13 +44,15 @@ async def create_backup(
     except RuntimeError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 
+    actor = get_actor_from_request(request)
+
     # Audit: backup_create.
     try:
         await wb.audit.record(
             action_type=AuditAction.BACKUP_CREATE.value,
             target_type=AuditTargetType.BACKUP.value,
             target_id=result.backup_id,
-            actor="system",
+            actor=actor,
             outcome=AuditOutcome.SUCCESS.value,
             params={"backup_id": result.backup_id},
         )
@@ -64,7 +66,7 @@ async def create_backup(
                 action_type=AuditAction.BACKUP_DELETE.value,
                 target_type=AuditTargetType.BACKUP.value,
                 target_id=rid,
-                actor="system",
+                actor=actor,
                 outcome=AuditOutcome.SUCCESS.value,
                 params={"reason": "auto-rotation", "triggered_by": result.backup_id},
             )
@@ -137,9 +139,11 @@ async def stream_backup_progress(
     if queue is None:
 
         async def _done() -> AsyncGenerator[str, None]:
-            yield "event: error\ndata: " + json.dumps(
-                {"message": "Operation not found or already completed"}
-            ) + "\n\n"
+            yield (
+                "event: error\ndata: "
+                + json.dumps({"message": "Operation not found or already completed"})
+                + "\n\n"
+            )
 
         return StreamingResponse(
             _done(),
@@ -240,7 +244,7 @@ async def restore_backup(
             action_type=AuditAction.BACKUP_RESTORE.value,
             target_type=AuditTargetType.BACKUP.value,
             target_id=backup_id,
-            actor="system",
+            actor=get_actor_from_request(request),
             outcome=AuditOutcome.SUCCESS.value,
             params={"safety_snapshot_id": result.get("safety_snapshot_id")},
         )
@@ -270,7 +274,7 @@ async def delete_backup(
             action_type=AuditAction.BACKUP_DELETE.value,
             target_type=AuditTargetType.BACKUP.value,
             target_id=backup_id,
-            actor="system",
+            actor=get_actor_from_request(request),
             outcome=AuditOutcome.SUCCESS.value,
         )
     except (RuntimeError, ValueError):

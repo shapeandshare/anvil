@@ -19,7 +19,7 @@ from collections.abc import AsyncGenerator
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from starlette.responses import StreamingResponse
@@ -27,11 +27,16 @@ from starlette.responses import StreamingResponse
 from ...db.models.training_config import TrainingConfig
 from ...db.session import AsyncSessionLocal
 from ...services.compute.compute_backend_unavailable import ComputeBackendUnavailable
+from ...services.governance.audit_action import AuditAction
+from ...services.governance.audit_outcome import AuditOutcome
+from ...services.governance.audit_target_type import AuditTargetType
 from ...services.inference.inference import InferenceService
 from ...services.tracking.tracking import TrackingService
 from ...services.training.training import TrainingService
 from ...services.training.training_run_config import TrainingRunConfig
 from ...services.training.training_run_service import TrainingRunService
+from ...workbench import AnvilWorkbench
+from ..deps import get_actor_from_request, get_workbench
 
 logger = logging.getLogger(__name__)
 
@@ -183,7 +188,11 @@ def _get_models_dir() -> Path:
         },
     },
 )
-async def start_training(config: TrainConfig) -> dict[str, Any]:
+async def start_training(
+    config: TrainConfig,
+    request: Request,
+    workbench: AnvilWorkbench = Depends(get_workbench),
+) -> dict[str, Any]:
     """Start a new training run asynchronously.
 
     Delegates to ``TrainingRunService`` for the full lifecycle.
@@ -194,6 +203,10 @@ async def start_training(config: TrainConfig) -> dict[str, Any]:
     ----------
     config : TrainConfig
         Pydantic-validated training configuration.
+    request : Request
+        Incoming HTTP request (used to extract actor identity for audit).
+    workbench : AnvilWorkbench
+        Session-bound workbench injected via FastAPI dependency.
 
     Returns
     -------
@@ -214,11 +227,32 @@ async def start_training(config: TrainConfig) -> dict[str, Any]:
     )
     svc_config = TrainingRunConfig(**config.model_dump())
     try:
-        return await run_svc.start_training_run(svc_config)
+        result = await run_svc.start_training_run(svc_config)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
     except ComputeBackendUnavailable as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
+
+    actor = get_actor_from_request(request)
+    try:
+        await workbench.audit.record(
+            action_type=AuditAction.TRAINING_START.value,
+            target_type=AuditTargetType.TRAINING_RUN.value,
+            target_id=str(result.get("run_id")),
+            actor=actor,
+            outcome=AuditOutcome.SUCCESS.value,
+            params={
+                "run_id": result.get("run_id"),
+                "experiment_id": result.get("experiment_id"),
+                "dataset_id": config.dataset_id,
+                "corpus_id": config.corpus_id,
+            },
+        )
+        await workbench.session.commit()
+    except Exception:
+        logger.warning("Audit record for training_start failed", exc_info=True)
+
+    return result
 
 
 @router.get("/training/{run_id}/status")
@@ -354,7 +388,11 @@ async def list_configs() -> dict[str, Any]:
 
 
 @router.post("/training/{run_id}/stop")
-async def stop_training(run_id: int) -> dict[str, Any]:
+async def stop_training(
+    run_id: int,
+    request: Request,
+    workbench: AnvilWorkbench = Depends(get_workbench),
+) -> dict[str, Any]:
     """Stop an active training run.
 
     Signals the run to stop and pushes an error event to the SSE queue
@@ -364,6 +402,10 @@ async def stop_training(run_id: int) -> dict[str, Any]:
     ----------
     run_id : int
         The training run ID to stop.
+    request : Request
+        Incoming HTTP request (used to extract actor identity for audit).
+    workbench : AnvilWorkbench
+        Session-bound workbench injected via FastAPI dependency.
 
     Returns
     -------
@@ -379,6 +421,21 @@ async def stop_training(run_id: int) -> dict[str, Any]:
                 "data": json.dumps({"message": "Training stopped by user"}),
             }
         )
+
+    actor = get_actor_from_request(request)
+    try:
+        await workbench.audit.record(
+            action_type=AuditAction.TRAINING_STOP.value,
+            target_type=AuditTargetType.TRAINING_RUN.value,
+            target_id=str(run_id),
+            actor=actor,
+            outcome=AuditOutcome.SUCCESS.value,
+            params={"run_id": run_id},
+        )
+        await workbench.session.commit()
+    except Exception:
+        logger.warning("Audit record for training_stop failed", exc_info=True)
+
     return {"status": "stopped"}
 
 
