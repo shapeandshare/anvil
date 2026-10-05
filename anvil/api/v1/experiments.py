@@ -12,11 +12,12 @@ All routes are prefixed with ``/v1`` and mounted under the ``router``.
 
 import asyncio
 import json
+import logging
 import os
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import FileResponse
 from mlflow.exceptions import MlflowException
 from mlflow.tracking import MlflowClient
@@ -26,9 +27,16 @@ from ...core.engine import LlamaModel
 from ...db.repositories.corpora import CorpusRepository
 from ...db.repositories.datasets import DatasetRepository
 from ...db.session import AsyncSessionLocal
+from ...services.governance.audit_action import AuditAction
+from ...services.governance.audit_outcome import AuditOutcome
+from ...services.governance.audit_target_type import AuditTargetType
 from ...services.tracking.tracking import TrackingService
 from ...services.training.export import SafetensorsExportService as ExportService
 from ...services.training.memory_estimator import estimate_training_memory
+from ...workbench import AnvilWorkbench
+from ..deps import get_actor_from_request, get_workbench
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -422,7 +430,6 @@ async def get_experiment(
         ds_id = params.get("dataset_id")
         if ds_id:
             try:
-
                 async with AsyncSessionLocal() as sess:
                     ds_repo = DatasetRepository(sess)
                     ds = await ds_repo.get(int(ds_id))
@@ -434,7 +441,6 @@ async def get_experiment(
             corp_id = params.get("corpus_id")
             if corp_id:
                 try:
-
                     async with AsyncSessionLocal() as sess:
                         corp_repo = CorpusRepository(sess)
                         corp = await corp_repo.get(int(corp_id))
@@ -610,18 +616,27 @@ async def get_experiment_metrics(experiment_id: int) -> dict[str, Any]:
 
 
 @router.delete("/experiments/{experiment_id}")
-async def delete_experiment(experiment_id: int) -> dict[str, Any]:
+async def delete_experiment(
+    experiment_id: int,
+    request: Request,
+    workbench: Annotated[AnvilWorkbench, Depends(get_workbench)],
+) -> dict[str, Any]:
     """Delete an experiment and its associated MLflow run.
 
     Removes the experiment from the tracking service and deletes the
-    corresponding MLflow run if one is linked.
+    corresponding MLflow run if one is linked. Emits an audit record
+    (R-002).
 
     DELETE /v1/experiments/{id}
 
     Parameters
     ----------
-    id : int
+    experiment_id : int
         Experiment ID to delete.
+    request : Request
+        Incoming HTTP request (used to extract actor identity for audit).
+    workbench : AnvilWorkbench
+        Session-bound workbench injected via FastAPI dependency.
 
     Returns
     -------
@@ -655,6 +670,21 @@ async def delete_experiment(experiment_id: int) -> dict[str, Any]:
                 )
         except MlflowException:
             pass
+
+    actor = get_actor_from_request(request)
+    try:
+        await workbench.audit.record(
+            action_type=AuditAction.EXPERIMENT_DELETE.value,
+            target_type=AuditTargetType.EXPERIMENT.value,
+            target_id=str(experiment_id),
+            actor=actor,
+            outcome=AuditOutcome.SUCCESS.value,
+            params={"experiment_id": experiment_id},
+        )
+        await workbench.session.commit()
+    except Exception:
+        logger.warning("Audit record for experiment_delete failed", exc_info=True)
+
     return {"status": "deleted"}
 
 

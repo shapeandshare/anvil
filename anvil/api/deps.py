@@ -14,14 +14,16 @@ from __future__ import annotations
 
 from collections.abc import AsyncGenerator
 
+from fastapi import Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db.session import get_db
 from ..workbench import AnvilWorkbench
 from .api_key_store import ApiKeyStore
+from .auth import SESSION_COOKIE_NAME
 
 # Import get_db_session for downstream convenience.
-__all__ = ["get_db_session", "get_workbench"]
+__all__ = ["get_actor_from_request", "get_db_session", "get_workbench"]
 
 # Module-level singleton for the API key store — initialised once at
 # import time (which happens during application startup).
@@ -36,6 +38,48 @@ def get_api_key_store() -> ApiKeyStore:
     ApiKeyStore
     """
     return _api_key_store
+
+
+def get_actor_from_request(request: Request) -> str:
+    """Extract the authenticated actor identity from a request.
+
+    In local-mode anvil there is no multi-user model: authentication is
+    either an API key (shared secret) or a session cookie (random token
+    per browser session).  The most stable, non-secret identity available
+    is therefore:
+
+    - ``"api_key"`` — when the request carries a valid ``X-API-Key`` header.
+    - ``"session:<first-8-chars>"`` — when the request carries a session
+      cookie.  The first 8 characters of the session token act as a
+      short fingerprint that identifies the session without exposing the
+      full token in the audit log.
+    - ``"anonymous"`` — fallback when neither credential is present (e.g.
+      exempt routes, OPTIONS pre-flight).
+
+    This function is intentionally read-only: it does **not** re-validate
+    the credentials.  Auth middleware has already accepted the request by
+    the time a route handler runs.
+
+    Parameters
+    ----------
+    request : Request
+        The incoming FastAPI/Starlette request.
+
+    Returns
+    -------
+    str
+        A stable, non-secret actor identifier for use in audit records.
+    """
+    api_key = request.headers.get("X-API-Key")
+    if api_key:
+        return "api_key"
+
+    session_id = request.cookies.get(SESSION_COOKIE_NAME)
+    if session_id:
+        # Use a short fingerprint — never log the full session token.
+        return f"session:{session_id[:8]}"
+
+    return "anonymous"
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession]:
